@@ -9,12 +9,8 @@
  * @ingroup aux_math
  */
 
-#include <algorithm>
-#include <cstring>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <assert.h>
+#include "m_relation_history.h"
+
 #include "math/m_api.h"
 #include "math/m_predict.h"
 #include "math/m_vec3.h"
@@ -25,10 +21,17 @@
 #include "os/os_threading.h"
 #include "util/u_template_historybuf.hpp"
 
-#include "m_relation_history.h"
-
+#include <memory>
+#include <algorithm>
+#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <mutex>
 
 using namespace xrt::auxiliary::util;
+namespace os = xrt::auxiliary::os;
 
 struct relation_history_entry
 {
@@ -36,31 +39,20 @@ struct relation_history_entry
 	uint64_t timestamp;
 };
 
-constexpr size_t BufLen = 4096;
-constexpr size_t power2 = 12;
+static constexpr size_t BufLen = 4096;
 
 struct m_relation_history
 {
 	HistoryBuffer<struct relation_history_entry, BufLen> impl;
-	bool has_first_sample;
-	struct os_mutex mutex;
+	os::Mutex mutex;
 };
 
 
-extern "C" {
 void
 m_relation_history_create(struct m_relation_history **rh_ptr)
 {
-	*rh_ptr = U_TYPED_CALLOC(struct m_relation_history);
-	struct m_relation_history *rh = *rh_ptr;
-
-	rh->has_first_sample = false;
-	os_mutex_init(&rh->mutex);
-#if 0
-  struct xrt_space_relation first_relation = {};
-  first_relation.pose.orientation.w = 1.0f; // Everything else, including tracked flags, is 0.
-  m_relation_history_push(rh, &first_relation, os_monotonic_get_ns());
-#endif
+	auto ret = std::make_unique<m_relation_history>();
+	*rh_ptr = ret.release();
 }
 
 bool
@@ -71,16 +63,19 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 	rhe.relation = *in_relation;
 	rhe.timestamp = timestamp;
 	bool ret = false;
-	os_mutex_lock(&rh->mutex);
-	// if we aren't empty, we can compare against the latest timestamp.
-	if (rh->impl.empty() || rhe.timestamp > rh->impl.back().timestamp) {
-		// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If we get
-		// a timestamp that's before the most recent timestamp in the buffer, just don't put it in the history.
-		rh->impl.push_back(rhe);
-		ret = true;
+	std::unique_lock<os::Mutex> lock(rh->mutex);
+	try {
+		// if we aren't empty, we can compare against the latest timestamp.
+		if (rh->impl.empty() || rhe.timestamp > rh->impl.back().timestamp) {
+			// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If
+			// we get a timestamp that's before the most recent timestamp in the buffer, just don't put it
+			// in the history.
+			rh->impl.push_back(rhe);
+			ret = true;
+		}
+	} catch (std::exception const &e) {
+		U_LOG_E("Caught exception: %s", e.what());
 	}
-	rh->has_first_sample = true;
-	os_mutex_unlock(&rh->mutex);
 	return ret;
 }
 
@@ -88,17 +83,18 @@ enum m_relation_history_result
 m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
 {
 	XRT_TRACE_MARKER();
-	os_mutex_lock(&rh->mutex);
-	m_relation_history_result ret = M_RELATION_HISTORY_RESULT_INVALID;
-	if (rh->impl.empty() || at_timestamp_ns == 0) {
-		// Do nothing. You push nothing to the buffer you get nothing from the buffer.
-		*out_relation = {};
-	} else {
+	std::unique_lock<os::Mutex> lock(rh->mutex);
+	try {
+		if (rh->impl.empty() || at_timestamp_ns == 0) {
+			// Do nothing. You push nothing to the buffer you get nothing from the buffer.
+			*out_relation = {};
+			return M_RELATION_HISTORY_RESULT_INVALID;
+		}
 		const auto b = rh->impl.begin();
 		const auto e = rh->impl.end();
 
-		// find the first element *not less than* our value. the lambda we pass is the comparison function, to
-		// compare against timestamps.
+		// find the first element *not less than* our value. the lambda we pass is the comparison
+		// function, to compare against timestamps.
 		const auto it =
 		    std::lower_bound(b, e, at_timestamp_ns, [](const relation_history_entry &rhe, uint64_t timestamp) {
 			    return rhe.timestamp < timestamp;
@@ -114,69 +110,68 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 			U_LOG_T("Extrapolating %f s past the back of the buffer!", delta_s);
 
 			m_predict_relation(&rh->impl.back().relation, delta_s, out_relation);
-			ret = M_RELATION_HISTORY_RESULT_PREDICTED;
-
-		} else if (at_timestamp_ns == it->timestamp) {
+			return M_RELATION_HISTORY_RESULT_PREDICTED;
+		}
+		if (at_timestamp_ns == it->timestamp) {
 			// exact match
 			U_LOG_T("Exact match in the buffer!");
 			*out_relation = it->relation;
-			ret = M_RELATION_HISTORY_RESULT_EXACT;
-		} else if (it == b) {
-			// lower bound is at the beginning:
+			return M_RELATION_HISTORY_RESULT_EXACT;
+		}
+		if (it == b) {
+			// lower bound is at the beginning (and it's not an exact match):
 			// The desired timestamp is before what our buffer contains.
 			// Aka a weird edge case where somebody asks for a really old pose and we do our best.
 			int64_t diff_prediction_ns = static_cast<int64_t>(at_timestamp_ns) - rh->impl.front().timestamp;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
 			U_LOG_T("Extrapolating %f s before the front of the buffer!", delta_s);
 			m_predict_relation(&rh->impl.front().relation, delta_s, out_relation);
-			ret = M_RELATION_HISTORY_RESULT_REVERSE_PREDICTED;
-		} else {
-			U_LOG_T("Interpolating within buffer!");
-
-			// We precede *it and follow *(it - 1) (which we know exists because we already handled the it =
-			// begin() case)
-			auto predecessor = *(it - 1);
-			auto successor = *it;
-
-			// Do the thing.
-			int64_t diff_before = static_cast<int64_t>(at_timestamp_ns) - predecessor.timestamp;
-			int64_t diff_after = static_cast<int64_t>(successor.timestamp) - at_timestamp_ns;
-
-			float amount_to_lerp = (float)diff_before / (float)(diff_before + diff_after);
-
-			// Copy relation flags
-			xrt_space_relation result{};
-			result.relation_flags = (enum xrt_space_relation_flags)(predecessor.relation.relation_flags &
-			                                                        successor.relation.relation_flags);
-			// First-order implementation - just lerp between the before and after
-			if (0 != (result.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT)) {
-				result.pose.position = m_vec3_lerp(predecessor.relation.pose.position,
-				                                   successor.relation.pose.position, amount_to_lerp);
-			}
-			if (0 != (result.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT)) {
-
-				math_quat_slerp(&predecessor.relation.pose.orientation,
-				                &successor.relation.pose.orientation, amount_to_lerp,
-				                &result.pose.orientation);
-			}
-
-			//! @todo Does this make any sense?
-			if (0 != (result.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)) {
-				result.angular_velocity =
-				    m_vec3_lerp(predecessor.relation.angular_velocity,
-				                successor.relation.angular_velocity, amount_to_lerp);
-			}
-			if (0 != (result.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT)) {
-				result.linear_velocity =
-				    m_vec3_lerp(predecessor.relation.linear_velocity,
-				                successor.relation.linear_velocity, amount_to_lerp);
-			}
-			*out_relation = result;
-			ret = M_RELATION_HISTORY_RESULT_INTERPOLATED;
+			return M_RELATION_HISTORY_RESULT_REVERSE_PREDICTED;
 		}
+		U_LOG_T("Interpolating within buffer!");
+
+		// We precede *it and follow *(it - 1) (which we know exists because we already handled
+		// the it = begin() case)
+		auto predecessor = *(it - 1);
+		auto successor = *it;
+
+		// Do the thing.
+		int64_t diff_before = static_cast<int64_t>(at_timestamp_ns) - predecessor.timestamp;
+		int64_t diff_after = static_cast<int64_t>(successor.timestamp) - at_timestamp_ns;
+
+		float amount_to_lerp = (float)diff_before / (float)(diff_before + diff_after);
+
+		// Copy relation flags
+		xrt_space_relation result{};
+		result.relation_flags = (enum xrt_space_relation_flags)(predecessor.relation.relation_flags &
+		                                                        successor.relation.relation_flags);
+		// First-order implementation - just lerp between the before and after
+		if (0 != (result.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT)) {
+			result.pose.position = m_vec3_lerp(predecessor.relation.pose.position,
+			                                   successor.relation.pose.position, amount_to_lerp);
+		}
+		if (0 != (result.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT)) {
+
+			math_quat_slerp(&predecessor.relation.pose.orientation, &successor.relation.pose.orientation,
+			                amount_to_lerp, &result.pose.orientation);
+		}
+
+		//! @todo Does interpolating the velocities make any sense?
+		if (0 != (result.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT)) {
+			result.angular_velocity = m_vec3_lerp(predecessor.relation.angular_velocity,
+			                                      successor.relation.angular_velocity, amount_to_lerp);
+		}
+		if (0 != (result.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT)) {
+			result.linear_velocity = m_vec3_lerp(predecessor.relation.linear_velocity,
+			                                     successor.relation.linear_velocity, amount_to_lerp);
+		}
+		*out_relation = result;
+		return M_RELATION_HISTORY_RESULT_INTERPOLATED;
+
+	} catch (std::exception const &e) {
+		U_LOG_E("Caught exception: %s", e.what());
+		return M_RELATION_HISTORY_RESULT_INVALID;
 	}
-	os_mutex_unlock(&rh->mutex);
-	return ret;
 }
 
 bool
@@ -184,14 +179,12 @@ m_relation_history_get_latest(struct m_relation_history *rh,
                               uint64_t *out_time_ns,
                               struct xrt_space_relation *out_relation)
 {
-	os_mutex_lock(&rh->mutex);
+	std::unique_lock<os::Mutex> lock(rh->mutex);
 	if (rh->impl.empty()) {
-		os_mutex_unlock(&rh->mutex);
 		return false;
 	}
 	*out_relation = rh->impl.back().relation;
 	*out_time_ns = rh->impl.back().timestamp;
-	os_mutex_unlock(&rh->mutex);
 	return true;
 }
 
@@ -209,8 +202,10 @@ m_relation_history_destroy(struct m_relation_history **rh_ptr)
 		// Do nothing, it's likely already been destroyed
 		return;
 	}
-	os_mutex_destroy(&rh->mutex);
-	free(rh);
+	try {
+		delete rh;
+	} catch (std::exception const &e) {
+		U_LOG_E("Caught exception: %s", e.what());
+	}
 	*rh_ptr = NULL;
-}
 }

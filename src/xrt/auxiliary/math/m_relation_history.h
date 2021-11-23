@@ -5,7 +5,7 @@
  * @brief Small utility for keeping track of the history of an xrt_space_relation, ie. for knowing where a HMD or
  * controller was in the past
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_ht
+ * @ingroup aux_util
  */
 #pragma once
 
