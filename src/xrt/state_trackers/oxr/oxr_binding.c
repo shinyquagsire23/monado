@@ -500,7 +500,8 @@ oxr_action_get_input_source_localized_name(struct oxr_logger *log,
 
 	// Find the interaction profile.
 	struct oxr_interaction_profile *oip = NULL;
-	interaction_profile_find_or_create(log, sess->sys->inst, path, &oip);
+	//! @todo: If we ever rebind a profile that has not been suggested by the client, it will not be found.
+	interaction_profile_find(log, sess->sys->inst, path, &oip);
 	if (oip == NULL) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "no interaction profile found");
 	}
