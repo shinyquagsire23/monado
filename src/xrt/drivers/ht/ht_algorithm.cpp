@@ -47,11 +47,12 @@ errHistory2D(HandHistory2DBBox *past, Palm7KP *present)
 		// U_LOG_E("Returning big number because htAlgorithm told me to!");
 		return 100000000000000000000000000000.0f;
 	}
-	float sum_of_lengths = m_vec2_len(*past->wrist_unfiltered[0] - *past->middle_unfiltered[0]) +
-	                       m_vec2_len(present->kps[WRIST_7KP] - present->kps[MIDDLE_7KP]);
+	float sum_of_lengths =
+	    m_vec2_len(*past->wrist_unfiltered.get_at_age(0) - *past->middle_unfiltered.get_at_age(0)) +
+	    m_vec2_len(present->kps[WRIST_7KP] - present->kps[MIDDLE_7KP]);
 
-	float sum_of_distances = (m_vec2_len(*past->wrist_unfiltered[0] - present->kps[WRIST_7KP]) +
-	                          m_vec2_len(*past->middle_unfiltered[0] - present->kps[MIDDLE_7KP]));
+	float sum_of_distances = (m_vec2_len(*past->wrist_unfiltered.get_at_age(0) - present->kps[WRIST_7KP]) +
+	                          m_vec2_len(*past->middle_unfiltered.get_at_age(0) - present->kps[MIDDLE_7KP]));
 
 
 	float final = sum_of_distances / sum_of_lengths;
@@ -112,10 +113,10 @@ htImageToKeypoints(struct ht_view *htv)
 	// Do the things for each active bbox history!
 	for (size_t i = 0; i < history_indices.size(); i++) {
 		HandHistory2DBBox *hist_of_interest = &htv->bbox_histories[history_indices[i]];
-		hist_of_interest->wrist_unfiltered.push(hand_detections[detection_indices[i]].kps[WRIST_7KP]);
-		hist_of_interest->index_unfiltered.push(hand_detections[detection_indices[i]].kps[INDEX_7KP]);
-		hist_of_interest->middle_unfiltered.push(hand_detections[detection_indices[i]].kps[MIDDLE_7KP]);
-		hist_of_interest->pinky_unfiltered.push(hand_detections[detection_indices[i]].kps[LITTLE_7KP]);
+		hist_of_interest->wrist_unfiltered.push_back(hand_detections[detection_indices[i]].kps[WRIST_7KP]);
+		hist_of_interest->index_unfiltered.push_back(hand_detections[detection_indices[i]].kps[INDEX_7KP]);
+		hist_of_interest->middle_unfiltered.push_back(hand_detections[detection_indices[i]].kps[MIDDLE_7KP]);
+		hist_of_interest->pinky_unfiltered.push_back(hand_detections[detection_indices[i]].kps[LITTLE_7KP]);
 		// Eh do the rest later
 	}
 
@@ -150,9 +151,10 @@ htImageToKeypoints(struct ht_view *htv)
 		xrt_vec2 unfiltered_middle;
 		xrt_vec2 unfiltered_direction;
 
-		centerAndRotationFromJoints(htv, entry->wrist_unfiltered[0], entry->index_unfiltered[0],
-		                            entry->middle_unfiltered[0], entry->pinky_unfiltered[0], &unfiltered_middle,
-		                            &unfiltered_direction);
+		centerAndRotationFromJoints(
+		    htv, entry->wrist_unfiltered.get_at_age(0), entry->index_unfiltered.get_at_age(0),
+		    entry->middle_unfiltered.get_at_age(0), entry->pinky_unfiltered.get_at_age(0), &unfiltered_middle,
+		    &unfiltered_direction);
 
 		xrt_vec2 filtered_middle;
 		xrt_vec2 filtered_direction;
@@ -285,18 +287,21 @@ jsonMaybeAddSomeHands(struct ht_device *htd, bool err)
 			for (int idx_joint = 0; idx_joint < 21; idx_joint++) {
 				// const char* key = keys[idx_joint];
 				cJSON *j_vec3 = cJSON_AddArrayToObject(j_hand_in_frame, keys[idx_joint]);
-				cJSON_AddItemToArray(
-				    j_vec3,
-				    cJSON_CreateNumber(
-				        htd->histories_3d[idx_hand].last_hands_unfiltered[0]->kps[idx_joint].x));
-				cJSON_AddItemToArray(
-				    j_vec3,
-				    cJSON_CreateNumber(
-				        htd->histories_3d[idx_hand].last_hands_unfiltered[0]->kps[idx_joint].y));
-				cJSON_AddItemToArray(
-				    j_vec3,
-				    cJSON_CreateNumber(
-				        htd->histories_3d[idx_hand].last_hands_unfiltered[0]->kps[idx_joint].z));
+				cJSON_AddItemToArray(j_vec3,
+				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
+				                                            .last_hands_unfiltered.get_at_age(0)
+				                                            ->kps[idx_joint]
+				                                            .x));
+				cJSON_AddItemToArray(j_vec3,
+				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
+				                                            .last_hands_unfiltered.get_at_age(0)
+				                                            ->kps[idx_joint]
+				                                            .y));
+				cJSON_AddItemToArray(j_vec3,
+				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
+				                                            .last_hands_unfiltered.get_at_age(0)
+				                                            ->kps[idx_joint]
+				                                            .z));
 			}
 
 
@@ -566,7 +571,8 @@ htRunAlgorithm(struct ht_device *htd)
 
 
 	for (size_t i = 0; i < past_indices.size(); i++) {
-		htd->histories_3d[past_indices[i]].last_hands_unfiltered.push(hands_unfiltered[present_indices[i]]);
+		htd->histories_3d[past_indices[i]].last_hands_unfiltered.push_back(
+		    hands_unfiltered[present_indices[i]]);
 	}
 	// The above may not do anything, because we'll start out with no hand histories! All the numbers of elements
 	// should be zero.
@@ -579,7 +585,7 @@ htRunAlgorithm(struct ht_device *htd)
 			history_new.uuid = rand(); // Not a great uuid, huh? Good enough for us, this only has to be
 			                           // unique across say an hour period max.
 			handEuroFiltersInit(&history_new, FCMIN_HAND, FCMIN_D_HAND, BETA_HAND);
-			history_new.last_hands_unfiltered.push(hands_unfiltered[i]);
+			history_new.last_hands_unfiltered.push_back(hands_unfiltered[i]);
 			// history_new.
 			htd->histories_3d.push_back(
 			    history_new); // Add something to the end - don't initialize any of it.
@@ -616,8 +622,8 @@ htRunAlgorithm(struct ht_device *htd)
 	for (size_t i = 0; i < htd->histories_3d.size(); i++) {
 		// U_LOG_E("Valid hand %zu l_idx %i r_idx %i", i, htd->histories_3d[i].last_hands[0]->idx_l,
 		//         htd->histories_3d[i].last_hands[0]->idx_r);
-		valid_2d_idxs[0].push_back(htd->histories_3d[i].last_hands_unfiltered[0]->idx_l);
-		valid_2d_idxs[1].push_back(htd->histories_3d[i].last_hands_unfiltered[0]->idx_r);
+		valid_2d_idxs[0].push_back(htd->histories_3d[i].last_hands_unfiltered.get_at_age(0)->idx_l);
+		valid_2d_idxs[1].push_back(htd->histories_3d[i].last_hands_unfiltered.get_at_age(0)->idx_r);
 		handednessHandHistory3D(&htd->histories_3d[i]);
 	}
 
@@ -645,7 +651,7 @@ htRunAlgorithm(struct ht_device *htd)
 
 	for (size_t hand_index = 0; hand_index < num_hands; hand_index++) {
 		handEuroFiltersRun(htd, &htd->histories_3d[hand_index], &filtered_hands[hand_index]);
-		htd->histories_3d[hand_index].last_hands_filtered.push(filtered_hands[hand_index]);
+		htd->histories_3d[hand_index].last_hands_filtered.push_back(filtered_hands[hand_index]);
 		applyThumbIndexDrag(&filtered_hands[hand_index]);
 		filtered_hands[hand_index].handedness = htd->histories_3d[hand_index].handedness;
 	}

@@ -32,7 +32,7 @@ float
 errHandHistory(const HandHistory3D &history_hand, const Hand3D &present_hand)
 {
 	// Remember we never have to deal with an empty hand. Can always access the last element.
-	return sumOfHandJointDistances(*history_hand->last_hands_unfiltered[0], present_hand);
+	return sumOfHandJointDistances(*history_hand->last_hands_unfiltered.get_at_age(0), present_hand);
 }
 
 float
@@ -262,7 +262,7 @@ void
 handednessHandHistory3D(HandHistory3D *history)
 {
 
-	float inter = handednessJointSet(history->last_hands_unfiltered[0]);
+	float inter = handednessJointSet(history->last_hands_unfiltered.get_at_age(0));
 
 	if ((fabsf(inter) > 0.3f) || (fabsf(history->handedness) < 0.3f)) {
 		history->handedness += inter;
@@ -305,16 +305,17 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 #if 0
 	// float vals[4] = {0.5, 0.33, 0.1, 0.07};
 	float vals[4] = {0.9, 0.09, 0.009, 0.001};
-  int m = f->last_hands_unfiltered.length-1;
-	double ts_out = (vals[0] * (double)f->last_hands_unfiltered[std::min(m,0)]->timestamp) +
-	                (vals[1] * (double)f->last_hands_unfiltered[std::min(m,1)]->timestamp) +
-	                (vals[2] * (double)f->last_hands_unfiltered[std::min(m,2)]->timestamp) +
-	                (vals[3] * (double)f->last_hands_unfiltered[std::min(m,3)]->timestamp);
+	auto m = f->last_hands_unfiltered.size() - 1;
+	double ts_out = (vals[0] * (double)f->last_hands_unfiltered.get_at_age(std::min(m, 0))->timestamp) +
+	                (vals[1] * (double)f->last_hands_unfiltered.get_at_age(std::min(m, 1))->timestamp) +
+	                (vals[2] * (double)f->last_hands_unfiltered.get_at_age(std::min(m, 2))->timestamp) +
+	                (vals[3] * (double)f->last_hands_unfiltered.get_at_age(std::min(m, 3))->timestamp);
 	out_hand->timestamp = (uint64_t)ts_out;
 
 	for (int kp_idx = 0; kp_idx < 21; kp_idx++) {
 		for (int hist_idx = 0; hist_idx < 4; hist_idx++) {
-			float *in_y_arr = (float *)&f->last_hands_unfiltered[std::min(m,hist_idx)]->kps[kp_idx];
+			float *in_y_arr =
+			    (float *)&f->last_hands_unfiltered.get_at_age(std::min(m, hist_idx))->kps[kp_idx];
 			float *out_y_arr = (float *)&out_hand->kps[kp_idx];
 			for (int i = 0; i < 3; i++) {
 				out_y_arr[i] += in_y_arr[i] * vals[hist_idx];
@@ -323,29 +324,31 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 	}
 #elif 0
 	for (int i = 0; i < 21; i++) {
-		m_filter_euro_vec3_run(&f->filters[i], f->last_hands_unfiltered[0]->timestamp,
-		                       &f->last_hands_unfiltered[0]->kps[i], &out_hand->kps[i]);
+		m_filter_euro_vec3_run(&f->filters[i], f->last_hands_unfiltered.get_at_age(0)->timestamp,
+		                       &f->last_hands_unfiltered.get_at_age(0)->kps[i], &out_hand->kps[i]);
 	}
 	// conspicuously wrong!
-	out_hand->timestamp = f->last_hands_unfiltered[0]->timestamp;
+	out_hand->timestamp = f->last_hands_unfiltered.get_at_age(0)->timestamp;
 #else
 
 	if (!f->have_prev_hand) {
-		f->last_hands_filtered.push(*f->last_hands_unfiltered[0]);
-		uint64_t ts = f->last_hands_unfiltered[0]->timestamp;
+		f->last_hands_filtered.push_back(*f->last_hands_unfiltered.get_at_age(0));
+		uint64_t ts = f->last_hands_unfiltered.get_at_age(0)->timestamp;
 		f->prev_ts_for_alpha = ts;
 		f->first_ts = ts;
 		f->prev_filtered_ts = ts;
 		f->prev_dy = 0;
 		f->have_prev_hand = true;
-		*out_hand = *f->last_hands_unfiltered[0];
+		*out_hand = *f->last_hands_unfiltered.get_at_age(0);
 	}
-	uint64_t ts = f->last_hands_unfiltered[0]->timestamp;
+	uint64_t ts = f->last_hands_unfiltered.get_at_age(0)->timestamp;
 	double dt, alpha_d;
 	dt = (double)(ts - f->prev_ts_for_alpha) / U_TIME_1S_IN_NS;
 
 	double abs_dy =
-	    (sumOfHandJointDistances(f->last_hands_unfiltered[0], f->last_hands_filtered[0]) / 21.0f) * 0.7f;
+	    (sumOfHandJointDistances(f->last_hands_unfiltered.get_at_age(0), f->last_hands_filtered.get_at_age(0)) /
+	     21.0f) *
+	    0.7f;
 	alpha_d = calc_smoothing_alpha(htd->dynamic_config.hand_fc_min_d.val, dt);
 
 	double alpha, fc_cutoff;
@@ -356,12 +359,12 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 	HT_DEBUG(htd, "dt is %f, abs_dy is %f, alpha is %f", dt, abs_dy, alpha);
 
 	for (int i = 0; i < 21; i++) {
-		out_hand->kps[i].x =
-		    exp_smooth(alpha, f->last_hands_unfiltered[0]->kps[i].x, f->last_hands_filtered[0]->kps[i].x);
-		out_hand->kps[i].y =
-		    exp_smooth(alpha, f->last_hands_unfiltered[0]->kps[i].y, f->last_hands_filtered[0]->kps[i].y);
-		out_hand->kps[i].z =
-		    exp_smooth(alpha, f->last_hands_unfiltered[0]->kps[i].z, f->last_hands_filtered[0]->kps[i].z);
+		out_hand->kps[i].x = exp_smooth(alpha, f->last_hands_unfiltered.get_at_age(0)->kps[i].x,
+		                                f->last_hands_filtered.get_at_age(0)->kps[i].x);
+		out_hand->kps[i].y = exp_smooth(alpha, f->last_hands_unfiltered.get_at_age(0)->kps[i].y,
+		                                f->last_hands_filtered.get_at_age(0)->kps[i].y);
+		out_hand->kps[i].z = exp_smooth(alpha, f->last_hands_unfiltered.get_at_age(0)->kps[i].z,
+		                                f->last_hands_filtered.get_at_age(0)->kps[i].z);
 	}
 	double prev_ts_offset = (double)(f->prev_filtered_ts - f->first_ts);
 	double current_ts_offset = (double)(ts - f->first_ts);

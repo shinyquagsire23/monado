@@ -169,7 +169,7 @@ struct HandHistory3D
 	float handedness;
 	bool have_prev_hand = false;
 	double prev_dy;
-	uint64_t prev_ts_for_alpha; // also in last_hands_unfiltered[0] but go away.
+	uint64_t prev_ts_for_alpha; // also in last_hands_unfiltered.back() but go away.
 
 	uint64_t first_ts;
 	uint64_t prev_filtered_ts;
