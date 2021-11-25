@@ -82,6 +82,8 @@ struct wmr_camera
 
 	struct libusb_transfer *xfers[NUM_XFERS];
 
+	uint8_t last_gain, debug_gain;
+
 	struct u_sink_debug debug_sinks[2];
 
 	enum u_logging_level log_level;
@@ -291,6 +293,18 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	xrt_frame_reference(&xf, NULL);
 
 	cam->last_seq = seq;
+	if (cam->last_gain != cam->debug_gain) {
+		int i;
+
+		for (i = 0; i < cam->config_count; i++) {
+			const struct wmr_camera_config *config = &cam->configs[i];
+			if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
+				continue;
+			}
+			wmr_camera_set_gain(cam, config->location, cam->debug_gain);
+		}
+	}
+
 out:
 	libusb_submit_transfer(xfer);
 }
@@ -309,6 +323,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_lev
 	int res, i;
 
 	cam->log_level = log_level;
+	cam->debug_gain = DEFAULT_GAIN;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -349,6 +364,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_lev
 	u_sink_debug_init(&cam->debug_sinks[1]);
 	u_var_add_root(cam, "WMR Camera", true);
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
+	u_var_add_u8(cam, &cam->debug_gain, "Gain");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "SLAM");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controllers");
 
@@ -502,6 +518,8 @@ wmr_camera_set_gain(struct wmr_camera *cam, uint8_t camera_id, uint8_t gain)
 	    .gain = __cpu_to_le16(gain),
 	    .camera_id2 = __cpu_to_le16(camera_id),
 	};
+
+	cam->last_gain = gain;
 
 	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
