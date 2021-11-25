@@ -32,7 +32,7 @@ extern "C" {
 
 // Messages types specific to WMR Hololens Sensors devices
 #define WMR_MS_HOLOLENS_MSG_SENSORS 0x01
-#define WMR_MS_HOLOLENS_MSG_CONTROL 0x02 // Integrated motion controller messages?
+#define WMR_MS_HOLOLENS_MSG_CONTROL 0x02 // Firmware read control responses
 #define WMR_MS_HOLOLENS_MSG_DEBUG 0x03
 #define WMR_MS_HOLOLENS_MSG_BT_IFACE 0x05         /* Bluetooth interface */
 #define WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER 0x06  /* Left controller */
@@ -43,8 +43,10 @@ extern "C" {
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
 #define WMR_CONTROL_MSG_UNKNOWN_05 0x05
 
+// Message sub-types for WMR_MS_HOLOLENS_MSG_BT_IFACE WMR Hololens Sensors message
 #define WMR_BT_IFACE_MSG_DEBUG 0x19
 
+// Controller status codes for WMR_MS_HOLOLENS_MSG_CONTROLLER_STATUS status message
 #define WMR_CONTROLLER_STATUS_UNPAIRED 0x0
 #define WMR_CONTROLLER_STATUS_OFFLINE 0x1
 #define WMR_CONTROLLER_STATUS_ONLINE 0x2
