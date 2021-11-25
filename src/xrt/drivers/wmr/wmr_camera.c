@@ -13,6 +13,8 @@
 #include <asm/byteorder.h>
 #include <libusb.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <inttypes.h>
 
 #include "os/os_threading.h"
 #include "util/u_var.h"
@@ -79,6 +81,10 @@ struct wmr_camera
 	size_t xfer_size;
 	uint32_t frame_width, frame_height;
 	uint8_t last_seq;
+	uint64_t last_frame_ts;
+
+	/* Unwrapped frame sequence number */
+	uint64_t frame_sequence;
 
 	struct libusb_transfer *xfers[NUM_XFERS];
 
@@ -267,8 +273,14 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	while (dst_remain > 0) {
 		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
 
-		/* TODO: See if there is useful info in the 32 byte packet headers.
-		 * There seems to be a counter or timestamp there at least */
+		/* 32 byte header seems to contain:
+		 *   __be32 magic = "Dlo+"
+		 *   __le32 frame_ctr;
+		 *   __le32 slice_ctr;
+		 *   __u8 unknown[20]; - binary block where all bytes are different each slice,
+		 *                       but repeat every 8 slices. They're different each boot
+		 *                       of the headset. Might just be uninitialised memory?
+		 */
 		src += 0x20;
 
 		memcpy(dst, src, to_copy);
@@ -277,10 +289,43 @@ img_xfer_cb(struct libusb_transfer *xfer)
 		dst_remain -= to_copy;
 	}
 
+	/* There should be exactly a 26 byte footer left over */
+	assert(xfer->buffer + xfer->length - src == 26);
+
+	/* Footer contains:
+	 * __le64 start_ts; - 100ns unit timestamp, from same clock as video_timestamps on the IMU feed
+	 * __le64 end_ts;   - 100ns unit timestamp, always about 111000 * 100ns later than start_ts ~= 90Hz
+	 * __le16 ctr1;     - Counter that increments by 88, but sometimes by 96, and wraps at 16384
+	 * __le16 unknown0  - Unknown value, has only ever been 0
+	 * __be32 magic     - "Dlo+"
+	 * __le16 frametype?- either 0x00 or 0x02. Every 3rd frame is 0x0, others are 0x2. Might be SLAM vs controllers?
+	 */
+	uint64_t frame_start_ts = read64(&src) * WMR_MS_HOLOLENS_NS_PER_TICK;
+	uint64_t frame_end_ts = read64(&src) * WMR_MS_HOLOLENS_NS_PER_TICK;
+	int64_t delta = frame_end_ts - frame_start_ts;
+
+	uint16_t unknown16 = read16(&src);
+	uint16_t unknown16_2 = read16(&src);
+
+	WMR_CAM_DEBUG(
+	    cam, "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64 " unknown %u %u",
+	    frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2);
+
 	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
 	uint8_t seq = xf->data[89];
+	uint8_t seq_delta = seq - cam->last_seq;
 
-	WMR_CAM_TRACE(cam, "Camera frame seq %u (prev %u) - exposure %u", seq, cam->last_seq, exposure);
+	/* Extend the sequence number to 64-bits */
+	cam->frame_sequence += seq_delta;
+
+	WMR_CAM_TRACE(cam, "Camera frame seq %u (prev %u) -> frame %" PRIu64 " - exposure %u", seq, cam->last_seq,
+	              cam->frame_sequence, exposure);
+
+	xf->source_sequence = cam->frame_sequence;
+	xf->timestamp = xf->source_timestamp = frame_start_ts;
+
+	cam->last_frame_ts = frame_start_ts;
+	cam->last_seq = seq;
 
 	/* Exposure of 0 is a dark frame for controller tracking */
 	int sink_index = (exposure == 0) ? 1 : 0;
@@ -292,7 +337,6 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	/* TODO: Push frame for tracking */
 	xrt_frame_reference(&xf, NULL);
 
-	cam->last_seq = seq;
 	if (cam->last_gain != cam->debug_gain) {
 		int i;
 
