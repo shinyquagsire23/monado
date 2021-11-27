@@ -48,11 +48,11 @@ send_bytes_to_controller(struct wmr_controller_connection *wcc, const uint8_t *b
 	struct wmr_hmd_controller_connection *conn = (struct wmr_hmd_controller_connection *)(wcc);
 	bool res = false;
 
-	assert(buf_size < 64);
-
 	os_mutex_lock(&conn->lock);
 	if (!conn->disconnected && buf_size > 0) {
 		uint8_t outbuf[64];
+
+		assert(buf_size <= sizeof(outbuf));
 
 		memcpy(outbuf, buffer, buf_size);
 		outbuf[0] += conn->hmd_cmd_base;
@@ -72,6 +72,9 @@ read_sync_from_controller(struct wmr_controller_connection *wcc, uint8_t *buffer
 	os_mutex_lock(&conn->lock);
 	if (!conn->disconnected && buf_size > 0) {
 		res = wmr_hmd_read_sync_from_controller(conn->hmd, buffer, buf_size, timeout_ms);
+		if (res > 0) {
+			buffer[0] -= conn->hmd_cmd_base;
+		}
 	}
 	os_mutex_unlock(&conn->lock);
 
@@ -115,6 +118,7 @@ wmr_hmd_controller_connection_disconnect(struct wmr_controller_connection *base)
 	} else {
 		os_mutex_lock(&conn->lock);
 		conn->disconnected = true;
+		conn->base.wcb = NULL;
 		os_mutex_unlock(&conn->lock);
 	}
 }
@@ -174,7 +178,9 @@ struct xrt_device *
 wmr_hmd_controller_connection_get_controller(struct wmr_hmd_controller_connection *wcc)
 {
 	struct wmr_controller_base *wcb = wcc->base.wcb;
-	struct xrt_device *xdev = &wcb->base;
+	if (wcb == NULL)
+		return NULL;
 
+	struct xrt_device *xdev = &wcb->base;
 	return xdev;
 }

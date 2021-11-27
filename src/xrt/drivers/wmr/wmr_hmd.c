@@ -164,6 +164,28 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
 	}
 }
 
+static void
+hololens_ensure_controller(struct wmr_hmd *wh, uint8_t controller_id, uint16_t vid, uint16_t pid)
+{
+	if (controller_id >= WMR_MAX_CONTROLLERS)
+		return;
+
+	if (wh->controller[controller_id] != NULL)
+		return;
+
+	WMR_DEBUG(wh, "Adding controller device %d", controller_id);
+
+	enum xrt_device_type controller_type =
+	    controller_id == 0 ? XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER : XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+	uint8_t hmd_cmd_base = controller_id == 0 ? 0x5 : 0xd;
+
+	struct wmr_hmd_controller_connection *controller =
+	    wmr_hmd_controller_create(wh, hmd_cmd_base, controller_type, vid, pid, wh->log_level);
+
+	os_mutex_lock(&wh->controller_status_lock);
+	wh->controller[controller_id] = controller;
+	os_mutex_unlock(&wh->controller_status_lock);
+}
 
 /*
  *
@@ -220,7 +242,7 @@ hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char
 		break;
 	}
 	case WMR_CONTROLLER_STATUS_ONLINE: {
-		if (size < 10) {
+		if (size < 7) {
 			WMR_TRACE(wh, "Got small controller online status packet (%i)", size);
 			return;
 		}
@@ -230,17 +252,32 @@ hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char
 
 		uint16_t vid = read16(&buffer);
 		uint16_t pid = read16(&buffer);
-		uint8_t unknown1 = read8(&buffer);
-		uint16_t unknown2160 = read16(&buffer);
 
-		WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x val1 %u val2 %u", controller_id, vid, pid,
-		          unknown1, unknown2160);
+		if (size >= 10) {
+			uint8_t unknown1 = read8(&buffer);
+			uint16_t unknown2160 = read16(&buffer);
+			WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x val1 %u val2 %u", controller_id, vid,
+			          pid, unknown1, unknown2160);
+		} else {
+			WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x", controller_id, vid, pid);
+		}
+
+		hololens_ensure_controller(wh, controller_id, vid, pid);
 		break;
 	}
 	default: //
 		WMR_DEBUG(wh, "Unknown controller status packet (%i) type 0x%02x", size, pkt_type);
 		break;
 	}
+
+	os_mutex_lock(&wh->controller_status_lock);
+	if (controller_id == 0)
+		wh->have_left_controller_status = true;
+	else if (controller_id == 1)
+		wh->have_right_controller_status = true;
+	if (wh->have_left_controller_status && wh->have_right_controller_status)
+		os_cond_signal(&wh->controller_status_cond);
+	os_mutex_unlock(&wh->controller_status_lock);
 }
 
 static void
@@ -281,19 +318,25 @@ hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer,
 static void
 hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
-	DRV_TRACE_MARKER();
-
-	if (size >= 45) {
-		WMR_TRACE(wh,
-		          "Got controller (%i)\n\t%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x "
-		          "%02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-		          size, buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7],
-		          buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15],
-		          buffer[16], buffer[17], buffer[18], buffer[19], buffer[20], buffer[21], buffer[22],
-		          buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29]);
-	} else {
-		WMR_TRACE(wh, "Got controller packet (%i)\n\t%02x", size, buffer[0]);
+	if (size < 45) {
+		WMR_TRACE(wh, "Got unknown short controller packet (%i)\n\t%02x", size, buffer[0]);
+		return;
 	}
+
+	uint8_t packet_id = buffer[0];
+	struct wmr_controller_connection *controller = NULL;
+
+	if (packet_id == WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER) {
+		controller = (struct wmr_controller_connection *)wh->controller[0];
+	} else if (packet_id == WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER) {
+		controller = (struct wmr_controller_connection *)wh->controller[1];
+	}
+
+	if (controller == NULL)
+		return; /* Controller online message not yet seen */
+
+	uint64_t now_ns = os_monotonic_get_ns();
+	wmr_controller_connection_receive_bytes(controller, now_ns, (uint8_t *)buffer, size);
 }
 
 static void
@@ -1153,6 +1196,22 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	// Destroy the thread object.
 	os_thread_helper_destroy(&wh->oth);
 
+	// Disconnect tunnelled controllers
+	os_mutex_lock(&wh->controller_status_lock);
+	if (wh->controller[0] != NULL) {
+		struct wmr_controller_connection *wcc = (struct wmr_controller_connection *)wh->controller[0];
+		wmr_controller_connection_disconnect(wcc);
+	}
+
+	if (wh->controller[1] != NULL) {
+		struct wmr_controller_connection *wcc = (struct wmr_controller_connection *)wh->controller[1];
+		wmr_controller_connection_disconnect(wcc);
+	}
+	os_mutex_unlock(&wh->controller_status_lock);
+
+	os_mutex_destroy(&wh->controller_status_lock);
+	os_cond_destroy(&wh->controller_status_cond);
+
 	if (wh->hid_hololens_sensors_dev != NULL) {
 		os_hid_destroy(wh->hid_hololens_sensors_dev);
 		wh->hid_hololens_sensors_dev = NULL;
@@ -1854,6 +1913,14 @@ precompute_sensor_transforms(struct wmr_hmd *wh)
 	wh->P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
 }
 
+static bool
+wmr_hmd_request_controller_status(struct wmr_hmd *wh)
+{
+	DRV_TRACE_MARKER();
+	unsigned char cmd[64] = {WMR_MS_HOLOLENS_MSG_BT_CONTROL, WMR_MS_HOLOLENS_MSG_CONTROLLER_STATUS};
+	return wmr_hmd_send_controller_packet(wh, cmd, sizeof(cmd));
+}
+
 void
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
@@ -1900,6 +1967,22 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	ret = os_mutex_init(&wh->hid_lock);
 	if (ret != 0) {
 		WMR_ERROR(wh, "Failed to init HID mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_mutex_init(&wh->controller_status_lock);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init Controller status mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_cond_init(&wh->controller_status_cond);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init Controller status cond!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
 		return;
@@ -2042,6 +2125,25 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
 		return;
+	}
+
+	/* Send controller status request to check for online controllers
+	 * and wait 250ms for the reports for Reverb G2 and Odyssey+ */
+	if (wh->hmd_desc->hmd_type == WMR_HEADSET_REVERB_G2 || wh->hmd_desc->hmd_type == WMR_HEADSET_SAMSUNG_800ZAA) {
+		bool have_controller_status = false;
+
+		os_mutex_lock(&wh->controller_status_lock);
+		if (wmr_hmd_request_controller_status(wh)) {
+			/* @todo: Add a timed version of os_cond_wait and a timeout? */
+			/* This will be signalled from the reader thread */
+			os_cond_wait(&wh->controller_status_cond, &wh->controller_status_lock);
+			have_controller_status = true;
+		}
+		os_mutex_unlock(&wh->controller_status_lock);
+
+		if (!have_controller_status) {
+			WMR_WARN(wh, "Failed to request controller status from HMD");
+		}
 	}
 
 	wmr_hmd_setup_ui(wh);

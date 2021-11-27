@@ -28,12 +28,15 @@
 #include "wmr_config.h"
 #include "wmr_camera.h"
 #include "wmr_common.h"
+#include "wmr_hmd_controller.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* Support 2 controllers on HP Reverb G2 */
+#define WMR_MAX_CONTROLLERS 2
 
 struct wmr_hmd;
 
@@ -189,6 +192,14 @@ struct wmr_hmd
 		char hand_status[128];
 		char slam_status[128];
 	} gui;
+
+	/* Tunnelled controller devices (Reverb G2, Odyssey+) handling */
+	struct os_mutex controller_status_lock;
+	struct os_cond controller_status_cond;
+	bool have_left_controller_status;
+	bool have_right_controller_status;
+
+	struct wmr_hmd_controller_connection *controller[WMR_MAX_CONTROLLERS];
 };
 
 static inline struct wmr_hmd *
