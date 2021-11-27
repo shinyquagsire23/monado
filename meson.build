@@ -85,7 +85,10 @@ percetto = dependency('percetto', required: false)
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
 leap = cc.find_library('Leap', dirs : ['/usr/local/lib'], required: false)
-inc_leap = include_directories('/usr/local/include')
+inc_leap = []
+if leap.found()
+  inc_leap += include_directories('/usr/local/include')
+endif
 
 opencv = dependency('opencv', required: get_option('tracking'))
 if not opencv.found()
