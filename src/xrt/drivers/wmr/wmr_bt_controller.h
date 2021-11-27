@@ -54,8 +54,6 @@ struct wmr_bt_controller
 	struct os_thread_helper controller_thread;
 	struct os_mutex lock;
 
-	struct wmr_controller_message controller_message;
-
 	struct m_imu_3dof fusion;
 
 	struct
@@ -70,24 +68,7 @@ struct wmr_bt_controller
 
 	uint32_t last_ticks;
 
-	struct
-	{
-		bool menu;
-		bool squeeze;
-		float trigger;
-
-		struct
-		{
-			bool click;
-			struct xrt_vec2 values;
-		} thumbstick;
-		struct
-		{
-			bool click;
-			bool touch;
-			struct xrt_vec2 values;
-		} trackpad;
-	} input;
+	struct wmr_controller_input input;
 };
 
 

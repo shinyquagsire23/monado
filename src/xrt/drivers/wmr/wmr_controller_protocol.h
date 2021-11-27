@@ -33,44 +33,23 @@ extern "C" {
 #define WMR_BT_MOTION_CONTROLLER_MSG 0x01
 
 
-struct wmr_controller_message
+struct wmr_controller_input
 {
-	// Very much still work in progress!
+	bool menu;
+	bool squeeze; // Actually a "squeeze" click
+	float trigger;
 
-	// HP Reverb G1 button map:
-	// Stick_pressed: 0x01
-	// Home button pressed: 0x02
-	// Menu button pressed: 0x04
-	// Grip button pressed: 0x08
-	// Touch-pad pressed: 0x10
-	// BT pairing button pressed: 0x20
-	// Touch-pad touched: 0x40
-	uint8_t buttons;
-
-	// Todo: interpret analog stick data
-	uint8_t stick_1;
-	uint8_t stick_2;
-	uint8_t stick_3;
-
-	uint8_t trigger; // pressure: 0x00 - 0xFF
-
-	// Touchpad coords range: 0x00 - 0x64. Both are 0xFF when untouched.
-	uint8_t pad_x;
-	uint8_t pad_y;
-
-	uint8_t battery;
-
-	int32_t accel_x;
-	int32_t accel_y;
-	int32_t accel_z;
-
-	int32_t temp;
-
-	int32_t gyro_x;
-	int32_t gyro_y;
-	int32_t gyro_z;
-
-	uint64_t timestamp;
+	struct
+	{
+		bool click;
+		struct xrt_vec2 values;
+	} thumbstick;
+	struct
+	{
+		bool click;
+		bool touch;
+		struct xrt_vec2 values;
+	} trackpad;
 };
 
 
@@ -89,7 +68,7 @@ struct wmr_controller_message
 bool
 wmr_controller_packet_parse(const unsigned char *buffer,
                             size_t len,
-                            struct wmr_controller_message *out_message,
+                            struct wmr_controller_input *decoded_input,
                             enum u_logging_level log_level);
 
 

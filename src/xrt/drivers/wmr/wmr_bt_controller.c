@@ -69,7 +69,7 @@ read_packets(struct wmr_bt_controller *d)
 	switch (buffer[0]) {
 	case WMR_BT_MOTION_CONTROLLER_MSG:
 		// Note: skipping msg type byte
-		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->controller_message, d->log_level)) {
+		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->input, d->log_level)) {
 			WMR_ERROR(d, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
 			          buffer[0], size);
 			return false;
