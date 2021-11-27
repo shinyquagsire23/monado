@@ -9,7 +9,7 @@
  * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @ingroup drv_wmr
  */
-
+#pragma once
 
 #include "os/os_threading.h"
 #include "math/m_imu_3dof.h"
