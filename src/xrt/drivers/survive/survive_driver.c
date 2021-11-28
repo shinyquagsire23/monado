@@ -49,6 +49,7 @@
 
 #include "../ht/ht_interface.h"
 #include "../multi_wrapper/multi.h"
+#include "../ht_ctrl_emu/ht_ctrl_emu_interface.h"
 #include "xrt/xrt_config_drivers.h"
 
 #include "survive_driver.h"
@@ -1406,7 +1407,11 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 			struct xrt_device *wrap =
 			    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, &ss->hmd->base,
 			                                   XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
-			out_xdevs[out_idx++] = wrap;
+			struct xrt_device *two_hands[2];
+			cemu_devices_create(&ss->hmd->base, wrap, two_hands);
+
+			out_xdevs[out_idx++] = two_hands[0];
+			out_xdevs[out_idx++] = two_hands[1];
 		}
 		// Don't need it anymore. And it's not even created unless we hit this codepath, which is somewhat hard.
 		t_stereo_camera_calibration_reference(&cal, NULL);
