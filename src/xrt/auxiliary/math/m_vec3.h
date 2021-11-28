@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // Copyright 2020, Nova King.
 // SPDX-License-Identifier: BSL-1.0
 /*!
@@ -6,6 +6,7 @@
  * @brief  C vec3 math library.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Nova King <technobaboo@gmail.com>
+ * @author Moses Turner <moses@collabora.com>>
  *
  * @see xrt_vec3
  * @ingroup aux_math
@@ -150,7 +151,13 @@ operator-(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
 	return m_vec3_sub(a, b);
 }
 
-static inline struct xrt_vec3 // Until clang-format-11 is on the CI.
+static inline struct xrt_vec3
+operator*(const struct xrt_vec3 &a, const float &b)
+{
+	return m_vec3_mul_scalar(a, b);
+}
+
+static inline struct xrt_vec3
 operator*(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
 {
 	return m_vec3_mul(a, b);
@@ -176,6 +183,12 @@ operator-=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
 
 static inline void
 operator*=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
+{
+	a = a * b;
+}
+
+static inline void
+operator*=(struct xrt_vec3 &a, const float &b)
 {
 	a = a * b;
 }
