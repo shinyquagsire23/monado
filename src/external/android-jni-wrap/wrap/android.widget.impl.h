@@ -23,9 +23,9 @@ inline void Toast::show() const {
 }
 
 inline Toast Toast::makeText(content::Context const &context,
-                             jni::Object const &text, int32_t duration) {
+                             std::string const &stringParam, int32_t duration) {
     return Toast(Meta::data().clazz().call<jni::Object>(
-        Meta::data().makeText, context.object(), text, duration));
+        Meta::data().makeText, context.object(), stringParam, duration));
 }
 
 inline Toast Toast::makeText(content::Context const &context, int32_t resId,

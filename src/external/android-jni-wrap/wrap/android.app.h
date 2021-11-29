@@ -54,6 +54,17 @@ class Activity : public content::Context {
     }
 
     /*!
+     * Wrapper for the getWindow method
+     *
+     * Java prototype:
+     * `public android.view.Window getWindow();`
+     *
+     * JNI signature: ()Landroid/view/Window;
+     *
+     */
+    jni::Object getWindow();
+
+    /*!
      * Wrapper for the getSystemService method
      *
      * Java prototype:
@@ -81,6 +92,7 @@ class Activity : public content::Context {
      * Class metadata
      */
     struct Meta : public MetaBaseDroppable {
+        jni::method_t getWindow;
         jni::method_t getSystemService;
         jni::method_t setVrModeEnabled;
 

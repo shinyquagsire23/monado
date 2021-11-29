@@ -74,7 +74,7 @@ class Toast : public ObjectWrapperBase {
      *
      */
     static Toast makeText(content::Context const &context,
-                          jni::Object const &text, int32_t duration);
+                          std::string const &stringParam, int32_t duration);
 
     /*!
      * Wrapper for the makeText static method

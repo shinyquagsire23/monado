@@ -11,6 +11,11 @@
 namespace wrap {
 namespace android::app {
 
+inline jni::Object Activity::getWindow() {
+    assert(!isNull());
+    return object().call<jni::Object>(Meta::data().getWindow);
+}
+
 inline jni::Object Activity::getSystemService(std::string const &name) {
     assert(!isNull());
     return object().call<jni::Object>(Meta::data().getSystemService, name);

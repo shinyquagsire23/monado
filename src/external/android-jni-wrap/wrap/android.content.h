@@ -23,6 +23,11 @@ namespace android::database {
 class Cursor;
 } // namespace android::database
 
+namespace android::net {
+class Uri;
+class Uri_Builder;
+} // namespace android::net
+
 namespace android::os {
 class Bundle;
 } // namespace android::os
@@ -181,6 +186,48 @@ class Context : public ObjectWrapperBase {
 };
 
 /*!
+ * Wrapper for android.content.ContentUris objects.
+ */
+class ContentUris : public ObjectWrapperBase {
+  public:
+    using ObjectWrapperBase::ObjectWrapperBase;
+    static constexpr const char *getTypeName() noexcept {
+        return "android/content/ContentUris";
+    }
+
+    /*!
+     * Wrapper for the appendId static method
+     *
+     * Java prototype:
+     * `public static android.net.Uri$Builder appendId(android.net.Uri$Builder,
+     * long);`
+     *
+     * JNI signature: (Landroid/net/Uri$Builder;J)Landroid/net/Uri$Builder;
+     *
+     */
+    static net::Uri_Builder appendId(net::Uri_Builder &uri_Builder,
+                                     long long longParam);
+
+    /*!
+     * Class metadata
+     */
+    struct Meta : public MetaBaseDroppable {
+        jni::method_t appendId;
+
+        /*!
+         * Singleton accessor
+         */
+        static Meta &data(bool deferDrop = false) {
+            static Meta instance{deferDrop};
+            return instance;
+        }
+
+      private:
+        explicit Meta(bool deferDrop);
+    };
+};
+
+/*!
  * Wrapper for android.content.ComponentName objects.
  */
 class ComponentName : public ObjectWrapperBase {
@@ -287,6 +334,17 @@ class Intent : public ObjectWrapperBase {
      * Wrapper for a constructor
      *
      * Java prototype:
+     * `public android.content.Intent();`
+     *
+     * JNI signature: ()V
+     *
+     */
+    static Intent construct();
+
+    /*!
+     * Wrapper for a constructor
+     *
+     * Java prototype:
      * `public android.content.Intent(android.content.Intent);`
      *
      * JNI signature: (Landroid/content/Intent;)V
@@ -314,7 +372,7 @@ class Intent : public ObjectWrapperBase {
      * JNI signature: (Ljava/lang/String;Landroid/net/Uri;)V
      *
      */
-    static Intent construct(std::string const &action, jni::Object const &uri);
+    static Intent construct(std::string const &action, net::Uri const &uri);
 
     /*!
      * Wrapper for a constructor
@@ -340,7 +398,7 @@ class Intent : public ObjectWrapperBase {
      * (Ljava/lang/String;Landroid/net/Uri;Landroid/content/Context;Ljava/lang/Class;)V
      *
      */
-    static Intent construct(std::string const &action, jni::Object const &uri,
+    static Intent construct(std::string const &action, net::Uri const &uri,
                             Context const &context,
                             java::lang::Class const &classParam);
 
@@ -360,6 +418,7 @@ class Intent : public ObjectWrapperBase {
      */
     struct Meta : public MetaBase {
         impl::StaticFieldId<int32_t> FLAG_ACTIVITY_NEW_TASK;
+        jni::method_t init;
         jni::method_t init1;
         jni::method_t init2;
         jni::method_t init3;
@@ -402,11 +461,28 @@ class ContentResolver : public ObjectWrapperBase {
      * (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
      *
      */
-    database::Cursor query(jni::Object const &uri,
+    database::Cursor query(net::Uri const &uri,
                            jni::Array<std::string> const &projection,
                            std::string const &selection,
                            jni::Array<std::string> const &selectionArgs,
                            std::string const &sortOrder);
+
+    /*!
+     * Wrapper for the query method - overload added in API level 1
+     *
+     * Java prototype:
+     * `public final android.database.Cursor query(android.net.Uri,
+     * java.lang.String[], java.lang.String, java.lang.String[],
+     * java.lang.String);`
+     *
+     * JNI signature:
+     * (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+     *
+     * This is a way to call the main query() function without the three
+     * trailing optional arguments.
+     */
+    database::Cursor query(net::Uri const &uri,
+                           jni::Array<std::string> const &projection);
 
     /*!
      * Wrapper for the query method - overload added in API level 16
@@ -420,7 +496,7 @@ class ContentResolver : public ObjectWrapperBase {
      * (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Landroid/os/CancellationSignal;)Landroid/database/Cursor;
      *
      */
-    database::Cursor query(jni::Object const &uri,
+    database::Cursor query(net::Uri const &uri,
                            jni::Array<std::string> const &projection,
                            std::string const &selection,
                            jni::Array<std::string> const &selectionArgs,
@@ -438,7 +514,7 @@ class ContentResolver : public ObjectWrapperBase {
      * (Landroid/net/Uri;[Ljava/lang/String;Landroid/os/Bundle;Landroid/os/CancellationSignal;)Landroid/database/Cursor;
      *
      */
-    database::Cursor query(jni::Object const &uri,
+    database::Cursor query(net::Uri const &uri,
                            jni::Array<std::string> const &projection,
                            os::Bundle const &queryArgs,
                            jni::Object const &cancellationSignal);

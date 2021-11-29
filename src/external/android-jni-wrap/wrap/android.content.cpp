@@ -29,6 +29,15 @@ Context::Meta::Meta(bool deferDrop)
         MetaBaseDroppable::dropClassRef();
     }
 }
+ContentUris::Meta::Meta(bool deferDrop)
+    : MetaBaseDroppable(ContentUris::getTypeName()),
+      appendId(classRef().getStaticMethod(
+          "appendId",
+          "(Landroid/net/Uri$Builder;J)Landroid/net/Uri$Builder;")) {
+    if (!deferDrop) {
+        MetaBaseDroppable::dropClassRef();
+    }
+}
 ComponentName::Meta::Meta()
     : MetaBase(ComponentName::getTypeName()),
       init(classRef().getMethod("<init>",
@@ -41,6 +50,7 @@ ComponentName::Meta::Meta()
 Intent::Meta::Meta()
     : MetaBase(Intent::getTypeName()),
       FLAG_ACTIVITY_NEW_TASK(classRef(), "FLAG_ACTIVITY_NEW_TASK"),
+      init(classRef().getMethod("<init>", "()V")),
       init1(classRef().getMethod("<init>", "(Landroid/content/Intent;)V")),
       init2(classRef().getMethod("<init>", "(Ljava/lang/String;)V")),
       init3(classRef().getMethod("<init>",
