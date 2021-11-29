@@ -16,31 +16,31 @@
 #include "util/u_time.h"
 #include "xrt/xrt_defines.h"
 
-static const int num_real_joints = 21;
+static constexpr int num_real_joints = 21;
 
 float
-sumOfHandJointDistances(Hand3D *one, Hand3D *two)
+sumOfHandJointDistances(const Hand3D &one, const Hand3D &two)
 {
 	float dist = 0.0f;
 	for (int i = 0; i < num_real_joints; i++) {
-		dist += m_vec3_len(one->kps[i] - two->kps[i]);
+		dist += m_vec3_len(one.kps[i] - two.kps[i]);
 	}
 	return dist;
 }
 
 float
-errHandHistory(HandHistory3D *history_hand, Hand3D *present_hand)
+errHandHistory(const HandHistory3D &history_hand, const Hand3D &present_hand)
 {
 	// Remember we never have to deal with an empty hand. Can always access the last element.
-	return sumOfHandJointDistances(history_hand->last_hands_unfiltered[0], present_hand);
+	return sumOfHandJointDistances(*history_hand->last_hands_unfiltered[0], present_hand);
 }
 
 float
-errHandDisparity(Hand2D *left_rays, Hand2D *right_rays)
+errHandDisparity(const Hand2D &left_rays, const Hand2D &right_rays)
 {
 	float error_y_diff = 0.0f;
 	for (int i = 0; i < 21; i++) {
-		float diff_y = fabsf(left_rays->kps[i].y - right_rays->kps[i].y);
+		float diff_y = fabsf(left_rays.kps[i].y - right_rays.kps[i].y);
 		// Big question about what's the best loss function. Gut feeling was "I should be using sum of squared
 		// errors" but I don't really know. Using just sum of errors for now. Ideally it'd also be not very
 		// sensitive to one or two really bad outliers.
@@ -107,6 +107,36 @@ applyThumbIndexDrag(Hand3D *hand)
 	hand->kps[INDX_TIP] = m_vec3_lerp(index, thumb, amount * 0.5f);
 }
 
+static inline xrt_vec3
+get_joint_position(struct xrt_hand_joint_set *set, xrt_hand_joint jt)
+{
+	return set->values.hand_joint_set_default[jt].relation.pose.position;
+}
+
+template <size_t N>
+static inline void
+set_finger(struct xrt_hand_joint_set *set,
+           const xrt_vec3 &pinky_to_index_prox,
+           const std::array<xrt_hand_joint, N> &finger)
+{
+	for (int i = 0; i < N - 1; i++) {
+		// Don't do fingertips. (Fingertip would be index 4.)
+		struct xrt_vec3 forwards =
+		    m_vec3_normalize(get_joint_position(set, finger[i + 1]) - get_joint_position(set, finger[i]));
+		struct xrt_vec3 backwards = m_vec3_mul_scalar(forwards, -1.0f);
+
+		struct xrt_vec3 left = m_vec3_orthonormalize(forwards, pinky_to_index_prox);
+		// float dot = m_vec3_dot(backwards, left);
+		// assert((m_vec3_dot(backwards,left) == 0.0f));
+		math_quat_from_plus_x_z(&left, &backwards,
+		                        &set->values.hand_joint_set_default[finger[i]].relation.pose.orientation);
+	}
+	// Do fingertip! Per XR_EXT_hand_tracking, just copy the distal joint's orientation. Doing anything else
+	// is wrong.
+	set->values.hand_joint_set_default[finger[N - 1]].relation.pose.orientation =
+	    set->values.hand_joint_set_default[finger[N - 2]].relation.pose.orientation;
+}
+
 void
 applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 {
@@ -117,7 +147,7 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 		return;
 	}
 
-#define gl(jt) set->values.hand_joint_set_default[jt].relation.pose.position
+	auto gl = [&](xrt_hand_joint jt) { return get_joint_position(set, jt); };
 
 	xrt_vec3 pinky_prox = gl(XRT_HAND_JOINT_LITTLE_PROXIMAL);
 
@@ -129,7 +159,8 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 		pinky_to_index_prox = m_vec3_mul_scalar(pinky_to_index_prox, -1.0f);
 	}
 
-	static const std::vector<std::vector<enum xrt_hand_joint>> fingers_with_joints_in_them = {
+	using Finger = std::array<xrt_hand_joint, 5>;
+	static const std::array<Finger, 4> fingers_with_joints_in_them = {
 
 	    {XRT_HAND_JOINT_INDEX_METACARPAL, XRT_HAND_JOINT_INDEX_PROXIMAL, XRT_HAND_JOINT_INDEX_INTERMEDIATE,
 	     XRT_HAND_JOINT_INDEX_DISTAL, XRT_HAND_JOINT_INDEX_TIP},
@@ -144,24 +175,8 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 	     XRT_HAND_JOINT_LITTLE_DISTAL, XRT_HAND_JOINT_LITTLE_TIP},
 
 	};
-	for (std::vector<enum xrt_hand_joint> finger : fingers_with_joints_in_them) {
-
-		for (int i = 0; i < 4; i++) {
-			// Don't do fingertips. (Fingertip would be index 4.)
-			struct xrt_vec3 forwards = m_vec3_normalize(gl(finger[i + 1]) - gl(finger[i]));
-			struct xrt_vec3 backwards = m_vec3_mul_scalar(forwards, -1.0f);
-
-			struct xrt_vec3 left = m_vec3_orthonormalize(forwards, pinky_to_index_prox);
-			// float dot = m_vec3_dot(backwards, left);
-			// assert((m_vec3_dot(backwards,left) == 0.0f));
-			math_quat_from_plus_x_z(
-			    &left, &backwards,
-			    &set->values.hand_joint_set_default[finger[i]].relation.pose.orientation);
-		}
-		// Do fingertip! Per XR_EXT_hand_tracking, just copy the distal joint's orientation. Doing anything else
-		// is wrong.
-		set->values.hand_joint_set_default[finger[4]].relation.pose.orientation =
-		    set->values.hand_joint_set_default[finger[3]].relation.pose.orientation;
+	for (Finger const &finger : fingers_with_joints_in_them) {
+		set_finger(set, pinky_to_index_prox, finger);
 	}
 
 	// wrist!
@@ -180,14 +195,16 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 	// obviously forwards to the next joint is the -Z.
 	xrt_vec3 thumb_prox_to_dist = gl(XRT_HAND_JOINT_THUMB_DISTAL) - gl(XRT_HAND_JOINT_THUMB_PROXIMAL);
 	xrt_vec3 thumb_dist_to_tip = gl(XRT_HAND_JOINT_THUMB_TIP) - gl(XRT_HAND_JOINT_THUMB_DISTAL);
-	xrt_vec3 plane_normal;
+	xrt_vec3 plane_normal{};
 	if (!is_right) {
 		math_vec3_cross(&thumb_prox_to_dist, &thumb_dist_to_tip, &plane_normal);
 	} else {
 		math_vec3_cross(&thumb_dist_to_tip, &thumb_prox_to_dist, &plane_normal);
 	}
-	std::vector<enum xrt_hand_joint> thumbs = {XRT_HAND_JOINT_THUMB_METACARPAL, XRT_HAND_JOINT_THUMB_PROXIMAL,
-	                                           XRT_HAND_JOINT_THUMB_DISTAL, XRT_HAND_JOINT_THUMB_TIP};
+	constexpr std::array<enum xrt_hand_joint, 4> thumbs = {XRT_HAND_JOINT_THUMB_METACARPAL,
+	                                                       XRT_HAND_JOINT_THUMB_PROXIMAL,
+	                                                       XRT_HAND_JOINT_THUMB_DISTAL, XRT_HAND_JOINT_THUMB_TIP};
+	//! @todo this code isn't quite the same as set_finger, can we make it the same so we can use that?
 	for (int i = 0; i < 3; i++) {
 		struct xrt_vec3 backwards =
 		    m_vec3_mul_scalar(m_vec3_normalize(gl(thumbs[i + 1]) - gl(thumbs[i])), -1.0f);
