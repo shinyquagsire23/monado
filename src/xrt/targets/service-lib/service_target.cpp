@@ -58,6 +58,7 @@ private:
 
 static struct ipc_server *server = NULL;
 static IpcServerHelper *helper = nullptr;
+static std::condition_variable helper_ready;
 static std::unique_ptr<std::thread> server_thread{};
 static std::mutex server_thread_mutex;
 
@@ -79,9 +80,9 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobjec
 		std::unique_lock lock(server_thread_mutex);
 		if (!server && !server_thread) {
 			helper = new IpcServerHelper();
+			helper_ready.notify_all();
 			server_thread = std::make_unique<std::thread>(
 			    []() { ipc_server_main_android(&server, signalStartupCompleteTrampoline, helper); });
-			helper->waitForStartupComplete();
 		}
 	}
 }
@@ -89,11 +90,8 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobjec
 extern "C" JNIEXPORT void JNICALL
 Java_org_freedesktop_monado_ipc_MonadoImpl_nativeWaitForServerStartup(JNIEnv *env, jobject thiz)
 {
-	if (server == nullptr) {
-		// Should not happen.
-		U_LOG_E("service: nativeWaitForServerStartup called before service started up!");
-		return;
-	}
+	std::unique_lock<std::mutex> lock(server_thread_mutex);
+	helper_ready.wait(lock, [&] { return helper != nullptr; });
 	helper->waitForStartupComplete();
 }
 

@@ -65,6 +65,7 @@ public class MonadoImpl extends IMonado.Stub {
 
     @Override
     public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
+        nativeWaitForServerStartup();
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
         if (nativeAddClient(fd) != 0) {
@@ -88,12 +89,7 @@ public class MonadoImpl extends IMonado.Stub {
             return;
         }
         nativeAppSurface(surface);
-        startServerIfNeeded();
-    }
-
-    private void startServerIfNeeded() {
         nativeStartServer();
-        nativeWaitForServerStartup();
     }
 
     @Override
