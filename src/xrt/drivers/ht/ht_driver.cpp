@@ -714,7 +714,7 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 
 	// This puts u_sink_create_to_r8g8b8_or_l8 on its own thread, so that nothing gets backed up if it runs slower
 	// than the native camera framerate.
-	u_sink_queue_create(&htd->camera.xfctx, tmp, &tmp);
+	u_sink_queue_create(&htd->camera.xfctx, 1, tmp, &tmp);
 
 	// Converts images (we'd expect YUV422 or MJPEG) to R8G8B8. Can take a long time, especially on unoptimized
 	// builds. If it's really slow, triple-check that you built Monado with optimizations!
@@ -722,7 +722,7 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 
 	// Puts the hand tracking code on its own thread, so that nothing upstream of it gets backed up if the hand
 	// tracking code runs slower than the upstream framerate.
-	u_sink_queue_create(&htd->camera.xfctx, tmp, &tmp);
+	u_sink_queue_create(&htd->camera.xfctx, 1, tmp, &tmp);
 
 	xrt_fs_mode *modes;
 	uint32_t count;

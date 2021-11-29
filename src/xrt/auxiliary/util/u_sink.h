@@ -96,6 +96,7 @@ u_sink_deinterleaver_create(struct xrt_frame_context *xfctx,
  */
 bool
 u_sink_queue_create(struct xrt_frame_context *xfctx,
+                    uint64_t max_size,
                     struct xrt_frame_sink *downstream,
                     struct xrt_frame_sink **out_xfs);
 

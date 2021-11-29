@@ -200,7 +200,7 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	u_sink_create_to_yuv_or_yuyv(&fact->xfctx, xsink, &xsink);
 
 	// Put a queue before it to multi-thread the filter.
-	u_sink_queue_create(&fact->xfctx, xsink, &xsink);
+	u_sink_queue_create(&fact->xfctx, 1, xsink, &xsink);
 
 	struct xrt_frame_sink *ht_sink = NULL;
 	t_hand_create(&fact->xfctx, fact->data, &fact->xth, &ht_sink);
