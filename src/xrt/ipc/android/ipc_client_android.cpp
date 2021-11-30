@@ -15,7 +15,6 @@
 #include "util/u_logging.h"
 
 #include "android/android_load_class.hpp"
-#include "android/android_looper.h"
 
 #include "wrap/android.app.h"
 
@@ -85,10 +84,6 @@ ipc_client_android_create(struct _JavaVM *vm, void *activity)
 int
 ipc_client_android_blocking_connect(struct ipc_client_android *ica)
 {
-	// To avoid deadlock on main thread, force client entering resume state
-	// before setting up IPC/surface
-	android_looper_poll_until_activity_resumed();
-
 	try {
 		int fd = ica->client.blockingConnect(ica->activity, XRT_ANDROID_PACKAGE);
 		return fd;

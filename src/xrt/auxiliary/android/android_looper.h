@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <xrt/xrt_config_os.h>
+
 #ifdef XRT_OS_ANDROID
 
 #ifdef __cplusplus

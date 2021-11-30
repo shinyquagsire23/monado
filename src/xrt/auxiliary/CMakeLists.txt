@@ -290,7 +290,7 @@ if(ANDROID)
 		android/android_globals.h
 		android/android_load_class.cpp
 		android/android_load_class.hpp
-		android/android_looper.c
+		android/android_looper.cpp
 		android/android_looper.h
 		android/org.freedesktop.monado.auxiliary.cpp
 		android/org.freedesktop.monado.auxiliary.hpp
