@@ -11,8 +11,10 @@
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 #include "util/u_debug.h"
+#include "util/u_var.h"
 #include "os/os_threading.h"
 #include "math/m_space.h"
+#include "tracking/t_euroc_recorder.h"
 
 #include <slam_tracker.hpp>
 #include <opencv2/core/mat.hpp>
@@ -172,6 +174,9 @@ struct TrackerSlam
 	struct os_thread_helper oth;    //!< Thread where the external SLAM system runs
 	MatFrame *cv_wrapper;           //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
 
+	struct xrt_slam_sinks *euroc_recorder; //!< EuRoC dataset recording sinks
+	bool euroc_record;                     //!< When true, samples will be saved to disk in EuRoC format
+
 	// Used for checking that the timestamps come in order
 	mutable timepoint_ns last_imu_ts = INT64_MIN;
 	mutable timepoint_ns last_left_ts = INT64_MIN;
@@ -197,6 +202,10 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	imu_sample sample{ts, a.x, a.y, a.z, w.x, w.y, w.z};
 	t.slam->push_imu_sample(sample);
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+
+	if (t.euroc_record) {
+		xrt_sink_push_imu(t.euroc_recorder->imu, s);
+	}
 
 	// Check monotonically increasing timestamps
 	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts)
@@ -252,6 +261,10 @@ t_slam_frame_sink_push_left(struct xrt_frame_sink *sink, struct xrt_frame *frame
 {
 	auto &t = *container_of(sink, TrackerSlam, left_sink);
 	push_frame(t, frame, true);
+
+	if (t.euroc_record) {
+		xrt_sink_push_frame(t.euroc_recorder->left, frame);
+	}
 }
 
 extern "C" void
@@ -259,6 +272,10 @@ t_slam_frame_sink_push_right(struct xrt_frame_sink *sink, struct xrt_frame *fram
 {
 	auto &t = *container_of(sink, TrackerSlam, right_sink);
 	push_frame(t, frame, false);
+
+	if (t.euroc_record) {
+		xrt_sink_push_frame(t.euroc_recorder->right, frame);
+	}
 }
 
 extern "C" void
@@ -278,6 +295,7 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	auto &t = *t_ptr; // Needed by SLAM_DEBUG
 	SLAM_DEBUG("Destroying SLAM tracker");
 	os_thread_helper_destroy(&t_ptr->oth);
+	u_var_remove_root(t_ptr);
 	delete t_ptr->slam;
 	delete t_ptr->cv_wrapper;
 	delete t_ptr;
@@ -341,6 +359,12 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	SLAM_ASSERT(ret == 0, "Unable to initialize thread");
 
 	xrt_frame_context_add(xfctx, &t.node);
+
+	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
+
+	// Setup UI
+	u_var_add_root(&t, "SLAM Tracker", true);
+	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;
