@@ -194,6 +194,7 @@ if(XRT_BUILD_DRIVER_VIVE)
 
 	if(XRT_BUILD_DRIVER_HANDTRACKING)
 		target_link_libraries(drv_vive PRIVATE drv_ht)
+		target_link_libraries(drv_vive PRIVATE drv_cemu)
 	endif()
 endif()
 

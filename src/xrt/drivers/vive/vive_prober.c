@@ -17,9 +17,18 @@
 #include "vive_controller.h"
 #include "vive_prober.h"
 
+#include "xrt/xrt_config_drivers.h"
+
+
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 #include "../ht/ht_interface.h"
 #include "../multi_wrapper/multi.h"
-#include "xrt/xrt_config_drivers.h"
+#include "../ht_ctrl_emu/ht_ctrl_emu_interface.h"
+DEBUG_GET_ONCE_BOOL_OPTION(vive_use_handtracking, "VIVE_USE_HANDTRACKING", false)
+#endif
+
+
 
 static const char VIVE_PRODUCT_STRING[] = "HTC Vive";
 static const char VIVE_PRO_PRODUCT_STRING[] = "VIVE Pro";
@@ -28,10 +37,6 @@ static const char VALVE_INDEX_MANUFACTURER_STRING[] = "Valve";
 static const char VIVE_MANUFACTURER_STRING[] = "HTC";
 
 DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
-
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-DEBUG_GET_ONCE_BOOL_OPTION(vive_use_handtracking, "VIVE_USE_HANDTRACKING", false)
-#endif
 
 static int
 log_vive_string(struct xrt_prober *xp, struct xrt_prober_device *dev, enum xrt_prober_string type)
@@ -270,7 +275,11 @@ init_valve_index(struct xrt_prober *xp,
 			struct xrt_device *wrap =
 			    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, &d->base,
 			                                   XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
-			out_xdevs[out_idx++] = wrap;
+
+			struct xrt_device *two_hands[2];
+			cemu_devices_create(&d->base, wrap, two_hands);
+			out_xdevs[out_idx++] = two_hands[0];
+			out_xdevs[out_idx++] = two_hands[1];
 		}
 		// Don't need it anymore. And it's not even created unless we hit this codepath, which is somewhat hard.
 		t_stereo_camera_calibration_reference(&cal, NULL);

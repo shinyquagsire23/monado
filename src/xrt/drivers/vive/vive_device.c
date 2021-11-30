@@ -113,9 +113,6 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	// Clear out the relation.
 	U_ZERO(out_relation);
 
-	//! @todo Use this properly.
-	(void)at_timestamp_ns;
-
 	m_relation_history_get(d->relation_hist, out_relation, at_timestamp_ns);
 }
 
