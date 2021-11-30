@@ -237,6 +237,10 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 	list(APPEND ENABLED_DRIVERS ht)
 endif()
 
+add_library(drv_cemu STATIC ht_ctrl_emu/ht_ctrl_emu.cpp ht_ctrl_emu/ht_ctrl_emu_interface.h)
+target_link_libraries(drv_cemu PRIVATE xrt-interfaces aux_generated_bindings aux_util)
+list(APPEND ENABLED_HEADSET_DRIVERS drv_cemu)
+
 if(XRT_BUILD_DRIVER_SURVIVE)
 	add_library(
 		drv_survive STATIC survive/survive_driver.c survive/survive_driver.h
