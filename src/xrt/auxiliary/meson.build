@@ -215,6 +215,8 @@ if build_tracking
 		'tracking/t_debug_hsv_filter.cpp',
 		'tracking/t_debug_hsv_picker.cpp',
 		'tracking/t_debug_hsv_viewer.cpp',
+		'tracking/t_euroc_recorder.cpp',
+		'tracking/t_euroc_recorder.h',
 		'tracking/t_file.cpp',
 		'tracking/t_frame_cv_mat_wrapper.cpp',
 		'tracking/t_frame_cv_mat_wrapper.hpp',
