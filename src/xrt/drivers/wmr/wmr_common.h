@@ -44,6 +44,7 @@ extern "C" {
 #define SAMSUNG_VID 0x04e8
 #define ODYSSEY_PID 0x7312
 #define ODYSSEY_CONTROLLER_PID 0x065d
+#define REVERB_G2_CONTROLLER_PID 0x066a /* On 0x045e Microsoft VID */
 
 
 /*!
