@@ -24,11 +24,13 @@
 
 #include "wmr_common.h"
 #include "wmr_bt_controller.h"
+#include "wmr_config_key.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 #ifndef XRT_OS_WINDOWS
 #include <unistd.h> // for sleep()
 #endif
@@ -41,6 +43,9 @@
 
 #define SET_INPUT(NAME) (d->base.inputs[WMR_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
 
+//! file path to store controller JSON configuration blocks that
+//! read from the firmware.
+DEBUG_GET_ONCE_OPTION(wmr_ctrl_config_path, "WMR_CONFIG_DUMP", NULL)
 
 static inline struct wmr_bt_controller *
 wmr_bt_controller(struct xrt_device *p)
@@ -94,6 +99,189 @@ read_packets(struct wmr_bt_controller *d)
 		break;
 	}
 
+	return true;
+}
+
+/*
+ *
+ * Config functions.
+ *
+ */
+
+static int
+wmr_controller_send_fw_cmd(struct wmr_bt_controller *d,
+                           const struct wmr_controller_fw_cmd *fw_cmd,
+                           unsigned char response_code,
+                           struct wmr_controller_fw_cmd_response *response)
+{
+	// comms timeout. Replies are usually in 10ms or so but the first can take longer
+	const int timeout_ms = 250;
+	const int timeout_ns = timeout_ms * U_TIME_1MS_IN_NS;
+	uint64_t timeout_start = os_monotonic_get_ns();
+	uint64_t timeout_end_ns = timeout_start + timeout_ns;
+	struct os_hid_device *hid = d->controller_hid;
+
+	os_hid_write(hid, fw_cmd->buf, sizeof(fw_cmd->buf));
+
+	do {
+		int size = os_hid_read(hid, response->buf, sizeof(response->buf), timeout_ms);
+		if (size == -1) {
+			return -1;
+		}
+
+		if (size < 1) {
+			// Ignore 0-byte reads (timeout) and try again
+			continue;
+		}
+
+		WMR_TRACE(d, "Controller fw read returned %d bytes", size);
+		if (response->buf[0] == response_code) {
+			if (size != sizeof(response->buf) || (response->response.cmd_id_echo != fw_cmd->cmd.cmd_id)) {
+				WMR_DEBUG(
+				    d, "Unexpected fw response - size %d (expected %zu), cmd_id_echo %u != cmd_id %u",
+				    size, sizeof(response->buf), response->response.cmd_id_echo, fw_cmd->cmd.cmd_id);
+				return -1;
+			}
+
+			response->response.blk_remain = __le32_to_cpu(response->response.blk_remain);
+			return size;
+		}
+	} while (os_monotonic_get_ns() < timeout_end_ns);
+
+	WMR_WARN(d, "Controller fw read timed out after %u ms",
+	         (unsigned int)((os_monotonic_get_ns() - timeout_start) / U_TIME_1MS_IN_NS));
+	return -ETIMEDOUT;
+}
+
+XRT_MAYBE_UNUSED static int
+wmr_read_fw_block(struct wmr_bt_controller *d, uint8_t blk_id, uint8_t **out_data, size_t *out_size)
+{
+	struct wmr_controller_fw_cmd_response fw_cmd_response;
+
+	uint8_t *data, *data_pos, *data_end;
+	uint32_t data_size, remain;
+
+	struct wmr_controller_fw_cmd fw_cmd;
+	memset(&fw_cmd, 0, sizeof(fw_cmd));
+
+	fw_cmd = WMR_CONTROLLER_FW_CMD_INIT(0x06, 0x02, blk_id, 0xffffffff);
+	if (wmr_controller_send_fw_cmd(d, &fw_cmd, 0x02, &fw_cmd_response) < 0) {
+		WMR_WARN(d, "Failed to read fw - cmd 0x02 failed to read header");
+		return -1;
+	}
+
+	data_size = fw_cmd_response.response.blk_remain + fw_cmd_response.response.len;
+	WMR_DEBUG(d, "FW header %d bytes, %u bytes in block", fw_cmd_response.response.len, data_size);
+
+	data = calloc(1, data_size + 1);
+	if (!data) {
+		return -1;
+	}
+	data[data_size] = '\0';
+
+	remain = data_size;
+	data_pos = data;
+	data_end = data + data_size;
+
+	uint8_t to_copy = fw_cmd_response.response.len;
+
+	memcpy(data_pos, fw_cmd_response.response.data, to_copy);
+	data_pos += to_copy;
+	remain -= to_copy;
+
+	while (remain > 0) {
+		fw_cmd = WMR_CONTROLLER_FW_CMD_INIT(0x06, 0x02, blk_id, remain);
+
+		os_nanosleep(U_TIME_1MS_IN_NS * 10); // Sleep 10ms
+		if (wmr_controller_send_fw_cmd(d, &fw_cmd, 0x02, &fw_cmd_response) < 0) {
+			WMR_WARN(d, "Failed to read fw - cmd 0x02 failed @ offset %zu", data_pos - data);
+			return -1;
+		}
+
+		uint8_t to_copy = fw_cmd_response.response.len;
+		if (data_pos + to_copy > data_end)
+			to_copy = data_end - data_pos;
+
+		WMR_DEBUG(d, "Read %d bytes @ offset %zu / %d", to_copy, data_pos - data, data_size);
+		memcpy(data_pos, fw_cmd_response.response.data, to_copy);
+		data_pos += to_copy;
+		remain -= to_copy;
+	}
+
+	WMR_DEBUG(d, "Read %d-byte FW data block %d", data_size, blk_id);
+
+	*out_data = data;
+	*out_size = data_size;
+
+	return 0;
+}
+
+static bool
+read_controller_config(struct wmr_bt_controller *d)
+{
+	unsigned char *data = NULL, *config_json_block;
+	size_t data_size;
+	int ret;
+
+#if 0
+	// There are extra firmware blocks that can be read from
+	// the controllers, like these. Serial numbers and
+	// USB PID/VID are visible in them, but it's not clear
+	// what the layout is and we don't use them currently,
+	// so this if 0 code is just exemplary.
+	
+	// Read serials
+	ret = wmr_read_fw_block(d, 0x03, &data, &data_size);
+	if (ret < 0 || data == NULL)
+		return false;
+	free(data);
+	data = NULL;
+
+	// Read block 0x14
+	ret = wmr_read_fw_block(d, 0x14, &data, &data_size);
+	if (ret < 0 || data == NULL)
+		return false;
+	free(data);
+	data = NULL;
+#endif
+
+	// Read config block
+	ret = wmr_read_fw_block(d, 0x02, &data, &data_size);
+	if (ret < 0 || data == NULL)
+		return false;
+
+	/* De-obfuscate the JSON config */
+	config_json_block = data + sizeof(uint16_t);
+	for (unsigned int i = 0; i < data_size - sizeof(uint16_t); i++) {
+		config_json_block[i] ^= wmr_config_key[i % sizeof(wmr_config_key)];
+	}
+
+#if 1
+	// Option to dump config block to a path. Later, these will be
+	// stored in a cache to save time on future startup
+	const char *dump_dir = debug_get_option_wmr_ctrl_config_path();
+	if (dump_dir != NULL) {
+		char fname[256];
+
+		int device_id = (d->base.device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) ? 0 : 1;
+
+		sprintf(fname, "%s/controller-%d-fw.txt", dump_dir, device_id);
+		WMR_INFO(d, "Storing controller config JSON to %s", fname);
+
+		FILE *f = fopen(fname, "w");
+		fwrite(config_json_block, data_size - 2, 1, f);
+		fclose(f);
+	}
+#endif
+
+#if 0
+	if (!wmr_config_parse(&d->config, (char *)config_json_block, d->log_level)) {
+		free(data);
+		return false;
+	}
+#endif
+
+	free(data);
 	return true;
 }
 
@@ -251,6 +439,7 @@ static struct xrt_binding_profile binding_profiles[1] = {
  *
  */
 
+
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
@@ -308,11 +497,15 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 
 	int ret = 0;
 
-	// Todo: Read config file from controller if possible.
-
 	ret = os_mutex_init(&d->lock);
 	if (ret != 0) {
 		WMR_ERROR(d, "WMR Controller (Bluetooth): Failed to init mutex!");
+		wmr_bt_controller_destroy(&d->base);
+		return NULL;
+	}
+
+	// Read config file from controller
+	if (!read_controller_config(d)) {
 		wmr_bt_controller_destroy(&d->base);
 		return NULL;
 	}

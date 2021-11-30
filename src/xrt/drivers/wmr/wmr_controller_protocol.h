@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <asm/byteorder.h>
+
 #include "wmr_protocol.h"
 
 
@@ -65,6 +67,45 @@ struct wmr_controller_input
 		struct xrt_vec3 gyro;
 		int32_t temperature;
 	} imu;
+};
+
+struct wmr_controller_fw_cmd
+{
+	union {
+		struct
+		{
+			uint8_t prefix;
+			uint8_t cmd_id;
+			uint8_t block_id;
+
+			__le32 addr;
+		} __attribute__((packed)) cmd;
+		uint8_t buf[64];
+	};
+};
+
+#define WMR_CONTROLLER_FW_CMD_INIT(p, c, b, a)                                                                         \
+	((struct wmr_controller_fw_cmd){                                                                               \
+	    .cmd = {.prefix = (p), .cmd_id = (c), .block_id = (b), .addr = __cpu_to_le32((a))}})
+
+struct wmr_controller_fw_cmd_response
+{
+	union {
+		struct
+		{
+			uint8_t prefix;
+			uint8_t zero;
+			uint8_t cmd_id_echo;
+			uint8_t zero1;
+			uint8_t block_id_echo;
+
+			__le32 blk_remain; /* Remaining bytes available in the block */
+			uint8_t len;       /* Bytes in this response data */
+
+			uint8_t data[68];
+		} __attribute__((packed)) response;
+		uint8_t buf[78];
+	};
 };
 
 /*!

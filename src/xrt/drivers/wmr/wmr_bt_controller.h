@@ -53,6 +53,8 @@ struct wmr_bt_controller
 	struct os_hid_device *controller_hid;
 	struct os_thread_helper controller_thread;
 
+	/* firmware configuration block, with device names etc */
+	struct wmr_config_header config_hdr;
 
 	struct os_mutex lock;
 
