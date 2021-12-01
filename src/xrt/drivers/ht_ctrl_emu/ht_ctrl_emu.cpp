@@ -47,6 +47,7 @@ enum cemu_input_index
 	CEMU_INDEX_MENU,
 	CEMU_INDEX_GRIP,
 	CEMU_INDEX_AIM,
+	CEMU_NUM_INPUTS,
 };
 
 static enum xrt_space_relation_flags valid_flags = (enum xrt_space_relation_flags)(
@@ -409,7 +410,7 @@ cemu_devices_create(struct xrt_device *head, struct xrt_device *hands, struct xr
 	system->grip_offset_from_palm = 0.03f; // 3 centimeters
 
 	for (int i = 0; i < 2; i++) {
-		cemud[i] = U_DEVICE_ALLOCATE(struct cemu_device, flags, 4, 0);
+		cemud[i] = U_DEVICE_ALLOCATE(struct cemu_device, flags, CEMU_NUM_INPUTS, 0);
 
 		cemud[i]->base.tracking_origin = hands->tracking_origin;
 
