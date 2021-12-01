@@ -101,6 +101,17 @@ lib_drv_ht = static_library(
 	build_by_default: 'handtracking' in drivers,
 )
 
+lib_drv_cemu = static_library(
+	'drv_cemu',
+	files(
+		'ht_ctrl_emu/ht_ctrl_emu.cpp',
+		'ht_ctrl_emu/ht_ctrl_emu_interface.h',
+	),
+	include_directories: [xrt_include, cjson_include],
+	dependencies: [aux],
+	build_by_default: 'handtracking' in drivers,
+)
+
 lib_drv_ohmd = static_library(
 	'drv_ohmd',
 	files(
