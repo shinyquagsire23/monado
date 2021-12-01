@@ -236,11 +236,21 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 		)
 	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 	list(APPEND ENABLED_DRIVERS ht)
-endif()
 
-add_library(drv_cemu STATIC ht_ctrl_emu/ht_ctrl_emu.cpp ht_ctrl_emu/ht_ctrl_emu_interface.h)
-target_link_libraries(drv_cemu PRIVATE xrt-interfaces aux_generated_bindings aux_util)
-list(APPEND ENABLED_HEADSET_DRIVERS drv_cemu)
+	add_library(
+		drv_cemu STATIC
+		ht_ctrl_emu/ht_ctrl_emu.cpp
+		ht_ctrl_emu/ht_ctrl_emu_interface.h
+		)
+	target_link_libraries(
+		drv_cemu
+		PRIVATE
+			xrt-interfaces
+			aux_generated_bindings
+			aux_util
+		)
+	list(APPEND ENABLED_HEADSET_DRIVERS drv_cemu)
+endif()
 
 if(XRT_BUILD_DRIVER_SURVIVE)
 	add_library(
