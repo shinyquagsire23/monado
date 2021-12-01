@@ -680,7 +680,10 @@ comp_resources_init(struct comp_resources *r,
 void
 comp_resources_close(struct comp_resources *r)
 {
-	assert(r->vk != NULL);
+	// We were never initialised or already closed, always safe to call this function.
+	if (r->vk == NULL) {
+		return;
+	}
 
 	struct vk_bundle *vk = r->vk;
 
@@ -710,4 +713,7 @@ comp_resources_close(struct comp_resources *r)
 		DF(Memory, r->distortion.device_memories[i]);
 	}
 	comp_buffer_close(vk, &r->compute.ubo);
+
+	// Finally forget about the vk bundle. We do not own it!
+	r->vk = NULL;
 }
