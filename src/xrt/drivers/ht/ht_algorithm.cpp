@@ -47,12 +47,11 @@ errHistory2D(HandHistory2DBBox *past, Palm7KP *present)
 		// U_LOG_E("Returning big number because htAlgorithm told me to!");
 		return 100000000000000000000000000000.0f;
 	}
-	float sum_of_lengths =
-	    m_vec2_len(*past->wrist_unfiltered.get_at_age(0) - *past->middle_unfiltered.get_at_age(0)) +
-	    m_vec2_len(present->kps[WRIST_7KP] - present->kps[MIDDLE_7KP]);
+	float sum_of_lengths = m_vec2_len(past->wrist_unfiltered.back() - past->middle_unfiltered.back()) +
+	                       m_vec2_len(present->kps[WRIST_7KP] - present->kps[MIDDLE_7KP]);
 
-	float sum_of_distances = (m_vec2_len(*past->wrist_unfiltered.get_at_age(0) - present->kps[WRIST_7KP]) +
-	                          m_vec2_len(*past->middle_unfiltered.get_at_age(0) - present->kps[MIDDLE_7KP]));
+	float sum_of_distances = (m_vec2_len(past->wrist_unfiltered.back() - present->kps[WRIST_7KP]) +
+	                          m_vec2_len(past->middle_unfiltered.back() - present->kps[MIDDLE_7KP]));
 
 
 	float final = sum_of_distances / sum_of_lengths;
@@ -151,10 +150,9 @@ htImageToKeypoints(struct ht_view *htv)
 		xrt_vec2 unfiltered_middle;
 		xrt_vec2 unfiltered_direction;
 
-		centerAndRotationFromJoints(
-		    htv, entry->wrist_unfiltered.get_at_age(0), entry->index_unfiltered.get_at_age(0),
-		    entry->middle_unfiltered.get_at_age(0), entry->pinky_unfiltered.get_at_age(0), &unfiltered_middle,
-		    &unfiltered_direction);
+		centerAndRotationFromJoints(htv, &entry->wrist_unfiltered.back(), &entry->index_unfiltered.back(),
+		                            &entry->middle_unfiltered.back(), &entry->pinky_unfiltered.back(),
+		                            &unfiltered_middle, &unfiltered_direction);
 
 		xrt_vec2 filtered_middle;
 		xrt_vec2 filtered_direction;
@@ -287,21 +285,18 @@ jsonMaybeAddSomeHands(struct ht_device *htd, bool err)
 			for (int idx_joint = 0; idx_joint < 21; idx_joint++) {
 				// const char* key = keys[idx_joint];
 				cJSON *j_vec3 = cJSON_AddArrayToObject(j_hand_in_frame, keys[idx_joint]);
-				cJSON_AddItemToArray(j_vec3,
-				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
-				                                            .last_hands_unfiltered.get_at_age(0)
-				                                            ->kps[idx_joint]
-				                                            .x));
-				cJSON_AddItemToArray(j_vec3,
-				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
-				                                            .last_hands_unfiltered.get_at_age(0)
-				                                            ->kps[idx_joint]
-				                                            .y));
-				cJSON_AddItemToArray(j_vec3,
-				                     cJSON_CreateNumber(htd->histories_3d[idx_hand]
-				                                            .last_hands_unfiltered.get_at_age(0)
-				                                            ->kps[idx_joint]
-				                                            .z));
+				cJSON_AddItemToArray(
+				    j_vec3,
+				    cJSON_CreateNumber(
+				        htd->histories_3d[idx_hand].last_hands_unfiltered.back().kps[idx_joint].x));
+				cJSON_AddItemToArray(
+				    j_vec3,
+				    cJSON_CreateNumber(
+				        htd->histories_3d[idx_hand].last_hands_unfiltered.back().kps[idx_joint].y));
+				cJSON_AddItemToArray(
+				    j_vec3,
+				    cJSON_CreateNumber(
+				        htd->histories_3d[idx_hand].last_hands_unfiltered.back().kps[idx_joint].z));
 			}
 
 
@@ -622,8 +617,8 @@ htRunAlgorithm(struct ht_device *htd)
 	for (size_t i = 0; i < htd->histories_3d.size(); i++) {
 		// U_LOG_E("Valid hand %zu l_idx %i r_idx %i", i, htd->histories_3d[i].last_hands[0]->idx_l,
 		//         htd->histories_3d[i].last_hands[0]->idx_r);
-		valid_2d_idxs[0].push_back(htd->histories_3d[i].last_hands_unfiltered.get_at_age(0)->idx_l);
-		valid_2d_idxs[1].push_back(htd->histories_3d[i].last_hands_unfiltered.get_at_age(0)->idx_r);
+		valid_2d_idxs[0].push_back(htd->histories_3d[i].last_hands_unfiltered.back().idx_l);
+		valid_2d_idxs[1].push_back(htd->histories_3d[i].last_hands_unfiltered.back().idx_r);
 		handednessHandHistory3D(&htd->histories_3d[i]);
 	}
 
