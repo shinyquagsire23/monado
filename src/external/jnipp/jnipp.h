@@ -175,10 +175,30 @@ namespace jni
             value_t values[sizeof...(TArgs)];
         };
 
+        /* specialization for empty array - no args. Avoids "empty array" warning. */
+        template <>
+        class ArgArray<>
+        {
+        public:
+            ArgArray() {
+                std::memset(this, 0, sizeof(ArgArray<>));
+            }
+
+            ~ArgArray() {
+            }
+
+            value_t values[1];
+        };
         long getArrayLength(jarray array);
 
+        /**
+         * @brief Used as a tag type for dispatching internally based on return type.
+         *
+         * @tparam T The type to wrap.
+         */
         template<typename T>
-        struct ReturnTypeWrapper{
+        struct ReturnTypeWrapper
+        {
             using type = T;
         };
     }
