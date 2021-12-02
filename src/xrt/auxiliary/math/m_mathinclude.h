@@ -14,12 +14,12 @@
 
 #pragma once
 
-#define _USE_MATH_DEFINES // for M_PI
+#define _USE_MATH_DEFINES // for M_PI // NOLINT
 #ifdef __cplusplus
 #include <cmath>
-#else
-#include <math.h>
 #endif
+
+#include <math.h>
 
 
 // Might be missing on Windows.
