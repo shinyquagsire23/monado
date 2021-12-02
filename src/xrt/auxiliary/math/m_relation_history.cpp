@@ -80,11 +80,13 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 	os_mutex_unlock(&rh->mutex);
 }
 
-void
+enum m_relation_history_result
 m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation *out_relation, uint64_t at_timestamp_ns)
 {
 	XRT_TRACE_MARKER();
 	os_mutex_lock(&rh->mutex);
+	m_relation_history_result ret = M_RELATION_HISTORY_RESULT_INVALID;
+
 	if (rh->has_first_sample == 0) {
 		// Do nothing. You push nothing to the buffer you get nothing from the buffer.
 		goto end;
@@ -104,6 +106,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			U_LOG_T("Extrapolating %f s after the head of the buffer!", delta_s);
 
 			m_predict_relation(&rh->impl[0]->relation, delta_s, out_relation);
+			ret = M_RELATION_HISTORY_RESULT_PREDICTED;
 			goto end;
 
 		} else if (at_timestamp_ns < oldest_in_buffer) {
@@ -114,6 +117,8 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 			double delta_s = time_ns_to_s(diff_prediction_ns);
 			U_LOG_T("Extrapolating %f s before the tail of the buffer!", delta_s);
 			m_predict_relation(&rh->impl[rh->impl.length() - 1]->relation, delta_s, out_relation);
+			ret = M_RELATION_HISTORY_RESULT_REVERSE_PREDICTED;
+
 			goto end;
 		}
 		U_LOG_T("Interpolating within buffer!");
@@ -196,9 +201,11 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 		    m_vec3_lerp(before.angular_velocity, after.angular_velocity, amount_to_lerp);
 		out_relation->linear_velocity =
 		    m_vec3_lerp(before.linear_velocity, after.linear_velocity, amount_to_lerp);
+		ret = M_RELATION_HISTORY_RESULT_INTERPOLATED;
 	}
 end:
 	os_mutex_unlock(&rh->mutex);
+	return ret;
 }
 
 void
