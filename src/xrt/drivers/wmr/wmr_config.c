@@ -36,9 +36,9 @@ wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
 	// initialize default sensor transforms
 	math_pose_identity(&c->eye_params[0].pose);
 	math_pose_identity(&c->eye_params[1].pose);
-	math_pose_identity(&c->accel_pose);
-	math_pose_identity(&c->gyro_pose);
-	math_pose_identity(&c->mag_pose);
+	math_pose_identity(&c->sensors.accel_pose);
+	math_pose_identity(&c->sensors.gyro_pose);
+	math_pose_identity(&c->sensors.mag_pose);
 }
 
 static void
@@ -170,7 +170,7 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 }
 
 static bool
-wmr_config_parse_inertial_sensor(struct wmr_hmd_config *c, cJSON *sensor, enum u_logging_level log_level)
+wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *sensor, enum u_logging_level log_level)
 {
 	struct xrt_pose *out_pose;
 
@@ -361,7 +361,7 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 
 	cJSON_ArrayForEach(item, sensors)
 	{
-		if (!wmr_config_parse_inertial_sensor(c, item, log_level)) {
+		if (!wmr_inertial_sensors_config_parse(&c->sensors, item, log_level)) {
 			WMR_WARN(log_level, "Error parsing InertialSensor entry");
 		}
 	}

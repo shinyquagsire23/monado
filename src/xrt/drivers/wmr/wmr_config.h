@@ -105,14 +105,19 @@ struct wmr_camera_config
 	struct wmr_distortion_6KT distortion6KT;
 };
 
+struct wmr_inertial_sensors_config
+{
+	struct xrt_pose accel_pose;
+	struct xrt_pose gyro_pose;
+	struct xrt_pose mag_pose;
+};
+
 struct wmr_hmd_config
 {
 	/* Left and Right eye mapping and distortion params */
 	struct wmr_distortion_eye_config eye_params[2];
 
-	struct xrt_pose accel_pose;
-	struct xrt_pose gyro_pose;
-	struct xrt_pose mag_pose;
+	struct wmr_inertial_sensors_config sensors;
 
 	int n_cameras;
 	struct wmr_camera_config cameras[WMR_MAX_CAMERAS];
