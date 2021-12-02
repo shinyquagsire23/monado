@@ -29,7 +29,7 @@
 #define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
 
 static void
-wmr_config_init_defaults(struct wmr_hmd_config *c)
+wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
 {
 	memset(c, 0, sizeof(struct wmr_hmd_config));
 
@@ -383,9 +383,9 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 
 
 bool
-wmr_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level)
+wmr_hmd_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level)
 {
-	wmr_config_init_defaults(c);
+	wmr_hmd_config_init_defaults(c);
 
 	cJSON *json_root = cJSON_Parse(json_string);
 	if (!cJSON_IsObject(json_root)) {

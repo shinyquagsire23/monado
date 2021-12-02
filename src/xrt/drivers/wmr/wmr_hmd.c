@@ -645,7 +645,7 @@ wmr_read_config(struct wmr_hmd *wh)
 		config_json_block[i] ^= wmr_config_key[i % sizeof(wmr_config_key)];
 	}
 
-	if (!wmr_config_parse(&wh->config, (char *)config_json_block, wh->log_level)) {
+	if (!wmr_hmd_config_parse(&wh->config, (char *)config_json_block, wh->log_level)) {
 		free(data);
 		return -1;
 	}
