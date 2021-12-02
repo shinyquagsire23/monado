@@ -87,7 +87,7 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 	os_mutex_lock(&rh->mutex);
 	m_relation_history_result ret = M_RELATION_HISTORY_RESULT_INVALID;
 
-	if (rh->has_first_sample == 0) {
+	if (rh->has_first_sample == 0 || at_timestamp_ns == 0) {
 		// Do nothing. You push nothing to the buffer you get nothing from the buffer.
 		goto end;
 	}
@@ -156,9 +156,13 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 				idx -= step;
 				continue;
 			}
+			if (ts_before == at_timestamp_ns || ts_after == at_timestamp_ns) {
+				// exact match
+				break;
+			}
 			if ((ts_before < at_timestamp_ns) && (ts_after > at_timestamp_ns)) {
-				// Found what we're looking for - at_timestamp_ns is between the reading before us and
-				// the reading after us. Break out of the loop
+				// Found what we're looking for - at_timestamp_ns is between the reading before
+				// us and the reading after us. Break out of the loop
 				break;
 			}
 
@@ -181,6 +185,19 @@ m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation 
 		// Do the thing.
 		struct xrt_space_relation before = rh->impl[idx]->relation;
 		struct xrt_space_relation after = rh->impl[idx - 1]->relation;
+
+		if (rh->impl[idx]->timestamp == at_timestamp_ns) {
+			// exact match: before
+			*out_relation = before;
+			ret = M_RELATION_HISTORY_RESULT_EXACT;
+			goto end;
+		}
+		if (rh->impl[idx - 1]->timestamp == at_timestamp_ns) {
+			// exact match: after
+			*out_relation = after;
+			ret = M_RELATION_HISTORY_RESULT_EXACT;
+			goto end;
+		}
 		int64_t diff_before, diff_after = 0;
 		diff_before = at_timestamp_ns - rh->impl[idx]->timestamp;
 		diff_after = rh->impl[idx - 1]->timestamp - at_timestamp_ns;
