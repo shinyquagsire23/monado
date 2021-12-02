@@ -28,3 +28,10 @@ add_executable(tests_json tests_json.cpp)
 target_link_libraries(tests_json PRIVATE tests_main)
 target_link_libraries(tests_json PRIVATE aux_util)
 add_test(NAME tests_json COMMAND tests_json --success)
+
+
+# history
+add_executable(tests_history_buf tests_history_buf.cpp)
+target_link_libraries(tests_history_buf PRIVATE tests_main)
+target_link_libraries(tests_history_buf PRIVATE aux_util aux_math)
+add_test(NAME tests_history_buf COMMAND tests_history_buf --success)
