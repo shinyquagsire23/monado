@@ -11,11 +11,16 @@
 #pragma once
 
 #include "math/m_vec2.h"
+#include "math/m_vec3.h"
 #include "util/u_logging.h"
 
 /* Increase this number if anyone releases a headset with
  * more cameras */
 #define WMR_MAX_CAMERAS 4
+
+/* Increase this number if anyone releases a controller with
+ * more tracking LEDs */
+#define WMR_MAX_LEDS 40
 
 #ifdef __cplusplus
 extern "C" {
@@ -126,6 +131,12 @@ struct wmr_inertial_sensors_config
 	struct wmr_inertial_sensor_config mag;
 };
 
+struct wmr_led_config
+{
+	struct xrt_vec3 pos;
+	struct xrt_vec3 norm;
+};
+
 struct wmr_hmd_config
 {
 	/* Left and Right eye mapping and distortion params */
@@ -141,17 +152,16 @@ bool
 wmr_hmd_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level);
 
 
-struct wmr_bt_controller_config
+struct wmr_controller_config
 {
-	/* Todo: still work in progress */
-	struct xrt_pose accel_pose;
-	struct xrt_pose gyro_pose;
-	struct xrt_pose mag_pose;
+	struct wmr_inertial_sensors_config sensors;
+
+	int led_count;
+	struct wmr_led_config leds[WMR_MAX_LEDS];
 };
 
-/* Todo: Extract and parse motion controller config. */
-
-
+bool
+wmr_controller_config_parse(struct wmr_controller_config *c, char *json_string, enum u_logging_level log_level);
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,7 @@
 #include "xrt/xrt_device.h"
 
 #include "wmr_controller_protocol.h"
+#include "wmr_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,8 +54,8 @@ struct wmr_bt_controller
 	struct os_hid_device *controller_hid;
 	struct os_thread_helper controller_thread;
 
-	/* firmware configuration block, with device names etc */
-	struct wmr_config_header config_hdr;
+	/* firmware configuration block */
+	struct wmr_controller_config config;
 
 	struct os_mutex lock;
 

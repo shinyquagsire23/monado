@@ -420,6 +420,34 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 	return true;
 }
 
+static bool
+wmr_controller_led_config_parse(struct wmr_led_config *l,
+                                int index,
+                                const cJSON *led_json,
+                                enum u_logging_level log_level)
+{
+	float tmp[3];
+
+	cJSON *pos = cJSON_GetObjectItem(led_json, "Position");
+	if (pos == NULL || u_json_get_float_array(pos, tmp, 3) != 3) {
+		WMR_ERROR(log_level, "Missing or invalid position for controller LED %d", index);
+		return false;
+	}
+	l->pos.x = tmp[0];
+	l->pos.y = tmp[1];
+	l->pos.z = tmp[2];
+
+	cJSON *norm = cJSON_GetObjectItem(led_json, "Normal");
+	if (norm == NULL || u_json_get_float_array(norm, tmp, 3) != 3) {
+		WMR_ERROR(log_level, "Missing or invalid normal for controller LED %d", index);
+		return false;
+	}
+	l->norm.x = tmp[0];
+	l->norm.y = tmp[1];
+	l->norm.z = tmp[2];
+
+	return true;
+}
 
 bool
 wmr_hmd_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging_level log_level)
@@ -444,4 +472,81 @@ wmr_hmd_config_parse(struct wmr_hmd_config *c, char *json_string, enum u_logging
 
 	cJSON_Delete(json_root);
 	return res;
+}
+
+static void
+wmr_controller_config_init_defaults(struct wmr_controller_config *c)
+{
+	memset(c, 0, sizeof(struct wmr_controller_config));
+
+	// initialize default sensor transforms
+	math_pose_identity(&c->sensors.accel.pose);
+	math_pose_identity(&c->sensors.gyro.pose);
+	math_pose_identity(&c->sensors.mag.pose);
+
+	math_matrix_3x3_identity(&c->sensors.accel.mix_matrix);
+	math_matrix_3x3_identity(&c->sensors.gyro.mix_matrix);
+	math_matrix_3x3_identity(&c->sensors.mag.mix_matrix);
+}
+
+bool
+wmr_controller_config_parse(struct wmr_controller_config *c, char *json_string, enum u_logging_level log_level)
+{
+	cJSON *item = NULL;
+
+	wmr_controller_config_init_defaults(c);
+
+	cJSON *json_root = cJSON_Parse(json_string);
+	if (!cJSON_IsObject(json_root)) {
+		WMR_ERROR(log_level, "Could not parse JSON data.");
+		cJSON_Delete(json_root);
+		return false;
+	}
+
+	cJSON *calib_info = cJSON_GetObjectItemCaseSensitive(json_root, "CalibrationInformation");
+	if (!cJSON_IsObject(calib_info)) {
+		WMR_ERROR(log_level, "CalibrationInformation object not found");
+		cJSON_Delete(json_root);
+		return false;
+	}
+
+	cJSON *sensors = cJSON_GetObjectItemCaseSensitive(calib_info, "InertialSensors");
+	if (!cJSON_IsArray(sensors)) {
+		WMR_ERROR(log_level, "InertialSensors: not found or not an Array");
+		return false;
+	}
+
+	cJSON_ArrayForEach(item, sensors)
+	{
+		if (!wmr_inertial_sensors_config_parse(&c->sensors, item, log_level)) {
+			WMR_WARN(log_level, "Error parsing InertialSensor entry");
+		}
+	}
+
+	cJSON *leds = cJSON_GetObjectItemCaseSensitive(calib_info, "ControllerLeds");
+	if (!cJSON_IsArray(leds)) {
+		WMR_ERROR(log_level, "ControllerLeds: not found or not an Array");
+		return false;
+	}
+
+	cJSON_ArrayForEach(item, leds)
+	{
+		if (c->led_count == WMR_MAX_LEDS) {
+			WMR_ERROR(log_level, "Too many ControllerLed entries. Enlarge WMR_MAX_LEDS");
+			return false;
+		}
+
+		struct wmr_led_config *led_config = c->leds + c->led_count;
+
+		if (!wmr_controller_led_config_parse(led_config, c->led_count, item, log_level)) {
+			WMR_WARN(log_level, "Error parsing ControllerLed entry");
+			continue;
+		}
+
+		c->led_count++;
+	}
+
+	cJSON_Delete(json_root);
+
+	return true;
 }

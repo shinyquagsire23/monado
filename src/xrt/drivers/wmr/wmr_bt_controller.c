@@ -274,12 +274,12 @@ read_controller_config(struct wmr_bt_controller *d)
 	}
 #endif
 
-#if 0
-	if (!wmr_config_parse(&d->config, (char *)config_json_block, d->log_level)) {
+	if (!wmr_controller_config_parse(&d->config, (char *)config_json_block, d->log_level)) {
 		free(data);
 		return false;
 	}
-#endif
+
+	WMR_DEBUG(d, "Parsed %d LED entries from controller calibration", d->config.led_count);
 
 	free(data);
 	return true;
