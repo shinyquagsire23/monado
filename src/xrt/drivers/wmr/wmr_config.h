@@ -105,11 +105,25 @@ struct wmr_camera_config
 	struct wmr_distortion_6KT distortion6KT;
 };
 
+/* Configuration for a single inertial sensor */
+struct wmr_inertial_sensor_config
+{
+	struct xrt_pose pose;
+
+	/* Current bias and mix matrix extracted from
+	 * the configuration, which provides coefficients
+	 * for temperature adjustments - but they're always 0,
+	 * so we just take the constant coefficient */
+	struct xrt_vec3 bias_offsets;
+	struct xrt_matrix_3x3 mix_matrix;
+};
+
+/* Configuration for the set of inertial sensors */
 struct wmr_inertial_sensors_config
 {
-	struct xrt_pose accel_pose;
-	struct xrt_pose gyro_pose;
-	struct xrt_pose mag_pose;
+	struct wmr_inertial_sensor_config accel;
+	struct wmr_inertial_sensor_config gyro;
+	struct wmr_inertial_sensor_config mag;
 };
 
 struct wmr_hmd_config

@@ -996,11 +996,11 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		math_pose_transform(&wh->centerline, &wh->display_to_centerline[dIdx],
 		                    &wh->display_to_centerline[dIdx]);
 	}
-	math_pose_invert(&wh->config.sensors.accel_pose, &wh->accel_to_centerline);
+	math_pose_invert(&wh->config.sensors.accel.pose, &wh->accel_to_centerline);
 	math_pose_transform(&wh->centerline, &wh->accel_to_centerline, &wh->accel_to_centerline);
-	math_pose_invert(&wh->config.sensors.gyro_pose, &wh->gyro_to_centerline);
+	math_pose_invert(&wh->config.sensors.gyro.pose, &wh->gyro_to_centerline);
 	math_pose_transform(&wh->centerline, &wh->gyro_to_centerline, &wh->gyro_to_centerline);
-	math_pose_invert(&wh->config.sensors.mag_pose, &wh->mag_to_centerline);
+	math_pose_invert(&wh->config.sensors.mag.pose, &wh->mag_to_centerline);
 	math_pose_transform(&wh->centerline, &wh->mag_to_centerline, &wh->mag_to_centerline);
 
 	struct u_device_simple_info info;

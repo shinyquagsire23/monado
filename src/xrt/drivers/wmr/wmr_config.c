@@ -36,9 +36,14 @@ wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
 	// initialize default sensor transforms
 	math_pose_identity(&c->eye_params[0].pose);
 	math_pose_identity(&c->eye_params[1].pose);
-	math_pose_identity(&c->sensors.accel_pose);
-	math_pose_identity(&c->sensors.gyro_pose);
-	math_pose_identity(&c->sensors.mag_pose);
+
+	math_pose_identity(&c->sensors.accel.pose);
+	math_pose_identity(&c->sensors.gyro.pose);
+	math_pose_identity(&c->sensors.mag.pose);
+
+	math_matrix_3x3_identity(&c->sensors.accel.mix_matrix);
+	math_matrix_3x3_identity(&c->sensors.gyro.mix_matrix);
+	math_matrix_3x3_identity(&c->sensors.mag.mix_matrix);
 }
 
 static void
@@ -170,27 +175,8 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 }
 
 static bool
-wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *sensor, enum u_logging_level log_level)
+wmr_inertial_sensor_config_parse(struct wmr_inertial_sensor_config *c, cJSON *sensor, enum u_logging_level log_level)
 {
-	struct xrt_pose *out_pose;
-
-	const char *sensor_type = cJSON_GetStringValue(cJSON_GetObjectItem(sensor, "SensorType"));
-	if (sensor_type == NULL) {
-		WMR_WARN(log_level, "Missing sensor type");
-		return false;
-	}
-
-	if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Gyro")) {
-		out_pose = &c->gyro_pose;
-	} else if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Accelerometer")) {
-		out_pose = &c->accel_pose;
-	} else if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Magnetometer")) {
-		out_pose = &c->mag_pose;
-	} else {
-		WMR_WARN(log_level, "Unhandled sensor type \"%s\"", sensor_type);
-		return false;
-	}
-
 	struct xrt_vec3 translation;
 	struct xrt_matrix_3x3 rotation;
 
@@ -206,9 +192,62 @@ wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *
 		return false;
 	}
 
-	wmr_config_compute_pose(out_pose, &translation, &rotation);
+	wmr_config_compute_pose(&c->pose, &translation, &rotation);
+
+	/* compute the bias offsets and mix matrix by taking the constant
+	 * coefficients from the configuration */
+	cJSON *mix_model = cJSON_GetObjectItem(sensor, "MixingMatrixTemperatureModel");
+	cJSON *bias_model = cJSON_GetObjectItem(sensor, "BiasTemperatureModel");
+	float mix_model_values[3 * 3 * 4];
+	float bias_model_values[12];
+
+	if (mix_model == NULL || bias_model == NULL) {
+		WMR_WARN(log_level, "Missing Inertial Sensor calibration");
+		return false;
+	}
+
+	if (u_json_get_float_array(mix_model, mix_model_values, 3 * 3 * 4) != 3 * 3 * 4) {
+		WMR_WARN(log_level, "Invalid Inertial Sensor calibration (invalid MixingMatrixTemperatureModel)");
+		return false;
+	}
+	for (int i = 0; i < 9; i++) {
+		c->mix_matrix.v[i] = mix_model_values[i * 4];
+	}
+
+	if (u_json_get_float_array(bias_model, bias_model_values, 12) != 12) {
+		WMR_WARN(log_level, "Invalid Inertial Sensor calibration (invalid BiasTemperatureModel)");
+		return false;
+	}
+	c->bias_offsets.x = bias_model_values[0];
+	c->bias_offsets.y = bias_model_values[4];
+	c->bias_offsets.z = bias_model_values[8];
 
 	return true;
+}
+
+static bool
+wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *sensor, enum u_logging_level log_level)
+{
+	struct wmr_inertial_sensor_config *target = NULL;
+
+	const char *sensor_type = cJSON_GetStringValue(cJSON_GetObjectItem(sensor, "SensorType"));
+	if (sensor_type == NULL) {
+		WMR_WARN(log_level, "Missing sensor type");
+		return false;
+	}
+
+	if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Gyro")) {
+		target = &c->gyro;
+	} else if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Accelerometer")) {
+		target = &c->accel;
+	} else if (!strcmp(sensor_type, "CALIBRATION_InertialSensorType_Magnetometer")) {
+		target = &c->mag;
+	} else {
+		WMR_WARN(log_level, "Unhandled sensor type \"%s\"", sensor_type);
+		return false;
+	}
+
+	return wmr_inertial_sensor_config_parse(target, sensor, log_level);
 }
 
 static bool
