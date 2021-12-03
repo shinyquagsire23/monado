@@ -33,6 +33,7 @@ if(XRT_BUILD_DRIVER_DEPTHAI)
 		PRIVATE
 			xrt-interfaces
 			aux_os
+			aux_tracking
 			${OpenCV_LIBRARIES}
 			depthai::opencv
 			depthai::core
