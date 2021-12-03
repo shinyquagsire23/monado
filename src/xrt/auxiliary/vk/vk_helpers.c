@@ -859,38 +859,38 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetDisplayModePropertiesKHR                = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
 	vk->vkReleaseDisplayEXT                          = GET_INS_PROC(vk, vkReleaseDisplayEXT);
 
-#endif  // defined(VK_USE_PLATFORM_DISPLAY_KHR)
+#endif // defined(VK_USE_PLATFORM_DISPLAY_KHR)
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
 	vk->vkCreateXcbSurfaceKHR                        = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
 
-#endif  // defined(VK_USE_PLATFORM_XCB_KHR)
+#endif // defined(VK_USE_PLATFORM_XCB_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
 	vk->vkCreateWaylandSurfaceKHR                    = GET_INS_PROC(vk, vkCreateWaylandSurfaceKHR);
 
-#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#endif // defined(VK_USE_PLATFORM_WAYLAND_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
 	vk->vkAcquireDrmDisplayEXT                       = GET_INS_PROC(vk, vkAcquireDrmDisplayEXT);
 	vk->vkGetDrmDisplayEXT                           = GET_INS_PROC(vk, vkGetDrmDisplayEXT);
 
-#endif  // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
+#endif // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
 
 #if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 	vk->vkGetRandROutputDisplayEXT                   = GET_INS_PROC(vk, vkGetRandROutputDisplayEXT);
 	vk->vkAcquireXlibDisplayEXT                      = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);
 
-#endif  // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
+#endif // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	vk->vkCreateAndroidSurfaceKHR                    = GET_INS_PROC(vk, vkCreateAndroidSurfaceKHR);
 
-#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
+#endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkCreateWin32SurfaceKHR                      = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
-#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 
@@ -993,7 +993,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCreateSemaphore                           = GET_DEV_PROC(vk, vkCreateSemaphore);
 #if defined(VK_KHR_timeline_semaphore)
 	vk->vkSignalSemaphore                           = GET_DEV_PROC(vk, vkSignalSemaphoreKHR);
-#endif  // defined(VK_KHR_timeline_semaphore)
+#endif // defined(VK_KHR_timeline_semaphore)
 
 	vk->vkDestroySemaphore                          = GET_DEV_PROC(vk, vkDestroySemaphore);
 
@@ -1013,7 +1013,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetMemoryWin32HandleKHR                   = GET_DEV_PROC(vk, vkGetMemoryWin32HandleKHR);
 	vk->vkImportSemaphoreWin32HandleKHR             = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
 	vk->vkImportFenceWin32HandleKHR                 = GET_DEV_PROC(vk, vkImportFenceWin32HandleKHR);
-#endif  // defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if !defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkGetMemoryFdKHR                            = GET_DEV_PROC(vk, vkGetMemoryFdKHR);
@@ -1023,13 +1023,13 @@ vk_get_device_functions(struct vk_bundle *vk)
 
 	vk->vkImportFenceFdKHR                          = GET_DEV_PROC(vk, vkImportFenceFdKHR);
 	vk->vkGetFenceFdKHR                             = GET_DEV_PROC(vk, vkGetFenceFdKHR);
-#endif  // !defined(VK_USE_PLATFORM_WIN32_KHR)
+#endif // !defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 	vk->vkGetMemoryAndroidHardwareBufferANDROID     = GET_DEV_PROC(vk, vkGetMemoryAndroidHardwareBufferANDROID);
 	vk->vkGetAndroidHardwareBufferPropertiesANDROID = GET_DEV_PROC(vk, vkGetAndroidHardwareBufferPropertiesANDROID);
 
-#endif  // defined(VK_USE_PLATFORM_ANDROID_KHR)
+#endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 	vk->vkGetPastPresentationTimingGOOGLE           = GET_DEV_PROC(vk, vkGetPastPresentationTimingGOOGLE);
 	// end of GENERATED device loader code - do not modify - used by scripts

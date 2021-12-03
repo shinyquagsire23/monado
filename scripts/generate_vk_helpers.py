@@ -273,7 +273,7 @@ class ConditionalGenerator:
         lines = []
         if self.current_condition and new_condition != self.current_condition:
             # Close current condition if required.
-            lines.append("#endif  // {}".format(self.current_condition))
+            lines.append("#endif // {}".format(self.current_condition))
             # empty line
             lines.append("")
             self.current_condition = None
