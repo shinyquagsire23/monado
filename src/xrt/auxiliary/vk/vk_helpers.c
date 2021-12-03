@@ -1234,20 +1234,13 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 {
 	// beginning of GENERATED extension code - do not modify - used by scripts
 	// Reset before filling out.
-	vk->has_GOOGLE_display_timing = false;
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
+	vk->has_GOOGLE_display_timing = false;
 
 	for (uint32_t i = 0; i < device_extension_count; i++) {
 		const char *ext = device_extensions[i];
-
-#if defined(VK_GOOGLE_display_timing)
-		if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
-			vk->has_GOOGLE_display_timing = true;
-			continue;
-		}
-#endif // defined(VK_GOOGLE_display_timing)
 
 #if defined(VK_KHR_timeline_semaphore)
 		if (strcmp(ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0) {
@@ -1269,6 +1262,13 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 			continue;
 		}
 #endif // defined(VK_EXT_robustness2)
+
+#if defined(VK_GOOGLE_display_timing)
+		if (strcmp(ext, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0) {
+			vk->has_GOOGLE_display_timing = true;
+			continue;
+		}
+#endif // defined(VK_GOOGLE_display_timing)
 	}
 	// end of GENERATED extension code - do not modify - used by scripts
 }
