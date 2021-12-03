@@ -11,9 +11,9 @@
 #include <util/u_template_historybuf.hpp>
 using xrt::auxiliary::util::HistoryBuffer;
 
-template <size_t MaxSize>
+template <typename Container>
 static inline std::ostream &
-operator<<(std::ostream &os, const xrt::auxiliary::util::detail::RingBufferIteratorBase<MaxSize> &iter_base)
+operator<<(std::ostream &os, const xrt::auxiliary::util::RandomAccessIteratorBase<Container> &iter_base)
 {
 	os << "Iterator@[" << iter_base.index() << "]";
 	return os;
@@ -349,10 +349,10 @@ TEST_CASE("IteratorBase")
 	buffer.push_back(2);
 	buffer.push_back(4);
 	using namespace xrt::auxiliary::util;
-	using iterator = typename HistoryBuffer<int, 4>::iterator;
-	iterator default_constructed{};
-	iterator begin_constructed = buffer.begin();
-	iterator end_constructed = buffer.end();
+	using const_iterator = typename HistoryBuffer<int, 4>::const_iterator;
+	const_iterator default_constructed{};
+	const_iterator begin_constructed = buffer.begin();
+	const_iterator end_constructed = buffer.end();
 
 	SECTION("Check default constructed")
 	{
@@ -369,6 +369,7 @@ TEST_CASE("IteratorBase")
 	{
 		CHECK_FALSE(end_constructed.valid());
 		CHECK_FALSE(end_constructed.is_cleared());
-		CHECK((++end_constructed).is_cleared());
+		// if we go past the end, we can go backwards into validity.
+		CHECK_FALSE((++end_constructed).is_cleared());
 	}
 }
