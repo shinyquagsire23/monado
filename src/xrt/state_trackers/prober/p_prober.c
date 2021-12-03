@@ -1104,6 +1104,7 @@ p_get_string_descriptor(struct xrt_prober *xp,
 	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
 	struct prober_device *pdev = (struct prober_device *)xpdev;
 	int ret = 0;
+
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
 		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, max_length);
@@ -1111,7 +1112,13 @@ p_get_string_descriptor(struct xrt_prober *xp,
 			return ret;
 		}
 	}
+#else
+	if (pdev->base.bus == XRT_BUS_TYPE_USB) {
+		P_WARN(p, "Can not get usb descriptors (libusb-dev not installed)!");
+		return ret;
+	}
 #endif
+
 	if (pdev && pdev->base.bus == XRT_BUS_TYPE_BLUETOOTH) {
 		switch (which_string) {
 		case XRT_PROBER_STRING_SERIAL_NUMBER: {
