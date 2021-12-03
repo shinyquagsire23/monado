@@ -318,6 +318,15 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
                          const struct xrt_matrix_2x2 *right,
                          struct xrt_matrix_2x2 *result_out);
 
+/*!
+ * Initialize a 3x3 matrix to the identity matrix
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat);
+
 void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
