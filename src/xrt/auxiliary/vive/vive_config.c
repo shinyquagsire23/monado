@@ -397,8 +397,10 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 
 	if (u_json_get(json, "model_number")) {
 		JSON_STRING(json, "model_number", d->firmware.model_number);
-	} else {
+	} else if (u_json_get(json, "model_number")) {
 		JSON_STRING(json, "model_name", d->firmware.model_number);
+	} else {
+		VIVE_ERROR(d, "Could not find either 'model_number' or 'model_name' fields!");
 	}
 
 	VIVE_DEBUG(d, "Parsing model number: %s", d->firmware.model_number);
@@ -415,7 +417,8 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 		d->variant = VIVE_VARIANT_PRO;
 		VIVE_DEBUG(d, "Found HTC Vive Pro HMD");
 	} else {
-		VIVE_ERROR(d, "Failed to parse Vive HMD variant");
+		VIVE_ERROR(d, "Failed to parse Vive HMD variant!\n\tfirmware.model_[number|name]: '%s'",
+		           d->firmware.model_number);
 	}
 
 	switch (d->variant) {
