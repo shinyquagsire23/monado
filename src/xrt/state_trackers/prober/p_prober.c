@@ -1140,13 +1140,23 @@ p_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 {
 	XRT_TRACE_MARKER();
 
-	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
-	XRT_MAYBE_UNUSED struct prober_device *pdev = (struct prober_device *)xpdev;
+	struct prober *p = (struct prober *)xp;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
+	bool has_been_queried = false;
+
 #ifdef XRT_HAVE_LIBUSB
+	has_been_queried = true;
 	if (pdev->usb.dev != NULL) {
 		return p_libusb_can_open(p, pdev);
 	}
 #endif
+
+	// No backend compiled in to judge the ability to open the device.
+	if (!has_been_queried) {
+		P_WARN(p, "Can not tell if '%s' can be opened, assuming yes!", pdev->usb.product);
+		return true;
+	}
+
 	//! @todo add more backends
 	return false;
 }
