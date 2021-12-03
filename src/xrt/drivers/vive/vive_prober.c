@@ -223,7 +223,7 @@ init_valve_index(struct xrt_prober *xp,
 
 	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
 	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VALVE_INDEX_PRODUCT_STRING)) {
-		U_LOG_D("Valve Index manufacturer string did not match.");
+		U_LOG_E("Valve Index manufacturer string did not match.");
 		return -1;
 	}
 
