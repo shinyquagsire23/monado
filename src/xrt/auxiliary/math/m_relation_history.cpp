@@ -81,7 +81,7 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 }
 
 enum m_relation_history_result
-m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation *out_relation, uint64_t at_timestamp_ns)
+m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
 {
 	XRT_TRACE_MARKER();
 	os_mutex_lock(&rh->mutex);

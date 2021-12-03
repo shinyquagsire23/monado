@@ -408,7 +408,7 @@ rs_ddev_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	m_relation_history_get(rs->relation_hist, out_relation, at_timestamp_ns);
+	m_relation_history_get(rs->relation_hist, at_timestamp_ns, out_relation);
 }
 
 static void

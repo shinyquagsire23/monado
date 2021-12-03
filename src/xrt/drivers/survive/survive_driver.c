@@ -332,7 +332,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	m_relation_history_get(survive->relation_hist, out_relation, at_timestamp_ns);
+	m_relation_history_get(survive->relation_hist, at_timestamp_ns, out_relation);
 
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_TRACE(survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)", p->position.x, p->position.y,
@@ -434,7 +434,7 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	struct xrt_space_relation hand_relation;
 
-	m_relation_history_get(survive->relation_hist, &hand_relation, at_timestamp_ns);
+	m_relation_history_get(survive->relation_hist, at_timestamp_ns, &hand_relation);
 
 	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &hand_relation, &hand_on_handle_pose, out_value);
 

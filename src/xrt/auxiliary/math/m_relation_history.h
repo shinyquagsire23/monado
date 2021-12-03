@@ -63,7 +63,7 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
  * @public @memberof m_relation_history
  */
 enum m_relation_history_result
-m_relation_history_get(struct m_relation_history *rh, struct xrt_space_relation *out_relation, uint64_t at_time_ns);
+m_relation_history_get(struct m_relation_history *rh, uint64_t at_time_ns, struct xrt_space_relation *out_relation);
 
 /*!
  * Destroys an opaque relation_history object.
