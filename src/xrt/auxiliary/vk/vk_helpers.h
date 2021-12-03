@@ -232,6 +232,8 @@ struct vk_bundle
 	PFN_vkCreateSemaphore vkCreateSemaphore;
 #if defined(VK_KHR_timeline_semaphore)
 	PFN_vkSignalSemaphoreKHR vkSignalSemaphore;
+	PFN_vkWaitSemaphoresKHR vkWaitSemaphores;
+	PFN_vkGetSemaphoreCounterValueKHR vkGetSemaphoreCounterValue;
 #endif // defined(VK_KHR_timeline_semaphore)
 
 	PFN_vkDestroySemaphore vkDestroySemaphore;

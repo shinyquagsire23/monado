@@ -104,6 +104,16 @@ def get_device_cmds():
             member_name="vkSignalSemaphore",
             requires=("VK_KHR_timeline_semaphore",),
         ),
+        Cmd(
+            "vkWaitSemaphoresKHR",
+            member_name="vkWaitSemaphores",
+            requires=("VK_KHR_timeline_semaphore",),
+        ),
+        Cmd(
+            "vkGetSemaphoreCounterValueKHR",
+            member_name="vkGetSemaphoreCounterValue",
+            requires=("VK_KHR_timeline_semaphore",),
+        ),
         Cmd("vkDestroySemaphore"),
         None,
         Cmd("vkCreateFence"),
