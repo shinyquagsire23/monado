@@ -354,7 +354,7 @@ def generate_ext_check():
         yield "\tvk->{} = false;".format(make_ext_member_name(ext))
 
     yield ""
-    yield "\tfor (uint32_t i = 0; i < num_device_extensions; i++) {"
+    yield "\tfor (uint32_t i = 0; i < device_extension_count; i++) {"
     yield "\t\tconst char *ext = device_extensions[i];"
     yield ""
 
