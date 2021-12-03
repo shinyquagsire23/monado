@@ -58,6 +58,7 @@ struct vk_bundle
 
 	// beginning of GENERATED extension code - do not modify - used by scripts
 	bool has_GOOGLE_display_timing;
+	bool has_KHR_timeline_semaphore;
 	bool has_EXT_global_priority;
 	bool has_EXT_robustness2;
 	// end of GENERATED extension code - do not modify - used by scripts

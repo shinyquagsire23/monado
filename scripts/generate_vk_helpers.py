@@ -221,6 +221,7 @@ def get_instance_cmds():
 
 EXTENSIONS_TO_CHECK = [
     "VK_GOOGLE_display_timing",
+    "VK_KHR_timeline_semaphore",
     "VK_EXT_global_priority",
     "VK_EXT_robustness2",
 ]

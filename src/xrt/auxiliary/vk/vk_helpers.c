@@ -1235,6 +1235,7 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 	// beginning of GENERATED extension code - do not modify - used by scripts
 	// Reset before filling out.
 	vk->has_GOOGLE_display_timing = false;
+	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
 
@@ -1247,6 +1248,13 @@ fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uin
 			continue;
 		}
 #endif // defined(VK_GOOGLE_display_timing)
+
+#if defined(VK_KHR_timeline_semaphore)
+		if (strcmp(ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0) {
+			vk->has_KHR_timeline_semaphore = true;
+			continue;
+		}
+#endif // defined(VK_KHR_timeline_semaphore)
 
 #if defined(VK_EXT_global_priority)
 		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
