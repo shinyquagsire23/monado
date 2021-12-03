@@ -52,7 +52,7 @@ m_relation_history_create(struct m_relation_history **rh);
  * @public @memberof m_relation_history
  */
 void
-m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation *in_relation, uint64_t ts);
+m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation const *in_relation, uint64_t ts);
 
 /*!
  * @brief Interpolates or extrapolates to the desired timestamp.

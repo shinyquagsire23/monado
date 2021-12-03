@@ -63,7 +63,7 @@ m_relation_history_create(struct m_relation_history **rh_ptr)
 }
 
 void
-m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation *in_relation, uint64_t timestamp)
+m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation const *in_relation, uint64_t timestamp)
 {
 	XRT_TRACE_MARKER();
 	struct relation_history_entry rhe;
