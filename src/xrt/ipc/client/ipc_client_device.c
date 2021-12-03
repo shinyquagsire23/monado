@@ -200,7 +200,7 @@ ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origi
 		}
 		if (isbp->output_count > 0) {
 			xbp->outputs = &ism->output_pairs[isbp->first_output_index];
-			xbp->output_count = isbp->input_count;
+			xbp->output_count = isbp->output_count;
 		}
 	}
 
