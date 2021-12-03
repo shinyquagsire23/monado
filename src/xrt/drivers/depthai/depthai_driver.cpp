@@ -338,7 +338,9 @@ depthai_destroy(struct depthai_fs *depthai)
 
 	os_thread_helper_destroy(&depthai->play_thread);
 
+	// To work around use after free issue detected by ASan, v2.13.3 has this bug.
 	depthai->queue->close();
+
 	delete depthai->device;
 
 	free(depthai);
