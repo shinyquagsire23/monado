@@ -368,7 +368,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		depthai->format = XRT_FORMAT_R8G8B8;
 		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 118; // Actual max.
+		depthai->fps = 60; // API says max is 118, anything over 60 seems broken with the v2.13.3 release.
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
 		break;
