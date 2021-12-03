@@ -76,3 +76,62 @@ m_relation_history_destroy(struct m_relation_history **rh);
 #ifdef __cplusplus
 }
 #endif
+
+
+#ifdef __cplusplus
+namespace xrt::auxiliary::math {
+
+/*!
+ * C++ interface for @ref m_relation_history, non-copyable/deletable.
+ *
+ * @ingroup aux_math
+ */
+class RelationHistory
+{
+public:
+	/*!
+	 * @copydoc m_relation_history_result
+	 */
+	typedef m_relation_history_result Result;
+
+
+private:
+	m_relation_history *mPtr{nullptr};
+
+
+public:
+	// clang-format off
+	RelationHistory() noexcept { m_relation_history_create(&mPtr); }
+	~RelationHistory() { m_relation_history_destroy(&mPtr); }
+	// clang-format on
+
+	// Special non-copyable reference.
+	RelationHistory(RelationHistory const &) = delete;
+	RelationHistory(RelationHistory &&) = delete;
+	RelationHistory &
+	operator=(RelationHistory const &) = delete;
+	RelationHistory &
+	operator=(RelationHistory &&) = delete;
+
+
+	/*!
+	 * @copydoc m_relation_history_push
+	 */
+	void
+	push(xrt_space_relation const &relation, uint64_t ts) noexcept
+	{
+		m_relation_history_push(mPtr, &relation, ts);
+	}
+
+	/*!
+	 * @copydoc m_relation_history_get
+	 */
+	Result
+	get(uint64_t at_time_ns, xrt_space_relation *out_relation) noexcept
+	{
+		return m_relation_history_get(mPtr, at_time_ns, out_relation);
+	}
+};
+
+} // namespace xrt::auxiliary::math
+#endif
