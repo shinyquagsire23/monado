@@ -984,7 +984,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	u_var_add_gui_header(wh, &wh->gui.misc, "Misc");
 	u_var_add_log_level(wh, &wh->log_level, "log_level");
 
-	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses
+	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses,
+	// then rotate around the X axis to convert coordinate system from WMR (X right, Y down, Z away)
+	// to OpenXR (X right, Y up, Z towards)
 	math_quat_slerp(&wh->config.eye_params[0].pose.orientation, &wh->config.eye_params[1].pose.orientation, 0.5f,
 	                &wh->centerline.orientation);
 	wh->centerline.position.x =
@@ -993,6 +995,13 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	    (wh->config.eye_params[0].pose.position.y + wh->config.eye_params[1].pose.position.y) * 0.5f;
 	wh->centerline.position.z =
 	    (wh->config.eye_params[0].pose.position.z + wh->config.eye_params[1].pose.position.z) * 0.5f;
+
+	struct xrt_pose wmr_to_openxr_xform = {
+	    .position = {0.0, 0.0, 0.0},
+	    .orientation = {.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0},
+	};
+
+	math_pose_transform(&wmr_to_openxr_xform, &wh->centerline, &wh->centerline);
 
 	// Compute display and sensor offsets relative to the centerline
 	for (int dIdx = 0; dIdx < 2; ++dIdx) {
