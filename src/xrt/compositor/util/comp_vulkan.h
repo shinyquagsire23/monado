@@ -25,7 +25,7 @@ extern "C" {
 struct comp_vulkan_extension_list
 {
 	const char **array;
-	uint32_t num;
+	uint32_t count;
 };
 
 /*!

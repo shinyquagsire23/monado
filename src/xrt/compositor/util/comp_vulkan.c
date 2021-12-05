@@ -120,7 +120,7 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	VkInstanceCreateInfo instance_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 	    .pApplicationInfo = &app_info,
-	    .enabledExtensionCount = vk_args->instance_extensions.num,
+	    .enabledExtensionCount = vk_args->instance_extensions.count,
 	    .ppEnabledExtensionNames = vk_args->instance_extensions.array,
 	};
 
@@ -172,9 +172,9 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 		    only_compute_queue,                        // compute_only
 		    prios[i],                                  // global_priority
 		    vk_args->required_device_extensions.array, //
-		    vk_args->required_device_extensions.num,   //
+		    vk_args->required_device_extensions.count, //
 		    vk_args->optional_device_extensions.array, //
-		    vk_args->optional_device_extensions.num,   //
+		    vk_args->optional_device_extensions.count, //
 		    &device_features);                         // optional_device_features
 
 		// All ok!

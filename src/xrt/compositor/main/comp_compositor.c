@@ -696,17 +696,17 @@ compositor_init_vulkan(struct comp_compositor *c)
 	    .instance_extensions =
 	        {
 	            .array = NULL, // Filled in below
-	            .num = 0,      // Filled in below
+	            .count = 0,    // Filled in below
 	        },
 	    .required_device_extensions =
 	        {
 	            .array = required_device_extensions,
-	            .num = ARRAY_SIZE(required_device_extensions),
+	            .count = ARRAY_SIZE(required_device_extensions),
 	        },
 	    .optional_device_extensions =
 	        {
 	            .array = optional_device_extensions,
-	            .num = ARRAY_SIZE(optional_device_extensions),
+	            .count = ARRAY_SIZE(optional_device_extensions),
 	        },
 	    .log_level = c->settings.log_level,
 	    .only_compute_queue = c->settings.use_compute,
@@ -716,7 +716,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	struct comp_vulkan_results vk_res = {0};
 
-	ret = select_instances_extensions(c, &vk_args.instance_extensions.array, &vk_args.instance_extensions.num);
+	ret = select_instances_extensions(c, &vk_args.instance_extensions.array, &vk_args.instance_extensions.count);
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
 		return ret;
