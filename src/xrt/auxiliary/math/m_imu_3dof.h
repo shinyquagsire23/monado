@@ -41,6 +41,9 @@ struct m_imu_3dof
 		struct xrt_vec3 gyro;  //!< Angular velocity
 		struct xrt_vec3 accel; //!< Acceleration
 		float delta_ms;
+		float accel_length;
+		float gyro_length;
+		float gyro_biased_length;
 	} last;
 
 	enum m_imu_3dof_state state;
@@ -57,6 +60,8 @@ struct m_imu_3dof
 		uint64_t level_timestamp_ns;
 		struct xrt_vec3 error_axis;
 		float error_angle;
+		bool is_accel;
+		bool is_rotating;
 	} grav;
 
 	// gyro bias correction

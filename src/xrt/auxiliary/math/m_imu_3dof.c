@@ -58,8 +58,14 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 	u_var_add_ro_u64(root, &f->last.timestamp_ns, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.gyro", prefix);
 	u_var_add_ro_vec3_f32(root, &f->last.gyro, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.gyro_length", prefix);
+	u_var_add_ro_f32(root, &f->last.gyro_length, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.gyro_biased_length", prefix);
+	u_var_add_ro_f32(root, &f->last.gyro_biased_length, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.accel", prefix);
 	u_var_add_ro_vec3_f32(root, &f->last.accel, tmp);
+	snprintf(tmp, sizeof(tmp), "%slast.accel_length", prefix);
+	u_var_add_ro_f32(root, &f->last.accel_length, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.delta_ms", prefix);
 	u_var_add_ro_f32(root, &f->last.delta_ms, tmp);
 
@@ -69,6 +75,10 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 	u_var_add_ro_vec3_f32(root, &f->grav.error_axis, tmp);
 	snprintf(tmp, sizeof(tmp), "%sgrav.error_angle", prefix);
 	u_var_add_ro_f32(root, &f->grav.error_angle, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgrav.is_accel", prefix);
+	u_var_add_bool(root, &f->grav.is_accel, tmp);
+	snprintf(tmp, sizeof(tmp), "%sgrav.is_rotating", prefix);
+	u_var_add_bool(root, &f->grav.is_rotating, tmp);
 
 	snprintf(tmp, sizeof(tmp), "%sgyro_bias.value", prefix);
 	u_var_add_ro_vec3_f32(root, &f->gyro_bias.value, tmp);
@@ -102,11 +112,14 @@ gravity_correction(struct m_imu_3dof *f,
 	 * reset the counter and start over.
 	 */
 
-	bool is_accel = fabsf(m_vec3_len(*accel) - 9.82f) >= gravity_tolerance;
+	float accel_length = m_vec3_len(*accel);
+	bool is_accel = fabsf(accel_length - 9.82f) >= gravity_tolerance;
 	bool is_rotating = gyro_length >= gyro_tolerance;
 	if (is_accel || is_rotating) {
 		f->grav.level_timestamp_ns = timestamp_ns;
 	}
+	f->grav.is_accel = is_accel;
+	f->grav.is_rotating = is_rotating;
 
 	/*
 	 * Device has been level for long enough, grab mean from the
@@ -229,6 +242,13 @@ m_imu_3dof_update(struct m_imu_3dof *f,
 
 	struct xrt_vec3 gyro_biased = m_vec3_sub(*gyro, f->gyro_bias.value);
 	float gyro_biased_length = m_vec3_len(gyro_biased);
+	float gyro_length = m_vec3_len(*gyro);
+	float accel_length = m_vec3_len(*accel);
+
+	f->last.accel_length = accel_length;
+	f->last.gyro_length = gyro_length;
+	f->last.gyro_biased_length = gyro_biased_length;
+
 
 	if (gyro_biased_length > 0.0001f) {
 #if 0
