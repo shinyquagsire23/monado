@@ -270,7 +270,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 			math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, &sample);
 			math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, &sample, &raw_gyro[i]);
 
-			vec3_from_hololens_accel(wh->packet.accel, i, &sample);
+			vec3_from_hololens_accel(wh->packet.accel, i, &raw_sample);
 			math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, &raw_sample, &sample);
 			math_vec3_accum(&wh->config.sensors.accel.bias_offsets, &sample);
 			math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, &sample, &raw_accel[i]);
