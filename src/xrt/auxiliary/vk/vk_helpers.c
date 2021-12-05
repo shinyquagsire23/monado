@@ -1626,15 +1626,16 @@ vk_init_from_given(struct vk_bundle *vk,
 	// First memset it clear.
 	U_ZERO(vk);
 
-	vk->vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+	ret = vk_get_loader_functions(vk, vkGetInstanceProcAddr);
+	if (ret != VK_SUCCESS) {
+		goto err_memset;
+	}
+
 	vk->instance = instance;
 	vk->physical_device = physical_device;
 	vk->device = device;
 	vk->queue_family_index = queue_family_index;
 	vk->queue_index = queue_index;
-
-	// Not really needed but just in case.
-	vk->vkCreateInstance = GET_PROC(vk, vkCreateInstance);
 
 	// Fill in all instance functions.
 	ret = vk_get_instance_functions(vk);
