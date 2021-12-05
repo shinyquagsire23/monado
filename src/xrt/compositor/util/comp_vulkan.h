@@ -11,6 +11,7 @@
 
 #include "xrt/xrt_compositor.h"
 #include "util/u_logging.h"
+#include "util/u_string_list.h"
 #include "vk/vk_helpers.h"
 
 
@@ -18,15 +19,6 @@
 extern "C" {
 #endif
 
-
-/*!
- * Simple helper struct for lists of arrays.
- */
-struct comp_vulkan_extension_list
-{
-	const char **array;
-	uint32_t count;
-};
 
 /*!
  * Arguments to Vulkan bundle initialisation, all args needs setting.
@@ -37,13 +29,13 @@ struct comp_vulkan_arguments
 	PFN_vkGetInstanceProcAddr get_instance_proc_address;
 
 	//! Extensions that the instance is created with.
-	struct comp_vulkan_extension_list instance_extensions;
+	struct u_string_list *instance_extensions;
 
 	//! Extensions that the device is created with.
-	struct comp_vulkan_extension_list required_device_extensions;
+	struct u_string_list *required_device_extensions;
 
 	//! Extensions that the device is created with.
-	struct comp_vulkan_extension_list optional_device_extensions;
+	struct u_string_list *optional_device_extensions;
 
 	//! Logging level to be set on the @ref vk_bundle.
 	enum u_logging_level log_level;

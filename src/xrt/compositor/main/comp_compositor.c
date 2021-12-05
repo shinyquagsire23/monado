@@ -628,55 +628,55 @@ static const char *optional_device_extensions[] = {
 #endif
 };
 
+static bool
+append_all(struct comp_compositor *c, struct u_string_list *list, const char *const *arr, uint32_t size)
+{
+	for (uint32_t i = 0; i < size; i++) {
+		int ret = u_string_list_append(list, arr[i]);
+		if (ret < 0) {
+			COMP_ERROR(c, "Failed to add %s to instance extension list: %d", arr[i], ret);
+			return false;
+		}
+	}
+	return true;
+}
 
 static VkResult
-select_instances_extensions(struct comp_compositor *c, const char ***out_exts, uint32_t *out_num)
+select_instances_extensions(struct comp_compositor *c, struct u_string_list *list)
 {
 	switch (c->settings.window_type) {
-	case WINDOW_NONE:
-		*out_exts = instance_extensions_none;
-		*out_num = ARRAY_SIZE(instance_extensions_none);
-		break;
+	case WINDOW_NONE: append_all(c, list, instance_extensions_none, ARRAY_SIZE(instance_extensions_none)); break;
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 	case WINDOW_DIRECT_WAYLAND:
-		*out_exts = instance_extensions_direct_wayland;
-		*out_num = ARRAY_SIZE(instance_extensions_direct_wayland);
+		append_all(c, list, instance_extensions_direct_wayland, ARRAY_SIZE(instance_extensions_direct_wayland));
 		break;
 
 	case WINDOW_WAYLAND:
-		*out_exts = instance_extensions_wayland;
-		*out_num = ARRAY_SIZE(instance_extensions_wayland);
+		append_all(c, list, instance_extensions_wayland, ARRAY_SIZE(instance_extensions_wayland));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_XCB_KHR
-	case WINDOW_XCB:
-		*out_exts = instance_extensions_xcb;
-		*out_num = ARRAY_SIZE(instance_extensions_xcb);
-		break;
+	case WINDOW_XCB: append_all(c, list, instance_extensions_xcb, ARRAY_SIZE(instance_extensions_xcb)); break;
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	case WINDOW_DIRECT_RANDR:
 	case WINDOW_DIRECT_NVIDIA:
-		*out_exts = instance_extensions_direct_mode;
-		*out_num = ARRAY_SIZE(instance_extensions_direct_mode);
+		append_all(c, list, instance_extensions_direct_mode, ARRAY_SIZE(instance_extensions_direct_mode));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	case WINDOW_ANDROID:
-		*out_exts = instance_extensions_android;
-		*out_num = ARRAY_SIZE(instance_extensions_android);
+		append_all(c, list, instance_extensions_android, ARRAY_SIZE(instance_extensions_android));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 	case WINDOW_MSWIN:
-		*out_exts = instance_extensions_windows;
-		*out_num = ARRAY_SIZE(instance_extensions_windows);
+		append_all(c, list, instance_extensions_windows, ARRAY_SIZE(instance_extensions_windows));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_DISPLAY_KHR
 	case WINDOW_VK_DISPLAY:
-		*out_exts = instance_extensions_vk_display;
-		*out_num = ARRAY_SIZE(instance_extensions_vk_display);
+		append_all(c, list, instance_extensions_vk_display, ARRAY_SIZE(instance_extensions_vk_display));
 		break;
 #endif
 	default: return VK_ERROR_INITIALIZATION_FAILED;
@@ -691,23 +691,32 @@ compositor_init_vulkan(struct comp_compositor *c)
 	struct vk_bundle *vk = get_vk(c);
 	VkResult ret;
 
+	// every backend needs at least as many extensions as the none window
+	struct u_string_list *instance_extension_list =
+	    u_string_list_create_with_capacity(ARRAY_SIZE(instance_extensions_none));
+
+	ret = select_instances_extensions(c, instance_extension_list);
+	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
+		u_string_list_destroy(&instance_extension_list);
+		return ret;
+	}
+
+	struct u_string_list *required_device_extension_list =
+	    u_string_list_create_with_capacity(ARRAY_SIZE(required_device_extensions));
+	append_all(c, required_device_extension_list, required_device_extensions,
+	           ARRAY_SIZE(required_device_extensions));
+
+	struct u_string_list *optional_device_extension_list =
+	    u_string_list_create_with_capacity(ARRAY_SIZE(optional_device_extensions));
+	append_all(c, optional_device_extension_list, optional_device_extensions,
+	           ARRAY_SIZE(optional_device_extensions));
+
 	struct comp_vulkan_arguments vk_args = {
 	    .get_instance_proc_address = vkGetInstanceProcAddr,
-	    .instance_extensions =
-	        {
-	            .array = NULL, // Filled in below
-	            .count = 0,    // Filled in below
-	        },
-	    .required_device_extensions =
-	        {
-	            .array = required_device_extensions,
-	            .count = ARRAY_SIZE(required_device_extensions),
-	        },
-	    .optional_device_extensions =
-	        {
-	            .array = optional_device_extensions,
-	            .count = ARRAY_SIZE(optional_device_extensions),
-	        },
+	    .instance_extensions = instance_extension_list,
+	    .required_device_extensions = required_device_extension_list,
+	    .optional_device_extensions = optional_device_extension_list,
 	    .log_level = c->settings.log_level,
 	    .only_compute_queue = c->settings.use_compute,
 	    .selected_gpu_index = c->settings.selected_gpu_index,
@@ -715,14 +724,13 @@ compositor_init_vulkan(struct comp_compositor *c)
 	};
 
 	struct comp_vulkan_results vk_res = {0};
+	bool bundle_ret = comp_vulkan_init_bundle(vk, &vk_args, &vk_res);
 
-	ret = select_instances_extensions(c, &vk_args.instance_extensions.array, &vk_args.instance_extensions.count);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
-		return ret;
-	}
+	u_string_list_destroy(&instance_extension_list);
+	u_string_list_destroy(&required_device_extension_list);
+	u_string_list_destroy(&optional_device_extension_list);
 
-	if (!comp_vulkan_init_bundle(vk, &vk_args, &vk_res)) {
+	if (!bundle_ret) {
 		return false;
 	}
 
