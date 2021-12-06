@@ -98,7 +98,6 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	return VK_SUCCESS;
 }
 
-
 /*
  *
  * Creation functions.
@@ -110,29 +109,15 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 {
 	VkResult ret;
 
-	uint32_t prop_count = 0;
-	vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
+	struct u_string_list *instance_ext_list = vk_build_instance_extensions(
+	    vk, vk_args->required_instance_extensions, vk_args->optional_instance_extensions);
 
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-	vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
-
-	struct u_string_list *instance_ext_list = u_string_list_create_from_list(vk_args->required_instance_extensions);
-
-
-	uint32_t optional_instance_ext_count = u_string_list_get_size(vk_args->optional_instance_extensions);
-	const char *const *optional_instance_exts = u_string_list_get_data(vk_args->optional_instance_extensions);
-	for (uint32_t i = 0; i < optional_instance_ext_count; i++) {
-		const char *optional_ext = optional_instance_exts[i];
-		for (uint32_t j = 0; j < prop_count; j++) {
-			if (strcmp(optional_ext, props[j].extensionName) == 0) {
-				int added = u_string_list_append_unique(instance_ext_list, optional_ext);
-				if (added == 0) {
-					VK_ERROR(vk, "Duplicate device extension %s not added twice", optional_ext);
-				}
-				break;
-			}
-		}
+	if (!instance_ext_list) {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
+
+	// Fill this out here.
+	vk_fill_in_has_instance_extensions(vk, instance_ext_list);
 
 	VkApplicationInfo app_info = {
 	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,

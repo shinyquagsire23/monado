@@ -57,12 +57,16 @@ struct vk_bundle
 
 	struct os_mutex queue_mutex;
 
-	// beginning of GENERATED extension code - do not modify - used by scripts
+	// beginning of GENERATED instance extension code - do not modify - used by scripts
+	bool has_EXT_display_surface_counter;
+	// end of GENERATED instance extension code - do not modify - used by scripts
+
+	// beginning of GENERATED device extension code - do not modify - used by scripts
 	bool has_KHR_timeline_semaphore;
 	bool has_EXT_global_priority;
 	bool has_EXT_robustness2;
 	bool has_GOOGLE_display_timing;
-	// end of GENERATED extension code - do not modify - used by scripts
+	// end of GENERATED device extension code - do not modify - used by scripts
 
 	bool is_tegra;
 
@@ -429,6 +433,14 @@ struct vk_device_features
 /*!
  * @ingroup aux_vk
  */
+struct u_string_list *
+vk_build_instance_extensions(struct vk_bundle *vk,
+                             struct u_string_list *required_instance_ext_list,
+                             struct u_string_list *optional_instance_ext_list);
+
+/*!
+ * @ingroup aux_vk
+ */
 VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
@@ -790,6 +802,11 @@ vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 VkResult
 vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 
+/*!
+ * Fills in has_* in vk_bundle given a string of prefiltered instance extensions
+ */
+void
+vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
 
 #ifdef __cplusplus
 }

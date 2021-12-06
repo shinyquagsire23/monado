@@ -219,7 +219,10 @@ def get_instance_cmds():
     ]
 
 
-EXTENSIONS_TO_CHECK = [
+INSTANCE_EXTENSIONS_TO_CHECK = [
+    "VK_EXT_display_surface_counter",
+]
+DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_timeline_semaphore",
     "VK_EXT_global_priority",
     "VK_EXT_robustness2",
@@ -353,24 +356,27 @@ def make_ext_name_define(ext: str):
     return "{}_EXTENSION_NAME".format(ext.upper()).replace("2", "_2")
 
 
-def generate_ext_members():
-    for ext in EXTENSIONS_TO_CHECK:
+def generate_ext_members(exts):
+    for ext in exts:
         yield "\tbool {};".format(make_ext_member_name(ext))
 
 
-def generate_ext_check():
+def generate_ext_check(exts):
     yield "\t// Reset before filling out."
 
-    for ext in EXTENSIONS_TO_CHECK:
+    for ext in exts:
         yield "\tvk->{} = false;".format(make_ext_member_name(ext))
 
     yield ""
-    yield "\tfor (uint32_t i = 0; i < device_extension_count; i++) {"
-    yield "\t\tconst char *ext = device_extensions[i];"
+    yield "\tconst char *const *exts = u_string_list_get_data(ext_list);"
+    yield "\tuint32_t ext_count = u_string_list_get_size(ext_list);"
+    yield ""
+    yield "\tfor (uint32_t i = 0; i < ext_count; i++) {"
+    yield "\t\tconst char *ext = exts[i];"
     yield ""
 
     conditional = ConditionalGenerator()
-    for ext in EXTENSIONS_TO_CHECK:
+    for ext in exts:
         condition_line = conditional.process_condition(compute_condition((ext,)))
         if condition_line:
             yield condition_line
@@ -401,9 +407,13 @@ INSTANCE_TEMPLATES = {
     "BEGIN": BEGIN_TEMPLATE % "instance loader",
     "END": END_TEMPLATE % "instance loader",
 }
+INSTANCE_EXT_TEMPLATES = {
+    "BEGIN": BEGIN_TEMPLATE % "instance extension",
+    "END": END_TEMPLATE % "instance extension",
+}
 EXT_TEMPLATES = {
-    "BEGIN": BEGIN_TEMPLATE % "extension",
-    "END": END_TEMPLATE % "extension",
+    "BEGIN": BEGIN_TEMPLATE % "device extension",
+    "END": END_TEMPLATE % "device extension",
 }
 
 
@@ -424,11 +434,19 @@ def process_header():
         DEVICE_TEMPLATES["END"],
         list(generate_structure_members(get_device_cmds())),
     )
+
+    lines = replace_middle(
+        lines,
+        INSTANCE_EXT_TEMPLATES["BEGIN"],
+        INSTANCE_EXT_TEMPLATES["END"],
+        list(generate_ext_members(INSTANCE_EXTENSIONS_TO_CHECK)),
+    )
+
     lines = replace_middle(
         lines,
         EXT_TEMPLATES["BEGIN"],
         EXT_TEMPLATES["END"],
-        list(generate_ext_members()),
+        list(generate_ext_members(DEVICE_EXTENSIONS_TO_CHECK)),
     )
 
     with open(str(HEADER_FN), "w", encoding="utf-8") as fp:
@@ -456,9 +474,16 @@ def process_impl():
 
     lines = replace_middle(
         lines,
+        INSTANCE_EXT_TEMPLATES["BEGIN"],
+        INSTANCE_EXT_TEMPLATES["END"],
+        list(generate_ext_check(INSTANCE_EXTENSIONS_TO_CHECK)),
+    )
+
+    lines = replace_middle(
+        lines,
         EXT_TEMPLATES["BEGIN"],
         EXT_TEMPLATES["END"],
-        list(generate_ext_check()),
+        list(generate_ext_check(DEVICE_EXTENSIONS_TO_CHECK)),
     )
 
     with open(str(IMPL_FN), "w", encoding="utf-8") as fp:

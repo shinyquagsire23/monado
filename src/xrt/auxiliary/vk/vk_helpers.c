@@ -1230,18 +1230,44 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 	return false;
 }
 
-static void
-fill_in_has_extensions(struct vk_bundle *vk, const char *const *device_extensions, uint32_t device_extension_count)
+void
+vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list)
 {
-	// beginning of GENERATED extension code - do not modify - used by scripts
+	// beginning of GENERATED instance extension code - do not modify - used by scripts
+	// Reset before filling out.
+	vk->has_EXT_display_surface_counter = false;
+
+	const char *const *exts = u_string_list_get_data(ext_list);
+	uint32_t ext_count = u_string_list_get_size(ext_list);
+
+	for (uint32_t i = 0; i < ext_count; i++) {
+		const char *ext = exts[i];
+
+#if defined(VK_EXT_display_surface_counter)
+		if (strcmp(ext, VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME) == 0) {
+			vk->has_EXT_display_surface_counter = true;
+			continue;
+		}
+#endif // defined(VK_EXT_display_surface_counter)
+	}
+	// end of GENERATED instance extension code - do not modify - used by scripts
+}
+
+static void
+fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_list)
+{
+	// beginning of GENERATED device extension code - do not modify - used by scripts
 	// Reset before filling out.
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
 	vk->has_GOOGLE_display_timing = false;
 
-	for (uint32_t i = 0; i < device_extension_count; i++) {
-		const char *ext = device_extensions[i];
+	const char *const *exts = u_string_list_get_data(ext_list);
+	uint32_t ext_count = u_string_list_get_size(ext_list);
+
+	for (uint32_t i = 0; i < ext_count; i++) {
+		const char *ext = exts[i];
 
 #if defined(VK_KHR_timeline_semaphore)
 		if (strcmp(ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0) {
@@ -1271,7 +1297,82 @@ fill_in_has_extensions(struct vk_bundle *vk, const char *const *device_extension
 		}
 #endif // defined(VK_GOOGLE_display_timing)
 	}
-	// end of GENERATED extension code - do not modify - used by scripts
+	// end of GENERATED device extension code - do not modify - used by scripts
+}
+
+static bool
+vk_should_skip_optional_instance_ext(struct vk_bundle *vk,
+                                     struct u_string_list *required_instance_ext_list,
+                                     struct u_string_list *optional_instance_ext_listconst,
+                                     const char *ext)
+{
+#ifdef VK_EXT_display_surface_counter
+	if (strcmp(ext, VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME) == 0) {
+		// it does not make sense to enable surface counter on anything that does not use a VkDisplayKHR
+		if (!u_string_list_contains(required_instance_ext_list, VK_KHR_DISPLAY_EXTENSION_NAME)) {
+			VK_DEBUG(vk, "Skipping optional instance extension %s because %s is not enabled", ext,
+			         VK_KHR_DISPLAY_EXTENSION_NAME);
+			return true;
+		}
+		VK_DEBUG(vk, "Not skipping optional instance extension %s because %s is enabled", ext,
+		         VK_KHR_DISPLAY_EXTENSION_NAME);
+	}
+#endif
+	return false;
+}
+
+static bool
+vk_is_instance_ext_supported(VkExtensionProperties *props, uint32_t prop_count, const char *ext)
+{
+	for (uint32_t j = 0; j < prop_count; j++) {
+		if (strcmp(ext, props[j].extensionName) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+struct u_string_list *
+vk_build_instance_extensions(struct vk_bundle *vk,
+                             struct u_string_list *required_instance_ext_list,
+                             struct u_string_list *optional_instance_ext_list)
+{
+	VkResult res;
+
+	uint32_t prop_count = 0;
+	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
+	vk_check_error("vkEnumerateInstanceExtensionProperties", res, NULL);
+
+	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
+	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
+	vk_check_error_with_free("vkEnumerateInstanceExtensionProperties", res, NULL, props);
+
+	struct u_string_list *ret = u_string_list_create_from_list(required_instance_ext_list);
+
+	uint32_t optional_instance_ext_count = u_string_list_get_size(optional_instance_ext_list);
+	const char *const *optional_instance_exts = u_string_list_get_data(optional_instance_ext_list);
+	for (uint32_t i = 0; i < optional_instance_ext_count; i++) {
+		const char *optional_ext = optional_instance_exts[i];
+
+		if (vk_should_skip_optional_instance_ext(vk, required_instance_ext_list, optional_instance_ext_list,
+		                                         optional_ext)) {
+			continue;
+		}
+
+		if (!vk_is_instance_ext_supported(props, prop_count, optional_ext)) {
+			VK_DEBUG(vk, "Optional instance extension %s not enabled, unsupported", optional_ext);
+			continue;
+		}
+
+		int added = u_string_list_append_unique(ret, optional_ext);
+		if (added == 1) {
+			VK_DEBUG(vk, "Using optional instance ext %s", optional_ext);
+		} else {
+			VK_WARN(vk, "Duplicate instance extension %s not added twice", optional_ext);
+		}
+		break;
+	}
+	return ret;
 }
 
 static VkResult
@@ -1345,8 +1446,7 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	}
 
 	// Fill this out here.
-	fill_in_has_extensions(vk, u_string_list_get_data(*out_device_ext_list),
-	                       u_string_list_get_size(*out_device_ext_list));
+	fill_in_has_device_extensions(vk, *out_device_ext_list);
 
 	free(props);
 
