@@ -354,12 +354,13 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 	const struct xrt_matrix_2x2 l = *left;
 	const struct xrt_matrix_2x2 r = *right;
 
-	struct xrt_matrix_2x2 result = {{
+	// Initialisers: struct, union, v[4]
+	struct xrt_matrix_2x2 result = {{{
 	    l.v[0] * r.v[0] + l.v[1] * r.v[2],
 	    l.v[0] * r.v[1] + l.v[1] * r.v[3],
 	    l.v[2] * r.v[0] + l.v[3] * r.v[2],
 	    l.v[2] * r.v[1] + l.v[3] * r.v[3],
-	}};
+	}}};
 
 	*result_out = result;
 }
