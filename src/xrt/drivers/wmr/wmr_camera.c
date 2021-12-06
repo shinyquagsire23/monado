@@ -460,7 +460,7 @@ wmr_camera_free(struct wmr_camera *cam)
 bool
 wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_configs, int config_count)
 {
-	int res, i;
+	int res = 0;
 
 	cam->configs = cam_configs;
 	cam->config_count = config_count;
@@ -479,7 +479,7 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 		goto fail;
 	}
 
-	for (i = 0; i < cam->config_count; i++) {
+	for (int i = 0; i < cam->config_count; i++) {
 		const struct wmr_camera_config *config = &cam->configs[i];
 		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
 			continue;
@@ -492,7 +492,7 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 		}
 	}
 
-	for (i = 0; i < NUM_XFERS; i++) {
+	for (int i = 0; i < NUM_XFERS; i++) {
 		uint8_t *recv_buf = malloc(cam->xfer_size);
 
 		libusb_fill_bulk_transfer(cam->xfers[i], cam->dev, 0x85, recv_buf, cam->xfer_size, img_xfer_cb, cam, 0);
@@ -510,9 +510,12 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 
 
 fail:
-	if (res < 0)
+	if (res < 0) {
 		WMR_CAM_ERROR(cam, "Error starting camera input: %s", libusb_error_name(res));
+	}
+
 	wmr_camera_stop(cam);
+
 	return false;
 }
 
