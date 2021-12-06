@@ -397,7 +397,7 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 
 	if (u_json_get(json, "model_number")) {
 		JSON_STRING(json, "model_number", d->firmware.model_number);
-	} else if (u_json_get(json, "model_number")) {
+	} else if (u_json_get(json, "model_name")) {
 		JSON_STRING(json, "model_name", d->firmware.model_number);
 	} else {
 		VIVE_ERROR(d, "Could not find either 'model_number' or 'model_name' fields!");
