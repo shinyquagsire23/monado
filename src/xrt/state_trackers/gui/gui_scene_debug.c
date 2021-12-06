@@ -291,6 +291,7 @@ on_elem(struct u_var_info *info, void *priv)
 		break;
 	}
 	case U_VAR_KIND_U8: igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL, NULL, NULL, power); break;
+	case U_VAR_KIND_U16: igDragScalar(name, ImGuiDataType_U16, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_U64: igDragScalar(name, ImGuiDataType_U64, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_I32: igInputInt(name, (int *)ptr, 1, 10, i_flags); break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
