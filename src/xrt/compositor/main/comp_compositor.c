@@ -253,18 +253,8 @@ do_graphics_layers(struct comp_compositor *c)
 
 	comp_renderer_destroy_layers(c->r);
 
-	/*
-	 * We have a fast path for single projection layer that goes directly
-	 * to the distortion shader, so no need to use the layer renderer.
-	 */
-	if (layer_count == 1) {
-		struct comp_layer *layer = &c->base.slot.layers[0];
-
-		// Handled by the distortion shader.
-		if (layer->data.type == XRT_LAYER_STEREO_PROJECTION ||
-		    layer->data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
-			return;
-		}
+	if (c->base.slot.one_projection_layer_fast_path) {
+		return;
 	}
 
 	comp_renderer_allocate_layers(c->r, layer_count);
@@ -337,6 +327,29 @@ do_graphics_layers(struct comp_compositor *c)
 	}
 }
 
+/*!
+ * We have a fast path for single projection layer that goes directly
+ * to the distortion shader, so no need to use the layer renderer.
+ */
+static bool
+can_do_one_projection_layer_fast_path(struct comp_compositor *c)
+{
+	if (c->base.slot.layer_count != 1) {
+		return false;
+	}
+
+	struct comp_layer *layer = &c->base.slot.layers[0];
+	enum xrt_layer_type type = layer->data.type;
+
+	// Handled by the distortion shader.
+	if (type != XRT_LAYER_STEREO_PROJECTION && //
+	    type != XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+		return false;
+	}
+
+	return true;
+}
+
 static xrt_result_t
 compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
@@ -345,6 +358,14 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	struct comp_compositor *c = comp_compositor(xc);
 
 	COMP_SPEW(c, "LAYER_COMMIT at %8.3fms", ts_ms());
+
+	/*
+	 * We have a fast path for single projection layer that goes directly
+	 * to the distortion shader, so no need to use the layer renderer.
+	 */
+	bool fast_path = can_do_one_projection_layer_fast_path(c);
+	c->base.slot.one_projection_layer_fast_path = fast_path;
+
 
 	u_graphics_sync_unref(&sync_handle);
 

@@ -57,6 +57,9 @@ struct comp_layer_slot
 
 	//! Number of submitted layers.
 	uint32_t layer_count;
+
+	//! Special case one layer projection/projection-depth fast-path.
+	bool one_projection_layer_fast_path;
 };
 
 /*!

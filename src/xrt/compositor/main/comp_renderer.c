@@ -798,36 +798,11 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	const uint32_t layer_count = c->base.slot.layer_count;
 	struct comp_rendering_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
+	bool one_projection_layer_fast_path = c->base.slot.one_projection_layer_fast_path;
 
-	if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
-		int i = 0;
-		const struct comp_layer *layer = &c->base.slot.layers[i];
-		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
-		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
-		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
-
-		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
-
-		renderer_submit_queue(r, rr->cmd);
-
-		// We mark afterwards to not include CPU time spent.
-		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
-	} else if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
-		int i = 0;
-		const struct comp_layer *layer = &c->base.slot.layers[i];
-		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
-		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
-		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
-
-		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
-
-		renderer_submit_queue(r, rr->cmd);
-
-		// We mark afterwards to not include CPU time spent.
-		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
-	} else {
+	// No fast path, standard layer renderer path.
+	if (!one_projection_layer_fast_path) {
 		// We mark here to include the layer rendering in the GPU time.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
@@ -852,6 +827,49 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 		renderer_build_rendering(r, rr, rtr, src_samplers, src_image_views, src_norm_rects);
 
 		renderer_submit_queue(r, rr->cmd);
+
+		return;
+	}
+
+
+	/*
+	 * Fast path.
+	 */
+
+	const uint32_t layer_count = c->base.slot.layer_count;
+	assert(layer_count >= 1);
+
+	int i = 0;
+	const struct comp_layer *layer = &c->base.slot.layers[i];
+
+	switch (layer->data.type) {
+	case XRT_LAYER_STEREO_PROJECTION: {
+		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
+
+		renderer_submit_queue(r, rr->cmd);
+
+		// We mark afterwards to not include CPU time spent.
+		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+	} break;
+
+	case XRT_LAYER_STEREO_PROJECTION_DEPTH: {
+		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
+		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
+		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
+
+		renderer_submit_queue(r, rr->cmd);
+
+		// We mark afterwards to not include CPU time spent.
+		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+	} break;
+
+	default: assert(false);
 	}
 }
 
