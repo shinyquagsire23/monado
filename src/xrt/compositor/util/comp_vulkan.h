@@ -39,10 +39,10 @@ struct comp_vulkan_arguments
 	//! Extensions that the instance is created with.
 	struct comp_vulkan_extension_list instance_extensions;
 
-	//! Extensions that the instance is created with.
+	//! Extensions that the device is created with.
 	struct comp_vulkan_extension_list required_device_extensions;
 
-	//! Extensions that the instance is created with.
+	//! Extensions that the device is created with.
 	struct comp_vulkan_extension_list optional_device_extensions;
 
 	//! Logging level to be set on the @ref vk_bundle.
