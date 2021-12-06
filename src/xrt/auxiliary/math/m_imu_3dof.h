@@ -76,6 +76,9 @@ void
 m_imu_3dof_init(struct m_imu_3dof *f, int flags);
 
 void
+m_imu_3dof_reset(struct m_imu_3dof *f);
+
+void
 m_imu_3dof_close(struct m_imu_3dof *f);
 
 void

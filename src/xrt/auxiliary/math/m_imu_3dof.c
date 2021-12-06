@@ -39,6 +39,20 @@ m_imu_3dof_init(struct m_imu_3dof *f, int flags)
 }
 
 void
+m_imu_3dof_reset(struct m_imu_3dof *f)
+{
+	struct m_ff_vec3_f32 *aff = f->word_accel_ff;
+	struct m_ff_vec3_f32 *gff = f->gyro_ff;
+	int flags = f->flags;
+
+	U_ZERO(f);
+	f->rot.w = 1.0f;
+	f->word_accel_ff = aff;
+	f->gyro_ff = gff;
+	f->flags = flags;
+}
+
+void
 m_imu_3dof_close(struct m_imu_3dof *f)
 {
 	m_ff_vec3_f32_free(&f->word_accel_ff);
