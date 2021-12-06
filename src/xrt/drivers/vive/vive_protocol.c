@@ -62,6 +62,8 @@ const struct vive_headset_power_report power_off_report = {
     .unknown2 = 0x7c,
 };
 
+#define CONFIG_Z_MAX_SIZE (1024 * 16)
+#define CONFIG_JSON_MAX_SIZE (1024 * 64)
 
 char *
 vive_read_config(struct os_hid_device *hid_dev)
@@ -83,7 +85,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 	    .id = VIVE_CONFIG_READ_REPORT_ID,
 	};
 
-	unsigned char *config_z = U_TYPED_ARRAY_CALLOC(unsigned char, 4096);
+	unsigned char *config_z = U_TYPED_ARRAY_CALLOC(unsigned char, CONFIG_Z_MAX_SIZE);
 
 	uint32_t count = 0;
 	do {
@@ -100,7 +102,7 @@ vive_read_config(struct os_hid_device *hid_dev)
 			return NULL;
 		}
 
-		if (count + report.len > 4096) {
+		if (count + report.len > CONFIG_Z_MAX_SIZE) {
 			U_LOG_E("Configuration data too large");
 			free(config_z);
 			return NULL;
@@ -110,13 +112,13 @@ vive_read_config(struct os_hid_device *hid_dev)
 		count += report.len;
 	} while (report.len);
 
-	unsigned char *config_json = U_TYPED_ARRAY_CALLOC(unsigned char, 32768);
+	unsigned char *config_json = U_TYPED_ARRAY_CALLOC(unsigned char, CONFIG_JSON_MAX_SIZE);
 
 	z_stream strm = {
 	    .next_in = config_z,
 	    .avail_in = count,
 	    .next_out = config_json,
-	    .avail_out = 32768,
+	    .avail_out = CONFIG_JSON_MAX_SIZE,
 	    .zalloc = Z_NULL,
 	    .zfree = Z_NULL,
 	    .opaque = Z_NULL,
