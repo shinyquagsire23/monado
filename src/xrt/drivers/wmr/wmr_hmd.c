@@ -46,6 +46,10 @@ static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
 static void
 wmr_hmd_deactivate_reverb(struct wmr_hmd *wh);
+static int
+wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh);
+static void
+wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh);
 
 const struct wmr_headset_descriptor headset_map[] = {
     {WMR_HEADSET_GENERIC, NULL, "Unknown WMR HMD", NULL, NULL}, /* Catch-all for unknown headsets */
@@ -53,7 +57,8 @@ const struct wmr_headset_descriptor headset_map[] = {
      wmr_hmd_deactivate_reverb},
     {WMR_HEADSET_REVERB_G2, "HP Reverb Virtual Reality Headset G2", "HP Reverb G2", wmr_hmd_activate_reverb,
      wmr_hmd_deactivate_reverb},
-    {WMR_HEADSET_SAMSUNG_800ZAA, "Samsung Windows Mixed Reality 800ZAA", "Samsung Odyssey", NULL, NULL},
+    {WMR_HEADSET_SAMSUNG_800ZAA, "Samsung Windows Mixed Reality 800ZAA", "Samsung Odyssey+",
+     wmr_hmd_activate_odyssey_plus, wmr_hmd_deactivate_odyssey_plus},
     {WMR_HEADSET_LENOVO_EXPLORER, "Lenovo VR-2511N", "Lenovo Explorer", NULL, NULL},
 };
 const int headset_map_n = sizeof(headset_map) / sizeof(headset_map[0]);
@@ -495,6 +500,44 @@ wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
 
 	/* Turn the screen off */
 	unsigned char cmd[2] = {0x04, 0x00};
+	HID_SEND(hid, cmd, "screen_off");
+}
+
+static int
+wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
+{
+	struct os_hid_device *hid = wh->hid_control_dev;
+
+	WMR_TRACE(wh, "Activating Odyssey HMD...");
+
+	os_nanosleep(U_TIME_1MS_IN_NS * 300);
+
+	unsigned char data[64] = {0x16};
+	HID_GET(hid, data, "data_1");
+
+	data[0] = 0x15;
+	HID_GET(hid, data, "data_2");
+
+	data[0] = 0x14;
+	HID_GET(hid, data, "data_3");
+
+	// Wake up the display.
+	unsigned char cmd[2] = {0x12, 0x01};
+	HID_SEND(hid, cmd, "screen_on");
+
+	WMR_INFO(wh, "Sent activation report, sleeping for compositor.");
+
+	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
+
+	return 0;
+}
+
+static void
+wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh)
+{
+	struct os_hid_device *hid = wh->hid_control_dev;
+
+	unsigned char cmd[2] = {0x12, 0x00};
 	HID_SEND(hid, cmd, "screen_off");
 }
 
