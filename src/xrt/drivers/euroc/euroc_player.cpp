@@ -44,7 +44,6 @@ enum euroc_player_ui_state
  *
  * @implements xrt_fs
  * @implements xrt_frame_node
- * @implements xrt_imu_sink
  */
 struct euroc_player
 {

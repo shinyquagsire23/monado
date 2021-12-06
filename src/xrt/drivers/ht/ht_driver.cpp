@@ -263,7 +263,9 @@ getUserConfig(struct ht_device *htd)
 			u_json_get_bool(u_json_get(dynamic_config_obj, "scribble_bounding_box"),
 			                &hdc->scribble_bounding_box);
 
-			U_LOG_E("Hey %s %s", dynamic_config_string, cJSON_Print(dynamic_config_obj));
+			char *dco_str = cJSON_Print(dynamic_config_obj);
+			U_LOG_D("Config %s %s", dynamic_config_string, dco_str);
+			free(dco_str);
 		}
 	}
 

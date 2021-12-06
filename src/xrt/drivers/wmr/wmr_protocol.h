@@ -23,7 +23,7 @@ extern "C" {
 /*!
  * WMR and MS HoloLens Sensors protocol constants and structures
  *
- * @ingroup drv_wmr
+ * @addtogroup drv_wmr
  * @{
  */
 
@@ -90,7 +90,7 @@ struct wmr_config_header
 /*!
  * WMR and MS HoloLens Sensors protocol helpers
  *
- * @ingroup drv_wmr
+ * @addtogroup drv_wmr
  * @{
  */
 

@@ -43,9 +43,9 @@ struct wmr_headset_descriptor
 {
 	enum wmr_headset_type hmd_type;
 
-	/* String by which we recognise the device */
+	//! String by which we recognise the device
 	const char *dev_id_str;
-	/* Friendly ID string for debug */
+	//! Friendly ID string for debug
 	const char *debug_name;
 
 	int (*init_func)(struct wmr_hmd *wh);
@@ -54,12 +54,11 @@ struct wmr_headset_descriptor
 
 struct wmr_hmd_distortion_params
 {
-	/* Inverse affine transform to move from (undistorted) pixels
-	 * to image plane / normalised image coordinates
-	 */
+	//! Inverse affine transform to move from (undistorted) pixels
+	//! to image plane / normalised image coordinates
 	struct xrt_matrix_3x3 inv_affine_xform;
 
-	/* tan(angle) FoV min/max for X and Y in the input texture */
+	//! tan(angle) FoV min/max for X and Y in the input texture
 	struct xrt_vec2 tex_x_range;
 	struct xrt_vec2 tex_y_range;
 };
@@ -73,10 +72,10 @@ struct wmr_hmd
 
 	const struct wmr_headset_descriptor *hmd_desc;
 
-	/* firmware configuration block, with device names etc */
+	//! firmware configuration block, with device names etc
 	struct wmr_config_header config_hdr;
 
-	/* Config data parsed from the firmware JSON */
+	//! Config data parsed from the firmware JSON
 	struct wmr_hmd_config config;
 
 	//! Packet reading thread.
@@ -102,7 +101,7 @@ struct wmr_hmd
 	//! Latest proximity sensor value from the device.
 	uint8_t proximity_sensor;
 
-	/* Distortion related parameters */
+	//! Distortion related parameters
 	struct wmr_hmd_distortion_params distortion_params[2];
 
 	// Config-derived poses

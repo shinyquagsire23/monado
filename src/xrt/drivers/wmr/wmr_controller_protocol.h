@@ -21,7 +21,7 @@ extern "C" {
 /*!
  * WMR Motion Controller protocol constant and structures
  *
- * @ingroup drv_wmr
+ * @addtogroup drv_wmr
  * @{
  */
 
@@ -75,7 +75,7 @@ struct wmr_controller_input
 /*!
  * WMR Motion Controller protocol helpers
  *
- * @ingroup drv_wmr
+ * @addtogroup drv_wmr
  * @{
  */
 

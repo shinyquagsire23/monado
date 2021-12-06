@@ -20,7 +20,7 @@ extern "C" {
 /*!
  * Defines for the WMR driver.
  *
- * @ingroup drv_wmr
+ * @addtogroup drv_wmr
  * @{
  */
 

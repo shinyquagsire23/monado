@@ -114,7 +114,7 @@ euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_l
 	assert(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8); // Only formats supported
 	auto img_type = frame->format == XRT_FORMAT_L8 ? CV_8UC1 : CV_8UC3;
 	string img_path = path + "/mav0/" + cam_name + "/data/" + std::to_string(ts) + ".png";
-	cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data};
+	cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data, frame->stride};
 	cv::imwrite(img_path, img);
 }
 

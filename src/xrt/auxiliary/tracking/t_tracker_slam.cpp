@@ -100,7 +100,7 @@ public:
 		auto img_type = frame->format == XRT_FORMAT_L8 ? CV_8UC1 : CV_8UC3;
 
 		// Wrap the frame data into a cv::Mat header
-		cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data};
+		cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data, frame->stride};
 
 		// Enable reference counting for a user-allocated cv::Mat (i.e., using existing frame->data)
 		img.u = this->allocate(img.dims, img.size.p, img.type(), img.data, img.step.p, ACCESS_RW,
