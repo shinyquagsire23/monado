@@ -893,17 +893,26 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	bool use_compute = c->settings.use_compute;
 
+	struct u_string_list *required_device_ext_list =
+	    u_string_list_create_with_capacity(ARRAY_SIZE(required_device_extensions));
+	append_all(c, required_device_ext_list, required_device_extensions, ARRAY_SIZE(required_device_extensions));
+
+	struct u_string_list *optional_device_ext_list =
+	    u_string_list_create_with_capacity(ARRAY_SIZE(optional_device_extensions));
+	append_all(c, optional_device_ext_list, optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
+
 	// follow same device selection logic as subsequent calls
-	ret = vk_create_device(                     //
-	    temp_vk,                                //
-	    c->settings.selected_gpu_index,         //
-	    use_compute,                            // compute_only
-	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT,    // global_priority
-	    required_device_extensions,             //
-	    ARRAY_SIZE(required_device_extensions), //
-	    optional_device_extensions,             //
-	    ARRAY_SIZE(optional_device_extensions), //
-	    NULL);                                  // optional_device_features
+	ret = vk_create_device(                  //
+	    temp_vk,                             //
+	    c->settings.selected_gpu_index,      //
+	    use_compute,                         // compute_only
+	    VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT, // global_priority
+	    required_device_ext_list,            //
+	    optional_device_ext_list,            //
+	    NULL);                               // optional_device_features
+
+	u_string_list_destroy(&required_device_ext_list);
+	u_string_list_destroy(&optional_device_ext_list);
 
 	if (ret != VK_SUCCESS) {
 		CVK_ERROR(c, "vk_create_device", "Failed to create VkDevice.", ret);

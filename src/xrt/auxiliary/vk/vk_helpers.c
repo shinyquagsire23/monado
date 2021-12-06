@@ -1231,7 +1231,7 @@ vk_check_extension(struct vk_bundle *vk, VkExtensionProperties *props, uint32_t 
 }
 
 static void
-fill_in_has_extensions(struct vk_bundle *vk, const char **device_extensions, uint32_t device_extension_count)
+fill_in_has_extensions(struct vk_bundle *vk, const char *const *device_extensions, uint32_t device_extension_count)
 {
 	// beginning of GENERATED extension code - do not modify - used by scripts
 	// Reset before filling out.
@@ -1299,12 +1299,9 @@ vk_get_device_ext_props(struct vk_bundle *vk,
 static bool
 vk_build_device_extensions(struct vk_bundle *vk,
                            VkPhysicalDevice physical_device,
-                           const char *const *required_device_extensions,
-                           uint32_t required_device_extension_count,
-                           const char *const *optional_device_extensions,
-                           uint32_t optional_device_extension_count,
-                           const char ***out_device_extensions,
-                           uint32_t *out_device_extension_count)
+                           struct u_string_list *required_device_ext_list,
+                           struct u_string_list *optional_device_ext_list,
+                           struct u_string_list **out_device_ext_list)
 {
 	VkExtensionProperties *props = NULL;
 	uint32_t prop_count = 0;
@@ -1312,27 +1309,35 @@ vk_build_device_extensions(struct vk_bundle *vk,
 		return false;
 	}
 
-	uint32_t max_exts = required_device_extension_count + optional_device_extension_count;
+	uint32_t required_device_ext_count = u_string_list_get_size(required_device_ext_list);
+	const char *const *required_device_exts = u_string_list_get_data(required_device_ext_list);
 
-	const char **device_extensions = U_TYPED_ARRAY_CALLOC(const char *, max_exts);
-
-	for (uint32_t i = 0; i < required_device_extension_count; i++) {
-		const char *ext = required_device_extensions[i];
+	// error out if we don't support one of the required extensions
+	for (uint32_t i = 0; i < required_device_ext_count; i++) {
+		const char *ext = required_device_exts[i];
 		if (!vk_check_extension(vk, props, prop_count, ext)) {
 			U_LOG_E("VkPhysicalDevice does not support required extension %s", ext);
 			free(props);
 			return false;
 		}
 		U_LOG_T("Using required device ext %s", ext);
-		device_extensions[i] = ext;
 	}
 
-	uint32_t device_extension_count = required_device_extension_count;
-	for (uint32_t i = 0; i < optional_device_extension_count; i++) {
-		const char *ext = optional_device_extensions[i];
+
+	*out_device_ext_list = u_string_list_create_from_list(required_device_ext_list);
+
+
+	uint32_t optional_device_ext_count = u_string_list_get_size(optional_device_ext_list);
+	const char *const *optional_device_exts = u_string_list_get_data(optional_device_ext_list);
+
+	for (uint32_t i = 0; i < optional_device_ext_count; i++) {
+		const char *ext = optional_device_exts[i];
 		if (vk_check_extension(vk, props, prop_count, ext)) {
 			U_LOG_D("Using optional device ext %s", ext);
-			device_extensions[device_extension_count++] = ext;
+			int added = u_string_list_append_unique(*out_device_ext_list, ext);
+			if (added == 0) {
+				U_LOG_W("Duplicate device extension %s not added twice", ext);
+			}
 		} else {
 			U_LOG_T("NOT using optional device ext %s", ext);
 			continue;
@@ -1340,12 +1345,11 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	}
 
 	// Fill this out here.
-	fill_in_has_extensions(vk, device_extensions, device_extension_count);
+	fill_in_has_extensions(vk, u_string_list_get_data(*out_device_ext_list),
+	                       u_string_list_get_size(*out_device_ext_list));
 
 	free(props);
 
-	*out_device_extensions = device_extensions;
-	*out_device_extension_count = device_extension_count;
 
 	return true;
 }
@@ -1455,10 +1459,8 @@ vk_create_device(struct vk_bundle *vk,
                  int forced_index,
                  bool only_compute,
                  VkQueueGlobalPriorityEXT global_priority,
-                 const char *const *required_device_extensions,
-                 size_t required_device_extension_count,
-                 const char *const *optional_device_extensions,
-                 size_t optional_device_extension_count,
+                 struct u_string_list *required_device_ext_list,
+                 struct u_string_list *optional_device_ext_list,
                  const struct vk_device_features *optional_device_features)
 {
 	VkResult ret;
@@ -1468,11 +1470,9 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
-	const char **device_extensions;
-	uint32_t device_extension_count;
-	if (!vk_build_device_extensions(vk, vk->physical_device, required_device_extensions,
-	                                required_device_extension_count, optional_device_extensions,
-	                                optional_device_extension_count, &device_extensions, &device_extension_count)) {
+	struct u_string_list *device_ext_list = NULL;
+	if (!vk_build_device_extensions(vk, vk->physical_device, required_device_ext_list, optional_device_ext_list,
+	                                &device_ext_list)) {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
@@ -1548,8 +1548,8 @@ vk_create_device(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 	    .queueCreateInfoCount = 1,
 	    .pQueueCreateInfos = &queue_create_info,
-	    .enabledExtensionCount = device_extension_count,
-	    .ppEnabledExtensionNames = device_extensions,
+	    .enabledExtensionCount = u_string_list_get_size(device_ext_list),
+	    .ppEnabledExtensionNames = u_string_list_get_data(device_ext_list),
 	    .pEnabledFeatures = &enabled_features,
 	};
 
@@ -1568,7 +1568,7 @@ vk_create_device(struct vk_bundle *vk,
 
 	ret = vk->vkCreateDevice(vk->physical_device, &device_create_info, NULL, &vk->device);
 
-	free(device_extensions);
+	u_string_list_destroy(&device_ext_list);
 
 	if (ret != VK_SUCCESS) {
 		VK_DEBUG(vk, "vkCreateDevice: %s (%d)", vk_result_string(ret), ret);

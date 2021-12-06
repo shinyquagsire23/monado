@@ -166,16 +166,14 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 
 	// No other way then to try to see if realtime is available.
 	for (size_t i = 0; i < ARRAY_SIZE(prios); i++) {
-		ret = vk_create_device(                                          //
-		    vk,                                                          //
-		    vk_args->selected_gpu_index,                                 //
-		    only_compute_queue,                                          // compute_only
-		    prios[i],                                                    // global_priority
-		    u_string_list_get_data(vk_args->required_device_extensions), //
-		    u_string_list_get_size(vk_args->required_device_extensions), //
-		    u_string_list_get_data(vk_args->optional_device_extensions), //
-		    u_string_list_get_size(vk_args->optional_device_extensions), //
-		    &device_features);                                           // optional_device_features
+		ret = vk_create_device(                  //
+		    vk,                                  //
+		    vk_args->selected_gpu_index,         //
+		    only_compute_queue,                  // compute_only
+		    prios[i],                            // global_priority
+		    vk_args->required_device_extensions, //
+		    vk_args->optional_device_extensions, //
+		    &device_features);                   // optional_device_features
 
 		// All ok!
 		if (ret == VK_SUCCESS) {

@@ -22,6 +22,7 @@
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_handles.h"
 #include "util/u_logging.h"
+#include "util/u_string_list.h"
 #include "os/os_threading.h"
 
 #ifdef __cplusplus
@@ -433,10 +434,8 @@ vk_create_device(struct vk_bundle *vk,
                  int forced_index,
                  bool only_compute,
                  VkQueueGlobalPriorityEXT global_priorty,
-                 const char *const *required_device_extensions,
-                 size_t required_device_extension_count,
-                 const char *const *optional_device_extensions,
-                 size_t optional_device_extension_count,
+                 struct u_string_list *required_device_ext_list,
+                 struct u_string_list *optional_device_ext_list,
                  const struct vk_device_features *optional_device_features);
 
 /*!
