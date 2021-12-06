@@ -325,6 +325,8 @@ lib_drv_wmr = static_library(
 		'wmr/wmr_protocol.h',
 		'wmr/wmr_controller_protocol.c',
 		'wmr/wmr_controller_protocol.h',
+		'wmr/wmr_source.c',
+		'wmr/wmr_source.h',
 	) + wmr_camera_files,
 	include_directories: [
 		xrt_include,

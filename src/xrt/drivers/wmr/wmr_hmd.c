@@ -34,6 +34,7 @@
 #include "wmr_common.h"
 #include "wmr_config_key.h"
 #include "wmr_protocol.h"
+#include "wmr_source.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -843,16 +844,15 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 		wh->hid_control_dev = NULL;
 	}
 
-	if (wh->camera != NULL) {
-		wmr_camera_free(wh->camera);
-	}
+	// Destroy SLAM source and tracker
+	xrt_frame_context_destroy_nodes(&wh->slam.xfctx);
 
 	// Destroy the fusion.
 	m_imu_3dof_close(&wh->fusion.i3dof);
 
 	os_mutex_destroy(&wh->fusion.mutex);
 
-	free(wh);
+	u_device_free(&wh->base);
 }
 
 static bool
@@ -1012,7 +1012,7 @@ struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
-               struct wmr_camera *cam,
+               struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level)
 {
 	enum u_device_alloc_flags flags =
@@ -1067,12 +1067,6 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		return NULL;
 	}
 
-	wh->slam.enabled = slam_enabled;
-	wh->use_slam_tracker = slam_enabled;
-
-	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
-	wh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
-
 	// Setup input.
 	wh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
@@ -1083,6 +1077,14 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		wh = NULL;
 		return NULL;
 	}
+
+	// Setup data source
+	wh->slam.source = wmr_source_create(&wh->slam.xfctx, dev_holo, wh->config);
+	wh->slam.enabled = slam_enabled;
+	wh->use_slam_tracker = slam_enabled;
+
+	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
+	wh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 
 	/* Now that we have the config loaded, iterate the map of known headsets and see if we have
 	 * an entry for this specific headset (otherwise the generic entry will be used)
@@ -1223,8 +1225,17 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	hololens_sensors_enable_imu(wh);
 
 	//! @todo Initialize SLAM tracker
+	struct xrt_slam_sinks *sinks = NULL;
 
-	//! @todo Stream data source into sinks (if populated)
+	// Stream data source into sinks (if populated)
+	bool stream_started = xrt_fs_slam_stream_start(wh->slam.source, sinks);
+	if (!stream_started) {
+		//! @todo Could reach this due to !XRT_HAVE_LIBUSB but the HMD should keep working
+		WMR_WARN(wh, "Failed to start WMR source");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
+	}
 
 	// Hand over hololens sensor device to reading thread.
 	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);

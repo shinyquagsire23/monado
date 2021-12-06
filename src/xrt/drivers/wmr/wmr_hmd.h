@@ -14,6 +14,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_frame.h"
 #include "xrt/xrt_prober.h"
 #include "os/os_threading.h"
 #include "math/m_imu_3dof.h"
@@ -82,8 +83,6 @@ struct wmr_hmd
 	//! Packet reading thread.
 	struct os_thread_helper oth;
 
-	struct wmr_camera *camera;
-
 	enum u_logging_level log_level;
 
 	/*!
@@ -131,6 +130,12 @@ struct wmr_hmd
 
 	struct
 	{
+		//! Source of video/IMU data for SLAM
+		struct xrt_fs *source;
+
+		//! Context for @ref source
+		struct xrt_frame_context xfctx;
+
 		//! Set at start. Whether the tracker was initialized.
 		bool enabled;
 	} slam;
@@ -160,7 +165,7 @@ struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
-               struct wmr_camera *cam,
+               struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level);
 
 #define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)

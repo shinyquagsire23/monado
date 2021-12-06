@@ -96,6 +96,10 @@ struct wmr_camera
 
 	struct u_sink_debug debug_sinks[2];
 
+	bool submit_frames;                //!< Whether to push frames to left/right sinks
+	struct xrt_frame_sink *left_sink;  //!< Downstream sinks to push left tracking frames to
+	struct xrt_frame_sink *right_sink; //!< Downstream sinks to push right tracking frames to
+
 	enum u_logging_level log_level;
 };
 
@@ -244,7 +248,6 @@ set_active(struct wmr_camera *cam, bool active)
 	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
 
-
 static void LIBUSB_CALL
 img_xfer_cb(struct libusb_transfer *xfer)
 {
@@ -311,7 +314,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	uint16_t unknown16 = read16(&src);
 	uint16_t unknown16_2 = read16(&src);
 
-	WMR_CAM_DEBUG(
+	WMR_CAM_TRACE(
 	    cam, "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64 " unknown %u %u",
 	    frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2);
 
@@ -326,19 +329,40 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	              cam->frame_sequence, exposure);
 
 	xf->source_sequence = cam->frame_sequence;
-	xf->timestamp = xf->source_timestamp = frame_start_ts;
+	xf->timestamp = frame_start_ts + delta / 2;
+	xf->source_timestamp = frame_start_ts;
 
 	cam->last_frame_ts = frame_start_ts;
 	cam->last_seq = seq;
 
-	/* Exposure of 0 is a dark frame for controller tracking */
+	/* Exposure of 0 is a dark frame for controller tracking (usually ~60fps) */
 	int sink_index = (exposure == 0) ? 1 : 0;
 
 	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
 		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
 	}
 
-	/* TODO: Push frame for tracking */
+	// Push to sinks
+	bool tracking_frame = sink_index == 0;
+	if (tracking_frame && cam->submit_frames) {
+		// Tracking frames usually come at ~30fps
+		struct xrt_frame *xf_left = NULL;
+		struct xrt_frame *xf_right = NULL;
+		u_frame_create_roi(xf, cam->configs[0].roi, &xf_left);
+		u_frame_create_roi(xf, cam->configs[1].roi, &xf_right);
+
+		if (cam->left_sink != NULL) {
+			xrt_sink_push_frame(cam->left_sink, xf_left);
+		}
+
+		if (cam->right_sink != NULL) {
+			xrt_sink_push_frame(cam->right_sink, xf_right);
+		}
+
+		xrt_frame_reference(&xf_left, NULL);
+		xrt_frame_reference(&xf_right, NULL);
+	}
+
 	xrt_frame_reference(&xf, NULL);
 
 	if (cam->last_exposure != cam->debug_exposure || cam->last_gain != cam->debug_gain) {
@@ -366,7 +390,10 @@ out:
  */
 
 struct wmr_camera *
-wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_level)
+wmr_camera_open(struct xrt_prober_device *dev_holo,
+                struct xrt_frame_sink *left_sink,
+                struct xrt_frame_sink *right_sink,
+                enum u_logging_level log_level)
 {
 	struct wmr_camera *cam = calloc(1, sizeof(struct wmr_camera));
 	int res, i;
@@ -416,6 +443,12 @@ wmr_camera_open(struct xrt_prober_device *dev_holo, enum u_logging_level log_lev
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
 	u_var_add_u8(cam, &cam->debug_gain, "Gain");
 	u_var_add_u8(cam, &cam->debug_exposure, "Exposure * 200");
+	u_var_add_bool(cam, &cam->submit_frames, "Submit frames");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
+
+	cam->left_sink = left_sink;
+	cam->right_sink = right_sink;
 
 	return cam;
 

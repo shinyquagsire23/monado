@@ -196,9 +196,7 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	struct wmr_camera *cam = wmr_camera_open(dev_holo, log_level);
-
-	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, cam, log_level);
+	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, dev_holo, log_level);
 	if (!p) {
 		U_LOG_IFL_E(log_level, "Failed to create WMR HMD device.");
 		return -1;
