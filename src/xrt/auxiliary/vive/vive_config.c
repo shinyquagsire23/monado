@@ -413,7 +413,8 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 	           strcmp(d->firmware.model_number, "Vive. MV") == 0) {
 		d->variant = VIVE_VARIANT_VIVE;
 		VIVE_DEBUG(d, "Found HTC Vive HMD");
-	} else if (strcmp(d->firmware.model_number, "Vive_Pro MV") == 0) {
+	} else if (strcmp(d->firmware.model_number, "Vive_Pro MV") == 0 ||
+	           strcmp(d->firmware.model_number, "VIVE_Pro MV") == 0) {
 		d->variant = VIVE_VARIANT_PRO;
 		VIVE_DEBUG(d, "Found HTC Vive Pro HMD");
 	} else {
