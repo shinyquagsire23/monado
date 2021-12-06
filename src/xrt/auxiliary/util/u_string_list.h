@@ -85,6 +85,19 @@ int
 u_string_list_append_unique(struct u_string_list *usl, const char *str);
 
 /*!
+ * @brief Check if the string is in the list.
+ *
+ * (Comparing string contents, not just pointers)
+ *
+ * @param usl self pointer
+ * @param str a non-null, null-terminated string.
+ *
+ * @return true if the string is in the list.
+ */
+bool
+u_string_list_contains(struct u_string_list *usl, const char *str);
+
+/*!
  * @brief Destroy a string list.
  *
  * Performs null checks and sets your pointer to zero.

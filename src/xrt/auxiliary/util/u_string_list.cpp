@@ -98,6 +98,12 @@ u_string_list_append_unique(struct u_string_list *usl, const char *str)
 	}
 }
 
+bool
+u_string_list_contains(struct u_string_list *usl, const char *str)
+{
+	return usl->list.contains(str);
+}
+
 void
 u_string_list_destroy(struct u_string_list **list_ptr)
 {

@@ -107,6 +107,30 @@ public:
 			push_back(elt);
 		}
 	}
+
+	/*!
+	 * @brief Check if the string is in the list.
+	 *
+	 * (Comparing string contents, not just pointers)
+	 *
+	 * @param str a non-null, null-terminated string.
+	 *
+	 * @return true if the string is in the list.
+	 */
+	bool
+	contains(const char *str)
+	{
+		if (str == nullptr) {
+			throw std::invalid_argument("Cannot pass a null pointer");
+		}
+		std::string needle{str};
+		auto it = std::find_if(vec.begin(), vec.end(), [needle](const char *elt) { return needle == elt; });
+		if (it != vec.end()) {
+			return true;
+		}
+		return false;
+	}
+
 	/*!
 	 * @brief Append a new string to the list if it doesn't match any existing string.
 	 *
