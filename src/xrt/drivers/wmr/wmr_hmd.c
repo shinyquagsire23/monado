@@ -30,6 +30,8 @@
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 
+#include "tracking/t_tracking.h"
+
 #include "wmr_hmd.h"
 #include "wmr_common.h"
 #include "wmr_config_key.h"
@@ -790,7 +792,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
                               struct xrt_space_relation *out_relation)
 {
 	struct wmr_hmd *wh = wmr_hmd(xdev);
-	//! @todo: Fill out_relation with SLAM pose
+	xrt_tracked_slam_get_tracked_pose(wh->slam.tracker, at_timestamp_ns, out_relation);
 
 	int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
@@ -1020,6 +1022,28 @@ wmr_hmd_switch_tracker(void *wh_ptr)
 	}
 }
 
+static struct xrt_slam_sinks *
+wmr_hmd_slam_track(struct wmr_hmd *wh)
+{
+	struct xrt_slam_sinks *sinks = NULL;
+
+#ifdef XRT_HAVE_SLAM
+	int create_status = t_slam_create(&wh->slam.xfctx, &wh->slam.tracker, &sinks);
+	if (create_status != 0) {
+		return NULL;
+	}
+
+	int start_status = t_slam_start(wh->slam.tracker);
+	if (start_status != 0) {
+		return NULL;
+	}
+
+	WMR_DEBUG(wh, "WMR HMD SLAM tracker successfully started");
+#endif
+
+	return sinks;
+}
+
 struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
@@ -1236,8 +1260,17 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Switch on IMU on the HMD.
 	hololens_sensors_enable_imu(wh);
 
-	//! @todo Initialize SLAM tracker
+	// Initialize SLAM tracker
 	struct xrt_slam_sinks *sinks = NULL;
+	if (wh->slam.enabled) {
+		sinks = wmr_hmd_slam_track(wh);
+		if (sinks == NULL) {
+			WMR_WARN(wh, "Unable to setup the SLAM tracker");
+			wmr_hmd_destroy(&wh->base);
+			wh = NULL;
+			return NULL;
+		}
+	}
 
 	// Stream data source into sinks (if populated)
 	bool stream_started = xrt_fs_slam_stream_start(wh->slam.source, sinks);

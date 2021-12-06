@@ -401,6 +401,11 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	cam->log_level = log_level;
 	cam->debug_gain = DEFAULT_GAIN;
 	cam->debug_exposure = DEFAULT_EXPOSURE / UI_EXPOSURE_STEP_SIZE;
+	//! @todo downstream sinks are currently being used for SLAM and they need the
+	//! exposure and gain to be well set by the user before receiving frames. So
+	//! we don't submit frames right away. It would be best if the exposure and
+	//! gain were automatically set.
+	cam->submit_frames = false;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");

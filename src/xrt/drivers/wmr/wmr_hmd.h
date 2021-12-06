@@ -136,6 +136,9 @@ struct wmr_hmd
 		//! Context for @ref source
 		struct xrt_frame_context xfctx;
 
+		//! SLAM tracker
+		struct xrt_tracked_slam *tracker;
+
 		//! Set at start. Whether the tracker was initialized.
 		bool enabled;
 	} slam;
