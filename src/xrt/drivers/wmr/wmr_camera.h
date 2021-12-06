@@ -36,8 +36,17 @@ bool
 wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *configs, int config_count);
 bool
 wmr_camera_stop(struct wmr_camera *cam);
+
+/*!
+ * Set manual exposure and gain values
+ *
+ * @param cam Camera container
+ * @param camera_id Which camera to affect
+ * @param exposure Time the shutter is open, observed values 60-6000.
+ * @param gain Amplification of the analog signal, observed values: 16-255.
+ */
 int
-wmr_camera_set_gain(struct wmr_camera *cam, uint8_t camera_id, uint8_t exposure);
+wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t exposure, uint8_t gain);
 
 #else
 
@@ -46,7 +55,7 @@ wmr_camera_set_gain(struct wmr_camera *cam, uint8_t camera_id, uint8_t exposure)
 #define wmr_camera_free(cam)
 #define wmr_camera_start(cam, cam_configs, n_configs) false
 #define wmr_camera_stop(cam) false
-#define wmr_camera_set_gain(cam, camera_id, exposure) -1
+#define wmr_camera_set_exposure_gain(cam, camera_id, exposure, gain) -1
 
 #endif
 
