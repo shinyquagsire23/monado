@@ -549,9 +549,12 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 
 	if (u_json_get(json, "model_number")) {
 		JSON_STRING(json, "model_number", d->firmware.model_number);
-	} else {
+	} else if (u_json_get(json, "model_name")) {
 		JSON_STRING(json, "model_name", d->firmware.model_number);
+	} else {
+		VIVE_ERROR(d, "Could not find either 'model_number' or 'model_name' fields!");
 	}
+
 
 	VIVE_DEBUG(d, "Parsing model number: %s", d->firmware.model_number);
 
@@ -576,7 +579,8 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 		d->variant = CONTROLLER_TRACKER_GEN2;
 		VIVE_DEBUG(d, "Found Gen 2 tracker.");
 	} else {
-		VIVE_ERROR(d, "Failed to parse controller variant");
+		VIVE_ERROR(d, "Failed to parse controller variant!\n\tfirmware.model_[number|name]: '%s'",
+		           d->firmware.model_number);
 	}
 
 	switch (d->variant) {
