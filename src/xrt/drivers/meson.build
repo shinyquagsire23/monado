@@ -150,8 +150,8 @@ lib_drv_psvr = static_library(
 	build_by_default: 'psvr' in drivers,
 )
 
-lib_drv_rs = static_library(
-	'drv_rs',
+lib_drv_realsense = static_library(
+	'drv_realsense',
 	files(
 		'realsense/rs_ddev.c',
 		'realsense/rs_hdev.c',
@@ -160,7 +160,7 @@ lib_drv_rs = static_library(
 		'realsense/rs_prober.c',
 	),
 	include_directories: [xrt_include,cjson_include],
-	dependencies: [aux, rs],
+	dependencies: [aux, realsense],
 	build_by_default: 'rs' in drivers,
 )
 

@@ -138,16 +138,16 @@ if(XRT_BUILD_DRIVER_PSVR)
 	list(APPEND ENABLED_HEADSET_DRIVERS psvr)
 endif()
 
-if(XRT_BUILD_DRIVER_RS)
+if(XRT_BUILD_DRIVER_REALSENSE)
 	add_library(
-		drv_rs STATIC
+		drv_realsense STATIC
 		realsense/rs_ddev.c
 		realsense/rs_hdev.c
 		realsense/rs_prober.c
 		realsense/rs_driver.h
 		realsense/rs_interface.h
 		)
-	target_link_libraries(drv_rs PRIVATE xrt-interfaces realsense2::realsense2 aux_util)
+	target_link_libraries(drv_realsense PRIVATE xrt-interfaces realsense2::realsense2 aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS rs)
 endif()
 

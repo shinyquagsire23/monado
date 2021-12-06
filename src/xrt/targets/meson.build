@@ -44,9 +44,9 @@ if 'psvr' in drivers
 	driver_libs += [lib_drv_psvr]
 endif
 
-if 'rs' in drivers
-	driver_libs += [lib_drv_rs]
-	driver_deps += [rs]
+if 'realsense' in drivers
+	driver_libs += [lib_drv_realsense]
+	driver_deps += [realsense]
 endif
 
 if 'v4l2' in drivers

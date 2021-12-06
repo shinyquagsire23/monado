@@ -62,7 +62,7 @@
 #include "illixr/illixr_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_RS
+#ifdef XRT_BUILD_DRIVER_REALSENSE
 #include "realsense/rs_interface.h"
 #endif
 
@@ -179,7 +179,7 @@ xrt_auto_prober_creator target_auto_list[] = {
     illixr_create_auto_prober,
 #endif
 
-#ifdef XRT_BUILD_DRIVER_RS
+#ifdef XRT_BUILD_DRIVER_REALSENSE
     rs_create_auto_prober,
 #endif
 

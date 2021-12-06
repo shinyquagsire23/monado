@@ -31,7 +31,7 @@
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 #endif
 
-#ifdef XRT_BUILD_DRIVER_RS
+#ifdef XRT_BUILD_DRIVER_REALSENSE
 #include "util/u_debug.h"
 DEBUG_GET_ONCE_NUM_OPTION(rs_source_index, "RS_SOURCE_INDEX", -1)
 #endif
@@ -275,7 +275,7 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 
 	// SLAM tracker with RealSense frameserver
 
-#ifdef XRT_BUILD_DRIVER_RS
+#ifdef XRT_BUILD_DRIVER_REALSENSE
 	if (debug_get_num_option_rs_source_index() != -1) {
 		struct xrt_slam_sinks empty_sinks = {0};
 		struct xrt_slam_sinks *sinks = &empty_sinks;

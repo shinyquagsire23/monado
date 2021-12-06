@@ -57,30 +57,30 @@ glslangValidator = find_program('glslangValidator')
 pthreads = cc.find_library('pthread', required: true)
 rt = cc.find_library('rt', required: true)
 
-avcodec  = dependency('libavcodec', required: false)
-egl      = dependency('egl', required: get_option('egl'))
-egl      = egl.partial_dependency(includes: true)
-eigen3   = dependency('eigen3')
-libjpeg  = dependency('libjpeg', required: false)
-libusb   = dependency('libusb-1.0', required: false)
-opengl   = dependency('gl', required: get_option('opengl'))
-opengles = dependency('glesv2', required: get_option('opengles'))
-rs       = dependency('realsense2', required: false)
-sdl2     = dependency('sdl2', required: get_option('gui'))
-udev     = dependency('libudev', required: false)
-libuvc   = dependency('libuvc', required: false)
-vulkan   = dependency('vulkan', required: true)
-zlib     = dependency('zlib', required: false)
-survive  = dependency('survive', required: false)
-dbus     = dependency('dbus-1', required: get_option('dbus'))
-systemd  = dependency('libsystemd', required: get_option('systemd'))
-libbsd   = dependency('libbsd', required: get_option('libbsd'))
-gst      = dependency('gstreamer-1.0', required: false)
-gst_app  = dependency('gstreamer-app-1.0', required: false)
-gst_video= dependency('gstreamer-video-1.0', required: false)
-depthai  = dependency('depthai', method: 'cmake', modules : ['depthai::core', 'depthai::opencv', 'XLink'], required: false)
+avcodec     = dependency('libavcodec', required: false)
+egl         = dependency('egl', required: get_option('egl'))
+egl         = egl.partial_dependency(includes: true)
+eigen3      = dependency('eigen3')
+libjpeg     = dependency('libjpeg', required: false)
+libusb      = dependency('libusb-1.0', required: false)
+opengl      = dependency('gl', required: get_option('opengl'))
+opengles    = dependency('glesv2', required: get_option('opengles'))
+realsense   = dependency('realsense2', required: false)
+sdl2        = dependency('sdl2', required: get_option('gui'))
+udev        = dependency('libudev', required: false)
+libuvc      = dependency('libuvc', required: false)
+vulkan      = dependency('vulkan', required: true)
+zlib        = dependency('zlib', required: false)
+survive     = dependency('survive', required: false)
+dbus        = dependency('dbus-1', required: get_option('dbus'))
+systemd     = dependency('libsystemd', required: get_option('systemd'))
+libbsd      = dependency('libbsd', required: get_option('libbsd'))
+gst         = dependency('gstreamer-1.0', required: false)
+gst_app     = dependency('gstreamer-app-1.0', required: false)
+gst_video   = dependency('gstreamer-video-1.0', required: false)
+depthai     = dependency('depthai', method: 'cmake', modules : ['depthai::core', 'depthai::opencv', 'XLink'], required: false)
 onnxruntime = dependency('libonnxruntime', required: false)
-percetto = dependency('percetto', required: false)
+percetto    = dependency('percetto', required: false)
 
 gst_found = gst.found() and gst_app.found() and gst_video.found()
 
@@ -219,9 +219,9 @@ if zlib.found() and ('auto' in drivers or 'vive' in drivers)
 	endif
 endif
 
-if rs.found() and ('auto' in drivers or 'rs' in drivers)
-	if 'rs' not in drivers
-		drivers += ['rs']
+if realsense.found() and ('auto' in drivers or 'realsense' in drivers)
+	if 'realsense' not in drivers
+		drivers += ['realsense']
 	endif
 endif
 

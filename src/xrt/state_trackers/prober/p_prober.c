@@ -31,7 +31,7 @@
 #include "euroc/euroc_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_RS
+#ifdef XRT_BUILD_DRIVER_REALSENSE
 #include "realsense/rs_interface.h"
 #endif
 
@@ -1006,7 +1006,7 @@ p_open_video_device(struct xrt_prober *xp,
 	}
 #endif
 
-#if defined(XRT_BUILD_DRIVER_RS)
+#if defined(XRT_BUILD_DRIVER_REALSENSE)
 	int rs_source_index = debug_get_num_option_rs_source_index();
 	if (rs_source_index != -1) {
 		*out_xfs = rs_source_create(xfctx, rs_source_index);

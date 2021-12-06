@@ -59,8 +59,8 @@ if(XRT_BUILD_DRIVER_PSVR)
 	target_link_libraries(target_lists PRIVATE drv_psvr)
 endif()
 
-if(XRT_BUILD_DRIVER_RS)
-	target_link_libraries(target_lists PRIVATE drv_rs)
+if(XRT_BUILD_DRIVER_REALSENSE)
+	target_link_libraries(target_lists PRIVATE drv_realsense)
 endif()
 
 if(XRT_BUILD_DRIVER_REMOTE)

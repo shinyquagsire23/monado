@@ -36,7 +36,7 @@ PREDEFINED             = VK_USE_PLATFORM_XCB_KHR \
                          XR_USE_GRAPHICS_API_VULKAN \
                          XR_USE_PLATFORM_XLIB \
                          XR_USE_TIMESPEC \
-                         XRT_BUILD_DRIVER_RS \
+                         XRT_BUILD_DRIVER_REALSENSE \
                          XRT_DOXYGEN \
                          XRT_FEATURE_SERVICE \
                          XRT_HAVE_JPEG \
