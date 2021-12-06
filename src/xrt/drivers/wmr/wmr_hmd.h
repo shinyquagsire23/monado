@@ -19,6 +19,7 @@
 #include "math/m_imu_3dof.h"
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_var.h"
 
 #include "wmr_protocol.h"
 #include "wmr_config.h"
@@ -130,8 +131,22 @@ struct wmr_hmd
 
 	struct
 	{
-		bool fusion;
-		bool misc;
+		//! Set at start. Whether the tracker was initialized.
+		bool enabled;
+	} slam;
+
+	//! Whether to use the @ref slam tracker or fallback to the @ref fusion 3dof tracker
+	bool use_slam_tracker;
+
+	//! Last tracked pose
+	struct xrt_pose pose;
+
+	//! Additional offset to apply to `pose`
+	struct xrt_pose offset;
+
+	struct
+	{
+		struct u_var_button switch_tracker_btn;
 	} gui;
 };
 

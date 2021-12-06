@@ -11,6 +11,7 @@
  * @ingroup drv_wmr
  */
 
+#include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_device.h"
 
@@ -41,6 +42,9 @@
 #ifndef XRT_OS_WINDOWS
 #include <unistd.h> // for sleep()
 #endif
+
+//! Specifies whether the user wants to use a SLAM tracker.
+DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
@@ -715,10 +719,10 @@ wmr_hmd_update_inputs(struct xrt_device *xdev)
 }
 
 static void
-wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
-                         enum xrt_input_name name,
-                         uint64_t at_timestamp_ns,
-                         struct xrt_space_relation *out_relation)
+wmr_hmd_get_3dof_tracked_pose(struct xrt_device *xdev,
+                              enum xrt_input_name name,
+                              uint64_t at_timestamp_ns,
+                              struct xrt_space_relation *out_relation)
 {
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 
@@ -730,10 +734,9 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	// Variables needed for prediction.
 	uint64_t last_imu_timestamp_ns = 0;
 	struct xrt_space_relation relation = {0};
-	relation.relation_flags = (enum xrt_space_relation_flags)( //
-	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |        //
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |             //
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
+	relation.pose.position = wh->pose.position;
+	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
 
 	// Get data while holding the lock.
 	os_mutex_lock(&wh->fusion.mutex);
@@ -752,6 +755,60 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	double prediction_s = time_ns_to_s(prediction_ns);
 
 	m_predict_relation(&relation, prediction_s, out_relation);
+	wh->pose = out_relation->pose;
+}
+
+//! Specific pose corrections for Basalt and a WMR headset
+XRT_MAYBE_UNUSED static inline struct xrt_pose
+wmr_hmd_correct_pose_from_basalt(struct xrt_pose pose)
+{
+	// Correct swapped axes
+	pose.position.y = -pose.position.y;
+	pose.position.z = -pose.position.z;
+	pose.orientation.y = -pose.orientation.y;
+	pose.orientation.z = -pose.orientation.z;
+	return pose;
+}
+
+static void
+wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
+                              enum xrt_input_name name,
+                              uint64_t at_timestamp_ns,
+                              struct xrt_space_relation *out_relation)
+{
+	struct wmr_hmd *wh = wmr_hmd(xdev);
+	//! @todo: Fill out_relation with SLAM pose
+
+	int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	bool pose_tracked = out_relation->relation_flags & pose_bits;
+
+	if (pose_tracked) {
+#if defined(XRT_HAVE_BASALT_SLAM)
+		wh->pose = wmr_hmd_correct_pose_from_basalt(out_relation->pose);
+#else
+		wh->pose = out_relation->pose;
+#endif
+	}
+
+	out_relation->pose = wh->pose;
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+}
+
+static void
+wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
+                         enum xrt_input_name name,
+                         uint64_t at_timestamp_ns,
+                         struct xrt_space_relation *out_relation)
+{
+	struct wmr_hmd *wh = wmr_hmd(xdev);
+	if (wh->slam.enabled && wh->use_slam_tracker) {
+		wmr_hmd_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
+	} else {
+		wmr_hmd_get_3dof_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
+	}
+	math_pose_transform(&wh->offset, &out_relation->pose, &out_relation->pose);
 }
 
 static void
@@ -933,6 +990,24 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 	*out_angle_up = -atanf(tanangle_up);
 }
 
+static void
+wmr_hmd_switch_tracker(void *wh_ptr)
+{
+	struct wmr_hmd *wh = (struct wmr_hmd *)wh_ptr;
+	wh->use_slam_tracker = !wh->use_slam_tracker;
+	struct u_var_button *btn = &wh->gui.switch_tracker_btn;
+
+	if (wh->use_slam_tracker) { // Use SLAM
+		snprintf(btn->label, sizeof(btn->label), "Switch to 3DoF Tracking");
+	} else { // Use 3DoF
+		snprintf(btn->label, sizeof(btn->label), "Switch to SLAM Tracking");
+		os_mutex_lock(&wh->fusion.mutex);
+		m_imu_3dof_reset(&wh->fusion.i3dof);
+		wh->fusion.i3dof.rot = wh->pose.orientation;
+		os_mutex_unlock(&wh->fusion.mutex);
+	}
+}
+
 struct xrt_device *
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
@@ -959,12 +1034,20 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	wh->log_level = log_level;
 
+	// Decide whether to initialize the SLAM tracker
+	bool slam_wanted = debug_get_bool_option_wmr_slam();
+#ifdef XRT_HAVE_SLAM
+	bool slam_supported = true;
+#else
+	bool slam_supported = false;
+#endif
+	bool slam_enabled = slam_supported && slam_wanted;
+
 	wh->base.orientation_tracking_supported = true;
-	wh->base.position_tracking_supported = false;
+	wh->base.position_tracking_supported = slam_enabled;
 	wh->base.hand_tracking_supported = false;
 	wh->hid_hololens_sensors_dev = hid_holo;
 	wh->hid_control_dev = hid_ctrl;
-	wh->camera = cam;
 
 	// Mutex before thread.
 	ret = os_mutex_init(&wh->fusion.mutex);
@@ -983,6 +1066,12 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		wh = NULL;
 		return NULL;
 	}
+
+	wh->slam.enabled = slam_enabled;
+	wh->use_slam_tracker = slam_enabled;
+
+	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
+	wh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 
 	// Setup input.
 	wh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
@@ -1020,11 +1109,34 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
-	// Setup variable tracker.
+	// Setup UI
 	u_var_add_root(wh, "WMR HMD", true);
-	u_var_add_gui_header(wh, &wh->gui.fusion, "3DoF Fusion");
+
+	u_var_add_gui_header(wh, NULL, "Tracking");
+	if (wh->slam.enabled) {
+		wh->gui.switch_tracker_btn.cb = wmr_hmd_switch_tracker;
+		wh->gui.switch_tracker_btn.ptr = wh;
+		u_var_add_button(wh, &wh->gui.switch_tracker_btn, "Switch to 3DoF Tracking");
+	}
+	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
+	u_var_add_pose(wh, &wh->offset, "Pose Offset");
+
+	u_var_add_gui_header(wh, NULL, "SLAM Tracking");
+	if (wh->slam.enabled) {
+		u_var_add_ro_text(wh, "Enabled", "Tracker status");
+	} else if (slam_supported && !slam_wanted) {
+		u_var_add_ro_text(wh, "Disabled by the user (WMR_SLAM=false)", "Tracker status");
+	} else if (slam_wanted && !slam_supported) {
+		u_var_add_ro_text(wh, "Unavailable (not built)", "Tracker status");
+	} else {
+		u_var_add_ro_text(wh, "Disabled", "Tracker status");
+		assert(false && "unexpected branch taken");
+	}
+
+	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
-	u_var_add_gui_header(wh, &wh->gui.misc, "Misc");
+
+	u_var_add_gui_header(wh, NULL, "Misc");
 	u_var_add_log_level(wh, &wh->log_level, "log_level");
 
 	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses,
@@ -1110,12 +1222,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Switch on IMU on the HMD.
 	hololens_sensors_enable_imu(wh);
 
-	if (wh->camera != NULL && !wmr_camera_start(wh->camera, wh->config.cameras, wh->config.n_cameras)) {
-		WMR_ERROR(wh, "Activation of HMD cameras failed");
-		wmr_hmd_destroy(&wh->base);
-		wh = NULL;
-		return NULL;
-	}
+	//! @todo Initialize SLAM tracker
+
+	//! @todo Stream data source into sinks (if populated)
 
 	// Hand over hololens sensor device to reading thread.
 	ret = os_thread_helper_start(&wh->oth, wmr_run_thread, wh);
