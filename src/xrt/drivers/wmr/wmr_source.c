@@ -304,3 +304,34 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 
 	return xfs;
 }
+
+void
+wmr_source_push_imu_packet(struct xrt_fs *xfs, uint64_t ts[4], struct xrt_vec3 accels[4], struct xrt_vec3 gyros[4])
+{
+	struct wmr_source *ws = wmr_source_from_xfs(xfs);
+
+	if (ws->average_imus) {
+		struct xrt_vec3 a = {0, 0, 0};
+		struct xrt_vec3 g = {0, 0, 0};
+		for (int i = 0; i < 4; i++) {
+			math_vec3_accum(&accels[i], &a);
+			math_vec3_accum(&gyros[i], &g);
+		}
+		math_vec3_scalar_mul(1.0f / 4, &a);
+		math_vec3_scalar_mul(1.0f / 4, &g);
+
+		timepoint_ns t = (ts[3] + ts[0]) / 2 * WMR_MS_HOLOLENS_NS_PER_TICK;
+		struct xrt_vec3_f64 accel = {a.x, a.y, a.z};
+		struct xrt_vec3_f64 gyro = {g.x, g.y, g.z};
+		struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = accel, .gyro_rad_secs = gyro};
+		xrt_sink_push_imu(&ws->imu_sink, &sample);
+	} else {
+		for (int i = 0; i < 4; i++) {
+			timepoint_ns t = ts[i] * WMR_MS_HOLOLENS_NS_PER_TICK;
+			struct xrt_vec3_f64 accel = {accels[i].x, accels[i].y, accels[i].z};
+			struct xrt_vec3_f64 gyro = {gyros[i].x, gyros[i].y, gyros[i].z};
+			struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = accel, .gyro_rad_secs = gyro};
+			xrt_sink_push_imu(&ws->imu_sink, &sample);
+		}
+	}
+}

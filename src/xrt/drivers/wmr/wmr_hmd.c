@@ -272,31 +272,43 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 
 		struct xrt_vec3 raw_gyro[4];
 		struct xrt_vec3 raw_accel[4];
+		struct xrt_vec3 calib_gyro[4];
+		struct xrt_vec3 calib_accel[4];
 
 		for (int i = 0; i < 4; i++) {
-			struct xrt_vec3 raw_sample, sample;
-			vec3_from_hololens_gyro(wh->packet.gyro, i, &raw_sample);
-			math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, &raw_sample, &sample);
-			math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, &sample);
-			math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, &sample, &raw_gyro[i]);
+			struct xrt_vec3 *rg = &raw_gyro[i];
+			struct xrt_vec3 *cg = &calib_gyro[i];
+			vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
+			math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
+			math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
+			math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, cg, cg);
 
-			vec3_from_hololens_accel(wh->packet.accel, i, &raw_sample);
-			math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, &raw_sample, &sample);
-			math_vec3_accum(&wh->config.sensors.accel.bias_offsets, &sample);
-			math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, &sample, &raw_accel[i]);
+			struct xrt_vec3 *ra = &raw_accel[i];
+			struct xrt_vec3 *ca = &calib_accel[i];
+			vec3_from_hololens_accel(wh->packet.accel, i, ra);
+			math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
+			math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
+			math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, ca, ca);
 		}
 
+		// Fusion tracking
 		os_mutex_lock(&wh->fusion.mutex);
 		for (int i = 0; i < 4; i++) {
 			m_imu_3dof_update(                                              //
 			    &wh->fusion.i3dof,                                          //
 			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
-			    &raw_accel[i],                                              //
-			    &raw_gyro[i]);                                              //
+			    &calib_accel[i],                                            //
+			    &calib_gyro[i]);                                            //
 		}
 		wh->fusion.last_imu_timestamp_ns = now_ns;
 		wh->fusion.last_angular_velocity = raw_gyro[3];
 		os_mutex_unlock(&wh->fusion.mutex);
+
+		// SLAM tracking
+		//! @todo For now we are using raw_samples here because the centerline fix
+		//! in the calibrated samples breaks SLAM systems. Handling of coordinate
+		//! systems needs to be revisited.
+		wmr_source_push_imu_packet(wh->slam.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
 
 		break;
 	}
