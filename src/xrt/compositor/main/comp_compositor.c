@@ -714,7 +714,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 	struct comp_vulkan_arguments vk_args = {
 	    .get_instance_proc_address = vkGetInstanceProcAddr,
-	    .instance_extensions = instance_extension_list,
+	    .required_instance_extensions = instance_extension_list,
 	    .required_device_extensions = required_device_extension_list,
 	    .optional_device_extensions = optional_device_extension_list,
 	    .log_level = c->settings.log_level,

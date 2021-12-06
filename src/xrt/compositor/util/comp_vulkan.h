@@ -29,7 +29,10 @@ struct comp_vulkan_arguments
 	PFN_vkGetInstanceProcAddr get_instance_proc_address;
 
 	//! Extensions that the instance is created with.
-	struct u_string_list *instance_extensions;
+	struct u_string_list *required_instance_extensions;
+
+	//! Extensions that the instance is created with.
+	struct u_string_list *optional_instance_extensions;
 
 	//! Extensions that the device is created with.
 	struct u_string_list *required_device_extensions;
