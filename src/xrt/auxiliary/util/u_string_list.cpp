@@ -47,6 +47,17 @@ u_string_list_create_with_capacity(uint32_t capacity)
 	}
 }
 
+struct u_string_list *
+u_string_list_create_from_list(struct u_string_list *usl)
+{
+	try {
+		auto ret = std::make_unique<u_string_list>(xrt::auxiliary::util::StringList{usl->list});
+		return ret.release();
+	} catch (std::exception const &) {
+		return nullptr;
+	}
+}
+
 
 uint32_t
 u_string_list_get_size(const struct u_string_list *usl)

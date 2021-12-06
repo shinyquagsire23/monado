@@ -41,6 +41,14 @@ struct u_string_list *
 u_string_list_create_with_capacity(uint32_t capacity);
 
 /*!
+ * @brief Create a new string list from an existing string list.
+ *
+ * @public @memberof u_string_list
+ */
+struct u_string_list *
+u_string_list_create_from_list(struct u_string_list *usl);
+
+/*!
  * @brief Retrieve the number of elements in the list
  *
  * @public @memberof u_string_list
