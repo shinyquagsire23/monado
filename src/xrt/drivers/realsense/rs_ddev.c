@@ -7,7 +7,7 @@
  * @author Moses Turner <mosesturner@protonmail.com>
  * @author Nova King <technobaboo@gmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  */
 
 #include "xrt/xrt_defines.h"

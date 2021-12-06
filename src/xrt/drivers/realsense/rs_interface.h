@@ -4,7 +4,7 @@
  * @file
  * @brief  Interface to RealSense devices.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  */
 
 #pragma once
@@ -16,7 +16,7 @@ extern "C" {
 struct xrt_frame_context;
 
 /*!
- * @defgroup drv_rs Intel RealSense driver
+ * @defgroup drv_realsense Intel RealSense driver
  * @ingroup drv
  *
  * @brief Driver for the SLAM-capable Intel Realsense devices.
@@ -30,7 +30,7 @@ struct xrt_frame_context;
 /*!
  * Create a auto prober for rs devices.
  *
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  */
 struct xrt_auto_prober *
 rs_create_auto_prober(void);
@@ -50,7 +50,7 @@ rs_source_create(struct xrt_frame_context *xfctx, int device_idx);
 /*!
  * @dir drivers/realsense
  *
- * @brief @ref drv_rs files.
+ * @brief @ref drv_realsense files.
  */
 
 

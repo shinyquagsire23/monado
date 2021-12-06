@@ -4,7 +4,7 @@
  * @file
  * @brief  RealSense device tracked with host-SLAM.
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  *
  * Originally created and tried on the D455 model but should work in any
  * RealSense device that has video and IMU streams.

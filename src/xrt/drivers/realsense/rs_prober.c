@@ -5,7 +5,7 @@
  * @brief  Realsense prober code.
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  */
 
 #include <stdio.h>

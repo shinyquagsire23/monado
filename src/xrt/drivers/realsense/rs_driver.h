@@ -4,7 +4,7 @@
  * @file
  * @brief  Internal header for the RealSense driver.
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
- * @ingroup drv_rs
+ * @ingroup drv_realsense
  */
 #pragma once
 
@@ -16,7 +16,7 @@
 #include <librealsense2/h/rs_pipeline.h>
 
 /*!
- * @addtogroup drv_rs
+ * @addtogroup drv_realsense
  * @{
  */
 
