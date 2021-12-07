@@ -21,78 +21,113 @@
 
 #include "android/android_globals.h"
 
+#include <chrono>
 #include <memory>
 #include <thread>
 
 using wrap::android::view::Surface;
+using namespace std::chrono_literals;
+
 namespace {
 struct IpcServerHelper
 {
 public:
-	IpcServerHelper() {}
-
-	void
-	waitForStartupComplete()
+	static IpcServerHelper &
+	instance()
 	{
-		std::unique_lock<std::mutex> lock{running_mutex};
-		running_cond.wait(lock, [&]() { return this->startup_complete; });
+		static IpcServerHelper instance;
+		return instance;
 	}
 
 	void
 	signalStartupComplete()
 	{
-		std::unique_lock<std::mutex> lock{running_mutex};
+		std::unique_lock<std::mutex> lock{server_mutex};
 		startup_complete = true;
-		running_cond.notify_all();
+		startup_cond.notify_all();
+	}
+
+	void
+	startServer()
+	{
+		std::unique_lock lock(server_mutex);
+		if (!server && !server_thread) {
+			server_thread = std::make_unique<std::thread>(
+			    [&]() { ipc_server_main_android(&server, signalStartupCompleteTrampoline, this); });
+		}
+	}
+
+	static void
+	signalStartupCompleteTrampoline(void *data)
+	{
+		static_cast<IpcServerHelper *>(data)->signalStartupComplete();
+	}
+
+	int32_t
+	addClient(int fd)
+	{
+		if (!waitForStartupComplete()) {
+			return -1;
+		}
+		return ipc_server_mainloop_add_fd(server, &server->ml, fd);
+	}
+
+	int32_t
+	shutdownServer()
+	{
+		if (!server || !server_thread) {
+			// Should not happen.
+			U_LOG_E("service: shutdownServer called before server started up!");
+			return -1;
+		}
+
+		{
+			// Wait until IPC server stop
+			std::unique_lock lock(server_mutex);
+			ipc_server_handle_shutdown_signal(server);
+			server_thread->join();
+			server_thread.reset(nullptr);
+			server = NULL;
+		}
+
+		return 0;
 	}
 
 private:
+	IpcServerHelper() {}
+
+	bool
+	waitForStartupComplete()
+	{
+		std::unique_lock<std::mutex> lock{server_mutex};
+		return startup_cond.wait_for(lock, 2s, [&]() { return server != NULL && startup_complete; });
+	}
+
+	//! Reference to the ipc_server, managed by ipc_server_process
+	struct ipc_server *server = NULL;
+
 	//! Mutex for starting thread
-	std::mutex running_mutex;
+	std::mutex server_mutex;
+
+	//! Server thread
+	std::unique_ptr<std::thread> server_thread{};
 
 	//! Condition variable for starting thread
-	std::condition_variable running_cond;
+	std::condition_variable startup_cond;
+
+	//! Server startup state
 	bool startup_complete = false;
 };
 } // namespace
-
-static struct ipc_server *server = NULL;
-static IpcServerHelper *helper = nullptr;
-static std::condition_variable helper_ready;
-static std::unique_ptr<std::thread> server_thread{};
-static std::mutex server_thread_mutex;
-
-static void
-signalStartupCompleteTrampoline(void *data)
-{
-	static_cast<IpcServerHelper *>(data)->signalStartupComplete();
-}
 
 extern "C" void
 Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz)
 {
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
-	U_LOG_D("service: Called nativeThreadEntry");
+	U_LOG_D("service: Called nativeStartServer");
 
-	{
-		// Start IPC server
-		std::unique_lock lock(server_thread_mutex);
-		if (!server && !server_thread) {
-			helper = new IpcServerHelper();
-			helper_ready.notify_all();
-			server_thread = std::make_unique<std::thread>(
-			    []() { ipc_server_main_android(&server, signalStartupCompleteTrampoline, helper); });
-		}
-	}
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeWaitForServerStartup(JNIEnv *env, jobject thiz)
-{
-	std::unique_lock<std::mutex> lock(server_thread_mutex);
-	helper_ready.wait(lock, [&] { return helper != nullptr; });
-	helper->waitForStartupComplete();
+	IpcServerHelper::instance().startServer();
 }
 
 extern "C" JNIEXPORT jint JNICALL
@@ -101,13 +136,9 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeAddClient(JNIEnv *env, jobject 
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
 	U_LOG_D("service: Called nativeAddClient with fd %d", fd);
-	if (server == nullptr) {
-		// Should not happen.
-		U_LOG_E("service: nativeAddClient called before service started up!");
-		return -1;
-	}
+
 	// We try pushing the fd number to the server. If and only if we get a 0 return, has the server taken ownership.
-	return ipc_server_mainloop_add_fd(server, &server->ml, fd);
+	return IpcServerHelper::instance().addClient(fd);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -127,22 +158,6 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeShutdownServer(JNIEnv *env, job
 {
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
-	if (server == nullptr || !server_thread) {
-		// Should not happen.
-		U_LOG_E("service: nativeShutdownServer called before service started up!");
-		return -1;
-	}
 
-	{
-		// Wait until IPC server stop
-		std::unique_lock lock(server_thread_mutex);
-		ipc_server_handle_shutdown_signal(server);
-		server_thread->join();
-		server_thread.reset(nullptr);
-		delete helper;
-		helper = nullptr;
-		server = NULL;
-	}
-
-	return 0;
+	return IpcServerHelper::instance().shutdownServer();
 }

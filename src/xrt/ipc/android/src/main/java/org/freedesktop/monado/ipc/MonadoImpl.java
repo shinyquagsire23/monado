@@ -65,7 +65,6 @@ public class MonadoImpl extends IMonado.Stub {
 
     @Override
     public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
-        nativeWaitForServerStartup();
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
         if (nativeAddClient(fd) != 0) {
@@ -114,12 +113,6 @@ public class MonadoImpl extends IMonado.Stub {
      */
     @SuppressWarnings("JavaJniMissingFunction")
     private native void nativeStartServer();
-
-    /**
-     * Native method that waits until the server reports that it is, in fact, started up.
-     */
-    @SuppressWarnings("JavaJniMissingFunction")
-    private native void nativeWaitForServerStartup();
 
     /**
      * Native handling of receiving a surface: should convert it to an ANativeWindow then do stuff
