@@ -1378,7 +1378,8 @@ filter_device_features(struct vk_bundle *vk,
 
 #ifdef VK_EXT_robustness2
 	if (vk->has_EXT_robustness2) {
-		physical_device_features.pNext = physical_device_features.pNext;
+		// Insert ourselves between physical_device_features and its previous pNext
+		robust_info.pNext = physical_device_features.pNext;
 		physical_device_features.pNext = (void *)&robust_info;
 	}
 #endif
