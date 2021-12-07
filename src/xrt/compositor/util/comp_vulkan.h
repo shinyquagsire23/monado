@@ -51,6 +51,9 @@ struct comp_vulkan_arguments
 	//! Should we look for a queue with no graphics, only compute.
 	bool only_compute_queue;
 
+	//! Should we try to enable timeline semaphores if available
+	bool timeline_semaphore;
+
 	//! Vulkan physical device to be selected, -1 for auto.
 	int selected_gpu_index;
 
