@@ -1349,6 +1349,24 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	return true;
 }
 
+static inline void
+append_to_pnext_chain(VkBaseInStructure *head, VkBaseInStructure *new_struct)
+{
+	assert(new_struct->pNext == NULL);
+	// Insert ourselves between head and its previous pNext
+	new_struct->pNext = head->pNext;
+	head->pNext = (void *)new_struct;
+}
+
+/**
+ * @brief Sets fields in @p device_features to true if and only if they are available and they are true in @p
+ * optional_device_features (indicating a desire for that feature)
+ *
+ * @param vk self
+ * @param physical_device The physical device to query
+ * @param[in] optional_device_features The features to request if available
+ * @param[out] device_features Populated with the subset of @p optional_device_features that are actually available.
+ */
 static void
 filter_device_features(struct vk_bundle *vk,
                        VkPhysicalDevice physical_device,
@@ -1371,6 +1389,13 @@ filter_device_features(struct vk_bundle *vk,
 	};
 #endif
 
+#ifdef VK_KHR_timeline_semaphore
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
+	    .pNext = NULL,
+	};
+#endif
+
 	VkPhysicalDeviceFeatures2 physical_device_features = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
 	    .pNext = NULL,
@@ -1378,9 +1403,15 @@ filter_device_features(struct vk_bundle *vk,
 
 #ifdef VK_EXT_robustness2
 	if (vk->has_EXT_robustness2) {
-		// Insert ourselves between physical_device_features and its previous pNext
-		robust_info.pNext = physical_device_features.pNext;
-		physical_device_features.pNext = (void *)&robust_info;
+		append_to_pnext_chain((VkBaseInStructure *)&physical_device_features,
+		                      (VkBaseInStructure *)&robust_info);
+	}
+#endif
+
+#ifdef VK_KHR_timeline_semaphore
+	if (vk->has_KHR_timeline_semaphore) {
+		append_to_pnext_chain((VkBaseInStructure *)&physical_device_features,
+		                      (VkBaseInStructure *)&timeline_semaphore_info);
 	}
 #endif
 
@@ -1398,6 +1429,10 @@ filter_device_features(struct vk_bundle *vk,
 #ifdef VK_EXT_robustness2
 	CHECK(null_descriptor, robust_info.nullDescriptor);
 #endif
+
+#ifdef VK_KHR_timeline_semaphore
+	CHECK(timeline_semaphore, timeline_semaphore_info.timelineSemaphore);
+#endif
 	CHECK(shader_storage_image_write_without_format,
 	      physical_device_features.features.shaderStorageImageWriteWithoutFormat);
 
@@ -1407,8 +1442,11 @@ filter_device_features(struct vk_bundle *vk,
 	VK_DEBUG(vk,
 	         "Features:"
 	         "\n\tnull_descriptor: %i"
-	         "\n\tshader_storage_image_write_without_format: %i",
-	         device_features->null_descriptor, device_features->shader_storage_image_write_without_format);
+	         "\n\tshader_storage_image_write_without_format: %i"
+	         "\n\ttimeline_semaphore: %i",                               //
+	         device_features->null_descriptor,                           //
+	         device_features->shader_storage_image_write_without_format, //
+	         device_features->timeline_semaphore);
 }
 
 VkResult
@@ -1444,7 +1482,7 @@ vk_create_device(struct vk_bundle *vk,
 
 	struct vk_device_features device_features = {0};
 	filter_device_features(vk, vk->physical_device, optional_device_features, &device_features);
-
+	vk->timeline_semaphores = device_features.timeline_semaphore;
 
 	/*
 	 * Queue
@@ -1493,6 +1531,14 @@ vk_create_device(struct vk_bundle *vk,
 	};
 #endif
 
+#ifdef VK_KHR_timeline_semaphore
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
+	    .pNext = NULL,
+	    .timelineSemaphore = device_features.timeline_semaphore,
+	};
+#endif
+
 	VkPhysicalDeviceFeatures enabled_features = {
 	    .shaderStorageImageWriteWithoutFormat = device_features.shader_storage_image_write_without_format,
 	};
@@ -1508,9 +1554,14 @@ vk_create_device(struct vk_bundle *vk,
 
 #ifdef VK_EXT_robustness2
 	if (vk->has_EXT_robustness2) {
-		// This struct is a in/out struct, while device_create_info has a const pNext.
-		robust_info.pNext = (void *)device_create_info.pNext;
-		device_create_info.pNext = (void *)&robust_info;
+		append_to_pnext_chain((VkBaseInStructure *)&device_create_info, (VkBaseInStructure *)&robust_info);
+	}
+#endif
+
+#ifdef VK_KHR_timeline_semaphore
+	if (vk->has_KHR_timeline_semaphore) {
+		append_to_pnext_chain((VkBaseInStructure *)&device_create_info,
+		                      (VkBaseInStructure *)&timeline_semaphore_info);
 	}
 #endif
 

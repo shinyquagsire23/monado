@@ -65,6 +65,9 @@ struct vk_bundle
 
 	bool is_tegra;
 
+	//! Were timeline semaphores requested, available, and enabled?
+	bool timeline_semaphores;
+
 	VkDebugReportCallbackEXT debug_report_cb;
 
 	VkPhysicalDeviceMemoryProperties device_memory_props;
@@ -418,6 +421,7 @@ struct vk_device_features
 {
 	bool shader_storage_image_write_without_format;
 	bool null_descriptor;
+	bool timeline_semaphore;
 };
 
 /*!
