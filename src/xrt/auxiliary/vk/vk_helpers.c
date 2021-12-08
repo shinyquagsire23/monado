@@ -1262,6 +1262,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
 	vk->has_GOOGLE_display_timing = false;
+	vk->has_EXT_display_control = false;
 
 	const char *const *exts = u_string_list_get_data(ext_list);
 	uint32_t ext_count = u_string_list_get_size(ext_list);
@@ -1296,6 +1297,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_GOOGLE_display_timing)
+
+#if defined(VK_EXT_display_control)
+		if (strcmp(ext, VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME) == 0) {
+			vk->has_EXT_display_control = true;
+			continue;
+		}
+#endif // defined(VK_EXT_display_control)
 	}
 	// end of GENERATED device extension code - do not modify - used by scripts
 }
@@ -1398,6 +1406,27 @@ vk_get_device_ext_props(struct vk_bundle *vk,
 }
 
 static bool
+vk_should_skip_optional_device_ext(struct vk_bundle *vk,
+                                   struct u_string_list *required_device_ext_list,
+                                   struct u_string_list *optional_device_ext_listconst,
+                                   const char *ext)
+{
+#ifdef VK_EXT_display_control
+	// only enable VK_EXT_display_control when we enabled VK_EXT_display_surface_counter instance ext
+	if (strcmp(ext, VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME) == 0) {
+		if (!vk->has_EXT_display_surface_counter) {
+			VK_DEBUG(vk, "Skipping optional instance extension %s because %s instance ext is not enabled",
+			         ext, VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME);
+			return true;
+		}
+		VK_DEBUG(vk, "Not skipping optional instance extension %s because %s instance ext is enabled", ext,
+		         VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME);
+	}
+#endif
+	return false;
+}
+
+static bool
 vk_build_device_extensions(struct vk_bundle *vk,
                            VkPhysicalDevice physical_device,
                            struct u_string_list *required_device_ext_list,
@@ -1433,6 +1462,11 @@ vk_build_device_extensions(struct vk_bundle *vk,
 
 	for (uint32_t i = 0; i < optional_device_ext_count; i++) {
 		const char *ext = optional_device_exts[i];
+
+		if (vk_should_skip_optional_device_ext(vk, required_device_ext_list, optional_device_ext_list, ext)) {
+			continue;
+		}
+
 		if (vk_check_extension(vk, props, prop_count, ext)) {
 			U_LOG_D("Using optional device ext %s", ext);
 			int added = u_string_list_append_unique(*out_device_ext_list, ext);

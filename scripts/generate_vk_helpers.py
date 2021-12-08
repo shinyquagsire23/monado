@@ -227,6 +227,7 @@ DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_EXT_global_priority",
     "VK_EXT_robustness2",
     "VK_GOOGLE_display_timing",
+    "VK_EXT_display_control",
 ]
 
 ROOT = Path(__file__).resolve().parent.parent

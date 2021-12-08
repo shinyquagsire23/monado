@@ -620,11 +620,13 @@ static const char *required_device_extensions[] = {
 #endif
 };
 
-static const char *optional_device_extensions[] = {
-    VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
-    VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
+static const char *optional_device_extensions[] = {VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
+                                                   VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
 #ifdef VK_EXT_robustness2
-    VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+                                                   VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+#endif
+#ifdef VK_EXT_display_control
+                                                   VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME
 #endif
 };
 

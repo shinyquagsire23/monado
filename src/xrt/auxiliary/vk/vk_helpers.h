@@ -66,6 +66,7 @@ struct vk_bundle
 	bool has_EXT_global_priority;
 	bool has_EXT_robustness2;
 	bool has_GOOGLE_display_timing;
+	bool has_EXT_display_control;
 	// end of GENERATED device extension code - do not modify - used by scripts
 
 	bool is_tegra;
