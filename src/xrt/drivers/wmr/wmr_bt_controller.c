@@ -62,18 +62,26 @@ read_packets(struct wmr_bt_controller *d)
 	} else if (size == 0) {
 		WMR_TRACE(d, "WMR Controller (Bluetooth): No data to read from device");
 		return true; // No more messages, return.
-	} else {
-		WMR_DEBUG(d, "WMR Controller (Bluetooth): Read %u bytes from device", size);
 	}
+
+	WMR_TRACE(d, "WMR Controller (Bluetooth): Read %u bytes from device", size);
+
 
 	switch (buffer[0]) {
 	case WMR_BT_MOTION_CONTROLLER_MSG:
+		os_mutex_lock(&d->lock);
 		// Note: skipping msg type byte
-		if (!wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->input, d->log_level)) {
+		bool b = wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->input, d->log_level);
+		if (b) {
+			m_imu_3dof_update(&d->fusion, d->input.imu.timestamp_ticks, &d->input.imu.gyro,
+			                  &d->input.imu.acc);
+		} else {
 			WMR_ERROR(d, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
 			          buffer[0], size);
+			os_mutex_unlock(&d->lock);
 			return false;
 		}
+		os_mutex_unlock(&d->lock);
 		break;
 	default:
 		WMR_DEBUG(d, "WMR Controller (Bluetooth): Unknown message type: %02x, size: %i", buffer[0], size);
@@ -97,20 +105,44 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
                                    uint64_t at_timestamp_ns,
                                    struct xrt_space_relation *out_relation)
 {
-	// struct wmr_bt_controller *d = wmr_bt_controller(xdev);
-	// Todo: implement
+	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
+
+	// Variables needed for prediction.
+	uint64_t last_imu_timestamp_ns = 0;
+	struct xrt_space_relation relation = {0};
+	relation.relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+
+
 	struct xrt_pose pose = {{0, 0, 0, 1}, {0, 1.2, -0.5}};
 	if (xdev->device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
 		pose.position.x = -0.2;
 	} else {
 		pose.position.x = 0.2;
 	}
+	relation.pose = pose;
 
-	out_relation->pose = pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
-	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+	// Copy data while holding the lock.
+	os_mutex_lock(&d->lock);
+	relation.pose.orientation = d->fusion.rot;
+	relation.angular_velocity = d->last_angular_velocity;
+	last_imu_timestamp_ns = d->last_imu_timestamp_ns * WMR_MOTION_CONTROLLER_NS_PER_TICK;
+	os_mutex_unlock(&d->lock);
+
+	// No prediction needed.
+	if (at_timestamp_ns < last_imu_timestamp_ns) {
+		*out_relation = relation;
+		return;
+	}
+
+	uint64_t prediction_ns = at_timestamp_ns - last_imu_timestamp_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	m_predict_relation(&relation, prediction_s, out_relation);
 }
+
+
 
 static void
 wmr_bt_controller_update_inputs(struct xrt_device *xdev)
@@ -119,7 +151,7 @@ wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 
 	struct xrt_input *inputs = d->base.inputs;
 
-	//! @todo Mutex protect the input struct.
+	os_mutex_lock(&d->lock);
 
 	inputs[WMR_INDEX_MENU_CLICK].value.boolean = d->input.menu;
 	inputs[WMR_INDEX_SQUEEZE_CLICK].value.boolean = d->input.squeeze;
@@ -129,13 +161,14 @@ wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 	inputs[WMR_INDEX_TRACKPAD_CLICK].value.boolean = d->input.trackpad.click;
 	inputs[WMR_INDEX_TRACKPAD_TOUCH].value.boolean = d->input.trackpad.touch;
 	inputs[WMR_INDEX_TRACKPAD].value.vec2 = d->input.trackpad.values;
+
+	os_mutex_unlock(&d->lock);
 }
 
 static void *
 wmr_bt_controller_run_thread(void *ptr)
 {
 	struct wmr_bt_controller *d = wmr_bt_controller(ptr);
-
 
 	os_thread_helper_lock(&d->controller_thread);
 	while (os_thread_helper_is_running_locked(&d->controller_thread)) {
@@ -164,11 +197,12 @@ wmr_bt_controller_destroy(struct xrt_device *xdev)
 	// Destroy the thread object.
 	os_thread_helper_destroy(&d->controller_thread);
 
-
 	if (d->controller_hid != NULL) {
 		os_hid_destroy(d->controller_hid);
 		d->controller_hid = NULL;
 	}
+
+	os_mutex_destroy(&d->lock);
 
 	// Destroy the fusion.
 	m_imu_3dof_close(&d->fusion);
@@ -260,6 +294,8 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	d->base.position_tracking_supported = false;
 	d->base.hand_tracking_supported = true;
 
+
+	d->input.imu.timestamp_ticks = 0;
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 
@@ -267,6 +303,13 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	int ret = 0;
 
 	// Todo: Read config file from controller if possible.
+
+	ret = os_mutex_init(&d->lock);
+	if (ret != 0) {
+		WMR_ERROR(d, "WMR Controller (Bluetooth): Failed to init mutex!");
+		wmr_bt_controller_destroy(&d->base);
+		return NULL;
+	}
 
 	// Thread and other state.
 	ret = os_thread_helper_init(&d->controller_thread);
@@ -289,8 +332,11 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 
 	u_var_add_root(d, d->base.str, true);
 	u_var_add_bool(d, &d->input.menu, "input.menu");
+	u_var_add_bool(d, &d->input.home, "input.home");
+	u_var_add_bool(d, &d->input.bt_pairing, "input.bt_pairing");
 	u_var_add_bool(d, &d->input.squeeze, "input.squeeze");
 	u_var_add_f32(d, &d->input.trigger, "input.trigger");
+	u_var_add_u8(d, &d->input.battery, "input.battery");
 	u_var_add_bool(d, &d->input.thumbstick.click, "input.thumbstick.click");
 	u_var_add_f32(d, &d->input.thumbstick.values.x, "input.thumbstick.values.y");
 	u_var_add_f32(d, &d->input.thumbstick.values.y, "input.thumbstick.values.x");
@@ -298,6 +344,10 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	u_var_add_bool(d, &d->input.trackpad.touch, "input.trackpad.touch");
 	u_var_add_f32(d, &d->input.trackpad.values.x, "input.trackpad.values.x");
 	u_var_add_f32(d, &d->input.trackpad.values.y, "input.trackpad.values.y");
+	u_var_add_ro_vec3_f32(d, &d->input.imu.acc, "imu.acc");
+	u_var_add_ro_vec3_f32(d, &d->input.imu.gyro, "imu.gyro");
+	u_var_add_i32(d, &d->input.imu.temperature, "imu.temperature");
+
 
 	return &d->base;
 }

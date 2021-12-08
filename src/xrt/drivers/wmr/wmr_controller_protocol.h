@@ -27,6 +27,7 @@ extern "C" {
 
 // Todo: Is this enough?
 #define WMR_MOTION_CONTROLLER_MSG_BUFFER_SIZE 256
+#define WMR_MOTION_CONTROLLER_NS_PER_TICK 100
 
 
 // Messages types specific to Bluetooth connected WMR motion controllers
@@ -35,8 +36,12 @@ extern "C" {
 
 struct wmr_controller_input
 {
+	// buttons clicked
 	bool menu;
+	bool home;
+	bool bt_pairing;
 	bool squeeze; // Actually a "squeeze" click
+
 	float trigger;
 
 	struct
@@ -50,8 +55,17 @@ struct wmr_controller_input
 		bool touch;
 		struct xrt_vec2 values;
 	} trackpad;
-};
 
+	uint8_t battery;
+
+	struct
+	{
+		uint64_t timestamp_ticks;
+		struct xrt_vec3 acc;
+		struct xrt_vec3 gyro;
+		int32_t temperature;
+	} imu;
+};
 
 /*!
  * @}

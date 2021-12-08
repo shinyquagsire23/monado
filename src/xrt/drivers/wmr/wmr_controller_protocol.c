@@ -19,6 +19,29 @@
  *
  */
 
+static inline void
+vec3_from_wmr_controller_accel(int32_t sample[3], struct xrt_vec3 *out_vec)
+{
+
+	// Reverb G1: 1g approximately equivalent to 490,000
+	// float g = sqrtf(sample[0]*sample[0] + sample[1]*sample[1] + sample[2]*sample[2]);
+	// U_LOG_IFL_D(log_level, "g: %f", g);
+
+	out_vec->x = (float)sample[0] * 0.001f * 1.0f;
+	out_vec->y = (float)sample[1] * 0.001f * 1.0f;
+	out_vec->z = (float)sample[2] * 0.001f * 1.0f;
+}
+
+
+static inline void
+vec3_from_wmr_controller_gyro(int32_t sample[3], struct xrt_vec3 *out_vec)
+{
+	out_vec->x = (float)sample[0] * 0.001f * 1.0f;
+	out_vec->y = (float)sample[1] * 0.001f * 1.0f;
+	out_vec->z = (float)sample[2] * 0.001f * 1.0f;
+}
+
+
 bool
 wmr_controller_packet_parse(const unsigned char *buffer,
                             size_t len,
@@ -30,39 +53,24 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 		return false;
 	}
 
-	/*
-	        U_LOG_IFL_D(log_level,
-	                    "%02x %02x %02x %02x %02x %02x %02x %02x | "           // buttons and inputs, battery
-	                    "%02x %02x %02x %02x %02x %02x %02x %02x %02x | "      // accel
-	                    "%02x %02x | "                                         // temp
-	                    "%02x %02x %02x %02x %02x %02x %02x %02x %02x | "      // gyro
-	                    "%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x | " // timestamp and more?
-	                    "%02x %02x %02x %02x %02x %02x",                       // device run state, status and more?
-	                    buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7],
-	   buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15], buffer[16],
-	                    buffer[17], buffer[18], buffer[19], buffer[20], buffer[21], buffer[22], buffer[23],
-	   buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29], buffer[30], buffer[31], buffer[32],
-	                    buffer[33], buffer[34], buffer[35], buffer[36], buffer[37], buffer[38], buffer[39],
-	   buffer[40], buffer[41], buffer[42], buffer[43]);
-	*/
 	const unsigned char *p = buffer;
 
 	// Read buttons
-	unsigned char buttons = read8(&p);
+	uint8_t buttons = read8(&p);
 	decoded_input->thumbstick.click = buttons & 0x01;
-	// decoded_input->home = buttons & 0x02;
+	decoded_input->home = buttons & 0x02;
 	decoded_input->menu = buttons & 0x04;
 	decoded_input->squeeze = buttons & 0x08; // squeeze-click
 	decoded_input->trackpad.click = buttons & 0x10;
-	// decoded_input->bt_pairing = buttons & 0x20;
+	decoded_input->bt_pairing = buttons & 0x20;
 	decoded_input->trackpad.touch = buttons & 0x40;
 
 
 	// Read thumbstick coordinates (12 bit resolution)
-	signed int stick_x = read8(&p);
-	unsigned char nipples = read8(&p);
-	stick_x += ((nipples & 0x0F) << 8);
-	signed int stick_y = (nipples >> 4);
+	int16_t stick_x = read8(&p);
+	uint8_t nibbles = read8(&p);
+	stick_x += ((nibbles & 0x0F) << 8);
+	int16_t stick_y = (nibbles >> 4);
 	stick_y += (read8(&p) << 4);
 
 	decoded_input->thumbstick.values.x = (float)(stick_x - 0x07FF) / 0x07FF;
@@ -75,39 +83,50 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 		decoded_input->thumbstick.values.y = 1.0f;
 	}
 
-
 	// Read trigger value (0x00 - 0xFF)
 	decoded_input->trigger = (float)read8(&p) / 0xFF;
 
-	U_LOG_IFL_D(log_level, "thumbstick: x %f, y %f, trigger: %f", decoded_input->thumbstick.values.x,
-	            decoded_input->thumbstick.values.y, decoded_input->trigger);
-
-
 	// Read trackpad coordinates (0x00 - 0x64. Both are 0xFF when untouched)
-	unsigned char trackpad_x = read8(&p);
-	unsigned char trackpad_y = read8(&p);
+	uint8_t trackpad_x = read8(&p);
+	uint8_t trackpad_y = read8(&p);
 	decoded_input->trackpad.values.x = (trackpad_x == 0xFF) ? 0.0f : (float)(trackpad_x - 0x32) / 0x32;
 	decoded_input->trackpad.values.y = (trackpad_y == 0xFF) ? 0.0f : (float)(trackpad_y - 0x32) / 0x32;
 
-	U_LOG_IFL_D(log_level, "touchpad: x %f, y %f", decoded_input->trackpad.values.x,
-	            decoded_input->trackpad.values.y);
 
+	decoded_input->battery = read8(&p);
+
+
+	int32_t acc[3];
+	acc[0] = read24(&p); // x
+	acc[1] = read24(&p); // y
+	acc[2] = read24(&p); // z
+	vec3_from_wmr_controller_accel(acc, &decoded_input->imu.acc);
+
+
+	decoded_input->imu.temperature = read16(&p);
+
+
+	int32_t gyro[3];
+	gyro[0] = read24(&p);
+	gyro[1] = read24(&p);
+	gyro[2] = read24(&p);
+	vec3_from_wmr_controller_accel(gyro, &decoded_input->imu.gyro);
+
+
+	uint32_t prev_ticks = decoded_input->imu.timestamp_ticks & 0xFFFFFFFFUL;
+
+	// Write the new ticks value into the lower half of timestamp_ticks
+	decoded_input->imu.timestamp_ticks &= (0xFFFFFFFFUL << 32);
+	decoded_input->imu.timestamp_ticks += (uint32_t)read32(&p);
+
+	if ((decoded_input->imu.timestamp_ticks & 0xFFFFFFFFUL) < prev_ticks) {
+		// Timer overflow, so increment the upper half of timestamp_ticks
+		decoded_input->imu.timestamp_ticks += (0x1UL << 32);
+	}
 
 	/* Todo: More decoding here
-
-	    unsigned char battery = read8(&p);
-	    unsigned int accel_x = read24(&p);
-	    unsigned int accel_y = read24(&p);
-	    unsigned int accel_z = read24(&p);
-	    unsigned int temp = read16(&p);
-	    unsigned int gyro_x = read24(&p);
-	    unsigned int gyro_y = read24(&p);
-	    unsigned int gyro_z = read24(&p);
-
-	    unsigned int timestamp = read32(&p); // Maybe only part of timestamp.
-	    read16(&p);                          // Unknown. Seems to depend on controller orientation.
-	    read32(&p);                          // Unknown.
-
+	    read16(&p); // Unknown. Seems to depend on controller orientation.
+	    read32(&p); // Unknown.
 	    read16(&p); // Unknown. Device state, etc.
 	    read16(&p);
 	    read16(&p);

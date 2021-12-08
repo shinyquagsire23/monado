@@ -24,7 +24,7 @@ extern "C" {
 
 
 /*!
- * Indices where each input is in the input list.
+ * Indices in input list of each input.
  */
 enum wmr_bt_input_index
 {
@@ -52,23 +52,20 @@ struct wmr_bt_controller
 
 	struct os_hid_device *controller_hid;
 	struct os_thread_helper controller_thread;
+
+
 	struct os_mutex lock;
 
+	//! The last decoded package of IMU and button data
+	struct wmr_controller_input input;
+	//! Time of last IMU sample, in CPU time.
+	uint64_t last_imu_timestamp_ns;
+	//! Main fusion calculator.
 	struct m_imu_3dof fusion;
-
-	struct
-	{
-		struct xrt_vec3 acc;
-		struct xrt_vec3 gyro;
-	} last;
-
-	struct xrt_quat rot_filtered;
+	//! The last angular velocity from the IMU, for prediction.
+	struct xrt_vec3 last_angular_velocity;
 
 	enum u_logging_level log_level;
-
-	uint32_t last_ticks;
-
-	struct wmr_controller_input input;
 };
 
 
