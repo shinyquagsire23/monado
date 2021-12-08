@@ -891,7 +891,12 @@ vk_get_instance_functions(struct vk_bundle *vk)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkCreateWin32SurfaceKHR                      = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
+
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
+
+#if defined(VK_EXT_display_surface_counter)
+	vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT   = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilities2EXT);
+#endif // defined(VK_EXT_display_surface_counter)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 

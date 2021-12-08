@@ -149,7 +149,12 @@ struct vk_bundle
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR;
+
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
+
+#if defined(VK_EXT_display_surface_counter)
+	PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT vkGetPhysicalDeviceSurfaceCapabilities2EXT;
+#endif // defined(VK_EXT_display_surface_counter)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts
 

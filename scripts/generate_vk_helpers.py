@@ -220,6 +220,8 @@ def get_instance_cmds():
         Cmd("vkCreateAndroidSurfaceKHR", requires=("VK_USE_PLATFORM_ANDROID_KHR",)),
         None,
         Cmd("vkCreateWin32SurfaceKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+        None,
+        Cmd("vkGetPhysicalDeviceSurfaceCapabilities2EXT", requires=("VK_EXT_display_surface_counter",))
     ]
 
 
