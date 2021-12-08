@@ -42,11 +42,11 @@ DEBUG_GET_ONCE_LOG_OPTION(json_log, "JSON_LOG", U_LOGGING_WARN)
 	} while (false);
 
 // Fatal assertion
-#define JSON_ASSERTF(...) JSON_ASSERT(true, __VA_ARGS__)
+#define JSON_ASSERTF(predicate, ...) JSON_ASSERT(true, predicate, __VA_ARGS__)
 #define JSON_ASSERTF_(predicate) JSON_ASSERT(true, predicate, "Assertion failed " #predicate)
 
 // Warn-only assertion
-#define JSON_ASSERTW(...) JSON_ASSERT(false, __VA_ARGS__)
+#define JSON_ASSERTW(predicate, ...) JSON_ASSERT(false, predicate, __VA_ARGS__)
 
 namespace xrt::auxiliary::util::json {
 
