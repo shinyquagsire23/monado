@@ -5,7 +5,7 @@ Copyright 2021, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-- Last updated: 24-February-2021
+- Last updated: 8-December-2021
 
 When the service starts, an `xrt_instance` is created and selected, a native
 system compositor is initialized, a shared memory segment for device data is
@@ -80,15 +80,15 @@ APK, even though they get loaded in different processes.
 The first main purpose of this service is for automatic startup and the
 **locating** function: helping establish communication between the client and
 the service. The Android framework takes care of launching the service process
-when the client requests to start and bind our service by name and package. The
-framework also provides us with method calls when we're started/bound. In this
-way, the "entry point" of the Monado service on Android is the
+when the client requests to bind our service by name and package. The framework
+also provides us with method calls when we're bound. In this way, the "entry point"
+of the Monado service on Android is the
 `org.freedesktop.monado.ipc.MonadoService` class, which exposes the
 implementation of our AIDL interface, `org.freedesktop.monado.ipc.MonadoImpl`.
 
-From there, the native-code mainloop starts when this service is started. By
-default, the JVM code will signal the mainloop to shut down a short time after
-the last client disconnects, to work best within the platform.
+From there, the native-code mainloop starts when this service received a valid
+`Surface`. By default, the JVM code will signal the mainloop to shut down a short
+time after the last client disconnects, to work best within the platform.
 
 At startup, just as on Linux, the shared memory segment is created. The
 [ashmem][] API is used to create/destroy an anonymous **shared memory** segment
@@ -107,9 +107,18 @@ connecting/accepting the named socket as used in standard Linux.
 
 The AIDL interface is also used for transporting some platform objects. At this
 time, the only one transported in this way is the [Surface][] injected into the
-client activity which is used for displaying rendered output.
+client activity which is used for displaying rendered output. Surface only comes
+from client when  [Display  over other apps][] is disabled.
+
+The owner of surface will impact the service shutdown behavior. When the
+surface comes from the injected window, it becomes invalid when client activity
+destroys. Therefore the runtime service must be shutdown when client exits,
+because all the graphic resources are associated with that surface. On the other
+hand,  when the owner of surface is the runtime service, it's capable to support
+multiple clients and client transition without shutdown.
 
 [Surface]: https://developer.android.com/reference/android/view/Surface
+[Display over other apps]: https://developer.android.com/reference/android/Manifest.permission#SYSTEM_ALERT_WINDOW
 
 ### Synchronization
 
