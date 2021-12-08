@@ -1446,11 +1446,11 @@ vk_build_device_extensions(struct vk_bundle *vk,
 	for (uint32_t i = 0; i < required_device_ext_count; i++) {
 		const char *ext = required_device_exts[i];
 		if (!vk_check_extension(vk, props, prop_count, ext)) {
-			U_LOG_E("VkPhysicalDevice does not support required extension %s", ext);
+			VK_DEBUG(vk, "VkPhysicalDevice does not support required extension %s", ext);
 			free(props);
 			return false;
 		}
-		U_LOG_T("Using required device ext %s", ext);
+		VK_DEBUG(vk, "Using required device ext %s", ext);
 	}
 
 
@@ -1468,13 +1468,13 @@ vk_build_device_extensions(struct vk_bundle *vk,
 		}
 
 		if (vk_check_extension(vk, props, prop_count, ext)) {
-			U_LOG_D("Using optional device ext %s", ext);
+			VK_DEBUG(vk, "Using optional device ext %s", ext);
 			int added = u_string_list_append_unique(*out_device_ext_list, ext);
 			if (added == 0) {
-				U_LOG_W("Duplicate device extension %s not added twice", ext);
+				VK_WARN(vk, "Duplicate device extension %s not added twice", ext);
 			}
 		} else {
-			U_LOG_T("NOT using optional device ext %s", ext);
+			VK_DEBUG(vk, "NOT using optional device ext %s", ext);
 			continue;
 		}
 	}
