@@ -150,6 +150,10 @@ def get_device_cmds():
         ),
         None,
         Cmd("vkGetPastPresentationTimingGOOGLE"),
+        None,
+        Cmd("vkGetSwapchainCounterEXT", requires=("VK_EXT_display_control",)),
+        Cmd("vkRegisterDeviceEventEXT", requires=("VK_EXT_display_control",)),
+        Cmd("vkRegisterDisplayEventEXT", requires=("VK_EXT_display_control",)),
     ]
 
 

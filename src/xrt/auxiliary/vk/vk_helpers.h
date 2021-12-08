@@ -284,6 +284,13 @@ struct vk_bundle
 #endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
+
+#if defined(VK_EXT_display_control)
+	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
+	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
+	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
+#endif // defined(VK_EXT_display_control)
+
 	// end of GENERATED device loader code - do not modify - used by scripts
 };
 

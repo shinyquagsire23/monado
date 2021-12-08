@@ -1035,6 +1035,13 @@ vk_get_device_functions(struct vk_bundle *vk)
 #endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 	vk->vkGetPastPresentationTimingGOOGLE           = GET_DEV_PROC(vk, vkGetPastPresentationTimingGOOGLE);
+
+#if defined(VK_EXT_display_control)
+	vk->vkGetSwapchainCounterEXT                    = GET_DEV_PROC(vk, vkGetSwapchainCounterEXT);
+	vk->vkRegisterDeviceEventEXT                    = GET_DEV_PROC(vk, vkRegisterDeviceEventEXT);
+	vk->vkRegisterDisplayEventEXT                   = GET_DEV_PROC(vk, vkRegisterDisplayEventEXT);
+#endif // defined(VK_EXT_display_control)
+
 	// end of GENERATED device loader code - do not modify - used by scripts
 	// clang-format on
 	return VK_SUCCESS;
