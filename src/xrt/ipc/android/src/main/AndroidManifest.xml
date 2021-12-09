@@ -15,6 +15,7 @@
 
             <intent-filter>
                 <action android:name="${serviceActionName}" />
+                <action android:name="${shutdownActionName}" />
             </intent-filter>
         </service>
     </application>

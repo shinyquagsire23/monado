@@ -21,10 +21,13 @@ android {
 
         // Single point of truth for these names.
         def serviceAction = "org.freedesktop.monado.ipc.CONNECT"
+        def shutdownAction = "org.freedesktop.monado.ipc.SHUTDOWN"
         manifestPlaceholders = [
                 serviceActionName : serviceAction,
+                shutdownActionName: shutdownAction
         ]
         buildConfigField("String", "SERVICE_ACTION", "\"${serviceAction}\"")
+        buildConfigField("String", "SHUTDOWN_ACTION", "\"${shutdownAction}\"")
         buildConfigField("Long", "WATCHDOG_TIMEOUT_MILLISECONDS", "1500L")
     }
 

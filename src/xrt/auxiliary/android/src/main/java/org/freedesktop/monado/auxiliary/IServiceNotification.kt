@@ -24,7 +24,7 @@ interface IServiceNotification {
      * Create and return a notification (creating the channel if applicable) that can be used in
      * {@code Service#startForeground()}
      */
-    fun buildNotification(context: Context): Notification
+    fun buildNotification(context: Context, pendingShutdownIntent: PendingIntent): Notification
 
     /**
      * Return the notification ID to use

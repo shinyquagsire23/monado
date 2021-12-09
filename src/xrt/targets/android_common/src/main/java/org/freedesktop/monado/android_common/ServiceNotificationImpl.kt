@@ -70,9 +70,14 @@ class ServiceNotificationImpl @Inject constructor() : IServiceNotification {
      * Create and return a notification (creating the channel if applicable) that can be used in
      * {@code Service#startForeground()}
      */
-    override fun buildNotification(context: Context): Notification {
+    override fun buildNotification(context: Context, pendingShutdownIntent: PendingIntent): Notification {
         createChannel(context)
 
+        val action = Notification.Action.Builder(
+            Icon.createWithResource(context, R.drawable.ic_feathericons_x),
+            context.getString(R.string.notifExitRuntime),
+            pendingShutdownIntent)
+            .build()
         // Make a notification for our foreground service
         // When selected it will open the "About" activity
         val builder = makeNotificationBuilder(context)
@@ -82,6 +87,7 @@ class ServiceNotificationImpl @Inject constructor() : IServiceNotification {
                         R.string.notif_text,
                         nameAndLogoProvider.getLocalizedRuntimeName()))
                 .setShowWhen(false)
+                .setActions(action)
                 .setContentIntent(uiProvider.makeAboutActivityPendingIntent())
 
         // Notification icon is optional

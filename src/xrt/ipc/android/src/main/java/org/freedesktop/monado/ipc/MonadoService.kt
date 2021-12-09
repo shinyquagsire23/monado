@@ -8,6 +8,7 @@
  */
 package org.freedesktop.monado.ipc
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -48,7 +49,9 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
         watchdog.startMonitor()
 
         // start the service so it could be foregrounded
-        startService(Intent(this, javaClass))
+        val intent = Intent(this, javaClass)
+        intent.action = BuildConfig.SERVICE_ACTION
+        startService(intent)
     }
 
     override fun onDestroy() {
@@ -62,7 +65,13 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand")
-        handleStart()
+        // if this isn't a restart
+        if (intent != null) {
+            when (intent.action) {
+                BuildConfig.SERVICE_ACTION -> handleStart()
+                BuildConfig.SHUTDOWN_ACTION -> handleShutdown()
+            }
+        }
         return START_STICKY
     }
 
@@ -73,7 +82,14 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
     }
 
     private fun handleStart() {
-        val notification = serviceNotification.buildNotification(this)
+        val pendingShutdownIntent = PendingIntent.getForegroundService(
+            this,
+            0,
+            Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
+            0
+        )
+
+        val notification = serviceNotification.buildNotification(this, pendingShutdownIntent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -106,6 +122,10 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
     override fun onShutdown() {
         Log.d(TAG, "onShutdown")
+        handleShutdown()
+    }
+
+    private fun handleShutdown() {
         stopForeground(true)
         stopSelf()
     }
