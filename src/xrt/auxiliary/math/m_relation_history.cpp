@@ -62,22 +62,25 @@ m_relation_history_create(struct m_relation_history **rh_ptr)
 #endif
 }
 
-void
+bool
 m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation const *in_relation, uint64_t timestamp)
 {
 	XRT_TRACE_MARKER();
 	struct relation_history_entry rhe;
 	rhe.relation = *in_relation;
 	rhe.timestamp = timestamp;
+	bool ret = false;
 	os_mutex_lock(&rh->mutex);
 	// Don't evaluate the second condition if the length is 0 - rh->impl[0] will be NULL!
 	if ((!rh->has_first_sample) || (rhe.timestamp > rh->impl[0]->timestamp)) {
 		// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If we get
 		// a timestamp that's before the most recent timestamp in the buffer, just don't put it in the history.
 		rh->impl.push(rhe);
+		ret = true;
 	}
 	rh->has_first_sample = true;
 	os_mutex_unlock(&rh->mutex);
+	return ret;
 }
 
 enum m_relation_history_result

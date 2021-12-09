@@ -49,9 +49,11 @@ m_relation_history_create(struct m_relation_history **rh);
  *
  * If the history is full, it will also pop a pose out of the other side of the buffer.
  *
+ * @return false if the timestamp is earlier than the most recent timestamp already recorded
+ *
  * @public @memberof m_relation_history
  */
-void
+bool
 m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation const *in_relation, uint64_t ts);
 
 /*!
@@ -117,10 +119,10 @@ public:
 	/*!
 	 * @copydoc m_relation_history_push
 	 */
-	void
+	bool
 	push(xrt_space_relation const &relation, uint64_t ts) noexcept
 	{
-		m_relation_history_push(mPtr, &relation, ts);
+		return m_relation_history_push(mPtr, &relation, ts);
 	}
 
 	/*!
