@@ -53,7 +53,10 @@ read_packets(struct wmr_bt_controller *d)
 {
 	unsigned char buffer[WMR_MOTION_CONTROLLER_MSG_BUFFER_SIZE];
 
-	// Do not block
+	// Get the timing as close to packet reception as possible.
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	// Read must be non-blocking for reliable timing.
 	int size = os_hid_read(d->controller_hid, buffer, sizeof(buffer), 0);
 
 	if (size < 0) {
@@ -66,15 +69,18 @@ read_packets(struct wmr_bt_controller *d)
 
 	WMR_TRACE(d, "WMR Controller (Bluetooth): Read %u bytes from device", size);
 
-
 	switch (buffer[0]) {
 	case WMR_BT_MOTION_CONTROLLER_MSG:
 		os_mutex_lock(&d->lock);
 		// Note: skipping msg type byte
 		bool b = wmr_controller_packet_parse(&buffer[1], (size_t)size - 1, &d->input, d->log_level);
 		if (b) {
-			m_imu_3dof_update(&d->fusion, d->input.imu.timestamp_ticks, &d->input.imu.gyro,
-			                  &d->input.imu.acc);
+			m_imu_3dof_update(&d->fusion, d->input.imu.timestamp_ticks * WMR_MOTION_CONTROLLER_NS_PER_TICK,
+			                  &d->input.imu.acc, &d->input.imu.gyro);
+
+			d->last_imu_timestamp_ns = now_ns;
+			d->last_angular_velocity = d->input.imu.gyro;
+
 		} else {
 			WMR_ERROR(d, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
 			          buffer[0], size);
@@ -127,7 +133,7 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
 	os_mutex_lock(&d->lock);
 	relation.pose.orientation = d->fusion.rot;
 	relation.angular_velocity = d->last_angular_velocity;
-	last_imu_timestamp_ns = d->last_imu_timestamp_ns * WMR_MOTION_CONTROLLER_NS_PER_TICK;
+	last_imu_timestamp_ns = d->last_imu_timestamp_ns;
 	os_mutex_unlock(&d->lock);
 
 	// No prediction needed.

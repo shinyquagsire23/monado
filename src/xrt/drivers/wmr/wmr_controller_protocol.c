@@ -22,23 +22,20 @@
 static inline void
 vec3_from_wmr_controller_accel(int32_t sample[3], struct xrt_vec3 *out_vec)
 {
+	// Reverb G1 observation: 1g is approximately 490,000.
 
-	// Reverb G1: 1g approximately equivalent to 490,000
-	// float g = sqrtf(sample[0]*sample[0] + sample[1]*sample[1] + sample[2]*sample[2]);
-	// U_LOG_IFL_D(log_level, "g: %f", g);
-
-	out_vec->x = (float)sample[0] * 0.001f * 1.0f;
-	out_vec->y = (float)sample[1] * 0.001f * 1.0f;
-	out_vec->z = (float)sample[2] * 0.001f * 1.0f;
+	out_vec->x = (float)sample[0] / (98000 / 2);
+	out_vec->y = (float)sample[1] / (98000 / 2);
+	out_vec->z = (float)sample[2] / (98000 / 2);
 }
 
 
 static inline void
 vec3_from_wmr_controller_gyro(int32_t sample[3], struct xrt_vec3 *out_vec)
 {
-	out_vec->x = (float)sample[0] * 0.001f * 1.0f;
-	out_vec->y = (float)sample[1] * 0.001f * 1.0f;
-	out_vec->z = (float)sample[2] * 0.001f * 1.0f;
+	out_vec->x = (float)sample[0] * 0.00001f;
+	out_vec->y = (float)sample[1] * 0.00001f;
+	out_vec->z = (float)sample[2] * 0.00001f;
 }
 
 
@@ -102,6 +99,11 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 	acc[2] = read24(&p); // z
 	vec3_from_wmr_controller_accel(acc, &decoded_input->imu.acc);
 
+	U_LOG_IFL_T(log_level, "Accel [m/s^2] : %f",
+	            sqrtf(decoded_input->imu.acc.x * decoded_input->imu.acc.x +
+	                  decoded_input->imu.acc.y * decoded_input->imu.acc.y +
+	                  decoded_input->imu.acc.z * decoded_input->imu.acc.z));
+
 
 	decoded_input->imu.temperature = read16(&p);
 
@@ -110,7 +112,7 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 	gyro[0] = read24(&p);
 	gyro[1] = read24(&p);
 	gyro[2] = read24(&p);
-	vec3_from_wmr_controller_accel(gyro, &decoded_input->imu.gyro);
+	vec3_from_wmr_controller_gyro(gyro, &decoded_input->imu.gyro);
 
 
 	uint32_t prev_ticks = decoded_input->imu.timestamp_ticks & 0xFFFFFFFFUL;
