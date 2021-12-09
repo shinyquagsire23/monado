@@ -337,6 +337,68 @@ error:
 	return false;
 }
 
+static void
+do_update_timings_google_display_timing(struct comp_target_swapchain *cts)
+{
+	struct vk_bundle *vk = get_vk(cts);
+
+	if (!vk->has_GOOGLE_display_timing) {
+		return;
+	}
+
+	if (cts->swapchain.handle == VK_NULL_HANDLE) {
+		return;
+	}
+
+	uint32_t count = 0;
+	vk->vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                        //
+	    cts->swapchain.handle,             //
+	    &count,                            //
+	    NULL);                             //
+	if (count <= 0) {
+		return;
+	}
+
+	VkPastPresentationTimingGOOGLE *timings = U_TYPED_ARRAY_CALLOC(VkPastPresentationTimingGOOGLE, count);
+	vk->vkGetPastPresentationTimingGOOGLE( //
+	    vk->device,                        //
+	    cts->swapchain.handle,             //
+	    &count,                            //
+	    timings);                          //
+	uint64_t now_ns = os_monotonic_get_ns();
+	for (uint32_t i = 0; i < count; i++) {
+		u_pc_info(cts->upc,                       //
+		          timings[i].presentID,           //
+		          timings[i].desiredPresentTime,  //
+		          timings[i].actualPresentTime,   //
+		          timings[i].earliestPresentTime, //
+		          timings[i].presentMargin,       //
+		          now_ns);                        //
+	}
+
+	free(timings);
+}
+
+static void
+do_update_timings_vblank_thread(struct comp_target_swapchain *cts)
+{
+	if (!cts->vblank.has_started) {
+		return;
+	}
+
+	uint64_t last_vblank_ns;
+
+	os_thread_helper_lock(&cts->vblank.event_thread);
+	last_vblank_ns = cts->vblank.last_vblank_ns;
+	cts->vblank.last_vblank_ns = 0;
+	os_thread_helper_unlock(&cts->vblank.event_thread);
+
+	if (last_vblank_ns) {
+		u_pc_update_vblank_from_display_control(cts->upc, last_vblank_ns);
+	}
+}
+
 #if defined(VK_EXT_display_surface_counter) && defined(VK_EXT_display_control)
 static bool
 check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct comp_target_swapchain *cts)
@@ -361,6 +423,167 @@ check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct 
 	return true;
 }
 
+static uint64_t
+get_surface_counter_val(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct vk_bundle *vk = get_vk(cts);
+	VkResult ret;
+
+	if ((cts->surface.surface_counter_flags & VK_SURFACE_COUNTER_VBLANK_EXT) == 0) {
+		return 0;
+	}
+
+	uint64_t counter_val = 0;
+	ret = vk->vkGetSwapchainCounterEXT( //
+	    vk->device,                     // device
+	    cts->swapchain.handle,          // swapchain
+	    VK_SURFACE_COUNTER_VBLANK_EXT,  // counter
+	    &counter_val);                  // pCounterValue
+
+	if (ret == VK_SUCCESS) {
+		COMP_SPEW(cts->base.c, "vkGetSwapchainCounterEXT: %lu", counter_val);
+	} else if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
+		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: Swapchain out of date!");
+	} else {
+		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: %s", vk_result_string(ret));
+	}
+
+	return counter_val;
+}
+
+static bool
+vblank_event_func(struct comp_target *ct, uint64_t *out_timestamp_ns)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+
+	struct vk_bundle *vk = get_vk(cts);
+	VkResult ret;
+
+
+	VkDisplayEventInfoEXT event_info = {
+	    .sType = VK_STRUCTURE_TYPE_DISPLAY_EVENT_INFO_EXT,
+	    .displayEvent = VK_DISPLAY_EVENT_TYPE_FIRST_PIXEL_OUT_EXT,
+	};
+
+	VkFence vblank_event_fence = VK_NULL_HANDLE;
+	ret = vk->vkRegisterDisplayEventEXT(vk->device, cts->display, &event_info, NULL, &vblank_event_fence);
+	if (ret == VK_ERROR_OUT_OF_HOST_MEMORY) {
+		COMP_ERROR(ct->c, "vkRegisterDisplayEventEXT: %s (started too early?)", vk_result_string(ret));
+		return false;
+	} else if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkRegisterDisplayEventEXT: %s", vk_result_string(ret));
+		return false;
+	}
+
+	// Not scoped to not effect timing.
+	COMP_TRACE_IDENT(vblank);
+
+	// Do the wait
+	ret = vk->vkWaitForFences(vk->device, 1, &vblank_event_fence, true, time_s_to_ns(1));
+
+	// As quickly as possible after the fence has fired.
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	bool valid = false;
+	if (ret == VK_SUCCESS) {
+		/*
+		 * Causes a lot of multiple thread access validation warnings
+		 * and is currently not used by the code so skip for now.
+		 */
+#if 0
+		uint64_t counter_val = get_surface_counter_val(ct);
+
+		static uint64_t last_ns = 0;
+		uint64_t diff_ns = now_ns - last_ns;
+		last_ns = now_ns;
+
+		double now_ms_f = time_ns_to_ms_f(now_ns);
+		double diff_ms_f = time_ns_to_ms_f(diff_ns);
+
+		COMP_DEBUG(ct->c, "vblank event at os time %fms, diff: %fms, vblank: #%lu", now_ms_f, diff_ms_f,
+		           counter_val);
+#else
+		(void)&get_surface_counter_val;
+#endif
+
+		*out_timestamp_ns = now_ns;
+		valid = true;
+
+	} else if (ret == VK_TIMEOUT) {
+		COMP_WARN(ct->c, "vkWaitForFences: VK_TIMEOUT");
+	} else {
+		COMP_ERROR(ct->c, "vkWaitForFences: %s", vk_result_string(ret));
+	}
+
+	vk->vkDestroyFence(vk->device, vblank_event_fence, NULL);
+
+	return valid;
+}
+
+static void *
+run_vblank_event_thread(void *ptr)
+{
+	struct comp_target *ct = (struct comp_target *)ptr;
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+
+	COMP_DEBUG(ct->c, "Surface thread starting");
+
+	os_thread_helper_lock(&cts->vblank.event_thread);
+
+	while (os_thread_helper_is_running_locked(&cts->vblank.event_thread)) {
+
+		if (!cts->vblank.should_wait) {
+			// Wait to be woken up.
+			os_thread_helper_wait_locked(&cts->vblank.event_thread);
+
+			// Check if we should stop.
+			continue;
+		}
+
+		// We should wait for a vblank event.
+		cts->vblank.should_wait = false;
+
+		// Unlock while waiting.
+		os_thread_helper_unlock(&cts->vblank.event_thread);
+
+		uint64_t when_ns = 0;
+		bool valid = vblank_event_func(ct, &when_ns);
+
+		// Just keep swimming.
+		os_thread_helper_lock(&cts->vblank.event_thread);
+
+		if (valid) {
+			cts->vblank.last_vblank_ns = when_ns;
+		}
+	}
+
+	os_thread_helper_unlock(&cts->vblank.event_thread);
+
+	return NULL;
+}
+
+static bool
+create_vblank_event_thread(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	if (cts->display == VK_NULL_HANDLE) {
+		return true;
+	}
+
+	int thread_ret = os_thread_helper_start(&cts->vblank.event_thread, run_vblank_event_thread, ct);
+	if (thread_ret != 0) {
+		COMP_ERROR(ct->c, "Failed to start vblank (first pixel out) event thread");
+		return false;
+	}
+
+	COMP_DEBUG(ct->c, "Started vblank (first pixel out) event thread.");
+
+	// Set this here.
+	cts->vblank.has_started = true;
+
+	return true;
+}
 #endif
 
 
@@ -518,6 +741,18 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	if (!check_surface_counter_caps(ct, vk, cts)) {
 		COMP_ERROR(ct->c, "Failed to query surface counter capabilities");
 	}
+
+	if (vk->has_EXT_display_control && cts->display != VK_NULL_HANDLE) {
+		if (cts->vblank.has_started) {
+			// Already running.
+		} else if (create_vblank_event_thread(ct)) {
+			COMP_INFO(ct->c, "Started vblank event thread!");
+		} else {
+			COMP_ERROR(ct->c, "Failed to register vblank event");
+		}
+	} else {
+		COMP_INFO(ct->c, "Not using vblank event thread!");
+	}
 #endif
 }
 
@@ -583,7 +818,20 @@ comp_target_swapchain_present(struct comp_target *ct,
 	    .pImageIndices = &index,
 	};
 
-	return vk->vkQueuePresentKHR(queue, &presentInfo);
+	VkResult ret = vk->vkQueuePresentKHR(queue, &presentInfo);
+
+#ifdef VK_EXT_display_control
+	if (cts->vblank.has_started) {
+		os_thread_helper_lock(&cts->vblank.event_thread);
+		if (!cts->vblank.should_wait) {
+			cts->vblank.should_wait = true;
+			os_thread_helper_signal_locked(&cts->vblank.event_thread);
+		}
+		os_thread_helper_unlock(&cts->vblank.event_thread);
+	}
+#endif
+
+	return ret;
 }
 
 static bool
@@ -664,44 +912,13 @@ comp_target_swapchain_mark_timing_point(struct comp_target *ct,
 static VkResult
 comp_target_swapchain_update_timings(struct comp_target *ct)
 {
+	COMP_TRACE_MARKER();
+
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	struct vk_bundle *vk = get_vk(cts);
 
-	if (!vk->has_GOOGLE_display_timing) {
-		return VK_SUCCESS;
-	}
+	do_update_timings_google_display_timing(cts);
+	do_update_timings_vblank_thread(cts);
 
-	if (cts->swapchain.handle == VK_NULL_HANDLE) {
-		return VK_SUCCESS;
-	}
-
-	uint32_t count = 0;
-	vk->vkGetPastPresentationTimingGOOGLE( //
-	    vk->device,                        //
-	    cts->swapchain.handle,             //
-	    &count,                            //
-	    NULL);                             //
-	if (count <= 0) {
-		return VK_SUCCESS;
-	}
-
-	VkPastPresentationTimingGOOGLE *timings = U_TYPED_ARRAY_CALLOC(VkPastPresentationTimingGOOGLE, count);
-	vk->vkGetPastPresentationTimingGOOGLE( //
-	    vk->device,                        //
-	    cts->swapchain.handle,             //
-	    &count,                            //
-	    timings);                          //
-	uint64_t now_ns = os_monotonic_get_ns();
-	for (uint32_t i = 0; i < count; i++) {
-		u_pc_info(cts->upc,                       //
-		          timings[i].presentID,           //
-		          timings[i].desiredPresentTime,  //
-		          timings[i].actualPresentTime,   //
-		          timings[i].earliestPresentTime, //
-		          timings[i].presentMargin,       //
-		          now_ns);                        //
-	}
-	free(timings);
 	return VK_SUCCESS;
 }
 
@@ -716,6 +933,13 @@ void
 comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 {
 	struct vk_bundle *vk = get_vk(cts);
+
+	// Thread if it has been started must be stopped first.
+	if (cts->vblank.has_started) {
+		os_thread_helper_stop(&cts->vblank.event_thread);
+		os_thread_helper_destroy(&cts->vblank.event_thread);
+		cts->vblank.has_started = false;
+	}
 
 	destroy_image_views(cts);
 

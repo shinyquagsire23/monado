@@ -72,6 +72,21 @@ struct comp_target_swapchain
 
 	//! The current display used for direct mode, VK_NULL_HANDLE else.
 	VkDisplayKHR display;
+
+	struct
+	{
+		//! Must only be accessed from main compositor thread.
+		bool has_started;
+
+		//! Protected by event_thread lock.
+		bool should_wait;
+
+		//! Protected by event_thread lock.
+		uint64_t last_vblank_ns;
+
+		//! Thread waiting on vblank_event_fence (first pixel out).
+		struct os_thread_helper event_thread;
+	} vblank;
 };
 
 
