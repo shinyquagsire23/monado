@@ -66,6 +66,8 @@ struct comp_window_direct_wayland
 	struct wl_display *display;
 	struct direct_wayland_lease_device *devices;
 	struct direct_wayland_lease *lease;
+
+	VkDisplayKHR vk_display;
 };
 
 static void
@@ -159,7 +161,7 @@ comp_window_direct_wayland_create_surface(struct comp_window_direct_wayland *w,
 	assert(!w->lease);
 
 	struct vk_bundle *vk = get_vk(w);
-	VkDisplayKHR _display = VK_NULL_HANDLE;
+	w->vk_display = VK_NULL_HANDLE;
 	VkResult ret = VK_ERROR_INCOMPATIBLE_DISPLAY_KHR;
 
 	/* TODO: Choose the connector with an environment variable or from `ct->c->settings.display` */
@@ -183,7 +185,7 @@ comp_window_direct_wayland_create_surface(struct comp_window_direct_wayland *w,
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
 
-	ret = vk->vkGetDrmDisplayEXT(vk->physical_device, dev->drm_fd, conn->id, &_display);
+	ret = vk->vkGetDrmDisplayEXT(vk->physical_device, dev->drm_fd, conn->id, &w->vk_display);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.base.c, "vkGetDrmDisplayEXT failed: %s", vk_result_string(ret));
 		return ret;
@@ -219,13 +221,13 @@ comp_window_direct_wayland_create_surface(struct comp_window_direct_wayland *w,
 		return VK_ERROR_UNKNOWN;
 	}
 
-	ret = vk->vkAcquireDrmDisplayEXT(vk->physical_device, lease->leased_fd, _display);
+	ret = vk->vkAcquireDrmDisplayEXT(vk->physical_device, lease->leased_fd, w->vk_display);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.base.c, "vkAcquireDrmDisplayEXT failed: %s", vk_result_string(ret));
 		return ret;
 	}
 
-	ret = comp_window_direct_create_surface(&w->base, _display, width, height);
+	ret = comp_window_direct_create_surface(&w->base, w->vk_display, width, height);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->base.base.c, "Failed to create surface: %s", vk_result_string(ret));
 	}
