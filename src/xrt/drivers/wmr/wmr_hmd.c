@@ -1016,27 +1016,17 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	math_pose_invert(&wh->config.sensors.mag.pose, &wh->mag_to_centerline);
 	math_pose_transform(&wh->centerline, &wh->mag_to_centerline, &wh->mag_to_centerline);
 
-	struct u_device_simple_info info;
-	info.display.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;
-	info.display.h_pixels = (uint32_t)wh->config.eye_params[0].display_size.y;
+	struct u_extents_2d exts;
 
-	info.lens_horizontal_separation_meters =
-	    fabs(wh->display_to_centerline[1].position.x - wh->display_to_centerline[0].position.x);
+	exts.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;
+	exts.h_pixels = (uint32_t)wh->config.eye_params[0].display_size.y;
 
-	/* We set up a dummy side-by-side config, then adjust the actual FoV bounds
-	 * in compute_distortion_bounds() below */
-	info.display.w_meters = 0.13f;
-	info.display.h_meters = 0.07f;
-	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * ((float)M_PI / 180.0f);
-	info.views[1].fov = 85.0f * ((float)M_PI / 180.0f);
+	u_extents_2d_split_side_by_side(&wh->base, &exts);
 
-	if (!u_device_setup_split_side_by_side(&wh->base, &info)) {
-		WMR_ERROR(wh, "Failed to setup basic HMD device info");
-		wmr_hmd_destroy(&wh->base);
-		wh = NULL;
-		return NULL;
-	}
+	// Fill in blend mode - just opqaue, unless we get Hololens support one day.
+	size_t idx = 0;
+	wh->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	wh->base.hmd->blend_mode_count = idx;
 
 	// Distortion information, fills in xdev->compute_distortion().
 	for (eye = 0; eye < 2; eye++) {
