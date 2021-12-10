@@ -29,8 +29,8 @@ private:
 
 public:
 	// clang-format off
-	int topIdx() { return mTopIdx; }
-	int length() { return mLength; }
+	int topIdx() const noexcept { return mTopIdx; }
+	int length() const noexcept { return mLength; }
 	// clang-format on
 
 	/* Put something at the top, overwrite whatever was at the back*/

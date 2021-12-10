@@ -40,11 +40,20 @@ TEST_CASE("m_relation_history")
 		// two seconds after T0
 		constexpr auto T2 = T1 + (uint64_t)U_TIME_1S_IN_NS;
 
-		m_relation_history_push(rh, &relation, T0);
+		CHECK(m_relation_history_push(rh, &relation, T0));
+		CHECK(m_relation_history_get_size(rh) == 1);
+
 		relation.pose.position.x = 1.f;
-		m_relation_history_push(rh, &relation, T1);
+		CHECK(m_relation_history_push(rh, &relation, T1));
+		CHECK(m_relation_history_get_size(rh) == 2);
+
 		relation.pose.position.x = 2.f;
-		m_relation_history_push(rh, &relation, T2);
+		CHECK(m_relation_history_push(rh, &relation, T2));
+		CHECK(m_relation_history_get_size(rh) == 3);
+
+		// Try going back in time: should fail
+		CHECK_FALSE(m_relation_history_push(rh, &relation, T1));
+		CHECK(m_relation_history_get_size(rh) == 3);
 
 		xrt_space_relation out_relation = XRT_SPACE_RELATION_ZERO;
 		CHECK(m_relation_history_get(rh, 0, &out_relation) == M_RELATION_HISTORY_RESULT_INVALID);

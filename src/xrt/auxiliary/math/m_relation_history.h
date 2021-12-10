@@ -68,6 +68,14 @@ enum m_relation_history_result
 m_relation_history_get(struct m_relation_history *rh, uint64_t at_time_ns, struct xrt_space_relation *out_relation);
 
 /*!
+ * @brief Returns the number of items in the history.
+ *
+ * @public @memberof m_relation_history
+ */
+uint32_t
+m_relation_history_get_size(const struct m_relation_history *rh);
+
+/*!
  * Destroys an opaque relation_history object.
  *
  * @public @memberof m_relation_history
