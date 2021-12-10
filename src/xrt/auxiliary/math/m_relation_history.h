@@ -68,6 +68,22 @@ enum m_relation_history_result
 m_relation_history_get(struct m_relation_history *rh, uint64_t at_time_ns, struct xrt_space_relation *out_relation);
 
 /*!
+ * @brief Get the latest report in the buffer, if any.
+ *
+ * @param rh self
+ * @param[out] out_time_ns Populated with the latest report time, if any
+ * @param[out] out_relation Populated with the latest relation, if any
+ *
+ * @return false if the history is empty.
+ *
+ * @public @memberof m_relation_history
+ */
+bool
+m_relation_history_get_latest(struct m_relation_history *rh,
+                              uint64_t *out_time_ns,
+                              struct xrt_space_relation *out_relation);
+
+/*!
  * @brief Returns the number of items in the history.
  *
  * @public @memberof m_relation_history

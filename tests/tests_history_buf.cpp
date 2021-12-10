@@ -40,22 +40,36 @@ TEST_CASE("m_relation_history")
 		// two seconds after T0
 		constexpr auto T2 = T1 + (uint64_t)U_TIME_1S_IN_NS;
 
+		xrt_space_relation out_relation = XRT_SPACE_RELATION_ZERO;
+		uint64_t out_time = 0;
+
+		CHECK(m_relation_history_get_size(rh) == 0);
+		CHECK_FALSE(m_relation_history_get_latest(rh, &out_time, &out_relation));
+
+
 		CHECK(m_relation_history_push(rh, &relation, T0));
 		CHECK(m_relation_history_get_size(rh) == 1);
+		CHECK(m_relation_history_get_latest(rh, &out_time, &out_relation));
+		CHECK(out_time == T0);
 
 		relation.pose.position.x = 1.f;
 		CHECK(m_relation_history_push(rh, &relation, T1));
 		CHECK(m_relation_history_get_size(rh) == 2);
+		CHECK(m_relation_history_get_latest(rh, &out_time, &out_relation));
+		CHECK(out_time == T1);
 
 		relation.pose.position.x = 2.f;
 		CHECK(m_relation_history_push(rh, &relation, T2));
 		CHECK(m_relation_history_get_size(rh) == 3);
+		CHECK(m_relation_history_get_latest(rh, &out_time, &out_relation));
+		CHECK(out_time == T2);
 
-		// Try going back in time: should fail
+		// Try going back in time: should fail to push, leave state the same
 		CHECK_FALSE(m_relation_history_push(rh, &relation, T1));
 		CHECK(m_relation_history_get_size(rh) == 3);
+		CHECK(m_relation_history_get_latest(rh, &out_time, &out_relation));
+		CHECK(out_time == T2);
 
-		xrt_space_relation out_relation = XRT_SPACE_RELATION_ZERO;
 		CHECK(m_relation_history_get(rh, 0, &out_relation) == M_RELATION_HISTORY_RESULT_INVALID);
 
 		CHECK(m_relation_history_get(rh, T0, &out_relation) == M_RELATION_HISTORY_RESULT_EXACT);
