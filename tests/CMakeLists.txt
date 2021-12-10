@@ -35,3 +35,9 @@ add_executable(tests_history_buf tests_history_buf.cpp)
 target_link_libraries(tests_history_buf PRIVATE tests_main)
 target_link_libraries(tests_history_buf PRIVATE aux_util aux_math)
 add_test(NAME tests_history_buf COMMAND tests_history_buf --success)
+
+# misc wrappers
+add_executable(tests_cxx_wrappers tests_cxx_wrappers.cpp)
+target_link_libraries(tests_cxx_wrappers PRIVATE tests_main)
+target_link_libraries(tests_cxx_wrappers PRIVATE aux_util xrt-interfaces)
+add_test(NAME tests_cxx_wrappers COMMAND tests_cxx_wrappers --success)

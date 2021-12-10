@@ -1,8 +1,8 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Header defining an xrt HMD device.
+ * @brief  Header defining an xrt display or controller device.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
  * @ingroup xrt_iface
@@ -474,5 +474,5 @@ xrt_device_destroy(struct xrt_device **xdev_ptr)
 
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
