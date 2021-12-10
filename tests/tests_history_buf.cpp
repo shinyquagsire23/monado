@@ -104,3 +104,90 @@ TEST_CASE("m_relation_history")
 
 	m_relation_history_destroy(&rh);
 }
+
+
+TEST_CASE("RelationHistory")
+{
+	using xrt::auxiliary::math::RelationHistory;
+	RelationHistory rh;
+
+	SECTION("empty buffer")
+	{
+		xrt_space_relation out_relation = XRT_SPACE_RELATION_ZERO;
+		CHECK(rh.get(0, &out_relation) == M_RELATION_HISTORY_RESULT_INVALID);
+		CHECK(rh.get(1, &out_relation) == M_RELATION_HISTORY_RESULT_INVALID);
+	}
+	SECTION("populated buffer")
+	{
+		xrt_space_relation relation = XRT_SPACE_RELATION_ZERO;
+		relation.relation_flags = (xrt_space_relation_flags)(
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+		relation.linear_velocity.x = 1.f;
+
+		// arbitrary value
+		constexpr auto T0 = 20 * (uint64_t)U_TIME_1S_IN_NS;
+		// one second after T0
+		constexpr auto T1 = T0 + (uint64_t)U_TIME_1S_IN_NS;
+		// two seconds after T0
+		constexpr auto T2 = T1 + (uint64_t)U_TIME_1S_IN_NS;
+
+		xrt_space_relation out_relation = XRT_SPACE_RELATION_ZERO;
+		uint64_t out_time = 0;
+
+		CHECK(rh.size() == 0);
+		CHECK_FALSE(rh.get_latest(&out_time, &out_relation));
+
+
+		CHECK(rh.push(relation, T0));
+		CHECK(rh.size() == 1);
+		CHECK(rh.get_latest(&out_time, &out_relation));
+		CHECK(out_time == T0);
+
+		relation.pose.position.x = 1.f;
+		CHECK(rh.push(relation, T1));
+		CHECK(rh.size() == 2);
+		CHECK(rh.get_latest(&out_time, &out_relation));
+		CHECK(out_time == T1);
+
+		relation.pose.position.x = 2.f;
+		CHECK(rh.push(relation, T2));
+		CHECK(rh.size() == 3);
+		CHECK(rh.get_latest(&out_time, &out_relation));
+		CHECK(out_time == T2);
+
+		// Try going back in time: should fail to push, leave state the same
+		CHECK_FALSE(rh.push(relation, T1));
+		CHECK(rh.size() == 3);
+		CHECK(rh.get_latest(&out_time, &out_relation));
+		CHECK(out_time == T2);
+
+		CHECK(rh.get(0, &out_relation) == M_RELATION_HISTORY_RESULT_INVALID);
+
+		CHECK(rh.get(T0, &out_relation) == M_RELATION_HISTORY_RESULT_EXACT);
+		CHECK(out_relation.pose.position.x == 0.f);
+
+		CHECK(rh.get(T1, &out_relation) == M_RELATION_HISTORY_RESULT_EXACT);
+		CHECK(out_relation.pose.position.x == 1.f);
+
+		CHECK(rh.get(T2, &out_relation) == M_RELATION_HISTORY_RESULT_EXACT);
+		CHECK(out_relation.pose.position.x == 2.f);
+
+
+		CHECK(rh.get(T0 - (uint64_t)U_TIME_1S_IN_NS, &out_relation) ==
+		      M_RELATION_HISTORY_RESULT_REVERSE_PREDICTED);
+		CHECK(out_relation.pose.position.x < 0.f);
+
+		CHECK(rh.get((T0 + T1) / 2, &out_relation) == M_RELATION_HISTORY_RESULT_INTERPOLATED);
+		CHECK(out_relation.pose.position.x > 0.f);
+		CHECK(out_relation.pose.position.x < 1.f);
+
+		CHECK(rh.get((T1 + T2) / 2, &out_relation) == M_RELATION_HISTORY_RESULT_INTERPOLATED);
+		CHECK(out_relation.pose.position.x > 1.f);
+		CHECK(out_relation.pose.position.x < 2.f);
+
+		CHECK(rh.get(T2 + (uint64_t)U_TIME_1S_IN_NS, &out_relation) == M_RELATION_HISTORY_RESULT_PREDICTED);
+		CHECK(out_relation.pose.position.x > 2.f);
+	}
+}
