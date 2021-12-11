@@ -759,10 +759,6 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.hmd->screens[0].nominal_frame_interval_ns = info.display.nominal_frame_interval_ns;
 
 	// Left
-	ohd->base.hmd->views[0].display.w_meters = info.views[0].display.w_meters;
-	ohd->base.hmd->views[0].display.h_meters = info.views[0].display.h_meters;
-	ohd->base.hmd->views[0].display.w_pixels = info.views[0].display.w_pixels;
-	ohd->base.hmd->views[0].display.h_pixels = info.views[0].display.h_pixels;
 	ohd->base.hmd->views[0].viewport.x_pixels = 0;
 	ohd->base.hmd->views[0].viewport.y_pixels = 0;
 	ohd->base.hmd->views[0].viewport.w_pixels = info.views[0].display.w_pixels;
@@ -770,10 +766,6 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	ohd->base.hmd->views[0].rot = u_device_rotation_ident;
 
 	// Right
-	ohd->base.hmd->views[1].display.w_meters = info.views[1].display.w_meters;
-	ohd->base.hmd->views[1].display.h_meters = info.views[1].display.h_meters;
-	ohd->base.hmd->views[1].display.w_pixels = info.views[1].display.w_pixels;
-	ohd->base.hmd->views[1].display.h_pixels = info.views[1].display.h_pixels;
 	ohd->base.hmd->views[1].viewport.x_pixels = info.views[0].display.w_pixels;
 	ohd->base.hmd->views[1].viewport.y_pixels = 0;
 	ohd->base.hmd->views[1].viewport.w_pixels = info.views[1].display.w_pixels;
@@ -809,8 +801,8 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 		ohd->distortion.openhmd[view].lens_center.x = info.views[view].lens_center_x_meters;
 		ohd->distortion.openhmd[view].lens_center.y = info.views[view].lens_center_y_meters;
 
-		ohd->distortion.openhmd[view].viewport_scale.x = ohd->base.hmd->views[view].display.w_meters;
-		ohd->distortion.openhmd[view].viewport_scale.y = ohd->base.hmd->views[view].display.h_meters;
+		ohd->distortion.openhmd[view].viewport_scale.x = info.views[view].display.w_meters;
+		ohd->distortion.openhmd[view].viewport_scale.y = info.views[view].display.h_meters;
 	}
 	// clang-format on
 

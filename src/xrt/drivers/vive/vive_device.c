@@ -830,8 +830,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &d->base.hmd->views[eye];
-		v->display.w_meters = (float)w_meters;
-		v->display.h_meters = (float)h_meters;
 		v->display.w_pixels = w_pixels;
 		v->display.h_pixels = h_pixels;
 		v->viewport.w_pixels = w_pixels;

@@ -65,8 +65,6 @@ struct xrt_view
 	{
 		uint32_t w_pixels;
 		uint32_t h_pixels;
-		float w_meters;
-		float h_meters;
 	} display;
 
 	/*!

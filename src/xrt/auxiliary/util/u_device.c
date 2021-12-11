@@ -100,8 +100,6 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
 		PRINT_INT(   "views[0].viewport.h_pixels   ", xdev->hmd->views[0].viewport.h_pixels);
 		PRINT_INT(   "views[0].display.w_pixels    ", xdev->hmd->views[0].display.w_pixels);
 		PRINT_INT(   "views[0].display.h_pixels    ", xdev->hmd->views[0].display.h_pixels);
-		PRINT_MM(    "views[0].display.w_meters    ", xdev->hmd->views[0].display.w_meters);
-		PRINT_MM(    "views[0].display.h_meters    ", xdev->hmd->views[0].display.h_meters);
 		PRINT_MAT2X2("views[0].rot            ", xdev->hmd->views[0].rot);
 		PRINT_ANGLE( "views[0].fov.angle_left ", xdev->hmd->views[0].fov.angle_left);
 		PRINT_ANGLE( "views[0].fov.angle_right", xdev->hmd->views[0].fov.angle_right);
@@ -114,8 +112,6 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
 		PRINT_INT(   "views[1].viewport.h_pixels   ", xdev->hmd->views[1].viewport.h_pixels);
 		PRINT_INT(   "views[1].display.w_pixels    ", xdev->hmd->views[1].display.w_pixels);
 		PRINT_INT(   "views[1].display.h_pixels    ", xdev->hmd->views[1].display.h_pixels);
-		PRINT_MM(    "views[1].display.w_meters    ", xdev->hmd->views[1].display.w_meters);
-		PRINT_MM(    "views[1].display.h_meters    ", xdev->hmd->views[1].display.h_meters);
 		PRINT_MAT2X2("views[1].rot            ", xdev->hmd->views[1].rot);
 		PRINT_ANGLE( "views[1].fov.angle_left ", xdev->hmd->views[1].fov.angle_left);
 		PRINT_ANGLE( "views[1].fov.angle_right", xdev->hmd->views[1].fov.angle_right);
@@ -193,8 +189,6 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 	xdev->hmd->screens[0].h_pixels = info->display.h_pixels;
 
 	// Left
-	xdev->hmd->views[0].display.w_meters = w_meters;
-	xdev->hmd->views[0].display.h_meters = h_meters;
 	xdev->hmd->views[0].display.w_pixels = w_pixels;
 	xdev->hmd->views[0].display.h_pixels = h_pixels;
 	xdev->hmd->views[0].viewport.x_pixels = 0;
@@ -204,8 +198,6 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 	xdev->hmd->views[0].rot = u_device_rotation_ident;
 
 	// Right
-	xdev->hmd->views[1].display.w_meters = w_meters;
-	xdev->hmd->views[1].display.h_meters = h_meters;
 	xdev->hmd->views[1].display.w_pixels = w_pixels;
 	xdev->hmd->views[1].display.h_pixels = h_pixels;
 	xdev->hmd->views[1].viewport.x_pixels = w_pixels;
