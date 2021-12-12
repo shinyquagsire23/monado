@@ -53,11 +53,11 @@ read_packets(struct wmr_bt_controller *d)
 {
 	unsigned char buffer[WMR_MOTION_CONTROLLER_MSG_BUFFER_SIZE];
 
-	// Get the timing as close to packet reception as possible.
-	uint64_t now_ns = os_monotonic_get_ns();
+	// Better cpu efficiency with blocking reads instead of multiple reads.
+	int size = os_hid_read(d->controller_hid, buffer, sizeof(buffer), 500);
 
-	// Read must be non-blocking for reliable timing.
-	int size = os_hid_read(d->controller_hid, buffer, sizeof(buffer), 0);
+	// Get the timing as close to reading packet as possible.
+	uint64_t now_ns = os_monotonic_get_ns();
 
 	if (size < 0) {
 		WMR_ERROR(d, "WMR Controller (Bluetooth): Error reading from device");
