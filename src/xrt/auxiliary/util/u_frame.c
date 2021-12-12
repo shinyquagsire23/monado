@@ -78,3 +78,68 @@ u_frame_clone(struct xrt_frame *to_copy, struct xrt_frame **out_frame)
 
 	xrt_frame_reference(out_frame, xf);
 }
+
+static void
+free_roi(struct xrt_frame *xf)
+{
+	xrt_frame_reference((struct xrt_frame **)&xf->owner, NULL);
+	free(xf);
+}
+
+void
+u_frame_create_roi(struct xrt_frame *original, struct xrt_rect roi, struct xrt_frame **out_frame)
+{
+	assert(roi.offset.w >= 0 && roi.offset.h >= 0 && roi.extent.w > 0 && roi.extent.h > 0);
+	uint32_t x = roi.offset.w;
+	uint32_t y = roi.offset.h;
+	uint32_t w = roi.extent.w;
+	uint32_t h = roi.extent.h;
+	assert(x + w <= original->width && y + h <= original->height);
+
+	// Calculate size and offset in bytes
+
+	// Block dimensions
+	uint32_t bw = u_format_block_width(original->format);
+	uint32_t bh = u_format_block_height(original->format);
+	size_t bsz = u_format_block_size(original->format);
+
+	// Only allow x and w to be multiples of bw (same with y, h, and bh)
+	assert(w % bw == 0 && x % bw == 0 && h % bh == 0 && y % bh == 0);
+
+	// x, y, w, and h in blocks
+	uint32_t xb = x / bw;
+	uint32_t yb = y / bh;
+	uint32_t wb = w / bw;
+	uint32_t hb = h / bh;
+
+	// Compute offset in bytes
+	size_t offset = yb * original->stride + xb * bsz;
+
+	// Compute exact size in original to hold the entire ROI
+	size_t start_margin = xb * bsz;
+	size_t end_margin = original->stride - ((xb + wb) * bsz);
+	size_t size = hb * original->stride - start_margin - end_margin;
+
+	// Create and fill in ROI frame
+
+	struct xrt_frame *xf = U_TYPED_CALLOC(struct xrt_frame);
+
+	xf->destroy = free_roi;
+	xrt_frame_reference((struct xrt_frame **)&xf->owner, original);
+
+	xf->width = w;
+	xf->height = h;
+	xf->stride = original->stride;
+	xf->size = size;
+	xf->data = original->data + offset;
+
+	xf->format = original->format;
+	xf->stereo_format = XRT_STEREO_FORMAT_NONE; // Explicitly not-stereo
+
+	xf->timestamp = original->timestamp;
+	xf->source_timestamp = original->source_timestamp;
+	xf->source_sequence = original->source_sequence;
+	xf->source_id = original->source_id;
+
+	xrt_frame_reference(out_frame, xf);
+}
