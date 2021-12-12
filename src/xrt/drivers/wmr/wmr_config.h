@@ -104,7 +104,7 @@ struct wmr_camera_config
 	enum wmr_camera_location location;
 	enum wmr_camera_purpose purpose;
 
-	int sensor_width, sensor_height;
+	struct xrt_rect roi;
 	struct xrt_pose pose;
 
 	struct wmr_distortion_6KT distortion6KT;
@@ -145,6 +145,7 @@ struct wmr_hmd_config
 	struct wmr_inertial_sensors_config sensors;
 
 	int n_cameras;
+	int n_ht_cameras;
 	struct wmr_camera_config cameras[WMR_MAX_CAMERAS];
 };
 

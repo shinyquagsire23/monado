@@ -144,22 +144,22 @@ compute_frame_size(struct wmr_camera *cam)
 			continue;
 		}
 
-		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->sensor_width,
-		              config->sensor_height);
+		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->roi.extent.w,
+		              config->roi.extent.h);
 
 		if (cams_found == 0) {
-			width = config->sensor_width;
-			height = config->sensor_height;
-		} else if (height != config->sensor_height) {
+			width = config->roi.extent.w;
+			height = config->roi.extent.h;
+		} else if (height != config->roi.extent.h) {
 			WMR_CAM_ERROR(cam, "Head tracking sensors have mismatched heights - %u != %u. Please report",
-			              height, config->sensor_height);
+			              height, config->roi.extent.h);
 			return false;
 		} else {
-			width += config->sensor_width;
+			width += config->roi.extent.w;
 		}
 
 		cams_found++;
-		F += config->sensor_width * (config->sensor_height + 1);
+		F += config->roi.extent.w * (config->roi.extent.h + 1);
 	}
 
 	if (cams_found == 0) {

@@ -320,11 +320,13 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	wmr_config_compute_pose(&cam_config->pose, &translation, &rotation);
 
-	if (!JSON_INT(camera, "SensorWidth", &cam_config->sensor_width) ||
-	    !JSON_INT(camera, "SensorHeight", &cam_config->sensor_height)) {
+	if (!JSON_INT(camera, "SensorWidth", &cam_config->roi.extent.w) ||
+	    !JSON_INT(camera, "SensorHeight", &cam_config->roi.extent.h)) {
 		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->n_cameras);
 		return false;
 	}
+	cam_config->roi.offset.w = c->n_ht_cameras * cam_config->roi.extent.w; // Assume all HT cams have same width
+	cam_config->roi.offset.h = 1;                                          // Ignore first metadata row
 
 	/* Distortion information */
 	cJSON *dist = cJSON_GetObjectItemCaseSensitive(camera, "Intrinsics");
@@ -366,6 +368,10 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion parameters",
 		          c->n_cameras);
 		return false;
+	}
+
+	if (cam_config->purpose == WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
+		c->n_ht_cameras++;
 	}
 
 	c->n_cameras++;
