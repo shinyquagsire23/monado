@@ -81,6 +81,18 @@ struct u_var_button
 	bool disabled;
 };
 
+struct u_var_combo
+{
+	//! Number of options.
+	int count;
+
+	//! List of `count` option names separated by \0.
+	const char *options;
+
+	//! Pointer to the option value.
+	int *value;
+};
+
 struct u_var_draggable_f32
 {
 	float val;
@@ -125,6 +137,7 @@ enum u_var_kind
 	U_VAR_KIND_RO_FF_VEC3_F32,
 	U_VAR_KIND_GUI_HEADER,
 	U_VAR_KIND_BUTTON,
+	U_VAR_KIND_COMBO,
 };
 
 #define U_VAR_NAME_STRING_SIZE 256
@@ -231,6 +244,7 @@ u_var_force_on(void);
 	ADD_FUNC(ro_ff_vec3_f32, struct m_ff_vec3_f32, RO_FF_VEC3_F32)                                                 \
 	ADD_FUNC(gui_header, bool, GUI_HEADER)                                                                         \
 	ADD_FUNC(button, struct u_var_button, BUTTON)                                                                  \
+	ADD_FUNC(combo, struct u_var_combo, COMBO)                                                                     \
 	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM) void u_var_add_##SUFFIX(void *, TYPE *, const char *);

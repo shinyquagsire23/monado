@@ -229,6 +229,12 @@ on_button_var(const char *name, void *ptr)
 		igPopStyleVar(1);
 	}
 }
+static void
+on_combo_var(const char *name, void *ptr)
+{
+	struct u_var_combo *combo = (struct u_var_combo *)ptr;
+	igComboStr(name, combo->value, combo->options, combo->count);
+}
 
 static void
 on_draggable_f32_var(const char *name, void *ptr)
@@ -368,6 +374,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
 	case U_VAR_KIND_DRAGGABLE_F32: on_draggable_f32_var(name, ptr); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
+	case U_VAR_KIND_COMBO: on_combo_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }
