@@ -477,6 +477,34 @@ rs_source_frame_destroy(struct xrt_frame *xf)
 	rs2_release_frame(rframe);
 	free(xf);
 }
+static inline timepoint_ns
+get_frame_monotonic_ts_from(struct rs_source *rs, rs2_frame *frame, uint64_t unow_monotonic, uint64_t unow_realtime)
+{
+	RS_DASSERT_(unow_monotonic < INT64_MAX && unow_realtime < INT64_MAX);
+	timepoint_ns now_monotonic = unow_monotonic;
+	timepoint_ns now_realtime = unow_realtime;
+
+	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
+	timepoint_ns device_ts = timestamp_ms * U_TIME_1MS_IN_NS;
+
+	// Assertion commented because GLOBAL_TIME makes ts be a bit in the future
+	// RS_DASSERT_((timepoint_ns)now_realtime > ts);
+
+	timepoint_ns monotonic_ts = now_monotonic - (now_realtime - device_ts);
+	return monotonic_ts;
+}
+
+
+//! Convert device_ts to monotonic clock.
+//! Assumes now_realtime and device_ts are in the same clock domain (GLOBAL_TIME).
+static inline timepoint_ns
+get_frame_monotonic_ts(struct rs_source *rs, rs2_frame *frame)
+{
+	uint64_t now_monotonic = os_monotonic_get_ns();
+	uint64_t now_realtime = os_realtime_get_ns();
+	return get_frame_monotonic_ts_from(rs, frame, now_monotonic, now_realtime);
+}
+
 
 static void
 rs2xrt_frame(struct rs_source *rs, rs2_frame *rframe, struct xrt_frame **out_xframe)
@@ -515,8 +543,10 @@ rs2xrt_frame(struct rs_source *rs, rs2_frame *rframe, struct xrt_frame **out_xfr
 	xf->format = rs->xrt_video_format;
 	xf->stereo_format = XRT_STEREO_FORMAT_NONE; //!< @todo Use a stereo xrt_format
 
-	uint64_t timestamp_ns = timestamp_ms * 1000 * 1000;
-	xf->timestamp = timestamp_ns;
+	uint64_t timestamp_ns = timestamp_ms * U_TIME_1MS_IN_NS;
+	// Don't set timestamp here, timestamp_ns is in realtime clock but we need
+	// monotonic. The user of this function should do it later.
+	// xf->timestamp = timestamp_ns;
 	xf->source_timestamp = timestamp_ns;
 	xf->source_sequence = number;
 	xf->source_id = rs->xfs.source_id;
@@ -527,7 +557,6 @@ rs2xrt_frame(struct rs_source *rs, rs2_frame *rframe, struct xrt_frame **out_xfr
 static void
 handle_frameset(struct rs_source *rs, rs2_frame *frames)
 {
-
 	// Check number of frames on debug builds
 	int num_of_frames = DO(rs2_embedded_frames_count, frames);
 	if (rs->stereo) {
@@ -549,6 +578,14 @@ handle_frameset(struct rs_source *rs, rs2_frame *frames)
 		rs2xrt_frame(rs, rframe_right, &xf_right);
 
 		if (xf_left->timestamp == xf_right->timestamp) {
+
+			// Correct timestamps to same monotonic time
+			uint64_t now_monotonic = os_monotonic_get_ns();
+			uint64_t now_realtime = os_realtime_get_ns();
+			timepoint_ns ts = get_frame_monotonic_ts_from(rs, frames, now_monotonic, now_realtime);
+			xf_left->timestamp = ts;
+			xf_right->timestamp = ts;
+
 			xrt_sink_push_frame(rs->in_sinks.left, xf_left);
 			xrt_sink_push_frame(rs->in_sinks.right, xf_right);
 		} else {
@@ -603,9 +640,7 @@ handle_gyro_frame(struct rs_source *rs, rs2_frame *frame)
 	RS_DASSERT(data_size == 3 * sizeof(float) || data_size == 4 * sizeof(float), "Unexpected size=%d", data_size);
 	RS_DASSERT_(data_size != 4 || data[3] == 0);
 #endif
-
-	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
-	timepoint_ns timestamp_ns = timestamp_ms * 1000 * 1000;
+	timepoint_ns timestamp_ns = get_frame_monotonic_ts(rs, frame);
 	struct xrt_vec3 gyro = {data[0], data[1], data[2]};
 	RS_TRACE(rs, "gyro t=%ld x=%f y=%f z=%f", timestamp_ns, gyro.x, gyro.y, gyro.z);
 	partial_imu_sample_push(rs, timestamp_ns, gyro, true);
@@ -624,9 +659,7 @@ handle_accel_frame(struct rs_source *rs, rs2_frame *frame)
 	RS_DASSERT(data_size == 3 * sizeof(float) || data_size == 4 * sizeof(float), "Unexpected size=%d", data_size);
 	RS_DASSERT_(data_size != 4 || data[3] == 0);
 #endif
-
-	double timestamp_ms = DO(rs2_get_frame_timestamp, frame);
-	timepoint_ns timestamp_ns = timestamp_ms * 1000 * 1000;
+	timepoint_ns timestamp_ns = get_frame_monotonic_ts(rs, frame);
 	struct xrt_vec3 accel = {data[0], data[1], data[2]};
 	RS_TRACE(rs, "accel t=%ld x=%f y=%f z=%f", timestamp_ns, accel.x, accel.y, accel.z);
 	partial_imu_sample_push(rs, timestamp_ns, accel, false);
@@ -844,20 +877,12 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	RS_TRACE(rs, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
-	// Push to debug UI by adjusting the timestamp to monotonic time
+	// Push to debug UI
 
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
 	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
-	uint64_t now_realtime = os_realtime_get_ns();
-	uint64_t now_monotonic = os_monotonic_get_ns();
-	RS_DASSERT_(now_realtime < INT64_MAX);
-
-	// Assertion commented because GLOBAL_TIME makes ts be a bit in the future
-	// RS_DASSERT_(now_realtime < INT64_MAX && (timepoint_ns)now_realtime > ts);
-
-	uint64_t imu_monotonic = now_monotonic - (now_realtime - ts);
-	m_ff_vec3_f32_push(rs->gyro_ff, &gyro, imu_monotonic);
-	m_ff_vec3_f32_push(rs->accel_ff, &accel, imu_monotonic);
+	m_ff_vec3_f32_push(rs->gyro_ff, &gyro, ts);
+	m_ff_vec3_f32_push(rs->accel_ff, &accel, ts);
 
 	if (rs->out_sinks.imu) {
 		xrt_sink_push_imu(rs->out_sinks.imu, s);
