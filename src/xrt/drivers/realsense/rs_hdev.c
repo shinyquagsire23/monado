@@ -444,23 +444,38 @@ rs_source_load_stream_options_from_json(struct rs_source *rs)
  *
  */
 
-//! Disable any laser emitters because they confuse SLAM feature detection
-static void
-disable_all_laser_emitters(struct rs_source *rs)
+//! Set an option for all sensors. Return whether it was set for any.
+static bool
+set_option_in_all_sensors(struct rs_source *rs, enum rs2_option option, float value)
 {
 	struct rs_container *rsc = &rs->rsc;
 	rs2_sensor_list *sensors = DO(rs2_query_sensors, rsc->device);
 	int sensors_count = DO(rs2_get_sensors_count, sensors);
+	bool any_set = false;
 	for (int i = 0; i < sensors_count; i++) {
 		rs2_sensor *sensor = DO(rs2_create_sensor, sensors, i);
 		rs2_options *sensor_options = (rs2_options *)sensor;
-		bool has_emitter = DO(rs2_supports_option, sensor_options, RS2_OPTION_EMITTER_ENABLED);
-		if (has_emitter) {
-			DO(rs2_set_option, sensor_options, RS2_OPTION_EMITTER_ENABLED, 0);
+		bool has_option = DO(rs2_supports_option, sensor_options, option);
+		if (has_option) {
+			float min, max, step, def;
+			DO(rs2_get_option_range, sensor_options, option, &min, &max, &step, &def);
+			bool valid_value = value >= min && value <= max;
+			if (valid_value) {
+				DO(rs2_set_option, sensor_options, option, value);
+				any_set = true;
+			} else {
+				float cur = rs2_get_option(sensor_options, option, NULL);
+				const char *option_desc = DO(rs2_get_option_description, sensor_options, option);
+				const char *option_name = DO(rs2_get_option_name, sensor_options, option);
+				RS_ERROR(rs, "Invalid value=%f for option %s ('%s')", value, option_name, option_desc);
+				RS_ERROR(rs, "Min=%f Max=%f Step=%f Current=%f", min, max, step, cur);
+			}
 		}
 		rs2_delete_sensor(sensor);
 	}
 	rs2_delete_sensor_list(sensors);
+
+	return any_set;
 }
 
 
@@ -824,7 +839,7 @@ rs_source_stream_start(struct xrt_fs *xfs,
 	struct rs_container *rsc = &rs->rsc;
 	rsc->profile = DO(rs2_pipeline_start_with_config_and_callback, rsc->pipeline, rsc->config, on_frame, rs);
 
-	disable_all_laser_emitters(rs);
+	set_option_in_all_sensors(rs, RS2_OPTION_EMITTER_ENABLED, 0); // Lasers are bad for SLAM
 
 	rs->is_running = true;
 	return rs->is_running;

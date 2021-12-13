@@ -430,6 +430,8 @@ rs_ddev_destroy(struct xrt_device *xdev)
 
 	close_ddev(rs);
 
+	m_relation_history_destroy(&rs->relation_hist);
+
 	free(rs);
 }
 
