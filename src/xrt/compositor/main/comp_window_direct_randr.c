@@ -117,6 +117,7 @@ comp_window_direct_randr_create(struct comp_compositor *c)
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_USE_DISPLAY_IF_AVAILABLE);
 
 	w->base.base.name = "direct";
+	w->base.display = VK_NULL_HANDLE;
 	w->base.base.destroy = comp_window_direct_randr_destroy;
 	w->base.base.flush = _flush;
 	w->base.base.init_pre_vulkan = comp_window_direct_randr_init;
@@ -251,13 +252,17 @@ comp_window_direct_randr_init_swapchain(struct comp_target *ct, uint32_t width, 
 		return false;
 	}
 
-	COMP_DEBUG(ct->c, "Will use display: %s %dx%d@%.2f", d->name, d->primary_mode.width, d->primary_mode.height,
+	COMP_DEBUG(ct->c, "Will use display: %s with primary mode %dx%d@%.2f", d->name, d->primary_mode.width,
+	           d->primary_mode.height,
 	           (double)d->primary_mode.dot_clock / (d->primary_mode.htotal * d->primary_mode.vtotal));
 
 	d->display = comp_window_direct_randr_get_output(w_direct, d->output);
 	if (d->display == VK_NULL_HANDLE) {
 		return false;
 	}
+
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	cts->display = d->display;
 
 	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy, d->display, width, height);
 }

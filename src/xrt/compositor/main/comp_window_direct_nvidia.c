@@ -96,6 +96,7 @@ comp_window_direct_nvidia_create(struct comp_compositor *c)
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "direct";
+	w->base.display = VK_NULL_HANDLE;
 	w->base.base.destroy = comp_window_direct_nvidia_destroy;
 	w->base.base.flush = _flush;
 	w->base.base.init_pre_vulkan = comp_window_direct_nvidia_init;
@@ -248,6 +249,8 @@ comp_window_direct_nvidia_init_swapchain(struct comp_target *ct, uint32_t width,
 	}
 
 	COMP_DEBUG(ct->c, "Will use display: %s", d->name);
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	cts->display = d->display;
 
 	return comp_window_direct_init_swapchain(&w_direct->base, w_direct->dpy, d->display, width, height);
 }

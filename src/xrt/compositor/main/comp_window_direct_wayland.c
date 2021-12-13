@@ -247,6 +247,9 @@ comp_window_direct_wayland_init_swapchain(struct comp_target *w, uint32_t width,
 		return false;
 	}
 
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)w_wayland;
+	cts->display = w_wayland->vk_display;
+
 	return true;
 }
 
@@ -452,6 +455,7 @@ comp_window_direct_wayland_create(struct comp_compositor *c)
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
 	w->base.base.name = "wayland-direct";
+	w->base.display = VK_NULL_HANDLE;
 	w->base.base.destroy = comp_window_direct_wayland_destroy;
 	w->base.base.flush = comp_window_direct_wayland_flush;
 	w->base.base.init_pre_vulkan = comp_window_direct_wayland_init;

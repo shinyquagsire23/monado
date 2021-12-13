@@ -66,6 +66,9 @@ struct comp_target_swapchain
 
 	//! Present mode that the system must support.
 	VkPresentModeKHR present_mode;
+
+	//! The current display used for direct mode, VK_NULL_HANDLE else.
+	VkDisplayKHR display;
 };
 
 
