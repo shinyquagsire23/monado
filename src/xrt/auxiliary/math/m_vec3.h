@@ -169,6 +169,12 @@ operator/(const struct xrt_vec3 &a, const struct xrt_vec3 &b)
 	return m_vec3_div(a, b);
 }
 
+static inline struct xrt_vec3
+operator/(const struct xrt_vec3 &a, const float &b)
+{
+	return m_vec3_div_scalar(a, b);
+}
+
 static inline void
 operator+=(struct xrt_vec3 &a, const struct xrt_vec3 &b)
 {
