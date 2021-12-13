@@ -56,6 +56,9 @@ struct comp_target_swapchain
 	{
 		VkSurfaceKHR handle;
 		VkSurfaceFormatKHR format;
+#ifdef VK_EXT_display_surface_counter
+		VkSurfaceCounterFlagsEXT surface_counter_flags;
+#endif
 	} surface;
 
 	struct

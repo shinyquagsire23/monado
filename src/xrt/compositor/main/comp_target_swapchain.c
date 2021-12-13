@@ -83,6 +83,32 @@ get_vk(struct comp_target_swapchain *cts)
 	return &cts->base.c->base.vk;
 }
 
+#if defined(VK_EXT_display_surface_counter) && defined(VK_EXT_display_control)
+static bool
+check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct comp_target_swapchain *cts)
+{
+	if (!vk->has_EXT_display_surface_counter) {
+		return true;
+	}
+
+	VkSurfaceCapabilities2EXT caps = {
+	    .sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES2_EXT,
+	};
+	VkResult ret = vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT(vk->physical_device, cts->surface.handle, &caps);
+
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilities2EXT: %s", vk_result_string(ret));
+		return false;
+	}
+
+	cts->surface.surface_counter_flags = caps.supportedSurfaceCounters;
+	COMP_DEBUG(ct->c, "Supported surface counter flags: %d", caps.supportedSurfaceCounters);
+
+	return true;
+}
+
+#endif
+
 static void
 comp_target_swapchain_create_images(struct comp_target *ct,
                                     uint32_t preferred_width,
@@ -210,6 +236,11 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	cts->base.surface_transform = surface_caps.currentTransform;
 
 	comp_target_swapchain_create_image_views(cts);
+#ifdef VK_EXT_display_control
+	if (!check_surface_counter_caps(ct, vk, cts)) {
+		COMP_ERROR(ct->c, "Failed to query surface counter capabilities");
+	}
+#endif
 }
 
 static VkExtent2D
