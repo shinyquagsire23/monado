@@ -36,8 +36,12 @@ if(XRT_HAVE_OPENGL)
 endif()
 
 if(XRT_HAVE_OPENGLES)
+	target_sources(comp_client PRIVATE client/comp_gles_glue.c)
+endif()
+
+if(XRT_HAVE_EGL)
 	target_sources(
-		comp_client PRIVATE client/comp_gles_glue.c client/comp_gl_eglimage_swapchain.c
+		comp_client PRIVATE client/comp_gl_eglimage_swapchain.c
 				    client/comp_gl_eglimage_swapchain.h
 		)
 endif()
