@@ -303,7 +303,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 			    &calib_gyro[i]);                                            //
 		}
 		wh->fusion.last_imu_timestamp_ns = now_ns;
-		wh->fusion.last_angular_velocity = raw_gyro[3];
+		wh->fusion.last_angular_velocity = calib_gyro[3];
 		os_mutex_unlock(&wh->fusion.mutex);
 
 		// SLAM tracking

@@ -71,8 +71,10 @@ struct wmr_source
 	struct m_ff_vec3_f32 *gyro_ff;     //!< Queue of gyroscope data to display in UI
 	struct m_ff_vec3_f32 *accel_ff;    //!< Queue of accelerometer data to display in UI
 
-	bool is_running;   //!< Whether the device is streaming
-	bool average_imus; //!< Average 4 IMU samples before sending them to the sinks
+	bool is_running;              //!< Whether the device is streaming
+	bool average_imus;            //!< Average 4 IMU samples before sending them to the sinks
+	time_duration_ns hw2mono;     //!< Estimated offset from IMU to monotonic clock
+	time_duration_ns cam_hw2mono; //!< Cache for hw2mono used in last left frame
 };
 
 /*
@@ -81,10 +83,44 @@ struct wmr_source
  *
  */
 
+/*!
+ * Convert a hardware timestamp into monotonic clock. Updates offset estimate.
+ * @note Only used with IMU samples as they have the smallest USB transmission time.
+ *
+ * @param ws wmr_source
+ * @param[in, out] ts Hardware timestamp, gets converted to monotonic clock.
+ */
+static inline void
+clock_hw2mono(struct wmr_source *ws, timepoint_ns *ts)
+{
+	const double alpha = 0.95; // Weight to put on accumulated hw2mono clock offset
+	timepoint_ns mono = os_monotonic_get_ns();
+	timepoint_ns hw = *ts;
+	time_duration_ns old_hw2mono = ws->hw2mono;
+	time_duration_ns got_hw2mono = mono - hw;
+	time_duration_ns new_hw2mono = old_hw2mono * alpha + got_hw2mono * (1.0 - alpha);
+	if (old_hw2mono == 0) { // hw2mono was not set for the first time yet
+		new_hw2mono = got_hw2mono;
+	}
+	ws->hw2mono = new_hw2mono;
+	*ts = hw + new_hw2mono;
+}
+
+//! Camera specific logic for clock conversion
+static inline void
+clock_cam_hw2mono(struct wmr_source *ws, struct xrt_frame *xf, bool is_left)
+{
+	if (is_left) {
+		ws->cam_hw2mono = ws->hw2mono; // Cache last hw2mono used for right frame
+	}
+	xf->timestamp += ws->cam_hw2mono;
+}
+
 static void
 receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, left_sink);
+	clock_cam_hw2mono(ws, xf, true);
 	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
 	if (ws->out_sinks.left) {
@@ -96,6 +132,7 @@ static void
 receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, right_sink);
+	clock_cam_hw2mono(ws, xf, false);
 	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
 	if (ws->out_sinks.right) {
@@ -107,12 +144,11 @@ static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, imu_sink);
-
+	clock_hw2mono(ws, &s->timestamp_ns);
 	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	WMR_TRACE(ws, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
-
 
 	// Push to debug UI
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
