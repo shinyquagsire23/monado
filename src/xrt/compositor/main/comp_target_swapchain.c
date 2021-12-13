@@ -194,11 +194,21 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 		extent.height = w2;
 	}
 
+	COMP_DEBUG(ct->c, "swapchain minImageCount %d maxImageCount %d", surface_caps.minImageCount,
+	           surface_caps.maxImageCount);
+
+	uint32_t image_count = surface_caps.minImageCount;
+	if (image_count < 3 && (surface_caps.maxImageCount >= 3 || surface_caps.maxImageCount == 0)) {
+		image_count = 3;
+	}
+	COMP_DEBUG(ct->c, "Creating compositor swapchain with %d images", image_count);
+
+
 	// Create the swapchain now.
 	VkSwapchainCreateInfoKHR swapchain_info = {
 	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 	    .surface = cts->surface.handle,
-	    .minImageCount = surface_caps.minImageCount,
+	    .minImageCount = image_count,
 	    .imageFormat = cts->surface.format.format,
 	    .imageColorSpace = cts->surface.format.colorSpace,
 	    .imageExtent =
