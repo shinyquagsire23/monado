@@ -334,6 +334,22 @@ extern "C" int
 t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink)
 {
 	enum u_logging_level log_level = debug_get_log_option_slam_log();
+
+	// Check that the external SLAM system built is compatible
+	int ima = IMPLEMENTATION_VERSION_MAJOR;
+	int imi = IMPLEMENTATION_VERSION_MINOR;
+	int ipa = IMPLEMENTATION_VERSION_PATCH;
+	int hma = HEADER_VERSION_MAJOR;
+	int hmi = HEADER_VERSION_MINOR;
+	int hpa = HEADER_VERSION_PATCH;
+	U_LOG_IFL_I(log_level, "External SLAM system built %d.%d.%d, expected %d.%d.%d.", ima, imi, ipa, hma, hmi, hpa);
+	if (IMPLEMENTATION_VERSION_MAJOR != HEADER_VERSION_MAJOR) {
+		U_LOG_IFL_E(log_level, "Incompatible external SLAM system found.");
+		return -1;
+	}
+	U_LOG_IFL_I(log_level, "Initializing compatible external SLAM system.");
+
+	// Check the user has provided a SLAM_CONFIG file
 	const char *config_file = debug_get_option_slam_config();
 	if (!config_file) {
 		U_LOG_IFL_W(log_level,

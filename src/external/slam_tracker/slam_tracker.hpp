@@ -25,15 +25,31 @@
 
 namespace xrt::auxiliary::tracking::slam {
 
+// For implementation: same as IMPLEMENTATION_VERSION_*
+// For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
+constexpr int HEADER_VERSION_MAJOR = 1; //!< API Breakages
+constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
+constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
+
+// Which header version the external system is implementing.
+extern const int IMPLEMENTATION_VERSION_MAJOR;
+extern const int IMPLEMENTATION_VERSION_MINOR;
+extern const int IMPLEMENTATION_VERSION_PATCH;
+
 /*!
  * @brief Standard pose type to communicate Monado with the external SLAM system
  */
 struct pose {
-  float px, py, pz;
-  float rx, ry, rz, rw;
+  std::int64_t timestamp;   //!< In same clock as input samples
+  float px, py, pz;         //!< Position vector
+  float rx, ry, rz, rw = 1; //!< Orientation quaternion
   pose() = default;
-  pose(float px, float py, float pz, float rx, float ry, float rz, float rw)
-      : px(px), py(py), pz(pz), rx(rx), ry(ry), rz(rz), rw(rw) {}
+  pose(std::int64_t timestamp,       //
+       float px, float py, float pz, //
+       float rx, float ry, float rz, float rw)
+      : timestamp(timestamp),   //
+        px(px), py(py), pz(pz), //
+        rx(rx), ry(ry), rz(rz), rw(rw) {}
 };
 
 /*!
