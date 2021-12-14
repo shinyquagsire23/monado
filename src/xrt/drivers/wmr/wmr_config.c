@@ -264,8 +264,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *json_purpose = cJSON_GetObjectItem(camera, "Purpose");
 	char *json_purpose_name = cJSON_GetStringValue(json_purpose);
 	if (json_purpose_name == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown camera purpose %s", c->n_cameras,
-		          json_purpose_name);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - camera purpose not found", c->n_cameras);
 		return false;
 	}
 
