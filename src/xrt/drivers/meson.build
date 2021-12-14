@@ -8,7 +8,7 @@ lib_drv_depthai = static_library(
 	files(
 		'depthai/depthai_driver.cpp',
 	),
-	include_directories: [xrt_include],
+	include_directories: [xrt_include, cjson_include],
 	dependencies: [aux, opencv, depthai],
 	build_by_default: 'depthai' in drivers,
 )
