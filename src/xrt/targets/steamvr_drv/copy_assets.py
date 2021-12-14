@@ -5,8 +5,8 @@
 
 import os
 import sys
-from distutils.dir_util import copy_tree
-from distutils.file_util import copy_file
+
+import shutil
 
 print(sys.argv[1], sys.argv[2], sys.argv[3])
 
@@ -22,9 +22,14 @@ output_path = sys.argv[3]
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 if is_file:
-    copy_file(input_path, output_path)
+    try:
+        os.remove(output_path)
+    except:
+        pass
+    shutil.copyfile(input_path, output_path)
 elif is_dir:
-    copy_tree(input_path, output_path)
+    shutil.rmtree(output_path, ignore_errors=True)
+    shutil.copytree(input_path, output_path)
 else:
     print(sys.argv[1], "must be FILE or DIRECTORY")
     sys.exit(1)
