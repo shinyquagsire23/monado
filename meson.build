@@ -60,7 +60,11 @@ rt = cc.find_library('rt', required: true)
 avcodec     = dependency('libavcodec', required: false)
 egl         = dependency('egl', required: get_option('egl'))
 egl         = egl.partial_dependency(includes: true)
-eigen3      = dependency('eigen3')
+if meson.version().version_compare('>=0.52')
+  eigen3      = dependency('eigen3', include_type: 'system')
+else
+  eigen3      = dependency('eigen3')
+endif
 libjpeg     = dependency('libjpeg', required: false)
 libusb      = dependency('libusb-1.0', required: false)
 opengl      = dependency('gl', required: get_option('opengl'))
