@@ -436,7 +436,11 @@ cemu_devices_create(struct xrt_device *head, struct xrt_device *hands, struct xr
 		    i ? XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER : XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 
 		//!@todo What should we do with the serial numbers?
-		snprintf(cemud[i]->base.str, XRT_DEVICE_NAME_LEN, i ? "%s Right Hand" : "%s Left Hand", hands->str);
+		int ret =
+		    snprintf(cemud[i]->base.str, XRT_DEVICE_NAME_LEN, i ? "%s Right Hand" : "%s Left Hand", hands->str);
+		if (ret >= 0) {
+			CEMU_DEBUG(cemud[i], "name truncated: %s", cemud[i]->base.str);
+		}
 
 		cemud[i]->ht_input_name =
 		    i ? XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT : XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
