@@ -229,11 +229,6 @@ hdk_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	uint64_t now = os_monotonic_get_ns();
-
-	// Adjusting for latency - 14ms, found empirically.
-	now -= 14000000;
-
 	os_mutex_lock(&hd->lock);
 	if (!hd->quat_valid) {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
