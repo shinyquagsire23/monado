@@ -51,6 +51,9 @@ DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
 //! Config file path, format is specific to the SLAM implementation in use
 DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", NULL)
 
+//! Whether to submit data to the SLAM tracker without user action
+DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", true)
+
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
@@ -169,6 +172,7 @@ struct TrackerSlam
 	struct xrt_frame_sink left_sink = {};  //!< Sends left camera frames to the SLAM system
 	struct xrt_frame_sink right_sink = {}; //!< Sends right camera frames to the SLAM system
 	struct xrt_imu_sink imu_sink = {};     //!< Sends imu samples to the SLAM system
+	bool submit;                           //!< Whether to submit data pushed to sinks to the SLAM tracker
 
 	enum u_logging_level log_level; //!< Logging level for the SLAM tracker, set by SLAM_LOG var
 	struct os_thread_helper oth;    //!< Thread where the external SLAM system runs
@@ -200,7 +204,9 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	//! @todo There are many conversions like these between xrt and
 	//! slam_tracker.hpp types. Implement a casting mechanism to avoid copies.
 	imu_sample sample{ts, a.x, a.y, a.z, w.x, w.y, w.z};
-	t.slam->push_imu_sample(sample);
+	if (t.submit) {
+		t.slam->push_imu_sample(sample);
+	}
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
 	if (t.euroc_record) {
@@ -247,7 +253,9 @@ push_frame(const TrackerSlam &t, struct xrt_frame *frame, bool is_left)
 	cv::Mat img = t.cv_wrapper->wrap(frame);
 	SLAM_DASSERT_(frame->timestamp < INT64_MAX);
 	img_sample sample{(int64_t)frame->timestamp, img, is_left};
-	t.slam->push_frame(sample);
+	if (t.submit) {
+		t.slam->push_frame(sample);
+	}
 	SLAM_TRACE("%s frame t=%lu", is_left ? " left" : "right", frame->timestamp);
 
 	// Check monotonically increasing timestamps
@@ -352,6 +360,8 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	t.sinks.right = &t.right_sink;
 	t.sinks.imu = &t.imu_sink;
 
+	t.submit = debug_get_bool_option_slam_submit_from_start();
+
 	t.node.break_apart = t_slam_node_break_apart;
 	t.node.destroy = t_slam_node_destroy;
 
@@ -364,6 +374,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 
 	// Setup UI
 	u_var_add_root(&t, "SLAM Tracker", true);
+	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
 	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
 
 	*out_xts = &t.base;

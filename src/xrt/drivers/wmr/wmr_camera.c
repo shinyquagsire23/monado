@@ -96,7 +96,6 @@ struct wmr_camera
 
 	struct u_sink_debug debug_sinks[2];
 
-	bool submit_frames;                //!< Whether to push frames to left/right sinks
 	struct xrt_frame_sink *left_sink;  //!< Downstream sinks to push left tracking frames to
 	struct xrt_frame_sink *right_sink; //!< Downstream sinks to push right tracking frames to
 
@@ -344,7 +343,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 
 	// Push to sinks
 	bool tracking_frame = sink_index == 0;
-	if (tracking_frame && cam->submit_frames) {
+	if (tracking_frame) {
 		// Tracking frames usually come at ~30fps
 		struct xrt_frame *xf_left = NULL;
 		struct xrt_frame *xf_right = NULL;
@@ -401,11 +400,6 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	cam->log_level = log_level;
 	cam->debug_gain = DEFAULT_GAIN;
 	cam->debug_exposure = DEFAULT_EXPOSURE / UI_EXPOSURE_STEP_SIZE;
-	//! @todo downstream sinks are currently being used for SLAM and they need the
-	//! exposure and gain to be well set by the user before receiving frames. So
-	//! we don't submit frames right away. It would be best if the exposure and
-	//! gain were automatically set.
-	cam->submit_frames = false;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -448,7 +442,6 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
 	u_var_add_u8(cam, &cam->debug_gain, "Gain");
 	u_var_add_u8(cam, &cam->debug_exposure, "Exposure * 200");
-	u_var_add_bool(cam, &cam->submit_frames, "Submit frames");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
 
