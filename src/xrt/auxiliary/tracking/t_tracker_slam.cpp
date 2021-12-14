@@ -13,7 +13,9 @@
 #include "util/u_debug.h"
 #include "util/u_var.h"
 #include "os/os_threading.h"
+#include "math/m_relation_history.h"
 #include "math/m_space.h"
+#include "math/m_vec3.h"
 #include "tracking/t_euroc_recorder.h"
 
 #include <slam_tracker.hpp>
@@ -57,6 +59,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", tru
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
+using xrt::auxiliary::math::RelationHistory;
 
 using cv::Mat;
 using cv::MatAllocator;
@@ -153,6 +156,16 @@ public:
 	}
 };
 
+//! SLAM prediction type. Naming scheme as follows:
+//! P: position, O: orientation, A: angular velocity, L: linear velocity
+//! S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
+enum prediction_type
+{
+	PREDICTION_NONE = 0,    //!< No prediction, always return the last SLAM tracked pose
+	PREDICTION_SP_SO_SA_SL, //!< Predicts from last two SLAM tracked poses only
+	PREDICTION_COUNT,
+};
+
 /*!
  * Main implementation of @ref xrt_tracked_slam. This is an adapter class for
  * SLAM tracking that wraps an external SLAM implementation.
@@ -181,11 +194,59 @@ struct TrackerSlam
 	struct xrt_slam_sinks *euroc_recorder; //!< EuRoC dataset recording sinks
 	bool euroc_record;                     //!< When true, samples will be saved to disk in EuRoC format
 
+	u_var_combo pred_combo;
+	prediction_type pred_type;
+
 	// Used for checking that the timestamps come in order
 	mutable timepoint_ns last_imu_ts = INT64_MIN;
 	mutable timepoint_ns last_left_ts = INT64_MIN;
 	mutable timepoint_ns last_right_ts = INT64_MIN;
+
+	// Prediction
+	RelationHistory relation_hist{};
+	pose last_pose;
 };
+
+//! Dequeue all tracked poses from the SLAM system and update prediction data with them.
+static bool
+sync_poses(TrackerSlam &t)
+{
+	pose tracked_pose{};
+	bool got_one = t.slam->try_dequeue_pose(tracked_pose);
+
+	bool dequeued = got_one;
+	while (dequeued) {
+		// New pose
+		pose np = tracked_pose;
+		int64_t nts = np.timestamp;
+		xrt_vec3 npos{np.px, np.py, np.pz};
+		xrt_quat nrot{np.rx, np.ry, np.rz, np.rw};
+
+		// Last pose
+		pose lp = t.last_pose;
+		int64_t lts = lp.timestamp;
+		xrt_vec3 lpos{lp.px, lp.py, lp.pz};
+		xrt_quat lrot{lp.rx, lp.ry, lp.rz, lp.rw};
+
+		double dt = time_ns_to_s(nts - lts);
+
+		SLAM_TRACE("dequeued SLAM pose ts=%ld p=[%f,%f,%f] r=[%f,%f,%f,%f]", //
+		           nts, np.px, np.py, np.pz, np.rx, np.ry, np.rz, np.rw);
+
+		xrt_space_relation rel{};
+		rel.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
+		rel.pose = {nrot, npos};
+		rel.linear_velocity = (npos - lpos) / dt;
+		math_quat_finite_difference(&lrot, &nrot, dt, &rel.angular_velocity);
+
+		t.relation_hist.push(rel, nts);
+		t.last_pose = tracked_pose;
+
+		dequeued = t.slam->try_dequeue_pose(tracked_pose);
+	}
+
+	return got_one;
+}
 
 } // namespace xrt::auxiliary::tracking::slam
 
@@ -218,19 +279,14 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	t.last_imu_ts = ts;
 }
 
-/*!
- * @brief Get a space relation tracked by a SLAM system at a specified time.
- *
- * @todo This function should do pose prediction, currently it is not using @p
- * when_ns and just returning the latest tracked pose instead.
- */
-extern "C" void
-t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
+//! Get last tracked pose by the SLAM system without any prediction.
+static void
+t_slam_get_tracked_pose_raw(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
 	auto &t = *container_of(xts, TrackerSlam, base);
-	pose p{};
-	bool dequeued = t.slam->try_dequeue_pose(p);
+	bool dequeued = sync_poses(t);
 	if (dequeued) {
+		pose &p = t.last_pose;
 		SLAM_TRACE("pose p=[%f,%f,%f] r=[%f,%f,%f,%f]", p.px, p.py, p.pz, p.rx, p.ry, p.rz, p.rw);
 
 		// Note that any pose correction should happen in the device consuming the tracking
@@ -242,6 +298,32 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 	} else {
 		SLAM_TRACE("No poses to dequeue");
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+	}
+}
+
+static void
+t_slam_get_tracked_pose_spsosasl(struct xrt_tracked_slam *xts,
+                                 timepoint_ns when_ns,
+                                 struct xrt_space_relation *out_relation)
+{
+	auto &t = *container_of(xts, TrackerSlam, base);
+	sync_poses(t);
+	t.relation_hist.get(when_ns, out_relation);
+}
+
+/*!
+ * @brief Get a space relation tracked by a SLAM system at a specified time.
+ */
+extern "C" void
+t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
+{
+	auto &t = *container_of(xts, TrackerSlam, base);
+	if (t.pred_type == PREDICTION_NONE) {
+		t_slam_get_tracked_pose_raw(xts, when_ns, out_relation);
+	} else if (t.pred_type == PREDICTION_SP_SO_SA_SL) {
+		t_slam_get_tracked_pose_spsosasl(xts, when_ns, out_relation);
+	} else {
+		SLAM_ASSERT(false, "Invalid prediction type (%d)", t.pred_type);
 	}
 }
 
@@ -387,11 +469,19 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	xrt_frame_context_add(xfctx, &t.node);
 
 	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
+	t.pred_type = PREDICTION_SP_SO_SA_SL;
 
 	// Setup UI
+	t.pred_combo.count = PREDICTION_COUNT;
+	t.pred_combo.options = "None\0SP SO SA SL\0\0";
+	t.pred_combo.value = (int *)&t.pred_type;
 	u_var_add_root(&t, "SLAM Tracker", true);
+	u_var_add_log_level(&t, &t.log_level, "Log Level");
 	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
 	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
+	u_var_add_combo(&t, &t.pred_combo, "Prediction Type");
+
+	t.last_pose.rw = 1;
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;
