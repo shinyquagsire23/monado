@@ -615,9 +615,8 @@ _calculate_squeeze_value(struct survive_device *survive)
 static void
 _process_button_event(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e)
 {
-	// Survive sends button event time relative to the start of the recording
-	timepoint_ns ts = os_monotonic_get_ns() - time_s_to_ns(e->time);
-
+	timepoint_ns ts = survive_timecode_to_monotonic(e->time);
+	;
 	if (e->event_type == SURVIVE_INPUT_EVENT_AXIS_CHANGED) {
 		for (int i = 0; i < e->axis_count; i++) {
 
