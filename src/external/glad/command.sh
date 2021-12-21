@@ -12,7 +12,7 @@
 # command line (for the glad2 branch!)
 
 glad --merge \
-	--api='gl:core=4.5,gles2=3.2,egl=1.4' \
+	--api='gl:core=4.5,gles2=3.2,egl=1.4,glx=1.3' \
 	--extensions=\
 GL_EXT_external_buffer,\
 GL_EXT_memory_object,\

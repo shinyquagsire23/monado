@@ -87,6 +87,11 @@ Copyright: 2013-2020, The Khronos Group, Inc.
 License: Apache-2.0
 Comment: This is generated from the specification XML (licensed as above) by GLAD2.
 
+Files: src/external/glad/include/glad/glx.h
+Copyright: 2013-2020, The Khronos Group, Inc.
+License: Apache-2.0
+Comment: This is generated from the specification XML (licensed as above) by GLAD2.
+
 Files:  src/external/glad/src/*
 Copyright: 2013-2020, David Herberth
 License: MIT
