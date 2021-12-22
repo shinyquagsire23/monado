@@ -29,7 +29,6 @@ target_link_libraries(tests_json PRIVATE tests_main)
 target_link_libraries(tests_json PRIVATE aux_util)
 add_test(NAME tests_json COMMAND tests_json --success)
 
-
 # history
 add_executable(tests_history_buf tests_history_buf.cpp)
 target_link_libraries(tests_history_buf PRIVATE tests_main)
@@ -41,3 +40,9 @@ add_executable(tests_cxx_wrappers tests_cxx_wrappers.cpp)
 target_link_libraries(tests_cxx_wrappers PRIVATE tests_main)
 target_link_libraries(tests_cxx_wrappers PRIVATE aux_util xrt-interfaces)
 add_test(NAME tests_cxx_wrappers COMMAND tests_cxx_wrappers --success)
+
+# quatexpmap
+add_executable(tests_quatexpmap tests_quatexpmap.cpp)
+target_link_libraries(tests_quatexpmap PRIVATE tests_main)
+target_link_libraries(tests_quatexpmap PRIVATE aux_math)
+add_test(NAME tests_quatexpmap COMMAND tests_quatexpmap --success)

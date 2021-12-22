@@ -145,7 +145,7 @@ math_vec3_normalize(struct xrt_vec3 *in);
  */
 
 /*!
- * Create a rotation from a angle in radians and a vector.
+ * Create a rotation from an angle in radians and a unit vector.
  *
  * @relates xrt_quat
  * @see xrt_vec3
@@ -246,7 +246,7 @@ math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, stru
 
 
 /*!
- * Integrate an angular velocity vector (exponential map) and apply to a
+ * Integrate a local angular velocity vector (exponential map) and apply to a
  * quaternion.
  *
  * ang_vel and dt should share the same units of time, and the ang_vel
@@ -263,8 +263,8 @@ math_quat_integrate_velocity(const struct xrt_quat *quat,
                              struct xrt_quat *result);
 
 /*!
- * Compute an angular velocity vector (exponential map format) by taking the
- * finite difference of two quaternions.
+ * Compute a global angular velocity vector (exponential map format) by taking
+ * the finite difference of two quaternions.
  *
  * quat1 is the orientation dt time after the orientation was quat0
  *
