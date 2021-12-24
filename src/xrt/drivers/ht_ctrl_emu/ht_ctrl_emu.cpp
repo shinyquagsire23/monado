@@ -412,6 +412,8 @@ cemu_devices_create(struct xrt_device *head, struct xrt_device *hands, struct xr
 	for (int i = 0; i < 2; i++) {
 		cemud[i] = U_DEVICE_ALLOCATE(struct cemu_device, flags, CEMU_NUM_INPUTS, 0);
 
+		cemud[i]->sys = system;
+
 		cemud[i]->base.tracking_origin = hands->tracking_origin;
 
 		cemud[i]->base.name = XRT_DEVICE_SIMPLE_CONTROLLER;
@@ -436,9 +438,9 @@ cemu_devices_create(struct xrt_device *head, struct xrt_device *hands, struct xr
 		    i ? XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER : XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER;
 
 		//!@todo What should we do with the serial numbers?
-		int ret =
-		    snprintf(cemud[i]->base.str, XRT_DEVICE_NAME_LEN, i ? "%s Right Hand" : "%s Left Hand", hands->str);
-		if (ret >= 0) {
+		int n =
+		    snprintf(cemud[i]->base.str, XRT_DEVICE_NAME_LEN, "%s %s Hand", i ? "Right" : "Left", hands->str);
+		if (n > XRT_DEVICE_NAME_LEN) {
 			CEMU_DEBUG(cemud[i], "name truncated: %s", cemud[i]->base.str);
 		}
 
@@ -446,7 +448,6 @@ cemu_devices_create(struct xrt_device *head, struct xrt_device *hands, struct xr
 		    i ? XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT : XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
 
 		cemud[i]->hand_index = i;
-		cemud[i]->sys = system;
 		system->out_hand[i] = cemud[i];
 
 		out_xdevs[i] = &cemud[i]->base;
