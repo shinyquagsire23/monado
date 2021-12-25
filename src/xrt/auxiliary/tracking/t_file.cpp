@@ -547,7 +547,7 @@ t_stereo_camera_calibration_to_json_v2(cJSON **out_cjson, struct t_stereo_camera
 		jb << "distortion";
 		jb << "{";
 		if (view.use_fisheye) {
-			int n = view.distortion_mat.size().area(); // Number of distortion parameters
+			int n = view.distortion_fisheye_mat.size().area(); // Number of distortion parameters
 			CALIB_ASSERT_(n == 4);
 
 			constexpr array names{"k1", "k2", "k3", "k4"};
