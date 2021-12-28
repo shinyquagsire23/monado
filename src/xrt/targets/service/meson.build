@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: BSL-1.0
 
 service_deps = [pthreads, libjpeg]
-if systemd.found() and not get_option('systemd').disabled()
-	service_deps += systemd
+if systemd_dep.found() and not get_option('systemd').disabled()
+	service_deps += systemd_dep
 endif
 
 hack_deps = []
@@ -52,7 +52,11 @@ service = executable(
 )
 
 service_install_path = join_paths(get_option('prefix'), 'bin', 'monado-service')
-systemd_dir = join_paths(get_option('prefix'), get_option('libdir'), 'systemd', 'user')
+systemd_user_services_dir = systemd.get_pkgconfig_variable('systemduserunitdir', define_variable : [ 'prefix', get_option('prefix')])
+if get_option('systemd-user-unit-dir') != ''
+	systemd_user_services_dir = get_option('systemd-user-unit-dir')
+endif
+
 
 service_conf_data = configuration_data()
 service_conf_data.set('UNIT_NAME', 'monado')
@@ -64,7 +68,7 @@ configure_file(
 	input: 'monado.in.service',
 	output: 'monado.service',
 	configuration: service_conf_data,
-	install_dir: systemd_dir
+	install_dir: systemd_user_services_dir
 )
 
 socket_conf_data = configuration_data()
@@ -74,5 +78,5 @@ configure_file(
 	input: 'monado.in.socket',
 	output: 'monado.socket',
 	configuration: socket_conf_data,
-	install_dir: systemd_dir
+	install_dir: systemd_user_services_dir
 )

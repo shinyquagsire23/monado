@@ -163,3 +163,8 @@ option('color_log',
 	value: true,
 	description: 'Log in color'
 )
+
+option('systemd-user-unit-dir',
+	type: 'string',
+	description: 'Directory for user systemd units (defaults to /usr/lib/systemd/user)'
+)

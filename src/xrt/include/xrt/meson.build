@@ -76,7 +76,7 @@ if dbus.found() and not get_option('dbus').disabled()
 	have_conf.set('XRT_HAVE_DBUS', true)
 endif
 
-if systemd.found() and not get_option('systemd').disabled()
+if systemd_dep.found() and not get_option('systemd').disabled()
 	have_conf.set('XRT_HAVE_SYSTEMD', true)
 endif
 
