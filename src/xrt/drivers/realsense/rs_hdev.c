@@ -45,6 +45,10 @@
 #define DEFAULT_VIDEO_WIDTH 640
 #define DEFAULT_VIDEO_HEIGHT 360
 #define DEFAULT_VIDEO_FPS 30
+#define DEFAULT_VIDEO_CHANGE_EXPOSURE true
+#define DEFAULT_VIDEO_AUTOEXPOSURE false
+#define DEFAULT_VIDEO_EXPOSURE 6000
+#define DEFAULT_VIDEO_GAIN 127
 #define DEFAULT_GYRO_FPS 200
 #define DEFAULT_ACCEL_FPS 250
 #define DEFAULT_STREAM_TYPE RS2_STREAM_INFRARED
@@ -144,6 +148,12 @@ struct rs_source
 	struct m_ff_vec3_f32 *gyro_ff;     //!< Queue of gyroscope data to display in UI
 	struct m_ff_vec3_f32 *accel_ff;    //!< Queue of accelerometer data to display in UI
 
+	// UI Exposure/Gain settings
+	bool ui_autoexposure;                   //!< Autoexposure value to set
+	struct u_var_draggable_f32 ui_exposure; //!< Exposure value to set
+	struct u_var_draggable_f32 ui_gain;     //!< Gain value to set
+	struct u_var_button ui_btn_apply;       //!< Apply changes button
+
 	struct rs_container rsc; //!< Container of RealSense API objects
 
 	// Properties loaded from json file and used when configuring the realsense pipeline
@@ -153,6 +163,10 @@ struct rs_source
 	int video_width;                  //!< Indicates desired frame width
 	int video_height;                 //!< Indicates desired frame height
 	int video_fps;                    //!< Indicates desired fps
+	bool video_change_exposure;       //!< Indicates whether to overwrite external device exposure settings
+	bool video_autoexposure;          //!< Indicates whether to enable autoexposure or use provided values
+	int video_exposure;               //!< Indicates desired exposure time in microseconds
+	int video_gain;                   //!< Indicates desired gain (16-248)
 	int gyro_fps;                     //!< Indicates desired gyroscope samples per second
 	int accel_fps;                    //!< Indicates desired accelerometer samples per second
 	rs2_stream stream_type;           //!< Indicates desired stream type for the cameras
@@ -404,6 +418,10 @@ rs_source_load_stream_options_from_json(struct rs_source *rs)
 	rs->video_width = DEFAULT_VIDEO_WIDTH;
 	rs->video_height = DEFAULT_VIDEO_HEIGHT;
 	rs->video_fps = DEFAULT_VIDEO_FPS;
+	rs->video_change_exposure = DEFAULT_VIDEO_CHANGE_EXPOSURE;
+	rs->video_autoexposure = DEFAULT_VIDEO_AUTOEXPOSURE;
+	rs->video_exposure = DEFAULT_VIDEO_EXPOSURE;
+	rs->video_gain = DEFAULT_VIDEO_GAIN;
 	rs->gyro_fps = DEFAULT_GYRO_FPS;
 	rs->accel_fps = DEFAULT_ACCEL_FPS;
 	rs->stream_type = DEFAULT_STREAM_TYPE;
@@ -428,6 +446,10 @@ rs_source_load_stream_options_from_json(struct rs_source *rs)
 	json_int(rs, hdev_config, "video_width", &rs->video_width);
 	json_int(rs, hdev_config, "video_height", &rs->video_height);
 	json_int(rs, hdev_config, "video_fps", &rs->video_fps);
+	json_bool(rs, hdev_config, "video_change_exposure", &rs->video_change_exposure);
+	json_bool(rs, hdev_config, "video_autoexposure", &rs->video_autoexposure);
+	json_int(rs, hdev_config, "video_exposure", &rs->video_exposure);
+	json_int(rs, hdev_config, "video_gain", &rs->video_gain);
 	json_int(rs, hdev_config, "gyro_fps", &rs->gyro_fps);
 	json_int(rs, hdev_config, "accel_fps", &rs->accel_fps);
 	json_rs2_stream(rs, hdev_config, "stream_type", &rs->stream_type);
@@ -467,8 +489,10 @@ set_option_in_all_sensors(struct rs_source *rs, enum rs2_option option, float va
 				float cur = rs2_get_option(sensor_options, option, NULL);
 				const char *option_desc = DO(rs2_get_option_description, sensor_options, option);
 				const char *option_name = DO(rs2_get_option_name, sensor_options, option);
-				RS_ERROR(rs, "Invalid value=%f for option %s ('%s')", value, option_name, option_desc);
-				RS_ERROR(rs, "Min=%f Max=%f Step=%f Current=%f", min, max, step, cur);
+				const char *sensor_name = DO(rs2_get_sensor_info, sensor, RS2_CAMERA_INFO_NAME);
+				RS_WARN(rs, "Unable to update sensor %s", sensor_name);
+				RS_WARN(rs, "Invalid value=%f for option %s ('%s')", value, option_name, option_desc);
+				RS_WARN(rs, "Min=%f Max=%f Step=%f Current=%f", min, max, step, cur);
 			}
 		}
 		rs2_delete_sensor(sensor);
@@ -478,6 +502,14 @@ set_option_in_all_sensors(struct rs_source *rs, enum rs2_option option, float va
 	return any_set;
 }
 
+//! Submit changes to supported options to the device
+static void
+update_options(struct rs_source *rs)
+{
+	set_option_in_all_sensors(rs, RS2_OPTION_EXPOSURE, rs->video_exposure);
+	set_option_in_all_sensors(rs, RS2_OPTION_GAIN, rs->video_gain);
+	set_option_in_all_sensors(rs, RS2_OPTION_ENABLE_AUTO_EXPOSURE, rs->video_autoexposure);
+}
 
 /*
  *
@@ -756,6 +788,15 @@ on_frame(rs2_frame *frame, void *ptr)
 	}
 }
 
+static void
+rs_source_apply_changes_ctn_cb(void *ptr)
+{
+	struct rs_source *rs = (struct rs_source *)ptr;
+	rs->video_autoexposure = rs->ui_autoexposure;
+	rs->video_exposure = rs->ui_exposure.val;
+	rs->video_gain = rs->ui_gain.val;
+	update_options(rs);
+}
 
 /*
  *
@@ -840,6 +881,9 @@ rs_source_stream_start(struct xrt_fs *xfs,
 	rsc->profile = DO(rs2_pipeline_start_with_config_and_callback, rsc->pipeline, rsc->config, on_frame, rs);
 
 	set_option_in_all_sensors(rs, RS2_OPTION_EMITTER_ENABLED, 0); // Lasers are bad for SLAM
+	if (rs->video_change_exposure) {
+		update_options(rs);
+	}
 
 	rs->is_running = true;
 	return rs->is_running;
@@ -1051,17 +1095,33 @@ rs_source_create(struct xrt_frame_context *xfctx, int device_idx)
 	rs->in_sinks.right = &rs->right_sink;
 	rs->in_sinks.imu = &rs->imu_sink;
 
-	// Setup UI
+	// Prepare UI
 	u_sink_debug_init(&rs->ui_left_sink);
 	u_sink_debug_init(&rs->ui_right_sink);
 	m_ff_vec3_f32_alloc(&rs->gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&rs->accel_ff, 1000);
+	rs->ui_autoexposure = rs->video_autoexposure;
+	float estep = 50;
+	float shutter_delay = 1500; // Approximated value, obtained by playing with the realsense-viewer
+	float emax = 1000 * 1000 / fps - fmod(1000 * 1000 / fps, estep) - shutter_delay;
+	rs->ui_exposure = (struct u_var_draggable_f32){.val = rs->video_exposure, .min = 0, .max = emax, .step = estep};
+	rs->ui_gain = (struct u_var_draggable_f32){.val = rs->video_gain, .min = 16, .max = 248, .step = 1};
+	rs->ui_btn_apply = (struct u_var_button){.cb = rs_source_apply_changes_ctn_cb, .ptr = rs};
+
+	// Setup UI
 	u_var_add_root(rs, "RealSense Source", false);
 	u_var_add_log_level(rs, &rs->log_level, "Log Level");
 	u_var_add_ro_ff_vec3_f32(rs, rs->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(rs, rs->accel_ff, "Accelerometer");
 	u_var_add_sink_debug(rs, &rs->ui_left_sink, "Left Camera");
 	u_var_add_sink_debug(rs, &rs->ui_right_sink, "Right Camera");
+	if (rs->video_change_exposure) {
+		u_var_add_gui_header(rs, NULL, "Stream options");
+		u_var_add_bool(rs, &rs->ui_autoexposure, "Enable autoexposure");
+		u_var_add_draggable_f32(rs, &rs->ui_exposure, "Exposure (usec)");
+		u_var_add_draggable_f32(rs, &rs->ui_gain, "Gain");
+		u_var_add_button(rs, &rs->ui_btn_apply, "Apply");
+	}
 
 	// Setup node
 	struct xrt_frame_node *xfn = &rs->node;
