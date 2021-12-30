@@ -83,6 +83,17 @@ m_space_relation_ident(struct xrt_space_relation *out_relation)
 void
 m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_relation *out_relation);
 
+/*!
+ * Linearly interpolate between two relations @p a and @p b. Uses slerp for
+ * their orientations. Sets @p flags in @p out_relation.
+ */
+void
+m_space_relation_interpolate(struct xrt_space_relation *a,
+                             struct xrt_space_relation *b,
+                             float t,
+                             enum xrt_space_relation_flags flags,
+                             struct xrt_space_relation *out_relation);
+
 /*
  *
  * Relation chain functions.
