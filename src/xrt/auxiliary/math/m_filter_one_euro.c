@@ -53,6 +53,14 @@ exp_smooth_vec3(double alpha, struct xrt_vec3 y, struct xrt_vec3 prev_y)
 	return m_vec3_add(scaled_prev, scaled_new);
 }
 
+static inline struct xrt_quat
+exp_smooth_quat(double alpha, struct xrt_quat y, struct xrt_quat prev_y)
+{
+	struct xrt_quat result;
+	math_quat_slerp(&prev_y, &y, alpha, &result);
+	return result;
+}
+
 static void
 filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double beta, double fc_min_d)
 {
@@ -237,5 +245,38 @@ m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct x
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
 	f->prev_y = exp_smooth_vec3(alpha, *in_y, f->prev_y);
+	*out_y = f->prev_y;
+}
+
+void
+m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double beta, double fc_min_d)
+{
+	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+}
+
+void
+m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct xrt_quat *in_y, struct xrt_quat *out_y)
+{
+	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {
+		/* First sample - no filtering yet */
+		f->prev_dy = (struct xrt_quat)XRT_QUAT_IDENTITY;
+		f->prev_y = *in_y;
+
+		*out_y = *in_y;
+		return;
+	}
+
+	double dt = 0;
+	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
+
+	struct xrt_quat dy;
+	math_quat_unrotate(&f->prev_y, in_y, &dy);
+	f->prev_dy = exp_smooth_quat(alpha_d, dy, f->prev_dy);
+
+	double dy_mag = math_quat_len(&f->prev_dy);
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
+
+	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
+	f->prev_y = exp_smooth_quat(alpha, *in_y, f->prev_y);
 	*out_y = f->prev_y;
 }

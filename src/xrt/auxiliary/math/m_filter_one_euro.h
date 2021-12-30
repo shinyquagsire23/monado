@@ -89,6 +89,18 @@ struct m_filter_euro_vec3
 	struct xrt_vec3 prev_dy;
 };
 
+struct m_filter_euro_quat
+{
+	/** Base/common data */
+	struct m_filter_one_euro_base base;
+
+	/** The previous sample */
+	struct xrt_quat prev_y;
+
+	/** The previous sample derivative */
+	struct xrt_quat prev_dy;
+};
+
 void
 m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, double fc_min_d);
 void
@@ -108,6 +120,11 @@ void
 m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double beta, double fc_min_d);
 void
 m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct xrt_vec3 *in_y, struct xrt_vec3 *out_y);
+
+void
+m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double beta, double fc_min_d);
+void
+m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct xrt_quat *in_y, struct xrt_quat *out_y);
 
 #ifdef __cplusplus
 }
