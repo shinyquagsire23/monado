@@ -13,6 +13,8 @@
 #include "util/u_debug.h"
 #include "util/u_var.h"
 #include "os/os_threading.h"
+#include "math/m_filter_fifo.h"
+#include "math/m_predict.h"
 #include "math/m_relation_history.h"
 #include "math/m_space.h"
 #include "math/m_vec3.h"
@@ -162,7 +164,9 @@ public:
 enum prediction_type
 {
 	PREDICTION_NONE = 0,    //!< No prediction, always return the last SLAM tracked pose
-	PREDICTION_SP_SO_SA_SL, //!< Predicts from last two SLAM tracked poses only
+	PREDICTION_SP_SO_SA_SL, //!< Predicts from last two SLAM poses only
+	PREDICTION_SP_SO_IA_SL, //!< Predicts from last SLAM pose with angular velocity computed from IMU
+	PREDICTION_SP_SO_IA_IL, //!< Predicts from last SLAM pose with angular and linear velocity computed from IMU
 	PREDICTION_COUNT,
 };
 
@@ -194,22 +198,28 @@ struct TrackerSlam
 	struct xrt_slam_sinks *euroc_recorder; //!< EuRoC dataset recording sinks
 	bool euroc_record;                     //!< When true, samples will be saved to disk in EuRoC format
 
-	u_var_combo pred_combo;
-	prediction_type pred_type;
-
-	// Used for checking that the timestamps come in order
-	mutable timepoint_ns last_imu_ts = INT64_MIN;
-	mutable timepoint_ns last_left_ts = INT64_MIN;
-	mutable timepoint_ns last_right_ts = INT64_MIN;
+	// Used mainly for checking that the timestamps come in order
+	timepoint_ns last_imu_ts = INT64_MIN;   //!< Last received IMU sample timestamp
+	timepoint_ns last_left_ts = INT64_MIN;  //!< Last received left image timestamp
+	timepoint_ns last_right_ts = INT64_MIN; //!< Last received right image timestamp
 
 	// Prediction
-	RelationHistory relation_hist{};
-	pose last_pose;
+
+	//!< Type of prediction to use
+	prediction_type pred_type = PREDICTION_SP_SO_IA_SL;
+	u_var_combo pred_combo;         //!< UI combo box to select @ref pred_type
+	RelationHistory slam_rels{};    //!< A history of relations produced purely from external SLAM tracker data
+	struct m_ff_vec3_f32 *gyro_ff;  //!< Last gyroscope samples
+	struct m_ff_vec3_f32 *accel_ff; //!< Last accelerometer samples
+
+	//! Used to correct accelerometer measurements when integrating into the prediction.
+	//! @todo Should be automatically computed instead of required to be filled manually through the UI.
+	xrt_vec3 gravity_correction{0, 0, -MATH_GRAVITY_M_S2};
 };
 
 //! Dequeue all tracked poses from the SLAM system and update prediction data with them.
 static bool
-sync_poses(TrackerSlam &t)
+flush_poses(TrackerSlam &t)
 {
 	pose tracked_pose{};
 	bool got_one = t.slam->try_dequeue_pose(tracked_pose);
@@ -222,35 +232,105 @@ sync_poses(TrackerSlam &t)
 		xrt_vec3 npos{np.px, np.py, np.pz};
 		xrt_quat nrot{np.rx, np.ry, np.rz, np.rw};
 
-		// Last pose
-		pose lp = t.last_pose;
-		int64_t lts = lp.timestamp;
-		xrt_vec3 lpos{lp.px, lp.py, lp.pz};
-		xrt_quat lrot{lp.rx, lp.ry, lp.rz, lp.rw};
+		// Last relation
+		xrt_space_relation lr = XRT_SPACE_RELATION_ZERO;
+		uint64_t lts;
+		t.slam_rels.get_latest(&lts, &lr);
+		xrt_vec3 lpos = lr.pose.position;
+		xrt_quat lrot = lr.pose.orientation;
 
 		double dt = time_ns_to_s(nts - lts);
 
-		SLAM_TRACE("dequeued SLAM pose ts=%ld p=[%f,%f,%f] r=[%f,%f,%f,%f]", //
+		SLAM_TRACE("Dequeued SLAM pose ts=%ld p=[%f,%f,%f] r=[%f,%f,%f,%f]", //
 		           nts, np.px, np.py, np.pz, np.rx, np.ry, np.rz, np.rw);
 
+		// Compute new relation based on new pose and velocities since last pose
 		xrt_space_relation rel{};
 		rel.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
 		rel.pose = {nrot, npos};
 		rel.linear_velocity = (npos - lpos) / dt;
 		math_quat_finite_difference(&lrot, &nrot, dt, &rel.angular_velocity);
 
-		t.relation_hist.push(rel, nts);
-		t.last_pose = tracked_pose;
-
+		t.slam_rels.push(rel, nts);
 		dequeued = t.slam->try_dequeue_pose(tracked_pose);
+	}
+
+	if (!got_one) {
+		SLAM_TRACE("No poses to flush");
 	}
 
 	return got_one;
 }
 
+//! Return our best guess of the relation at time @p when_ns using all the data the tracker has.
+static void
+predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
+{
+	bool valid_pred_type = t.pred_type >= PREDICTION_NONE && t.pred_type <= PREDICTION_SP_SO_IA_IL;
+	SLAM_DASSERT(valid_pred_type, "Invalid prediction type (%d)", t.pred_type);
+
+	// Get last relation computed purely from SLAM data
+	xrt_space_relation rel{};
+	uint64_t rel_ts;
+	bool empty = !t.slam_rels.get_latest(&rel_ts, &rel);
+
+	// Stop if there is no previous relation to use for prediction
+	if (empty) {
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return;
+	}
+
+	// Use only last SLAM pose without prediction if PREDICTION_NONE
+	if (t.pred_type == PREDICTION_NONE) {
+		*out_relation = rel;
+		return;
+	}
+
+	// Use only SLAM data if asking for an old point in time or PREDICTION_SP_SO_SA_SL
+	SLAM_DASSERT_(rel_ts < INT64_MAX);
+	if (t.pred_type == PREDICTION_SP_SO_SA_SL || when_ns <= (int64_t)rel_ts) {
+		t.slam_rels.get(when_ns, out_relation);
+		return;
+	}
+
+	// Update angular velocity with gyro data
+	if (t.pred_type >= PREDICTION_SP_SO_IA_SL) {
+		xrt_vec3 avg_gyro{};
+		m_ff_vec3_f32_filter(t.gyro_ff, rel_ts, when_ns, &avg_gyro);
+		math_quat_rotate_derivative(&rel.pose.orientation, &avg_gyro, &rel.angular_velocity);
+	}
+
+	// Update linear velocity with accel data
+	if (t.pred_type >= PREDICTION_SP_SO_IA_IL) {
+		xrt_vec3 avg_accel{};
+		m_ff_vec3_f32_filter(t.accel_ff, rel_ts, when_ns, &avg_accel);
+		xrt_vec3 world_accel{};
+		math_quat_rotate_vec3(&rel.pose.orientation, &avg_accel, &world_accel);
+		world_accel += t.gravity_correction;
+		double slam_to_imu_dt = time_ns_to_s(t.last_imu_ts - rel_ts);
+		rel.linear_velocity += world_accel * slam_to_imu_dt;
+	}
+
+	// Do the prediction based on the updated relation
+	double slam_to_now_dt = time_ns_to_s(when_ns - rel_ts);
+	xrt_space_relation predicted_relation{};
+	m_predict_relation(&rel, slam_to_now_dt, &predicted_relation);
+
+	*out_relation = predicted_relation;
+}
+
 } // namespace xrt::auxiliary::tracking::slam
 
 using namespace xrt::auxiliary::tracking::slam;
+
+//! Get a prediction from the SLAM tracked poses.
+extern "C" void
+t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
+{
+	auto &t = *container_of(xts, TrackerSlam, base);
+	flush_poses(t);
+	predict_pose(t, when_ns, out_relation);
+}
 
 //! Receive and send IMU samples to the external SLAM system
 extern "C" void
@@ -274,62 +354,19 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 		xrt_sink_push_imu(t.euroc_recorder->imu, s);
 	}
 
+	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
+	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
+	m_ff_vec3_f32_push(t.gyro_ff, &gyro, ts);
+	m_ff_vec3_f32_push(t.accel_ff, &accel, ts);
+
 	// Check monotonically increasing timestamps
 	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts)
 	t.last_imu_ts = ts;
 }
 
-//! Get last tracked pose by the SLAM system without any prediction.
-static void
-t_slam_get_tracked_pose_raw(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
-{
-	auto &t = *container_of(xts, TrackerSlam, base);
-	bool dequeued = sync_poses(t);
-	if (dequeued) {
-		pose &p = t.last_pose;
-		SLAM_TRACE("pose p=[%f,%f,%f] r=[%f,%f,%f,%f]", p.px, p.py, p.pz, p.rx, p.ry, p.rz, p.rw);
-
-		// Note that any pose correction should happen in the device consuming the tracking
-		out_relation->pose = {{p.rx, p.ry, p.rz, p.rw}, {p.px, p.py, p.pz}};
-		out_relation->relation_flags = (enum xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
-
-	} else {
-		SLAM_TRACE("No poses to dequeue");
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-	}
-}
-
-static void
-t_slam_get_tracked_pose_spsosasl(struct xrt_tracked_slam *xts,
-                                 timepoint_ns when_ns,
-                                 struct xrt_space_relation *out_relation)
-{
-	auto &t = *container_of(xts, TrackerSlam, base);
-	sync_poses(t);
-	t.relation_hist.get(when_ns, out_relation);
-}
-
-/*!
- * @brief Get a space relation tracked by a SLAM system at a specified time.
- */
-extern "C" void
-t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
-{
-	auto &t = *container_of(xts, TrackerSlam, base);
-	if (t.pred_type == PREDICTION_NONE) {
-		t_slam_get_tracked_pose_raw(xts, when_ns, out_relation);
-	} else if (t.pred_type == PREDICTION_SP_SO_SA_SL) {
-		t_slam_get_tracked_pose_spsosasl(xts, when_ns, out_relation);
-	} else {
-		SLAM_ASSERT(false, "Invalid prediction type (%d)", t.pred_type);
-	}
-}
-
 //! Push the frame to the external SLAM system
 static void
-push_frame(const TrackerSlam &t, struct xrt_frame *frame, bool is_left)
+push_frame(TrackerSlam &t, struct xrt_frame *frame, bool is_left)
 {
 	// Construct and send the image sample
 	cv::Mat img = t.cv_wrapper->wrap(frame);
@@ -386,6 +423,8 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	SLAM_DEBUG("Destroying SLAM tracker");
 	os_thread_helper_destroy(&t_ptr->oth);
 	u_var_remove_root(t_ptr);
+	m_ff_vec3_f32_free(&t.gyro_ff);
+	m_ff_vec3_f32_free(&t.accel_ff);
 	delete t_ptr->slam;
 	delete t_ptr->cv_wrapper;
 	delete t_ptr;
@@ -469,19 +508,23 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	xrt_frame_context_add(xfctx, &t.node);
 
 	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
-	t.pred_type = PREDICTION_SP_SO_SA_SL;
 
 	// Setup UI
 	t.pred_combo.count = PREDICTION_COUNT;
-	t.pred_combo.options = "None\0SP SO SA SL\0\0";
+	t.pred_combo.options = "None\0SP SO SA SL\0SP SO IA SL\0SP SO IA IL\0\0";
 	t.pred_combo.value = (int *)&t.pred_type;
+	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
+	m_ff_vec3_f32_alloc(&t.accel_ff, 1000);
+
 	u_var_add_root(&t, "SLAM Tracker", true);
 	u_var_add_log_level(&t, &t.log_level, "Log Level");
 	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
 	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
+	u_var_add_gui_header(&t, NULL, "Prediction");
 	u_var_add_combo(&t, &t.pred_combo, "Prediction Type");
-
-	t.last_pose.rw = 1;
+	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
+	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
+	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;
