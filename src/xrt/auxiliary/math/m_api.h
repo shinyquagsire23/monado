@@ -205,6 +205,15 @@ void
 math_quat_invert(const struct xrt_quat *quat, struct xrt_quat *out_quat);
 
 /*!
+ * The euclidean norm or length of a quaternion. Same as if it were a vec4.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+float
+math_quat_len(const struct xrt_quat *quat);
+
+/*!
  * Normalize a quaternion.
  *
  * @relates xrt_quat
@@ -244,6 +253,14 @@ math_quat_rotate_vec3(const struct xrt_quat *left, const struct xrt_vec3 *right,
 void
 math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, struct xrt_quat *result);
 
+/*!
+ * Inverse of @ref math_quat_rotate. Removes @p left rotation from @p right.
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_unrotate(const struct xrt_quat *left, const struct xrt_quat *right, struct xrt_quat *result);
 
 /*!
  * Integrate a local angular velocity vector (exponential map) and apply to a

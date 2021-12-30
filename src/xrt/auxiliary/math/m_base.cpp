@@ -251,6 +251,12 @@ math_quat_invert(const struct xrt_quat *quat, struct xrt_quat *out_quat)
 	map_quat(*out_quat) = map_quat(*quat).conjugate();
 }
 
+extern "C" float
+math_quat_len(const struct xrt_quat *quat)
+{
+	return map_quat(*quat).norm();
+}
+
 extern "C" void
 math_quat_normalize(struct xrt_quat *inout)
 {
@@ -291,6 +297,21 @@ math_quat_rotate(const struct xrt_quat *left, const struct xrt_quat *right, stru
 	auto r = copy(right);
 
 	auto q = l * r;
+
+	map_quat(*result) = q;
+}
+
+extern "C" void
+math_quat_unrotate(const struct xrt_quat *left, const struct xrt_quat *right, struct xrt_quat *result)
+{
+	assert(left != NULL);
+	assert(right != NULL);
+	assert(result != NULL);
+
+	auto l = copy(left);
+	auto r = copy(right);
+
+	auto q = l.inverse() * r;
 
 	map_quat(*result) = q;
 }
