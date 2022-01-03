@@ -232,7 +232,7 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igBegin("Params", NULL, 0);
 
 	igComboStr("Type", (int *)&cs->settings->camera_type,
-	           "Regular Mono\0Regular Stereo (Side-by-Side)\0PS4\0Leap Motion Controller\0\0", -1);
+	           "Regular Mono\0Regular Stereo (Side-by-Side)\0SLAM Stereo\0PS4\0Leap Motion Controller\0\0", -1);
 
 	switch (cs->settings->camera_type) {
 	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO:
@@ -240,6 +240,10 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 		cs->params.stereo_sbs = false;
 		break;
 	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS:
+		igCheckbox("Fisheye Camera", &cs->params.use_fisheye);
+		cs->params.stereo_sbs = true;
+		break;
+	case XRT_SETTINGS_CAMERA_TYPE_SLAM:
 		igCheckbox("Fisheye Camera", &cs->params.use_fisheye);
 		cs->params.stereo_sbs = true;
 		break;
@@ -337,7 +341,17 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	u_sink_quirk_create(cs->xfctx, cali, &qp, &cali);
 
 	// Now that we have setup a node graph, start it.
-	xrt_fs_stream_start(cs->xfs, cali, XRT_FS_CAPTURE_TYPE_CALIBRATION, cs->settings->camera_mode);
+
+	if (cs->settings->camera_type == XRT_SETTINGS_CAMERA_TYPE_SLAM) {
+		struct xrt_frame_sink *tmp = cali;
+		struct xrt_slam_sinks sinks;
+		u_sink_combiner_create(cs->xfctx, tmp, &sinks.left, &sinks.right);
+
+		xrt_fs_slam_stream_start(cs->xfs, &sinks);
+	} else {
+		xrt_fs_stream_start(cs->xfs, cali, XRT_FS_CAPTURE_TYPE_CALIBRATION, cs->settings->camera_mode);
+	}
+
 #else
 	gui_scene_delete_me(p, &cs->base);
 #endif
@@ -426,6 +440,7 @@ gui_scene_calibrate(struct gui_program *p,
 		cs->params.stereo_sbs = true;
 		cs->settings->camera_type = XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS;
 	}
+
 #endif
 	gui_scene_push_front(p, &cs->base);
 }

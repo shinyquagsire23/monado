@@ -214,6 +214,11 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 		qp.ps4_cam = false;
 		qp.leap_motion = false;
 		break;
+	case XRT_SETTINGS_CAMERA_TYPE_SLAM:
+		qp.stereo_sbs = true;
+		qp.ps4_cam = false;
+		qp.leap_motion = false;
+		break;
 	case XRT_SETTINGS_CAMERA_TYPE_PS4:
 		qp.stereo_sbs = true;
 		qp.ps4_cam = true;

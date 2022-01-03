@@ -52,7 +52,7 @@ static ImVec2 button_dims = {256 + 64, 0};
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 static void
-create_depthai(struct video_select *vs)
+create_depthai_monocular(struct video_select *vs)
 {
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 
@@ -63,6 +63,24 @@ create_depthai(struct video_select *vs)
 		vs->xfctx = NULL;
 		return;
 	}
+
+	xrt_fs_enumerate_modes(vs->xfs, &vs->modes, &vs->num_modes);
+}
+
+static void
+create_depthai_stereo(struct video_select *vs)
+{
+	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
+
+	vs->xfs = depthai_fs_stereo_grayscale(vs->xfctx);
+	if (vs->xfs == NULL) {
+		U_LOG_E("Failed to open DepthAI camera!");
+		free(vs->xfctx);
+		vs->xfctx = NULL;
+		return;
+	}
+	vs->settings->camera_type = XRT_SETTINGS_CAMERA_TYPE_SLAM;
+
 
 	xrt_fs_enumerate_modes(vs->xfs, &vs->modes, &vs->num_modes);
 }
@@ -128,8 +146,11 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 		igSeparator();
-		if (igButton("DepthAI", button_dims)) {
-			create_depthai(vs);
+		if (igButton("DepthAI (Monocular)", button_dims)) {
+			create_depthai_monocular(vs);
+		}
+		if (igButton("DepthAI (Stereo)", button_dims)) {
+			create_depthai_stereo(vs);
 		}
 #endif
 	} else if (vs->num_modes == 0) {

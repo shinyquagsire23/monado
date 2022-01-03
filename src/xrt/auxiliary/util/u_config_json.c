@@ -427,6 +427,7 @@ u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_t
 	switch (settings->camera_type) {
 	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_MONO: cJSON_AddStringToObject(t, "camera_type", "regular_mono"); break;
 	case XRT_SETTINGS_CAMERA_TYPE_REGULAR_SBS: cJSON_AddStringToObject(t, "camera_type", "regular_sbs"); break;
+	case XRT_SETTINGS_CAMERA_TYPE_SLAM: cJSON_AddStringToObject(t, "camera_type", "slam_sbs"); break;
 	case XRT_SETTINGS_CAMERA_TYPE_PS4: cJSON_AddStringToObject(t, "camera_type", "ps4"); break;
 	case XRT_SETTINGS_CAMERA_TYPE_LEAP_MOTION: cJSON_AddStringToObject(t, "camera_type", "leap_motion"); break;
 	}
