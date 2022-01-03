@@ -100,7 +100,12 @@ private:
 	waitForStartupComplete()
 	{
 		std::unique_lock<std::mutex> lock{server_mutex};
-		return startup_cond.wait_for(lock, 2s, [&]() { return server != NULL && startup_complete; });
+		bool completed = startup_cond.wait_for(lock, START_TIMEOUT_SECONDS,
+		                                       [&]() { return server != NULL && startup_complete; });
+		if (!completed) {
+			U_LOG_E("Server startup timeout!");
+		}
+		return completed;
 	}
 
 	//! Reference to the ipc_server, managed by ipc_server_process
@@ -117,6 +122,9 @@ private:
 
 	//! Server startup state
 	bool startup_complete = false;
+
+	//! Timeout duration in seconds
+	static constexpr std::chrono::seconds START_TIMEOUT_SECONDS = 5s;
 };
 } // namespace
 
