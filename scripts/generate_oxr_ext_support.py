@@ -8,30 +8,30 @@ from pathlib import Path
 # Each extension that we implement gets an entry in this tuple.
 # Each entry should be a list of defines that are checked for an extension:
 # the first one must be the name of the extension itself.
-# Keep sorted.
+# Keep sorted, KHR, EXT, Vendor, experimental (same order).
 EXTENSIONS = (
     ['XR_KHR_android_create_instance', 'XR_USE_PLATFORM_ANDROID'],
-    ['XR_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
-    ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
-    ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
-    ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
-    ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
-    ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
-    ['XR_KHR_vulkan_enable2', 'XR_USE_GRAPHICS_API_VULKAN'],
-    ['XR_KHR_composition_layer_depth', 'XRT_FEATURE_OPENXR_LAYER_DEPTH'],
     ['XR_KHR_composition_layer_cube', 'XRT_FEATURE_OPENXR_LAYER_CUBE'],
     ['XR_KHR_composition_layer_cylinder', 'XRT_FEATURE_OPENXR_LAYER_CYLINDER'],
+    ['XR_KHR_composition_layer_depth', 'XRT_FEATURE_OPENXR_LAYER_DEPTH'],
     ['XR_KHR_composition_layer_equirect', 'XRT_FEATURE_OPENXR_LAYER_EQUIRECT1'],
     ['XR_KHR_composition_layer_equirect2', 'XRT_FEATURE_OPENXR_LAYER_EQUIRECT2'],
-    ['XR_EXT_debug_utils'],
-    ['XR_MND_headless'],
-    ['XR_MND_swapchain_usage_input_attachment_bit'],
+    ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
+    ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
+    ['XR_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
+    ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
+    ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
     ['XR_KHR_swapchain_usage_input_attachment_bit'],
-    ['XR_EXTX_overlay'],
-    ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
-    ['XR_MNDX_ball_on_a_stick_controller'],
+    ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
+    ['XR_KHR_vulkan_enable2', 'XR_USE_GRAPHICS_API_VULKAN'],
+    ['XR_EXT_debug_utils'],
     ['XR_EXT_hand_tracking'],
     ['XR_FB_display_refresh_rate'],
+    ['XR_MND_headless'],
+    ['XR_MND_swapchain_usage_input_attachment_bit'],
+    ['XR_EXTX_overlay'],
+    ['XR_MNDX_ball_on_a_stick_controller'],
+    ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
 )
 
 ROOT = Path(__file__).resolve().parent.parent
