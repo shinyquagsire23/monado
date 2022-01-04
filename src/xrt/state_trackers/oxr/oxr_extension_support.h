@@ -33,6 +33,17 @@
 
 
 /*
+ * XR_KHR_binding_modification
+ */
+#if defined(XR_KHR_binding_modification)
+#define OXR_HAVE_KHR_binding_modification
+#define OXR_EXTENSION_SUPPORT_KHR_binding_modification(_) _(KHR_binding_modification, KHR_BINDING_MODIFICATION)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_binding_modification(_)
+#endif
+
+
+/*
  * XR_KHR_composition_layer_cube
  */
 #if defined(XR_KHR_composition_layer_cube) && defined(XRT_FEATURE_OPENXR_LAYER_CUBE)
@@ -315,6 +326,7 @@
 // clang-format off
 #define OXR_EXTENSION_SUPPORT_GENERATE(_) \
     OXR_EXTENSION_SUPPORT_KHR_android_create_instance(_) \
+    OXR_EXTENSION_SUPPORT_KHR_binding_modification(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cube(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_cylinder(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_depth(_) \
