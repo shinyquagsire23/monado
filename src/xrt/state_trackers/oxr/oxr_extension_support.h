@@ -202,6 +202,17 @@
 
 
 /*
+ * XR_EXT_dpad_binding
+ */
+#if defined(XR_EXT_dpad_binding)
+#define OXR_HAVE_EXT_dpad_binding
+#define OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) _(EXT_dpad_binding, EXT_DPAD_BINDING)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_)
+#endif
+
+
+/*
  * XR_EXT_hand_tracking
  */
 #if defined(XR_EXT_hand_tracking)
@@ -319,6 +330,7 @@
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable2(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
+    OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \
     OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \

@@ -26,6 +26,7 @@ EXTENSIONS = (
     ['XR_KHR_vulkan_enable', 'XR_USE_GRAPHICS_API_VULKAN'],
     ['XR_KHR_vulkan_enable2', 'XR_USE_GRAPHICS_API_VULKAN'],
     ['XR_EXT_debug_utils', 'XRT_FEATURE_OPENXR_DEBUG_UTILS'],
+    ['XR_EXT_dpad_binding'],
     ['XR_EXT_hand_tracking'],
     ['XR_FB_display_refresh_rate'],
     ['XR_MND_headless'],
