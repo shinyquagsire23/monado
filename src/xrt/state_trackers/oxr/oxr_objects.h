@@ -95,6 +95,7 @@ extern "C" {
 
 struct xrt_instance;
 struct oxr_logger;
+struct oxr_extension_status;
 struct oxr_instance;
 struct oxr_system;
 struct oxr_session;
@@ -211,10 +212,20 @@ oxr_instance_to_openxr(struct oxr_instance *inst)
 }
 
 /*!
+ * Creates a instance, does minimal validation of @p createInfo.
+ *
+ * @param[in]  log        Logger
+ * @param[in]  createInfo OpenXR creation info.
+ * @param[in]  extensions Parsed extension list to be enabled.
+ * @param[out] out_inst   Pointer to pointer to a instance, returned instance.
+ *
  * @public @static @memberof oxr_instance
  */
 XrResult
-oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_inst);
+oxr_instance_create(struct oxr_logger *log,
+                    const XrInstanceCreateInfo *createInfo,
+                    const struct oxr_extension_status *extensions,
+                    struct oxr_instance **out_inst);
 
 /*!
  * @public @memberof oxr_instance

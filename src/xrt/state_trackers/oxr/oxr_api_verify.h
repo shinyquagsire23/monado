@@ -239,6 +239,9 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
                               const char *variable);
 
 XrResult
+oxr_verify_extensions(struct oxr_logger *log, const struct oxr_extension_status *extensions);
+
+XrResult
 oxr_verify_view_config_type(struct oxr_logger *log,
                             struct oxr_instance *inst,
                             XrViewConfigurationType view_conf,

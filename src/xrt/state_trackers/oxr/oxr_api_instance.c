@@ -92,17 +92,12 @@ oxr_xrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *loaderInitInfo)
 
 #ifdef XRT_OS_ANDROID
 static XrResult
-oxr_check_android_extensions(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo)
+oxr_check_android_extensions(struct oxr_logger *log,
+                             const XrInstanceCreateInfo *createInfo,
+                             const struct oxr_extension_status *extensions)
 {
-
-	bool foundAndroidExtension = false;
-	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
-		if (strcmp(createInfo->enabledExtensionNames[i], XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME) == 0) {
-			foundAndroidExtension = true;
-			break;
-		}
-	}
-	if (!foundAndroidExtension) {
+	// We need the XR_KHR_android_create_instance extension.
+	if (!extensions->KHR_android_create_instance) {
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
 		                 "(createInfo->enabledExtensionNames) "
 		                 "Mandatory platform-specific extension " XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME
@@ -166,33 +161,43 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_ins
 		                 "Cannot satisfy request for version: too high");
 	}
 
+	// To be passed into verify and instance creation.
+	struct oxr_extension_status extensions;
+	U_ZERO(&extensions);
+
 	/*
 	 * Check that all extension names are recognized, so oxr_instance_create
 	 * doesn't need to check for bad extension names.
+	 *
+	 * Also fill out the oxr_extension_status struct at the same time.
 	 */
 #define CHECK_EXT_NAME(mixed_case, all_caps)                                                                           \
 	if (strcmp(createInfo->enabledExtensionNames[i], XR_##all_caps##_EXTENSION_NAME) == 0) {                       \
+		extensions.mixed_case = true;                                                                          \
 		continue;                                                                                              \
 	}
 	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
 		OXR_EXTENSION_SUPPORT_GENERATE(CHECK_EXT_NAME)
 
 		return oxr_error(&log, XR_ERROR_EXTENSION_NOT_PRESENT,
-		                 "(createInfo->enabledExtensionNames[%d]) "
-		                 "Unrecognized extension name",
-		                 i);
+		                 "(createInfo->enabledExtensionNames[%d]) Unrecognized extension name '%s'", i,
+		                 createInfo->enabledExtensionNames[i]);
 	}
 
+	ret = oxr_verify_extensions(&log, &extensions);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
 
 #ifdef XRT_OS_ANDROID
-	ret = oxr_check_android_extensions(&log, createInfo);
+	ret = oxr_check_android_extensions(&log, createInfo, &extensions);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
 #endif
 	struct oxr_instance *inst = NULL;
 
-	ret = oxr_instance_create(&log, createInfo, &inst);
+	ret = oxr_instance_create(&log, createInfo, &extensions, &inst);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}

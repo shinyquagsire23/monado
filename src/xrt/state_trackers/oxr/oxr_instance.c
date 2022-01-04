@@ -186,7 +186,10 @@ apply_quirks(struct oxr_logger *log, struct oxr_instance *inst)
 }
 
 XrResult
-oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createInfo, struct oxr_instance **out_instance)
+oxr_instance_create(struct oxr_logger *log,
+                    const XrInstanceCreateInfo *createInfo,
+                    const struct oxr_extension_status *extensions,
+                    struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
 	struct xrt_device *xdevs[NUM_XDEVS] = {0};
@@ -354,20 +357,8 @@ oxr_instance_create(struct oxr_logger *log, const XrInstanceCreateInfo *createIn
 		dev->hmd->views[1].fov.angle_down = down_override;
 	}
 
-
-	U_ZERO(&inst->extensions);
-	for (uint32_t i = 0; i < createInfo->enabledExtensionCount; ++i) {
-
-#define ENABLE_EXT(mixed_case, all_caps)                                                                               \
-	if (strcmp(createInfo->enabledExtensionNames[i], XR_##all_caps##_EXTENSION_NAME) == 0) {                       \
-		inst->extensions.mixed_case = true;                                                                    \
-		continue;                                                                                              \
-	}
-		OXR_EXTENSION_SUPPORT_GENERATE(ENABLE_EXT)
-		// assert(false &&
-		//        "Should not be reached - oxr_xrCreateInstance should "
-		//        "have failed on unrecognized extension.");
-	}
+	// Sets the enabled extensions, this is where we should do any extra validation.
+	inst->extensions = *extensions;
 
 	// Create the compositor, if we are not headless.
 	if (!inst->extensions.MND_headless) {

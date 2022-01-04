@@ -406,6 +406,20 @@ oxr_verify_subaction_path_get(struct oxr_logger *log,
  */
 
 XrResult
+oxr_verify_extensions(struct oxr_logger *log, const struct oxr_extension_status *extensions)
+{
+	if ((extensions->KHR_swapchain_usage_input_attachment_bit ||
+	     extensions->MND_swapchain_usage_input_attachment_bit) &&
+	    !extensions->KHR_vulkan_enable2 && !extensions->KHR_vulkan_enable) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "Using [KHR|MND]_swapchain_usage_input_attachment_bit doesn't make sense without "
+		                 "KHR_vulkan_enable[2].");
+	}
+
+	return XR_SUCCESS;
+}
+
+XrResult
 oxr_verify_view_config_type(struct oxr_logger *log,
                             struct oxr_instance *inst,
                             XrViewConfigurationType view_conf,
