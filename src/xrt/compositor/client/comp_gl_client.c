@@ -298,7 +298,7 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 		/*!
 		 * @todo The swapchain images should have been externally synchronized.
 		 */
-		glFlush();
+		glFinish();
 	}
 
 	if (xret != XRT_SUCCESS) {

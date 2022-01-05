@@ -179,16 +179,12 @@ ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_pr
  */
 
 static xrt_result_t
-insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
+insert_fence_android_native(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
 {
 	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
 
 	*out_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 	EGLDisplay dpy = ceglc->dpy;
-
-	if (!GLAD_EGL_ANDROID_native_fence_sync) {
-		return XRT_SUCCESS;
-	}
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 
@@ -335,7 +331,17 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 #endif
 
-	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence)) {
+	/*
+	 * For now, only use the insert_fence callback only if
+	 * EGL_ANDROID_native_fence_sync is available, revisit this when a more
+	 * generic synchronization mechanism is implemented.
+	 */
+	client_gl_insert_fence_func insert_fence_func = NULL;
+	if (GLAD_EGL_ANDROID_native_fence_sync) {
+		insert_fence_func = insert_fence_android_native;
+	}
+
+	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence_func)) {
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
 		old_restore(&old, display);
