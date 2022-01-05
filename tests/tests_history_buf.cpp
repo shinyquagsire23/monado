@@ -252,10 +252,23 @@ TEST_CASE("u_template_historybuf")
 		CHECK_NOTHROW(buffer.get_at_index(0));
 		CHECK_FALSE(buffer.get_at_index(0) == nullptr);
 		CHECK(*buffer.get_at_index(0) == 0);
+
 		CHECK_FALSE(buffer.get_at_age(0) == nullptr);
 		CHECK(*buffer.get_at_age(0) == 0);
+		CHECK_FALSE(buffer.get_at_clamped_age(0) == nullptr);
+		CHECK(*buffer.get_at_clamped_age(0) == 0);
+
+		CHECK(buffer.get_at_age(1) == nullptr);
+
+		CHECK_FALSE(buffer.get_at_clamped_age(1) == nullptr);
+		CHECK(*buffer.get_at_clamped_age(1) == 0);
+
+		CHECK_FALSE(buffer.get_at_clamped_age(2) == nullptr);
+		CHECK(*buffer.get_at_clamped_age(2) == 0);
+
 		CHECK_NOTHROW(buffer.front());
 		CHECK(buffer.front() == 0);
+
 		CHECK_NOTHROW(buffer.back());
 		CHECK(buffer.back() == 0);
 
@@ -310,10 +323,21 @@ TEST_CASE("u_template_historybuf")
 			CHECK_NOTHROW(buffer.get_at_age(0));
 			CHECK_FALSE(buffer.get_at_age(0) == nullptr);
 			CHECK(*buffer.get_at_age(0) == 1);
+			CHECK_FALSE(buffer.get_at_clamped_age(0) == nullptr);
+			CHECK(*buffer.get_at_clamped_age(0) == 1);
+
 			CHECK_FALSE(buffer.get_at_age(1) == nullptr);
 			CHECK(*buffer.get_at_age(1) == 0);
+			CHECK_FALSE(buffer.get_at_clamped_age(1) == nullptr);
+			CHECK(*buffer.get_at_clamped_age(1) == 0);
 
 			CHECK(buffer.get_at_age(2) == nullptr);
+
+			CHECK_FALSE(buffer.get_at_clamped_age(2) == nullptr);
+			CHECK(*buffer.get_at_clamped_age(2) == 0);
+
+			CHECK_FALSE(buffer.get_at_clamped_age(3) == nullptr);
+			CHECK(*buffer.get_at_clamped_age(3) == 0);
 
 			CHECK_NOTHROW(buffer.front());
 			CHECK(buffer.front() == 0);

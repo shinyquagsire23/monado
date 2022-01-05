@@ -74,10 +74,34 @@ public:
 	T *
 	get_at_age(size_t age) noexcept;
 
-
 	//! @overload
 	const T *
 	get_at_age(size_t age) const noexcept;
+
+	/*!
+	 * @brief Like get_at_age() but values larger than the oldest age are clamped.
+	 *
+	 */
+	T *
+	get_at_clamped_age(size_t age) noexcept
+	{
+		size_t inner_index = 0;
+		if (helper_.clamped_age_to_inner_index(age, inner_index)) {
+			return &internalBuffer[inner_index];
+		}
+		return nullptr;
+	}
+
+	//! @overload
+	const T *
+	get_at_clamped_age(size_t age) const noexcept
+	{
+		size_t inner_index = 0;
+		if (helper_.clamped_age_to_inner_index(age, inner_index)) {
+			return &internalBuffer[inner_index];
+		}
+		return nullptr;
+	}
 
 	/*!
 	 * @brief Access something at a given index, where 0 is the least-recent value still stored, index 1 follows it,

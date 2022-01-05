@@ -46,6 +46,10 @@ public:
 	bool
 	age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept;
 
+	//! Get the inner index for a given age, clamping it if out of bounds
+	bool
+	clamped_age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept;
+
 	//! Get the inner index for a given index (if possible)
 	bool
 	index_to_inner_index(size_t index, size_t &out_inner_idx) const noexcept;
@@ -133,6 +137,16 @@ RingBufferHelper<MaxSize>::age_to_inner_index(size_t age, size_t &out_inner_idx)
 	// prevent underflow with unsigned values
 	out_inner_idx = (latest_inner_idx_ + MaxSize - age) % MaxSize;
 	return true;
+}
+
+template <size_t MaxSize>
+inline bool
+RingBufferHelper<MaxSize>::clamped_age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept
+{
+	if (empty()) {
+		return false;
+	}
+	return age_to_inner_index((std::min)(age, length_ - 1), out_inner_idx);
 }
 
 template <size_t MaxSize>
