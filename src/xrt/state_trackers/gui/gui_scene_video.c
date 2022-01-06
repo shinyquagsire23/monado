@@ -133,6 +133,21 @@ render_mode(struct xrt_fs_mode *mode)
 	return igButton(tmp, button_dims);
 }
 
+void
+mode_selected_so_continue(struct gui_scene *scene, struct gui_program *p)
+{
+	struct video_select *vs = (struct video_select *)scene;
+	gui_scene_calibrate(p, vs->xfctx, vs->xfs, vs->settings);
+
+	// We should not clean these up, zero them out.
+	vs->settings = NULL;
+	vs->xfctx = NULL;
+	vs->xfs = NULL;
+
+	// Schedule us to be deleted when it's safe.
+	gui_scene_delete_me(p, scene);
+}
+
 static void
 scene_render(struct gui_scene *scene, struct gui_program *p)
 {
@@ -158,24 +173,21 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		igText("No modes found on '%s'!", vs->xfs->name);
 	}
 
-	// We have selected a stream device and it has modes.
-	for (size_t i = 0; i < vs->num_modes; i++) {
-		if (!render_mode(&vs->modes[i])) {
-			continue;
+	// We have selected a stream device and it has only one mode - user doesn't need to care what that is; proceed
+	// immediately
+	if (vs->num_modes == 1) {
+		vs->settings->camera_mode = 0;
+		mode_selected_so_continue(scene, p);
+	} else {
+		// We have selected a stream device and it has multiple modes - let user decide which to use
+		for (size_t i = 0; i < vs->num_modes; i++) {
+			if (!render_mode(&vs->modes[i])) {
+				continue;
+			}
+
+			vs->settings->camera_mode = i;
+			mode_selected_so_continue(scene, p);
 		}
-
-		vs->settings->camera_mode = i;
-
-		// User selected this mode, create the next scene.
-		gui_scene_calibrate(p, vs->xfctx, vs->xfs, vs->settings);
-
-		// We should not clean these up, zero them out.
-		vs->settings = NULL;
-		vs->xfctx = NULL;
-		vs->xfs = NULL;
-
-		// Schedule us to be deleted when it's safe.
-		gui_scene_delete_me(p, scene);
 	}
 
 	igSeparator();
