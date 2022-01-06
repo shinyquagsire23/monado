@@ -274,7 +274,8 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 	igInputInt("Collect in groups of #", &cs->params.num_collect_restart, 1, 5, 0);
 
 	igSeparator();
-	igComboStr("Board type", (int *)&cs->params.pattern, "Checkers\0Corners SB\0Circles\0Asymetric Circles\0\0", 3);
+	igComboStr("Board type", (int *)&cs->params.pattern, "Checkers\0Corners SB\0Circles\0Asymmetric Circles\0\0",
+	           3);
 	switch (cs->params.pattern) {
 	case T_BOARD_CHECKERS:
 		igInputInt("Checkerboard Rows", &cs->params.checkers.rows, 1, 5, 0);
