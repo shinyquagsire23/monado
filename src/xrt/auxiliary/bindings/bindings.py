@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2020-2021, Collabora, Ltd.
+# Copyright 2020-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Generate code from a JSON file describing interaction profiles and
 bindings."""
@@ -7,6 +7,32 @@ bindings."""
 import argparse
 import json
 
+
+
+class PathsByLengthCollector:
+    """Helper class to sort paths by length, useful for creating fast path
+    validation functions.
+    """
+
+    def __init__(self):
+        self.by_length = dict()
+
+    def add_path(self, path):
+        length = len(path)
+        if length in self.by_length:
+            self.by_length[length].add(path)
+        else:
+            self.by_length[length] = {path}
+
+    def add_paths(self, paths):
+        for path in paths:
+            self.add_path(path)
+
+    def to_dict_of_lists(self):
+        ret = dict()
+        for length, set_per_length in self.by_length.items():
+            ret[length] = list(set_per_length)
+        return ret
 
 class Component:
     """Components correspond with the standard OpenXR components click, touch, force, value, x, y, twist, pose
@@ -97,14 +123,10 @@ class Profile:
         self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
         self.components = Component.parse_components(json_profile)
 
-        self.by_length = {}
+        collector = PathsByLengthCollector()
         for component in self.components:
-            for path in component.to_monado_paths():
-                length = len(path)
-                if length in self.by_length:
-                    self.by_length[length].append(path)
-                else:
-                    self.by_length[length] = [path]
+            collector.add_paths(component.to_monado_paths())
+        self.by_length = collector.to_dict_of_lists()
 
 
 class Bindings:
