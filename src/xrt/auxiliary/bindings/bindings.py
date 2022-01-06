@@ -8,6 +8,14 @@ import argparse
 import json
 
 
+def find_component_in_list_by_name(name, component_list):
+    """Find a component with the given name in a list of components."""
+    for component in component_list:
+        if component.component_name == name:
+            return component
+    return None
+
+
 class PathsByLengthCollector:
     """Helper class to sort paths by length, useful for creating fast path
     validation functions.
@@ -33,6 +41,48 @@ class PathsByLengthCollector:
             ret[length] = list(set_per_length)
         return ret
 
+class DPad:
+    """Class holding per identifier information for dpad emulation."""
+
+    @classmethod
+    def parse_dpad(dpad_cls,
+                   identifier_path,
+                   component_list,
+                   dpad_json):
+        center = dpad_json["center"]
+        position_str = dpad_json["position"]
+        activate_str = dpad_json["activate"]
+
+        position_component = find_component_in_list_by_name(position_str,
+                                                            component_list)
+        activate_component = find_component_in_list_by_name(activate_str,
+                                                            component_list)
+
+        paths = [
+            identifier_path + "/dpad_up",
+            identifier_path + "/dpad_down",
+            identifier_path + "/dpad_left",
+            identifier_path + "/dpad_right",
+        ]
+
+        if center:
+            paths.append(identifier_path + "/dpad_center")
+
+        return DPad(center,
+                    paths,
+                    position_component,
+                    activate_component)
+
+    def __init__(self,
+                 center,
+                 paths,
+                 position_component,
+                 activate_component):
+        self.center = center
+        self.paths = paths
+        self.position_component = position_component
+        self.activate_component = activate_component
+
 
 class Component:
     """Components correspond with the standard OpenXR components click, touch,
@@ -42,7 +92,7 @@ class Component:
     @classmethod
     def parse_components(component_cls,
                          subaction_path,
-                         identifier_path,
+                         identifier_json_path,
                          json_subpath):
         """
         Turn a Identifier's component paths into a list of Component objects.
@@ -56,7 +106,7 @@ class Component:
                 monado_binding = monado_bindings[component_name]
 
             c = Component(subaction_path,
-                          identifier_path,
+                          identifier_json_path,
                           json_subpath["localized_name"],
                           json_subpath["type"],
                           component_name,
@@ -68,14 +118,14 @@ class Component:
 
     def __init__(self,
                  subaction_path,
-                 identifier_path,
+                 identifier_json_path,
                  subpath_localized_name,
                  subpath_type,
                  component_name,
                  monado_binding,
                  components_for_subpath):
         self.subaction_path = subaction_path
-        self.identifier_path = identifier_path  # note: starts with a slash
+        self.identifier_json_path = identifier_json_path  # note: starts with a slash
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
@@ -91,7 +141,7 @@ class Component:
         """
         paths = []
 
-        basepath = self.subaction_path + self.identifier_path
+        basepath = self.subaction_path + self.identifier_json_path
 
         if self.component_name == "position":
             paths.append(basepath + "/" + "x")
@@ -128,20 +178,31 @@ class Identifer:
         identifier_list = []
         for subaction_path in json_subaction_paths:  # /user/hand/*
             for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
-                identifier_path = json_sub_path_itm[0]  # /input/trackpad
+                json_path = json_sub_path_itm[0]  # /input/trackpad
                 json_subpath = json_sub_path_itm[1]  # json object associated with a subpath (type, localized_name, ...)
 
                 # Oculus Touch a,b/x,y components only exist on one controller
                 if "side" in json_subpath and "/user/hand/" + json_subpath["side"] != subaction_path:
                     continue
 
+                # Full path to the identifier
+                identifier_path = subaction_path + json_path
+
                 component_list = Component.parse_components(subaction_path,
-                                                            identifier_path,
+                                                            json_path,
                                                             json_subpath)
+
+                dpad = None
+                if "dpad_emulation" in json_subpath:
+                    dpad = DPad.parse_dpad(identifier_path,
+                                           component_list,
+                                           json_subpath["dpad_emulation"])
 
                 i = Identifer(subaction_path,
                               identifier_path,
-                              component_list)
+                              json_path,
+                              component_list,
+                              dpad)
                 identifier_list.append(i)
 
         return identifier_list
@@ -149,11 +210,14 @@ class Identifer:
     def __init__(self,
                  subaction_path,
                  identifier_path,
-                 component_list):
+                 json_path,
+                 component_list,
+                 dpad):
         self.subaction_path = subaction_path
         self.identifier_path = identifier_path
-        self.path = subaction_path + identifier_path
+        self.json_path = json_path
         self.components = component_list
+        self.dpad = dpad
         return
 
 
@@ -178,6 +242,22 @@ class Profile:
         for component in self.components:
             collector.add_paths(component.get_full_openxr_paths())
         self.subpaths_by_length = collector.to_dict_of_lists()
+
+        collector = PathsByLengthCollector()
+        for identifier in self.identifiers:
+            if not identifier.dpad:
+                continue
+            collector.add_path(identifier.identifier_path)
+        self.dpad_emulators_by_length = collector.to_dict_of_lists()
+
+        collector = PathsByLengthCollector()
+        for identifier in self.identifiers:
+            if not identifier.dpad:
+                continue
+            path = identifier.identifier_path
+            collector.add_paths(identifier.dpad.paths)
+
+        self.dpad_paths_by_length = collector.to_dict_of_lists()
 
 
 class Bindings:
@@ -253,6 +333,10 @@ def generate_bindings_c(file, p):
     for profile in p.profiles:
         name = "oxr_verify_" + profile.validation_func_name + "_subpath"
         write_verify_func(f, name, profile.subpaths_by_length)
+        name = "oxr_verify_" + profile.validation_func_name + "_dpad_path"
+        write_verify_func(f, name, profile.dpad_paths_by_length)
+        name = "oxr_verify_" + profile.validation_func_name + "_dpad_emulator"
+        write_verify_func(f, name, profile.dpad_emulators_by_length)
 
     f.write(
         f'\n\nstruct profile_template profile_templates[{len(p.profiles)}] = {{ // array of profile_template\n')
@@ -276,7 +360,8 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            steamvr_path = component.identifier_path
+            json_path = component.identifier_json_path
+            steamvr_path = json_path # @todo Doesn't handle pose yet.
             if component.component_name in ["click", "touch", "force", "value"]:
                 steamvr_path += "/" + component.component_name
 
@@ -313,6 +398,38 @@ def generate_bindings_c(file, p):
             f.write(f'\t\t\t}}, // /binding_template {idx}\n')
 
         f.write('\t\t}, // /array of binding_template\n')
+
+        dpads = []
+        for idx, identifier in enumerate(profile.identifiers):
+            if identifier.dpad:
+                dpads.append(identifier)
+
+#        for identifier in dpads:
+#            print(identifier.path, identifier.dpad_position_component)
+
+        dpad_count = len(dpads)
+        f.write(f'\t\t.dpad_count = {dpad_count},\n')
+        if len(dpads) == 0:
+            f.write(f'\t\t.dpads = NULL,\n')
+        else:
+            f.write(
+                f'\t\t.dpads = (struct dpad_emulation[]){{ // array of dpad_emulation\n')
+            for idx, identifier in enumerate(dpads):
+                f.write('\t\t\t{\n')
+                f.write(f'\t\t\t\t.subaction_path = "{identifier.subaction_path}",\n')
+                f.write('\t\t\t\t.paths = {\n')
+                for path in identifier.dpad.paths:
+                    f.write(f'\t\t\t\t\t"{path}",\n')
+                f.write('\t\t\t\t},\n')
+                f.write(f'\t\t\t\t.position = {identifier.dpad.position_component.monado_binding},\n')
+                if identifier.dpad.activate_component:
+                    f.write(f'\t\t\t\t.activate = {identifier.dpad.activate_component.monado_binding},\n')
+                else:
+                    f.write(f'\t\t\t\t.actiavte = 0')
+
+                f.write('\t\t\t},\n')
+            f.write('\t\t}, // /array of dpad_emulation\n')
+
         f.write('\t}, // /profile_template\n')
 
     f.write('}; // /array of profile_template\n\n')
@@ -399,9 +516,30 @@ def generate_bindings_h(file, p):
     for profile in p.profiles:
         f.write("\nbool\noxr_verify_" + profile.validation_func_name +
                 "_subpath(const char *str, size_t length);\n")
+        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
+                "_dpad_path(const char *str, size_t length);\n")
+        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
+                "_dpad_emulator(const char *str, size_t length);\n")
 
     f.write(f'''
 #define PATHS_PER_BINDING_TEMPLATE 8
+
+enum oxr_dpad_binding_point
+{{
+\tOXR_DPAD_BINDING_POINT_NONE,
+\tOXR_DPAD_BINDING_POINT_UP,
+\tOXR_DPAD_BINDING_POINT_DOWN,
+\tOXR_DPAD_BINDING_POINT_LEFT,
+\tOXR_DPAD_BINDING_POINT_RIGHT,
+}};
+
+struct dpad_emulation
+{{
+\tconst char *subaction_path;
+\tconst char *paths[PATHS_PER_BINDING_TEMPLATE];
+\tenum xrt_input_name position;
+\tenum xrt_input_name activate; // Can be zero
+}};
 
 struct binding_template
 {{
@@ -422,6 +560,8 @@ struct profile_template
 \tconst char *steamvr_controller_type;
 \tstruct binding_template *bindings;
 \tsize_t binding_count;
+\tstruct dpad_emulation *dpads;
+\tsize_t dpad_count;
 }};
 
 #define NUM_PROFILE_TEMPLATES {len(p.profiles)}

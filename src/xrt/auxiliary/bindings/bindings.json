@@ -73,6 +73,11 @@
 					"type": "trackpad",
 					"localized_name": "Trackpad",
 					"components": ["touch", "click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "touch",
+						"center": true
+					},
 					"monado_bindings": {
 						"touch": "XRT_INPUT_DAYDREAM_TOUCHPAD_TOUCH",
 						"click": "XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK",
@@ -144,6 +149,11 @@
 					"type": "trackpad",
 					"localized_name": "Trackpad",
 					"components": ["click", "touch", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": true
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVE_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_VIVE_TRACKPAD_TOUCH",
@@ -257,6 +267,11 @@
 					"type": "joystick",
 					"localized_name": "Thumbstick",
 					"components": ["click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_THUMBSTICK_CLICK",
 						"position": "XRT_INPUT_WMR_THUMBSTICK"
@@ -266,6 +281,11 @@
 					"type": "trackpad",
 					"localized_name": "Trackpad",
 					"components": ["click", "touch", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": true
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_WMR_TRACKPAD_TOUCH",
@@ -407,6 +427,11 @@
 					"type": "joystick",
 					"localized_name": "Left Thumbstick",
 					"components": ["click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_THUMBSTICK_LEFT_CLICK",
 						"position": "XRT_INPUT_XBOX_THUMBSTICK_LEFT"
@@ -416,6 +441,11 @@
 					"type": "joystick",
 					"localized_name": "Right Thumbstick",
 					"components": ["click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_THUMBSTICK_RIGHT_CLICK",
 						"position": "XRT_INPUT_XBOX_THUMBSTICK_RIGHT"
@@ -509,6 +539,11 @@
 					"type": "trackpad",
 					"localized_name": "Trackpad",
 					"components": ["click", "touch", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": true
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_GO_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_GO_TRACKPAD_TOUCH",
@@ -622,6 +657,11 @@
 					"type": "joystick",
 					"localized_name": "Thumbstick",
 					"components": ["click", "touch", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "touch",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_THUMBSTICK_CLICK",
 						"touch": "XRT_INPUT_TOUCH_THUMBSTICK_TOUCH",
@@ -722,6 +762,11 @@
 					"type": "joystick",
 					"localized_name": "Thumbstick",
 					"components": ["click", "touch", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "touch",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_THUMBSTICK_CLICK",
 						"touch": "XRT_INPUT_INDEX_THUMBSTICK_TOUCH",
@@ -732,6 +777,11 @@
 					"type": "trackpad",
 					"localized_name": "Trackpad",
 					"components": ["touch", "force", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "force",
+						"center": true
+					},
 					"monado_bindings": {
 						"force": "XRT_INPUT_INDEX_TRACKPAD_FORCE",
 						"touch": "XRT_INPUT_INDEX_TRACKPAD_TOUCH",
@@ -989,6 +1039,11 @@
 					"type": "joystick",
 					"localized_name": "Thumbstick",
 					"components": ["click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"activate": "click",
+						"center": false
+					},
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_JOYSTICK_CLICK",
 						"position": "XRT_INPUT_HYDRA_JOYSTICK_VALUE"
