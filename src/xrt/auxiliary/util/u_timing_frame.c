@@ -50,17 +50,34 @@ enum frame_state
 
 struct frame
 {
+	//! An arbitrary id that identifies this frame. Set in `create_frame`.
 	int64_t frame_id;
+
+	//! When this frame was last used for a prediction. Set in `predict_next_frame`.
 	uint64_t when_predict_ns;
+
+	//! When should the compositor wake the app up. Set in `predict_next_frame`.
 	uint64_t wake_up_time_ns;
+
+	//! When the compositor last woke up the app after wait_frame. Set in `dt_mark_point` with
+	//! `U_TIMING_POINT_WAKE_UP`.
 	uint64_t when_woke_ns;
+
+	//! When the compositor started rendering a frame
 	uint64_t when_began_ns;
+
+	//! When the compositor finished rendering a frame
 	uint64_t when_submitted_ns;
+
+	//! When new frame timing info was last added.
 	uint64_t when_infoed_ns;
+
+	//! How much time we currently expect the app to take rendering a frame. Updated in `predict_next_frame`
 	uint64_t current_app_time_ns;
-	uint64_t expected_done_time_ns; //!< When we expect the compositor to be done with its frame.
-	uint64_t desired_present_time_ns;
-	uint64_t predicted_display_time_ns;
+
+	uint64_t expected_done_time_ns;     //!< When we expect the compositor to be done with its frame.
+	uint64_t desired_present_time_ns;   //!< The GPU should start scanning out at this time.
+	uint64_t predicted_display_time_ns; //!< At what time have we predicted that pixels turns to photons.
 	uint64_t present_margin_ns;
 	uint64_t actual_present_time_ns;
 	uint64_t earliest_present_time_ns;
