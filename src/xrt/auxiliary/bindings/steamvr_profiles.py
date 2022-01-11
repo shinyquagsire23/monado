@@ -36,9 +36,9 @@ def open_file(args, fname):
 
 def steamvr_subpath_name(component):
     if component.subpath_type == "pose":
-        return component.subpath_name.replace("/input/", "/pose/")
+        return component.identifier_path.replace("/input/", "/pose/")
 
-    return component.subpath_name
+    return component.identifier_path
 
 
 def get_required_components(path_type):

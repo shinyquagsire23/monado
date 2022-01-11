@@ -39,48 +39,39 @@ class Component:
     """
 
     @classmethod
-    def parse_components(component_cls, json_profile):
-        """Turn a profile's input paths into a list of Component objects."""
-
-        json_subaction_paths = json_profile["subaction_paths"]
-        json_subpaths = json_profile["subpaths"]
+    def parse_components(component_cls,
+                         subaction_path,
+                         identifier_path,
+                         json_subpath):
+        """Turn a Identifier's component paths into a list of Component objects."""
 
         component_list = []
-        for subaction_path in json_subaction_paths:  # /user/hand/*
-            for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
-                subpath_name = json_sub_path_itm[0]  # /input/trackpad
-                json_subpath = json_sub_path_itm[1]  # json object associated with a subpath (type, localized_name, ...)
+        for component_name in json_subpath["components"]:  # click, touch, ...
+            monado_binding = None
+            if component_name in json_subpath["monado_bindings"]:
+                monado_binding = json_subpath["monado_bindings"][component_name]
 
-                # Oculus Touch a,b/x,y components only exist on one controller
-                if "side" in json_subpath and "/user/hand/" + json_subpath["side"] != subaction_path:
-                    continue
-
-                for component_name in json_subpath["components"]:  # click, touch, ...
-                    monado_binding = None
-                    if component_name in json_subpath["monado_bindings"]:
-                        monado_binding = json_subpath["monado_bindings"][component_name]
-
-                    c = Component(subaction_path,
-                                  subpath_name,
-                                  json_subpath["localized_name"],
-                                  json_subpath["type"],
-                                  component_name,
-                                  monado_binding,
-                                  json_subpath["components"])
-                    component_list.append(c)
+            c = Component(subaction_path,
+                          identifier_path,
+                          json_subpath["localized_name"],
+                          json_subpath["type"],
+                          component_name,
+                          monado_binding,
+                          json_subpath["components"])
+            component_list.append(c)
 
         return component_list
 
     def __init__(self,
                  subaction_path,
-                 subpath_name,
+                 identifier_path,
                  subpath_localized_name,
                  subpath_type,
                  component_name,
                  monado_binding,
                  components_for_subpath):
         self.subaction_path = subaction_path
-        self.subpath_name = subpath_name  # note: starts with a slash
+        self.identifier_path = identifier_path  # note: starts with a slash
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
@@ -95,7 +86,7 @@ class Component:
         """
         paths = []
 
-        basepath = self.subaction_path + self.subpath_name
+        basepath = self.subaction_path + self.identifier_path
 
         if self.component_name == "position":
             paths.append(basepath + "/" + "x")
@@ -115,6 +106,52 @@ class Component:
         return not self.is_input()
 
 
+class Identifer:
+    """A Identifier is a OpenXR identifier with a user path, such as button
+    X, a trackpad, a pose such as aim. It can have one or more features, even
+    tho outputs doesn't include a component/feature path a output indentifier
+    will have a haptic output feature.
+    """
+
+    @classmethod
+    def parse_identifiers(indentifer_cls, json_profile):
+        """Turn a profile's input paths into a list of Component objects."""
+
+        json_subaction_paths = json_profile["subaction_paths"]
+        json_subpaths = json_profile["subpaths"]
+
+        identifier_list = []
+        for subaction_path in json_subaction_paths:  # /user/hand/*
+            for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
+                identifier_path = json_sub_path_itm[0]  # /input/trackpad
+                json_subpath = json_sub_path_itm[1]  # json object associated with a subpath (type, localized_name, ...)
+
+                # Oculus Touch a,b/x,y components only exist on one controller
+                if "side" in json_subpath and "/user/hand/" + json_subpath["side"] != subaction_path:
+                    continue
+
+                component_list = Component.parse_components(subaction_path,
+                                                            identifier_path,
+                                                            json_subpath)
+
+                i = Identifer(subaction_path,
+                              identifier_path,
+                              component_list)
+                identifier_list.append(i)
+
+        return identifier_list
+
+    def __init__(self,
+                 subaction_path,
+                 identifier_path,
+                 component_list):
+        self.subaction_path = subaction_path
+        self.identifier_path = identifier_path
+        self.path = subaction_path + identifier_path
+        self.components = component_list
+        return
+
+
 class Profile:
     """An interactive bindings profile."""
 
@@ -125,7 +162,12 @@ class Profile:
         self.profile_type = json_profile["type"]
         self.monado_device_enum = json_profile["monado_device"]
         self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
-        self.components = Component.parse_components(json_profile)
+        self.identifiers = Identifer.parse_identifiers(json_profile)
+
+        self.components = []
+        for identifier in self.identifiers:
+            for component in identifier.components:
+                self.components.append(component)
 
         collector = PathsByLengthCollector()
         for component in self.components:
@@ -219,7 +261,7 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            steamvr_path = component.subpath_name
+            steamvr_path = component.identifier_path
             if component.component_name in ["click", "touch", "force", "value"]:
                 steamvr_path += "/" + component.component_name
 
