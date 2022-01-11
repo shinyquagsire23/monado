@@ -8,7 +8,7 @@ import argparse
 import json
 
 
-def handle_subpath(pathgroup_cls, component_list, subaction_path, sub_path_itm):
+def handle_subpath(component_list, subaction_path, sub_path_itm):
     sub_path_name = sub_path_itm[0]
     sub_path_obj = sub_path_itm[1]
 
@@ -30,8 +30,7 @@ class Component:
         component_list = []
         for subaction_path in subaction_paths:
             for sub_path_itm in paths.items():
-                handle_subpath(component_cls, component_list,
-                               subaction_path, sub_path_itm)
+                handle_subpath(component_list, subaction_path, sub_path_itm)
         return component_list
 
     def __init__(self, subaction_path, sub_path_itm, component_str):
