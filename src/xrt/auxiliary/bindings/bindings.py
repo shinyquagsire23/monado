@@ -196,21 +196,19 @@ def generate_bindings_c(file, p):
 
             component_str = component.component_str
 
-            # controllers can have input that we don't have bindings for'
-            if component_str not in sp_obj["monado_bindings"]:
-                continue
+            # controllers can have input that we don't have bindings for
+            if component_str in sp_obj["monado_bindings"]:
+                monado_binding = sp_obj["monado_bindings"][component_str]
 
-            monado_binding = sp_obj["monado_bindings"][component_str]
+                if component.is_input() and monado_binding is not None:
+                    f.write(f'\t\t\t\t.input = {monado_binding},\n')
+                else:
+                    f.write(f'\t\t\t\t.input = 0,\n')
 
-            if component.is_input() and monado_binding is not None:
-                f.write(f'\t\t\t\t.input = {monado_binding},\n')
-            else:
-                f.write(f'\t\t\t\t.input = 0,\n')
-
-            if component.is_output() and monado_binding is not None:
-                f.write(f'\t\t\t\t.output = {monado_binding},\n')
-            else:
-                f.write(f'\t\t\t\t.output = 0,\n')
+                if component.is_output() and monado_binding is not None:
+                    f.write(f'\t\t\t\t.output = {monado_binding},\n')
+                else:
+                    f.write(f'\t\t\t\t.output = 0,\n')
 
             f.write(f'\t\t\t}}, // /binding_template {idx}\n')
 
