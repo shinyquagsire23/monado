@@ -52,9 +52,8 @@ fake_driver_manifest = custom_target(
 fake_driver_resources = custom_target(
 	'driver_resources_copy',
 	depends : driver_monado,
-	input : 'resources',  # https://github.com/mesonbuild/meson/issues/4717
-	output : 'fake_driver_resources',
-	command : [copy_asset, 'DIRECTORY', '@INPUT@', resources_dir],
+	output : 'resources',
+	command : [copy_asset, 'DIRECTORY', join_paths(meson.current_source_dir(), 'resources'), resources_dir],
 	build_by_default : true
 )
 
