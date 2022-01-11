@@ -41,7 +41,7 @@ def steamvr_subpath_name(sub_path_name, sub_path_obj):
     return sub_path_name
 
 
-def get_required_features(path_type):
+def get_required_components(path_type):
     if path_type == "button":
         return ["click", "touch"]
     if path_type == "trigger":
@@ -79,10 +79,10 @@ def main():
 
         input_source = {}
 
-        feature: Feature
-        for idx, feature in enumerate(p.features):
-            sp_name = steamvr_subpath_name(feature.sub_path_name, feature.sub_path_obj)
-            sp = feature.sub_path_obj
+        component: Component
+        for idx, component in enumerate(p.components):
+            sp_name = steamvr_subpath_name(component.sub_path_name, component.sub_path_obj)
+            sp = component.sub_path_obj
 
             input_source[sp_name] = {
                 "type": sp["type"],
@@ -90,8 +90,8 @@ def main():
                 "order": idx
             }
 
-            for req in get_required_features(sp["type"]):
-                input_source[sp_name][req] = req in sp["features"]
+            for req in get_required_components(sp["type"]):
+                input_source[sp_name][req] = req in sp["components"]
 
         j = {
             "json_id": "input_profile",

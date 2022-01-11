@@ -8,7 +8,7 @@ import argparse
 import json
 
 
-def handle_subpath(pathgroup_cls, feature_list, subaction_path, sub_path_itm):
+def handle_subpath(pathgroup_cls, component_list, subaction_path, sub_path_itm):
     sub_path_name = sub_path_itm[0]
     sub_path_obj = sub_path_itm[1]
 
@@ -16,31 +16,30 @@ def handle_subpath(pathgroup_cls, feature_list, subaction_path, sub_path_itm):
     if "side" in sub_path_obj and sub_path_obj["side"] not in subaction_path:
         return
 
-    for feature in sub_path_obj["features"]:
-        feature_list.append(Feature(subaction_path, sub_path_itm, feature))
+    for component in sub_path_obj["components"]:
+        component_list.append(Component(subaction_path, sub_path_itm, component))
 
 
-class Feature:
-    """Features roughly correlate with data sources. For example a trackpad may
-    have several features: position, click, touch, force, ...
+class Component:
+    """Components correspond with the standard OpenXR components click, touch, force, value, x, y, twist, pose
     """
 
     @classmethod
-    def parse_features(feature_cls, subaction_paths, paths):
-        """Turn a profile's input paths into a list of Feature objects."""
-        feature_list = []
+    def parse_components(component_cls, subaction_paths, paths):
+        """Turn a profile's input paths into a list of Component objects."""
+        component_list = []
         for subaction_path in subaction_paths:
             for sub_path_itm in paths.items():
-                handle_subpath(feature_cls, feature_list,
+                handle_subpath(component_cls, component_list,
                                subaction_path, sub_path_itm)
-        return feature_list
+        return component_list
 
-    def __init__(self, subaction_path, sub_path_itm, feature_str):
+    def __init__(self, subaction_path, sub_path_itm, component_str):
         # note: self.sub_path_name starts with a slash
         self.sub_path_name = sub_path_itm[0]
         self.sub_path_obj = sub_path_itm[1]
         self.subaction_path = subaction_path
-        self.feature_str = feature_str
+        self.component_str = component_str
 
     def to_monado_paths(self):
         """A group of paths that derive from the same input.
@@ -50,19 +49,19 @@ class Feature:
 
         basepath = self.subaction_path + self.sub_path_name
 
-        if self.feature_str == "position":
+        if self.component_str == "position":
             paths.append(basepath + "/" + "x")
             paths.append(basepath + "/" + "y")
             paths.append(basepath)
         else:
-            paths.append(basepath + "/" + self.feature_str)
+            paths.append(basepath + "/" + self.component_str)
             paths.append(basepath)
 
         return paths
 
     def is_input(self):
         # only haptics is output so far, everything else is input
-        return self.feature_str != "haptic"
+        return self.component_str != "haptic"
 
     def is_output(self):
         return not self.is_input()
@@ -77,13 +76,13 @@ class Profile:
         self.monado_device = data["monado_device"]
         self.title = data['title']
         self.func = name[22:].replace("/", "_")
-        self.features = Feature.parse_features(data["subaction_paths"],
-                                               data["subpaths"])
+        self.components = Component.parse_components(data["subaction_paths"],
+                                                     data["subpaths"])
         self.hw_type = data["type"]
 
         self.by_length = {}
-        for feature in self.features:
-            for path in feature.to_monado_paths():
+        for component in self.components:
+            for path in component.to_monado_paths():
                 length = len(path)
                 if length in self.by_length:
                     self.by_length[length].append(path)
@@ -162,7 +161,7 @@ def generate_bindings_c(file, p):
         fname = vendor_name + "_" + hw_name + "_profile.json"
         controller_type = "monado_" + vendor_name + "_" + hw_name
 
-        binding_count = len(profile.features)
+        binding_count = len(profile.components)
         f.write(f'\t{{ // profile_template\n')
         f.write(f'\t\t.name = {profile.monado_device},\n')
         f.write(f'\t\t.path = "{profile.name}",\n')
@@ -173,42 +172,42 @@ def generate_bindings_c(file, p):
         f.write(
             f'\t\t.bindings = (struct binding_template[]){{ // array of binding_template\n')
 
-        feature: Feature
-        for idx, feature in enumerate(profile.features):
-            sp_obj = feature.sub_path_obj
+        component: Component
+        for idx, component in enumerate(profile.components):
+            sp_obj = component.sub_path_obj
 
-            steamvr_path = feature.sub_path_name
-            if feature.feature_str in ["click", "touch", "force", "value"]:
-                steamvr_path += "/" + feature.feature_str
+            steamvr_path = component.sub_path_name
+            if component.component_str in ["click", "touch", "force", "value"]:
+                steamvr_path += "/" + component.component_str
 
             f.write(f'\t\t\t{{ // binding_template {idx}\n')
-            f.write(f'\t\t\t\t.subaction_path = "{feature.subaction_path}",\n')
+            f.write(f'\t\t\t\t.subaction_path = "{component.subaction_path}",\n')
             f.write(f'\t\t\t\t.steamvr_path = "{steamvr_path}",\n')
             f.write(
                 f'\t\t\t\t.localized_name = "{sp_obj["localized_name"]}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
-            for path in feature.to_monado_paths():
+            for path in component.to_monado_paths():
                 f.write(f'\t\t\t\t\t"{path}",\n')
             f.write('\t\t\t\t\tNULL\n')
             f.write('\t\t\t\t}, // /array of paths\n')
 
-            # print("feature", feature.__dict__)
+            # print("component", component.__dict__)
 
-            feature_str = feature.feature_str
+            component_str = component.component_str
 
             # controllers can have input that we don't have bindings for'
-            if feature_str not in sp_obj["monado_bindings"]:
+            if component_str not in sp_obj["monado_bindings"]:
                 continue
 
-            monado_binding = sp_obj["monado_bindings"][feature_str]
+            monado_binding = sp_obj["monado_bindings"][component_str]
 
-            if feature.is_input() and monado_binding is not None:
+            if component.is_input() and monado_binding is not None:
                 f.write(f'\t\t\t\t.input = {monado_binding},\n')
             else:
                 f.write(f'\t\t\t\t.input = 0,\n')
 
-            if feature.is_output() and monado_binding is not None:
+            if component.is_output() and monado_binding is not None:
                 f.write(f'\t\t\t\t.output = {monado_binding},\n')
             else:
                 f.write(f'\t\t\t\t.output = 0,\n')
@@ -223,15 +222,15 @@ def generate_bindings_c(file, p):
     inputs = set()
     outputs = set()
     for profile in p.profiles:
-        feature: Feature
-        for idx, feature in enumerate(profile.features):
+        component: Component
+        for idx, component in enumerate(profile.components):
 
-            feature_str = feature.feature_str
+            component_str = component.component_str
 
-            sp_obj = feature.sub_path_obj
-            if feature_str not in sp_obj["monado_bindings"]:
+            sp_obj = component.sub_path_obj
+            if component_str not in sp_obj["monado_bindings"]:
                 continue
-            monado_binding = sp_obj["monado_bindings"][feature_str]
+            monado_binding = sp_obj["monado_bindings"][component_str]
 
             if sp_obj["type"] == "vibration":
                 outputs.add(monado_binding)

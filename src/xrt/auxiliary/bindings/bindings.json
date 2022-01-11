@@ -12,7 +12,7 @@
 				"/input/select": {
 					"type": "button",
 					"localized_name": "Select",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_SIMPLE_SELECT_CLICK"
 					}
@@ -20,7 +20,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_SIMPLE_MENU_CLICK"
 					}
@@ -28,7 +28,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_SIMPLE_GRIP_POSE"
 					}
@@ -36,7 +36,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_SIMPLE_AIM_POSE"
 					}
@@ -44,7 +44,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_SIMPLE_VIBRATION"
 					}
@@ -64,7 +64,7 @@
 				"/input/select": {
 					"type": "button",
 					"localized_name": "Select",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_DAYDREAM_BAR_CLICK"
 					}
@@ -72,7 +72,7 @@
 				"/input/trackpad": {
 					"type": "trackpad",
 					"localized_name": "Trackpad",
-					"features": ["touch", "click", "position"],
+					"components": ["touch", "click", "position"],
 					"monado_bindings": {
 						"touch": "XRT_INPUT_DAYDREAM_TOUCHPAD_TOUCH",
 						"click": "XRT_INPUT_DAYDREAM_TOUCHPAD_CLICK",
@@ -82,7 +82,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_DAYDREAM_POSE"
 					}
@@ -90,7 +90,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_DAYDREAM_POSE"
 					}
@@ -110,7 +110,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVE_SYSTEM_CLICK"
 					}
@@ -118,7 +118,7 @@
 				"/input/squeeze": {
 					"type": "button",
 					"localized_name": "Squeeze",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVE_SQUEEZE_CLICK"
 					}
@@ -126,7 +126,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click":  "XRT_INPUT_VIVE_MENU_CLICK"
 					}
@@ -134,7 +134,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["click", "value"],
+					"components": ["click", "value"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVE_TRIGGER_CLICK",
 						"value": "XRT_INPUT_VIVE_TRIGGER_VALUE"
@@ -143,7 +143,7 @@
 				"/input/trackpad": {
 					"type": "trackpad",
 					"localized_name": "Trackpad",
-					"features": ["click", "touch", "position"],
+					"components": ["click", "touch", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVE_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_VIVE_TRACKPAD_TOUCH",
@@ -153,7 +153,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_VIVE_GRIP_POSE"
 					}
@@ -161,7 +161,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_VIVE_AIM_POSE"
 					}
@@ -169,7 +169,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_VIVE_HAPTIC"
 					}
@@ -188,7 +188,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVEPRO_SYSTEM_CLICK"
 					}
@@ -196,7 +196,7 @@
 				"/input/volume_up": {
 					"type": "button",
 					"localized_name": "Volume Up",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVEPRO_VOLUP_CLICK"
 					}
@@ -204,7 +204,7 @@
 				"/input/volume_down": {
 					"type": "button",
 					"localized_name": "Volume Down",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVEPRO_VOLDN_CLICK"
 					}
@@ -212,7 +212,7 @@
 				"/input/mute_mic": {
 					"type": "button",
 					"localized_name": "Mute Microphone",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_VIVEPRO_MUTE_MIC_CLICK"
 					}
@@ -232,7 +232,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_MENU_CLICK"
 					}
@@ -240,7 +240,7 @@
 				"/input/squeeze": {
 					"type": "button",
 					"localized_name": "Squeeze",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_SQUEEZE_CLICK"
 					}
@@ -248,7 +248,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_WMR_TRIGGER_VALUE"
 					}
@@ -256,7 +256,7 @@
 				"/input/thumbstick": {
 					"type": "joystick",
 					"localized_name": "Thumbstick",
-					"features": ["click", "position"],
+					"components": ["click", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_THUMBSTICK_CLICK",
 						"position": "XRT_INPUT_WMR_THUMBSTICK"
@@ -265,7 +265,7 @@
 				"/input/trackpad": {
 					"type": "trackpad",
 					"localized_name": "Trackpad",
-					"features": ["click", "touch", "position"],
+					"components": ["click", "touch", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_WMR_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_WMR_TRACKPAD_TOUCH",
@@ -275,7 +275,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_WMR_GRIP_POSE"
 					}
@@ -283,7 +283,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings":  {
 						"pose": "XRT_INPUT_WMR_AIM_POSE"
 					}
@@ -291,7 +291,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_WMR_HAPTIC"
 					}
@@ -310,7 +310,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_MENU_CLICK"
 					}
@@ -318,7 +318,7 @@
 				"/input/view": {
 					"type": "button",
 					"localized_name": "View",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_VIEW_CLICK"
 					}
@@ -326,7 +326,7 @@
 				"/input/a": {
 					"type": "button",
 					"localized_name": "A",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_A_CLICK"
 					}
@@ -334,7 +334,7 @@
 				"/input/b": {
 					"type": "button",
 					"localized_name": "B",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_B_CLICK"
 					}
@@ -342,7 +342,7 @@
 				"/input/x": {
 					"type": "button",
 					"localized_name": "X",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_X_CLICK"
 					}
@@ -350,7 +350,7 @@
 				"/input/y": {
 					"type": "button",
 					"localized_name": "Y",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_Y_CLICK"
 					}
@@ -358,7 +358,7 @@
 				"/input/dpad_down": {
 					"type": "button",
 					"localized_name": "DPAD down",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_DPAD_DOWN_CLICK"
 					}
@@ -366,7 +366,7 @@
 				"/input/dpad_right": {
 					"type": "button",
 					"localized_name": "DPAD right",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_DPAD_RIGHT_CLICK"
 					}
@@ -374,7 +374,7 @@
 				"/input/dpad_up": {
 					"type": "button",
 					"localized_name": "DPAD up",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_DPAD_UP_CLICK"
 					}
@@ -382,7 +382,7 @@
 				"/input/dpad_left": {
 					"type": "button",
 					"localized_name": "DPAD left",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_DPAD_LEFT_CLICK"
 					}
@@ -390,7 +390,7 @@
 				"/input/shoulder_left": {
 					"type": "button",
 					"localized_name": "Shoulder left",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_SHOULDER_LEFT_CLICK"
 					}
@@ -398,7 +398,7 @@
 				"/input/shoulder_right": {
 					"type": "button",
 					"localized_name": "Shoulder right",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_SHOULDER_RIGHT_CLICK"
 					}
@@ -406,7 +406,7 @@
 				"/input/thumbstick_left": {
 					"type": "joystick",
 					"localized_name": "Left Thumbstick",
-					"features": ["click", "position"],
+					"components": ["click", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_THUMBSTICK_LEFT_CLICK",
 						"position": "XRT_INPUT_XBOX_THUMBSTICK_LEFT"
@@ -415,7 +415,7 @@
 				"/input/thumbstick_right": {
 					"type": "joystick",
 					"localized_name": "Right Thumbstick",
-					"features": ["click", "position"],
+					"components": ["click", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_XBOX_THUMBSTICK_RIGHT_CLICK",
 						"position": "XRT_INPUT_XBOX_THUMBSTICK_RIGHT"
@@ -424,7 +424,7 @@
 				"/input/trigger_left": {
 					"type": "trigger",
 					"localized_name": "Left Trigger",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_XBOX_LEFT_TRIGGER_VALUE"
 					}
@@ -432,7 +432,7 @@
 				"/input/trigger_right": {
 					"type": "trigger",
 					"localized_name": "Right Trigger",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_XBOX_RIGHT_TRIGGER_VALUE"
 					}
@@ -440,7 +440,7 @@
 				"/output/haptic_left": {
 					"type": "vibration",
 					"localized_name": "Left Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_LEFT"
 					}
@@ -448,7 +448,7 @@
 				"/output/haptic_right": {
 					"type": "vibration",
 					"localized_name": "Right Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_RIGHT"
 					}
@@ -456,7 +456,7 @@
 				"/output/haptic_left_trigger": {
 					"type": "vibration",
 					"localized_name": "Left Trigger Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_LEFT_TRIGGER"
 					}
@@ -464,7 +464,7 @@
 				"/output/haptic_right_trigger": {
 					"type": "vibration",
 					"localized_name": "Right Trigger Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_XBOX_HAPTIC_RIGHT_TRIGGER"
 					}
@@ -484,7 +484,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_GO_SYSTEM_CLICK"
 					}
@@ -492,7 +492,7 @@
 				"/input/trigger": {
 					"type": "button",
 					"localized_name": "Trigger",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_GO_TRIGGER_CLICK"
 					}
@@ -500,7 +500,7 @@
 				"/input/back": {
 					"type": "button",
 					"localized_name": "Back",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_GO_BACK_CLICK"
 					}
@@ -508,7 +508,7 @@
 				"/input/trackpad": {
 					"type": "trackpad",
 					"localized_name": "Trackpad",
-					"features": ["click", "touch", "position"],
+					"components": ["click", "touch", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_GO_TRACKPAD_CLICK",
 						"touch": "XRT_INPUT_GO_TRACKPAD_TOUCH",
@@ -518,7 +518,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_GO_GRIP_POSE"
 					}
@@ -526,7 +526,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_GO_AIM_POSE"
 					}
@@ -546,7 +546,7 @@
 				"/input/x": {
 					"type": "button",
 					"localized_name": "X",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"side": "left",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_X_CLICK",
@@ -556,7 +556,7 @@
 				"/input/y": {
 					"type": "button",
 					"localized_name": "Y",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"side": "left",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_Y_CLICK",
@@ -566,7 +566,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"side": "left",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_MENU_CLICK"
@@ -575,7 +575,7 @@
 				"/input/a": {
 					"type": "button",
 					"localized_name": "A",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"side": "right",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_A_CLICK",
@@ -585,7 +585,7 @@
 				"/input/b": {
 					"type": "button",
 					"localized_name": "B",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"side": "right",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_B_CLICK",
@@ -595,7 +595,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click"],
+					"components": ["click"],
 					"side": "right",
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_SYSTEM_CLICK"
@@ -604,7 +604,7 @@
 				"/input/squeeze": {
 					"type": "trigger",
 					"localized_name": "Squeeze",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_TOUCH_SQUEEZE_VALUE"
 					}
@@ -612,7 +612,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["touch", "value"],
+					"components": ["touch", "value"],
 					"monado_bindings": {
 						"touch": "XRT_INPUT_TOUCH_TRIGGER_TOUCH",
 						"value": "XRT_INPUT_TOUCH_TRIGGER_VALUE"
@@ -621,7 +621,7 @@
 				"/input/thumbstick": {
 					"type": "joystick",
 					"localized_name": "Thumbstick",
-					"features": ["click", "touch", "position"],
+					"components": ["click", "touch", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_TOUCH_THUMBSTICK_CLICK",
 						"touch": "XRT_INPUT_TOUCH_THUMBSTICK_TOUCH",
@@ -631,7 +631,7 @@
 				"/input/thumbrest": {
 					"type": "button",
 					"localized_name": "Thumb Rest",
-					"features": ["touch"],
+					"components": ["touch"],
 					"monado_bindings": {
 						"touch": "XRT_INPUT_TOUCH_THUMBREST_TOUCH"
 					}
@@ -639,7 +639,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_TOUCH_GRIP_POSE"
 					}
@@ -647,7 +647,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_TOUCH_AIM_POSE"
 					}
@@ -655,7 +655,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_TOUCH_HAPTIC"
 					}
@@ -675,7 +675,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_SYSTEM_CLICK",
 						"touch": "XRT_INPUT_INDEX_SYSTEM_TOUCH"
@@ -684,7 +684,7 @@
 				"/input/a": {
 					"type": "button",
 					"localized_name": "A",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_A_CLICK",
 						"touch": "XRT_INPUT_INDEX_A_TOUCH"
@@ -693,7 +693,7 @@
 				"/input/b": {
 					"type": "button",
 					"localized_name": "B",
-					"features": ["click", "touch"],
+					"components": ["click", "touch"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_B_CLICK",
 						"touch": "XRT_INPUT_INDEX_B_TOUCH"
@@ -702,7 +702,7 @@
 				"/input/squeeze": {
 					"type": "trigger",
 					"localized_name": "Squeeze",
-					"features": ["force", "value"],
+					"components": ["force", "value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_INDEX_SQUEEZE_VALUE",
 						"force": "XRT_INPUT_INDEX_SQUEEZE_FORCE"
@@ -711,7 +711,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["click", "touch", "value"],
+					"components": ["click", "touch", "value"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_TRIGGER_CLICK",
 						"touch": "XRT_INPUT_INDEX_TRIGGER_TOUCH",
@@ -721,7 +721,7 @@
 				"/input/thumbstick": {
 					"type": "joystick",
 					"localized_name": "Thumbstick",
-					"features": ["click", "touch", "position"],
+					"components": ["click", "touch", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_INDEX_THUMBSTICK_CLICK",
 						"touch": "XRT_INPUT_INDEX_THUMBSTICK_TOUCH",
@@ -731,7 +731,7 @@
 				"/input/trackpad": {
 					"type": "trackpad",
 					"localized_name": "Trackpad",
-					"features": ["touch", "force", "position"],
+					"components": ["touch", "force", "position"],
 					"monado_bindings": {
 						"force": "XRT_INPUT_INDEX_TRACKPAD_FORCE",
 						"touch": "XRT_INPUT_INDEX_TRACKPAD_TOUCH",
@@ -741,7 +741,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_INDEX_GRIP_POSE"
 					}
@@ -749,7 +749,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_INDEX_AIM_POSE"
 					}
@@ -757,7 +757,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_INDEX_HAPTIC"
 					}
@@ -778,7 +778,7 @@
 				"/input/select": {
 					"type": "trigger",
 					"localized_name": "Select",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_HAND_SELECT_VALUE"
 					}
@@ -786,7 +786,7 @@
 				"/input/squeeze": {
 					"type": "trigger",
 					"localized_name": "Squeeze",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_HAND_SQUEEZE_VALUE"
 					}
@@ -794,7 +794,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_HAND_GRIP_POSE"
 					}
@@ -802,7 +802,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "Aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_HAND_AIM_POSE"
 					}
@@ -823,7 +823,7 @@
 				"/input/system": {
 					"type": "button",
 					"localized_name": "System",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_PS_CLICK"
 					}
@@ -831,7 +831,7 @@
 				"/input/menu": {
 					"type": "button",
 					"localized_name": "Menu",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_MOVE_CLICK"
 					}
@@ -839,7 +839,7 @@
 				"/input/start": {
 					"type": "button",
 					"localized_name": "Start",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_START_CLICK"
 					}
@@ -847,7 +847,7 @@
 				"/input/select": {
 					"type": "button",
 					"localized_name": "Select",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_SELECT_CLICK"
 					}
@@ -855,7 +855,7 @@
 				"/input/square_mndx": {
 					"type": "button",
 					"localized_name": "Square",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_SQUARE_CLICK"
 					}
@@ -863,7 +863,7 @@
 				"/input/cross_mndx": {
 					"type": "button",
 					"localized_name": "Cross",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_CROSS_CLICK"
 					}
@@ -871,7 +871,7 @@
 				"/input/circle_mndx": {
 					"type": "button",
 					"localized_name": "Circle",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_CIRCLE_CLICK"
 					}
@@ -879,7 +879,7 @@
 				"/input/triangle_mndx": {
 					"type": "button",
 					"localized_name": "Triangle",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_PSMV_TRIANGLE_CLICK"
 					}
@@ -887,7 +887,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_PSMV_TRIGGER_VALUE"
 					}
@@ -895,7 +895,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_PSMV_GRIP_POSE"
 					}
@@ -903,7 +903,7 @@
 				"/input/ball_mndx": {
 					"type": "pose",
 					"localized_name": "Ball",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_PSMV_BALL_CENTER_POSE"
 					}
@@ -911,7 +911,7 @@
 				"/input/body_center_mndx": {
 					"type": "pose",
 					"localized_name": "Body Center",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_PSMV_BODY_CENTER_POSE"
 					}
@@ -919,7 +919,7 @@
 				"/input/aim": {
 					"type": "pose",
 					"localized_name": "aim",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_PSMV_AIM_POSE"
 					}
@@ -927,7 +927,7 @@
 				"/output/haptic": {
 					"type": "vibration",
 					"localized_name": "Haptic",
-					"features": ["haptic"],
+					"components": ["haptic"],
 					"monado_bindings": {
 						"haptic": "XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION"
 					}
@@ -948,7 +948,7 @@
 				"/input/1": {
 					"type": "button",
 					"localized_name": "1",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_1_CLICK"
 					}
@@ -956,7 +956,7 @@
 				"/input/2": {
 					"type": "button",
 					"localized_name": "2",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_2_CLICK"
 					}
@@ -964,7 +964,7 @@
 				"/input/3": {
 					"type": "button",
 					"localized_name": "3",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_3_CLICK"
 					}
@@ -972,7 +972,7 @@
 				"/input/4": {
 					"type": "button",
 					"localized_name": "4",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_4_CLICK"
 					}
@@ -980,7 +980,7 @@
 				"/input/bumper": {
 					"type": "button",
 					"localized_name": "Bumper",
-					"features": ["click"],
+					"components": ["click"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_BUMPER_CLICK"
 					}
@@ -988,7 +988,7 @@
 				"/input/thumbstick": {
 					"type": "joystick",
 					"localized_name": "Thumbstick",
-					"features": ["click", "position"],
+					"components": ["click", "position"],
 					"monado_bindings": {
 						"click": "XRT_INPUT_HYDRA_JOYSTICK_CLICK",
 						"position": "XRT_INPUT_HYDRA_JOYSTICK_VALUE"
@@ -997,7 +997,7 @@
 				"/input/trigger": {
 					"type": "trigger",
 					"localized_name": "Trigger",
-					"features": ["value"],
+					"components": ["value"],
 					"monado_bindings": {
 						"value": "XRT_INPUT_HYDRA_TRIGGER_VALUE"
 					}
@@ -1005,7 +1005,7 @@
 				"/input/grip": {
 					"type": "pose",
 					"localized_name": "Grip",
-					"features": ["pose"],
+					"components": ["pose"],
 					"monado_bindings": {
 						"pose": "XRT_INPUT_HYDRA_POSE"
 					}
