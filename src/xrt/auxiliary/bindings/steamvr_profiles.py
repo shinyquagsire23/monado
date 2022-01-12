@@ -34,8 +34,8 @@ def open_file(args, fname):
     return f
 
 
-def steamvr_subpath_name(sub_path_name, sub_path_obj):
-    if sub_path_obj["type"] == "pose":
+def steamvr_subpath_name(sub_path_name, json_subpath):
+    if json_subpath["type"] == "pose":
         return sub_path_name.replace("/input/", "/pose/")
 
     return sub_path_name
@@ -81,8 +81,8 @@ def main():
 
         component: Component
         for idx, component in enumerate(p.components):
-            sp_name = steamvr_subpath_name(component.sub_path_name, component.sub_path_obj)
-            sp = component.sub_path_obj
+            sp_name = steamvr_subpath_name(component.sub_path_name, component.json_subpath)
+            sp = component.json_subpath
 
             input_source[sp_name] = {
                 "type": sp["type"],

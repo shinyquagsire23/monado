@@ -9,15 +9,15 @@ import json
 
 
 def handle_subpath(component_list, subaction_path, sub_path_itm):
-    sub_path_name = sub_path_itm[0]
-    sub_path_obj = sub_path_itm[1]
+    sub_path_name = sub_path_itm[0]  # a subpath like /input/trackpad
+    json_sub_path = sub_path_itm[1]  # json object associated with a subpath
 
     # Oculus Touch a,b/x,y only exist on one controller
-    if "side" in sub_path_obj and sub_path_obj["side"] not in subaction_path:
+    if "side" in json_sub_path and "/user/hand/" + json_sub_path["side"] != subaction_path:
         return
 
-    for component in sub_path_obj["components"]:
-        component_list.append(Component(subaction_path, sub_path_itm, component))
+    for json_component in json_sub_path["components"]:
+        component_list.append(Component(subaction_path, sub_path_itm, json_component))
 
 
 class Component:
@@ -25,18 +25,22 @@ class Component:
     """
 
     @classmethod
-    def parse_components(component_cls, subaction_paths, paths):
+    def parse_components(component_cls, json_profile):
         """Turn a profile's input paths into a list of Component objects."""
+
+        json_subaction_paths = json_profile["subaction_paths"]
+        json_subpaths = json_profile["subpaths"]
+
         component_list = []
-        for subaction_path in subaction_paths:
-            for sub_path_itm in paths.items():
-                handle_subpath(component_list, subaction_path, sub_path_itm)
+        for json_subaction_path in json_subaction_paths:  # /user/hand/*
+            for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
+                handle_subpath(component_list, json_subaction_path, json_sub_path_itm)
         return component_list
 
     def __init__(self, subaction_path, sub_path_itm, component_str):
         # note: self.sub_path_name starts with a slash
         self.sub_path_name = sub_path_itm[0]
-        self.sub_path_obj = sub_path_itm[1]
+        self.json_subpath = sub_path_itm[1]
         self.subaction_path = subaction_path
         self.component_str = component_str
 
@@ -69,15 +73,14 @@ class Component:
 class Profile:
     """An interactive bindings profile."""
 
-    def __init__(self, name, data):
+    def __init__(self, profile_name, json_profile):
         """Construct an profile."""
-        self.name = name
-        self.monado_device = data["monado_device"]
-        self.title = data['title']
-        self.func = name[22:].replace("/", "_")
-        self.components = Component.parse_components(data["subaction_paths"],
-                                                     data["subpaths"])
-        self.hw_type = data["type"]
+        self.name = profile_name
+        self.monado_device = json_profile["monado_device"]
+        self.title = json_profile['title']
+        self.func = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
+        self.components = Component.parse_components(json_profile)
+        self.hw_type = json_profile["type"]
 
         self.by_length = {}
         for component in self.components:
@@ -90,23 +93,24 @@ class Profile:
 
 
 class Bindings:
-    """A group of interactive profiles used in bindings."""
+    """A collection of interaction profiles used in bindings."""
 
     @classmethod
-    def parse(cls, data):
-        """Parse a dictionary defining a protocol into Profile objects."""
-        return cls(data)
+    def parse(cls, json_root):
+        """Parse an entire bindings.json into a collection of Profile objects."""
+        return cls(json_root)
 
     @classmethod
     def load_and_parse(cls, file):
         """Load a JSON file and parse it into Profile objects."""
         with open(file) as infile:
-            return cls.parse(json.loads(infile.read()))
+            json_root = json.loads(infile.read())
+            return cls.parse(json_root)
 
-    def __init__(self, data):
+    def __init__(self, json_root):
         """Construct a bindings from a dictionary of profiles."""
-        self.profiles = [Profile(name, call) for
-                         name, call in data["profiles"].items()]
+        self.profiles = [Profile(profile_name, json_profile) for
+                         profile_name, json_profile in json_root["profiles"].items()]
 
 
 header = '''// Copyright 2020, Collabora, Ltd.
@@ -173,7 +177,7 @@ def generate_bindings_c(file, p):
 
         component: Component
         for idx, component in enumerate(profile.components):
-            sp_obj = component.sub_path_obj
+            json_subpath = component.json_subpath
 
             steamvr_path = component.sub_path_name
             if component.component_str in ["click", "touch", "force", "value"]:
@@ -183,7 +187,7 @@ def generate_bindings_c(file, p):
             f.write(f'\t\t\t\t.subaction_path = "{component.subaction_path}",\n')
             f.write(f'\t\t\t\t.steamvr_path = "{steamvr_path}",\n')
             f.write(
-                f'\t\t\t\t.localized_name = "{sp_obj["localized_name"]}",\n')
+                f'\t\t\t\t.localized_name = "{json_subpath["localized_name"]}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
             for path in component.to_monado_paths():
@@ -196,8 +200,8 @@ def generate_bindings_c(file, p):
             component_str = component.component_str
 
             # controllers can have input that we don't have bindings for
-            if component_str in sp_obj["monado_bindings"]:
-                monado_binding = sp_obj["monado_bindings"][component_str]
+            if component_str in json_subpath["monado_bindings"]:
+                monado_binding = json_subpath["monado_bindings"][component_str]
 
                 if component.is_input() and monado_binding is not None:
                     f.write(f'\t\t\t\t.input = {monado_binding},\n')
@@ -224,12 +228,12 @@ def generate_bindings_c(file, p):
 
             component_str = component.component_str
 
-            sp_obj = component.sub_path_obj
-            if component_str not in sp_obj["monado_bindings"]:
+            json_subpath = component.json_subpath
+            if component_str not in json_subpath["monado_bindings"]:
                 continue
-            monado_binding = sp_obj["monado_bindings"][component_str]
+            monado_binding = json_subpath["monado_bindings"][component_str]
 
-            if sp_obj["type"] == "vibration":
+            if json_subpath["type"] == "vibration":
                 outputs.add(monado_binding)
             else:
                 inputs.add(monado_binding)
@@ -358,13 +362,13 @@ def main():
         help='Output file, uses the name to choose output type')
     args = parser.parse_args()
 
-    p = Bindings.load_and_parse(args.bindings)
+    bindings = Bindings.load_and_parse(args.bindings)
 
     for output in args.output:
         if output.endswith("generated_bindings.c"):
-            generate_bindings_c(output, p)
+            generate_bindings_c(output, bindings)
         if output.endswith("generated_bindings.h"):
-            generate_bindings_h(output, p)
+            generate_bindings_h(output, bindings)
 
 
 if __name__ == "__main__":
