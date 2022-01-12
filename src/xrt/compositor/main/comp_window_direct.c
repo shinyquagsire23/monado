@@ -62,10 +62,10 @@ print_modes(struct comp_target *ct, VkDisplayModePropertiesKHR *mode_properties,
 {
 	COMP_PRINT_MODE(ct->c, "Available Vk modes for direct mode");
 	for (int i = 0; i < mode_count; i++) {
-		VkDisplayModePropertiesKHR props = mode_properties[i];
-		uint16_t width = props.parameters.visibleRegion.width;
-		uint16_t height = props.parameters.visibleRegion.height;
-		float refresh = (float)props.parameters.refreshRate / 1000.f;
+		VkDisplayModePropertiesKHR *props = &mode_properties[i];
+		uint16_t width = props->parameters.visibleRegion.width;
+		uint16_t height = props->parameters.visibleRegion.height;
+		float refresh = (float)props->parameters.refreshRate / 1000.f;
 
 		COMP_PRINT_MODE(ct->c, "| %2d | %dx%d@%.2f", i, width, height, refresh);
 	}
