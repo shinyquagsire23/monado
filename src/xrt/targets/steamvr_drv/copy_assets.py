@@ -29,7 +29,7 @@ if is_file:
     shutil.copyfile(input_path, output_path)
 elif is_dir:
     shutil.rmtree(output_path, ignore_errors=True)
-    shutil.copytree(input_path, output_path)
+    shutil.copytree(input_path, output_path, dirs_exist_ok=True)
 else:
     print(sys.argv[1], "must be FILE or DIRECTORY")
     sys.exit(1)
