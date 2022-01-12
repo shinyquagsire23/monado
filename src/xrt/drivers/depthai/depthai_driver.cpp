@@ -100,6 +100,8 @@ enum depthai_camera_type
 	RGB_OV_9782,
 	GRAY_OV_9282_L,
 	GRAY_OV_9282_R,
+	GRAY_OV_7251_L,
+	GRAY_OV_7251_R,
 };
 
 /*!
@@ -392,6 +394,24 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
 		depthai->fps = 60; // Currently only supports 60.
 		break;
+	case (GRAY_OV_7251_L):
+		depthai->width = 640;
+		depthai->height = 480;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_480_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently only supports 60.
+		break;
+	case (GRAY_OV_7251_R):
+		depthai->width = 640;
+		depthai->height = 480;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::RIGHT;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_480_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently only supports 60.
+		break;
 	default: assert(false);
 	}
 
@@ -437,13 +457,25 @@ static void
 depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 {
 	// Hardcoded to OV_9282 L/R
-	depthai->width = 1280;
-	depthai->height = 800;
-	depthai->format = XRT_FORMAT_L8;
-	depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
-	depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
-	depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-	depthai->fps = 60; // Currently supports up to 60.
+	if (true) {
+		// OV_9282 L/R
+		depthai->width = 1280;
+		depthai->height = 800;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently supports up to 60.
+	} else {
+		// OV_7251 L/R
+		depthai->width = 640;
+		depthai->height = 480;
+		depthai->format = XRT_FORMAT_L8;
+		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_480_P;
+		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+		depthai->fps = 60; // Currently supports up to 60.
+	}
 
 	dai::Pipeline p = {};
 
