@@ -29,21 +29,25 @@ choose_best_vk_mode_auto(struct comp_target *ct, VkDisplayModePropertiesKHR *mod
 
 	int best_index = 0;
 
+	VkDisplayModeParametersKHR *current = &mode_properties[0].parameters;
+
+	COMP_DEBUG(ct->c, "Available Vk direct mode %d: %dx%d@%.2f", 0, current->visibleRegion.width,
+	           current->visibleRegion.height, (float)current->refreshRate / 1000.);
+
 	// First priority: choose mode that maximizes rendered pixels.
 	// Second priority: choose mode with highest refresh rate.
 	for (int i = 1; i < mode_count; i++) {
-		VkDisplayModeParametersKHR current = mode_properties[i].parameters;
-		COMP_DEBUG(ct->c, "Available Vk direct mode %d: %dx%d@%.2f", i, current.visibleRegion.width,
-		           current.visibleRegion.height, (float)current.refreshRate / 1000.);
+		COMP_DEBUG(ct->c, "Available Vk direct mode %d: %dx%d@%.2f", i, current->visibleRegion.width,
+		           current->visibleRegion.height, (float)current->refreshRate / 1000.);
 
 
 		VkDisplayModeParametersKHR best = mode_properties[best_index].parameters;
 
 		int best_pixels = best.visibleRegion.width * best.visibleRegion.height;
-		int pixels = current.visibleRegion.width * current.visibleRegion.height;
+		int pixels = current->visibleRegion.width * current->visibleRegion.height;
 		if (pixels > best_pixels) {
 			best_index = i;
-		} else if (pixels == best_pixels && current.refreshRate > best.refreshRate) {
+		} else if (pixels == best_pixels && current->refreshRate > best.refreshRate) {
 			best_index = i;
 		}
 	}
