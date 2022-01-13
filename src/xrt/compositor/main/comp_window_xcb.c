@@ -177,6 +177,21 @@ comp_window_xcb_list_screens(struct comp_window_xcb *w, xcb_screen_t *screen)
 }
 
 static bool
+select_new_current_display(struct comp_target *ct)
+{
+	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
+	for (uint32_t i = 0; i < w_xcb->display_count; i++) {
+		if (w_xcb->displays[i].size.width != 0 && w_xcb->displays[i].size.height != 0) {
+			w_xcb->base.base.c->settings.display = i;
+			COMP_DEBUG(ct->c, "Select new current display %d: %s", i, w_xcb->displays[i].name);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool
 comp_window_xcb_init(struct comp_target *ct)
 {
 	struct comp_window_xcb *w_xcb = (struct comp_window_xcb *)ct;
@@ -207,10 +222,27 @@ comp_window_xcb_init(struct comp_target *ct)
 			ct->c->settings.display = 0;
 
 		struct comp_window_xcb_display *d = comp_window_xcb_current_display(w_xcb);
-		ct->c->settings.preferred.width = d->size.width;
-		ct->c->settings.preferred.height = d->size.height;
-		// TODO: size cb
-		// set_size_cb(settings->width, settings->height);
+
+		if (d->size.width == 0 || d->size.height == 0) {
+			COMP_WARN(ct->c, "Selected display %d has no size", w_xcb->base.base.c->settings.display);
+			if (select_new_current_display(ct)) {
+				d = comp_window_xcb_current_display(w_xcb);
+				COMP_WARN(ct->c, "Falling back to display %d: %s", w_xcb->base.base.c->settings.display,
+				          d->name);
+			} else {
+				COMP_ERROR(ct->c, "No suitable display found, disabling fullscreen");
+				w_xcb->base.base.c->settings.fullscreen = false;
+			}
+		}
+
+		if (d->size.width != 0 && d->size.height != 0) {
+			ct->c->settings.preferred.width = d->size.width;
+			ct->c->settings.preferred.height = d->size.height;
+			COMP_DEBUG(ct->c, "Setting window size %dx%d.", d->size.width, d->size.height);
+
+			// TODO: size cb
+			// set_size_cb(settings->width, settings->height);
+		}
 	}
 
 	comp_window_xcb_create_window(w_xcb, ct->c->settings.preferred.width, ct->c->settings.preferred.height);
@@ -316,8 +348,12 @@ comp_window_xcb_get_randr_outputs(struct comp_window_xcb *w)
 		    .position = {crtc_reply->x, crtc_reply->y},
 		    .size = {crtc_reply->width, crtc_reply->height},
 		};
+
 		memcpy(w->displays[i].name, name, name_len);
 		w->displays[i].name[name_len] = '\0';
+
+		COMP_DEBUG(w->base.base.c, "randr output %d: %s: %dx%d", i, w->displays[i].name, crtc_reply->width,
+		           crtc_reply->height);
 
 		free(crtc_reply);
 		free(output_reply);
