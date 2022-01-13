@@ -374,6 +374,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	xcb_intern_atom_reply_t *non_desktop_reply = xcb_intern_atom_reply(connection, non_desktop_cookie, &error);
 
 	if (error != NULL) {
+		free(non_desktop_reply);
 		COMP_ERROR(ct->c, "xcb_intern_atom_reply returned error %d", error->error_code);
 		return;
 	}
@@ -384,6 +385,7 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	}
 
 	if (non_desktop_reply->atom == XCB_NONE) {
+		free(non_desktop_reply);
 		COMP_ERROR(ct->c, "No output has non-desktop property");
 		return;
 	}
@@ -447,5 +449,6 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 		free(output_reply);
 	}
 
+	free(non_desktop_reply);
 	free(resources_reply);
 }
