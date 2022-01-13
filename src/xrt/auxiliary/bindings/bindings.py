@@ -56,12 +56,16 @@ class Component:
                     continue
 
                 for component_name in json_subpath["components"]:  # click, touch, ...
+                    monado_binding = None
+                    if component_name in json_subpath["monado_bindings"]:
+                        monado_binding = json_subpath["monado_bindings"][component_name]
+
                     c = Component(subaction_path,
                                   subpath_name,
                                   json_subpath["localized_name"],
                                   json_subpath["type"],
                                   component_name,
-                                  json_subpath["monado_bindings"],
+                                  monado_binding,
                                   json_subpath["components"])
                     component_list.append(c)
 
@@ -73,14 +77,14 @@ class Component:
                  subpath_localized_name,
                  subpath_type,
                  component_name,
-                 json_monado_bindings,
+                 monado_binding,
                  components_for_subpath):
         self.subaction_path = subaction_path
         self.subpath_name = subpath_name  # note: starts with a slash
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
-        self.json_monado_bindings = json_monado_bindings
+        self.monado_binding = monado_binding
 
         # click, touch etc. components under the subpath of this component. Only needed for steamvr profile gen.
         self.components_for_subpath = components_for_subpath
@@ -236,8 +240,8 @@ def generate_bindings_c(file, p):
             component_str = component.component_name
 
             # controllers can have input that we don't have bindings for
-            if component_str in component.json_monado_bindings:
-                monado_binding = component.json_monado_bindings[component_str]
+            if component.monado_binding:
+                monado_binding = component.monado_binding
 
                 if component.is_input() and monado_binding is not None:
                     f.write(f'\t\t\t\t.input = {monado_binding},\n')
@@ -262,16 +266,13 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            component_str = component.component_name
-
-            if component_str not in component.json_monado_bindings:
+            if not component.monado_binding:
                 continue
-            monado_binding = component.json_monado_bindings[component_str]
 
             if component.subpath_type == "vibration":
-                outputs.add(monado_binding)
+                outputs.add(component.monado_binding)
             else:
-                inputs.add(monado_binding)
+                inputs.add(component.monado_binding)
 
     # special cased bindings that are never directly used in the input profiles
     inputs.add("XRT_INPUT_GENERIC_HEAD_POSE")
