@@ -34,11 +34,11 @@ def open_file(args, fname):
     return f
 
 
-def steamvr_subpath_name(sub_path_name, json_subpath):
-    if json_subpath["type"] == "pose":
-        return sub_path_name.replace("/input/", "/pose/")
+def steamvr_subpath_name(component):
+    if component.subpath_type == "pose":
+        return component.subpath_name.replace("/input/", "/pose/")
 
-    return sub_path_name
+    return component.subpath_name
 
 
 def get_required_components(path_type):
@@ -69,33 +69,32 @@ def main():
     for p in bindings.profiles:
 
         device_class = ""
-        if p.hw_type == "tracked_controller":
+        if p.profile_type == "tracked_controller":
             device_class = "TrackedDeviceClass_Controller"
         else:
             # TODO: profile for non-controller hw
             continue
 
-        hw_name, vendor_name, fname = names(p)
+        profile_type, vendor_name, fname = names(p)
 
         input_source = {}
 
         component: Component
         for idx, component in enumerate(p.components):
-            sp_name = steamvr_subpath_name(component.sub_path_name, component.json_subpath)
-            sp = component.json_subpath
+            subpath_name = steamvr_subpath_name(component)
 
-            input_source[sp_name] = {
-                "type": sp["type"],
+            input_source[subpath_name] = {
+                "type": component.subpath_type,
                 "binding_image_point": [0, 0],  # TODO
                 "order": idx
             }
 
-            for req in get_required_components(sp["type"]):
-                input_source[sp_name][req] = req in sp["components"]
+            for req in get_required_components(component.subpath_type):
+                input_source[subpath_name][req] = req in component.components_for_subpath
 
         j = {
             "json_id": "input_profile",
-            "controller_type": "monado_" + vendor_name + "_" + hw_name,
+            "controller_type": "monado_" + vendor_name + "_" + profile_type,
             "device_class": device_class,
             "resource_root": "steamvr-monado",
             "driver_name": "monado",

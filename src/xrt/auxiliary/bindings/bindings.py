@@ -8,18 +8,6 @@ import argparse
 import json
 
 
-def handle_subpath(component_list, subaction_path, sub_path_itm):
-    sub_path_name = sub_path_itm[0]  # a subpath like /input/trackpad
-    json_sub_path = sub_path_itm[1]  # json object associated with a subpath
-
-    # Oculus Touch a,b/x,y only exist on one controller
-    if "side" in json_sub_path and "/user/hand/" + json_sub_path["side"] != subaction_path:
-        return
-
-    for json_component in json_sub_path["components"]:
-        component_list.append(Component(subaction_path, sub_path_itm, json_component))
-
-
 class Component:
     """Components correspond with the standard OpenXR components click, touch, force, value, x, y, twist, pose
     """
@@ -32,17 +20,44 @@ class Component:
         json_subpaths = json_profile["subpaths"]
 
         component_list = []
-        for json_subaction_path in json_subaction_paths:  # /user/hand/*
+        for subaction_path in json_subaction_paths:  # /user/hand/*
             for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
-                handle_subpath(component_list, json_subaction_path, json_sub_path_itm)
+                subpath_name = json_sub_path_itm[0]  # /input/trackpad
+                json_subpath = json_sub_path_itm[1]  # json object associated with a subpath (type, localized_name, ...)
+
+                # Oculus Touch a,b/x,y components only exist on one controller
+                if "side" in json_subpath and "/user/hand/" + json_subpath["side"] != subaction_path:
+                    continue
+
+                for component_name in json_subpath["components"]:  # click, touch, ...
+                    c = Component(subaction_path,
+                                  subpath_name,
+                                  json_subpath["localized_name"],
+                                  json_subpath["type"],
+                                  component_name,
+                                  json_subpath["monado_bindings"],
+                                  json_subpath["components"])
+                    component_list.append(c)
+
         return component_list
 
-    def __init__(self, subaction_path, sub_path_itm, component_str):
-        # note: self.sub_path_name starts with a slash
-        self.sub_path_name = sub_path_itm[0]
-        self.json_subpath = sub_path_itm[1]
+    def __init__(self,
+                 subaction_path,
+                 subpath_name,
+                 subpath_localized_name,
+                 subpath_type,
+                 component_name,
+                 json_monado_bindings,
+                 components_for_subpath):
         self.subaction_path = subaction_path
-        self.component_str = component_str
+        self.subpath_name = subpath_name  # note: starts with a slash
+        self.subpath_localized_name = subpath_localized_name
+        self.subpath_type = subpath_type
+        self.component_name = component_name
+        self.json_monado_bindings = json_monado_bindings
+
+        # click, touch etc. components under the subpath of this component. Only needed for steamvr profile gen.
+        self.components_for_subpath = components_for_subpath
 
     def to_monado_paths(self):
         """A group of paths that derive from the same input.
@@ -50,21 +65,21 @@ class Component:
         """
         paths = []
 
-        basepath = self.subaction_path + self.sub_path_name
+        basepath = self.subaction_path + self.subpath_name
 
-        if self.component_str == "position":
+        if self.component_name == "position":
             paths.append(basepath + "/" + "x")
             paths.append(basepath + "/" + "y")
             paths.append(basepath)
         else:
-            paths.append(basepath + "/" + self.component_str)
+            paths.append(basepath + "/" + self.component_name)
             paths.append(basepath)
 
         return paths
 
     def is_input(self):
         # only haptics is output so far, everything else is input
-        return self.component_str != "haptic"
+        return self.component_name != "haptic"
 
     def is_output(self):
         return not self.is_input()
@@ -76,11 +91,11 @@ class Profile:
     def __init__(self, profile_name, json_profile):
         """Construct an profile."""
         self.name = profile_name
-        self.monado_device = json_profile["monado_device"]
-        self.title = json_profile['title']
-        self.func = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
+        self.localized_name = json_profile['title']
+        self.profile_type = json_profile["type"]
+        self.monado_device_enum = json_profile["monado_device"]
+        self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
         self.components = Component.parse_components(json_profile)
-        self.hw_type = json_profile["type"]
 
         self.by_length = {}
         for component in self.components:
@@ -148,7 +163,7 @@ def generate_bindings_c(file, p):
 ''')
 
     for profile in p.profiles:
-        f.write(func_start.format(func=profile.func))
+        f.write(func_start.format(func=profile.validation_func_name))
         for length in profile.by_length:
             f.write("\tcase " + str(length) + ":\n\t\t")
             for path in profile.by_length[length]:
@@ -166,9 +181,9 @@ def generate_bindings_c(file, p):
 
         binding_count = len(profile.components)
         f.write(f'\t{{ // profile_template\n')
-        f.write(f'\t\t.name = {profile.monado_device},\n')
+        f.write(f'\t\t.name = {profile.monado_device_enum},\n')
         f.write(f'\t\t.path = "{profile.name}",\n')
-        f.write(f'\t\t.localized_name = "{profile.title}",\n')
+        f.write(f'\t\t.localized_name = "{profile.localized_name}",\n')
         f.write(f'\t\t.steamvr_input_profile_path = "{fname}",\n')
         f.write(f'\t\t.steamvr_controller_type = "{controller_type}",\n')
         f.write(f'\t\t.binding_count = {binding_count},\n')
@@ -177,17 +192,16 @@ def generate_bindings_c(file, p):
 
         component: Component
         for idx, component in enumerate(profile.components):
-            json_subpath = component.json_subpath
 
-            steamvr_path = component.sub_path_name
-            if component.component_str in ["click", "touch", "force", "value"]:
-                steamvr_path += "/" + component.component_str
+            steamvr_path = component.subpath_name
+            if component.component_name in ["click", "touch", "force", "value"]:
+                steamvr_path += "/" + component.component_name
 
             f.write(f'\t\t\t{{ // binding_template {idx}\n')
             f.write(f'\t\t\t\t.subaction_path = "{component.subaction_path}",\n')
             f.write(f'\t\t\t\t.steamvr_path = "{steamvr_path}",\n')
             f.write(
-                f'\t\t\t\t.localized_name = "{json_subpath["localized_name"]}",\n')
+                f'\t\t\t\t.localized_name = "{component.subpath_localized_name}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
             for path in component.to_monado_paths():
@@ -197,11 +211,11 @@ def generate_bindings_c(file, p):
 
             # print("component", component.__dict__)
 
-            component_str = component.component_str
+            component_str = component.component_name
 
             # controllers can have input that we don't have bindings for
-            if component_str in json_subpath["monado_bindings"]:
-                monado_binding = json_subpath["monado_bindings"][component_str]
+            if component_str in component.json_monado_bindings:
+                monado_binding = component.json_monado_bindings[component_str]
 
                 if component.is_input() and monado_binding is not None:
                     f.write(f'\t\t\t\t.input = {monado_binding},\n')
@@ -226,14 +240,13 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            component_str = component.component_str
+            component_str = component.component_name
 
-            json_subpath = component.json_subpath
-            if component_str not in json_subpath["monado_bindings"]:
+            if component_str not in component.json_monado_bindings:
                 continue
-            monado_binding = json_subpath["monado_bindings"][component_str]
+            monado_binding = component.json_monado_bindings[component_str]
 
-            if json_subpath["type"] == "vibration":
+            if component.subpath_type == "vibration":
                 outputs.add(monado_binding)
             else:
                 inputs.add(monado_binding)
@@ -304,7 +317,7 @@ def generate_bindings_h(file, p):
 ''')
 
     for profile in p.profiles:
-        f.write("\nbool\noxr_verify_" + profile.func +
+        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
                 "_subpath(const char *str, size_t length);\n")
 
     f.write(f'''
