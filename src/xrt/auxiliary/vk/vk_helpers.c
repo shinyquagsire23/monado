@@ -1392,6 +1392,8 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 		}
 		break;
 	}
+
+	free(props);
 	return ret;
 }
 
