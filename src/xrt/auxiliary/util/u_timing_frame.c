@@ -133,7 +133,7 @@ struct display_timing
 	uint64_t adjust_non_miss_ns;
 
 	/*!
-	 * Exrta time between end of draw time and when the present happens.
+	 * Extra time between end of draw time and when the present happens.
 	 */
 	uint64_t margin_ns;
 
@@ -606,8 +606,20 @@ dt_destroy(struct u_frame_timing *uft)
 	free(dt);
 }
 
+const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAULT = {
+    // Just a wild guess.
+    .present_offset_ns = U_TIME_1MS_IN_NS * 4,
+    .margin_ns = U_TIME_1MS_IN_NS,
+    .app_time_fraction = 10,
+    .app_time_max_fraction = 30,
+    .adjust_missed_fraction = 4,
+    .adjust_non_miss_fraction = 2,
+};
+
 xrt_result_t
-u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
+u_ft_display_timing_create(uint64_t estimated_frame_period_ns,
+                           const struct u_ft_display_timing_config *config,
+                           struct u_frame_timing **out_uft)
 {
 	struct display_timing *dt = U_TYPED_CALLOC(struct display_timing);
 	dt->base.predict = dt_predict;
@@ -616,19 +628,19 @@ u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_ti
 	dt->base.destroy = dt_destroy;
 	dt->frame_period_ns = estimated_frame_period_ns;
 
-	// Just a wild guess.
-	dt->present_offset_ns = U_TIME_1MS_IN_NS * 4;
+	// Estimate of how long after "present" the photons hit the eyes
+	dt->present_offset_ns = config->present_offset_ns;
 
 	// Start at this of frame time.
-	dt->app_time_ns = get_percent_of_time(estimated_frame_period_ns, 10);
+	dt->app_time_ns = get_percent_of_time(estimated_frame_period_ns, config->app_time_fraction);
 	// Max app time, write a better compositor.
-	dt->app_time_max_ns = get_percent_of_time(estimated_frame_period_ns, 30);
+	dt->app_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->app_time_max_fraction);
 	// When missing, back off in these increments
-	dt->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, 4);
+	dt->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_missed_fraction);
 	// When not missing frames but adjusting app time at these increments
-	dt->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, 2);
+	dt->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_non_miss_fraction);
 	// Extra margin that is added to app time.
-	dt->margin_ns = U_TIME_1MS_IN_NS;
+	dt->margin_ns = config->margin_ns;
 
 	*out_uft = &dt->base;
 

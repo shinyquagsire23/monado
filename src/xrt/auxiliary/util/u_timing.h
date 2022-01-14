@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -77,6 +77,11 @@ struct u_frame_timing
 	/*!
 	 * Mark a point on the frame's lifetime.
 	 *
+	 * @param[in] uft      The frame timing struct.
+	 * @param[in] point    The point to record for a frame.
+	 * @param[in] frame_id The frame ID to record for.
+	 * @param[in] when_ns  The timestamp of the event.
+	 *
 	 * @see @ref frame-timing.
 	 */
 	void (*mark_point)(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns);
@@ -84,10 +89,21 @@ struct u_frame_timing
 	/*!
 	 * Provide frame timing information about a delivered frame, this is
 	 * usually provided by the display system. These arguments currently
-	 * matches 1-to-1 what VK_GOOGLE_display_timing provides.
+	 * matches 1-to-1 what VK_GOOGLE_display_timing provides, see
+	 * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPastPresentationTimingGOOGLE.html
 	 *
 	 * Depend on when the information is delivered this can be called at any
 	 * point of the following frames.
+	 *
+	 * @param[in] uft                      The frame timing struct.
+	 * @param[in] frame_id                 The frame ID to record for.
+	 * @param[in] desired_present_time_ns  The time that we indicated the GPU should start scanning out at, or zero
+	 *                                     if we didn't provide such a time.
+	 * @param[in] actual_present_time_ns   The time that the GPU actually started scanning out.
+	 * @param[in] earliest_present_time_ns The earliest the GPU could have presented - might be before @p
+	 *                                     actual_present_time_ns if a @p desired_present_time_ns was passed.
+	 * @param[in] present_margin_ns        How "early" present happened compared to when it needed to happen in
+	 *                                     order to hit @p earliestPresentTime.
 	 *
 	 * @see @ref frame-timing.
 	 */
@@ -204,7 +220,7 @@ u_ft_destroy(struct u_frame_timing **uft_ptr)
 struct u_render_timing
 {
 	/*!
-	 * Predict when the client's next: rendered frame will be display; when the
+	 * Predict when the client's next rendered frame will be displayed; when the
 	 * client should be woken up from sleeping; and its display period.
 	 *
 	 * This is called from `xrWaitFrame`, but it does not do any waiting, the caller
@@ -367,6 +383,47 @@ u_rt_destroy(struct u_render_timing **urt_ptr)
 	*urt_ptr = NULL;
 }
 
+/*
+ *
+ * Configuration struct
+ *
+ */
+/*!
+ * Configuration for the "display_timing" implementation of u_ft
+ *
+ * @see u_ft_display_timing_create
+ */
+struct u_ft_display_timing_config
+{
+	//! How long after "present" is the image actually displayed
+	uint64_t present_offset_ns;
+	//! Extra margin that is added to app time, between end of draw and present
+	uint64_t margin_ns;
+	/*!
+	 * @name Frame-Relative Values
+	 * All these values are in "percentage points of the nominal frame period" so they can work across
+	 * devices of varying refresh rate/display interval.
+	 * @{
+	 */
+	//! The initial estimate of how much time the app needs
+	uint32_t app_time_fraction;
+	//! The maximum time we allow to the app
+	uint32_t app_time_max_fraction;
+	//! When missing a frame, back off in these increments
+	uint32_t adjust_missed_fraction;
+	//! When not missing frames but adjusting app time at these increments
+	uint32_t adjust_non_miss_fraction;
+	/*!
+	 * @}
+	 */
+};
+
+/*!
+ * Default configuration values
+ *
+ * @see u_ft_display_timing_config, u_ft_display_timing_create
+ */
+extern const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAULT;
 
 /*
  *
@@ -380,7 +437,9 @@ u_rt_destroy(struct u_render_timing **urt_ptr)
  * @ingroup aux_timing
  */
 xrt_result_t
-u_ft_display_timing_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
+u_ft_display_timing_create(uint64_t estimated_frame_period_ns,
+                           const struct u_ft_display_timing_config *config,
+                           struct u_frame_timing **out_uft);
 
 /*!
  * When you can not get display timing information use this.

@@ -126,7 +126,8 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	// Some platforms really don't like the display_timing code.
 	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
 	if (cts->uft == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
-		u_ft_display_timing_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
+		u_ft_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
+		                           &U_FT_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->uft);
 	} else if (cts->uft == NULL) {
 		u_ft_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
 	}
