@@ -496,54 +496,17 @@ struct t_calibration_params
  * Sets the calibration parameters to the their default values.
  * @public @memberof t_calibration_params
  */
-static inline void
-t_calibration_params_default(struct t_calibration_params *p)
-{
-	// Camera config.
-	p->use_fisheye = false;
-	p->stereo_sbs = true;
+void
+t_calibration_gui_params_default(struct t_calibration_params *p);
 
-	// Which board should we calibrate against.
-	p->pattern = T_BOARD_CHECKERS;
+void
+t_calibration_gui_params_load_or_default(struct t_calibration_params *p);
 
-	// Checker board.
-	p->checkers.cols = 9;
-	p->checkers.rows = 7;
-	p->checkers.size_meters = 0.025f;
-	p->checkers.subpixel_enable = true;
-	p->checkers.subpixel_size = 5;
+void
+t_calibration_gui_params_to_json(struct cJSON **out_json, struct t_calibration_params *p);
 
-	// Sector based checker board.
-	p->sb_checkers.cols = 14;
-	p->sb_checkers.rows = 9;
-	p->sb_checkers.size_meters = 0.01206f;
-	p->sb_checkers.marker = false;
-	p->sb_checkers.normalize_image = false;
-
-	// Symmetrical circles.
-	p->circles.cols = 9;
-	p->circles.rows = 7;
-	p->circles.distance_meters = 0.025f;
-
-	// Asymmetrical circles.
-	p->asymmetric_circles.cols = 5;
-	p->asymmetric_circles.rows = 17;
-	p->asymmetric_circles.diagonal_distance_meters = 0.02f;
-
-	// Loading of images.
-	p->load.enabled = false;
-	p->load.num_images = 20;
-
-	// Frame collection info.
-	p->num_cooldown_frames = 20;
-	p->num_wait_for = 5;
-	p->num_collect_total = 20;
-	p->num_collect_restart = 1;
-
-	// Misc.
-	p->mirror_rgb_image = false;
-	p->save_images = true;
-}
+void
+t_calibration_gui_params_parse_from_json(const struct cJSON *params, struct t_calibration_params *p);
 
 /*!
  * @brief Create the camera calibration frame sink.

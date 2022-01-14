@@ -314,6 +314,14 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 		return;
 	}
 
+	struct u_config_json config_json;
+	u_gui_state_open_file(&config_json);
+
+	struct cJSON *new_state;
+	t_calibration_gui_params_to_json(&new_state, &cs->params);
+
+	u_gui_state_save_scene(&config_json, GUI_STATE_SCENE_CALIBRATE, new_state);
+
 	cs->base.render = scene_render_video;
 
 	struct xrt_frame_sink *rgb = NULL;
@@ -401,7 +409,7 @@ gui_scene_calibrate(struct gui_program *p,
 	cs->settings = s;
 
 #ifdef XRT_HAVE_OPENCV
-	t_calibration_params_default(&cs->params);
+	t_calibration_gui_params_load_or_default(&cs->params);
 
 	/*
 	 * Pre-quirk some known cameras.
