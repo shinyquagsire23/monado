@@ -1,4 +1,4 @@
-# Frame Timing {#frame-timing}
+# Frame Pacing/Timing {#frame-pacing}
 
 <!--
 Copyright 2021, Collabora, Ltd. and the Monado contributors
@@ -7,10 +7,10 @@ SPDX-License-Identifier: BSL-1.0
 
 A "brief" overview of the various time-points that a frame goes through, from
 when the application gets go ahead to render the frame to when pixels are turned
-into photons. This only a single frame, where all of the timings are hit and the
-application is single threaded. The HMD also only turns on the display during
-the vblank period, meaning the pixel to photon transformation is delayed from
-scanout starting to the vblank period (like for the Index).
+into photons. This is only a single frame, where all of the timings are hit and
+the application is single threaded. The HMD also only turns on the display
+during the vblank period, meaning the pixel to photon transformation is delayed
+from scanout starting to the vblank period (like for the Index).
 
 * `xrWaitFrame` returns to the application, referred to as **wake_up**.
 * The app does a logic step to move the simulation to the next predicted
@@ -34,8 +34,8 @@ information.
 ## Main compositor perspective
 
 * @ref xrt_comp_wait_frame - It is within this function that the frame timing is
-  predicted, see @ref u_rt_predict. The compositor will then wait to
-  **wake_up** time and then return from this function.
+  predicted, see @ref u_pa_predict and @ref u_pc_predict. The compositor will
+  then wait to **wake_up** time and then return from this function.
 * @ref xrt_comp_begin_frame - The app or IPC server calls this function when it
   is done with CPU work and ready to do GPU work.
 * @ref xrt_comp_discard_frame - The frame is discarded.

@@ -11,7 +11,7 @@
 #include "xrt/xrt_config_os.h"
 
 #include "util/u_misc.h"
-#include "util/u_timing.h"
+#include "util/u_pacing.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_target_swapchain.h"
@@ -125,11 +125,11 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 	// Some platforms really don't like the display_timing code.
 	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
-	if (cts->uft == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
-		u_ft_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
-		                           &U_FT_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->uft);
-	} else if (cts->uft == NULL) {
-		u_ft_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->uft);
+	if (cts->upc == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
+		u_pc_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
+		                           &U_PC_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->upc);
+	} else if (cts->upc == NULL) {
+		u_pc_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->upc);
 	}
 
 	// Free old image views.
@@ -599,7 +599,7 @@ comp_target_swapchain_calc_frame_timings(struct comp_target *ct,
 	uint64_t predicted_display_period_ns = 0;
 	uint64_t min_display_period_ns = 0;
 
-	u_ft_predict(cts->uft,                     //
+	u_pc_predict(cts->upc,                     //
 	             &frame_id,                    //
 	             &wake_up_time_ns,             //
 	             &desired_present_time_ns,     //
@@ -628,13 +628,13 @@ comp_target_swapchain_mark_timing_point(struct comp_target *ct,
 
 	switch (point) {
 	case COMP_TARGET_TIMING_POINT_WAKE_UP:
-		u_ft_mark_point(cts->uft, U_TIMING_POINT_WAKE_UP, cts->current_frame_id, when_ns);
+		u_pc_mark_point(cts->upc, U_TIMING_POINT_WAKE_UP, cts->current_frame_id, when_ns);
 		break;
 	case COMP_TARGET_TIMING_POINT_BEGIN:
-		u_ft_mark_point(cts->uft, U_TIMING_POINT_BEGIN, cts->current_frame_id, when_ns);
+		u_pc_mark_point(cts->upc, U_TIMING_POINT_BEGIN, cts->current_frame_id, when_ns);
 		break;
 	case COMP_TARGET_TIMING_POINT_SUBMIT:
-		u_ft_mark_point(cts->uft, U_TIMING_POINT_SUBMIT, cts->current_frame_id, when_ns);
+		u_pc_mark_point(cts->upc, U_TIMING_POINT_SUBMIT, cts->current_frame_id, when_ns);
 		break;
 	default: assert(false);
 	}
@@ -672,7 +672,7 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 	    timings);                          //
 
 	for (uint32_t i = 0; i < count; i++) {
-		u_ft_info(cts->uft,                       //
+		u_pc_info(cts->upc,                       //
 		          timings[i].presentID,           //
 		          timings[i].desiredPresentTime,  //
 		          timings[i].actualPresentTime,   //
@@ -713,7 +713,7 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 		cts->swapchain.handle = VK_NULL_HANDLE;
 	}
 
-	u_ft_destroy(&cts->uft);
+	u_pc_destroy(&cts->upc);
 }
 
 void

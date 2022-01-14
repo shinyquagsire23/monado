@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Shared timing code.
+ * @brief  Shared pacing code.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_util
  */
 
@@ -18,17 +19,17 @@ extern "C" {
 
 
 /*!
- * @defgroup aux_timing Frame and Render timing
+ * @defgroup aux_pacing Frame and Render timing/pacing
  *
  * @ingroup aux_util
- * @see @ref frame-timing.
+ * @see @ref frame-pacing.
  */
 
 
 /*!
  * For marking timepoints on a frame's lifetime, not a async event.
  *
- * @ingroup aux_timing
+ * @ingroup aux_pacing
  */
 enum u_timing_point
 {
@@ -40,21 +41,27 @@ enum u_timing_point
 
 /*
  *
- * Frame timing helper.
+ * Compositor pacing helper.
  *
  */
 
 /*!
- * Frame timing helper struct, used for the compositors own frame timing.
+ * Compositor pacing helper interface.
  *
- * @ingroup aux_timing
+ * This is used for the compositor's own frame timing/pacing. It is not responsible for getting the timing data from the
+ * graphics API, etc: instead it consumes timing data from the graphics API (if available) and from "markers" in the
+ * compositor's CPU code, and produces predictions that are used to guide the compositor.
+ *
+ * Pacing of the underlying app/client is handled by @ref u_pacing_app
+ *
+ * @ingroup aux_pacing
  */
-struct u_frame_timing
+struct u_pacing_compositor
 {
 	/*!
 	 * Predict the next frame.
 	 *
-	 * @param[in] uft                                The frame timing struct.
+	 * @param[in] upc                                The compositor pacing helper.
 	 * @param[out] out_frame_id                      Id used to refer to this frame again.
 	 * @param[out] out_wake_up_time_ns               When should the compositor wake up.
 	 * @param[out] out_desired_present_time_ns       The GPU should start scanning out at this time.
@@ -65,7 +72,7 @@ struct u_frame_timing
 	 *
 	 * @see @ref frame-timing.
 	 */
-	void (*predict)(struct u_frame_timing *uft,
+	void (*predict)(struct u_pacing_compositor *upc,
 	                int64_t *out_frame_id,
 	                uint64_t *out_wake_up_time_ns,
 	                uint64_t *out_desired_present_time_ns,
@@ -77,25 +84,32 @@ struct u_frame_timing
 	/*!
 	 * Mark a point on the frame's lifetime.
 	 *
-	 * @param[in] uft      The frame timing struct.
+	 * This is usually provided "when it happens" because the points to mark are steps in the CPU workload of the
+	 * compositor.
+	 *
+	 * @param[in] upc      The compositor pacing helper.
 	 * @param[in] point    The point to record for a frame.
 	 * @param[in] frame_id The frame ID to record for.
 	 * @param[in] when_ns  The timestamp of the event.
 	 *
 	 * @see @ref frame-timing.
 	 */
-	void (*mark_point)(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns);
+	void (*mark_point)(struct u_pacing_compositor *upc,
+	                   enum u_timing_point point,
+	                   int64_t frame_id,
+	                   uint64_t when_ns);
 
 	/*!
-	 * Provide frame timing information about a delivered frame, this is
-	 * usually provided by the display system. These arguments currently
+	 * Provide frame timing information about a delivered frame.
+	 *
+	 * This is usually provided after-the-fact by the display system. These arguments currently
 	 * matches 1-to-1 what VK_GOOGLE_display_timing provides, see
 	 * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPastPresentationTimingGOOGLE.html
 	 *
 	 * Depend on when the information is delivered this can be called at any
 	 * point of the following frames.
 	 *
-	 * @param[in] uft                      The frame timing struct.
+	 * @param[in] upc                      The compositor pacing helper.
 	 * @param[in] frame_id                 The frame ID to record for.
 	 * @param[in] desired_present_time_ns  The time that we indicated the GPU should start scanning out at, or zero
 	 *                                     if we didn't provide such a time.
@@ -107,7 +121,7 @@ struct u_frame_timing
 	 *
 	 * @see @ref frame-timing.
 	 */
-	void (*info)(struct u_frame_timing *uft,
+	void (*info)(struct u_pacing_compositor *upc,
 	             int64_t frame_id,
 	             uint64_t desired_present_time_ns,
 	             uint64_t actual_present_time_ns,
@@ -115,21 +129,21 @@ struct u_frame_timing
 	             uint64_t present_margin_ns);
 
 	/*!
-	 * Destroy this u_frame_timing.
+	 * Destroy this u_pacing_compositor.
 	 */
-	void (*destroy)(struct u_frame_timing *uft);
+	void (*destroy)(struct u_pacing_compositor *upc);
 };
 
 /*!
- * @copydoc u_frame_timing::predict
+ * @copydoc u_pacing_compositor::predict
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_frame_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
  */
 static inline void
-u_ft_predict(struct u_frame_timing *uft,
+u_pc_predict(struct u_pacing_compositor *upc,
              int64_t *out_frame_id,
              uint64_t *out_wake_up_time_ns,
              uint64_t *out_desired_present_time_ns,
@@ -138,7 +152,7 @@ u_ft_predict(struct u_frame_timing *uft,
              uint64_t *out_predicted_display_period_ns,
              uint64_t *out_min_display_period_ns)
 {
-	uft->predict(uft,                             //
+	upc->predict(upc,                             //
 	             out_frame_id,                    //
 	             out_wake_up_time_ns,             //
 	             out_desired_present_time_ns,     //
@@ -149,58 +163,58 @@ u_ft_predict(struct u_frame_timing *uft,
 }
 
 /*!
- * @copydoc u_frame_timing::mark_point
+ * @copydoc u_pacing_compositor::mark_point
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_frame_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
  */
 static inline void
-u_ft_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
+u_pc_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
 {
-	uft->mark_point(uft, point, frame_id, when_ns);
+	upc->mark_point(upc, point, frame_id, when_ns);
 }
 
 /*!
- * @copydoc u_frame_timing::info
+ * @copydoc u_pacing_compositor::info
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_frame_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
  */
 static inline void
-u_ft_info(struct u_frame_timing *uft,
+u_pc_info(struct u_pacing_compositor *upc,
           int64_t frame_id,
           uint64_t desired_present_time_ns,
           uint64_t actual_present_time_ns,
           uint64_t earliest_present_time_ns,
           uint64_t present_margin_ns)
 {
-	uft->info(uft, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
+	upc->info(upc, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
 	          present_margin_ns);
 }
 
 /*!
- * @copydoc u_frame_timing::destroy
+ * @copydoc u_pacing_compositor::destroy
  *
  * Helper for calling through the function pointer: does a null check and sets
- * uft_ptr to null if freed.
+ * @p upc_ptr to null if freed.
  *
- * @public @memberof u_frame_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
  */
 static inline void
-u_ft_destroy(struct u_frame_timing **uft_ptr)
+u_pc_destroy(struct u_pacing_compositor **upc_ptr)
 {
-	struct u_frame_timing *uft = *uft_ptr;
-	if (uft == NULL) {
+	struct u_pacing_compositor *upc = *upc_ptr;
+	if (upc == NULL) {
 		return;
 	}
 
-	uft->destroy(uft);
-	*uft_ptr = NULL;
+	upc->destroy(upc);
+	*upc_ptr = NULL;
 }
 
 
@@ -211,13 +225,16 @@ u_ft_destroy(struct u_frame_timing **uft_ptr)
  */
 
 /*!
- * This render timing helper is designed to schedule the rendering time of
+ * This application pacing helper is designed to schedule the rendering time of
  * clients that submit frames to a compositor, which runs its own render loop
  * that picks latest completed frames for that client.
  *
- * @ingroup aux_timing
+ * It manages the frame pacing of an app/client, rather than the compositor itself. The frame pacing of the compositor
+ * is handled by @ref u_pacing_compositor
+ *
+ * @ingroup aux_pacing
  */
-struct u_render_timing
+struct u_pacing_app
 {
 	/*!
 	 * Predict when the client's next rendered frame will be displayed; when the
@@ -226,13 +243,13 @@ struct u_render_timing
 	 * This is called from `xrWaitFrame`, but it does not do any waiting, the caller
 	 * should wait till `out_wake_up_time`.
 	 *
-	 * @param      urt                          Render timing helper.
+	 * @param      upa                          Render timing helper.
 	 * @param[out] out_frame_id                 Frame ID of this predicted frame.
 	 * @param[out] out_wake_up_time             When the client should be woken up.
 	 * @param[out] out_predicted_display_time   Predicted display time.
 	 * @param[out] out_predicted_display_period Predicted display period.
 	 */
-	void (*predict)(struct u_render_timing *urt,
+	void (*predict)(struct u_pacing_app *upa,
 	                int64_t *out_frame_id,
 	                uint64_t *out_wake_up_time,
 	                uint64_t *out_predicted_display_time,
@@ -241,20 +258,22 @@ struct u_render_timing
 	/*!
 	 * Mark a point on the frame's lifetime.
 	 *
+	 * @param      upa     Render timing helper.
+	 * @param[in] frame_id The frame ID to record for.
 	 * @see @ref frame-timing.
 	 */
-	void (*mark_point)(struct u_render_timing *urt, int64_t frame_id, enum u_timing_point point, uint64_t when_ns);
+	void (*mark_point)(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point point, uint64_t when_ns);
 
 	/*!
 	 * When a frame has been discarded.
 	 */
-	void (*mark_discarded)(struct u_render_timing *urt, int64_t frame_id);
+	void (*mark_discarded)(struct u_pacing_app *upa, int64_t frame_id);
 
 	/*!
 	 * A frame has been delivered from the client, see `xrEndFrame`. The GPU might
 	 * still be rendering the work.
 	 */
-	void (*mark_delivered)(struct u_render_timing *urt, int64_t frame_id);
+	void (*mark_delivered)(struct u_pacing_app *upa, int64_t frame_id);
 
 	/*!
 	 * Add a new sample point from the main render loop.
@@ -267,120 +286,120 @@ struct u_render_timing
 	 * to be able to predict one or more frames into the future anyways. But
 	 * preferably as soon as the main loop wakes up from wait frame.
 	 *
-	 * @param urt                         Self pointer
+	 * @param upa                         Self pointer
 	 * @param predicted_display_time_ns   Predicted display time for this sample.
 	 * @param predicted_display_period_ns Predicted display period for this sample.
 	 * @param extra_ns                    Time between display and when this sample
 	 *                                    was created, that is when the main loop
 	 *                                    was woken up by the main compositor.
 	 */
-	void (*info)(struct u_render_timing *urt,
+	void (*info)(struct u_pacing_app *upa,
 	             uint64_t predicted_display_time_ns,
 	             uint64_t predicted_display_period_ns,
 	             uint64_t extra_ns);
 
 	/*!
-	 * Destroy this u_render_timing.
+	 * Destroy this u_pacing_app.
 	 */
-	void (*destroy)(struct u_render_timing *urt);
+	void (*destroy)(struct u_pacing_app *upa);
 };
 
 /*!
- * @copydoc u_render_timing::predict
+ * @copydoc u_pacing_app::predict
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_render_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_predict(struct u_render_timing *urt,
+u_pa_predict(struct u_pacing_app *upa,
              int64_t *out_frame_id,
              uint64_t *out_wake_up_time,
              uint64_t *out_predicted_display_time,
              uint64_t *out_predicted_display_period)
 {
-	urt->predict(urt, out_frame_id, out_wake_up_time, out_predicted_display_time, out_predicted_display_period);
+	upa->predict(upa, out_frame_id, out_wake_up_time, out_predicted_display_time, out_predicted_display_period);
 }
 
 /*!
- * @copydoc u_render_timing::mark_point
+ * @copydoc u_pacing_app::mark_point
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_render_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_mark_point(struct u_render_timing *urt, int64_t frame_id, enum u_timing_point point, uint64_t when_ns)
+u_pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point point, uint64_t when_ns)
 {
-	urt->mark_point(urt, frame_id, point, when_ns);
+	upa->mark_point(upa, frame_id, point, when_ns);
 }
 
 /*!
- * @copydoc u_render_timing::mark_discarded
+ * @copydoc u_pacing_app::mark_discarded
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_render_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_mark_discarded(struct u_render_timing *urt, int64_t frame_id)
+u_pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id)
 {
-	urt->mark_discarded(urt, frame_id);
+	upa->mark_discarded(upa, frame_id);
 }
 
 /*!
- * @copydoc u_render_timing::mark_delivered
+ * @copydoc u_pacing_app::mark_delivered
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_render_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_mark_delivered(struct u_render_timing *urt, int64_t frame_id)
+u_pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id)
 {
-	urt->mark_delivered(urt, frame_id);
+	upa->mark_delivered(upa, frame_id);
 }
 
 /*!
- * @copydoc u_render_timing::info
+ * @copydoc u_pacing_app::info
  *
  * Helper for calling through the function pointer.
  *
- * @public @memberof u_render_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_info(struct u_render_timing *urt,
+u_pa_info(struct u_pacing_app *upa,
           uint64_t predicted_display_time_ns,
           uint64_t predicted_display_period_ns,
           uint64_t extra_ns)
 {
-	urt->info(urt, predicted_display_time_ns, predicted_display_period_ns, extra_ns);
+	upa->info(upa, predicted_display_time_ns, predicted_display_period_ns, extra_ns);
 }
 
 /*!
- * @copydoc u_render_timing::destroy
+ * @copydoc u_pacing_app::destroy
  *
  * Helper for calling through the function pointer: does a null check and sets
- * urt_ptr to null if freed.
+ * upa_ptr to null if freed.
  *
- * @public @memberof u_frame_timing
- * @ingroup aux_timing
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
  */
 static inline void
-u_rt_destroy(struct u_render_timing **urt_ptr)
+u_pa_destroy(struct u_pacing_app **upa_ptr)
 {
-	struct u_render_timing *urt = *urt_ptr;
-	if (urt == NULL) {
+	struct u_pacing_app *upa = *upa_ptr;
+	if (upa == NULL) {
 		return;
 	}
 
-	urt->destroy(urt);
-	*urt_ptr = NULL;
+	upa->destroy(upa);
+	*upa_ptr = NULL;
 }
 
 /*
@@ -389,11 +408,11 @@ u_rt_destroy(struct u_render_timing **urt_ptr)
  *
  */
 /*!
- * Configuration for the "display_timing" implementation of u_ft
+ * Configuration for the "display-timing-aware" implementation of @ref u_pacing_compositor
  *
- * @see u_ft_display_timing_create
+ * @see u_pc_display_timing_create
  */
-struct u_ft_display_timing_config
+struct u_pc_display_timing_config
 {
 	//! How long after "present" is the image actually displayed
 	uint64_t present_offset_ns;
@@ -419,11 +438,11 @@ struct u_ft_display_timing_config
 };
 
 /*!
- * Default configuration values
+ * Default configuration values for display-timing-aware compositor pacing.
  *
- * @see u_ft_display_timing_config, u_ft_display_timing_create
+ * @see u_pc_display_timing_config, u_pc_display_timing_create
  */
-extern const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAULT;
+extern const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT;
 
 /*
  *
@@ -432,30 +451,37 @@ extern const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAUL
  */
 
 /*!
- * Meant to be used with VK_GOOGLE_display_timing.
+ * Creates a new composition pacing helper that uses real display timing information.
  *
- * @ingroup aux_timing
+ * Meant to be used with `VK_GOOGLE_display_timing`.
+ *
+ * @ingroup aux_pacing
+ * @see u_pacing_compositor
  */
 xrt_result_t
-u_ft_display_timing_create(uint64_t estimated_frame_period_ns,
-                           const struct u_ft_display_timing_config *config,
-                           struct u_frame_timing **out_uft);
+u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
+                           const struct u_pc_display_timing_config *config,
+                           struct u_pacing_compositor **out_upc);
 
 /*!
- * When you can not get display timing information use this.
+ * Creates a new composition pacing helper that does not depend on display timing information.
  *
- * @ingroup aux_timing
+ * When you cannot get display timing information, use this.
+ *
+ * @ingroup aux_pacing
+ * @see u_pacing_compositor
  */
 xrt_result_t
-u_ft_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft);
+u_pc_fake_create(uint64_t estimated_frame_period_ns, struct u_pacing_compositor **out_upc);
 
 /*!
- * Creates a new render timing.
+ * Creates a new application pacing helper.
  *
- * @ingroup aux_timing
+ * @ingroup aux_pacing
+ * @see u_pacing_app
  */
 xrt_result_t
-u_rt_create(struct u_render_timing **out_urt);
+u_pa_create(struct u_pacing_app **out_upa);
 
 
 #ifdef __cplusplus

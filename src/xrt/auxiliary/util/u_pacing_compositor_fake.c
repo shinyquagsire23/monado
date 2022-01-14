@@ -12,7 +12,7 @@
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_timing.h"
+#include "util/u_pacing.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -30,7 +30,7 @@
 
 struct fake_timing
 {
-	struct u_frame_timing base;
+	struct u_pacing_compositor base;
 
 	/*!
 	 * The periodicity of the display.
@@ -63,9 +63,9 @@ struct fake_timing
  */
 
 static inline struct fake_timing *
-fake_timing(struct u_frame_timing *uft)
+fake_timing(struct u_pacing_compositor *upc)
 {
-	return (struct fake_timing *)uft;
+	return (struct fake_timing *)upc;
 }
 
 static uint64_t
@@ -97,7 +97,7 @@ get_percent_of_time(uint64_t time_ns, uint32_t fraction_percent)
  */
 
 static void
-ft_predict(struct u_frame_timing *uft,
+pc_predict(struct u_pacing_compositor *upc,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time_ns,
            uint64_t *out_desired_present_time_ns,
@@ -106,7 +106,7 @@ ft_predict(struct u_frame_timing *uft,
            uint64_t *out_predicted_display_period_ns,
            uint64_t *out_min_display_period_ns)
 {
-	struct fake_timing *ft = fake_timing(uft);
+	struct fake_timing *ft = fake_timing(upc);
 
 	int64_t frame_id = ft->frame_id_generator++;
 	uint64_t predicted_display_time_ns = predict_next_frame(ft);
@@ -126,7 +126,7 @@ ft_predict(struct u_frame_timing *uft,
 }
 
 static void
-ft_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
+pc_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
 {
 	// To help validate calling code.
 	switch (point) {
@@ -138,7 +138,7 @@ ft_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t fra
 }
 
 static void
-ft_info(struct u_frame_timing *uft,
+pc_info(struct u_pacing_compositor *upc,
         int64_t frame_id,
         uint64_t desired_present_time_ns,
         uint64_t actual_present_time_ns,
@@ -152,9 +152,9 @@ ft_info(struct u_frame_timing *uft,
 }
 
 static void
-ft_destroy(struct u_frame_timing *uft)
+pc_destroy(struct u_pacing_compositor *upc)
 {
-	struct fake_timing *ft = fake_timing(uft);
+	struct fake_timing *ft = fake_timing(upc);
 	free(ft);
 }
 
@@ -166,13 +166,13 @@ ft_destroy(struct u_frame_timing *uft)
  */
 
 xrt_result_t
-u_ft_fake_create(uint64_t estimated_frame_period_ns, struct u_frame_timing **out_uft)
+u_pc_fake_create(uint64_t estimated_frame_period_ns, struct u_pacing_compositor **out_uft)
 {
 	struct fake_timing *ft = U_TYPED_CALLOC(struct fake_timing);
-	ft->base.predict = ft_predict;
-	ft->base.mark_point = ft_mark_point;
-	ft->base.info = ft_info;
-	ft->base.destroy = ft_destroy;
+	ft->base.predict = pc_predict;
+	ft->base.mark_point = pc_mark_point;
+	ft->base.info = pc_info;
+	ft->base.destroy = pc_destroy;
 	ft->frame_period_ns = estimated_frame_period_ns;
 
 	// To make sure the code can start from a non-zero frame id.

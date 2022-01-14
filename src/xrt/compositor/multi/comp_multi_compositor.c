@@ -197,8 +197,8 @@ multi_compositor_predict_frame(struct xrt_compositor *xc,
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 
-	u_rt_predict(                         //
-	    mc->urt,                          //
+	u_pa_predict(                         //
+	    mc->upa,                          //
 	    out_frame_id,                     //
 	    out_wake_time_ns,                 //
 	    out_predicted_display_time_ns,    //
@@ -223,7 +223,7 @@ multi_compositor_mark_frame(struct xrt_compositor *xc,
 	case XRT_COMPOSITOR_FRAME_POINT_WOKE:
 		os_mutex_lock(&mc->msc->list_and_timing_lock);
 		uint64_t now_ns = os_monotonic_get_ns();
-		u_rt_mark_point(mc->urt, frame_id, U_TIMING_POINT_WAKE_UP, now_ns);
+		u_pa_mark_point(mc->upa, frame_id, U_TIMING_POINT_WAKE_UP, now_ns);
 		os_mutex_unlock(&mc->msc->list_and_timing_lock);
 		break;
 	default: assert(false);
@@ -278,7 +278,7 @@ multi_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 	uint64_t now_ns = os_monotonic_get_ns();
-	u_rt_mark_point(mc->urt, frame_id, U_TIMING_POINT_BEGIN, now_ns);
+	u_pa_mark_point(mc->upa, frame_id, U_TIMING_POINT_BEGIN, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -292,7 +292,7 @@ multi_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 	struct multi_compositor *mc = multi_compositor(xc);
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_rt_mark_discarded(mc->urt, frame_id);
+	u_pa_mark_discarded(mc->upa, frame_id);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -509,7 +509,7 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	wait_for_scheduled_free(mc);
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_rt_mark_delivered(mc->urt, frame_id);
+	u_pa_mark_delivered(mc->upa, frame_id);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -553,7 +553,7 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	slot_clear(&mc->delivered);
 
 	// Does null checking.
-	u_rt_destroy(&mc->urt);
+	u_pa_destroy(&mc->upa);
 
 	os_precise_sleeper_deinit(&mc->sleeper);
 
@@ -623,11 +623,11 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	os_precise_sleeper_init(&mc->sleeper);
 
 	// This is safe to do without a lock since we are not on the list yet.
-	u_rt_create(&mc->urt);
+	u_pa_create(&mc->upa);
 
 	os_mutex_lock(&msc->list_and_timing_lock);
 
-	// Meh if we have to many clients just ignore it.
+	// If we have too many clients, just ignore it.
 	for (size_t i = 0; i < MULTI_MAX_CLIENTS; i++) {
 		if (mc->msc->clients[i] != NULL) {
 			continue;
@@ -636,8 +636,8 @@ multi_compositor_create(struct multi_system_compositor *msc,
 		break;
 	}
 
-	u_rt_info(                                         //
-	    mc->urt,                                       //
+	u_pa_info(                                         //
+	    mc->upa,                                       //
 	    msc->last_timings.predicted_display_time_ns,   //
 	    msc->last_timings.predicted_display_period_ns, //
 	    msc->last_timings.diff_ns);                    //

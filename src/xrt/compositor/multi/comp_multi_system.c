@@ -297,8 +297,8 @@ broadcast_timings(struct multi_system_compositor *msc,
 			continue;
 		}
 
-		u_rt_info(                       //
-		    mc->urt,                     //
+		u_pa_info(                       //
+		    mc->upa,                     //
 		    predicted_display_time_ns,   //
 		    predicted_display_period_ns, //
 		    diff_ns);                    //

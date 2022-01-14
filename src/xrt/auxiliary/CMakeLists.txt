@@ -178,6 +178,10 @@ add_library(
 	util/u_logging.h
 	util/u_misc.c
 	util/u_misc.h
+	util/u_pacing.h
+	util/u_pacing_app.c
+	util/u_pacing_compositor.c
+	util/u_pacing_compositor_fake.c
 	util/u_sink.h
 	util/u_sink_combiner.c
 	util/u_sink_converter.c
@@ -191,10 +195,6 @@ add_library(
 	util/u_template_historybuf.hpp
 	util/u_time.cpp
 	util/u_time.h
-	util/u_timing.h
-	util/u_timing_fake.c
-	util/u_timing_frame.c
-	util/u_timing_render.c
 	util/u_trace_marker.c
 	util/u_trace_marker.h
 	util/u_var.cpp

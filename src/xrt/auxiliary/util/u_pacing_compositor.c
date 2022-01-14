@@ -12,7 +12,7 @@
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_timing.h"
+#include "util/u_pacing.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -87,7 +87,7 @@ struct frame
 
 struct display_timing
 {
-	struct u_frame_timing base;
+	struct u_pacing_compositor base;
 
 	/*!
 	 * Very often the present time that we get from the system is only when
@@ -151,9 +151,9 @@ struct display_timing
  */
 
 static inline struct display_timing *
-display_timing(struct u_frame_timing *uft)
+display_timing(struct u_pacing_compositor *upc)
 {
-	return (struct display_timing *)uft;
+	return (struct display_timing *)upc;
 }
 
 static double
@@ -373,7 +373,7 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
  */
 
 static void
-dt_predict(struct u_frame_timing *uft,
+dt_predict(struct u_pacing_compositor *upc,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time_ns,
            uint64_t *out_desired_present_time_ns,
@@ -382,7 +382,7 @@ dt_predict(struct u_frame_timing *uft,
            uint64_t *out_predicted_display_period_ns,
            uint64_t *out_min_display_period_ns)
 {
-	struct display_timing *dt = display_timing(uft);
+	struct display_timing *dt = display_timing(upc);
 
 	struct frame *f = predict_next_frame(dt);
 
@@ -403,9 +403,9 @@ dt_predict(struct u_frame_timing *uft,
 }
 
 static void
-dt_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
+dt_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
 {
-	struct display_timing *dt = display_timing(uft);
+	struct display_timing *dt = display_timing(upc);
 	struct frame *f = get_frame(dt, frame_id);
 
 	switch (point) {
@@ -429,14 +429,14 @@ dt_mark_point(struct u_frame_timing *uft, enum u_timing_point point, int64_t fra
 }
 
 static void
-dt_info(struct u_frame_timing *uft,
+dt_info(struct u_pacing_compositor *upc,
         int64_t frame_id,
         uint64_t desired_present_time_ns,
         uint64_t actual_present_time_ns,
         uint64_t earliest_present_time_ns,
         uint64_t present_margin_ns)
 {
-	struct display_timing *dt = display_timing(uft);
+	struct display_timing *dt = display_timing(upc);
 	(void)dt;
 
 	struct frame *last = get_latest_frame_with_state_at_least(dt, STATE_INFO);
@@ -500,13 +500,13 @@ dt_info(struct u_frame_timing *uft,
 	 *
 	 */
 
-	TE_BEG(rt_cpu, f->when_predict_ns, "sleep");
-	TE_END(rt_cpu, f->wake_up_time_ns);
+	TE_BEG(pc_cpu, f->when_predict_ns, "sleep");
+	TE_END(pc_cpu, f->wake_up_time_ns);
 
 	uint64_t oversleep_start_ns = f->wake_up_time_ns + 1;
 	if (f->when_woke_ns > oversleep_start_ns) {
-		TE_BEG(rt_cpu, oversleep_start_ns, "oversleep");
-		TE_END(rt_cpu, f->when_woke_ns);
+		TE_BEG(pc_cpu, oversleep_start_ns, "oversleep");
+		TE_END(pc_cpu, f->when_woke_ns);
 	}
 
 
@@ -518,11 +518,11 @@ dt_info(struct u_frame_timing *uft,
 
 	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
 	if (gpu_end_ns > f->when_submitted_ns) {
-		TE_BEG(rt_gpu, f->when_submitted_ns, "gpu");
-		TE_END(rt_gpu, gpu_end_ns);
+		TE_BEG(pc_gpu, f->when_submitted_ns, "gpu");
+		TE_END(pc_gpu, gpu_end_ns);
 	} else {
-		TE_BEG(rt_gpu, gpu_end_ns, "gpu-time-travel");
-		TE_END(rt_gpu, f->when_submitted_ns);
+		TE_BEG(pc_gpu, gpu_end_ns, "gpu-time-travel");
+		TE_END(pc_gpu, f->when_submitted_ns);
 	}
 
 
@@ -533,8 +533,8 @@ dt_info(struct u_frame_timing *uft,
 	 */
 
 	if (gpu_end_ns < f->desired_present_time_ns) {
-		TE_BEG(rt_margin, gpu_end_ns, "margin");
-		TE_END(rt_margin, f->desired_present_time_ns);
+		TE_BEG(pc_margin, gpu_end_ns, "margin");
+		TE_END(pc_margin, f->desired_present_time_ns);
 	}
 
 
@@ -546,11 +546,11 @@ dt_info(struct u_frame_timing *uft,
 
 	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
 		if (f->actual_present_time_ns > f->desired_present_time_ns) {
-			TE_BEG(rt_error, f->desired_present_time_ns, "slippage");
-			TE_END(rt_error, f->actual_present_time_ns);
+			TE_BEG(pc_error, f->desired_present_time_ns, "slippage");
+			TE_END(pc_error, f->actual_present_time_ns);
 		} else {
-			TE_BEG(rt_error, f->actual_present_time_ns, "run-ahead");
-			TE_END(rt_error, f->desired_present_time_ns);
+			TE_BEG(pc_error, f->actual_present_time_ns, "run-ahead");
+			TE_END(pc_error, f->desired_present_time_ns);
 		}
 	}
 
@@ -562,11 +562,11 @@ dt_info(struct u_frame_timing *uft,
 	 */
 
 	if (f->when_infoed_ns >= f->actual_present_time_ns) {
-		TE_BEG(rt_info, f->actual_present_time_ns, "info");
-		TE_END(rt_info, f->when_infoed_ns);
+		TE_BEG(pc_info, f->actual_present_time_ns, "info");
+		TE_END(pc_info, f->when_infoed_ns);
 	} else {
-		TE_BEG(rt_info, f->when_infoed_ns, "info_before");
-		TE_END(rt_info, f->actual_present_time_ns);
+		TE_BEG(pc_info, f->when_infoed_ns, "info_before");
+		TE_END(pc_info, f->actual_present_time_ns);
 	}
 
 
@@ -577,12 +577,12 @@ dt_info(struct u_frame_timing *uft,
 	 */
 
 	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
-		U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->earliest_present_time_ns, "earliest");
+		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->earliest_present_time_ns, "earliest");
 	}
 	if (!is_within_half_ms(f->desired_present_time_ns, f->earliest_present_time_ns)) {
-		U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->desired_present_time_ns, "predicted");
+		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->desired_present_time_ns, "predicted");
 	}
-	U_TRACE_INSTANT_ON_TRACK(timing, rt_present, f->actual_present_time_ns, "vsync");
+	U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->actual_present_time_ns, "vsync");
 
 
 	/*
@@ -591,22 +591,22 @@ dt_info(struct u_frame_timing *uft,
 	 *
 	 */
 
-	TE_BEG(rt_allotted, f->wake_up_time_ns, "allotted");
-	TE_END(rt_allotted, f->wake_up_time_ns + f->current_app_time_ns);
+	TE_BEG(pc_allotted, f->wake_up_time_ns, "allotted");
+	TE_END(pc_allotted, f->wake_up_time_ns + f->current_app_time_ns);
 
 #undef TE_BEG
 #undef TE_END
 }
 
 static void
-dt_destroy(struct u_frame_timing *uft)
+dt_destroy(struct u_pacing_compositor *upc)
 {
-	struct display_timing *dt = display_timing(uft);
+	struct display_timing *dt = display_timing(upc);
 
 	free(dt);
 }
 
-const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAULT = {
+const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
     // Just a wild guess.
     .present_offset_ns = U_TIME_1MS_IN_NS * 4,
     .margin_ns = U_TIME_1MS_IN_NS,
@@ -617,9 +617,9 @@ const struct u_ft_display_timing_config U_FT_DISPLAY_TIMING_CONFIG_DEFAULT = {
 };
 
 xrt_result_t
-u_ft_display_timing_create(uint64_t estimated_frame_period_ns,
-                           const struct u_ft_display_timing_config *config,
-                           struct u_frame_timing **out_uft)
+u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
+                           const struct u_pc_display_timing_config *config,
+                           struct u_pacing_compositor **out_uft)
 {
 	struct display_timing *dt = U_TYPED_CALLOC(struct display_timing);
 	dt->base.predict = dt_predict;

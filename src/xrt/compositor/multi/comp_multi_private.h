@@ -16,7 +16,7 @@
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
-#include "util/u_timing.h"
+#include "util/u_pacing.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -144,7 +144,7 @@ struct multi_compositor
 	 */
 	struct multi_layer_slot delivered;
 
-	struct u_render_timing *urt;
+	struct u_pacing_app *upa;
 };
 
 static inline struct multi_compositor *

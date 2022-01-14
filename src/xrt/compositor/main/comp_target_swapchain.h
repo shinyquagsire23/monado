@@ -26,7 +26,7 @@ extern "C" {
  *
  */
 
-struct u_frame_timing;
+struct u_pacing_compositor;
 
 /*!
  * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
@@ -38,8 +38,8 @@ struct comp_target_swapchain
 	//! Base target.
 	struct comp_target base;
 
-	//! Frame timing tracker.
-	struct u_frame_timing *uft;
+	//! Compositor frame pacing helper
+	struct u_pacing_compositor *upc;
 
 	//! If we should use display timing.
 	enum comp_target_display_timing_usage timing_usage;
