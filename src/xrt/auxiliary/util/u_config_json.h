@@ -102,6 +102,21 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 bool
 u_config_json_get_remote_port(struct u_config_json *json, int *out_port);
 
+
+enum u_gui_state_scene
+{
+	GUI_STATE_SCENE_CALIBRATE
+};
+
+void
+u_gui_state_open_file(struct u_config_json *json);
+
+struct cJSON *
+u_gui_state_get_scene(struct u_config_json *json, enum u_gui_state_scene scene);
+
+void
+u_gui_state_save_scene(struct u_config_json *json, enum u_gui_state_scene scene, struct cJSON *new_state);
+
 #ifdef __cplusplus
 }
 #endif

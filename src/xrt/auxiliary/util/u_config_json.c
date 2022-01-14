@@ -23,10 +23,12 @@
 #include <sys/stat.h>
 
 #include "bindings/b_generated_bindings.h"
+#include <assert.h>
 
 DEBUG_GET_ONCE_OPTION(active_config, "P_OVERRIDE_ACTIVE_CONFIG", NULL)
 
 #define CONFIG_FILE_NAME "config_v0.json"
+#define GUI_STATE_FILE_NAME "gui_state_v0.json"
 
 void
 u_config_json_close(struct u_config_json *json)
@@ -38,13 +40,13 @@ u_config_json_close(struct u_config_json *json)
 	json->file_loaded = false;
 }
 
-void
-u_config_json_open_or_create_main_file(struct u_config_json *json)
+static void
+u_config_json_open_or_create_file(struct u_config_json *json, const char *filename)
 {
 	json->file_loaded = false;
 #if defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)
 	char tmp[1024];
-	ssize_t ret = u_file_get_path_in_config_dir(CONFIG_FILE_NAME, tmp, sizeof(tmp));
+	ssize_t ret = u_file_get_path_in_config_dir(filename, tmp, sizeof(tmp));
 	if (ret <= 0) {
 		U_LOG_E(
 		    "Could not load or create config file no $HOME "
@@ -52,7 +54,7 @@ u_config_json_open_or_create_main_file(struct u_config_json *json)
 		return;
 	}
 
-	FILE *file = u_file_open_file_in_config_dir(CONFIG_FILE_NAME, "r");
+	FILE *file = u_file_open_file_in_config_dir(filename, "r");
 	if (file == NULL) {
 		return;
 	}
@@ -83,6 +85,12 @@ u_config_json_open_or_create_main_file(struct u_config_json *json)
 	//! @todo implement the underlying u_file_get_path_in_config_dir
 	return;
 #endif
+}
+
+void
+u_config_json_open_or_create_main_file(struct u_config_json *json)
+{
+	u_config_json_open_or_create_file(json, CONFIG_FILE_NAME);
 }
 
 static cJSON *
@@ -386,12 +394,12 @@ u_config_json_make_default_root(struct u_config_json *json)
 }
 
 static void
-u_config_write(struct u_config_json *json)
+u_config_write(struct u_config_json *json, const char *filename)
 {
 	char *str = cJSON_Print(json->root);
 	U_LOG_D("%s", str);
 
-	FILE *config_file = u_file_open_file_in_config_dir(CONFIG_FILE_NAME, "w");
+	FILE *config_file = u_file_open_file_in_config_dir(filename, "w");
 	fprintf(config_file, "%s\n", str);
 	fflush(config_file);
 	fclose(config_file);
@@ -435,7 +443,7 @@ u_config_json_save_calibration(struct u_config_json *json, struct xrt_settings_t
 	cJSON_DeleteItemFromObject(t, "calibration_path");
 	cJSON_AddStringToObject(t, "calibration_path", settings->calibration_path);
 
-	u_config_write(json);
+	u_config_write(json, CONFIG_FILE_NAME);
 }
 
 static cJSON *
@@ -497,5 +505,56 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 		cJSON_AddItemToArray(o, entry);
 	}
 
-	u_config_write(json);
+	u_config_write(json, CONFIG_FILE_NAME);
+}
+
+void
+u_gui_state_open_file(struct u_config_json *json)
+{
+	u_config_json_open_or_create_file(json, GUI_STATE_FILE_NAME);
+}
+
+static const char *
+u_gui_state_scene_to_string(enum u_gui_state_scene scene)
+{
+	switch (scene) {
+	case GUI_STATE_SCENE_CALIBRATE: return "calibrate";
+	default: assert(false);
+	}
+}
+
+struct cJSON *
+u_gui_state_get_scene(struct u_config_json *json, enum u_gui_state_scene scene)
+{
+	if (json->root == NULL) {
+		return NULL;
+	}
+	const char *scene_name = u_gui_state_scene_to_string(scene);
+
+	struct cJSON *c =
+	    cJSON_DetachItemFromObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(json->root, "scenes"), scene_name);
+	cJSON_free(json->root);
+	return c;
+}
+
+void
+u_gui_state_save_scene(struct u_config_json *json, enum u_gui_state_scene scene, struct cJSON *new_state)
+{
+
+	if (!json->file_loaded) {
+		u_config_json_make_default_root(json);
+	}
+
+	cJSON *root = json->root;
+
+	const char *scene_name = u_gui_state_scene_to_string(scene);
+
+	struct cJSON *sc = cJSON_GetObjectItemCaseSensitive(root, "scenes");
+
+	if (!sc) {
+		sc = cJSON_AddObjectToObject(root, "scenes");
+	}
+	cJSON_DeleteItemFromObject(sc, scene_name);
+	cJSON_AddItemToObject(sc, scene_name, new_state);
+	u_config_write(json, GUI_STATE_FILE_NAME);
 }
