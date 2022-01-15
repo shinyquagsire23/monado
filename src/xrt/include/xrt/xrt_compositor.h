@@ -701,9 +701,15 @@ struct xrt_compositor
 	 * @ref wait_frame.
 	 *
 	 * The only requirement on the compositor for the @p frame_id
-	 * is that it is a positive number.
+	 * is that it is a positive number and larger then the last returned
+	 * frame_id.
 	 *
-	 * @param[out] xc                              The compositor
+	 * After a call to predict_frame, the state tracker is not allowed to
+	 * call this function until after a call to @ref mark_frame (with point
+	 * @ref XRT_COMPOSITOR_FRAME_POINT_WOKE), followed by either
+	 * @ref begin_frame or @ref discard_frame.
+	 *
+	 * @param[in]  xc                              The compositor
 	 * @param[out] out_frame_id                    Frame id
 	 * @param[out] out_wake_time_ns                When we want the client to be awoken to begin rendering.
 	 * @param[out] out_predicted_gpu_time_ns       When we expect the client to finish the GPU work.
@@ -721,8 +727,13 @@ struct xrt_compositor
 	 * This function and @ref predict_frame function calls are a alternative to
 	 * @ref wait_frame.
 	 *
-	 * The client calls this function to mark that it woke up from waiting
-	 * on a frame.
+	 * If point is XRT_COMPOSITOR_FRAME_POINT_WOKE it is to mark that the
+	 * client woke up from waiting on a frame.
+	 *
+	 * @param[in] xc       The compositor
+	 * @param[in] frame_id Frame id
+	 * @param[in] point    What type of frame point to mark.
+	 * @param[in] when_ns  When this point happened.
 	 */
 	xrt_result_t (*mark_frame)(struct xrt_compositor *xc,
 	                           int64_t frame_id,
@@ -732,8 +743,17 @@ struct xrt_compositor
 	/*!
 	 * See xrWaitFrame.
 	 *
+	 * This function has the same semantics as calling @ref predict_frame
+	 * sleeping and then calling @ref mark_frame with a point of
+	 * XRT_COMPOSITOR_FRAME_POINT_WOKE.
+	 *
 	 * The only requirement on the compositor for the @p frame_id
-	 * is that it is a positive number.
+	 * is that it is a positive number and larger then the last returned
+	 * @p frame_id.
+	 *
+	 * After a call to wait_frame, the state tracker is not allowed to call
+	 * this function until after a call to either @ref begin_frame or
+	 * @ref discard_frame.
 	 *
 	 * If the caller can do its own blocking, use the pair of functions
 	 * xrt_compositor::predict_frame and xrt_compositor::mark_frame instead
@@ -746,6 +766,13 @@ struct xrt_compositor
 
 	/*!
 	 * See xrBeginFrame.
+	 *
+	 * Must have made a call to either @ref predict_frame or @ref wait_frame
+	 * before calling this function. After this function is called you must
+	 * call layer_commit.
+	 *
+	 * @param[in] xc       The compositor
+	 * @param[in] frame_id Frame id
 	 */
 	xrt_result_t (*begin_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
