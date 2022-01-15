@@ -741,8 +741,8 @@ struct xrt_compositor
 	 */
 	xrt_result_t (*wait_frame)(struct xrt_compositor *xc,
 	                           int64_t *out_frame_id,
-	                           uint64_t *predicted_display_time,
-	                           uint64_t *predicted_display_period);
+	                           uint64_t *out_predicted_display_time,
+	                           uint64_t *out_predicted_display_period);
 
 	/*!
 	 * See xrBeginFrame.
@@ -1063,10 +1063,10 @@ xrt_comp_mark_frame(struct xrt_compositor *xc,
 static inline xrt_result_t
 xrt_comp_wait_frame(struct xrt_compositor *xc,
                     int64_t *out_frame_id,
-                    uint64_t *predicted_display_time,
-                    uint64_t *predicted_display_period)
+                    uint64_t *out_predicted_display_time,
+                    uint64_t *out_predicted_display_period)
 {
-	return xc->wait_frame(xc, out_frame_id, predicted_display_time, predicted_display_period);
+	return xc->wait_frame(xc, out_frame_id, out_predicted_display_time, out_predicted_display_period);
 }
 
 /*!
