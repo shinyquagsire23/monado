@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -194,6 +194,15 @@ is_within_half_ms(uint64_t l, uint64_t r)
 	return is_within_of_each_other(l, r, U_TIME_HALF_MS_IN_NS);
 }
 
+/*!
+ * Gets a frame data structure based on the @p frame_id.
+ *
+ * Note that this is done modulo the number of frame data structs we hold: the data in the frame you receive may not
+ * match the @p frame_id you passed!
+ *
+ * @see create_frame to create a frame id and (partially) initialize the frame data structure, @ref do_clean_slate_frame
+ * for a more complete initialization
+ */
 static struct frame *
 get_frame(struct display_timing *dt, int64_t frame_id)
 {
@@ -205,6 +214,13 @@ get_frame(struct display_timing *dt, int64_t frame_id)
 	return &dt->frames[index];
 }
 
+/*!
+ * Assign the next available frame ID, initialize the corresponding frame data with the ID and @p state, and return a
+ * pointer to that frame data.
+ *
+ * Fields other than frame::frame_id and frame::state are not modified, so may have old data in them. This may be a
+ * feature rather than a bug.
+ */
 static struct frame *
 create_frame(struct display_timing *dt, enum frame_state state)
 {
@@ -217,6 +233,11 @@ create_frame(struct display_timing *dt, enum frame_state state)
 	return f;
 }
 
+/*!
+ * Gets the most recent frame data whose state is greater than or equal to @p state, if any
+ *
+ * @return a frame pointer, or null if no frames have at least @p state
+ */
 static struct frame *
 get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state state)
 {
@@ -233,6 +254,10 @@ get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state
 	return NULL;
 }
 
+/*!
+ * "Create" a frame ID in state @ref STATE_PREDICTED (by calling @ref create_frame), and additionally initialize
+ * frame::desired_present_time_ns (with a crude estimate) and frame::when_predict_ns.
+ */
 static struct frame *
 do_clean_slate_frame(struct display_timing *dt)
 {
@@ -247,10 +272,15 @@ do_clean_slate_frame(struct display_timing *dt)
 	return f;
 }
 
+/*!
+ * Find the next possible present time for rendering that has not yet occurred, and create a frame/frame id with that
+ * prediction in it.
+ */
 static struct frame *
 walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_time_ns)
 {
 	uint64_t now_ns = os_monotonic_get_ns();
+	// This is the earliest possible time we could present, assuming rendering still must take place.
 	uint64_t from_time_ns = now_ns + calc_total_app_time(dt);
 	uint64_t desired_present_time_ns = last_present_time_ns + dt->frame_period_ns;
 
@@ -441,7 +471,15 @@ dt_info(struct u_pacing_compositor *upc,
 
 	struct frame *last = get_latest_frame_with_state_at_least(dt, STATE_INFO);
 	struct frame *f = get_frame(dt, frame_id);
+	if (f->frame_id != frame_id) {
+		FT_LOG_W("Discarded info for unsubmitted or expired frame_id %" PRIx64, frame_id);
+		if (last != NULL) {
+			FT_LOG_W("The latest frame_id we have info for is %" PRIx64, last->frame_id);
+		}
+		return;
+	}
 	assert(f->state == STATE_SUBMITTED);
+	assert(f->desired_present_time_ns == desired_present_time_ns);
 
 	f->when_infoed_ns = os_monotonic_get_ns();
 	f->actual_present_time_ns = actual_present_time_ns;
