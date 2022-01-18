@@ -1,4 +1,4 @@
-# Copyright 2018-2021, Collabora, Ltd.
+# Copyright 2018-2022, Collabora, Ltd.
 #
 # SPDX-License-Identifier: BSL-1.0
 
@@ -34,6 +34,12 @@ add_executable(tests_history_buf tests_history_buf.cpp)
 target_link_libraries(tests_history_buf PRIVATE tests_main)
 target_link_libraries(tests_history_buf PRIVATE aux_util aux_math)
 add_test(NAME tests_history_buf COMMAND tests_history_buf --success)
+
+# pacing
+add_executable(tests_pacing tests_pacing.cpp)
+target_link_libraries(tests_pacing PRIVATE tests_main)
+target_link_libraries(tests_pacing PRIVATE aux_util aux_math)
+add_test(NAME tests_pacing COMMAND tests_pacing --success)
 
 # misc wrappers
 add_executable(tests_cxx_wrappers tests_cxx_wrappers.cpp)
