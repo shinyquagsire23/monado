@@ -69,10 +69,9 @@ fake_timing(struct u_pacing_compositor *upc)
 }
 
 static uint64_t
-predict_next_frame(struct fake_timing *ft)
+predict_next_frame(struct fake_timing *ft, uint64_t now_ns)
 {
 	uint64_t time_needed_ns = ft->present_offset_ns + ft->app_time_ns;
-	uint64_t now_ns = os_monotonic_get_ns();
 	uint64_t predicted_display_time_ns = ft->last_display_time_ns + ft->frame_period_ns;
 
 	while (now_ns + time_needed_ns > predicted_display_time_ns) {
@@ -98,6 +97,7 @@ get_percent_of_time(uint64_t time_ns, uint32_t fraction_percent)
 
 static void
 pc_predict(struct u_pacing_compositor *upc,
+           uint64_t now_ns,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time_ns,
            uint64_t *out_desired_present_time_ns,
@@ -109,7 +109,7 @@ pc_predict(struct u_pacing_compositor *upc,
 	struct fake_timing *ft = fake_timing(upc);
 
 	int64_t frame_id = ft->frame_id_generator++;
-	uint64_t predicted_display_time_ns = predict_next_frame(ft);
+	uint64_t predicted_display_time_ns = predict_next_frame(ft, now_ns);
 	uint64_t desired_present_time_ns = predicted_display_time_ns - ft->present_offset_ns;
 	uint64_t wake_up_time_ns = desired_present_time_ns - ft->app_time_ns;
 	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
@@ -143,7 +143,8 @@ pc_info(struct u_pacing_compositor *upc,
         uint64_t desired_present_time_ns,
         uint64_t actual_present_time_ns,
         uint64_t earliest_present_time_ns,
-        uint64_t present_margin_ns)
+        uint64_t present_margin_ns,
+        uint64_t when_ns)
 {
 	/*
 	 * The compositor might call this function because it selected the
@@ -166,7 +167,7 @@ pc_destroy(struct u_pacing_compositor *upc)
  */
 
 xrt_result_t
-u_pc_fake_create(uint64_t estimated_frame_period_ns, struct u_pacing_compositor **out_uft)
+u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_pacing_compositor **out_uft)
 {
 	struct fake_timing *ft = U_TYPED_CALLOC(struct fake_timing);
 	ft->base.predict = pc_predict;
@@ -185,7 +186,7 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, struct u_pacing_compositor 
 	ft->app_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
 
 	// Make the next display time be in the future.
-	ft->last_display_time_ns = os_monotonic_get_ns() + U_TIME_1MS_IN_NS * 50.0;
+	ft->last_display_time_ns = now_ns + U_TIME_1MS_IN_NS * 50.0;
 
 	// Return value.
 	*out_uft = &ft->base;

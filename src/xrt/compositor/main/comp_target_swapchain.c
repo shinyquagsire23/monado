@@ -123,13 +123,14 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	VkBool32 supported;
 	VkResult ret;
 
+	uint64_t now_ns = os_monotonic_get_ns();
 	// Some platforms really don't like the display_timing code.
 	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
 	if (cts->upc == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
 		u_pc_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
 		                           &U_PC_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->upc);
 	} else if (cts->upc == NULL) {
-		u_pc_fake_create(ct->c->settings.nominal_frame_interval_ns, &cts->upc);
+		u_pc_fake_create(ct->c->settings.nominal_frame_interval_ns, now_ns, &cts->upc);
 	}
 
 	// Free old image views.
@@ -598,8 +599,10 @@ comp_target_swapchain_calc_frame_pacing(struct comp_target *ct,
 	uint64_t predicted_display_time_ns = 0;
 	uint64_t predicted_display_period_ns = 0;
 	uint64_t min_display_period_ns = 0;
+	uint64_t now_ns = os_monotonic_get_ns();
 
 	u_pc_predict(cts->upc,                     //
+	             now_ns,                       //
 	             &frame_id,                    //
 	             &wake_up_time_ns,             //
 	             &desired_present_time_ns,     //
@@ -670,14 +673,15 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 	    cts->swapchain.handle,             //
 	    &count,                            //
 	    timings);                          //
-
+	uint64_t now_ns = os_monotonic_get_ns();
 	for (uint32_t i = 0; i < count; i++) {
 		u_pc_info(cts->upc,                       //
 		          timings[i].presentID,           //
 		          timings[i].desiredPresentTime,  //
 		          timings[i].actualPresentTime,   //
 		          timings[i].earliestPresentTime, //
-		          timings[i].presentMargin);      //
+		          timings[i].presentMargin,       //
+		          now_ns);                        //
 	}
 	free(timings);
 	return VK_SUCCESS;

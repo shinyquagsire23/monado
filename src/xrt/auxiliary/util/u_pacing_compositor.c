@@ -259,13 +259,12 @@ get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state
  * frame::desired_present_time_ns (with a crude estimate) and frame::when_predict_ns.
  */
 static struct frame *
-do_clean_slate_frame(struct display_timing *dt)
+do_clean_slate_frame(struct display_timing *dt, uint64_t now_ns)
 {
 	struct frame *f = create_frame(dt, STATE_PREDICTED);
-	uint64_t now_ns = os_monotonic_get_ns();
 
 	// Wild shot in the dark.
-	uint64_t the_time_ns = os_monotonic_get_ns() + dt->frame_period_ns * 10;
+	uint64_t the_time_ns = now_ns + dt->frame_period_ns * 10;
 	f->when_predict_ns = now_ns;
 	f->desired_present_time_ns = the_time_ns;
 
@@ -277,9 +276,8 @@ do_clean_slate_frame(struct display_timing *dt)
  * prediction in it.
  */
 static struct frame *
-walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_time_ns)
+walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_time_ns, uint64_t now_ns)
 {
-	uint64_t now_ns = os_monotonic_get_ns();
 	// This is the earliest possible time we could present, assuming rendering still must take place.
 	uint64_t from_time_ns = now_ns + calc_total_app_time(dt);
 	uint64_t desired_present_time_ns = last_present_time_ns + dt->frame_period_ns;
@@ -306,17 +304,17 @@ walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_tim
 }
 
 static struct frame *
-predict_next_frame(struct display_timing *dt)
+predict_next_frame(struct display_timing *dt, uint64_t now_ns)
 {
 	struct frame *f = NULL;
 	// Last earliest display time, can be zero.
 	struct frame *last_predicted = get_latest_frame_with_state_at_least(dt, STATE_PREDICTED);
 	struct frame *last_completed = get_latest_frame_with_state_at_least(dt, STATE_INFO);
 	if (last_predicted == NULL && last_completed == NULL) {
-		f = do_clean_slate_frame(dt);
+		f = do_clean_slate_frame(dt, now_ns);
 	} else if (last_completed == last_predicted) {
 		// Very high propability that we missed a frame.
-		f = walk_forward_through_frames(dt, last_completed->earliest_present_time_ns);
+		f = walk_forward_through_frames(dt, last_completed->earliest_present_time_ns, now_ns);
 	} else if (last_completed != NULL) {
 		assert(last_predicted != NULL);
 		assert(last_predicted->frame_id > last_completed->frame_id);
@@ -342,11 +340,11 @@ predict_next_frame(struct display_timing *dt)
 			diff_id = 1;
 		}
 
-		f = walk_forward_through_frames(dt, adjusted_last_present_time_ns);
+		f = walk_forward_through_frames(dt, adjusted_last_present_time_ns, now_ns);
 	} else {
 		assert(last_predicted != NULL);
 
-		f = walk_forward_through_frames(dt, last_predicted->predicted_display_time_ns);
+		f = walk_forward_through_frames(dt, last_predicted->predicted_display_time_ns, now_ns);
 	}
 
 	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, f->desired_present_time_ns);
@@ -404,6 +402,7 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 
 static void
 dt_predict(struct u_pacing_compositor *upc,
+           uint64_t now_ns,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time_ns,
            uint64_t *out_desired_present_time_ns,
@@ -414,7 +413,7 @@ dt_predict(struct u_pacing_compositor *upc,
 {
 	struct display_timing *dt = display_timing(upc);
 
-	struct frame *f = predict_next_frame(dt);
+	struct frame *f = predict_next_frame(dt, now_ns);
 
 	uint64_t wake_up_time_ns = f->wake_up_time_ns;
 	uint64_t desired_present_time_ns = f->desired_present_time_ns;
@@ -464,7 +463,8 @@ dt_info(struct u_pacing_compositor *upc,
         uint64_t desired_present_time_ns,
         uint64_t actual_present_time_ns,
         uint64_t earliest_present_time_ns,
-        uint64_t present_margin_ns)
+        uint64_t present_margin_ns,
+        uint64_t when_ns)
 {
 	struct display_timing *dt = display_timing(upc);
 	(void)dt;
@@ -481,7 +481,7 @@ dt_info(struct u_pacing_compositor *upc,
 	assert(f->state == STATE_SUBMITTED);
 	assert(f->desired_present_time_ns == desired_present_time_ns);
 
-	f->when_infoed_ns = os_monotonic_get_ns();
+	f->when_infoed_ns = when_ns;
 	f->actual_present_time_ns = actual_present_time_ns;
 	f->earliest_present_time_ns = earliest_present_time_ns;
 	f->present_margin_ns = present_margin_ns;

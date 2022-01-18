@@ -188,11 +188,8 @@ calc_period(const struct pacing_app *pa)
 }
 
 static uint64_t
-predict_display_time(const struct pacing_app *pa, uint64_t period_ns)
+predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t period_ns)
 {
-	// Now
-	uint64_t now_ns = os_monotonic_get_ns();
-
 
 	// Total app and compositor time to produce a frame
 	uint64_t app_and_compositor_time_ns = total_app_and_compositor_time_ns(pa);
@@ -222,6 +219,7 @@ predict_display_time(const struct pacing_app *pa, uint64_t period_ns)
 
 static void
 pa_predict(struct u_pacing_app *upa,
+           uint64_t now_ns,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time,
            uint64_t *out_predicted_display_time,
@@ -235,7 +233,7 @@ pa_predict(struct u_pacing_app *upa,
 	DEBUG_PRINT_FRAME_ID();
 
 	uint64_t period_ns = calc_period(pa);
-	uint64_t predict_ns = predict_display_time(pa, period_ns);
+	uint64_t predict_ns = predict_display_time(pa, now_ns, period_ns);
 	// When should the client wake up.
 	uint64_t wake_up_time_ns = predict_ns - total_app_and_compositor_time_ns(pa);
 	// When the client should deliver the frame to us.
@@ -255,7 +253,7 @@ pa_predict(struct u_pacing_app *upa,
 	pa->frames[index].frame_id = frame_id;
 	pa->frames[index].predicted_delivery_time_ns = delivery_time_ns;
 	pa->frames[index].predicted_display_period_ns = period_ns;
-	pa->frames[index].when.predicted_ns = os_monotonic_get_ns();
+	pa->frames[index].when.predicted_ns = now_ns;
 }
 
 static void
@@ -278,7 +276,7 @@ pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point po
 	case U_TIMING_POINT_BEGIN:
 		assert(pa->frames[index].state == U_RT_WAIT_LEFT);
 
-		pa->frames[index].when.begin_ns = os_monotonic_get_ns();
+		pa->frames[index].when.begin_ns = when_ns;
 		pa->frames[index].state = U_RT_BEGUN;
 		break;
 	case U_TIMING_POINT_SUBMIT:
@@ -287,7 +285,7 @@ pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point po
 }
 
 static void
-pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id)
+pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
@@ -297,13 +295,13 @@ pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id)
 	assert(pa->frames[index].frame_id == frame_id);
 	assert(pa->frames[index].state == U_RT_WAIT_LEFT || pa->frames[index].state == U_RT_BEGUN);
 
-	pa->frames[index].when.delivered_ns = os_monotonic_get_ns();
+	pa->frames[index].when.delivered_ns = when_ns;
 	pa->frames[index].state = U_PA_READY;
 	pa->frames[index].frame_id = -1;
 }
 
 static void
-pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id)
+pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
@@ -314,17 +312,15 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id)
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_BEGUN);
 
-	uint64_t now_ns = os_monotonic_get_ns();
-
 	// Update all data.
-	f->when.delivered_ns = now_ns;
+	f->when.delivered_ns = when_ns;
 
 
 	/*
 	 * Process data.
 	 */
 
-	int64_t diff_ns = f->predicted_delivery_time_ns - now_ns;
+	int64_t diff_ns = f->predicted_delivery_time_ns - when_ns;
 	bool late = false;
 	if (diff_ns < 0) {
 		diff_ns = -diff_ns;

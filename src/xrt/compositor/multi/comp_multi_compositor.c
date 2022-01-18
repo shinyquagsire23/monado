@@ -194,11 +194,12 @@ multi_compositor_predict_frame(struct xrt_compositor *xc,
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
-
+	uint64_t now_ns = os_monotonic_get_ns();
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 
 	u_pa_predict(                         //
 	    mc->upa,                          //
+	    now_ns,                           //
 	    out_frame_id,                     //
 	    out_wake_time_ns,                 //
 	    out_predicted_display_time_ns,    //
@@ -290,9 +291,10 @@ multi_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
+	uint64_t now_ns = os_monotonic_get_ns();
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_discarded(mc->upa, frame_id);
+	u_pa_mark_discarded(mc->upa, frame_id, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -507,9 +509,10 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	}
 
 	wait_for_scheduled_free(mc);
+	uint64_t now_ns = os_monotonic_get_ns();
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_delivered(mc->upa, frame_id);
+	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
