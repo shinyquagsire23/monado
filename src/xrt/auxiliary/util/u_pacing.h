@@ -70,7 +70,7 @@ struct u_pacing_compositor
 	 * @param[out] out_predicted_display_period_ns   Display period that we are running on.
 	 * @param[out] out_min_display_period_ns         The fastest theoretical display period.
 	 *
-	 * @see @ref frame-timing.
+	 * @see @ref frame-pacing.
 	 */
 	void (*predict)(struct u_pacing_compositor *upc,
 	                int64_t *out_frame_id,
@@ -92,7 +92,7 @@ struct u_pacing_compositor
 	 * @param[in] frame_id The frame ID to record for.
 	 * @param[in] when_ns  The timestamp of the event.
 	 *
-	 * @see @ref frame-timing.
+	 * @see @ref frame-pacing.
 	 */
 	void (*mark_point)(struct u_pacing_compositor *upc,
 	                   enum u_timing_point point,
@@ -119,7 +119,7 @@ struct u_pacing_compositor
 	 * @param[in] present_margin_ns        How "early" present happened compared to when it needed to happen in
 	 *                                     order to hit @p earliestPresentTime.
 	 *
-	 * @see @ref frame-timing.
+	 * @see @ref frame-pacing.
 	 */
 	void (*info)(struct u_pacing_compositor *upc,
 	             int64_t frame_id,
@@ -260,7 +260,7 @@ struct u_pacing_app
 	 *
 	 * @param      upa     Render timing helper.
 	 * @param[in] frame_id The frame ID to record for.
-	 * @see @ref frame-timing.
+	 * @see @ref frame-pacing.
 	 */
 	void (*mark_point)(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point point, uint64_t when_ns);
 

@@ -19,7 +19,7 @@ getting started information and general documentation.
 * @ref vulkan-extensions
 * @ref writing-driver
 * @ref ipc-design
-* @ref frame-timing
+* @ref frame-pacing
 * @ref tracing
 * @ref implementing-extension
 
