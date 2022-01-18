@@ -258,20 +258,29 @@ struct u_pacing_app
 	/*!
 	 * Mark a point on the frame's lifetime.
 	 *
-	 * @param      upa     Render timing helper.
+	 * @param     upa      Render timing helper.
 	 * @param[in] frame_id The frame ID to record for.
+	 * @param[in] point    The point/event to record
+	 * @param[in] when_ns  The timestamp
+	 *
 	 * @see @ref frame-pacing.
 	 */
 	void (*mark_point)(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point point, uint64_t when_ns);
 
 	/*!
 	 * When a frame has been discarded.
+	 *
+	 * @param     upa      Render timing helper.
+	 * @param[in] frame_id The frame ID to mark as discarded.
 	 */
 	void (*mark_discarded)(struct u_pacing_app *upa, int64_t frame_id);
 
 	/*!
 	 * A frame has been delivered from the client, see `xrEndFrame`. The GPU might
 	 * still be rendering the work.
+	 *
+	 * @param     upa      Render timing helper.
+	 * @param[in] frame_id The frame ID to mark as delivered.
 	 */
 	void (*mark_delivered)(struct u_pacing_app *upa, int64_t frame_id);
 
