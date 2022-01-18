@@ -646,6 +646,17 @@ dt_info(struct u_pacing_compositor *upc,
 #undef TE_END
 }
 
+
+static void
+dt_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+{
+	struct display_timing *dt = display_timing(upc);
+	(void)dt;
+	// not associating with frame IDs right now.
+	(void)frame_id;
+	dt->present_offset_ns = present_offset_ns;
+}
+
 static void
 dt_destroy(struct u_pacing_compositor *upc)
 {
@@ -673,6 +684,7 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	dt->base.predict = dt_predict;
 	dt->base.mark_point = dt_mark_point;
 	dt->base.info = dt_info;
+	dt->base.update_present_offset = dt_update_present_offset;
 	dt->base.destroy = dt_destroy;
 	dt->frame_period_ns = estimated_frame_period_ns;
 

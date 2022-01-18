@@ -135,6 +135,19 @@ struct u_pacing_compositor
 	             uint64_t when_ns);
 
 	/*!
+	 * Provide an updated estimate of the present offset.
+	 *
+	 * This is usually used only for more complicated display systems.
+	 *
+	 * @param[in] upc                The compositor pacing helper.
+	 * @param[in] frame_id           The frame ID to record for.
+	 * @param[in] present_offset_ns  The improved estimate of the time between "present" and photons.
+	 *
+	 * @see @ref frame-pacing.
+	 */
+	void (*update_present_offset)(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns);
+
+	/*!
 	 * Destroy this u_pacing_compositor.
 	 */
 	void (*destroy)(struct u_pacing_compositor *upc);
@@ -203,6 +216,20 @@ u_pc_info(struct u_pacing_compositor *upc,
 {
 	upc->info(upc, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
 	          present_margin_ns, when_ns);
+}
+
+/*!
+ * @copydoc u_pacing_compositor::update_present_offset
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+{
+	upc->update_present_offset(upc, frame_id, present_offset_ns);
 }
 
 /*!
