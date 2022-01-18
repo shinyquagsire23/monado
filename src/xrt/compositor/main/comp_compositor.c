@@ -152,7 +152,7 @@ compositor_predict_frame(struct xrt_compositor *xc,
 	uint64_t present_slop_ns = 0;
 	uint64_t desired_present_time_ns = 0;
 	uint64_t predicted_display_time_ns = 0;
-	comp_target_calc_frame_timings(  //
+	comp_target_calc_frame_pacing(   //
 	    c->target,                   //
 	    &frame_id,                   //
 	    &wake_up_time_ns,            //

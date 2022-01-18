@@ -169,12 +169,12 @@ struct comp_target
 	 * Predict when the next frame should be started and when it will be
 	 * turned into photons by the hardware.
 	 */
-	void (*calc_frame_timings)(struct comp_target *ct,
-	                           int64_t *out_frame_id,
-	                           uint64_t *out_wake_up_time_ns,
-	                           uint64_t *out_desired_present_time_ns,
-	                           uint64_t *out_present_slop_ns,
-	                           uint64_t *out_predicted_display_time_ns);
+	void (*calc_frame_pacing)(struct comp_target *ct,
+	                          int64_t *out_frame_id,
+	                          uint64_t *out_wake_up_time_ns,
+	                          uint64_t *out_desired_present_time_ns,
+	                          uint64_t *out_present_slop_ns,
+	                          uint64_t *out_predicted_display_time_ns);
 
 	/*!
 	 * The compositor tells the target a timing information about a single
@@ -348,22 +348,22 @@ comp_target_flush(struct comp_target *ct)
 }
 
 /*!
- * @copydoc comp_target::calc_frame_timings
+ * @copydoc comp_target::calc_frame_pacing
  *
  * @public @memberof comp_target
  * @ingroup comp_main
  */
 static inline void
-comp_target_calc_frame_timings(struct comp_target *ct,
-                               int64_t *out_frame_id,
-                               uint64_t *out_wake_up_time_ns,
-                               uint64_t *out_desired_present_time_ns,
-                               uint64_t *out_present_slop_ns,
-                               uint64_t *out_predicted_display_time_ns)
+comp_target_calc_frame_pacing(struct comp_target *ct,
+                              int64_t *out_frame_id,
+                              uint64_t *out_wake_up_time_ns,
+                              uint64_t *out_desired_present_time_ns,
+                              uint64_t *out_present_slop_ns,
+                              uint64_t *out_predicted_display_time_ns)
 {
 	COMP_TRACE_MARKER();
 
-	ct->calc_frame_timings(             //
+	ct->calc_frame_pacing(              //
 	    ct,                             //
 	    out_frame_id,                   //
 	    out_wake_up_time_ns,            //

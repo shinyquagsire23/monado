@@ -582,12 +582,12 @@ comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
  */
 
 static void
-comp_target_swapchain_calc_frame_timings(struct comp_target *ct,
-                                         int64_t *out_frame_id,
-                                         uint64_t *out_wake_up_time_ns,
-                                         uint64_t *out_desired_present_time_ns,
-                                         uint64_t *out_present_slop_ns,
-                                         uint64_t *out_predicted_display_time_ns)
+comp_target_swapchain_calc_frame_pacing(struct comp_target *ct,
+                                        int64_t *out_frame_id,
+                                        uint64_t *out_wake_up_time_ns,
+                                        uint64_t *out_desired_present_time_ns,
+                                        uint64_t *out_present_slop_ns,
+                                        uint64_t *out_predicted_display_time_ns)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 
@@ -726,7 +726,7 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 	cts->base.has_images = comp_target_swapchain_has_images;
 	cts->base.acquire = comp_target_swapchain_acquire_next_image;
 	cts->base.present = comp_target_swapchain_present;
-	cts->base.calc_frame_timings = comp_target_swapchain_calc_frame_timings;
+	cts->base.calc_frame_pacing = comp_target_swapchain_calc_frame_pacing;
 	cts->base.mark_timing_point = comp_target_swapchain_mark_timing_point;
 	cts->base.update_timings = comp_target_swapchain_update_timings;
 }
