@@ -228,6 +228,7 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 #define CURL(prefix, name, index) igDragFloat(#prefix "." #name, &d->prefix.hand_curl[index], 0.01, 0.0, 1.0, "%f", 0);
 #define HAND(prefix)                                                                                                   \
 	do {                                                                                                           \
+		igCheckbox("Hand tracking Active", &d->prefix.hand_tracking_active);                                   \
 		CURL(prefix, little, 0);                                                                               \
 		CURL(prefix, ring, 1);                                                                                 \
 		CURL(prefix, middle, 2);                                                                               \

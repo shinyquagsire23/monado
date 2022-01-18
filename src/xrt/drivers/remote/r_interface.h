@@ -49,6 +49,8 @@ struct r_remote_controller_data
 
 	float hand_curl[5];
 
+	bool hand_tracking_active;
+
 	bool active;
 	bool select;
 	bool menu;

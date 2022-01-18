@@ -145,6 +145,7 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	xrt_device_get_tracked_pose(xdev, XRT_INPUT_SIMPLE_GRIP_POSE, requested_timestamp_ns, &relation);
 
 	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation, &hand_on_handle_pose, out_value);
+	out_value->is_active = latest->hand_tracking_active;
 
 	// This is a lie
 	*out_timestamp_ns = requested_timestamp_ns;

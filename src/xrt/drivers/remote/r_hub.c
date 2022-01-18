@@ -172,11 +172,14 @@ r_create_devices(uint16_t port,
 	r->reset.hmd.pose.position.y = 1.6f;
 	r->reset.hmd.pose.orientation.w = 1.0f;
 	r->reset.left.active = true;
+	r->reset.left.hand_tracking_active = true;
 	r->reset.left.pose.position.x = -0.2f;
 	r->reset.left.pose.position.y = 1.3f;
 	r->reset.left.pose.position.z = -0.5f;
 	r->reset.left.pose.orientation.w = 1.0f;
+
 	r->reset.right.active = true;
+	r->reset.right.hand_tracking_active = true;
 	r->reset.right.pose.position.x = 0.2f;
 	r->reset.right.pose.position.y = 1.3f;
 	r->reset.right.pose.position.z = -0.5f;
