@@ -177,6 +177,49 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 #endif
 	}
 
+	if (igButton("XR_EXT_hand_tracking Touch Index Fingertips", zero_dims)) {
+		d->left.pose.position.x = -0.0250000f;
+		d->left.pose.position.y = 1.300000f;
+		d->left.pose.position.z = -0.500000f;
+		d->left.pose.orientation.x = 0.000000f;
+		d->left.pose.orientation.y = 0.000000f;
+		d->left.pose.orientation.z = 0.000000f;
+		d->left.pose.orientation.w = 1.000000f;
+		d->left.linear_velocity.x = 0.000000f;
+		d->left.linear_velocity.y = 0.000000f;
+		d->left.linear_velocity.z = -1.830000f;
+		d->left.angular_velocity.x = -16.900000f;
+		d->left.angular_velocity.y = 0.000000f;
+		d->left.angular_velocity.z = 0.000000f;
+
+		d->left.hand_curl[0] = 0.0f;
+		d->left.hand_curl[1] = 0.0f;
+		d->left.hand_curl[2] = 0.0f;
+		d->left.hand_curl[3] = 0.0f;
+		d->left.hand_curl[4] = 0.0f;
+
+
+		d->right.pose.position.x = 0.0250000f;
+		d->right.pose.position.y = 1.300000f;
+		d->right.pose.position.z = -0.500000f;
+		d->right.pose.orientation.x = 0.000000f;
+		d->right.pose.orientation.y = 0.000000f;
+		d->right.pose.orientation.z = 0.000000f;
+		d->right.pose.orientation.w = 1.000000f;
+		d->right.linear_velocity.x = 0.000000f;
+		d->right.linear_velocity.y = 0.000000f;
+		d->right.linear_velocity.z = -1.830000f;
+		d->right.angular_velocity.x = -16.900000f;
+		d->right.angular_velocity.y = 0.000000f;
+		d->right.angular_velocity.z = 0.000000f;
+
+		d->right.hand_curl[0] = 0.0f;
+		d->right.hand_curl[1] = 0.0f;
+		d->right.hand_curl[2] = 0.0f;
+		d->right.hand_curl[3] = 0.0f;
+		d->right.hand_curl[4] = 0.0f;
+	}
+
 	if (igButton("Dump left", zero_dims)) {
 		U_LOG_RAW(
 		    "d->left.pose.position.x = %ff;\n"
