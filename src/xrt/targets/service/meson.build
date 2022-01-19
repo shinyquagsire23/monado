@@ -51,32 +51,33 @@ service = executable(
 	install: true,
 )
 
-service_install_path = join_paths(get_option('prefix'), 'bin', 'monado-service')
-systemd_user_services_dir = systemd.get_pkgconfig_variable('systemduserunitdir', define_variable : [ 'prefix', get_option('prefix')])
-if get_option('systemd-user-unit-dir') != ''
-	systemd_user_services_dir = get_option('systemd-user-unit-dir')
+if systemd.found() and not get_option('systemd').disabled()
+	service_install_path = join_paths(get_option('prefix'), 'bin', 'monado-service')
+	systemd_user_services_dir = systemd.get_pkgconfig_variable('systemduserunitdir', define_variable : [ 'prefix', get_option('prefix')])
+	if get_option('systemd-user-unit-dir') != ''
+		systemd_user_services_dir = get_option('systemd-user-unit-dir')
+	endif
+
+	service_conf_data = configuration_data()
+	service_conf_data.set('UNIT_NAME', 'monado')
+	service_conf_data.set('conflicts', 'monado-dev')
+	service_conf_data.set('exit_on_disconnect', 'off')
+	service_conf_data.set('extra_desc', '')
+	service_conf_data.set('service_path', service_install_path)
+	configure_file(
+		input: 'monado.in.service',
+		output: 'monado.service',
+		configuration: service_conf_data,
+		install_dir: systemd_user_services_dir
+	)
+
+	socket_conf_data = configuration_data()
+	socket_conf_data.set('conflicts', 'monado-dev')
+	socket_conf_data.set('extra_desc', '')
+	configure_file(
+		input: 'monado.in.socket',
+		output: 'monado.socket',
+		configuration: socket_conf_data,
+		install_dir: systemd_user_services_dir
+	)
 endif
-
-
-service_conf_data = configuration_data()
-service_conf_data.set('UNIT_NAME', 'monado')
-service_conf_data.set('conflicts', 'monado-dev')
-service_conf_data.set('exit_on_disconnect', 'off')
-service_conf_data.set('extra_desc', '')
-service_conf_data.set('service_path', service_install_path)
-configure_file(
-	input: 'monado.in.service',
-	output: 'monado.service',
-	configuration: service_conf_data,
-	install_dir: systemd_user_services_dir
-)
-
-socket_conf_data = configuration_data()
-socket_conf_data.set('conflicts', 'monado-dev')
-socket_conf_data.set('extra_desc', '')
-configure_file(
-	input: 'monado.in.socket',
-	output: 'monado.socket',
-	configuration: socket_conf_data,
-	install_dir: systemd_user_services_dir
-)
