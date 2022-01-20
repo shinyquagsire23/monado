@@ -44,7 +44,7 @@ plugins {
 }
 
 ext {
-    ndk_version = '21.3.6528147'
+    ndk_version = '21.4.7075529'
     sharedTargetSdk = 30
     sharedMinSdk = 26
 
