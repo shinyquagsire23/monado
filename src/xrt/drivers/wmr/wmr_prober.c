@@ -74,6 +74,15 @@ check_and_get_interface(struct xrt_prober_device *device, enum wmr_headset_type 
 		*out_interface = 0;
 		return true;
 
+	case QUANTA_VID:
+		if (device->product_id != MEDION_ERAZER_X1000_PID) {
+			return false;
+		}
+
+		*out_hmd_type = WMR_HEADSET_MEDION_ERAZER_X1000;
+		*out_interface = 0;
+		return true;
+
 	default: return false;
 	}
 }

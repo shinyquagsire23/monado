@@ -45,6 +45,9 @@ extern "C" {
 #define ODYSSEY_PID 0x7312
 #define ODYSSEY_CONTROLLER_PID 0x065d
 
+#define QUANTA_VID 0x0408 /* Medion? */
+#define MEDION_ERAZER_X1000_PID 0xb5d5
+
 /*!
  * @}
  */
