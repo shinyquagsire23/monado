@@ -40,49 +40,42 @@ DEBUG_GET_ONCE_LOG_OPTION(wmr_log, "WMR_LOG", U_LOGGING_INFO)
  */
 
 static bool
-check_and_get_interface_hp(struct xrt_prober_device *device, enum wmr_headset_type *out_hmd_type, int *out_interface)
+check_and_get_interface(struct xrt_prober_device *device, enum wmr_headset_type *out_hmd_type, int *out_interface)
 {
-	if (device->product_id != REVERB_G1_PID && device->product_id != REVERB_G2_PID) {
-		return false;
+	switch (device->vendor_id) {
+	case HP_VID:
+		if (device->product_id != REVERB_G1_PID && device->product_id != REVERB_G2_PID) {
+			return false;
+		}
+
+		if (device->product_id == REVERB_G1_PID)
+			*out_hmd_type = WMR_HEADSET_REVERB_G1;
+		else
+			*out_hmd_type = WMR_HEADSET_REVERB_G2;
+
+		*out_interface = 0;
+		return true;
+
+	case LENOVO_VID:
+		if (device->product_id != EXPLORER_PID) {
+			return false;
+		}
+
+		*out_hmd_type = WMR_HEADSET_LENOVO_EXPLORER;
+		*out_interface = 0;
+		return true;
+
+	case SAMSUNG_VID:
+		if (device->product_id != ODYSSEY_PID) {
+			return false;
+		}
+
+		*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
+		*out_interface = 0;
+		return true;
+
+	default: return false;
 	}
-
-	if (device->product_id == REVERB_G1_PID)
-		*out_hmd_type = WMR_HEADSET_REVERB_G1;
-	else
-		*out_hmd_type = WMR_HEADSET_REVERB_G2;
-	*out_interface = 0;
-
-	return true;
-}
-
-static bool
-check_and_get_interface_lenovo(struct xrt_prober_device *device,
-                               enum wmr_headset_type *out_hmd_type,
-                               int *out_interface)
-{
-	if (device->product_id != EXPLORER_PID) {
-		return false;
-	}
-
-	*out_hmd_type = WMR_HEADSET_LENOVO_EXPLORER;
-	*out_interface = 0;
-
-	return true;
-}
-
-static bool
-check_and_get_interface_samsung(struct xrt_prober_device *device,
-                                enum wmr_headset_type *out_hmd_type,
-                                int *out_interface)
-{
-	if (device->product_id != ODYSSEY_PID) {
-		return false;
-	}
-
-	*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
-	*out_interface = 0;
-
-	return true;
 }
 
 static bool
@@ -104,12 +97,7 @@ find_companion_device(struct xrt_prober *xp,
 			continue;
 		}
 
-		switch (devices[i]->vendor_id) {
-		case HP_VID: match = check_and_get_interface_hp(devices[i], out_hmd_type, &interface); break;
-		case LENOVO_VID: match = check_and_get_interface_lenovo(devices[i], out_hmd_type, &interface); break;
-		case SAMSUNG_VID: match = check_and_get_interface_samsung(devices[i], out_hmd_type, &interface); break;
-		default: break;
-		}
+		match = check_and_get_interface(devices[i], out_hmd_type, &interface);
 
 		if (!match) {
 			continue;
