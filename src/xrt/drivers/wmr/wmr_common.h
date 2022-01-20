@@ -36,7 +36,7 @@ extern "C" {
 #define HP_VID 0x03f0
 #define REVERB_G1_PID 0x0c6a
 #define REVERB_G2_PID 0x0580
-
+#define REVERB_G2_CONTROLLER_PID 0x066a /* On 0x045e Microsoft VID */
 
 #define LENOVO_VID 0x17ef
 #define EXPLORER_PID 0xb801
@@ -44,8 +44,6 @@ extern "C" {
 #define SAMSUNG_VID 0x04e8
 #define ODYSSEY_PID 0x7312
 #define ODYSSEY_CONTROLLER_PID 0x065d
-#define REVERB_G2_CONTROLLER_PID 0x066a /* On 0x045e Microsoft VID */
-
 
 /*!
  * @}
