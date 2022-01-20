@@ -137,6 +137,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.debian:bullseye
     - .fdo.distribution-image@debian # from ci-templates
+  needs:
+    - debian:bullseye:container_prep
 
 
 # Base for using Debian bullseye-ndk image
@@ -144,6 +146,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.debian:bullseye-ndk
     - .fdo.suffixed-image@debian # from ci-templates
+  needs:
+    - debian:bullseye-ndk:container_prep
 
 
 # Base for using Ubuntu focal image
@@ -151,6 +155,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.ubuntu:focal
     - .fdo.distribution-image@ubuntu # from ci-templates
+  needs:
+    - ubuntu:focal:container_prep
 
 
 # Base for using Ubuntu hirsute image
@@ -158,6 +164,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.ubuntu:hirsute
     - .fdo.distribution-image@ubuntu # from ci-templates
+  needs:
+    - ubuntu:hirsute:container_prep
 
 
 # Base for using Ubuntu impish image
@@ -165,6 +173,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.ubuntu:impish
     - .fdo.distribution-image@ubuntu # from ci-templates
+  needs:
+    - ubuntu:impish:container_prep
 
 
 # Base for using Arch rolling image
@@ -172,6 +182,8 @@ arch:rolling:container_prep:
   extends:
     - .monado.variables.arch:rolling
     - .fdo.distribution-image@arch # from ci-templates
+  needs:
+    - arch:rolling:container_prep
 
 
 # Style check job
@@ -528,7 +540,8 @@ reprepro:package:
     - .monado.image.ubuntu:impish
 
     - .monado.packaging.conditions
-  dependencies:
+  needs:
+    - ubuntu:impish:container_prep
     - debian:bullseye:package
     - ubuntu:focal:package
     - ubuntu:hirsute:package
@@ -547,7 +560,7 @@ pages:
   stage: pages
   only:
     - main
-  dependencies:
+  needs:
     - debian:cmake
     - reprepro:package
   script:
