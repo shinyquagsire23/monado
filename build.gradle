@@ -29,7 +29,6 @@ buildscript {
     }
     dependencies {
         classpath "com.mikepenz.aboutlibraries.plugin:aboutlibraries-plugin:${latestAboutLibsRelease}"
-        classpath 'com.quittle:svg-2-android-vector:0.0.5'
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hiltVersion"
     }
 }
@@ -44,11 +43,10 @@ plugins {
     id 'com.github.b3er.local.properties' version '1.1'
 
     // For getting git describe data and formatting it how Android wants.
-    // "apply false" caused gradle error so skipping for now.
     id "com.gladed.androidgitversion" version "0.4.14"
 
     // For downloading e.g. the CDDL (for transitive dependencies of hilt)
-    id "de.undercouch.download" version "4.1.2" apply false
+    id "de.undercouch.download" version "4.1.2"
 
     // So we don't have to check in generated files: we start with SVGs for vector art.
     id "com.quittle.svg-2-android-vector" version "0.0.6" apply false
