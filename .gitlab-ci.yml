@@ -36,7 +36,7 @@ include:
 .monado.variables.debian:bullseye-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-25.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Ubuntu focal image
@@ -90,8 +90,8 @@ debian:bullseye-ndk:container_prep:
     - .monado.variables.debian:bullseye-ndk
     - .fdo.container-build@debian # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/ndk_container_prep.sh'
+    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake default-jdk-headless git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
+    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/android_container_prep.sh'
 
 # Make Ubuntu focal image
 ubuntu:focal:container_prep:

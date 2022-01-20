@@ -119,11 +119,12 @@ distributions:
               - --cross-file=.gitlab-ci/i386-cross.txt
 
       # This one is pretty minimal, compared to the others.
+      # Though, we now install the android SDK in it...
       - codename: bullseye-ndk
         distro_version: bullseye
         repo_suffix: ndk
-        script: ndk_container_prep.sh
-        tag: "2022-01-24.0"
+        script: android_container_prep.sh
+        tag: "2022-01-25.0"
         packages:
           git:
           wget:
@@ -136,6 +137,7 @@ distributions:
           pkg-config:
           ca-certificates:
           glslang-tools:
+          default-jdk-headless:
         build_jobs:
           - name: "ndk:armeabi-v7a"
             cmake_defines:

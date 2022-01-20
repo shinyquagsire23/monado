@@ -75,7 +75,7 @@ src/xrt/drivers/arduino/device/*.bin
 # Ignore gradle-related and android studio-related things
 *.iml
 .gradle/
-local.properties
+/local.properties
 .idea/*
 # .idea/caches
 # .idea/libraries
