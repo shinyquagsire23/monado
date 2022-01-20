@@ -1141,7 +1141,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 			break;
 		}
 	}
-	assert(wh->hmd_desc != NULL); /* We must have matched something, or the map is set up wrong */
+	assert(wh->hmd_desc != NULL); /* Each supported device MUST have a manually created entry in our headset_map */
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
