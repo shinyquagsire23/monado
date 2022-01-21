@@ -150,10 +150,10 @@ euroc_device_get_tracked_pose(struct xrt_device *xdev,
 		}
 	}
 
-	struct xrt_space_graph space_graph = {0};
-	m_space_graph_add_pose(&space_graph, &ed->pose);
-	m_space_graph_add_pose(&space_graph, &ed->offset);
-	m_space_graph_resolve(&space_graph, out_relation);
+	struct xrt_relation_chain relation_chain = {0};
+	m_relation_chain_push_pose(&relation_chain, &ed->pose);
+	m_relation_chain_push_pose(&relation_chain, &ed->offset);
+	m_relation_chain_resolve(&relation_chain, out_relation);
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);

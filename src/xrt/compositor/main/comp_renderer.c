@@ -635,11 +635,11 @@ renderer_get_view_projection(struct comp_renderer *r)
 		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i, &eye_pose);
 
 		struct xrt_space_relation result = {0};
-		struct xrt_space_graph xsg = {0};
-		m_space_graph_add_pose_if_not_identity(&xsg, &eye_pose);
-		m_space_graph_add_relation(&xsg, &relation);
-		m_space_graph_add_pose_if_not_identity(&xsg, &base_space_pose);
-		m_space_graph_resolve(&xsg, &result);
+		struct xrt_relation_chain xrc = {0};
+		m_relation_chain_push_pose_if_not_identity(&xrc, &eye_pose);
+		m_relation_chain_push_relation(&xrc, &relation);
+		m_relation_chain_push_pose_if_not_identity(&xrc, &base_space_pose);
+		m_relation_chain_resolve(&xrc, &result);
 
 		comp_layer_renderer_set_pose(r->lr, &eye_pose, &result.pose, i);
 	}
@@ -876,7 +876,7 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
 	    &relation);                                      //
 
 	struct xrt_vec3 eye_relation = {
-	    0.063000f, /* TODO: get actual ipd_meters */
+	    0.063000f, /*! @todo get actual ipd_meters */
 	    0.0f,
 	    0.0f,
 	};
@@ -890,10 +890,10 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
 		xrt_device_get_view_pose(r->c->xdev, &eye_relation, i, &eye_pose);
 
 		struct xrt_space_relation result = {0};
-		struct xrt_space_graph xsg = {0};
-		m_space_graph_add_pose_if_not_identity(&xsg, &eye_pose);
-		m_space_graph_add_relation(&xsg, &relation);
-		m_space_graph_resolve(&xsg, &result);
+		struct xrt_relation_chain xrc = {0};
+		m_relation_chain_push_pose_if_not_identity(&xrc, &eye_pose);
+		m_relation_chain_push_relation(&xrc, &relation);
+		m_relation_chain_resolve(&xrc, &result);
 
 		out_results[i] = result.pose;
 	}

@@ -3,7 +3,7 @@
 /*!
  * @file
  * @brief  Functions for manipulating @ref xrt_pose, @ref xrt_space_relation and
- *         @ref xrt_space_graph structs.
+ *         @ref xrt_relation_chain structs.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_math
  */
@@ -85,56 +85,80 @@ m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_re
 
 /*
  *
- * Space graph functions.
+ * Relation chain functions.
  *
  */
 
 /*!
- * Reserve a step in the graph and return a pointer to the relation.
+ * Reserve a step in the chain and return a pointer to the relation.
+ *
+ * @note The data pointed to by the returned pointer is not initialized:
+ * you must populate it before using @ref m_relation_chain_resolve
+ *
+ * @public @memberof xrt_relation_chain
  */
 static inline struct xrt_space_relation *
-m_space_graph_reserve(struct xrt_space_graph *xsg)
+m_relation_chain_reserve(struct xrt_relation_chain *xrc)
 {
-	if (xsg->step_count < XRT_SPACE_GRAPHS_MAX) {
-		return &xsg->steps[xsg->step_count++];
+	if (xrc->step_count < XRT_RELATION_CHAIN_CAPACITY) {
+		return &xrc->steps[xrc->step_count++];
 	} else {
 		return NULL;
 	}
 }
 
 /*!
- * Flattens a space graph into a single relation.
+ * Append a new relation
+ *
+ * @public @memberof xrt_relation_chain
  */
 static inline void
-m_space_graph_add_relation(struct xrt_space_graph *xsg, const struct xrt_space_relation *relation)
+m_relation_chain_push_relation(struct xrt_relation_chain *xrc, const struct xrt_space_relation *relation)
 {
-	if (xsg->step_count >= XRT_SPACE_GRAPHS_MAX) {
+	if (xrc->step_count >= XRT_RELATION_CHAIN_CAPACITY) {
 		return;
 	}
 
-	xsg->steps[xsg->step_count++] = *relation;
+	xrc->steps[xrc->step_count++] = *relation;
 }
 
+/*!
+ * Append the inverse of the provided relation.
+ *
+ * Validity flags stay the same, only the pose and velocities are inverted.
+ *
+ * @public @memberof xrt_relation_chain
+ */
 static inline void
-m_space_graph_add_inverted_relation(struct xrt_space_graph *xsg, const struct xrt_space_relation *relation)
+m_relation_chain_push_inverted_relation(struct xrt_relation_chain *xrc, const struct xrt_space_relation *relation)
 {
 	struct xrt_space_relation r = *relation;
 
 	struct xrt_space_relation invert;
 	m_space_relation_invert(&r, &invert);
-	m_space_graph_add_relation(xsg, &invert);
+	m_relation_chain_push_relation(xrc, &invert);
 }
 
+/*!
+ * Append a new pose as a relation without velocity
+ *
+ * @public @memberof xrt_relation_chain
+ */
 static inline void
-m_space_graph_add_pose(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
+m_relation_chain_push_pose(struct xrt_relation_chain *xrc, const struct xrt_pose *pose)
 {
 	struct xrt_space_relation relation;
 	m_space_relation_from_pose(pose, &relation);
-	m_space_graph_add_relation(xsg, &relation);
+	m_relation_chain_push_relation(xrc, &relation);
 }
 
+/*!
+ * Append a new pose as a relation without velocity, if it is not the identity pose.
+ *
+ * @public @memberof xrt_relation_chain
+ */
 static inline void
-m_space_graph_add_pose_if_not_identity(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
+m_relation_chain_push_pose_if_not_identity(struct xrt_relation_chain *xrc, const struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 
@@ -142,11 +166,18 @@ m_space_graph_add_pose_if_not_identity(struct xrt_space_graph *xsg, const struct
 		return;
 	}
 
-	m_space_graph_add_pose(xsg, &p);
+	m_relation_chain_push_pose(xrc, &p);
 }
 
+/*!
+ * Append the inverse of a pose as a relation without velocity, if it is not the identity pose.
+ *
+ * Validity flags stay the same, only the pose is inverted.
+ *
+ * @public @memberof xrt_relation_chain
+ */
 static inline void
-m_space_graph_add_inverted_pose_if_not_identity(struct xrt_space_graph *xsg, const struct xrt_pose *pose)
+m_relation_chain_push_inverted_pose_if_not_identity(struct xrt_relation_chain *xrc, const struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 
@@ -156,14 +187,18 @@ m_space_graph_add_inverted_pose_if_not_identity(struct xrt_space_graph *xsg, con
 
 	struct xrt_pose invert;
 	math_pose_invert(&p, &invert);
-	m_space_graph_add_pose(xsg, &invert);
+	m_relation_chain_push_pose(xrc, &invert);
 }
 
 /*!
- * Flattens a space graph into a single relation.
+ * Compute the equivalent single relation from flattening a relation chain.
+ *
+ * The input chain is not modified.
+ *
+ * @public @memberof xrt_relation_chain
  */
 void
-m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation);
+m_relation_chain_resolve(const struct xrt_relation_chain *xrc, struct xrt_space_relation *out_relation);
 
 /*!
  * @}

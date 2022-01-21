@@ -885,12 +885,12 @@ bool
 oxr_xdev_find_output(struct xrt_device *xdev, enum xrt_output_name name, struct xrt_output **out_output);
 
 void
-oxr_xdev_get_space_graph(struct oxr_logger *log,
-                         struct oxr_instance *inst,
-                         struct xrt_device *xdev,
-                         enum xrt_input_name name,
-                         XrTime at_time,
-                         struct xrt_space_graph *xsg);
+oxr_xdev_get_relation_chain(struct oxr_logger *log,
+                            struct oxr_instance *inst,
+                            struct xrt_device *xdev,
+                            enum xrt_input_name name,
+                            XrTime at_time,
+                            struct xrt_relation_chain *xrc);
 
 void
 oxr_xdev_get_space_relation(struct oxr_logger *log,

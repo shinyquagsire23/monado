@@ -662,13 +662,13 @@ u_hand_joints_set_out_data(struct u_hand_tracking *set,
 		l[i].relation.relation_flags |= data->relation.relation_flags;
 		l[i].radius = hand_joint_default_set_curl_model_defaults[i].radius;
 
-		struct xrt_space_graph graph = {0};
-		m_space_graph_add_relation(&graph, &data->relation);
-		m_space_graph_add_pose(&graph, hand_offset);
-		m_space_graph_resolve(&graph, &l[i].relation);
+		struct xrt_relation_chain chain = {0};
+		m_relation_chain_push_relation(&chain, &data->relation);
+		m_relation_chain_push_pose(&chain, hand_offset);
+		m_relation_chain_resolve(&chain, &l[i].relation);
 
 		// joint relations can not be "more valid" than the hand relation
-		// after space graph to make sure flags are not "upgraded"
+		// after relation chain to make sure flags are not "upgraded"
 		l[i].relation.relation_flags &= hand_relation->relation_flags;
 	}
 

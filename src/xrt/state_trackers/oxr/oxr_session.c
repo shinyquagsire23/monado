@@ -281,9 +281,9 @@ oxr_session_get_view_relation_at(struct oxr_logger *log,
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 
 	// Applies the offset in the function.
-	struct xrt_space_graph xsg = {0};
-	oxr_xdev_get_space_graph(log, sess->sys->inst, xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xsg);
-	m_space_graph_resolve(&xsg, out_relation);
+	struct xrt_relation_chain xrc = {0};
+	oxr_xdev_get_relation_chain(log, sess->sys->inst, xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xrc);
+	m_relation_chain_resolve(&xrc, out_relation);
 
 	return oxr_session_success_result(sess);
 }
@@ -396,11 +396,11 @@ oxr_session_locate_views(struct oxr_logger *log,
 
 		// Do the magical space relation dance here.
 		struct xrt_space_relation result = {0};
-		struct xrt_space_graph xsg = {0};
-		m_space_graph_add_pose_if_not_identity(&xsg, &view_pose);
-		m_space_graph_add_relation(&xsg, &pure_relation);
-		m_space_graph_add_pose_if_not_identity(&xsg, &baseSpc->pose);
-		m_space_graph_resolve(&xsg, &result);
+		struct xrt_relation_chain xrc = {0};
+		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
+		m_relation_chain_push_relation(&xrc, &pure_relation);
+		m_relation_chain_push_pose_if_not_identity(&xrc, &baseSpc->pose);
+		m_relation_chain_resolve(&xrc, &result);
 		union {
 			struct xrt_pose xrt;
 			struct XrPosef oxr;
@@ -843,21 +843,21 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		struct xrt_space_relation r = value.values.hand_joint_set_default[i].relation;
 
 		struct xrt_space_relation result;
-		struct xrt_space_graph graph = {0};
-		m_space_graph_add_relation(&graph, &r);
+		struct xrt_relation_chain chain = {0};
+		m_relation_chain_push_relation(&chain, &r);
 
 
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
 
-			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
+			m_relation_chain_push_relation(&chain, &value.hand_pose);
+			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
 
 		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 
 			// for local space, first do stage space and transform
 			// result to local @todo: improve local space
-			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
+			m_relation_chain_push_relation(&chain, &value.hand_pose);
+			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
 
 		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
 			/*! @todo: testing, relating to view space unsupported
@@ -868,11 +868,12 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			struct xrt_space_relation view_relation;
 			oxr_session_get_view_relation_at(log, sess, at_time, &view_relation);
 
-			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
+			m_relation_chain_push_relation(&chain, &value.hand_pose);
+			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
 
-			m_space_graph_add_inverted_relation(&graph, &view_relation);
-			m_space_graph_add_inverted_pose_if_not_identity(&graph, &head_xdev->tracking_origin->offset);
+			m_relation_chain_push_inverted_relation(&chain, &view_relation);
+			m_relation_chain_push_inverted_pose_if_not_identity(&chain,
+			                                                    &head_xdev->tracking_origin->offset);
 
 		} else if (!baseSpc->is_reference) {
 			// action space
@@ -892,15 +893,16 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			                            &act_space_relation);
 
 
-			m_space_graph_add_relation(&graph, &value.hand_pose);
-			m_space_graph_add_pose_if_not_identity(&graph, tracking_origin_offset);
+			m_relation_chain_push_relation(&chain, &value.hand_pose);
+			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
 
-			m_space_graph_add_inverted_relation(&graph, &act_space_relation);
-			m_space_graph_add_inverted_pose_if_not_identity(&graph, &input->xdev->tracking_origin->offset);
+			m_relation_chain_push_inverted_relation(&chain, &act_space_relation);
+			m_relation_chain_push_inverted_pose_if_not_identity(&chain,
+			                                                    &input->xdev->tracking_origin->offset);
 		}
 
-		m_space_graph_add_inverted_pose_if_not_identity(&graph, &baseSpc->pose);
-		m_space_graph_resolve(&graph, &result);
+		m_relation_chain_push_inverted_pose_if_not_identity(&chain, &baseSpc->pose);
+		m_relation_chain_resolve(&chain, &result);
 
 		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
 			if (!global_to_local_space(sess, &result)) {

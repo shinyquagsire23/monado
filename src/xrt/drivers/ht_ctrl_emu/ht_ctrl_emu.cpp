@@ -152,10 +152,10 @@ static xrt_vec3
 joint_position_global(xrt_hand_joint_set *joint_set, xrt_hand_joint joint)
 {
 	struct xrt_space_relation out_relation;
-	struct xrt_space_graph xsg = {};
-	m_space_graph_add_relation(&xsg, &joint_set->values.hand_joint_set_default[joint].relation);
-	m_space_graph_add_relation(&xsg, &joint_set->hand_pose);
-	m_space_graph_resolve(&xsg, &out_relation);
+	struct xrt_relation_chain xrc = {};
+	m_relation_chain_push_relation(&xrc, &joint_set->values.hand_joint_set_default[joint].relation);
+	m_relation_chain_push_relation(&xrc, &joint_set->hand_pose);
+	m_relation_chain_resolve(&xrc, &out_relation);
 	return out_relation.pose.position;
 }
 
@@ -163,10 +163,10 @@ static xrt_pose
 joint_pose_global(xrt_hand_joint_set *joint_set, xrt_hand_joint joint)
 {
 	struct xrt_space_relation out_relation;
-	struct xrt_space_graph xsg = {};
-	m_space_graph_add_relation(&xsg, &joint_set->values.hand_joint_set_default[joint].relation);
-	m_space_graph_add_relation(&xsg, &joint_set->hand_pose);
-	m_space_graph_resolve(&xsg, &out_relation);
+	struct xrt_relation_chain xrc = {};
+	m_relation_chain_push_relation(&xrc, &joint_set->values.hand_joint_set_default[joint].relation);
+	m_relation_chain_push_relation(&xrc, &joint_set->hand_pose);
+	m_relation_chain_resolve(&xrc, &out_relation);
 	return out_relation.pose;
 }
 
@@ -183,10 +183,10 @@ do_grip_pose(struct xrt_hand_joint_set *joint_set,
 	xrt_pose palm = joint_pose_global(joint_set, XRT_HAND_JOINT_PALM);
 
 	// Position.
-	struct xrt_space_graph xsg = {};
-	m_space_graph_add_pose(&xsg, &offset_from_palm);
-	m_space_graph_add_pose(&xsg, &palm);
-	m_space_graph_resolve(&xsg, out_relation);
+	struct xrt_relation_chain xrc = {};
+	m_relation_chain_push_pose(&xrc, &offset_from_palm);
+	m_relation_chain_push_pose(&xrc, &palm);
+	m_relation_chain_resolve(&xrc, out_relation);
 
 
 	// Orientation.

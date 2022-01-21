@@ -221,14 +221,14 @@ rs_hdev_correct_pose_from_kimera(struct xrt_pose pose)
 	// Correct orientation
 	//! @todo Encode this transformation into constants
 	struct xrt_space_relation out_relation;
-	struct xrt_space_graph space_graph = {0};
+	struct xrt_relation_chain relation_chain = {0};
 	struct xrt_pose pre_correction = {{-0.5, -0.5, -0.5, 0.5}, {0, 0, 0}}; // euler(90, 90, 0)
 	float sin45 = 0.7071067811865475;
 	struct xrt_pose pos_correction = {{sin45, 0, sin45, 0}, {0, 0, 0}}; // euler(180, 90, 0)
-	m_space_graph_add_pose(&space_graph, &pre_correction);
-	m_space_graph_add_pose(&space_graph, &swapped);
-	m_space_graph_add_pose(&space_graph, &pos_correction);
-	m_space_graph_resolve(&space_graph, &out_relation);
+	m_relation_chain_push_pose(&relation_chain, &pre_correction);
+	m_relation_chain_push_pose(&relation_chain, &swapped);
+	m_relation_chain_push_pose(&relation_chain, &pos_correction);
+	m_relation_chain_resolve(&relation_chain, &out_relation);
 	return out_relation.pose;
 }
 
@@ -249,13 +249,13 @@ rs_hdev_correct_pose_from_basalt(struct xrt_pose pose)
 	// Correct orientation
 	//! @todo Encode this transformation into constants
 	struct xrt_space_relation out_relation;
-	struct xrt_space_graph space_graph = {0};
+	struct xrt_relation_chain relation_chain = {0};
 	const float sin45 = 0.7071067811865475;
 	struct xrt_pose pos_correction = {{sin45, 0, 0, sin45}, {0, 0, 0}}; // euler(90, 0, 0)
 
-	m_space_graph_add_pose(&space_graph, &swapped);
-	m_space_graph_add_pose(&space_graph, &pos_correction);
-	m_space_graph_resolve(&space_graph, &out_relation);
+	m_relation_chain_push_pose(&relation_chain, &swapped);
+	m_relation_chain_push_pose(&relation_chain, &pos_correction);
+	m_relation_chain_resolve(&relation_chain, &out_relation);
 	return out_relation.pose;
 }
 
@@ -284,10 +284,10 @@ rs_hdev_get_tracked_pose(struct xrt_device *xdev,
 #endif
 	}
 
-	struct xrt_space_graph space_graph = {0};
-	m_space_graph_add_pose(&space_graph, &rh->pose);
-	m_space_graph_add_pose(&space_graph, &rh->offset);
-	m_space_graph_resolve(&space_graph, out_relation);
+	struct xrt_relation_chain relation_chain = {0};
+	m_relation_chain_push_pose(&relation_chain, &rh->pose);
+	m_relation_chain_push_pose(&relation_chain, &rh->offset);
+	m_relation_chain_resolve(&relation_chain, out_relation);
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
 	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);

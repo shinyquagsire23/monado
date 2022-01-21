@@ -43,10 +43,10 @@ direct_override(struct multi_device *d,
                 struct xrt_space_relation *tracker_relation,
                 struct xrt_space_relation *out_relation)
 {
-	struct xrt_space_graph xsg = {0};
-	m_space_graph_add_pose_if_not_identity(&xsg, &d->tracking_override.offset_inv);
-	m_space_graph_add_relation(&xsg, tracker_relation);
-	m_space_graph_resolve(&xsg, out_relation);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_pose_if_not_identity(&xrc, &d->tracking_override.offset_inv);
+	m_relation_chain_push_relation(&xrc, tracker_relation);
+	m_relation_chain_resolve(&xrc, out_relation);
 }
 
 static void
@@ -65,16 +65,16 @@ attached_override(struct multi_device *d,
 	 */
 
 	// XXX TODO tracking origin offsets
-	// m_space_graph_add_inverted_pose_if_not_identity(&xsg, tracker_offset);
-	// m_space_graph_add_inverted_relation(&xsg, tracker_relation);
+	// m_relation_chain_push_inverted_pose_if_not_identity(&xrc, tracker_offset);
+	// m_relation_chain_push_inverted_relation(&xrc, tracker_relation);
 
-	struct xrt_space_graph xsg = {0};
-	m_space_graph_add_relation(&xsg, target_relation);
-	m_space_graph_add_pose_if_not_identity(&xsg, &d->tracking_override.offset_inv);
-	m_space_graph_add_relation(&xsg, tracker_relation);
-	m_space_graph_add_pose_if_not_identity(&xsg, tracker_offset);
-	m_space_graph_add_relation(&xsg, in_target_space);
-	m_space_graph_resolve(&xsg, out_relation);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, target_relation);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &d->tracking_override.offset_inv);
+	m_relation_chain_push_relation(&xrc, tracker_relation);
+	m_relation_chain_push_pose_if_not_identity(&xrc, tracker_offset);
+	m_relation_chain_push_relation(&xrc, in_target_space);
+	m_relation_chain_resolve(&xrc, out_relation);
 }
 
 static void

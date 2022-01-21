@@ -486,24 +486,24 @@ struct xrt_space_relation
 	}
 
 /*!
- * The maximum number of steps that can be in a space graph chain.
+ * The maximum number of steps that can be in a relation chain.
  *
- * @see xrt_space_graph::steps
+ * @see xrt_relation_chain::steps
+ * @relates xrt_relation_chain
  * @ingroup xrt_iface math
  */
-#define XRT_SPACE_GRAPHS_MAX 8
+#define XRT_RELATION_CHAIN_CAPACITY 8
 
 /*!
- * A graph of space relations, technically more of a chain of transformation
- * since it's not branching, but a flat graph is still a graph. Functions for
- * manipulating this are available in `math/m_space.h`.
+ * A chain of space relations and their associated validity flags.
+ * Functions for manipulating this are available in `math/m_space.h`.
  *
  * @see xrt_space_relation
  * @ingroup xrt_iface math
  */
-struct xrt_space_graph
+struct xrt_relation_chain
 {
-	struct xrt_space_relation steps[XRT_SPACE_GRAPHS_MAX];
+	struct xrt_space_relation steps[XRT_RELATION_CHAIN_CAPACITY];
 	uint32_t step_count;
 };
 

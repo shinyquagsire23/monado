@@ -593,10 +593,10 @@ public:
 
 		struct xrt_pose *offset = &m_xdev->tracking_origin->offset;
 
-		struct xrt_space_graph graph = {};
-		m_space_graph_add_relation(&graph, &rel);
-		m_space_graph_add_pose_if_not_identity(&graph, offset);
-		m_space_graph_resolve(&graph, &rel);
+		struct xrt_relation_chain chain = {};
+		m_relation_chain_push_relation(&chain, &rel);
+		m_relation_chain_push_pose_if_not_identity(&chain, offset);
+		m_relation_chain_resolve(&chain, &rel);
 
 		apply_pose(&rel, &m_pose);
 
@@ -941,10 +941,10 @@ CDeviceDriver_Monado::GetPose()
 
 	struct xrt_pose *offset = &m_xdev->tracking_origin->offset;
 
-	struct xrt_space_graph graph = {};
-	m_space_graph_add_relation(&graph, &rel);
-	m_space_graph_add_pose_if_not_identity(&graph, offset);
-	m_space_graph_resolve(&graph, &rel);
+	struct xrt_relation_chain chain = {};
+	m_relation_chain_push_relation(&chain, &rel);
+	m_relation_chain_push_pose_if_not_identity(&chain, offset);
+	m_relation_chain_resolve(&chain, &rel);
 
 	vr::DriverPose_t t = {};
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Functions for manipulating a @ref xrt_space_graph struct.
+ * @brief  Functions for manipulating a @ref xrt_relation_chain struct.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_math
  */
@@ -61,11 +61,11 @@ dump_relation(const struct xrt_space_relation *r)
 }
 
 static void
-dump_graph(const struct xrt_space_graph *xsg)
+dump_chain(const struct xrt_relation_chain *xrc)
 {
-	fprintf(stderr, "%s %u\n", __func__, xsg->step_count);
-	for (uint32_t i = 0; i < xsg->step_count; i++) {
-		const struct xrt_space_relation *r = &xsg->steps[i];
+	fprintf(stderr, "%s %u\n", __func__, xrc->step_count);
+	for (uint32_t i = 0; i < xrc->step_count; i++) {
+		const struct xrt_space_relation *r = &xrc->steps[i];
 		fprintf(stderr, "\t%2u: ", i);
 		dump_relation(r);
 	}
@@ -79,13 +79,13 @@ dump_graph(const struct xrt_space_graph *xsg)
  */
 
 static bool
-has_step_with_no_pose(const struct xrt_space_graph *xsg)
+has_step_with_no_pose(const struct xrt_relation_chain *xrc)
 {
 	const enum xrt_space_relation_flags pose_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT);
 
-	for (uint32_t i = 0; i < xsg->step_count; i++) {
-		const struct xrt_space_relation *r = &xsg->steps[i];
+	for (uint32_t i = 0; i < xrc->step_count; i++) {
+		const struct xrt_space_relation *r = &xrc->steps[i];
 		if ((r->relation_flags & pose_flags) == 0) {
 			return true;
 		}
@@ -216,7 +216,7 @@ apply_relation(const struct xrt_space_relation *a,
 	struct xrt_pose body_pose = XRT_POSE_IDENTITY;
 	struct xrt_pose base_pose = XRT_POSE_IDENTITY;
 
-	// Only valid poses handled in graph. Flags are determined later.
+	// Only valid poses handled in chain. Flags are determined later.
 	make_valid_pose(af, &a->pose, &body_pose);
 	make_valid_pose(bf, &b->pose, &base_pose);
 
@@ -276,27 +276,27 @@ apply_relation(const struct xrt_space_relation *a,
  */
 
 void
-m_space_graph_resolve(const struct xrt_space_graph *xsg, struct xrt_space_relation *out_relation)
+m_relation_chain_resolve(const struct xrt_relation_chain *xrc, struct xrt_space_relation *out_relation)
 {
-	if (xsg->step_count == 0 || has_step_with_no_pose(xsg)) {
+	if (xrc->step_count == 0 || has_step_with_no_pose(xrc)) {
 		*out_relation = XRT_SPACE_RELATION_ZERO;
 		return;
 	}
 
-	struct xrt_space_relation r = xsg->steps[0];
-	for (uint32_t i = 1; i < xsg->step_count; i++) {
-		apply_relation(&r, &xsg->steps[i], &r);
+	struct xrt_space_relation r = xrc->steps[0];
+	for (uint32_t i = 1; i < xrc->step_count; i++) {
+		apply_relation(&r, &xrc->steps[i], &r);
 	}
 
 #if 0
-	dump_graph(xsg);
+	dump_chain(xrc);
 	fprintf(stderr, "\tRR: ");
 	dump_relation(&r);
 #else
-	(void)dump_graph;
+	(void)dump_chain;
 #endif
 
-	// Ensure no errors has crept in.
+	// Ensure no errors have crept in.
 	math_quat_normalize(&r.pose.orientation);
 
 	*out_relation = r;

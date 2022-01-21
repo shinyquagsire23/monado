@@ -157,10 +157,10 @@ global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel)
 		return false;
 	}
 
-	struct xrt_space_graph graph = {0};
-	m_space_graph_add_relation(&graph, rel);
-	m_space_graph_add_inverted_pose_if_not_identity(&graph, &sess->initial_head_relation.pose);
-	m_space_graph_resolve(&graph, rel);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, rel);
+	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &sess->initial_head_relation.pose);
+	m_relation_chain_resolve(&xrc, rel);
 
 	return true;
 }
@@ -341,9 +341,8 @@ get_pure_space_relation(struct oxr_logger *log,
 	if (spc->is_reference && baseSpc->is_reference) {
 		return oxr_space_ref_relation(log, sess, spc->type, baseSpc->type, time, out_relation);
 	}
+	/// @todo Deal with action to action by keeping a true_space that we can always go via. (poor mans space graph)
 	if (!spc->is_reference && !baseSpc->is_reference) {
-		// @todo Deal with action to action by keeping a true_space that
-		//       we can always go via. Aka poor mans space graph.
 		// WARNING order not thought through here!
 		// struct xrt_pose pose1;
 		// struct xrt_pose pose2;
@@ -442,11 +441,11 @@ oxr_space_locate(
 
 	// Combine space and base space poses with pure relation
 	struct xrt_space_relation result;
-	struct xrt_space_graph graph = {0};
-	m_space_graph_add_pose_if_not_identity(&graph, &spc->pose);
-	m_space_graph_add_relation(&graph, &pure);
-	m_space_graph_add_inverted_pose_if_not_identity(&graph, &baseSpc->pose);
-	m_space_graph_resolve(&graph, &result);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose);
+	m_relation_chain_push_relation(&xrc, &pure);
+	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &baseSpc->pose);
+	m_relation_chain_resolve(&xrc, &result);
 
 	// Copy
 	union {
