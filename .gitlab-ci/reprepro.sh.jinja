@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
+
+{# ignore the warning, this is actually the template to edit. #}
+###############################################
+#           GENERATED - DO NOT EDIT           #
+# see .gitlab-ci/reprepro.sh.template instead #
+###############################################
+{#
+Please run the following after editing:
+  ci-fairy generate-template --config .gitlab-ci/config.yml .gitlab-ci/reprepro.sh.template > .gitlab-ci/reprepro.sh
+#}
+
+
+set -euo pipefail
+
+# Convince gnupg to work properly in CI
+echo "Import and cache the GPG key"
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+cp .gitlab-ci/gpg.conf .gitlab-ci/gpg-agent.conf ~/.gnupg
+echo RELOADAGENT | gpg-connect-agent
+gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase "${MONADO_GPG_PASSPHRASE}" --import "${MONADO_GPG_SECRET_KEY}"
+
+echo "Prepare reprepro config"
+mkdir -p repo/conf
+# Substitute in the GPG fingerprint into the repository config.
+# This file is itself generated with ci-fairy.
+cat .gitlab-ci/distributions | envsubst  > repo/conf/distributions
+
+echo "reprepro config file:"
+echo "---------------------"
+cat repo/conf/distributions
+echo "---------------------"
+
+# For each distro, sign the changes file and add it to the repo.
+{% for distro in distributions -%} {%- for image in distro.images if "deb_version_suffix" in image %}
+
+# {{ image.codename }}
+if [ -f "incoming/{{image.codename}}.distro" ]; then
+    VERSION=$(cat incoming/{{image.codename}}.distro)
+    echo "Signing and processing {{image.codename}}: ${VERSION}"
+    debsign -k "${MONADO_GPG_FINGERPRINT}" -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" "incoming/monado_${VERSION}_amd64.changes"
+    reprepro -V --ignore=wrongdistribution -b repo include {{image.codename}} "incoming/monado_${VERSION}_amd64.changes"
+else
+    echo "Skipping {{image.codename}} - no artifact found"
+fi
+{% endfor -%} {%- endfor %}

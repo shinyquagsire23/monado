@@ -1,0 +1,33 @@
+{#
+Copyright 2020-2022, Collabora, Ltd.
+
+SPDX-License-Identifier: BSL-1.0
+#}
+{#
+Template for reprepro distributions config file.
+
+After this template gets expanded, with a paragraph for each
+distribution codename supported,
+the GPG fingerprint gets substituted into that at CI time using envsubst,
+(not ahead of time using ci-fairy)
+because the fingerprint is included in the "secrets" in CI.
+
+Note: There is no way to indicate comments in the reprepro distributions config
+file format, and whitespace is meaningful (need blank lines between paragraphs).
+
+Please run the following after modifying this file:
+
+    ci-fairy generate-template --config .gitlab-ci/config.yml .gitlab-ci/distributions.jinja > .gitlab-ci/distributions
+
+or just use the makefile.
+#}
+{% for distro in distributions -%} {%- for image in distro.images if "deb_version_suffix" in image %}
+Origin: monado.freedesktop.org
+Description: Monado CI apt repository
+Codename: {{ image.codename }}
+Architectures: amd64 i386 source
+Components: main
+Tracking: minimal
+SignWith: ${MONADO_GPG_FINGERPRINT}
+
+{% endfor -%} {%- endfor %}

@@ -1,7 +1,32 @@
 Origin: monado.freedesktop.org
 Description: Monado CI apt repository
-Codename: ${DISTRO}
+Codename: bullseye
 Architectures: amd64 i386 source
 Components: main
 Tracking: minimal
 SignWith: ${MONADO_GPG_FINGERPRINT}
+
+Origin: monado.freedesktop.org
+Description: Monado CI apt repository
+Codename: focal
+Architectures: amd64 i386 source
+Components: main
+Tracking: minimal
+SignWith: ${MONADO_GPG_FINGERPRINT}
+
+Origin: monado.freedesktop.org
+Description: Monado CI apt repository
+Codename: hirsute
+Architectures: amd64 i386 source
+Components: main
+Tracking: minimal
+SignWith: ${MONADO_GPG_FINGERPRINT}
+
+Origin: monado.freedesktop.org
+Description: Monado CI apt repository
+Codename: impish
+Architectures: amd64 i386 source
+Components: main
+Tracking: minimal
+SignWith: ${MONADO_GPG_FINGERPRINT}
+

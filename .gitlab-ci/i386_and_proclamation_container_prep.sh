@@ -6,9 +6,5 @@
     cd $(dirname $0)
     bash ./install-cross.sh
 )
-(
-    cd $(dirname $0)
-    bash ./build-openxr-openhmd.sh
-)
 
 python3 -m pip install proclamation
