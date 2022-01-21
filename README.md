@@ -40,6 +40,7 @@ and aims to support other operating systems in the near future.
 Dependencies include:
 
 * [CMake][] 3.13 or newer (Note Ubuntu 18.04 only has 3.10) or meson >= 0.49
+* Python 3.6 or newer
 * Vulkan headers and loader - Fedora package `vulkan-loader-devel`
 * OpenGL headers
 * Eigen3
