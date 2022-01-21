@@ -58,7 +58,7 @@ variables:
 .monado.variables.debian:buster-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.2"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Arch Linux image
@@ -175,6 +175,7 @@ ndk:container_prep:
   extends:
     - .monado.variables.debian:buster-ndk
     - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
   variables:
     # Repo suffix is set in .monado.variables.debian:buster-ndk
