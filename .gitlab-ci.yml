@@ -28,43 +28,43 @@ variables:
 .monado.variables.debian:buster:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 # Variables for build and usage of Debian 11 (Bullseye) image
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: bullseye
-    FDO_DISTRIBUTION_TAG: "2021-11-04.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 # Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 # Variables for build and usage of Ubuntu 21.04 (Hirsute) image
 .monado.variables.ubuntu:hirsute:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.04"
-    FDO_DISTRIBUTION_TAG: "2021-10-27.1"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 # Variables for build and usage of Ubuntu 21.10 (Impish) image
 .monado.variables.ubuntu:impish:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.10"
-    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 # Variables for build and usage of Debian 10 (Buster) + Android NDK image
 .monado.variables.debian:buster-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: buster
-    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Arch Linux image
 .monado.variables.arch:rolling:
   variables:
-    FDO_DISTRIBUTION_TAG: "2021-09-14.0"
+    FDO_DISTRIBUTION_TAG: "2022-01-21.0"
 
 include:
   - project: "freedesktop/ci-templates"
