@@ -1,0 +1,7 @@
+Origin: monado.freedesktop.org
+Description: Monado CI apt repository
+Codename: ${DISTRO}
+Architectures: amd64 i386 source
+Components: main
+Tracking: minimal
+SignWith: ${MONADO_GPG_FINGERPRINT}

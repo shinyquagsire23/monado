@@ -1,67 +1,81 @@
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
-
-######################################
-#      GENERATED - DO NOT EDIT       #
-# see .gitlab-ci/ci.template instead #
-######################################
+# SPDX-FileCopyrightText: 2018-2021 Collabora, Ltd. and the Monado contributors
 
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 
-.templates_sha: &templates_sha 34039cd573a2df832d465bc9e4c5f543571f5241
+.templates_sha: &templates_sha 14731f78c23c7b523a85a26a068ade9ac1ecd2f3
 
-include:
-  # Debian
-  - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/debian.yml"
-  # Ubuntu
-  - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/ubuntu.yml"
-  # Arch
-  - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/arch.yml"
+# Variables listing packages for Debian-based distros
+.monado.variables.debian-based-packages:
+  variables:
+    # Packages required for build and some other basic jobs
+    CORE_REQUIRED_PACKAGES: "build-essential git wget unzip cmake meson ninja-build libeigen3-dev curl patch python3 pkg-config libx11-dev libx11-xcb-dev libxxf86vm-dev libxrandr-dev libxcb-randr0-dev libvulkan-dev glslang-tools libglvnd-dev libgl1-mesa-dev ca-certificates libusb-1.0-0-dev libudev-dev"
 
+    # These are optional packages, that we're building against to ensure we build as much code as possible
+    FEATURE_PACKAGES: "libhidapi-dev libwayland-dev libuvc-dev libavcodec-dev libopencv-dev libv4l-dev libcjson-dev libsdl2-dev libegl1-mesa-dev libdbus-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libsystemd-dev libbsd-dev"
 
-# Variables for build and usage of Debian bullseye image
+    # Only used for building packages
+    PACKAGING_PACKAGES: "devscripts debhelper dput-ng gettext-base pandoc"
+
+    # Used for ancillary "not compilation" jobs/features, like docs, changelogs, formatting, etc.
+    TOOLS_REQUIRED_PACKAGES: "codespell doxygen graphviz python3-pip python3-click"
+
+    # The NDK builder uses only these packages
+    NDK_PACKAGES: "git wget unzip cmake meson ninja-build libeigen3-dev python3 pkg-config ca-certificates glslang-tools"
+
+# Variables for build and usage of Debian 10 (Buster) image
+.monado.variables.debian:buster:
+  variables:
+    FDO_DISTRIBUTION_VERSION: buster
+    FDO_DISTRIBUTION_TAG: "2021-10-28.0"
+
+# Variables for build and usage of Debian 11 (Bullseye) image
 .monado.variables.debian:bullseye:
   variables:
-    FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-01-19.0"
+    FDO_DISTRIBUTION_VERSION: bullseye
+    FDO_DISTRIBUTION_TAG: "2021-11-04.0"
 
-# Variables for build and usage of Debian bullseye-ndk image
-.monado.variables.debian:bullseye-ndk:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-01-19.0"
-    FDO_REPO_SUFFIX: ndk
-
-# Variables for build and usage of Ubuntu focal image
+# Variables for build and usage of Ubuntu 20.04 LTS (Focal) image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
     FDO_DISTRIBUTION_TAG: "2021-10-27.1"
 
-# Variables for build and usage of Ubuntu hirsute image
+# Variables for build and usage of Ubuntu 21.04 (Hirsute) image
 .monado.variables.ubuntu:hirsute:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.04"
     FDO_DISTRIBUTION_TAG: "2021-10-27.1"
 
-# Variables for build and usage of Ubuntu impish image
+# Variables for build and usage of Ubuntu 21.10 (Impish) image
 .monado.variables.ubuntu:impish:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.10"
     FDO_DISTRIBUTION_TAG: "2021-10-28.0"
 
-# Variables for build and usage of Arch rolling image
+# Variables for build and usage of Debian 10 (Buster) + Android NDK image
+.monado.variables.debian:buster-ndk:
+  variables:
+    FDO_DISTRIBUTION_VERSION: buster
+    FDO_DISTRIBUTION_TAG: "2020-05-06.0"
+    FDO_REPO_SUFFIX: ndk
+
+# Variables for build and usage of Arch Linux image
 .monado.variables.arch:rolling:
   variables:
-    FDO_DISTRIBUTION_VERSION: "rolling"
     FDO_DISTRIBUTION_TAG: "2021-09-14.0"
+
+include:
+  - project: "freedesktop/ci-templates"
+    ref: *templates_sha
+    file: "/templates/debian.yml"
+  - project: "freedesktop/ci-templates"
+    ref: *templates_sha
+    file: "/templates/ubuntu.yml"
+  - project: "freedesktop/ci-templates"
+    ref: *templates_sha
+    file: "/templates/arch.yml"
 
 stages:
   - container_prep
@@ -73,112 +87,105 @@ stages:
 
 ###
 # Container prep jobs
-# Make Debian bullseye image
+
+# Base for all container prep
+.monado.variables.container-prep-base:
+  # "stage" set here doesn't work, for some reason
+  variables:
+    # no need to pull the whole tree for rebuilding the image - is this still needed?
+    GIT_STRATEGY: none
+    # Each most-derived container prep job has a script to set up stuff for it.
+    FDO_DISTRIBUTION_EXEC: "bash .gitlab-ci/$(echo ${CI_JOB_NAME} | sed 's/:/_/g').sh"
+
+# Debian Buster (x64 + i386)
+debian:buster:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.variables.debian:buster
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
+    - .fdo.container-build@debian # from ci-templates
+  variables:
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus clang-format-7 (which we don't actually need anymore)
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} clang-format-7"
+
+# Debian Bullseye (x64 + i386)
 debian:bullseye:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.debian:bullseye
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@debian # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev meson ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus clang-format.
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} ${TOOLS_REQUIRED_PACKAGES} clang-format"
 
-# Make Debian bullseye-ndk image
-debian:bullseye-ndk:container_prep:
+# Arch Linux (x64)
+arch:container_prep:
   stage: container_prep
   extends:
-    - .monado.variables.debian:bullseye-ndk
-    - .fdo.container-build@debian # from ci-templates
+    - .monado.variables.arch:rolling
+    - .monado.variables.container-prep-base
+    - .fdo.container-build@arch # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/ndk_container_prep.sh'
+    # a list of packages to install
+    FDO_DISTRIBUTION_PACKAGES: "git gcc clang cmake meson ninja pkgconfig python3 diffutils patch doxygen graphviz eigen hidapi libxrandr mesa glslang vulkan-headers vulkan-icd-loader check glfw-x11 libusb opencv gtk3 ffmpeg v4l-utils qt5-base"
 
-# Make Ubuntu focal image
+# Ubuntu Focal (x64)
 ubuntu:focal:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.ubuntu:focal
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev meson ninja-build pandoc patch pkg-config python3 unzip wget'
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
 
-# Make Ubuntu hirsute image
+# Ubuntu Hirsute (x64)
 ubuntu:hirsute:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.ubuntu:hirsute
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev meson ninja-build pandoc patch pkg-config python3 unzip wget'
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES}"
 
-# Make Ubuntu impish image
+# Ubuntu Impish (x64)
 ubuntu:impish:container_prep:
   stage: container_prep
   extends:
     - .monado.variables.ubuntu:impish
+    - .monado.variables.container-prep-base
+    - .monado.variables.debian-based-packages
     - .fdo.container-build@ubuntu # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev meson ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
+    # a list of packages to install - assembled from .monado.variables.debian-based-packages, plus reprepro
+    FDO_DISTRIBUTION_PACKAGES: "${CORE_REQUIRED_PACKAGES} ${FEATURE_PACKAGES} ${PACKAGING_PACKAGES} reprepro"
 
-# Make Arch rolling image
-arch:rolling:container_prep:
+# Debian Buster + the Android NDK in /opt/android-ndk
+# The NDK itself gets installed by .gitlab-ci/ndk:container_prep.sh
+ndk:container_prep:
   stage: container_prep
   extends:
-    - .monado.variables.arch:rolling
-    - .fdo.container-build@arch # from ci-templates
+    - .monado.variables.debian:buster-ndk
+    - .monado.variables.container-prep-base
+    - .fdo.container-build@debian # from ci-templates
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'check clang cmake diffutils doxygen eigen ffmpeg gcc git glfw-x11 glslang graphviz gtk3 hidapi libusb libxrandr mesa meson ninja opencv patch pkgconfig python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader'
-
-###
-# Container usage base jobs
-
-# Base for using Debian bullseye image
-.monado.image.debian:bullseye:
-  extends:
-    - .monado.variables.debian:bullseye
-    - .fdo.distribution-image@debian # from ci-templates
-
-
-# Base for using Debian bullseye-ndk image
-.monado.image.debian:bullseye-ndk:
-  extends:
-    - .monado.variables.debian:bullseye-ndk
-    - .fdo.suffixed-image@debian # from ci-templates
-
-
-# Base for using Ubuntu focal image
-.monado.image.ubuntu:focal:
-  extends:
-    - .monado.variables.ubuntu:focal
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Ubuntu hirsute image
-.monado.image.ubuntu:hirsute:
-  extends:
-    - .monado.variables.ubuntu:hirsute
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Ubuntu impish image
-.monado.image.ubuntu:impish:
-  extends:
-    - .monado.variables.ubuntu:impish
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Arch rolling image
-.monado.image.arch:rolling:
-  extends:
-    - .monado.variables.arch:rolling
-    - .fdo.distribution-image@arch # from ci-templates
-
+    # Repo suffix is set in .monado.variables.debian:buster-ndk
+    # a list of packages to install
+    FDO_DISTRIBUTION_PACKAGES: "${NDK_PACKAGES}"
 
 # Style check job
 format-and-spellcheck:
   extends:
-    - .monado.image.debian:bullseye
-
+    - .monado.variables.debian:bullseye
+    - .fdo.distribution-image@debian # from ci-templates
   stage: build
   script:
     - scripts/format-and-spellcheck.sh
@@ -197,183 +204,160 @@ reuse:
   script:
     - reuse lint
 
-
-debian:cmake:
+# "Base" job for a CMake build
+.monado.base-job.build-cmake:
   stage: build
-  extends:
-    - .monado.image.debian:bullseye
+  script:
+    - rm -rf build
+    - mkdir build
+    - pushd build
+    - cmake -GNinja .. $CMAKE_ARGS
+    # List build options
+    - grep "^XRT_" CMakeCache.txt
+    - ninja
+    - ctest --output-on-failure
 
+# "Base" job for a Meson build
+.monado.base-job.build-meson:
+  stage: build
+  script:
+    - rm -rf build
+    - mkdir build
+    - pushd build
+    - meson .. $MESON_ARGS
+    - ninja
+
+debian:bullseye:cmake:
+  extends:
+    - .monado.variables.debian:bullseye
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
   before_script:
+    # Generate "changes since last release" and add to changelog,
+    # since this is the build that makes our docs.
     - pushd doc/changes
     - proclamation build --overwrite vNEXT
     - popd
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S .
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
   artifacts:
     paths:
       - build/doc/html/
 
 debian:cmake-no-opencv:
-  stage: build
   extends:
-    - .monado.image.debian:bullseye
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DXRT_HAVE_OPENCV=OFF
 
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_OPENCV=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
+debian:cmake-no-opengl:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DXRT_HAVE_OPENGL=OFF
 
 debian:cmake-no-sdl2:
-  stage: build
   extends:
-    - .monado.image.debian:bullseye
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_SDL2=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DXRT_HAVE_SDL2=OFF
 
 debian:cmake-no-service:
-  stage: build
   extends:
-    - .monado.image.debian:bullseye
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_FEATURE_SERVICE=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
-
-debian:cmake:32bit:
-  stage: build
-  extends:
-    - .monado.image.debian:bullseye
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DCMAKE_TOOLCHAIN_FILE=.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
-
-debian:meson:
-  stage: build
-  extends:
-    - .monado.image.debian:bullseye
-
-  script:
-    - rm -rf build
-    - meson setup build .
-    - ninja -C build
-
-debian:meson:32bit:
-  stage: build
-  extends:
-    - .monado.image.debian:bullseye
-
-  script:
-    - rm -rf build
-    - meson setup build . --prefix=/usr --libdir=/usr/lib/i386-linux-gnu --cross-file=.gitlab-ci/i386-cross.txt
-    - ninja -C build
-
-ndk:armeabi-v7a:
-  stage: build
-  extends:
-    - .monado.image.debian:bullseye-ndk
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-
-ndk:arm64-v8a:
-  stage: build
-  extends:
-    - .monado.image.debian:bullseye-ndk
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-
-ubuntu:cmake:
-  stage: build
-  extends:
-    - .monado.image.ubuntu:focal
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
-
-ubuntu:meson:
-  stage: build
-  extends:
-    - .monado.image.ubuntu:focal
-
-  script:
-    - rm -rf build
-    - meson setup build .
-    - ninja -C build
-
-ubuntu:latest:cmake:
-  stage: build
-  extends:
-    - .monado.image.ubuntu:impish
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DXRT_FEATURE_SERVICE=OFF
 
 arch:cmake:
-  stage: build
   extends:
-    - .monado.image.arch:rolling
-
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S .
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
+    - .monado.variables.arch:rolling
+    - .fdo.distribution-image@arch # from ci-templates
+    - .monado.base-job.build-cmake
 
 arch:cmake:clang:
-  stage: build
   extends:
-    - .monado.image.arch:rolling
+    - .monado.variables.arch:rolling
+    - .fdo.distribution-image@arch # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    CMAKE_ARGS: -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
 
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
+ubuntu:cmake:
+  extends:
+    - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.build-cmake
+
+debian:meson:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-meson
+
+ubuntu:meson:
+  extends:
+    - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.build-meson
 
 arch:meson:
+  extends:
+    - .monado.variables.arch:rolling
+    - .fdo.distribution-image@arch # from ci-templates
+    - .monado.base-job.build-meson
+  variables:
+    MESON_ARGS: -Ddocs=disabled
+
+# Cross-compiling
+debian:meson:32bit:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-meson
+  variables:
+    MESON_ARGS: --prefix /usr --libdir /usr/lib/i386-linux-gnu --cross-file ../.gitlab-ci/i386-cross.txt
+
+debian:cmake:32bit:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.build-cmake
+  variables:
+    # OpenCV and local OpenHMD doesn't play nicely with us in multi-arch.
+    CMAKE_ARGS: -DCMAKE_TOOLCHAIN_FILE=../.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=off -DXRT_BUILD_DRIVER_OHMD=off
+
+# Base of Android NDK builds.
+# Takes the last :-delimited part of the name as the ABI to build for,
+# so you don't need to do anything other than "extends" in the job
+.monado.ndk:build-base:
   stage: build
   extends:
-    - .monado.image.arch:rolling
-
+    - .monado.variables.debian:buster-ndk
+    - .fdo.suffixed-image@debian # from ci-templates
+  variables:
+    ANDROID_PLATFORM: 26
   script:
-    - rm -rf build
-    - meson setup build .
-    - ninja -C build
+    - mkdir build
+    - pushd build
+    # This extracts the ABI from the job name
+    - export ABI=$(echo $CI_JOB_NAME | cut --delimiter=":" -f 2)
+    # Note we are pointing CMake to the host install of Eigen3 because it's header-only
+    # and thus this is safe to do.
+    - cmake -GNinja .. -DANDROID_PLATFORM=$ANDROID_PLATFORM -DANDROID_ABI=$ABI -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/
+    - grep "^XRT_" CMakeCache.txt
+    - ninja
+
+ndk:armeabi-v7a:
+  extends: .monado.ndk:build-base
+
+ndk:arm64-v8a:
+  extends: .monado.ndk:build-base
 
 # Packaging
 .monado.packaging.conditions:
@@ -384,121 +368,127 @@ arch:meson:
     # Otherwise, don't build packages.
     - when: never
 
+.monado.base-job.debuild:
+  extends:
+    - .monado.packaging.conditions
+  stage: package
+  before_script:
+    # Configure git - needed despite not actually committing here.
+    - git config --global user.email "ryan.pavlik@collabora.com"
+    - git config --global user.name "Monado CI"
+  script:
+    # Prep the source tree
+    - git clean -dfx
+    - git merge origin/${PACKAGE_BRANCH} --no-commit
+    - DEBFULLNAME="Monado CI" DEBEMAIL="ryan.pavlik@collabora.com" debian/extra/prepare-commit-package.sh ${CI_COMMIT_SHA} 1~${BACKPORT_SUFFIX}~ci$(date --utc "+%Y%m%d")
+    # Build the package
+    - debuild -uc -us
+    # Use dput-ng to move the package-related files into some artifacts.
+    - export INCOMING=$(pwd)/incoming
+    - mkdir -p $INCOMING
+    - mkdir -p ~/.dput.d/profiles
+    - cat .gitlab-ci/localhost.json | envsubst  > ~/.dput.d/profiles/localhost.json
+    - dpkg-parsechangelog --show-field version > incoming/${DISTRO}.distro
+    - dput --debug localhost ../monado_$(dpkg-parsechangelog --show-field version)_amd64.changes
+  artifacts:
+    paths:
+      - "incoming/"
+    expire_in: 2 days
 
+debian:buster:package:
+  extends:
+    - .monado.variables.debian:buster
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.debuild
+  variables:
+    BACKPORT_SUFFIX: bpo10
+    PACKAGE_BRANCH: debian/buster-backports
+    DISTRO: buster
 
 debian:bullseye:package:
   extends:
-    - .monado.image.debian:bullseye
-    - .monado.packaging.conditions
+    - .monado.variables.debian:bullseye
+    - .fdo.distribution-image@debian # from ci-templates
+    - .monado.base-job.debuild
   variables:
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: debian
-    CODENAME: bullseye
-    DEB_VERSION_SUFFIX: bpo11
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
+    BACKPORT_SUFFIX: bpo11
+    PACKAGE_BRANCH: debian/bullseye
+    DISTRO: bullseye
 
 ubuntu:focal:package:
   extends:
-    - .monado.image.ubuntu:focal
-    - .monado.packaging.conditions
+    - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
   variables:
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: ubuntu
-    CODENAME: focal
-    DEB_VERSION_SUFFIX: ubuntu2004
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
+    BACKPORT_SUFFIX: ubuntu2004
+    PACKAGE_BRANCH: ubuntu/focal
+    DISTRO: focal
 
 ubuntu:hirsute:package:
   extends:
-    - .monado.image.ubuntu:hirsute
-    - .monado.packaging.conditions
+    - .monado.variables.ubuntu:hirsute
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
+
   variables:
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: ubuntu
-    CODENAME: hirsute
-    DEB_VERSION_SUFFIX: ubuntu2104
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
+    BACKPORT_SUFFIX: ubuntu2104
+    PACKAGE_BRANCH: ubuntu/hirsute
+    DISTRO: hirsute
 
 ubuntu:impish:package:
   extends:
-    - .monado.image.ubuntu:impish
-    - .monado.packaging.conditions
+    - .monado.variables.ubuntu:impish
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .monado.base-job.debuild
+
   variables:
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: ubuntu
-    CODENAME: impish
-    DEB_VERSION_SUFFIX: ubuntu2110
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
+    BACKPORT_SUFFIX: ubuntu2110
+    PACKAGE_BRANCH: ubuntu/impish
+    DISTRO: impish
 
 reprepro:package:
   stage: reprepro
   extends:
-    - .monado.image.ubuntu:impish
-
+    - .monado.variables.ubuntu:impish
     - .monado.packaging.conditions
+    - .fdo.distribution-image@ubuntu # from ci-templates
   dependencies:
+    - debian:buster:package
     - debian:bullseye:package
     - ubuntu:focal:package
     - ubuntu:hirsute:package
     - ubuntu:impish:package
+  before_script:
+    # Convince gnupg to work properly in CI
+    - mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+    - touch ~/.gnupg/gpg.conf
+    - echo 'use-agent' > ~/.gnupg/gpg.conf
+    - echo 'pinentry-mode loopback' >> ~/.gnupg/gpg.conf
+    - touch ~/.gnupg/gpg-agent.conf
+    - echo 'allow-loopback-pinentry' > ~/.gnupg/gpg-agent.conf
+    - echo RELOADAGENT | gpg-connect-agent
+    - gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE} --import ${MONADO_GPG_SECRET_KEY}
+
   script:
-    - bash .gitlab-ci/reprepro.sh
+    # Use reprepro to create an apt repository in our artifacts
+    - mkdir -p repo/conf
+    # For each distro, sign the changes file and add it to the repo.
+    - |
+      for fn in incoming/*.distro; do
+        # parse the distro name out
+        export DISTRO=$(echo $fn | sed -e 's:incoming/::' -e 's:[.]distro::')
+        echo "Processing $DISTRO"
+        # add distro to repository config - blank line is mandatory!
+        cat .gitlab-ci/distributions | envsubst >> repo/conf/distributions
+        echo >> repo/conf/distributions
+
+        echo "Signing package for $DISTRO"
+        debsign -k ${MONADO_GPG_FINGERPRINT} -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" incoming/monado_$(cat $fn)_amd64.changes
+
+        echo "Adding package for $DISTRO to the repository"
+        reprepro -V --ignore=wrongdistribution -b repo include ${DISTRO} incoming/monado_$(cat $fn)_amd64.changes
+      done
   artifacts:
     paths:
       - "repo/"
@@ -512,7 +502,7 @@ pages:
   only:
     - main
   dependencies:
-    - debian:cmake
+    - debian:bullseye:cmake
     - reprepro:package
   script:
     - mkdir -p public
