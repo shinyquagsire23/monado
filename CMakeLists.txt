@@ -252,7 +252,7 @@ cmake_dependent_option(XRT_BUILD_DRIVER_ILLIXR "Enable ILLIXR driver" ON "ILLIXR
 option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
 cmake_dependent_option(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" ON "LeapV2_FOUND" OFF)
 cmake_dependent_option(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" ON "XRT_HAVE_LINUX OR ANDROID" OFF)
-option(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" ON)
+cmake_dependent_option(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" ON "NOT WIN32" OFF)
 
 option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
 
