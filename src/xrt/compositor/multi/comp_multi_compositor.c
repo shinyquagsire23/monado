@@ -207,6 +207,8 @@ multi_compositor_predict_frame(struct xrt_compositor *xc,
 
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
+	*out_predicted_gpu_time_ns = 0;
+
 	return XRT_SUCCESS;
 }
 
