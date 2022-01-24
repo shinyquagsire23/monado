@@ -49,6 +49,18 @@ struct u_string_list *
 u_string_list_create_from_list(struct u_string_list *usl);
 
 /*!
+ * @brief Create a new string list from an array of suitable strings.
+ *
+ * @param arr an array of zero or more non-null, null-terminated string that must live at least as long as the list,
+ * preferably string literals.
+ * @param size the number of elements in the array.
+ *
+ * @public @memberof u_string_list
+ */
+struct u_string_list *
+u_string_list_create_from_array(const char *const *arr, uint32_t size);
+
+/*!
  * @brief Retrieve the number of elements in the list
  *
  * @public @memberof u_string_list
@@ -76,6 +88,21 @@ u_string_list_get_data(const struct u_string_list *usl);
  */
 int
 u_string_list_append(struct u_string_list *usl, const char *str);
+
+
+/*!
+ * @brief Append an array of new string literals to the list.
+ *
+ * @param usl self pointer
+ * @param arr an array of zero or more non-null, null-terminated string that must live at least as long as the list,
+ * preferably string literals.
+ * @param size the number of elements in the array.
+ * @return 1 if successfully added, negative for errors.
+ *
+ * @public @memberof u_string_list
+ */
+int
+u_string_list_append_array(struct u_string_list *usl, const char *const *arr, uint32_t size);
 
 /*!
  * @brief Append a new string literal to the list, if it's not the same as a string already in the list.

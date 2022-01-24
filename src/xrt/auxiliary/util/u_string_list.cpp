@@ -58,6 +58,22 @@ u_string_list_create_from_list(struct u_string_list *usl)
 	}
 }
 
+struct u_string_list *
+u_string_list_create_from_array(const char *const *arr, uint32_t size)
+{
+	if (arr == nullptr || size == 0) {
+		return u_string_list_create();
+	}
+	try {
+		auto ret = std::make_unique<u_string_list>(xrt::auxiliary::util::StringList{size});
+		for (uint32_t i = 0; i < size; ++i) {
+			ret->list.push_back(arr[i]);
+		}
+		return ret.release();
+	} catch (std::exception const &) {
+		return nullptr;
+	}
+}
 
 uint32_t
 u_string_list_get_size(const struct u_string_list *usl)
@@ -89,6 +105,23 @@ u_string_list_append(struct u_string_list *usl, const char *str)
 	}
 	try {
 		usl->list.push_back(str);
+		return 1;
+	} catch (std::exception const &) {
+		return -1;
+	}
+}
+
+int
+u_string_list_append_array(struct u_string_list *usl, const char *const *arr, uint32_t size)
+{
+
+	if (usl == nullptr) {
+		return -1;
+	}
+	try {
+		for (uint32_t i = 0; i < size; ++i) {
+			usl->list.push_back(arr[i]);
+		}
 		return 1;
 	} catch (std::exception const &) {
 		return -1;
