@@ -107,11 +107,6 @@ struct pacing_compositor
 	uint64_t comp_time_ns;
 
 	/*!
-	 * The amount of time that the compositor needs to render frame.
-	 */
-	uint64_t padding_time_ns;
-
-	/*!
 	 * Used to generate frame IDs.
 	 */
 	int64_t next_frame_id;
