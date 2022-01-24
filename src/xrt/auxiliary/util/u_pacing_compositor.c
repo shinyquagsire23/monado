@@ -245,8 +245,10 @@ get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state
 	uint64_t count = 1;
 
 	while (start_from >= count && count < NUM_FRAMES) {
-		struct frame *f = get_frame(dt, start_from - count++);
-		if (f->state >= state) {
+		int64_t frame_id = start_from - count;
+		count++;
+		struct frame *f = get_frame(dt, frame_id);
+		if (f->state >= state && f->frame_id == frame_id) {
 			return f;
 		}
 	}
@@ -436,6 +438,14 @@ dt_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_
 {
 	struct display_timing *dt = display_timing(upc);
 	struct frame *f = get_frame(dt, frame_id);
+	if (f->frame_id != frame_id) {
+		FT_LOG_W("Discarded point marking for unsubmitted or expired frame_id %" PRIx64, frame_id);
+		struct frame *last = get_latest_frame_with_state_at_least(dt, STATE_PREDICTED);
+		if (last != NULL) {
+			FT_LOG_W("The latest frame_id we have predicted is %" PRIx64, last->frame_id);
+		}
+		return;
+	}
 
 	switch (point) {
 	case U_TIMING_POINT_WAKE_UP:
