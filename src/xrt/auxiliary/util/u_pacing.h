@@ -468,7 +468,7 @@ struct u_pc_display_timing_config
 {
 	//! How long after "present" is the image actually displayed
 	uint64_t present_offset_ns;
-	//! Extra margin that is added to app time, between end of draw and present
+	//! Extra margin that is added to compositor time, between end of draw and present
 	uint64_t margin_ns;
 	/*!
 	 * @name Frame-Relative Values
@@ -476,10 +476,10 @@ struct u_pc_display_timing_config
 	 * devices of varying refresh rate/display interval.
 	 * @{
 	 */
-	//! The initial estimate of how much time the app needs
-	uint32_t app_time_fraction;
-	//! The maximum time we allow to the app
-	uint32_t app_time_max_fraction;
+	//! The initial estimate of how much time the compositor needs
+	uint32_t comp_time_fraction;
+	//! The maximum time we allow to the compositor
+	uint32_t comp_time_max_fraction;
 	//! When missing a frame, back off in these increments
 	uint32_t adjust_missed_fraction;
 	//! When not missing frames but adjusting app time at these increments

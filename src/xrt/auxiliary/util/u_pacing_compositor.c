@@ -104,7 +104,7 @@ struct display_timing
 	/*!
 	 * The amount of time that the application needs to render frame.
 	 */
-	uint64_t app_time_ns;
+	uint64_t comp_time_ns;
 
 	/*!
 	 * The amount of time that the application needs to render frame.
@@ -119,7 +119,7 @@ struct display_timing
 	/*!
 	 * The maximum amount we give to the 'app'.
 	 */
-	uint64_t app_time_max_ns;
+	uint64_t comp_time_max_ns;
 
 	/*!
 	 * If we missed a frame, back off this much.
@@ -172,7 +172,7 @@ get_percent_of_time(uint64_t time_ns, uint32_t fraction_percent)
 static uint64_t
 calc_total_app_time(struct display_timing *dt)
 {
-	return dt->app_time_ns + dt->margin_ns;
+	return dt->comp_time_ns + dt->margin_ns;
 }
 
 static uint64_t
@@ -351,7 +351,7 @@ predict_next_frame(struct display_timing *dt, uint64_t now_ns)
 
 	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, f->desired_present_time_ns);
 	f->wake_up_time_ns = f->desired_present_time_ns - calc_total_app_time(dt);
-	f->current_app_time_ns = dt->app_time_ns;
+	f->current_app_time_ns = dt->comp_time_ns;
 
 	return f;
 }
@@ -359,19 +359,19 @@ predict_next_frame(struct display_timing *dt, uint64_t now_ns)
 static void
 adjust_app_time(struct display_timing *dt, struct frame *f)
 {
-	uint64_t app_time_ns = dt->app_time_ns;
+	uint64_t comp_time_ns = dt->comp_time_ns;
 
 	if (f->actual_present_time_ns > f->desired_present_time_ns &&
 	    !is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
 		double missed_ms = ns_to_ms(f->actual_present_time_ns - f->desired_present_time_ns);
 		FT_LOG_W("Frame %" PRIu64 " missed by %.2f!", f->frame_id, missed_ms);
 
-		app_time_ns += dt->adjust_missed_ns;
-		if (app_time_ns > dt->app_time_max_ns) {
-			app_time_ns = dt->app_time_max_ns;
+		comp_time_ns += dt->adjust_missed_ns;
+		if (comp_time_ns > dt->comp_time_max_ns) {
+			comp_time_ns = dt->comp_time_max_ns;
 		}
 
-		dt->app_time_ns = app_time_ns;
+		dt->comp_time_ns = comp_time_ns;
 		return;
 	}
 
@@ -388,10 +388,10 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
 	// We didn't miss the frame but we were outside the range adjust the app time.
 	if (f->present_margin_ns > dt->margin_ns) {
 		// Approach the present time.
-		dt->app_time_ns -= dt->adjust_non_miss_ns;
+		dt->comp_time_ns -= dt->adjust_non_miss_ns;
 	} else {
 		// Back off the present time.
-		dt->app_time_ns += dt->adjust_non_miss_ns;
+		dt->comp_time_ns += dt->adjust_non_miss_ns;
 	}
 }
 
@@ -669,8 +669,10 @@ const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
     // Just a wild guess.
     .present_offset_ns = U_TIME_1MS_IN_NS * 4,
     .margin_ns = U_TIME_1MS_IN_NS,
-    .app_time_fraction = 10,
-    .app_time_max_fraction = 30,
+    // Start by assuming the compositor takes 10% of the frame.
+    .comp_time_fraction = 10,
+    // Don't allow the compositor to take more than 30% of the frame.
+    .comp_time_max_fraction = 30,
     .adjust_missed_fraction = 4,
     .adjust_non_miss_fraction = 2,
 };
@@ -692,9 +694,9 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	dt->present_offset_ns = config->present_offset_ns;
 
 	// Start at this of frame time.
-	dt->app_time_ns = get_percent_of_time(estimated_frame_period_ns, config->app_time_fraction);
-	// Max app time, write a better compositor.
-	dt->app_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->app_time_max_fraction);
+	dt->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_fraction);
+	// Max compositor time: if we ever hit this, write a better compositor.
+	dt->comp_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_max_fraction);
 	// When missing, back off in these increments
 	dt->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_missed_fraction);
 	// When not missing frames but adjusting app time at these increments
