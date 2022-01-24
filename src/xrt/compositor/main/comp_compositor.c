@@ -523,25 +523,22 @@ vkGetInstanceProcAddr(VkInstance instance, const char *pName);
 	VK_KHR_SURFACE_EXTENSION_NAME
 // clang-format on
 
-static const char *instance_extensions_none[] = {
+static const char *instance_extensions_common[] = {
     COMP_INSTANCE_EXTENSIONS_COMMON,
 };
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
 static const char *instance_extensions_xcb[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_XCB_SURFACE_EXTENSION_NAME,
 };
 #endif
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 static const char *instance_extensions_wayland[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
 };
 
 static const char *instance_extensions_direct_wayland[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,           //
     VK_KHR_DISPLAY_EXTENSION_NAME,             //
     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,     //
     VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME, //
@@ -554,7 +551,6 @@ static const char *instance_extensions_direct_wayland[] = {
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 static const char *instance_extensions_direct_mode[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_DISPLAY_EXTENSION_NAME,
     VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
     VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME,
@@ -563,21 +559,18 @@ static const char *instance_extensions_direct_mode[] = {
 
 #ifdef VK_USE_PLATFORM_DISPLAY_KHR
 static const char *instance_extensions_vk_display[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_DISPLAY_EXTENSION_NAME,
 };
 #endif
 
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 static const char *instance_extensions_android[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 };
 #endif
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 static const char *instance_extensions_windows[] = {
-    COMP_INSTANCE_EXTENSIONS_COMMON,
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 };
 #endif
@@ -620,68 +613,60 @@ static const char *required_device_extensions[] = {
 #endif
 };
 
-static const char *optional_device_extensions[] = {VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
-                                                   VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
+static const char *optional_device_extensions[] = {
+    VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
+    VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
 #ifdef VK_EXT_robustness2
-                                                   VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
+    VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
 #endif
 #ifdef VK_EXT_display_control
-                                                   VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME
+    VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME,
 #endif
 };
-
-static bool
-append_all(struct comp_compositor *c, struct u_string_list *required, const char *const *arr, uint32_t size)
-{
-	for (uint32_t i = 0; i < size; i++) {
-		int ret = u_string_list_append(required, arr[i]);
-		if (ret < 0) {
-			COMP_ERROR(c, "Failed to add %s to instance extension list: %d", arr[i], ret);
-			return false;
-		}
-	}
-	return true;
-}
 
 static VkResult
 select_instances_extensions(struct comp_compositor *c, struct u_string_list *required, struct u_string_list *optional)
 {
 	switch (c->settings.window_type) {
-	case WINDOW_NONE:
-		append_all(c, required, instance_extensions_none, ARRAY_SIZE(instance_extensions_none));
-		break;
+	case WINDOW_NONE: break;
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
 	case WINDOW_DIRECT_WAYLAND:
-		append_all(c, required, instance_extensions_direct_wayland,
-		           ARRAY_SIZE(instance_extensions_direct_wayland));
+		u_string_list_append_array(required, instance_extensions_direct_wayland,
+		                           ARRAY_SIZE(instance_extensions_direct_wayland));
 		break;
 
 	case WINDOW_WAYLAND:
-		append_all(c, required, instance_extensions_wayland, ARRAY_SIZE(instance_extensions_wayland));
+		u_string_list_append_array(required, instance_extensions_wayland,
+		                           ARRAY_SIZE(instance_extensions_wayland));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_XCB_KHR
-	case WINDOW_XCB: append_all(c, required, instance_extensions_xcb, ARRAY_SIZE(instance_extensions_xcb)); break;
+		u_string_list_append_array(required, instance_extensions_xcb, ARRAY_SIZE(instance_extensions_xcb));
+		break;
 #endif
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	case WINDOW_DIRECT_RANDR:
 	case WINDOW_DIRECT_NVIDIA:
-		append_all(c, required, instance_extensions_direct_mode, ARRAY_SIZE(instance_extensions_direct_mode));
+		u_string_list_append_array(required, instance_extensions_direct_mode,
+		                           ARRAY_SIZE(instance_extensions_direct_mode));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_ANDROID_KHR
 	case WINDOW_ANDROID:
-		append_all(c, required, instance_extensions_android, ARRAY_SIZE(instance_extensions_android));
+		u_string_list_append_array(required, instance_extensions_android,
+		                           ARRAY_SIZE(instance_extensions_android));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 	case WINDOW_MSWIN:
-		append_all(c, required, instance_extensions_windows, ARRAY_SIZE(instance_extensions_windows));
+		u_string_list_append_array(required, instance_extensions_windows,
+		                           ARRAY_SIZE(instance_extensions_windows));
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_DISPLAY_KHR
 	case WINDOW_VK_DISPLAY:
-		append_all(c, required, instance_extensions_vk_display, ARRAY_SIZE(instance_extensions_vk_display));
+		u_string_list_append_array(required, instance_extensions_vk_display,
+		                           ARRAY_SIZE(instance_extensions_vk_display));
 		break;
 #endif
 	default: return VK_ERROR_INITIALIZATION_FAILED;
@@ -700,9 +685,9 @@ compositor_init_vulkan(struct comp_compositor *c)
 	struct vk_bundle *vk = get_vk(c);
 	VkResult ret;
 
-	// every backend needs at least as many extensions as the none window
+	// every backend needs at least the common extensions
 	struct u_string_list *required_instance_ext_list =
-	    u_string_list_create_with_capacity(ARRAY_SIZE(instance_extensions_none));
+	    u_string_list_create_from_array(instance_extensions_common, ARRAY_SIZE(instance_extensions_common));
 
 	struct u_string_list *optional_instance_ext_list = u_string_list_create();
 
@@ -715,14 +700,10 @@ compositor_init_vulkan(struct comp_compositor *c)
 	}
 
 	struct u_string_list *required_device_extension_list =
-	    u_string_list_create_with_capacity(ARRAY_SIZE(required_device_extensions));
-	append_all(c, required_device_extension_list, required_device_extensions,
-	           ARRAY_SIZE(required_device_extensions));
+	    u_string_list_create_from_array(required_device_extensions, ARRAY_SIZE(required_device_extensions));
 
 	struct u_string_list *optional_device_extension_list =
-	    u_string_list_create_with_capacity(ARRAY_SIZE(optional_device_extensions));
-	append_all(c, optional_device_extension_list, optional_device_extensions,
-	           ARRAY_SIZE(optional_device_extensions));
+	    u_string_list_create_from_array(optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
 
 	struct comp_vulkan_arguments vk_args = {
 	    .get_instance_proc_address = vkGetInstanceProcAddr,
@@ -908,12 +889,10 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	bool use_compute = c->settings.use_compute;
 
 	struct u_string_list *required_device_ext_list =
-	    u_string_list_create_with_capacity(ARRAY_SIZE(required_device_extensions));
-	append_all(c, required_device_ext_list, required_device_extensions, ARRAY_SIZE(required_device_extensions));
+	    u_string_list_create_from_array(required_device_extensions, ARRAY_SIZE(required_device_extensions));
 
 	struct u_string_list *optional_device_ext_list =
-	    u_string_list_create_with_capacity(ARRAY_SIZE(optional_device_extensions));
-	append_all(c, optional_device_ext_list, optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
+	    u_string_list_create_from_array(optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
 
 	// follow same device selection logic as subsequent calls
 	ret = vk_create_device(                  //
