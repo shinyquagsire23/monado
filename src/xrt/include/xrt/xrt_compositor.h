@@ -712,7 +712,8 @@ struct xrt_compositor
 	 * @param[in]  xc                              The compositor
 	 * @param[out] out_frame_id                    Frame id
 	 * @param[out] out_wake_time_ns                When we want the client to be awoken to begin rendering.
-	 * @param[out] out_predicted_gpu_time_ns       When we expect the client to finish the GPU work.
+	 * @param[out] out_predicted_gpu_time_ns       When we expect the client to finish the GPU work. If not
+	 *                                             computed/available, set to 0.
 	 * @param[out] out_predicted_display_time_ns   When the pixels turns into photons.
 	 * @param[out] out_predicted_display_period_ns The period for the frames.
 	 */
@@ -727,7 +728,7 @@ struct xrt_compositor
 	 * This function and @ref predict_frame function calls are a alternative to
 	 * @ref wait_frame.
 	 *
-	 * If point is XRT_COMPOSITOR_FRAME_POINT_WOKE it is to mark that the
+	 * If point is @ref XRT_COMPOSITOR_FRAME_POINT_WOKE it is to mark that the
 	 * client woke up from waiting on a frame.
 	 *
 	 * @param[in] xc       The compositor
@@ -743,9 +744,9 @@ struct xrt_compositor
 	/*!
 	 * See xrWaitFrame.
 	 *
-	 * This function has the same semantics as calling @ref predict_frame
-	 * sleeping and then calling @ref mark_frame with a point of
-	 * XRT_COMPOSITOR_FRAME_POINT_WOKE.
+	 * This function has the same semantics as calling @ref predict_frame,
+	 * sleeping, and then calling @ref mark_frame with a point of
+	 * @ref XRT_COMPOSITOR_FRAME_POINT_WOKE.
 	 *
 	 * The only requirement on the compositor for the @p frame_id
 	 * is that it is a positive number and larger then the last returned
