@@ -124,7 +124,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	VkResult ret;
 
 	uint64_t now_ns = os_monotonic_get_ns();
-	// Some platforms really don't like the display_timing code.
+	// Some platforms really don't like the pacing_compositor code.
 	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
 	if (cts->upc == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
 		u_pc_display_timing_create(ct->c->settings.nominal_frame_interval_ns,

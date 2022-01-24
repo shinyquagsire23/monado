@@ -20,20 +20,20 @@
 #include <assert.h>
 #include <inttypes.h>
 
-DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_TIMING_FRAME_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_COMPOSITOR_LOG", U_LOGGING_WARN)
 
-#define FT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
-#define FT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
-#define FT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
-#define FT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
-#define FT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPC_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPC_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPC_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPC_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPC_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
 
 #define NUM_FRAMES 16
 
 
 /*
  *
- * Display timing code.
+ * Compositor pacing code, which depends directly on the display's timing.
  *
  */
 
@@ -56,10 +56,10 @@ struct frame
 	//! When this frame was last used for a prediction. Set in `predict_next_frame`.
 	uint64_t when_predict_ns;
 
-	//! When should the compositor wake the app up. Set in `predict_next_frame`.
+	//! When should the compositor wake up. Set in `predict_next_frame`.
 	uint64_t wake_up_time_ns;
 
-	//! When the compositor last woke up the app after wait_frame. Set in `dt_mark_point` with
+	//! When we last woke up the compositor after its equivalent of wait_frame. Set in `pc_mark_point` with
 	//! `U_TIMING_POINT_WAKE_UP`.
 	uint64_t when_woke_ns;
 
@@ -72,8 +72,8 @@ struct frame
 	//! When new frame timing info was last added.
 	uint64_t when_infoed_ns;
 
-	//! How much time we currently expect the app to take rendering a frame. Updated in `predict_next_frame`
-	uint64_t current_app_time_ns;
+	//! How much time we currently expect the compositor to take rendering a frame. Updated in `predict_next_frame`
+	uint64_t current_comp_time_ns;
 
 	uint64_t expected_done_time_ns;     //!< When we expect the compositor to be done with its frame.
 	uint64_t desired_present_time_ns;   //!< The GPU should start scanning out at this time.
@@ -85,7 +85,7 @@ struct frame
 	enum frame_state state;
 };
 
-struct display_timing
+struct pacing_compositor
 {
 	struct u_pacing_compositor base;
 
@@ -102,12 +102,12 @@ struct display_timing
 	uint64_t frame_period_ns;
 
 	/*!
-	 * The amount of time that the application needs to render frame.
+	 * The amount of time that the compositor needs to render frame.
 	 */
 	uint64_t comp_time_ns;
 
 	/*!
-	 * The amount of time that the application needs to render frame.
+	 * The amount of time that the compositor needs to render frame.
 	 */
 	uint64_t padding_time_ns;
 
@@ -117,7 +117,7 @@ struct display_timing
 	int64_t next_frame_id;
 
 	/*!
-	 * The maximum amount we give to the 'app'.
+	 * The maximum amount we give to the compositor.
 	 */
 	uint64_t comp_time_max_ns;
 
@@ -150,10 +150,10 @@ struct display_timing
  *
  */
 
-static inline struct display_timing *
-display_timing(struct u_pacing_compositor *upc)
+static inline struct pacing_compositor *
+pacing_compositor(struct u_pacing_compositor *upc)
 {
-	return (struct display_timing *)upc;
+	return (struct pacing_compositor *)upc;
 }
 
 static double
@@ -170,15 +170,15 @@ get_percent_of_time(uint64_t time_ns, uint32_t fraction_percent)
 }
 
 static uint64_t
-calc_total_app_time(struct display_timing *dt)
+calc_total_comp_time(struct pacing_compositor *pc)
 {
-	return dt->comp_time_ns + dt->margin_ns;
+	return pc->comp_time_ns + pc->margin_ns;
 }
 
 static uint64_t
-calc_display_time_from_present_time(struct display_timing *dt, uint64_t desired_present_time_ns)
+calc_display_time_from_present_time(struct pacing_compositor *pc, uint64_t desired_present_time_ns)
 {
-	return desired_present_time_ns + dt->present_offset_ns;
+	return desired_present_time_ns + pc->present_offset_ns;
 }
 
 static inline bool
@@ -204,14 +204,14 @@ is_within_half_ms(uint64_t l, uint64_t r)
  * for a more complete initialization
  */
 static struct frame *
-get_frame(struct display_timing *dt, int64_t frame_id)
+get_frame(struct pacing_compositor *pc, int64_t frame_id)
 {
 	assert(frame_id >= 0);
 	assert((uint64_t)frame_id <= (uint64_t)SIZE_MAX);
 
 	size_t index = (size_t)(frame_id % NUM_FRAMES);
 
-	return &dt->frames[index];
+	return &pc->frames[index];
 }
 
 /*!
@@ -222,10 +222,10 @@ get_frame(struct display_timing *dt, int64_t frame_id)
  * feature rather than a bug.
  */
 static struct frame *
-create_frame(struct display_timing *dt, enum frame_state state)
+create_frame(struct pacing_compositor *pc, enum frame_state state)
 {
-	int64_t frame_id = dt->next_frame_id++;
-	struct frame *f = get_frame(dt, frame_id);
+	int64_t frame_id = pc->next_frame_id++;
+	struct frame *f = get_frame(pc, frame_id);
 
 	f->frame_id = frame_id;
 	f->state = state;
@@ -239,15 +239,15 @@ create_frame(struct display_timing *dt, enum frame_state state)
  * @return a frame pointer, or null if no frames have at least @p state
  */
 static struct frame *
-get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state state)
+get_latest_frame_with_state_at_least(struct pacing_compositor *pc, enum frame_state state)
 {
-	uint64_t start_from = dt->next_frame_id;
+	uint64_t start_from = pc->next_frame_id;
 	uint64_t count = 1;
 
 	while (start_from >= count && count < NUM_FRAMES) {
 		int64_t frame_id = start_from - count;
 		count++;
-		struct frame *f = get_frame(dt, frame_id);
+		struct frame *f = get_frame(pc, frame_id);
 		if (f->state >= state && f->frame_id == frame_id) {
 			return f;
 		}
@@ -261,12 +261,12 @@ get_latest_frame_with_state_at_least(struct display_timing *dt, enum frame_state
  * frame::desired_present_time_ns (with a crude estimate) and frame::when_predict_ns.
  */
 static struct frame *
-do_clean_slate_frame(struct display_timing *dt, uint64_t now_ns)
+do_clean_slate_frame(struct pacing_compositor *pc, uint64_t now_ns)
 {
-	struct frame *f = create_frame(dt, STATE_PREDICTED);
+	struct frame *f = create_frame(pc, STATE_PREDICTED);
 
 	// Wild shot in the dark.
-	uint64_t the_time_ns = now_ns + dt->frame_period_ns * 10;
+	uint64_t the_time_ns = now_ns + pc->frame_period_ns * 10;
 	f->when_predict_ns = now_ns;
 	f->desired_present_time_ns = the_time_ns;
 
@@ -278,14 +278,14 @@ do_clean_slate_frame(struct display_timing *dt, uint64_t now_ns)
  * prediction in it.
  */
 static struct frame *
-walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_time_ns, uint64_t now_ns)
+walk_forward_through_frames(struct pacing_compositor *pc, uint64_t last_present_time_ns, uint64_t now_ns)
 {
 	// This is the earliest possible time we could present, assuming rendering still must take place.
-	uint64_t from_time_ns = now_ns + calc_total_app_time(dt);
-	uint64_t desired_present_time_ns = last_present_time_ns + dt->frame_period_ns;
+	uint64_t from_time_ns = now_ns + calc_total_comp_time(pc);
+	uint64_t desired_present_time_ns = last_present_time_ns + pc->frame_period_ns;
 
 	while (desired_present_time_ns <= from_time_ns) {
-		FT_LOG_D(
+		UPC_LOG_D(
 		    "Skipped!"                                         //
 		    "\n\tfrom_time_ns:            %" PRIu64            //
 		    "\n\tdesired_present_time_ns: %" PRIu64            //
@@ -295,10 +295,10 @@ walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_tim
 		    ns_to_ms(from_time_ns - desired_present_time_ns)); //
 
 		// Try next frame period.
-		desired_present_time_ns += dt->frame_period_ns;
+		desired_present_time_ns += pc->frame_period_ns;
 	}
 
-	struct frame *f = create_frame(dt, STATE_PREDICTED);
+	struct frame *f = create_frame(pc, STATE_PREDICTED);
 	f->when_predict_ns = now_ns;
 	f->desired_present_time_ns = desired_present_time_ns;
 
@@ -306,17 +306,17 @@ walk_forward_through_frames(struct display_timing *dt, uint64_t last_present_tim
 }
 
 static struct frame *
-predict_next_frame(struct display_timing *dt, uint64_t now_ns)
+predict_next_frame(struct pacing_compositor *pc, uint64_t now_ns)
 {
 	struct frame *f = NULL;
 	// Last earliest display time, can be zero.
-	struct frame *last_predicted = get_latest_frame_with_state_at_least(dt, STATE_PREDICTED);
-	struct frame *last_completed = get_latest_frame_with_state_at_least(dt, STATE_INFO);
+	struct frame *last_predicted = get_latest_frame_with_state_at_least(pc, STATE_PREDICTED);
+	struct frame *last_completed = get_latest_frame_with_state_at_least(pc, STATE_INFO);
 	if (last_predicted == NULL && last_completed == NULL) {
-		f = do_clean_slate_frame(dt, now_ns);
+		f = do_clean_slate_frame(pc, now_ns);
 	} else if (last_completed == last_predicted) {
 		// Very high propability that we missed a frame.
-		f = walk_forward_through_frames(dt, last_completed->earliest_present_time_ns, now_ns);
+		f = walk_forward_through_frames(pc, last_completed->earliest_present_time_ns, now_ns);
 	} else if (last_completed != NULL) {
 		assert(last_predicted != NULL);
 		assert(last_predicted->frame_id > last_completed->frame_id);
@@ -324,13 +324,13 @@ predict_next_frame(struct display_timing *dt, uint64_t now_ns)
 		int64_t diff_id = last_predicted->frame_id - last_completed->frame_id;
 		int64_t diff_ns = last_completed->desired_present_time_ns - last_completed->earliest_present_time_ns;
 		uint64_t adjusted_last_present_time_ns =
-		    last_completed->earliest_present_time_ns + diff_id * dt->frame_period_ns;
+		    last_completed->earliest_present_time_ns + diff_id * pc->frame_period_ns;
 
 		if (diff_ns > U_TIME_1MS_IN_NS) {
-			FT_LOG_D("Large diff!");
+			UPC_LOG_D("Large diff!");
 		}
 		if (diff_id > 1) {
-			FT_LOG_D(
+			UPC_LOG_D(
 			    "diff_id > 1\n"
 			    "\tdiff_id:                       %" PRIi64
 			    "\n"
@@ -342,56 +342,56 @@ predict_next_frame(struct display_timing *dt, uint64_t now_ns)
 			diff_id = 1;
 		}
 
-		f = walk_forward_through_frames(dt, adjusted_last_present_time_ns, now_ns);
+		f = walk_forward_through_frames(pc, adjusted_last_present_time_ns, now_ns);
 	} else {
 		assert(last_predicted != NULL);
 
-		f = walk_forward_through_frames(dt, last_predicted->predicted_display_time_ns, now_ns);
+		f = walk_forward_through_frames(pc, last_predicted->predicted_display_time_ns, now_ns);
 	}
 
-	f->predicted_display_time_ns = calc_display_time_from_present_time(dt, f->desired_present_time_ns);
-	f->wake_up_time_ns = f->desired_present_time_ns - calc_total_app_time(dt);
-	f->current_app_time_ns = dt->comp_time_ns;
+	f->predicted_display_time_ns = calc_display_time_from_present_time(pc, f->desired_present_time_ns);
+	f->wake_up_time_ns = f->desired_present_time_ns - calc_total_comp_time(pc);
+	f->current_comp_time_ns = pc->comp_time_ns;
 
 	return f;
 }
 
 static void
-adjust_app_time(struct display_timing *dt, struct frame *f)
+adjust_comp_time(struct pacing_compositor *pc, struct frame *f)
 {
-	uint64_t comp_time_ns = dt->comp_time_ns;
+	uint64_t comp_time_ns = pc->comp_time_ns;
 
 	if (f->actual_present_time_ns > f->desired_present_time_ns &&
 	    !is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
 		double missed_ms = ns_to_ms(f->actual_present_time_ns - f->desired_present_time_ns);
-		FT_LOG_W("Frame %" PRIu64 " missed by %.2f!", f->frame_id, missed_ms);
+		UPC_LOG_W("Frame %" PRIu64 " missed by %.2f!", f->frame_id, missed_ms);
 
-		comp_time_ns += dt->adjust_missed_ns;
-		if (comp_time_ns > dt->comp_time_max_ns) {
-			comp_time_ns = dt->comp_time_max_ns;
+		comp_time_ns += pc->adjust_missed_ns;
+		if (comp_time_ns > pc->comp_time_max_ns) {
+			comp_time_ns = pc->comp_time_max_ns;
 		}
 
-		dt->comp_time_ns = comp_time_ns;
+		pc->comp_time_ns = comp_time_ns;
 		return;
 	}
 
 	// We want the GPU work to stop at margin_ns.
 	if (is_within_of_each_other(  //
 	        f->present_margin_ns, //
-	        dt->margin_ns,        //
-	        dt->adjust_non_miss_ns)) {
+	        pc->margin_ns,        //
+	        pc->adjust_non_miss_ns)) {
 		// Nothing to do, the GPU ended its work +-adjust_non_miss_ns
 		// of margin_ns before the present started.
 		return;
 	}
 
-	// We didn't miss the frame but we were outside the range adjust the app time.
-	if (f->present_margin_ns > dt->margin_ns) {
+	// We didn't miss the frame but we were outside the range: adjust the compositor time.
+	if (f->present_margin_ns > pc->margin_ns) {
 		// Approach the present time.
-		dt->comp_time_ns -= dt->adjust_non_miss_ns;
+		pc->comp_time_ns -= pc->adjust_non_miss_ns;
 	} else {
 		// Back off the present time.
-		dt->comp_time_ns += dt->adjust_non_miss_ns;
+		pc->comp_time_ns += pc->adjust_non_miss_ns;
 	}
 }
 
@@ -403,7 +403,7 @@ adjust_app_time(struct display_timing *dt, struct frame *f)
  */
 
 static void
-dt_predict(struct u_pacing_compositor *upc,
+pc_predict(struct u_pacing_compositor *upc,
            uint64_t now_ns,
            int64_t *out_frame_id,
            uint64_t *out_wake_up_time_ns,
@@ -413,16 +413,16 @@ dt_predict(struct u_pacing_compositor *upc,
            uint64_t *out_predicted_display_period_ns,
            uint64_t *out_min_display_period_ns)
 {
-	struct display_timing *dt = display_timing(upc);
+	struct pacing_compositor *pc = pacing_compositor(upc);
 
-	struct frame *f = predict_next_frame(dt, now_ns);
+	struct frame *f = predict_next_frame(pc, now_ns);
 
 	uint64_t wake_up_time_ns = f->wake_up_time_ns;
 	uint64_t desired_present_time_ns = f->desired_present_time_ns;
 	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_time_ns = f->predicted_display_time_ns;
-	uint64_t predicted_display_period_ns = dt->frame_period_ns;
-	uint64_t min_display_period_ns = dt->frame_period_ns;
+	uint64_t predicted_display_period_ns = pc->frame_period_ns;
+	uint64_t min_display_period_ns = pc->frame_period_ns;
 
 	*out_frame_id = f->frame_id;
 	*out_wake_up_time_ns = wake_up_time_ns;
@@ -434,15 +434,15 @@ dt_predict(struct u_pacing_compositor *upc,
 }
 
 static void
-dt_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
+pc_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_t frame_id, uint64_t when_ns)
 {
-	struct display_timing *dt = display_timing(upc);
-	struct frame *f = get_frame(dt, frame_id);
+	struct pacing_compositor *pc = pacing_compositor(upc);
+	struct frame *f = get_frame(pc, frame_id);
 	if (f->frame_id != frame_id) {
-		FT_LOG_W("Discarded point marking for unsubmitted or expired frame_id %" PRIx64, frame_id);
-		struct frame *last = get_latest_frame_with_state_at_least(dt, STATE_PREDICTED);
+		UPC_LOG_W("Discarded point marking for unsubmitted or expired frame_id %" PRIx64, frame_id);
+		struct frame *last = get_latest_frame_with_state_at_least(pc, STATE_PREDICTED);
 		if (last != NULL) {
-			FT_LOG_W("The latest frame_id we have predicted is %" PRIx64, last->frame_id);
+			UPC_LOG_W("The latest frame_id we have predicted is %" PRIx64, last->frame_id);
 		}
 		return;
 	}
@@ -468,7 +468,7 @@ dt_mark_point(struct u_pacing_compositor *upc, enum u_timing_point point, int64_
 }
 
 static void
-dt_info(struct u_pacing_compositor *upc,
+pc_info(struct u_pacing_compositor *upc,
         int64_t frame_id,
         uint64_t desired_present_time_ns,
         uint64_t actual_present_time_ns,
@@ -476,15 +476,15 @@ dt_info(struct u_pacing_compositor *upc,
         uint64_t present_margin_ns,
         uint64_t when_ns)
 {
-	struct display_timing *dt = display_timing(upc);
-	(void)dt;
+	struct pacing_compositor *pc = pacing_compositor(upc);
+	(void)pc;
 
-	struct frame *last = get_latest_frame_with_state_at_least(dt, STATE_INFO);
-	struct frame *f = get_frame(dt, frame_id);
+	struct frame *last = get_latest_frame_with_state_at_least(pc, STATE_INFO);
+	struct frame *f = get_frame(pc, frame_id);
 	if (f->frame_id != frame_id) {
-		FT_LOG_W("Discarded info for unsubmitted or expired frame_id %" PRIx64, frame_id);
+		UPC_LOG_W("Discarded info for unsubmitted or expired frame_id %" PRIx64, frame_id);
 		if (last != NULL) {
-			FT_LOG_W("The latest frame_id we have info for is %" PRIx64, last->frame_id);
+			UPC_LOG_W("The latest frame_id we have info for is %" PRIx64, last->frame_id);
 		}
 		return;
 	}
@@ -503,12 +503,12 @@ dt_info(struct u_pacing_compositor *upc,
 	}
 
 	// Adjust the frame timing.
-	adjust_app_time(dt, f);
+	adjust_comp_time(pc, f);
 
 	double present_margin_ms = ns_to_ms(present_margin_ns);
 	double since_last_frame_ms = ns_to_ms(since_last_frame_ns);
 
-	FT_LOG_T(
+	UPC_LOG_T(
 	    "Got"
 	    "\n\tframe_id:                 0x%08" PRIx64 //
 	    "\n\twhen_predict_ns:          %" PRIu64     //
@@ -640,7 +640,7 @@ dt_info(struct u_pacing_compositor *upc,
 	 */
 
 	TE_BEG(pc_allotted, f->wake_up_time_ns, "allotted");
-	TE_END(pc_allotted, f->wake_up_time_ns + f->current_app_time_ns);
+	TE_END(pc_allotted, f->wake_up_time_ns + f->current_comp_time_ns);
 
 #undef TE_BEG
 #undef TE_END
@@ -648,21 +648,21 @@ dt_info(struct u_pacing_compositor *upc,
 
 
 static void
-dt_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
 {
-	struct display_timing *dt = display_timing(upc);
-	(void)dt;
+	struct pacing_compositor *pc = pacing_compositor(upc);
+	(void)pc;
 	// not associating with frame IDs right now.
 	(void)frame_id;
-	dt->present_offset_ns = present_offset_ns;
+	pc->present_offset_ns = present_offset_ns;
 }
 
 static void
-dt_destroy(struct u_pacing_compositor *upc)
+pc_destroy(struct u_pacing_compositor *upc)
 {
-	struct display_timing *dt = display_timing(upc);
+	struct pacing_compositor *pc = pacing_compositor(upc);
 
-	free(dt);
+	free(pc);
 }
 
 const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
@@ -682,32 +682,32 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
                            const struct u_pc_display_timing_config *config,
                            struct u_pacing_compositor **out_uft)
 {
-	struct display_timing *dt = U_TYPED_CALLOC(struct display_timing);
-	dt->base.predict = dt_predict;
-	dt->base.mark_point = dt_mark_point;
-	dt->base.info = dt_info;
-	dt->base.update_present_offset = dt_update_present_offset;
-	dt->base.destroy = dt_destroy;
-	dt->frame_period_ns = estimated_frame_period_ns;
+	struct pacing_compositor *pc = U_TYPED_CALLOC(struct pacing_compositor);
+	pc->base.predict = pc_predict;
+	pc->base.mark_point = pc_mark_point;
+	pc->base.info = pc_info;
+	pc->base.update_present_offset = pc_update_present_offset;
+	pc->base.destroy = pc_destroy;
+	pc->frame_period_ns = estimated_frame_period_ns;
 
 	// Estimate of how long after "present" the photons hit the eyes
-	dt->present_offset_ns = config->present_offset_ns;
+	pc->present_offset_ns = config->present_offset_ns;
 
 	// Start at this of frame time.
-	dt->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_fraction);
+	pc->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_fraction);
 	// Max compositor time: if we ever hit this, write a better compositor.
-	dt->comp_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_max_fraction);
+	pc->comp_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_max_fraction);
 	// When missing, back off in these increments
-	dt->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_missed_fraction);
-	// When not missing frames but adjusting app time at these increments
-	dt->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_non_miss_fraction);
-	// Extra margin that is added to app time.
-	dt->margin_ns = config->margin_ns;
+	pc->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_missed_fraction);
+	// When not missing frames but adjusting compositor time at these increments
+	pc->adjust_non_miss_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_non_miss_fraction);
+	// Extra margin that is added to compositor time.
+	pc->margin_ns = config->margin_ns;
 
-	*out_uft = &dt->base;
+	*out_uft = &pc->base;
 
 	double estimated_frame_period_ms = ns_to_ms(estimated_frame_period_ns);
-	FT_LOG_I("Created display timing (%.2fms)", estimated_frame_period_ms);
+	UPC_LOG_I("Created compositor pacing (%.2fms)", estimated_frame_period_ms);
 
 	return XRT_SUCCESS;
 }
