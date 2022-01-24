@@ -20,6 +20,14 @@
 #include <assert.h>
 #include <inttypes.h>
 
+DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_APP_LOG", U_LOGGING_WARN)
+
+#define UPA_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPA_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPA_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPA_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
+#define UPA_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
+
 
 /*
  *
@@ -37,6 +45,8 @@ enum u_pa_state
 
 struct u_pa_frame
 {
+	int64_t frame_id;
+
 	//! When we predicted this frame to be shown.
 	uint64_t predicted_display_time_ns;
 
@@ -46,15 +56,15 @@ struct u_pa_frame
 	//! When the client should have delivered the frame.
 	uint64_t predicted_delivery_time_ns;
 
+	//! When something happened.
 	struct
 	{
 		uint64_t predicted_ns;
 		uint64_t wait_woke_ns;
 		uint64_t begin_ns;
 		uint64_t delivered_ns;
-	} when; //!< When something happened.
+	} when;
 
-	int64_t frame_id;
 	enum u_pa_state state;
 };
 
@@ -72,9 +82,9 @@ struct pacing_app
 	{
 		//! App time between wait returning and begin being called.
 		uint64_t cpu_time_ns;
-		//! Time between begin and frame rendering completeing.
+		//! Time between begin and frame rendering completing.
 		uint64_t draw_time_ns;
-		//! Exrta time between end of draw time and when the compositor wakes up.
+		//! Extra time between end of draw time and when the compositor wakes up.
 		uint64_t margin_ns;
 	} app; //!< App statistics.
 
@@ -104,15 +114,7 @@ pacing_app(struct u_pacing_app *upa)
 	return (struct pacing_app *)upa;
 }
 
-DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_TIMING_RENDER_LOG", U_LOGGING_WARN)
-
-#define RT_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
-#define RT_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
-#define RT_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
-#define RT_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
-#define RT_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
-
-#define DEBUG_PRINT_FRAME_ID() RT_LOG_T("%" PRIi64, frame_id)
+#define DEBUG_PRINT_FRAME_ID() UPA_LOG_T("%" PRIi64, frame_id)
 #define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % ARRAY_SIZE((RT)->frames))
 
 #define IIR_ALPHA_LT 0.8
@@ -261,7 +263,7 @@ pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point po
 {
 	struct pacing_app *pa = pacing_app(upa);
 
-	RT_LOG_T("%" PRIi64 " (%u)", frame_id, point);
+	UPA_LOG_T("%" PRIi64 " (%u)", frame_id, point);
 
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	assert(pa->frames[index].frame_id == frame_id);
@@ -332,7 +334,7 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	uint64_t diff_cpu_ns = f->when.begin_ns - f->when.wait_woke_ns;
 	uint64_t diff_draw_ns = f->when.delivered_ns - f->when.begin_ns;
 
-	RT_LOG_D(
+	UPA_LOG_D(
 	    "Delivered frame %.2fms %s."                                           //
 	    "\n\tperiod: %.2f"                                                     //
 	    "\n\tcpu  o: %.2f, n: %.2f"                                            //
