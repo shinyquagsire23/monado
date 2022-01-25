@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="org.freedesktop.monado.openxr_runtime">
     <!--
-        Copyright 2020, Collabora, Ltd.
+        Copyright 2020-2022, Collabora, Ltd.
         SPDX-License-Identifier: BSL-1.0
     -->
 
@@ -38,6 +39,9 @@
         android:name="android.hardware.sensor.hifi_sensors"
         android:required="false" />
 
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS"
+        tools:ignore="HighSamplingRate" />
+
     <application
         android:name=".MonadoOpenXrApplication"
         android:allowBackup="true"
@@ -52,7 +56,8 @@
             android:name="org.freedesktop.monado.android_common.MonadoVrListener"
             android:icon="@drawable/ic_monado_logo"
             android:label="@string/app_name"
-            android:permission="android.permission.BIND_VR_LISTENER_SERVICE">
+            android:permission="android.permission.BIND_VR_LISTENER_SERVICE"
+            android:exported="true">
             <meta-data
                 android:name="org.khronos.openxr.OpenXRRuntime"
                 android:value="libopenxr_monado.so" />
