@@ -224,6 +224,7 @@ reprepro:package:
   stage: reprepro
   extends:
     - {{ base_job_to_use_image_containing("reprepro") }}
+    - .monado.packaging.conditions
   dependencies:
 {% for distro in distributions -%} {%- for image in distro.images if "deb_version_suffix" in image %}
     - {{packaging_job_name(distro, image)}}
