@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 import groovy.xml.XmlUtil
 
@@ -7,6 +7,9 @@ plugins {
     id 'kotlin-android'
 
     id 'com.mikepenz.aboutlibraries.plugin'
+
+    id "com.gladed.androidgitversion"
+    id "de.undercouch.download"
 
     // Hilt dependency injection
     id 'kotlin-kapt'
@@ -93,8 +96,8 @@ if (!(new File(project.file(project.eigenIncludeDir), "Eigen/Core")).exists()) {
 }
 
 android {
-    compileSdkVersion project.sharedTargetSdk
-    buildToolsVersion '30.0.3'
+    compileSdk sharedTargetSdk
+    buildToolsVersion buildToolsVersion
 
     ndkVersion "${ndk_version}"
 
