@@ -641,6 +641,7 @@ select_instances_extensions(struct comp_compositor *c, struct u_string_list *req
 		break;
 #endif
 #ifdef VK_USE_PLATFORM_XCB_KHR
+	case WINDOW_XCB:
 		u_string_list_append_array(required, instance_extensions_xcb, ARRAY_SIZE(instance_extensions_xcb));
 		break;
 #endif
