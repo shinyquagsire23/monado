@@ -132,12 +132,26 @@ reuse:
   extends:
     - {{base_job_to_use_image(distro, image)}}
 
-{% if job.before_script %}
+{%- if job.before_script or "android" in job.name %}
+
   before_script:
-    {% for line in job.before_script %}
-    - {{line}}
-    {% endfor %}
 {% endif %}
+{% for line in job.before_script %}
+    - {{line}}
+{% endfor %}
+{%- if "android" in job.name %}
+    {# Keep this right below the before_script since this is an extra line!! #}
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+{% endif %}
+
   script:
     - rm -rf build
 
@@ -155,6 +169,12 @@ reuse:
     - cmake -GNinja -B build -S . {{- make_cmake_args(job.cmake_defines) }}
     - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
     - ninja -C build
+
+{#- gradle builds -#}
+{%- elif "android" in job.name %}
+
+    - cp .gitlab-ci/local.properties .
+    - ./gradlew {{ job.target }}
 
 {%- else %}
 

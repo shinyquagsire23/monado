@@ -202,11 +202,11 @@ debian:cmake:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   before_script:
     - pushd doc/changes
     - proclamation build --overwrite vNEXT
     - popd
+
   script:
     - rm -rf build
     - cmake -GNinja -B build -S .
@@ -221,7 +221,6 @@ debian:cmake-no-opencv:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_OPENCV=OFF
@@ -233,7 +232,6 @@ debian:cmake-no-sdl2:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_SDL2=OFF
@@ -245,7 +243,6 @@ debian:cmake-no-service:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_FEATURE_SERVICE=OFF
@@ -257,7 +254,6 @@ debian:cmake:32bit:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DCMAKE_TOOLCHAIN_FILE=.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=OFF
@@ -269,7 +265,6 @@ debian:meson:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - meson setup build .
@@ -279,7 +274,6 @@ debian:meson:32bit:
   stage: build
   extends:
     - .monado.image.debian:bullseye
-
   script:
     - rm -rf build
     - meson setup build . --prefix=/usr --libdir=/usr/lib/i386-linux-gnu --cross-file=.gitlab-ci/i386-cross.txt
@@ -289,7 +283,6 @@ ndk:armeabi-v7a:
   stage: build
   extends:
     - .monado.image.debian:bullseye-ndk
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
@@ -300,18 +293,62 @@ ndk:arm64-v8a:
   stage: build
   extends:
     - .monado.image.debian:bullseye-ndk
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
     - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
     - ninja -C build
 
+android:outOfProcess:
+  stage: build
+  extends:
+    - .monado.image.debian:bullseye-ndk
+  before_script:
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+
+  script:
+    - rm -rf build
+    - cp .gitlab-ci/local.properties .
+    - ./gradlew assembleOutOfProcessDebug
+  artifacts:
+    paths:
+      - src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
+
+android:inProcess:
+  stage: build
+  extends:
+    - .monado.image.debian:bullseye-ndk
+  before_script:
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+
+  script:
+    - rm -rf build
+    - cp .gitlab-ci/local.properties .
+    - ./gradlew assembleInProcessDebug
+  artifacts:
+    paths:
+      - src/xrt/targets/openxr_android/build/outputs/apk/inProcess/
+
 ubuntu:cmake:
   stage: build
   extends:
     - .monado.image.ubuntu:focal
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
@@ -323,7 +360,6 @@ ubuntu:meson:
   stage: build
   extends:
     - .monado.image.ubuntu:focal
-
   script:
     - rm -rf build
     - meson setup build .
@@ -333,7 +369,6 @@ ubuntu:latest:cmake:
   stage: build
   extends:
     - .monado.image.ubuntu:impish
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
@@ -345,7 +380,6 @@ arch:cmake:
   stage: build
   extends:
     - .monado.image.arch:rolling
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S .
@@ -357,7 +391,6 @@ arch:cmake:clang:
   stage: build
   extends:
     - .monado.image.arch:rolling
-
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
@@ -369,7 +402,6 @@ arch:meson:
   stage: build
   extends:
     - .monado.image.arch:rolling
-
   script:
     - rm -rf build
     - meson setup build .
