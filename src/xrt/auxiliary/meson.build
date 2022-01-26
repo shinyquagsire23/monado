@@ -119,6 +119,13 @@ if build_opengl or build_opengles
 		'ogl/ogl_helpers.h',
 	]
 
+	if build_opengl and build_xlib
+		ogl_files += [
+			'ogl/glx_api.h',
+			'ogl/glx_api.c',
+		]
+	endif
+
 	if build_opengles or build_egl
 		ogl_files += [
 			'ogl/egl_api.h',
