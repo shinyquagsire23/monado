@@ -19,6 +19,7 @@ foreach(
 	tests_json
 	tests_pacing
 	tests_quatexpmap
+	tests_rational
 	)
 
 	add_executable(${testname} ${testname}.cpp)
@@ -33,3 +34,4 @@ target_link_libraries(tests_cxx_wrappers PRIVATE xrt-interfaces)
 target_link_libraries(tests_history_buf PRIVATE aux_math)
 target_link_libraries(tests_input_transform PRIVATE st_oxr xrt-interfaces xrt-external-openxr)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
+target_link_libraries(tests_rational PRIVATE aux_math)
