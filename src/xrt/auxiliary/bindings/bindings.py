@@ -35,7 +35,8 @@ class PathsByLengthCollector:
         return ret
 
 class Component:
-    """Components correspond with the standard OpenXR components click, touch, force, value, x, y, twist, pose
+    """Components correspond with the standard OpenXR components click, touch,
+    force, value, x, y, twist, pose
     """
 
     @classmethod
@@ -77,7 +78,8 @@ class Component:
         self.component_name = component_name
         self.monado_binding = monado_binding
 
-        # click, touch etc. components under the subpath of this component. Only needed for steamvr profile gen.
+        # click, touch etc. components under the subpath of this component.
+        # Only needed for steamvr profile gen.
         self.components_for_subpath = components_for_subpath
 
     def get_full_openxr_paths(self):
