@@ -80,8 +80,8 @@ class Component:
         # click, touch etc. components under the subpath of this component. Only needed for steamvr profile gen.
         self.components_for_subpath = components_for_subpath
 
-    def to_monado_paths(self):
-        """A group of paths that derive from the same input.
+    def get_full_openxr_paths(self):
+        """A group of paths that derive from the same component.
         For example .../thumbstick, .../thumbstick/x, .../thumbstick/y
         """
         paths = []
@@ -171,7 +171,7 @@ class Profile:
 
         collector = PathsByLengthCollector()
         for component in self.components:
-            collector.add_paths(component.to_monado_paths())
+            collector.add_paths(component.get_full_openxr_paths())
         self.by_length = collector.to_dict_of_lists()
 
 
@@ -272,7 +272,7 @@ def generate_bindings_c(file, p):
                 f'\t\t\t\t.localized_name = "{component.subpath_localized_name}",\n')
 
             f.write('\t\t\t\t.paths = { // array of paths\n')
-            for path in component.to_monado_paths():
+            for path in component.get_full_openxr_paths():
                 f.write(f'\t\t\t\t\t"{path}",\n')
             f.write('\t\t\t\t\tNULL\n')
             f.write('\t\t\t\t}, // /array of paths\n')
