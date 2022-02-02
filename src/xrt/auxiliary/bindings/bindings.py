@@ -8,7 +8,6 @@ import argparse
 import json
 
 
-
 class PathsByLengthCollector:
     """Helper class to sort paths by length, useful for creating fast path
     validation functions.
@@ -34,6 +33,7 @@ class PathsByLengthCollector:
             ret[length] = list(set_per_length)
         return ret
 
+
 class Component:
     """Components correspond with the standard OpenXR components click, touch,
     force, value, x, y, twist, pose
@@ -44,13 +44,16 @@ class Component:
                          subaction_path,
                          identifier_path,
                          json_subpath):
-        """Turn a Identifier's component paths into a list of Component objects."""
+        """
+        Turn a Identifier's component paths into a list of Component objects.
+        """
 
+        monado_bindings = json_subpath["monado_bindings"]
         component_list = []
         for component_name in json_subpath["components"]:  # click, touch, ...
             monado_binding = None
-            if component_name in json_subpath["monado_bindings"]:
-                monado_binding = json_subpath["monado_bindings"][component_name]
+            if component_name in monado_bindings:
+                monado_binding = monado_bindings[component_name]
 
             c = Component(subaction_path,
                           identifier_path,
@@ -182,7 +185,8 @@ class Bindings:
 
     @classmethod
     def parse(cls, json_root):
-        """Parse an entire bindings.json into a collection of Profile objects."""
+        """Parse an entire bindings.json into a collection of Profile objects.
+        """
         return cls(json_root)
 
     @classmethod
