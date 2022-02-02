@@ -257,7 +257,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	int size = os_hid_read(wh->hid_hololens_sensors_dev, buffer, sizeof(buffer), 100);
 
 	if (size < 0) {
-		WMR_ERROR(wh, "Error reading from device");
+		WMR_ERROR(wh, "Error reading from Hololens Sensors device. Call to os_hid_read returned %i", size);
 		return false;
 	} else if (size == 0) {
 		WMR_TRACE(wh, "No more data to read");
@@ -349,7 +349,7 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 static void
 control_ipd_value_decode(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
-	if (size != 4) {
+	if (size != 2 && size != 4) {
 		WMR_ERROR(wh, "Invalid control ipd distance packet size (expected 4 but got %i)", size);
 		return;
 	}
@@ -361,7 +361,7 @@ control_ipd_value_decode(struct wmr_hmd *wh, const unsigned char *buffer, int si
 	}
 
 	uint8_t proximity = read8(&buffer);
-	uint16_t ipd_value = read16(&buffer);
+	uint16_t ipd_value = (size == 4) ? read16(&buffer) : wh->raw_ipd;
 
 	bool changed = (wh->raw_ipd != ipd_value) || (wh->proximity_sensor != proximity);
 
@@ -382,7 +382,8 @@ control_read_packets(struct wmr_hmd *wh)
 	int size = os_hid_read(wh->hid_control_dev, buffer, sizeof(buffer), 0);
 
 	if (size < 0) {
-		WMR_ERROR(wh, "Error reading from device");
+		WMR_ERROR(wh, "Error reading from companion (HMD control) device. Call to os_hid_read returned %i",
+		          size);
 		return false;
 	} else if (size == 0) {
 		WMR_TRACE(wh, "No more data to read");
@@ -395,10 +396,21 @@ control_read_packets(struct wmr_hmd *wh)
 	case WMR_CONTROL_MSG_IPD_VALUE: //
 		control_ipd_value_decode(wh, buffer, size);
 		break;
+	case WMR_CONTROL_MSG_UNKNOWN_02: //
+		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
+		if (size == 4) {
+			// Todo: Decode.
+			// On Reverb G1 this message is sometimes received right after a
+			// proximity/IPD message, and it always seems to be '02 XX 0d 26'.
+			WMR_DEBUG(wh, "---> Type and content bytes: %02x %02x %02x %02x", buffer[0], buffer[1],
+			          buffer[2], buffer[3]);
+		}
+		break;
 	case WMR_CONTROL_MSG_UNKNOWN_05: //
+		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
 		break;
 	default: //
-		WMR_DEBUG(wh, "Unknown message type: %02x, (%i)", buffer[0], size);
+		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
 		break;
 	}
 
