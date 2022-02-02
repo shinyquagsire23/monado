@@ -198,7 +198,7 @@ class Bindings:
                          profile_name, json_profile in json_root["profiles"].items()]
 
 
-header = '''// Copyright 2020, Collabora, Ltd.
+header = '''// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
