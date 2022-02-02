@@ -174,7 +174,7 @@ class Profile:
         collector = PathsByLengthCollector()
         for component in self.components:
             collector.add_paths(component.get_full_openxr_paths())
-        self.by_length = collector.to_dict_of_lists()
+        self.subpaths_by_length = collector.to_dict_of_lists()
 
 
 class Bindings:
@@ -211,7 +211,7 @@ header = '''// Copyright 2020-2022, Collabora, Ltd.
 
 func_start = '''
 bool
-oxr_verify_{func}_subpath(const char *str, size_t length)
+{name}(const char *str, size_t length)
 {{
 \tswitch (length) {{
 '''
@@ -219,6 +219,20 @@ oxr_verify_{func}_subpath(const char *str, size_t length)
 if_strcmp = '''if (strcmp(str, "{check}") == 0) {{
 \t\t\treturn true;
 \t\t}} else '''
+
+
+def write_verify_func(f, name, dict_of_lists):
+    """Generate function to check if a string is in a set of strings.
+    Input is a file to write the code into, a dict where keys are length and
+    the values are lists of strings of that length. And a suffix if any."""
+
+    f.write(func_start.format(name=name))
+    for length in dict_of_lists:
+        f.write("\tcase " + str(length) + ":\n\t\t")
+        for path in dict_of_lists[length]:
+            f.write(if_strcmp.format(check=path))
+        f.write("{\n\t\t\treturn false;\n\t\t}\n")
+    f.write("\tdefault:\n\t\treturn false;\n\t}\n}\n")
 
 
 def generate_bindings_c(file, p):
@@ -233,13 +247,8 @@ def generate_bindings_c(file, p):
 ''')
 
     for profile in p.profiles:
-        f.write(func_start.format(func=profile.validation_func_name))
-        for length in profile.by_length:
-            f.write("\tcase " + str(length) + ":\n\t\t")
-            for path in profile.by_length[length]:
-                f.write(if_strcmp.format(check=path))
-            f.write("{\n\t\t\treturn false;\n\t\t}\n")
-        f.write("\tdefault:\n\t\treturn false;\n\t}\n}\n")
+        name = "oxr_verify_" + profile.validation_func_name + "_subpath"
+        write_verify_func(f, name, profile.subpaths_by_length)
 
     f.write(
         f'\n\nstruct profile_template profile_templates[{len(p.profiles)}] = {{ // array of profile_template\n')
