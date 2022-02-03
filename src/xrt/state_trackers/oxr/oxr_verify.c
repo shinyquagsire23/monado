@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,11 +9,8 @@
  * @ingroup oxr_api
  */
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "xrt/xrt_compiler.h"
+#include "math/m_mathinclude.h"
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"
@@ -21,6 +18,10 @@
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
 #include "oxr_subaction.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 
 /*
@@ -632,3 +633,44 @@ oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *log, const XrGraphicsBin
 	return XR_SUCCESS;
 }
 #endif // defined(XR_USE_GRAPHICS_API_D3D11)
+
+#ifdef XR_EXT_dpad_binding
+XrResult
+oxr_verify_XrInteractionProfileDpadBindingEXT(struct oxr_logger *log,
+                                              const XrInteractionProfileDpadBindingEXT *dpad,
+                                              const char *error_prefix)
+{
+	if (dpad->forceThreshold <= 0.0 || dpad->forceThreshold > 1.0) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(%s->forceThreshold == %f) is not within range of (0.0 .. 1.0].", error_prefix,
+		                 dpad->forceThreshold);
+	}
+
+	if (dpad->forceThresholdReleased <= 0.0 || dpad->forceThresholdReleased > 1.0) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(%s->forceThresholdReleased == %f) is not within range of (0.0 .. 1.0].",
+		                 error_prefix, dpad->forceThresholdReleased);
+	}
+
+	if (dpad->forceThreshold < dpad->forceThresholdReleased) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(%s->[forceThreshold '%f' < forceThresholdReleased '%f']) forceThreshold is not "
+		                 "equal or greater than forceThresholdReleased.",
+		                 error_prefix, dpad->forceThreshold, dpad->forceThresholdReleased);
+	}
+
+	if (dpad->centerRegion <= 0.0 || dpad->centerRegion >= 1.0) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(%s->centerRegion == %f) is outside the exclusive range (0.0 .. 1.0).", error_prefix,
+		                 dpad->centerRegion);
+	}
+
+	if (dpad->wedgeAngle < 0 || dpad->wedgeAngle >= M_PI) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(%s->wedgeAngle == %f) is outside the half-open range [0.0 .. π).", error_prefix,
+		                 dpad->wedgeAngle);
+	}
+
+	return XR_SUCCESS;
+}
+#endif // XR_EXT_dpad_binding

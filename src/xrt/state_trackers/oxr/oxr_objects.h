@@ -611,7 +611,8 @@ oxr_binding_find_bindings_from_key(struct oxr_logger *log,
 XrResult
 oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
                                                 struct oxr_instance *inst,
-                                                const XrInteractionProfileSuggestedBinding *suggestedBindings);
+                                                const XrInteractionProfileSuggestedBinding *suggestedBindings,
+                                                struct oxr_dpad_state *state);
 
 /*!
  * @public @memberof oxr_instance

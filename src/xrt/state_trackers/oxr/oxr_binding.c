@@ -427,7 +427,8 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 XrResult
 oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
                                                 struct oxr_instance *inst,
-                                                const XrInteractionProfileSuggestedBinding *suggestedBindings)
+                                                const XrInteractionProfileSuggestedBinding *suggestedBindings,
+                                                struct oxr_dpad_state *dpad_state)
 {
 	struct oxr_interaction_profile *p = NULL;
 
@@ -437,7 +438,7 @@ oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
 
 	// Valid path, but not used.
 	if (p == NULL) {
-		return XR_SUCCESS;
+		goto out;
 	}
 
 	struct oxr_binding *bindings = p->bindings;
@@ -452,6 +453,10 @@ oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
 
 		add_key_to_matching_bindings(bindings, binding_count, s->binding, act->act_key);
 	}
+
+out:
+	// Teardown any remaining dpad state.
+	oxr_dpad_state_deinit(dpad_state);
 
 	return XR_SUCCESS;
 }

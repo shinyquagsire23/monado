@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -280,6 +280,15 @@ oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(struct oxr_logger *, const XrGrap
 XrResult
 oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *, const XrGraphicsBindingD3D11KHR *);
 #endif // defined(XR_USE_GRAPHICS_API_D3D11)
+
+#ifdef XR_EXT_dpad_binding
+XrResult
+oxr_verify_XrInteractionProfileDpadBindingEXT(struct oxr_logger *,
+                                              const XrInteractionProfileDpadBindingEXT *,
+                                              const char *error_prefix);
+#endif // XR_EXT_dpad_binding
+
+
 /*!
  * @}
  */

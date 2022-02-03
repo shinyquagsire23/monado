@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -16,12 +16,101 @@
 
 #include "oxr_api_funcs.h"
 #include "oxr_api_verify.h"
+#include "oxr_chain.h"
 #include "oxr_subaction.h"
 
 #include <stdio.h>
 #include <inttypes.h>
 
 #include "bindings/b_generated_bindings.h"
+
+
+typedef bool (*path_verify_fn_t)(const char *, size_t);
+
+
+/*
+ *
+ * Dpad functions.
+ *
+ */
+
+#ifdef XR_EXT_dpad_binding
+XrResult
+process_dpad(struct oxr_logger *log,
+             struct oxr_instance *inst,
+             struct oxr_dpad_state *state,
+             const XrInteractionProfileDpadBindingEXT *dpad,
+             path_verify_fn_t dpad_emulator_fn,
+             const char *prefix,
+             const char *ip_str)
+{
+	const char *str = NULL;
+	size_t length = 0;
+	XrResult ret;
+
+	ret = oxr_path_get_string(log, inst, dpad->binding, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return oxr_error(log, XR_ERROR_PATH_INVALID, "(%s->binding == %" PRIu64 ") is not a valid path", prefix,
+		                 dpad->binding);
+	}
+
+	if (!dpad_emulator_fn(str, length)) {
+		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
+		                 "(%s->binding == \"%s\") is not a valid dpad binding path for profile \"%s\"", prefix,
+		                 str, ip_str);
+	}
+
+	ret = oxr_verify_XrInteractionProfileDpadBindingEXT(log, dpad, prefix);
+	if (ret != XR_SUCCESS) {
+		return ret;
+	}
+
+	if (dpad->actionSet == XR_NULL_HANDLE) {
+		return oxr_error(log, XR_ERROR_HANDLE_INVALID, "(%s->actionSet == XR_NULL_HANDLE)", prefix);
+	}
+
+	struct oxr_action_set *act_set = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_action_set *, dpad->actionSet);
+	if (act_set->handle.debug != OXR_XR_DEBUG_ACTIONSET) {
+		return oxr_error(log, XR_ERROR_HANDLE_INVALID, "(%s->actionSet == %p)", prefix, (void *)act_set);
+	}
+
+	struct oxr_dpad_entry *entry = oxr_dpad_state_get_or_add(state, act_set->act_set_key);
+	if (entry->key == 0) {
+		entry->key = act_set->act_set_key;
+		assert(act_set->act_set_key != 0);
+	}
+
+	bool added = false;
+	for (size_t i = 0; i < ARRAY_SIZE(entry->dpads); i++) {
+		// Have we found a empty slot, add it.
+		if (entry->dpads[i].binding == XR_NULL_PATH) {
+			entry->dpads[i] = *dpad;
+
+			// Don't leave potentially dangling pointers.
+			entry->dpads[i].next = NULL;
+			entry->dpads[i].actionSet = XR_NULL_HANDLE;
+
+			entry->dpad_count++;
+			added = true;
+			break;
+		}
+
+		if (entry->dpads[i].binding == dpad->binding) {
+			return oxr_error(
+			    log, XR_ERROR_VALIDATION_FAILURE,
+			    "(%s->[actionSet == \"%s\", binding == \"%s\"]) pair is already added to profile \"%s\"",
+			    prefix, act_set->data->name, str, ip_str);
+		}
+	}
+
+	if (!added) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to add dpad binding!");
+	}
+
+	return XR_SUCCESS;
+}
+#endif
+
 
 /*
  *
@@ -105,46 +194,74 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 	}
 
 	XrPath ip = suggestedBindings->interactionProfile;
-	const char *str = NULL;
-	size_t length;
+	const char *ip_str = NULL;
+	size_t ip_length = 0;
 
-	XrResult ret = oxr_path_get_string(&log, inst, ip, &str, &length);
+	XrResult ret = oxr_path_get_string(&log, inst, ip, &ip_str, &ip_length);
 	if (ret != XR_SUCCESS) {
 		oxr_error(&log, ret, "(suggestedBindings->countSuggestedBindings == 0x%08" PRIx64 ") invalid path", ip);
 	}
 
 	// Used in the loop that verifies the suggested bindings paths.
-	bool (*func)(const char *, size_t) = NULL;
+	path_verify_fn_t subpath_fn = NULL;
+	path_verify_fn_t dpad_path_fn = NULL;
+	path_verify_fn_t dpad_emulator_fn = NULL;
+	bool has_dpad = inst->extensions.EXT_dpad_binding;
 
 	if (ip == inst->path_cache.khr_simple_controller) {
-		func = oxr_verify_khr_simple_controller_subpath;
+		subpath_fn = oxr_verify_khr_simple_controller_subpath;
+		dpad_path_fn = oxr_verify_khr_simple_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_khr_simple_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.google_daydream_controller) {
-		func = oxr_verify_google_daydream_controller_subpath;
+		subpath_fn = oxr_verify_google_daydream_controller_subpath;
+		dpad_path_fn = oxr_verify_google_daydream_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_google_daydream_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.htc_vive_controller) {
-		func = oxr_verify_htc_vive_controller_subpath;
+		subpath_fn = oxr_verify_htc_vive_controller_subpath;
+		dpad_path_fn = oxr_verify_htc_vive_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_htc_vive_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.htc_vive_pro) {
-		func = oxr_verify_htc_vive_pro_subpath;
+		subpath_fn = oxr_verify_htc_vive_pro_subpath;
+		dpad_path_fn = oxr_verify_htc_vive_pro_dpad_path;
+		dpad_emulator_fn = oxr_verify_htc_vive_pro_dpad_emulator;
 	} else if (ip == inst->path_cache.microsoft_motion_controller) {
-		func = oxr_verify_microsoft_motion_controller_subpath;
+		subpath_fn = oxr_verify_microsoft_motion_controller_subpath;
+		dpad_path_fn = oxr_verify_microsoft_motion_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_microsoft_motion_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.microsoft_xbox_controller) {
-		func = oxr_verify_microsoft_xbox_controller_subpath;
+		subpath_fn = oxr_verify_microsoft_xbox_controller_subpath;
+		dpad_path_fn = oxr_verify_microsoft_xbox_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_microsoft_xbox_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.oculus_go_controller) {
-		func = oxr_verify_oculus_go_controller_subpath;
+		subpath_fn = oxr_verify_oculus_go_controller_subpath;
+		dpad_path_fn = oxr_verify_oculus_go_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_oculus_go_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.oculus_touch_controller) {
-		func = oxr_verify_oculus_touch_controller_subpath;
+		subpath_fn = oxr_verify_oculus_touch_controller_subpath;
+		dpad_path_fn = oxr_verify_oculus_touch_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_oculus_touch_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.valve_index_controller) {
-		func = oxr_verify_valve_index_controller_subpath;
+		subpath_fn = oxr_verify_valve_index_controller_subpath;
+		dpad_path_fn = oxr_verify_valve_index_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_valve_index_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.mndx_ball_on_a_stick_controller) {
-		func = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
+		subpath_fn = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
+		dpad_path_fn = oxr_verify_mndx_ball_on_a_stick_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_mndx_ball_on_a_stick_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.msft_hand_interaction) {
-		func = oxr_verify_microsoft_hand_interaction_subpath;
+		subpath_fn = oxr_verify_microsoft_hand_interaction_subpath;
+		dpad_path_fn = oxr_verify_microsoft_hand_interaction_dpad_path;
+		dpad_emulator_fn = oxr_verify_microsoft_hand_interaction_dpad_emulator;
 	} else {
 		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(suggestedBindings->interactionProfile == \"%s\") is not "
 		                 "a supported interaction profile",
-		                 str);
+		                 ip_str);
 	}
 
+	// Needed in various paths here.
+	const char *str = NULL;
+	size_t length;
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
@@ -167,15 +284,74 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 			                 i, s->binding);
 		}
 
-		if (!func(str, length)) {
-			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
-			                 "(suggestedBindings->suggestedBindings[%zu]->"
-			                 "binding == \"%s\") is not a valid path",
-			                 i, str);
+		if (subpath_fn(str, length)) {
+			continue;
 		}
+
+#ifdef XR_EXT_dpad_binding
+		if (dpad_path_fn(str, length)) {
+			if (!has_dpad) {
+				return oxr_error(
+				    &log, XR_ERROR_PATH_UNSUPPORTED,
+				    "(suggestedBindings->suggestedBindings[%zu]->binding == \"%s\") is is a dpad path, "
+				    "but XR_EXT_dpad_binding is not enabled, for profile \"%s\"",
+				    i, str, ip_str);
+			}
+			continue;
+		}
+#endif
+
+		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+		                 "(suggestedBindings->suggestedBindings[%zu]->binding == \"%s\") is not a valid "
+		                 "binding path for profile \"%s\"",
+		                 i, str, ip_str);
 	}
 
-	return oxr_action_suggest_interaction_profile_bindings(&log, inst, suggestedBindings);
+
+	/*
+	 * Binding modifications.
+	 */
+
+	const XrBindingModificationsKHR *mods = OXR_GET_INPUT_FROM_CHAIN(
+	    suggestedBindings->next, XR_TYPE_BINDING_MODIFICATIONS_KHR, XrBindingModificationsKHR);
+
+	struct oxr_dpad_state dpad_state = {0};
+#ifdef XR_EXT_dpad_binding
+	if (has_dpad) {
+		if (!oxr_dpad_state_init(&dpad_state)) {
+			return oxr_error(&log, XR_ERROR_RUNTIME_FAILURE, " Failed to init dpad state!");
+		}
+
+		char temp[512] = {0};
+		for (uint32_t i = 0; mods != NULL && i < mods->bindingModificationCount; i++) {
+			const XrBindingModificationBaseHeaderKHR *mod = mods->bindingModifications[i];
+			const XrInteractionProfileDpadBindingEXT *dpad = OXR_GET_INPUT_FROM_CHAIN(
+			    mod, XR_TYPE_INTERACTION_PROFILE_DPAD_BINDING_EXT, XrInteractionProfileDpadBindingEXT);
+			if (dpad == NULL) {
+				continue;
+			}
+
+			snprintf(temp, sizeof(temp),
+			         "suggestedBindings->next<XrBindingModificationsKHR>->bindingModifications[%u]->next<"
+			         "XrInteractionProfileDpadBindingEXT>",
+			         i);
+
+			ret = process_dpad(&log, inst, &dpad_state, dpad, dpad_emulator_fn, temp, ip_str);
+			if (ret != XR_SUCCESS) {
+				// Teardown the state.
+				oxr_dpad_state_deinit(&dpad_state);
+				return ret;
+			}
+		}
+	}
+#endif
+
+
+	/*
+	 * Everything verified.
+	 */
+
+	return oxr_action_suggest_interaction_profile_bindings(&log, inst, suggestedBindings, &dpad_state);
 }
 
 XrResult
