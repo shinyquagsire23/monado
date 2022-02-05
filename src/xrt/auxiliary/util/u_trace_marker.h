@@ -53,8 +53,10 @@ void
 u_trace_marker_init(void);
 
 #define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
+#define DRV_TRACE_IDENT(IDENT) U_TRACE_EVENT(drv, #IDENT)
 #define SINK_TRACE_IDENT(IDENT) U_TRACE_EVENT(sink, #IDENT)
 #define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
+#define DRV_TRACE_MARKER() U_TRACE_EVENT(drv, __func__)
 #define IPC_TRACE_MARKER() U_TRACE_EVENT(ipc, __func__)
 #define OXR_TRACE_MARKER() U_TRACE_EVENT(oxr, __func__)
 #define COMP_TRACE_MARKER() U_TRACE_EVENT(comp, __func__)
@@ -82,6 +84,7 @@ u_trace_marker_init(void);
 #define U_TRACE_CATEGORIES(C, G)                                                                                       \
 	C(vk, "vk")         /* Vulkan calls */                                                                         \
 	C(xrt, "xrt")       /* Misc XRT calls */                                                                       \
+	C(drv, "drv")       /* Driver calls */                                                                         \
 	C(sink, "sink")     /* Sink/frameserver calls */                                                               \
 	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
 	C(comp, "comp")     /* Compositor calls  */                                                                    \
