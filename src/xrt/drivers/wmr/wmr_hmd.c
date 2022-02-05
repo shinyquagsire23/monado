@@ -28,6 +28,7 @@
 #include "util/u_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
 
 #include "tracking/t_tracking.h"
@@ -137,18 +138,24 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
 static void
 hololens_handle_unknown(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	WMR_DEBUG(wh, "Unknown hololens sensors message type: %02x, (%i)", buffer[0], size);
 }
 
 static void
 hololens_handle_control(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
 }
 
 static void
 hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	if (size < 3) {
 		WMR_DEBUG(wh, "Got small packet 0x17 (%i)", size);
 		return;
@@ -203,6 +210,8 @@ hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char
 static void
 hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	int pkt_type;
 
 	if (size < 2)
@@ -235,6 +244,8 @@ hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer,
 static void
 hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	if (size >= 45) {
 		WMR_TRACE(wh,
 		          "Got controller (%i)\n\t%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x "
@@ -251,6 +262,8 @@ hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffe
 static void
 hololens_handle_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	if (size < 12) {
 		WMR_TRACE(wh, "Got short debug packet (%i) 0x%02x", size, buffer[0]);
 		return;
@@ -273,6 +286,8 @@ hololens_handle_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 static void
 hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
+	DRV_TRACE_MARKER();
+
 	// Get the timing as close to reading the packet as possible.
 	uint64_t now_ns = os_monotonic_get_ns();
 
@@ -322,6 +337,8 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 static bool
 hololens_sensors_read_packets(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	WMR_TRACE(wh, " ");
 
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
@@ -404,6 +421,8 @@ control_ipd_value_decode(struct wmr_hmd *wh, const unsigned char *buffer, int si
 static bool
 control_read_packets(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Do not block
@@ -419,6 +438,8 @@ control_read_packets(struct wmr_hmd *wh)
 	} else {
 		WMR_TRACE(wh, "Read %u bytes", size);
 	}
+
+	DRV_TRACE_IDENT(control_packet_got);
 
 	switch (buffer[0]) {
 	case WMR_CONTROL_MSG_IPD_VALUE: //
@@ -455,6 +476,8 @@ control_read_packets(struct wmr_hmd *wh)
 static void *
 wmr_run_thread(void *ptr)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = (struct wmr_hmd *)ptr;
 
 	os_thread_helper_lock(&wh->oth);
@@ -482,6 +505,8 @@ wmr_run_thread(void *ptr)
 static void
 hololens_sensors_enable_imu(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	int size = os_hid_write(wh->hid_hololens_sensors_dev, hololens_sensors_imu_on, sizeof(hololens_sensors_imu_on));
 	if (size <= 0) {
 		WMR_ERROR(wh, "Error writing to device");
@@ -508,6 +533,8 @@ hololens_sensors_enable_imu(struct wmr_hmd *wh)
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	struct os_hid_device *hid = wh->hid_control_dev;
 
 	WMR_TRACE(wh, "Activating HP Reverb G1/G2 HMD...");
@@ -568,6 +595,8 @@ wmr_hmd_refresh_debug_gui(struct wmr_hmd *wh)
 static void
 wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	// Turn the screen off
 	wmr_hmd_screen_enable_reverb(wh, false);
 
@@ -577,6 +606,8 @@ wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
 static void
 wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable)
 {
+	DRV_TRACE_MARKER();
+
 	struct os_hid_device *hid = wh->hid_control_dev;
 
 	unsigned char cmd[2] = {0x04, 0x00};
@@ -595,6 +626,8 @@ wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable)
 static int
 wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	struct os_hid_device *hid = wh->hid_control_dev;
 
 	WMR_TRACE(wh, "Activating Odyssey HMD...");
@@ -628,6 +661,8 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 static void
 wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	// Turn the screen off
 	wmr_hmd_screen_enable_odyssey_plus(wh, false);
 
@@ -637,6 +672,8 @@ wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh)
 static void
 wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable)
 {
+	DRV_TRACE_MARKER();
+
 	struct os_hid_device *hid = wh->hid_control_dev;
 
 	unsigned char cmd[2] = {0x12, 0x00};
@@ -670,6 +707,8 @@ wmr_hmd_screen_enable_toggle(void *wh_ptr)
 static int
 wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *buf, int len)
 {
+	DRV_TRACE_MARKER();
+
 	struct os_hid_device *hid = wh->hid_hololens_sensors_dev;
 
 	unsigned char cmd[64] = {0x02, type};
@@ -691,6 +730,8 @@ wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *b
 static int
 wmr_read_config_part(struct wmr_hmd *wh, unsigned char type, unsigned char *data, int len)
 {
+	DRV_TRACE_MARKER();
+
 	unsigned char buf[33];
 	int offset = 0;
 	int size;
@@ -733,6 +774,8 @@ wmr_read_config_part(struct wmr_hmd *wh, unsigned char type, unsigned char *data
 XRT_MAYBE_UNUSED static int
 wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
 {
+	DRV_TRACE_MARKER();
+
 	unsigned char meta[84];
 	uint8_t *data;
 	int size, data_size;
@@ -773,6 +816,8 @@ wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
 static int
 wmr_read_config(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	unsigned char *data = NULL, *config_json_block;
 	size_t data_size;
 	int ret;
@@ -830,6 +875,8 @@ wmr_read_config(struct wmr_hmd *wh)
 static void
 wmr_hmd_update_inputs(struct xrt_device *xdev)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 	(void)wh;
 }
@@ -840,6 +887,8 @@ wmr_hmd_get_3dof_tracked_pose(struct xrt_device *xdev,
                               uint64_t at_timestamp_ns,
                               struct xrt_space_relation *out_relation)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
@@ -892,6 +941,8 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
                               uint64_t at_timestamp_ns,
                               struct xrt_space_relation *out_relation)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 	xrt_tracked_slam_get_tracked_pose(wh->slam.tracker, at_timestamp_ns, out_relation);
 
@@ -918,6 +969,8 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
                          uint64_t at_timestamp_ns,
                          struct xrt_space_relation *out_relation)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 	if (wh->slam.enabled && wh->use_slam_tracker) {
 		wmr_hmd_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
@@ -933,6 +986,8 @@ wmr_hmd_get_view_pose(struct xrt_device *xdev,
                       uint32_t view_index,
                       struct xrt_pose *out_pose)
 {
+	DRV_TRACE_MARKER();
+
 	(void)xdev;
 	u_device_get_view_pose(eye_relation, view_index, out_pose);
 }
@@ -940,6 +995,8 @@ wmr_hmd_get_view_pose(struct xrt_device *xdev,
 static void
 wmr_hmd_destroy(struct xrt_device *xdev)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 
 	// Destroy the thread object.
@@ -973,6 +1030,8 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 static bool
 compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = wmr_hmd(xdev);
 
 	assert(view == 0 || view == 1);
@@ -1034,6 +1093,8 @@ compute_distortion_bounds(struct wmr_hmd *wh,
                           float *out_angle_down,
                           float *out_angle_up)
 {
+	DRV_TRACE_MARKER();
+
 	assert(view == 0 || view == 1);
 
 	float tanangle_left = 0.0f, tanangle_right = 0.0f, tanangle_up = 0.0f, tanangle_down = 0.0f;
@@ -1108,6 +1169,8 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 static void
 wmr_hmd_switch_tracker(void *wh_ptr)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_hmd *wh = (struct wmr_hmd *)wh_ptr;
 	wh->use_slam_tracker = !wh->use_slam_tracker;
 	struct u_var_button *btn = &wh->gui.switch_tracker_btn;
@@ -1126,6 +1189,8 @@ wmr_hmd_switch_tracker(void *wh_ptr)
 static struct xrt_slam_sinks *
 wmr_hmd_slam_track(struct wmr_hmd *wh)
 {
+	DRV_TRACE_MARKER();
+
 	struct xrt_slam_sinks *sinks = NULL;
 
 #ifdef XRT_HAVE_SLAM
@@ -1152,6 +1217,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level)
 {
+	DRV_TRACE_MARKER();
+
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	int ret = 0, i;

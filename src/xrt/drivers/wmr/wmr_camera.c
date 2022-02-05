@@ -20,6 +20,7 @@
 #include "util/u_var.h"
 #include "util/u_sink.h"
 #include "util/u_frame.h"
+#include "util/u_trace_marker.h"
 
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
@@ -194,6 +195,8 @@ compute_frame_size(struct wmr_camera *cam)
 static void *
 wmr_cam_usb_thread(void *ptr)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_camera *cam = ptr;
 
 	os_thread_helper_lock(&cam->usb_thread);
@@ -250,6 +253,8 @@ set_active(struct wmr_camera *cam, bool active)
 static void LIBUSB_CALL
 img_xfer_cb(struct libusb_transfer *xfer)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_camera *cam = xfer->user_data;
 
 	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
@@ -394,6 +399,8 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
                 struct xrt_frame_sink *right_sink,
                 enum u_logging_level log_level)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_camera *cam = calloc(1, sizeof(struct wmr_camera));
 	int res, i;
 
@@ -460,6 +467,8 @@ fail:
 void
 wmr_camera_free(struct wmr_camera *cam)
 {
+	DRV_TRACE_MARKER();
+
 	// Stop the camera.
 	wmr_camera_stop(cam);
 
@@ -496,6 +505,8 @@ wmr_camera_free(struct wmr_camera *cam)
 bool
 wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_configs, int config_count)
 {
+	DRV_TRACE_MARKER();
+
 	int res = 0;
 
 	cam->configs = cam_configs;
@@ -559,6 +570,8 @@ fail:
 bool
 wmr_camera_stop(struct wmr_camera *cam)
 {
+	DRV_TRACE_MARKER();
+
 	int res, i;
 
 	if (!cam->running) {
@@ -593,6 +606,8 @@ fail:
 int
 wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t exposure, uint8_t gain)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_camera_gain_cmd cmd = {
 	    .magic = __cpu_to_le32(WMR_MAGIC),
 	    .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),

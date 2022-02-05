@@ -16,6 +16,7 @@
 #include "util/u_debug.h"
 #include "util/u_sink.h"
 #include "util/u_var.h"
+#include "util/u_trace_marker.h"
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 
@@ -192,6 +193,8 @@ wmr_source_configure_capture(struct xrt_fs *xfs, struct xrt_fs_capture_parameter
 static bool
 wmr_source_stream_stop(struct xrt_fs *xfs)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
 
 	bool stopped = wmr_camera_stop(ws->camera);
@@ -206,6 +209,8 @@ wmr_source_stream_stop(struct xrt_fs *xfs)
 static bool
 wmr_source_is_running(struct xrt_fs *xfs)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
 	return ws->is_running;
 }
@@ -216,6 +221,8 @@ wmr_source_stream_start(struct xrt_fs *xfs,
                         enum xrt_fs_capture_type capture_type,
                         uint32_t descriptor_index)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
 
 	if (xs == NULL && capture_type == XRT_FS_CAPTURE_TYPE_TRACKING) {
@@ -241,6 +248,8 @@ wmr_source_stream_start(struct xrt_fs *xfs,
 static bool
 wmr_source_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
 	if (sinks != NULL) {
 		ws->out_sinks = *sinks;
@@ -258,6 +267,8 @@ wmr_source_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 static void
 wmr_source_node_break_apart(struct xrt_frame_node *node)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = container_of(node, struct wmr_source, node);
 	wmr_source_stream_stop(&ws->xfs);
 }
@@ -265,6 +276,8 @@ wmr_source_node_break_apart(struct xrt_frame_node *node)
 static void
 wmr_source_node_destroy(struct xrt_frame_node *node)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = container_of(node, struct wmr_source, node);
 	WMR_DEBUG(ws, "Destroying WMR source");
 	u_sink_debug_destroy(&ws->ui_left_sink);
@@ -289,6 +302,8 @@ wmr_source_node_destroy(struct xrt_frame_node *node)
 struct xrt_fs *
 wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev_holo, struct wmr_hmd_config cfg)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = U_TYPED_CALLOC(struct wmr_source);
 	ws->log_level = debug_get_log_option_wmr_log();
 	ws->average_imus = true;
@@ -344,6 +359,8 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 void
 wmr_source_push_imu_packet(struct xrt_fs *xfs, uint64_t ts[4], struct xrt_vec3 accels[4], struct xrt_vec3 gyros[4])
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
 
 	if (ws->average_imus) {

@@ -21,6 +21,7 @@
 #include "util/u_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_trace_marker.h"
 
 #include "wmr_common.h"
 #include "wmr_bt_controller.h"
@@ -56,6 +57,8 @@ wmr_bt_controller(struct xrt_device *p)
 static bool
 read_packets(struct wmr_bt_controller *d)
 {
+	DRV_TRACE_MARKER();
+
 	unsigned char buffer[WMR_MOTION_CONTROLLER_MSG_BUFFER_SIZE];
 
 	// Better cpu efficiency with blocking reads instead of multiple reads.
@@ -63,6 +66,8 @@ read_packets(struct wmr_bt_controller *d)
 
 	// Get the timing as close to reading packet as possible.
 	uint64_t now_ns = os_monotonic_get_ns();
+
+	DRV_TRACE_IDENT(read_packets_got);
 
 	if (size < 0) {
 		WMR_ERROR(d, "WMR Controller (Bluetooth): Error reading from device");
@@ -288,10 +293,11 @@ read_controller_config(struct wmr_bt_controller *d)
 static void
 wmr_bt_controller_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
+	DRV_TRACE_MARKER();
+
 	// struct wmr_bt_controller *d = wmr_bt_controller(xdev);
 	// Todo: implement
 }
-
 
 static void
 wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
@@ -299,6 +305,8 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
                                    uint64_t at_timestamp_ns,
                                    struct xrt_space_relation *out_relation)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
 
 	// Variables needed for prediction.
@@ -341,6 +349,8 @@ wmr_bt_controller_get_tracked_pose(struct xrt_device *xdev,
 static void
 wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
 
 	struct xrt_input *inputs = d->base.inputs;
@@ -362,6 +372,8 @@ wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 static void *
 wmr_bt_controller_run_thread(void *ptr)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_bt_controller *d = wmr_bt_controller(ptr);
 
 	os_thread_helper_lock(&d->controller_thread);
@@ -383,6 +395,8 @@ wmr_bt_controller_run_thread(void *ptr)
 static void
 wmr_bt_controller_destroy(struct xrt_device *xdev)
 {
+	DRV_TRACE_MARKER();
+
 	struct wmr_bt_controller *d = wmr_bt_controller(xdev);
 
 	// Remove the variable tracking.
@@ -445,6 +459,7 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
                          enum u_logging_level log_level)
 {
+	DRV_TRACE_MARKER();
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct wmr_bt_controller *d = U_DEVICE_ALLOCATE(struct wmr_bt_controller, flags, 10, 1);

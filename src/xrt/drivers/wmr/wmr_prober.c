@@ -14,6 +14,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "wmr_interface.h"
 #include "wmr_hmd.h"
@@ -152,6 +153,8 @@ wmr_found(struct xrt_prober *xp,
           cJSON *attached_data,
           struct xrt_device **out_xdev)
 {
+	DRV_TRACE_MARKER();
+
 	enum u_logging_level log_level = debug_get_log_option_wmr_log();
 
 	struct xrt_prober_device *dev_holo = devices[index];
@@ -211,6 +214,7 @@ wmr_bt_controller_found(struct xrt_prober *xp,
                         cJSON *attached_data,
                         struct xrt_device **out_xdev)
 {
+	DRV_TRACE_MARKER();
 
 	enum u_logging_level log_level = debug_get_log_option_wmr_log();
 
