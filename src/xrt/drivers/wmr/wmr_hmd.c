@@ -75,11 +75,76 @@ const struct wmr_headset_descriptor headset_map[] = {
 };
 const int headset_map_n = sizeof(headset_map) / sizeof(headset_map[0]);
 
+
+/*
+ *
+ * Hololens decode packets.
+ *
+ */
+
+static void
+hololens_sensors_decode_packet(struct wmr_hmd *wh,
+                               struct hololens_sensors_packet *pkt,
+                               const unsigned char *buffer,
+                               int size)
+{
+	WMR_TRACE(wh, " ");
+
+	if (size != 497 && size != 381) {
+		WMR_ERROR(wh, "invalid hololens sensor packet size (expected 381 or 497 but got %d)", size);
+		return;
+	}
+
+	pkt->id = read8(&buffer);
+	for (int i = 0; i < 4; i++) {
+		pkt->temperature[i] = read16(&buffer);
+	}
+
+	for (int i = 0; i < 4; i++) {
+		pkt->gyro_timestamp[i] = read64(&buffer);
+	}
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 32; j++) {
+			pkt->gyro[i][j] = read16(&buffer);
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		pkt->accel_timestamp[i] = read64(&buffer);
+	}
+
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 4; j++) {
+			pkt->accel[i][j] = read32(&buffer);
+		}
+	}
+
+	for (int i = 0; i < 4; i++) {
+		pkt->video_timestamp[i] = read64(&buffer);
+	}
+
+	return;
+}
+
+
 /*
  *
  * Hololens packets.
  *
  */
+
+static void
+hololens_handle_unknown(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+	WMR_DEBUG(wh, "Unknown hololens sensors message type: %02x, (%i)", buffer[0], size);
+}
+
+static void
+hololens_handle_control(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+	WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
+}
 
 static void
 hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
@@ -184,7 +249,7 @@ hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffe
 }
 
 static void
-hololens_decode_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+hololens_handle_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
 	if (size < 12) {
 		WMR_TRACE(wh, "Got short debug packet (%i) 0x%02x", size, buffer[0]);
@@ -206,48 +271,52 @@ hololens_decode_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 }
 
 static void
-hololens_sensors_decode_packet(struct wmr_hmd *wh,
-                               struct hololens_sensors_packet *pkt,
-                               const unsigned char *buffer,
-                               int size)
+hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
-	WMR_TRACE(wh, " ");
+	// Get the timing as close to reading the packet as possible.
+	uint64_t now_ns = os_monotonic_get_ns();
 
-	if (size != 497 && size != 381) {
-		WMR_ERROR(wh, "invalid hololens sensor packet size (expected 381 or 497 but got %d)", size);
-		return;
-	}
+	hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
 
-	pkt->id = read8(&buffer);
-	for (int i = 0; i < 4; i++) {
-		pkt->temperature[i] = read16(&buffer);
-	}
+	struct xrt_vec3 raw_gyro[4];
+	struct xrt_vec3 raw_accel[4];
+	struct xrt_vec3 calib_gyro[4];
+	struct xrt_vec3 calib_accel[4];
 
 	for (int i = 0; i < 4; i++) {
-		pkt->gyro_timestamp[i] = read64(&buffer);
+		struct xrt_vec3 *rg = &raw_gyro[i];
+		struct xrt_vec3 *cg = &calib_gyro[i];
+		vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
+		math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
+		math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
+		math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, cg, cg);
+
+		struct xrt_vec3 *ra = &raw_accel[i];
+		struct xrt_vec3 *ca = &calib_accel[i];
+		vec3_from_hololens_accel(wh->packet.accel, i, ra);
+		math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
+		math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
+		math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, ca, ca);
 	}
 
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 32; j++) {
-			pkt->gyro[i][j] = read16(&buffer);
-		}
-	}
-
+	// Fusion tracking
+	os_mutex_lock(&wh->fusion.mutex);
 	for (int i = 0; i < 4; i++) {
-		pkt->accel_timestamp[i] = read64(&buffer);
+		m_imu_3dof_update(                                              //
+		    &wh->fusion.i3dof,                                          //
+		    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
+		    &calib_accel[i],                                            //
+		    &calib_gyro[i]);                                            //
 	}
+	wh->fusion.last_imu_timestamp_ns = now_ns;
+	wh->fusion.last_angular_velocity = calib_gyro[3];
+	os_mutex_unlock(&wh->fusion.mutex);
 
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 4; j++) {
-			pkt->accel[i][j] = read32(&buffer);
-		}
-	}
-
-	for (int i = 0; i < 4; i++) {
-		pkt->video_timestamp[i] = read64(&buffer);
-	}
-
-	return;
+	// SLAM tracking
+	//! @todo For now we are using raw_samples here because the centerline fix
+	//! in the calibrated samples breaks SLAM systems. Handling of coordinate
+	//! systems needs to be revisited.
+	wmr_source_push_imu_packet(wh->slam.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
 }
 
 static bool
@@ -271,54 +340,9 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	}
 
 	switch (buffer[0]) {
-	case WMR_MS_HOLOLENS_MSG_SENSORS: {
-		// Get the timing as close to reading the packet as possible.
-		uint64_t now_ns = os_monotonic_get_ns();
-
-		hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
-
-		struct xrt_vec3 raw_gyro[4];
-		struct xrt_vec3 raw_accel[4];
-		struct xrt_vec3 calib_gyro[4];
-		struct xrt_vec3 calib_accel[4];
-
-		for (int i = 0; i < 4; i++) {
-			struct xrt_vec3 *rg = &raw_gyro[i];
-			struct xrt_vec3 *cg = &calib_gyro[i];
-			vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
-			math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
-			math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
-			math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, cg, cg);
-
-			struct xrt_vec3 *ra = &raw_accel[i];
-			struct xrt_vec3 *ca = &calib_accel[i];
-			vec3_from_hololens_accel(wh->packet.accel, i, ra);
-			math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
-			math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
-			math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, ca, ca);
-		}
-
-		// Fusion tracking
-		os_mutex_lock(&wh->fusion.mutex);
-		for (int i = 0; i < 4; i++) {
-			m_imu_3dof_update(                                              //
-			    &wh->fusion.i3dof,                                          //
-			    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
-			    &calib_accel[i],                                            //
-			    &calib_gyro[i]);                                            //
-		}
-		wh->fusion.last_imu_timestamp_ns = now_ns;
-		wh->fusion.last_angular_velocity = calib_gyro[3];
-		os_mutex_unlock(&wh->fusion.mutex);
-
-		// SLAM tracking
-		//! @todo For now we are using raw_samples here because the centerline fix
-		//! in the calibrated samples breaks SLAM systems. Handling of coordinate
-		//! systems needs to be revisited.
-		wmr_source_push_imu_packet(wh->slam.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
-
+	case WMR_MS_HOLOLENS_MSG_SENSORS: //
+		hololens_handle_sensors(wh, buffer, size);
 		break;
-	}
 	case WMR_MS_HOLOLENS_MSG_BT_IFACE: //
 		hololens_handle_bt_iface_packet(wh, buffer, size);
 		break;
@@ -330,13 +354,13 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 		hololens_handle_controller_status_packet(wh, buffer, size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_CONTROL: //
-		WMR_DEBUG(wh, "WMR_MS_HOLOLENS_MSG_CONTROL: %02x, (%i)", buffer[0], size);
+		hololens_handle_control(wh, buffer, size);
 		break;
 	case WMR_MS_HOLOLENS_MSG_DEBUG: //
-		hololens_decode_debug(wh, buffer, size);
+		hololens_handle_debug(wh, buffer, size);
 		break;
 	default: //
-		WMR_DEBUG(wh, "Unknown message type: %02x, (%i)", buffer[0], size);
+		hololens_handle_unknown(wh, buffer, size);
 		break;
 	}
 
@@ -667,7 +691,6 @@ wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *b
 static int
 wmr_read_config_part(struct wmr_hmd *wh, unsigned char type, unsigned char *data, int len)
 {
-
 	unsigned char buf[33];
 	int offset = 0;
 	int size;
