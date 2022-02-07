@@ -28,6 +28,7 @@ namespace detail {
 		friend class HistoryBuffer<T, MaxSize>;
 
 	public:
+		using Self = HistoryBufIterator<T, MaxSize>;
 		using container_type = HistoryBuffer<T, MaxSize>;
 		using typename base::difference_type;
 		using typename base::iterator_category;
@@ -75,53 +76,53 @@ namespace detail {
 		operator->() const noexcept;
 
 		//! Pre-increment: Advance, then return self.
-		HistoryBufIterator &
+		Self &
 		operator++();
 
 		//! Post-increment: return a copy of initial state after incrementing self
-		HistoryBufIterator
+		Self
 		operator++(int);
 
 		//! Pre-decrement: Subtract, then return self.
-		HistoryBufIterator &
+		Self &
 		operator--();
 
 		//! Post-decrement: return a copy of initial state after decrementing self
-		HistoryBufIterator
+		Self
 		operator--(int);
 
 		// Use the base class implementation of subtracting one iterator from another
 		using base::operator-;
 
 		//! Increment by an arbitrary amount.
-		HistoryBufIterator &
+		Self &
 		operator+=(std::ptrdiff_t n) noexcept;
 
 		//! Decrement by an arbitrary amount.
-		HistoryBufIterator &
+		Self &
 		operator-=(std::ptrdiff_t n) noexcept;
 
 		//! Increment a copy of the iterator by an arbitrary amount.
-		HistoryBufIterator
+		Self
 		operator+(std::ptrdiff_t n) const noexcept;
 
 		//! Decrement a copy of the iterator by an arbitrary amount.
-		HistoryBufIterator
+		Self
 		operator-(std::ptrdiff_t n) const noexcept;
 
 	private:
 		//! Factory for a "begin" iterator from a container and its helper: mostly for internal use.
-		static HistoryBufIterator
+		static Self
 		begin(container_type &container, const RingBufferHelper<MaxSize> &helper)
 		{
-			return HistoryBufIterator{&container, std::move(base::begin(helper))};
+			return {&container, std::move(base::begin(helper))};
 		}
 
 		//! Construct the "past the end" iterator that can be decremented safely
-		static HistoryBufIterator
+		static Self
 		end(container_type &container, const RingBufferHelper<MaxSize> &helper)
 		{
-			return HistoryBufIterator{&container, std::move(base::end(helper))};
+			return {&container, std::move(base::end(helper))};
 		}
 
 		// for use internally
@@ -178,7 +179,7 @@ namespace detail {
 	inline HistoryBufIterator<T, MaxSize>
 	HistoryBufIterator<T, MaxSize>::operator--(int)
 	{
-		HistoryBufIterator tmp = *this;
+		Self tmp = *this;
 		this->decrement_n(1);
 		return tmp;
 	}
@@ -203,7 +204,7 @@ namespace detail {
 	inline HistoryBufIterator<T, MaxSize>
 	HistoryBufIterator<T, MaxSize>::operator+(std::ptrdiff_t n) const noexcept
 	{
-		HistoryBufIterator ret(*this);
+		Self ret(*this);
 		ret += n;
 		return ret;
 	}
@@ -212,7 +213,7 @@ namespace detail {
 	inline HistoryBufIterator<T, MaxSize>
 	HistoryBufIterator<T, MaxSize>::operator-(std::ptrdiff_t n) const noexcept
 	{
-		HistoryBufIterator ret(*this);
+		Self ret(*this);
 		ret -= n;
 		return ret;
 	}
@@ -224,6 +225,7 @@ namespace detail {
 	{}
 } // namespace detail
 
+// HistoryBuffer method implementations that depend on iterator availability
 
 template <typename T, size_t MaxSize>
 inline typename HistoryBuffer<T, MaxSize>::iterator
