@@ -130,6 +130,19 @@ ipc_client_device_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
+ipc_client_device_get_view_poses(struct xrt_device *xdev,
+                                 const struct xrt_vec3 *default_eye_relation,
+                                 uint64_t at_timestamp_ns,
+                                 uint32_t view_count,
+                                 struct xrt_space_relation *out_head_relation,
+                                 struct xrt_fov *out_fovs,
+                                 struct xrt_pose *out_poses)
+{
+	// Empty
+	assert(false);
+}
+
+static void
 ipc_client_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
@@ -158,6 +171,7 @@ ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origi
 	icd->base.get_tracked_pose = ipc_client_device_get_tracked_pose;
 	icd->base.get_hand_tracking = ipc_client_device_get_hand_tracking;
 	icd->base.get_view_pose = ipc_client_device_get_view_pose;
+	icd->base.get_view_poses = ipc_client_device_get_view_poses;
 	icd->base.set_output = ipc_client_device_set_output;
 	icd->base.destroy = ipc_client_device_destroy;
 

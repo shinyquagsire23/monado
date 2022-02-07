@@ -278,3 +278,13 @@ struct ipc_arg_swapchain_from_native
 {
 	size_t sizes[IPC_MAX_SWAPCHAIN_HANDLES];
 };
+
+/*!
+ * Arguments for xrt_device::get_view_poses with two views.
+ */
+struct ipc_info_get_view_poses_2
+{
+	struct xrt_fov fovs[2];
+	struct xrt_pose poses[2];
+	struct xrt_space_relation head_relation;
+};

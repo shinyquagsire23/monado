@@ -118,6 +118,42 @@ ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
 	}
 }
 
+static void
+ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
+                              const struct xrt_vec3 *default_eye_relation,
+                              uint64_t at_timestamp_ns,
+                              uint32_t view_count,
+                              struct xrt_space_relation *out_head_relation,
+                              struct xrt_fov *out_fovs,
+                              struct xrt_pose *out_poses)
+{
+	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+
+	struct ipc_info_get_view_poses_2 info = {0};
+
+	if (view_count == 2) {
+		xrt_result_t r = ipc_call_device_get_view_poses_2( //
+		    ich->ipc_c,                                    //
+		    ich->device_id,                                //
+		    default_eye_relation,                          //
+		    at_timestamp_ns,                               //
+		    &info);                                        //
+		if (r != XRT_SUCCESS) {
+			IPC_ERROR(ich->ipc_c, "Error calling view poses!");
+		}
+
+		*out_head_relation = info.head_relation;
+		for (int i = 0; i < 2; i++) {
+			out_fovs[i] = info.fovs[i];
+			out_poses[i] = info.poses[i];
+		}
+	} else {
+		IPC_ERROR(ich->ipc_c, "Can not handle %u view_count, only 2 supported.", view_count);
+		assert(false && !"Can only handle view_count of 2.");
+	}
+}
+
+
 /*!
  * @public @memberof ipc_client_hmd
  */
@@ -136,6 +172,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->base.update_inputs = ipc_client_hmd_update_inputs;
 	ich->base.get_tracked_pose = ipc_client_hmd_get_tracked_pose;
 	ich->base.get_view_pose = ipc_client_hmd_get_view_pose;
+	ich->base.get_view_poses = ipc_client_hmd_get_view_poses;
 	ich->base.destroy = ipc_client_hmd_destroy;
 
 	// Start copying the information from the isdev.
