@@ -193,6 +193,21 @@ get_view_pose(struct xrt_device *xdev,
 	xrt_device_get_view_pose(target, eye_relation, view_index, out_pose);
 }
 
+static void
+get_view_poses(struct xrt_device *xdev,
+               const struct xrt_vec3 *default_eye_relation,
+               uint64_t at_timestamp_ns,
+               uint32_t view_count,
+               struct xrt_space_relation *out_head_relation,
+               struct xrt_fov *out_fovs,
+               struct xrt_pose *out_poses)
+{
+	struct multi_device *d = (struct multi_device *)xdev;
+	struct xrt_device *target = d->tracking_override.target;
+	xrt_device_get_view_poses(target, default_eye_relation, at_timestamp_ns, view_count, out_head_relation,
+	                          out_fovs, out_poses);
+}
+
 static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
@@ -253,6 +268,7 @@ multi_create_tracking_override(enum xrt_tracking_override_type override_type,
 	d->base.update_inputs = update_inputs;
 	d->base.compute_distortion = compute_distortion;
 	d->base.get_view_pose = get_view_pose;
+	d->base.get_view_poses = get_view_poses;
 
 	return &d->base;
 }

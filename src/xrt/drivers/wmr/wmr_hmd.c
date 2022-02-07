@@ -993,6 +993,19 @@ wmr_hmd_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
+wmr_hmd_get_view_poses(struct xrt_device *xdev,
+                       const struct xrt_vec3 *default_eye_relation,
+                       uint64_t at_timestamp_ns,
+                       uint32_t view_count,
+                       struct xrt_space_relation *out_head_relation,
+                       struct xrt_fov *out_fovs,
+                       struct xrt_pose *out_poses)
+{
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+}
+
+static void
 wmr_hmd_destroy(struct xrt_device *xdev)
 {
 	DRV_TRACE_MARKER();
@@ -1233,6 +1246,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.update_inputs = wmr_hmd_update_inputs;
 	wh->base.get_tracked_pose = wmr_hmd_get_tracked_pose;
 	wh->base.get_view_pose = wmr_hmd_get_view_pose;
+	wh->base.get_view_poses = wmr_hmd_get_view_poses;
 	wh->base.destroy = wmr_hmd_destroy;
 	wh->base.name = XRT_DEVICE_GENERIC_HMD;
 	wh->base.device_type = XRT_DEVICE_TYPE_HMD;

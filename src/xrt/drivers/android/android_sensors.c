@@ -178,6 +178,20 @@ android_device_get_view_pose(struct xrt_device *xdev,
 	u_device_get_view_pose(eye_relation, view_index, out_pose);
 }
 
+static void
+android_device_get_view_poses(struct xrt_device *xdev,
+                              const struct xrt_vec3 *default_eye_relation,
+                              uint64_t at_timestamp_ns,
+                              uint32_t view_count,
+                              struct xrt_space_relation *out_head_relation,
+                              struct xrt_fov *out_fovs,
+                              struct xrt_pose *out_poses)
+{
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+}
+
+
 /*
  *
  * Prober functions.
@@ -204,6 +218,7 @@ android_device_create()
 	d->base.update_inputs = android_device_update_inputs;
 	d->base.get_tracked_pose = android_device_get_tracked_pose;
 	d->base.get_view_pose = android_device_get_view_pose;
+	d->base.get_view_poses = android_device_get_view_poses;
 	d->base.compute_distortion = android_device_compute_distortion;
 	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	d->base.device_type = XRT_DEVICE_TYPE_HMD;

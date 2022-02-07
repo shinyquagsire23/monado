@@ -113,6 +113,19 @@ sample_hmd_get_view_pose(struct xrt_device *xdev,
 	u_device_get_view_pose(eye_relation, view_index, out_pose);
 }
 
+static void
+sample_hmd_get_view_poses(struct xrt_device *xdev,
+                          const struct xrt_vec3 *default_eye_relation,
+                          uint64_t at_timestamp_ns,
+                          uint32_t view_count,
+                          struct xrt_space_relation *out_head_relation,
+                          struct xrt_fov *out_fovs,
+                          struct xrt_pose *out_poses)
+{
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+}
+
 struct xrt_device *
 sample_hmd_create(void)
 {
@@ -124,6 +137,7 @@ sample_hmd_create(void)
 	sh->base.update_inputs = sample_hmd_update_inputs;
 	sh->base.get_tracked_pose = sample_hmd_get_tracked_pose;
 	sh->base.get_view_pose = sample_hmd_get_view_pose;
+	sh->base.get_view_poses = sample_hmd_get_view_poses;
 	sh->base.destroy = sample_hmd_destroy;
 	sh->base.name = XRT_DEVICE_GENERIC_HMD;
 	sh->base.device_type = XRT_DEVICE_TYPE_HMD;

@@ -52,6 +52,8 @@
 #include "../ht_ctrl_emu/ht_ctrl_emu_interface.h"
 #include "xrt/xrt_config_drivers.h"
 
+#include "util/u_trace_marker.h"
+
 #include "survive_driver.h"
 
 // If we haven't gotten a config for devices this long after startup, just start without those devices
@@ -462,6 +464,30 @@ survive_device_get_view_pose(struct xrt_device *xdev,
 	out_pose->orientation = survive->hmd.config.display.rot[view_index];
 }
 
+static void
+survive_device_get_view_poses(struct xrt_device *xdev,
+                              const struct xrt_vec3 *default_eye_relation,
+                              uint64_t at_timestamp_ns,
+                              uint32_t view_count,
+                              struct xrt_space_relation *out_head_relation,
+                              struct xrt_fov *out_fovs,
+                              struct xrt_pose *out_poses)
+{
+	XRT_TRACE_MARKER();
+
+	// Only supports two views.
+	assert(view_count <= 2);
+
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+
+	// This is for the Index' canted displays, on the Vive [Pro] they are identity.
+	struct survive_device *survive = (struct survive_device *)xdev;
+	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(survive->hmd.config.display.rot); i++) {
+		out_poses[i].orientation = survive->hmd.config.display.rot[i];
+	}
+}
+
 enum InputComponent
 {
 	COMP_1D,
@@ -831,6 +857,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->base.update_inputs = survive_device_update_inputs;
 	survive->base.get_tracked_pose = survive_device_get_tracked_pose;
 	survive->base.get_view_pose = survive_device_get_view_pose;
+	survive->base.get_view_poses = survive_device_get_view_poses;
 	survive->base.tracking_origin = &sys->base;
 
 	SURVIVE_INFO(survive, "survive HMD present");

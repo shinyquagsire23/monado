@@ -162,6 +162,18 @@ r_device_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
+r_device_get_view_poses(struct xrt_device *xdev,
+                        const struct xrt_vec3 *default_eye_relation,
+                        uint64_t at_timestamp_ns,
+                        uint32_t view_count,
+                        struct xrt_space_relation *out_head_relation,
+                        struct xrt_fov *out_fovs,
+                        struct xrt_pose *out_poses)
+{
+	assert(false);
+}
+
+static void
 r_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	struct r_device *rd = r_device(xdev);
@@ -186,6 +198,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->base.get_tracked_pose = r_device_get_tracked_pose;
 	rd->base.get_hand_tracking = r_device_get_hand_tracking;
 	rd->base.get_view_pose = r_device_get_view_pose;
+	rd->base.get_view_poses = r_device_get_view_poses;
 	rd->base.set_output = r_device_set_output;
 	rd->base.destroy = r_device_destroy;
 	rd->base.tracking_origin = &r->base;

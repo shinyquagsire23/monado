@@ -134,6 +134,30 @@ vive_device_get_view_pose(struct xrt_device *xdev,
 	out_pose->orientation = d->config.display.rot[view_index];
 }
 
+static void
+vive_device_get_view_poses(struct xrt_device *xdev,
+                           const struct xrt_vec3 *default_eye_relation,
+                           uint64_t at_timestamp_ns,
+                           uint32_t view_count,
+                           struct xrt_space_relation *out_head_relation,
+                           struct xrt_fov *out_fovs,
+                           struct xrt_pose *out_poses)
+{
+	XRT_TRACE_MARKER();
+
+	// Only supports two views.
+	assert(view_count <= 2);
+
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+
+	// This is for the Index' canted displays, on the Vive [Pro] they are identity.
+	struct vive_device *d = vive_device(xdev);
+	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(d->config.display.rot); i++) {
+		out_poses[i].orientation = d->config.display.rot[i];
+	}
+}
+
 static int
 vive_mainboard_get_device_info(struct vive_device *d)
 {
@@ -756,6 +780,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.update_inputs = vive_device_update_inputs;
 	d->base.get_tracked_pose = vive_device_get_tracked_pose;
 	d->base.get_view_pose = vive_device_get_view_pose;
+	d->base.get_view_poses = vive_device_get_view_poses;
 	d->base.destroy = vive_device_destroy;
 	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 	d->base.name = XRT_DEVICE_GENERIC_HMD;

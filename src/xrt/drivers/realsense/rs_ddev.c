@@ -421,6 +421,18 @@ rs_ddev_get_view_pose(struct xrt_device *xdev,
 }
 
 static void
+rs_ddev_get_view_poses(struct xrt_device *xdev,
+                       const struct xrt_vec3 *default_eye_relation,
+                       uint64_t at_timestamp_ns,
+                       uint32_t view_count,
+                       struct xrt_space_relation *out_head_relation,
+                       struct xrt_fov *out_fovs,
+                       struct xrt_pose *out_poses)
+{
+	assert(false);
+}
+
+static void
 rs_ddev_destroy(struct xrt_device *xdev)
 {
 	struct rs_ddev *rs = rs_ddev(xdev);
@@ -466,6 +478,7 @@ rs_ddev_create(int device_idx)
 	rs->base.update_inputs = rs_ddev_update_inputs;
 	rs->base.get_tracked_pose = rs_ddev_get_tracked_pose;
 	rs->base.get_view_pose = rs_ddev_get_view_pose;
+	rs->base.get_view_poses = rs_ddev_get_view_poses;
 	rs->base.destroy = rs_ddev_destroy;
 	rs->base.name = XRT_DEVICE_REALSENSE;
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;

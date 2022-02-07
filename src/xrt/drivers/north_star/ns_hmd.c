@@ -464,6 +464,26 @@ ns_hmd_get_view_pose(struct xrt_device *xdev,
 	*out_pose = ns->head_pose_to_eye[view_index];
 }
 
+static void
+ns_hmd_get_view_poses(struct xrt_device *xdev,
+                      const struct xrt_vec3 *default_eye_relation,
+                      uint64_t at_timestamp_ns,
+                      uint32_t view_count,
+                      struct xrt_space_relation *out_head_relation,
+                      struct xrt_fov *out_fovs,
+                      struct xrt_pose *out_poses)
+{
+	// Use this to take care of most stuff, then fix up below.
+	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	                        out_poses);
+
+	// Fix fix.
+	struct ns_hmd *ns = ns_hmd(xdev);
+	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(ns->head_pose_to_eye); i++) {
+		out_poses[i] = ns->head_pose_to_eye[i];
+	}
+}
+
 static bool
 ns_config_load(struct ns_hmd *ns, const char *config_path)
 {
@@ -568,6 +588,7 @@ ns_hmd_create(const char *config_path)
 	ns->base.update_inputs = ns_hmd_update_inputs;
 	ns->base.get_tracked_pose = ns_hmd_get_tracked_pose;
 	ns->base.get_view_pose = ns_hmd_get_view_pose;
+	ns->base.get_view_poses = ns_hmd_get_view_poses;
 	ns->base.destroy = ns_hmd_destroy;
 	ns->base.name = XRT_DEVICE_GENERIC_HMD;
 	math_pose_identity(&ns->no_tracker_relation.pose);
@@ -601,8 +622,6 @@ ns_hmd_create(const char *config_path)
 
 	ns->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	ns->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
-
-	ns->base.get_view_pose = ns_hmd_get_view_pose;
 
 	// Setup variable tracker.
 	u_var_add_root(ns, "North Star", true);
