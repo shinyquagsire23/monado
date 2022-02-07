@@ -444,3 +444,23 @@ u_device_get_view_pose(const struct xrt_vec3 *eye_relation, uint32_t view_index,
 
 	*out_pose = pose;
 }
+
+void
+u_device_get_view_poses(struct xrt_device *xdev,
+                        const struct xrt_vec3 *default_eye_relation,
+                        uint64_t at_timestamp_ns,
+                        uint32_t view_count,
+                        struct xrt_space_relation *out_head_relation,
+                        struct xrt_fov *out_fovs,
+                        struct xrt_pose *out_poses)
+{
+	xrt_device_get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_timestamp_ns, out_head_relation);
+
+	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(xdev->hmd->views); i++) {
+		out_fovs[i] = xdev->hmd->views[i].fov;
+	}
+
+	for (uint32_t i = 0; i < view_count; i++) {
+		u_device_get_view_pose(default_eye_relation, i, &out_poses[i]);
+	}
+}

@@ -158,6 +158,19 @@ u_device_setup_tracking_origins(struct xrt_device *head,
 void
 u_device_get_view_pose(const struct xrt_vec3 *eye_relation, uint32_t view_index, struct xrt_pose *out_pose);
 
+/*!
+ * Helper function for `get_view_poses` in a HMD driver.
+ */
+void
+u_device_get_view_poses(struct xrt_device *xdev,
+                        const struct xrt_vec3 *default_eye_relation,
+                        uint64_t at_timestamp_ns,
+                        uint32_t view_count,
+                        struct xrt_space_relation *out_head_relation,
+                        struct xrt_fov *out_fovs,
+                        struct xrt_pose *out_poses);
+
+
 #ifdef __cplusplus
 }
 #endif
