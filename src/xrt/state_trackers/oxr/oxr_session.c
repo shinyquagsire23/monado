@@ -365,8 +365,46 @@ oxr_session_locate_views(struct oxr_logger *log,
 		U_LOG_D("viewLocateInfo->displayTime %" PRIu64, viewLocateInfo->displayTime);
 	}
 
+	/*
+	 * Get head relation, fovs and view poses.
+	 */
+
+	// To be passed down to the devices, some can override this.
+	const struct xrt_vec3 default_eye_relation = {
+	    sess->ipd_meters,
+	    0.0f,
+	    0.0f,
+	};
+
+	const uint64_t xdisplay_time =
+	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, viewLocateInfo->displayTime);
+	//! @todo Head relation currently not used.
+	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	struct xrt_fov fovs[2] = {0};
+	struct xrt_pose poses[2] = {0};
+
+	xrt_device_get_view_poses( //
+	    xdev,                  //
+	    &default_eye_relation, //
+	    xdisplay_time,         //
+	    2,                     //
+	    &head_relation,        //
+	    fovs,                  //
+	    poses);
+
+
+	/*
+	 * Get the pure_relation if needed.
+	 */
+
 	// Get the viewLocateInfo->space to view space relation.
 	struct xrt_space_relation pure_relation;
+
+	/*!
+	 * @todo Introduce oxr_space_ref_relation_with_relation that takes
+	 * relation and transforms it into the correct relationship.
+	 */
+	// If we are going from stage space use the head pose.
 	oxr_space_ref_relation(           //
 	    log,                          //
 	    sess,                         //
@@ -381,18 +419,14 @@ oxr_session_locate_views(struct oxr_logger *log,
 
 	viewState->viewStateFlags = 0;
 
-	//! @todo Do not hardcode IPD.
-	const struct xrt_vec3 eye_relation = {
-	    sess->ipd_meters,
-	    0.0f,
-	    0.0f,
-	};
+
 
 	for (uint32_t i = 0; i < view_count; i++) {
-		struct xrt_pose view_pose = XRT_POSE_IDENTITY;
+		/*
+		 * Pose
+		 */
 
-		// Get the per view pose from the device.
-		xrt_device_get_view_pose(xdev, &eye_relation, i, &view_pose);
+		const struct xrt_pose view_pose = poses[i];
 
 		// Do the magical space relation dance here.
 		struct xrt_space_relation result = {0};
@@ -408,13 +442,24 @@ oxr_session_locate_views(struct oxr_logger *log,
 		safe_copy_pose.xrt = result.pose;
 		views[i].pose = safe_copy_pose.oxr;
 
-		// Copy the fov information directly from the device.
+
+		/*
+		 * Fov
+		 */
+
+		const struct xrt_fov fov = fovs[i];
+
 		union {
 			struct xrt_fov xrt;
 			XrFovf oxr;
 		} safe_copy_fov = {0};
-		safe_copy_fov.xrt = xdev->hmd->views[i].fov;
+		safe_copy_fov.xrt = fov;
 		views[i].fov = safe_copy_fov.oxr;
+
+
+		/*
+		 * Checking, debug and flag handling.
+		 */
 
 		struct xrt_pose *pose = (struct xrt_pose *)&views[i].pose;
 		if ((result.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0 &&
