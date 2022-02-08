@@ -103,17 +103,6 @@ sample_hmd_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-sample_hmd_get_view_pose(struct xrt_device *xdev,
-                         const struct xrt_vec3 *eye_relation,
-                         uint32_t view_index,
-                         struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	// This helper function assumes a symmetric IPD
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 sample_hmd_get_view_poses(struct xrt_device *xdev,
                           const struct xrt_vec3 *default_eye_relation,
                           uint64_t at_timestamp_ns,
@@ -136,7 +125,6 @@ sample_hmd_create(void)
 	struct sample_hmd *sh = U_DEVICE_ALLOCATE(struct sample_hmd, flags, 1, 0);
 	sh->base.update_inputs = sample_hmd_update_inputs;
 	sh->base.get_tracked_pose = sample_hmd_get_tracked_pose;
-	sh->base.get_view_pose = sample_hmd_get_view_pose;
 	sh->base.get_view_poses = sample_hmd_get_view_poses;
 	sh->base.destroy = sample_hmd_destroy;
 	sh->base.name = XRT_DEVICE_GENERIC_HMD;

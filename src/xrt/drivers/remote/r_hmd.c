@@ -85,16 +85,6 @@ r_hmd_get_hand_tracking(struct xrt_device *xdev,
 }
 
 static void
-r_hmd_get_view_pose(struct xrt_device *xdev,
-                    const struct xrt_vec3 *eye_relation,
-                    uint32_t view_index,
-                    struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 r_hmd_get_view_poses(struct xrt_device *xdev,
                      const struct xrt_vec3 *default_eye_relation,
                      uint64_t at_timestamp_ns,
@@ -130,7 +120,6 @@ r_hmd_create(struct r_hub *r)
 	rh->base.update_inputs = r_hmd_update_inputs;
 	rh->base.get_tracked_pose = r_hmd_get_tracked_pose;
 	rh->base.get_hand_tracking = r_hmd_get_hand_tracking;
-	rh->base.get_view_pose = r_hmd_get_view_pose;
 	rh->base.get_view_poses = r_hmd_get_view_poses;
 	rh->base.set_output = r_hmd_set_output;
 	rh->base.destroy = r_hmd_destroy;

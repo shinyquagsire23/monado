@@ -169,16 +169,6 @@ android_device_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-android_device_get_view_pose(struct xrt_device *xdev,
-                             const struct xrt_vec3 *eye_relation,
-                             uint32_t view_index,
-                             struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 android_device_get_view_poses(struct xrt_device *xdev,
                               const struct xrt_vec3 *default_eye_relation,
                               uint64_t at_timestamp_ns,
@@ -217,7 +207,6 @@ android_device_create()
 	d->base.destroy = android_device_destroy;
 	d->base.update_inputs = android_device_update_inputs;
 	d->base.get_tracked_pose = android_device_get_tracked_pose;
-	d->base.get_view_pose = android_device_get_view_pose;
 	d->base.get_view_poses = android_device_get_view_poses;
 	d->base.compute_distortion = android_device_compute_distortion;
 	d->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;

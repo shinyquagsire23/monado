@@ -144,16 +144,6 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-dummy_hmd_get_view_pose(struct xrt_device *xdev,
-                        const struct xrt_vec3 *eye_relation,
-                        uint32_t view_index,
-                        struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 dummy_hmd_get_view_poses(struct xrt_device *xdev,
                          const struct xrt_vec3 *default_eye_relation,
                          uint64_t at_timestamp_ns,
@@ -174,7 +164,6 @@ dummy_hmd_create(void)
 	struct dummy_hmd *dh = U_DEVICE_ALLOCATE(struct dummy_hmd, flags, 1, 0);
 	dh->base.update_inputs = dummy_hmd_update_inputs;
 	dh->base.get_tracked_pose = dummy_hmd_get_tracked_pose;
-	dh->base.get_view_pose = dummy_hmd_get_view_pose;
 	dh->base.get_view_poses = dummy_hmd_get_view_poses;
 	dh->base.destroy = dummy_hmd_destroy;
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;

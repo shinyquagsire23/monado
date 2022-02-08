@@ -412,15 +412,6 @@ rs_ddev_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-rs_ddev_get_view_pose(struct xrt_device *xdev,
-                      const struct xrt_vec3 *eye_relation,
-                      uint32_t view_index,
-                      struct xrt_pose *out_pose)
-{
-	assert(false);
-}
-
-static void
 rs_ddev_get_view_poses(struct xrt_device *xdev,
                        const struct xrt_vec3 *default_eye_relation,
                        uint64_t at_timestamp_ns,
@@ -477,7 +468,6 @@ rs_ddev_create(int device_idx)
 	        rs->enable_relocalization, rs->enable_pose_prediction, rs->enable_pose_filtering);
 	rs->base.update_inputs = rs_ddev_update_inputs;
 	rs->base.get_tracked_pose = rs_ddev_get_tracked_pose;
-	rs->base.get_view_pose = rs_ddev_get_view_pose;
 	rs->base.get_view_poses = rs_ddev_get_view_poses;
 	rs->base.destroy = rs_ddev_destroy;
 	rs->base.name = XRT_DEVICE_REALSENSE;

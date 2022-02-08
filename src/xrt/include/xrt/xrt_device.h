@@ -347,39 +347,6 @@ struct xrt_device
 	 * xrt_device::get_tracked_pose for that.
 	 *
 	 * @param[in] xdev         The device.
-	 * @param[in] eye_relation The interpupillary relation as a 3D position.
-	 *                         Most simple stereo devices would just want to
-	 *                         set `out_pose->position.[x|y|z] = ipd.[x|y|z]
-	 *                         / 2.0f` and adjust for left vs right view.
-	 *                         Not to be confused with IPD that is absolute
-	 *                         distance, this is a full 3D translation
-	 *                         If a device has a more accurate/dynamic way of
-	 *                         knowing the eye relation, it may ignore this
-	 *                         input.
-	 * @param[in] view_index   Index of view.
-	 * @param[out] out_pose    Output pose. See eye_relation argument for
-	 *                         sample position. Be sure to also set
-	 *                         orientation: most likely identity
-	 *                         orientation unless you have canted screens.
-	 *                         (Caution: Even if you have eye tracking, you
-	 *                         won't use eye orientation here!)
-	 */
-	void (*get_view_pose)(struct xrt_device *xdev,
-	                      const struct xrt_vec3 *eye_relation,
-	                      uint32_t view_index,
-	                      struct xrt_pose *out_pose);
-
-	/*!
-	 * @brief Get the per-view pose in relation to the view space.
-	 *
-	 * On most device with coplanar displays, this just calls a helper to
-	 * process the provided eye relation, but this may also handle canted
-	 * displays as well as eye tracking.
-	 *
-	 * Does not do any device level tracking, use
-	 * xrt_device::get_tracked_pose for that.
-	 *
-	 * @param[in] xdev         The device.
 	 * @param[in] default_eye_relation
 	 *                         The interpupillary relation as a 3D position.
 	 *                         Most simple stereo devices would just want to
@@ -463,20 +430,6 @@ static inline void
 xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
 {
 	xdev->set_output(xdev, name, value);
-}
-
-/*!
- * Helper function for @ref xrt_device::get_view_pose.
- *
- * @public @memberof xrt_device
- */
-static inline void
-xrt_device_get_view_pose(struct xrt_device *xdev,
-                         const struct xrt_vec3 *eye_relation,
-                         uint32_t view_index,
-                         struct xrt_pose *out_pose)
-{
-	xdev->get_view_pose(xdev, eye_relation, view_index, out_pose);
 }
 
 /*!

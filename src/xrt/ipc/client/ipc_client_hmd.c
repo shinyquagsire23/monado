@@ -105,20 +105,6 @@ ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-ipc_client_hmd_get_view_pose(struct xrt_device *xdev,
-                             const struct xrt_vec3 *eye_relation,
-                             uint32_t view_index,
-                             struct xrt_pose *out_pose)
-{
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
-
-	xrt_result_t r = ipc_call_device_get_view_pose(ich->ipc_c, ich->device_id, eye_relation, view_index, out_pose);
-	if (r != XRT_SUCCESS) {
-		IPC_ERROR(ich->ipc_c, "Error calling view pose!");
-	}
-}
-
-static void
 ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
                               const struct xrt_vec3 *default_eye_relation,
                               uint64_t at_timestamp_ns,
@@ -171,7 +157,6 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->device_id = device_id;
 	ich->base.update_inputs = ipc_client_hmd_update_inputs;
 	ich->base.get_tracked_pose = ipc_client_hmd_get_tracked_pose;
-	ich->base.get_view_pose = ipc_client_hmd_get_view_pose;
 	ich->base.get_view_poses = ipc_client_hmd_get_view_poses;
 	ich->base.destroy = ipc_client_hmd_destroy;
 

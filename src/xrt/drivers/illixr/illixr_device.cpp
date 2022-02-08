@@ -131,16 +131,6 @@ illixr_hmd_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-illixr_hmd_get_view_pose(struct xrt_device *xdev,
-                         const struct xrt_vec3 *eye_relation,
-                         uint32_t view_index,
-                         struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 illixr_hmd_get_view_poses(struct xrt_device *xdev,
                           const struct xrt_vec3 *default_eye_relation,
                           uint64_t at_timestamp_ns,

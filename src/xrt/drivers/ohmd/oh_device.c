@@ -428,16 +428,6 @@ oh_device_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-oh_device_get_view_pose(struct xrt_device *xdev,
-                        const struct xrt_vec3 *eye_relation,
-                        uint32_t view_index,
-                        struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 oh_device_get_view_poses(struct xrt_device *xdev,
                          const struct xrt_vec3 *default_eye_relation,
                          uint64_t at_timestamp_ns,
@@ -729,7 +719,6 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	struct oh_device *ohd = U_DEVICE_ALLOCATE(struct oh_device, flags, 1, 0);
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
-	ohd->base.get_view_pose = oh_device_get_view_pose;
 	ohd->base.get_view_poses = oh_device_get_view_poses;
 	ohd->base.destroy = oh_device_destroy;
 	ohd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
@@ -1046,7 +1035,6 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 	ohd->base.update_inputs = oh_device_update_inputs;
 	ohd->base.set_output = oh_device_set_output;
 	ohd->base.get_tracked_pose = oh_device_get_tracked_pose;
-	ohd->base.get_view_pose = oh_device_get_view_pose;
 	ohd->base.get_view_poses = oh_device_get_view_poses;
 	ohd->base.destroy = oh_device_destroy;
 	if (oculus_touch) {

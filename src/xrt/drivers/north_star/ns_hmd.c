@@ -455,16 +455,6 @@ ns_hmd_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static void
-ns_hmd_get_view_pose(struct xrt_device *xdev,
-                     const struct xrt_vec3 *eye_relation,
-                     uint32_t view_index,
-                     struct xrt_pose *out_pose)
-{
-	struct ns_hmd *ns = ns_hmd(xdev);
-	*out_pose = ns->head_pose_to_eye[view_index];
-}
-
-static void
 ns_hmd_get_view_poses(struct xrt_device *xdev,
                       const struct xrt_vec3 *default_eye_relation,
                       uint64_t at_timestamp_ns,
@@ -587,7 +577,6 @@ ns_hmd_create(const char *config_path)
 
 	ns->base.update_inputs = ns_hmd_update_inputs;
 	ns->base.get_tracked_pose = ns_hmd_get_tracked_pose;
-	ns->base.get_view_pose = ns_hmd_get_view_pose;
 	ns->base.get_view_poses = ns_hmd_get_view_poses;
 	ns->base.destroy = ns_hmd_destroy;
 	ns->base.name = XRT_DEVICE_GENERIC_HMD;

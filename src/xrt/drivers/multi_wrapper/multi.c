@@ -183,17 +183,6 @@ set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_
 }
 
 static void
-get_view_pose(struct xrt_device *xdev,
-              const struct xrt_vec3 *eye_relation,
-              uint32_t view_index,
-              struct xrt_pose *out_pose)
-{
-	struct multi_device *d = (struct multi_device *)xdev;
-	struct xrt_device *target = d->tracking_override.target;
-	xrt_device_get_view_pose(target, eye_relation, view_index, out_pose);
-}
-
-static void
 get_view_poses(struct xrt_device *xdev,
                const struct xrt_vec3 *default_eye_relation,
                uint64_t at_timestamp_ns,
@@ -267,7 +256,6 @@ multi_create_tracking_override(enum xrt_tracking_override_type override_type,
 	d->base.set_output = set_output;
 	d->base.update_inputs = update_inputs;
 	d->base.compute_distortion = compute_distortion;
-	d->base.get_view_pose = get_view_pose;
 	d->base.get_view_poses = get_view_poses;
 
 	return &d->base;

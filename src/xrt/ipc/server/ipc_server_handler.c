@@ -955,23 +955,6 @@ ipc_handle_device_get_hand_tracking(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_device_get_view_pose(volatile struct ipc_client_state *ics,
-                                uint32_t id,
-                                const struct xrt_vec3 *eye_relation,
-                                uint32_t view_index,
-                                struct xrt_pose *out_pose)
-{
-	// To make the code a bit more readable.
-	uint32_t device_id = id;
-	struct xrt_device *xdev = get_xdev(ics, device_id);
-
-	// Get the pose.
-	xrt_device_get_view_pose(xdev, eye_relation, view_index, out_pose);
-
-	return XRT_SUCCESS;
-}
-
-xrt_result_t
 ipc_handle_device_get_view_poses_2(volatile struct ipc_client_state *ics,
                                    uint32_t id,
                                    const struct xrt_vec3 *default_eye_relation,

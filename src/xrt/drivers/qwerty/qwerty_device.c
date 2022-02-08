@@ -204,16 +204,6 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 }
 
 static void
-qwerty_get_view_pose(struct xrt_device *xdev,
-                     const struct xrt_vec3 *eye_relation,
-                     uint32_t view_index,
-                     struct xrt_pose *out_pose)
-{
-	(void)xdev;
-	u_device_get_view_pose(eye_relation, view_index, out_pose);
-}
-
-static void
 qwerty_get_view_poses(struct xrt_device *xdev,
                       const struct xrt_vec3 *default_eye_relation,
                       uint64_t at_timestamp_ns,
@@ -282,7 +272,6 @@ qwerty_hmd_create(void)
 
 	xd->update_inputs = qwerty_update_inputs;
 	xd->get_tracked_pose = qwerty_get_tracked_pose;
-	xd->get_view_pose = qwerty_get_view_pose;
 	xd->get_view_poses = qwerty_get_view_poses;
 	xd->destroy = qwerty_destroy;
 	u_distortion_mesh_set_none(xd); // Fill in xd->compute_distortion()

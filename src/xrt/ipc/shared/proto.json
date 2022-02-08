@@ -201,17 +201,6 @@
 		]
 	},
 
-	"device_get_view_pose": {
-		"in": [
-			{"name": "id", "type": "uint32_t"},
-			{"name": "eye_relation", "type": "const struct xrt_vec3"},
-			{"name": "view_index", "type": "uint32_t"}
-		],
-		"out": [
-			{"name": "pose", "type": "struct xrt_pose"}
-		]
-	},
-
 	"device_get_view_poses_2": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},
