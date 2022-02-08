@@ -41,17 +41,17 @@ htProcessJoint(struct ht_device *htd,
 }
 
 static float
-errHistory2D(HandHistory2DBBox *past, Palm7KP *present)
+errHistory2D(const HandHistory2DBBox &past, const Palm7KP &present)
 {
-	if (!past->htAlgorithm_approves) {
+	if (!past.htAlgorithm_approves) {
 		// U_LOG_E("Returning big number because htAlgorithm told me to!");
 		return 100000000000000000000000000000.0f;
 	}
-	float sum_of_lengths = m_vec2_len(past->wrist_unfiltered.back() - past->middle_unfiltered.back()) +
-	                       m_vec2_len(present->kps[WRIST_7KP] - present->kps[MIDDLE_7KP]);
+	float sum_of_lengths = m_vec2_len(past.wrist_unfiltered.back() - past.middle_unfiltered.back()) +
+	                       m_vec2_len(present.kps[WRIST_7KP] - present.kps[MIDDLE_7KP]);
 
-	float sum_of_distances = (m_vec2_len(past->wrist_unfiltered.back() - present->kps[WRIST_7KP]) +
-	                          m_vec2_len(past->middle_unfiltered.back() - present->kps[MIDDLE_7KP]));
+	float sum_of_distances = (m_vec2_len(past.wrist_unfiltered.back() - present.kps[WRIST_7KP]) +
+	                          m_vec2_len(past.middle_unfiltered.back() - present.kps[MIDDLE_7KP]));
 
 
 	float final = sum_of_distances / sum_of_lengths;
@@ -499,7 +499,7 @@ htRunAlgorithm(struct ht_device *htd)
 			cur_hand.idx_r = idx_r;
 
 			// Calculate a y-disparity for this combination
-			cur_hand.y_disparity_error = errHandDisparity(&left_2d, &right_2d);
+			cur_hand.y_disparity_error = errHandDisparity(left_2d, right_2d);
 
 			possible_3d_hands.push_back(cur_hand);
 		}
@@ -517,7 +517,7 @@ htRunAlgorithm(struct ht_device *htd)
 			// See if this pair is suspiciously close together.
 			// If it is, then this pairing is wrong - this is what was causing the "hands smushing together"
 			// issue - we weren't catching these reliably.
-			float errr = sumOfHandJointDistances(&possible_3d_hands[idx_one], &possible_3d_hands[idx_two]);
+			float errr = sumOfHandJointDistances(possible_3d_hands[idx_one], possible_3d_hands[idx_two]);
 			HT_TRACE(htd, "%zu %zu is smush %f", idx_one, idx_two, errr);
 			if (errr < 0.03f * 21.0f) {
 				possible_3d_hands[idx_one].rejected_by_smush = true;

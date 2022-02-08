@@ -49,7 +49,7 @@ naive_sort_permutation_by_error(
     std::vector<size_t> &out_indices_2,
     std::vector<float> &out_errs,
 
-    float (*calc_error)(Tp_1 *one, Tp_2 *two),
+    float (*calc_error)(const Tp_1 &one, const Tp_2 &two),
     float max_err = std::numeric_limits<float>::max())
 {
 	used_1 = std::vector<bool>(in_1.size()); // silly? Unsure.
@@ -64,7 +64,7 @@ naive_sort_permutation_by_error(
 
 	for (size_t idx_1 = 0; idx_1 < in_1.size(); idx_1++) {
 		for (size_t idx_2 = 0; idx_2 < in_2.size(); idx_2++) {
-			float err = calc_error(&in_1[idx_1], &in_2[idx_2]);
+			float err = calc_error(in_1[idx_1], in_2[idx_2]);
 			if (err > 0.0f) {
 				// Negative error means the error calculator thought there was something so bad with
 				// these that they shouldn't be considered at all.

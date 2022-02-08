@@ -346,7 +346,7 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 	dt = (double)(ts - f->prev_ts_for_alpha) / U_TIME_1S_IN_NS;
 
 	double abs_dy =
-	    (sumOfHandJointDistances(&f->last_hands_unfiltered.back(), &f->last_hands_filtered.back()) / 21.0f) * 0.7f;
+	    (sumOfHandJointDistances(f->last_hands_unfiltered.back(), f->last_hands_filtered.back()) / 21.0f) * 0.7f;
 	alpha_d = calc_smoothing_alpha(htd->dynamic_config.hand_fc_min_d.val, dt);
 
 	double alpha, fc_cutoff;

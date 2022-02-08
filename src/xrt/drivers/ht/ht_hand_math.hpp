@@ -17,12 +17,12 @@ struct ht_device;
 struct xrt_hand_joint_set;
 
 float
-sumOfHandJointDistances(Hand3D *one, Hand3D *two);
+sumOfHandJointDistances(const Hand3D &one, const Hand3D &two);
 
 float
-errHandHistory(HandHistory3D *history_hand, Hand3D *present_hand);
+errHandHistory(const HandHistory3D &history_hand, const Hand3D &present_hand);
 float
-errHandDisparity(Hand2D *left_rays, Hand2D *right_rays);
+errHandDisparity(const Hand2D &left_rays, const Hand2D &right_rays);
 
 void
 applyJointWidths(struct xrt_hand_joint_set *set);
