@@ -186,6 +186,7 @@ add_library(
 	util/u_pacing_compositor_fake.c
 	util/u_sink.h
 	util/u_sink_combiner.c
+	util/u_sink_force_genlock.c
 	util/u_sink_converter.c
 	util/u_sink_deinterleaver.c
 	util/u_sink_queue.c

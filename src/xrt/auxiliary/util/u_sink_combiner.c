@@ -4,6 +4,7 @@
  * @file
  * @brief  An @ref xrt_frame_sink that combines two frames into a stereo frame.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
@@ -18,9 +19,8 @@
 
 
 /*!
- * An @ref xrt_frame_sink queue, any frames received will be pushed to the
- * downstream consumer on the queue thread. Will drop frames should multiple
- * frames be queued up.
+ * An @ref xrt_frame_sink combiner, frames pushed to the left and right side will be combined into one @ref xrt_frame
+ * with format XRT_STEREO_FORMAT_SBS. Will drop stale frames if the combining work takes too long.
  *
  * @implements xrt_frame_sink
  * @implements xrt_frame_node
@@ -51,28 +51,12 @@ struct u_sink_combiner
 };
 
 static void
-combine_frames(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame **out_frame)
+combine_frames_l8(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame *f)
 {
 	SINK_TRACE_MARKER();
 
-	assert(l->width == r->width);
-	assert(l->height == r->height);
-	assert(l->format == r->format);
-	assert(l->format == XRT_FORMAT_L8);
 
-	int64_t diff_ns = l->timestamp - r->timestamp;
 	uint32_t height = l->height;
-	uint32_t width = l->width + r->width;
-	enum xrt_format format = l->format;
-
-	u_frame_create_one_off(format, width, height, out_frame);
-
-	struct xrt_frame *f = *out_frame;
-	f->timestamp = l->timestamp - (diff_ns / 2); // Middle of both frames.
-	f->stereo_format = XRT_STEREO_FORMAT_SBS;
-	f->source_sequence = l->source_sequence;
-
-	SINK_TRACE_IDENT(combine_frames_copy);
 
 	for (uint32_t y = 0; y < height; y++) {
 		uint8_t *dst = f->data + f->stride * y;
@@ -90,96 +74,66 @@ combine_frames(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame **out_
 	}
 }
 
-static void *
-combiner_mainloop(void *ptr)
+static void
+combine_frames_r8g8b8(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame *f)
 {
 	SINK_TRACE_MARKER();
 
-	struct u_sink_combiner *q = (struct u_sink_combiner *)ptr;
-	struct xrt_frame *frames[2] = {NULL, NULL};
+	uint32_t height = l->height;
 
-	pthread_mutex_lock(&q->mutex);
+	for (uint32_t y = 0; y < height; y++) {
+		uint8_t *dst = f->data + f->stride * y;
+		uint8_t *src = l->data + l->stride * y;
 
-	while (q->running) {
-		// Wait for both frames.
-		if (q->frames[0] == NULL || q->frames[1] == NULL) {
-			pthread_cond_wait(&q->cond, &q->mutex);
+		for (uint32_t x = 0; x < l->width * 3; x++) {
+			*dst++ = *src++;
 		}
 
-		// Where we woken up to turn off.
-		if (!q->running) {
-			break;
+		dst = f->data + f->stride * y + l->width * 3;
+		src = r->data + r->stride * y;
+		for (uint32_t x = 0; x < r->width * 3; x++) {
+			*dst++ = *src++;
 		}
-
-		// Just in case.
-		if (q->frames[0] == NULL || q->frames[1] == NULL) {
-			continue;
-		}
-
-		SINK_TRACE_IDENT(combiner_frame);
-
-		/*
-		 * We need to take a reference on the current frame, this is to
-		 * keep it alive during the call to the consumer should it be
-		 * replaced. But we no longer need to hold onto the frame on the
-		 * queue so we just move the pointer.
-		 */
-		frames[0] = q->frames[0];
-		frames[1] = q->frames[1];
-		q->frames[0] = NULL;
-		q->frames[1] = NULL;
-
-		/*
-		 * Check timestamps.
-		 */
-		int64_t diff_ns = frames[0]->timestamp - frames[1]->timestamp;
-		if (diff_ns < -U_TIME_1MS_IN_NS || diff_ns > U_TIME_1MS_IN_NS) {
-
-			U_LOG_W("Frame differ in timestamps too much! (%lli)", (long long)diff_ns);
-
-			// Save the most recent frame.
-			if (diff_ns > 0) {
-				xrt_frame_reference(&q->frames[0], frames[0]);
-			} else {
-				xrt_frame_reference(&q->frames[1], frames[1]);
-			}
-			pthread_mutex_unlock(&q->mutex);
-
-			// Don't hold the lock while releasing the frames.
-			xrt_frame_reference(&frames[0], NULL);
-			xrt_frame_reference(&frames[1], NULL);
-
-			pthread_mutex_lock(&q->mutex);
-			continue;
-		}
-
-		/*
-		 * Unlock the mutex when we do the work, so a new frame can be
-		 * queued.
-		 */
-		pthread_mutex_unlock(&q->mutex);
-
-		struct xrt_frame *frame = NULL;
-		combine_frames(frames[0], frames[1], &frame);
-
-		// Send to the consumer that does the work.
-		q->consumer->push_frame(q->consumer, frame);
-
-		/*
-		 * Drop our reference we don't need it anymore, or it's held by
-		 * the consumer.
-		 */
-		xrt_frame_reference(&frame, NULL);
-		xrt_frame_reference(&frames[0], NULL);
-		xrt_frame_reference(&frames[1], NULL);
-
-		// Have to lock it again.
-		pthread_mutex_lock(&q->mutex);
 	}
+}
 
-	pthread_mutex_unlock(&q->mutex);
+static void
+combine_frames(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame **out_frame)
+{
+	SINK_TRACE_MARKER();
 
-	return NULL;
+	assert(l->width == r->width);
+	assert(l->height == r->height);
+	assert(l->format == r->format);
+	assert((l->format == XRT_FORMAT_L8) || (l->format == XRT_FORMAT_R8G8B8));
+
+	int64_t diff_ns = l->timestamp - r->timestamp;
+	uint32_t height = l->height;
+	uint32_t width = l->width + r->width;
+	enum xrt_format format = l->format;
+
+	u_frame_create_one_off(format, width, height, out_frame);
+
+	struct xrt_frame *f = *out_frame;
+	f->timestamp = l->timestamp - (diff_ns / 2); // Middle of both frames.
+	f->stereo_format = XRT_STEREO_FORMAT_SBS;
+	f->source_sequence = l->source_sequence;
+
+	switch (l->format) {
+	case XRT_FORMAT_L8: {
+		combine_frames_l8(l, r, f);
+		break;
+	}
+	case XRT_FORMAT_R8G8B8: {
+		combine_frames_r8g8b8(l, r, f);
+		break;
+	}
+	default: assert(!"Unimplemented!");
+	}
+#if 1
+	// So that we can test if this works on a really slow computer
+	os_nanosleep(0.1f * U_TIME_1S_IN_NS);
+#endif
 }
 
 static void
@@ -194,12 +148,13 @@ combiner_left_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 	// Only schedule new frames if we are running.
 	if (q->running) {
 		xrt_frame_reference(&q->frames[0], xf);
+
+		// the right frame can be not null if the combiner is dropping frames and we've received another
+		// left-right push as it was still running.
+		xrt_frame_reference(&q->frames[1], NULL);
 	}
 
-	// Wake up the thread, if both frames are here.
-	if (q->frames[0] != NULL && q->frames[1] != NULL) {
-		pthread_cond_signal(&q->cond);
-	}
+
 
 	pthread_mutex_unlock(&q->mutex);
 }
@@ -218,9 +173,40 @@ combiner_right_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 		xrt_frame_reference(&q->frames[1], xf);
 	}
 
-	// Wake up the thread, if both frames are here.
+	// If both frames are here, do the work!
+	// (Yes, this push_frame will block, and so will combiner_left_frame as it's waiting for the work to complete.
+	// It's okay, u_sink_force_genlock does the async/frame-dropping stuff for us.)
 	if (q->frames[0] != NULL && q->frames[1] != NULL) {
-		pthread_cond_signal(&q->cond);
+		struct xrt_frame *frames[2] = {NULL, NULL};
+		frames[0] = q->frames[0];
+		frames[1] = q->frames[1];
+		q->frames[0] = NULL;
+		q->frames[1] = NULL;
+		/*
+		 * Check timestamps.
+		 */
+		int64_t diff_ns = frames[0]->timestamp - frames[1]->timestamp;
+
+
+		// u_sink_force_genlock should have done this for us already
+		assert(!(diff_ns < -U_TIME_1MS_IN_NS || diff_ns > U_TIME_1MS_IN_NS));
+
+		struct xrt_frame *frame = NULL;
+		combine_frames(frames[0], frames[1], &frame);
+
+		// Send to the consumer that does the work.
+		xrt_sink_push_frame(q->consumer, frame);
+
+		/*
+		 * Drop our reference we don't need it anymore, or it's held by
+		 * the consumer.
+		 */
+		xrt_frame_reference(&frame, NULL);
+		xrt_frame_reference(&frames[0], NULL);
+		xrt_frame_reference(&frames[1], NULL);
+
+	} else {
+		U_LOG_W("Right frame pushed with no left frame");
 	}
 
 	pthread_mutex_unlock(&q->mutex);
@@ -230,7 +216,6 @@ static void
 combiner_break_apart(struct xrt_frame_node *node)
 {
 	struct u_sink_combiner *q = container_of(node, struct u_sink_combiner, node);
-	void *retval = NULL;
 
 	// The fields are protected.
 	pthread_mutex_lock(&q->mutex);
@@ -242,14 +227,8 @@ combiner_break_apart(struct xrt_frame_node *node)
 	xrt_frame_reference(&q->frames[0], NULL);
 	xrt_frame_reference(&q->frames[1], NULL);
 
-	// Wake up the thread.
-	pthread_cond_signal(&q->cond);
-
 	// No longer need to protect fields.
 	pthread_mutex_unlock(&q->mutex);
-
-	// Wait for thread to finish.
-	pthread_join(q->thread, &retval);
 }
 
 static void
@@ -279,6 +258,10 @@ u_sink_combiner_create(struct xrt_frame_context *xfctx,
 	struct u_sink_combiner *q = U_TYPED_CALLOC(struct u_sink_combiner);
 	int ret = 0;
 
+	// If you remove this, this sink will block for some time after you push the left frame while copying the data.
+	// Only remove this if you're sure that's okay.
+	u_sink_force_genlock_create(xfctx, &q->left, &q->right, out_left_xfs, out_right_xfs);
+
 	q->left.push_frame = combiner_left_frame;
 	q->right.push_frame = combiner_right_frame;
 	q->node.break_apart = combiner_break_apart;
@@ -292,25 +275,8 @@ u_sink_combiner_create(struct xrt_frame_context *xfctx,
 		return false;
 	}
 
-	ret = pthread_cond_init(&q->cond, NULL);
-	if (ret) {
-		pthread_mutex_destroy(&q->mutex);
-		free(q);
-		return false;
-	}
-
-	ret = pthread_create(&q->thread, NULL, combiner_mainloop, q);
-	if (ret != 0) {
-		pthread_cond_destroy(&q->cond);
-		pthread_mutex_destroy(&q->mutex);
-		free(q);
-		return false;
-	}
-
 	xrt_frame_context_add(xfctx, &q->node);
 
-	*out_left_xfs = &q->left;
-	*out_right_xfs = &q->right;
 
 	return true;
 }

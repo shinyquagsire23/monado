@@ -129,6 +129,15 @@ u_sink_combiner_create(struct xrt_frame_context *xfctx,
                        struct xrt_frame_sink **out_left_xfs,
                        struct xrt_frame_sink **out_right_xfs);
 
+/*!
+ * Enforces left-right push order on frames and forces them to be within a reasonable amount of time from each other
+ */
+bool
+u_sink_force_genlock_create(struct xrt_frame_context *xfctx,
+                            struct xrt_frame_sink *downstream_left,
+                            struct xrt_frame_sink *downstream_right,
+                            struct xrt_frame_sink **out_left_xfs,
+                            struct xrt_frame_sink **out_right_xfs);
 
 /*
  *
