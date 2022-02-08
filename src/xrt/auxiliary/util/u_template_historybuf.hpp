@@ -171,7 +171,7 @@ private:
 
 	using container_t = std::array<T, MaxSize>;
 	container_t internalBuffer{};
-	detail::RingBufferHelper<MaxSize> helper_;
+	detail::RingBufferHelper helper_{MaxSize};
 };
 
 template <typename T, size_t MaxSize>

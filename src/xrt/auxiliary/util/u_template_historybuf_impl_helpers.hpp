@@ -22,6 +22,7 @@
 //|  -4   |   -3   |  -2 | -1 | Top | -7 | -6 | -5 |
 
 namespace xrt::auxiliary::util::detail {
+
 /**
  * @brief All the bookkeeping for adapting a fixed-size array to a ring buffer.
  *
@@ -39,9 +40,12 @@ namespace xrt::auxiliary::util::detail {
  * - "inner" index: the index in the underlying array/buffer. It's called "inner" because the consumer of the
  *   ring buffer should not ever deal with this index, it's an implementation detail.
  */
-template <size_t MaxSize> class RingBufferHelper
+class RingBufferHelper
 {
 public:
+	//! Construct for a given size
+	explicit constexpr RingBufferHelper(size_t capacity) : capacity_(capacity) {}
+
 	//! Get the inner index for a given age (if possible)
 	bool
 	age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept;
@@ -86,15 +90,17 @@ public:
 	void
 	pop_front() noexcept;
 
-	//! Get the inner index of the front (oldest) value, or MaxSize if empty.
+	//! Get the inner index of the front (oldest) value, or capacity_ if empty.
 	size_t
 	front_inner_index() const noexcept;
 
-	//! Get the inner index of the back (newest) value, or MaxSize if empty.
+	//! Get the inner index of the back (newest) value, or capacity_ if empty.
 	size_t
 	back_inner_index() const noexcept;
 
 private:
+	const size_t capacity_;
+
 	//! The inner index containing the most recently added element, if any
 	size_t latest_inner_idx_ = 0;
 
@@ -113,18 +119,16 @@ private:
 };
 
 
-template <size_t MaxSize>
 inline size_t
-RingBufferHelper<MaxSize>::front_impl_() const noexcept
+RingBufferHelper::front_impl_() const noexcept
 {
 	assert(!empty());
-	// length will not exceed MaxSize, so this will not underflow
-	return (latest_inner_idx_ + MaxSize - length_ + 1) % MaxSize;
+	// length will not exceed capacity_, so this will not underflow
+	return (latest_inner_idx_ + capacity_ - length_ + 1) % capacity_;
 }
 
-template <size_t MaxSize>
 inline bool
-RingBufferHelper<MaxSize>::age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept
+RingBufferHelper::age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept
 {
 
 	if (empty()) {
@@ -133,15 +137,14 @@ RingBufferHelper<MaxSize>::age_to_inner_index(size_t age, size_t &out_inner_idx)
 	if (age >= length_) {
 		return false;
 	}
-	// latest_inner_idx_ is the same as (latest_inner_idx_ + MaxSize) % MaxSize so we add MaxSize to
+	// latest_inner_idx_ is the same as (latest_inner_idx_ + capacity_) % capacity_ so we add capacity_ to
 	// prevent underflow with unsigned values
-	out_inner_idx = (latest_inner_idx_ + MaxSize - age) % MaxSize;
+	out_inner_idx = (latest_inner_idx_ + capacity_ - age) % capacity_;
 	return true;
 }
 
-template <size_t MaxSize>
 inline bool
-RingBufferHelper<MaxSize>::clamped_age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept
+RingBufferHelper::clamped_age_to_inner_index(size_t age, size_t &out_inner_idx) const noexcept
 {
 	if (empty()) {
 		return false;
@@ -149,9 +152,8 @@ RingBufferHelper<MaxSize>::clamped_age_to_inner_index(size_t age, size_t &out_in
 	return age_to_inner_index((std::min)(age, length_ - 1), out_inner_idx);
 }
 
-template <size_t MaxSize>
 inline bool
-RingBufferHelper<MaxSize>::index_to_inner_index(size_t index, size_t &out_inner_idx) const noexcept
+RingBufferHelper::index_to_inner_index(size_t index, size_t &out_inner_idx) const noexcept
 {
 
 	if (empty()) {
@@ -160,48 +162,44 @@ RingBufferHelper<MaxSize>::index_to_inner_index(size_t index, size_t &out_inner_
 	if (index >= length_) {
 		return false;
 	}
-	// Just add to the front (oldest) index and take modulo MaxSize
-	out_inner_idx = (front_impl_() + index) % MaxSize;
+	// Just add to the front (oldest) index and take modulo capacity_
+	out_inner_idx = (front_impl_() + index) % capacity_;
 	return true;
 }
 
-template <size_t MaxSize>
 inline size_t
-RingBufferHelper<MaxSize>::push_back_location() noexcept
+RingBufferHelper::push_back_location() noexcept
 {
-	// We always increment the latest inner index modulo MaxSize
-	latest_inner_idx_ = (latest_inner_idx_ + 1) % MaxSize;
-	// Length cannot exceed MaxSize. If it already was MaxSize, that just means we're overwriting something at
+	// We always increment the latest inner index modulo capacity_
+	latest_inner_idx_ = (latest_inner_idx_ + 1) % capacity_;
+	// Length cannot exceed capacity_. If it already was capacity_, that just means we're overwriting something at
 	// latest_inner_idx_
-	length_ = std::min(length_ + 1, MaxSize);
+	length_ = std::min(length_ + 1, capacity_);
 	return latest_inner_idx_;
 }
 
-template <size_t MaxSize>
 inline void
-RingBufferHelper<MaxSize>::pop_front() noexcept
+RingBufferHelper::pop_front() noexcept
 {
 	if (!empty()) {
 		length_--;
 	}
 }
 
-template <size_t MaxSize>
 inline size_t
-RingBufferHelper<MaxSize>::front_inner_index() const noexcept
+RingBufferHelper::front_inner_index() const noexcept
 {
 	if (empty()) {
-		return MaxSize;
+		return capacity_;
 	}
 	return front_impl_();
 }
 
-template <size_t MaxSize>
 inline size_t
-RingBufferHelper<MaxSize>::back_inner_index() const noexcept
+RingBufferHelper::back_inner_index() const noexcept
 {
 	if (empty()) {
-		return MaxSize;
+		return capacity_;
 	}
 	return latest_inner_idx_;
 }

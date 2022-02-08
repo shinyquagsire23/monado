@@ -22,9 +22,9 @@ namespace detail {
 	 * @tparam MaxSize Maximum number of elements - must match HistoryBuffer
 	 */
 	template <typename T, size_t MaxSize>
-	class HistoryBufIterator : public RandomAccessIteratorBase<const RingBufferHelper<MaxSize>>
+	class HistoryBufIterator : public RandomAccessIteratorBase<const RingBufferHelper>
 	{
-		using base = RandomAccessIteratorBase<const RingBufferHelper<MaxSize>>;
+		using base = RandomAccessIteratorBase<const RingBufferHelper>;
 		friend class HistoryBuffer<T, MaxSize>;
 
 	public:
@@ -113,14 +113,14 @@ namespace detail {
 	private:
 		//! Factory for a "begin" iterator from a container and its helper: mostly for internal use.
 		static Self
-		begin(container_type &container, const RingBufferHelper<MaxSize> &helper)
+		begin(container_type &container, const RingBufferHelper &helper)
 		{
 			return {&container, std::move(base::begin(helper))};
 		}
 
 		//! Construct the "past the end" iterator that can be decremented safely
 		static Self
-		end(container_type &container, const RingBufferHelper<MaxSize> &helper)
+		end(container_type &container, const RingBufferHelper &helper)
 		{
 			return {&container, std::move(base::end(helper))};
 		}
