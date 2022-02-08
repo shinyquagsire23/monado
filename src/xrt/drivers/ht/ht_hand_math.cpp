@@ -32,7 +32,7 @@ float
 errHandHistory(const HandHistory3D &history_hand, const Hand3D &present_hand)
 {
 	// Remember we never have to deal with an empty hand. Can always access the last element.
-	return sumOfHandJointDistances(history_hand->last_hands_unfiltered.back(), present_hand);
+	return sumOfHandJointDistances(history_hand.last_hands_unfiltered.back(), present_hand);
 }
 
 float
@@ -119,7 +119,7 @@ set_finger(struct xrt_hand_joint_set *set,
            const xrt_vec3 &pinky_to_index_prox,
            const std::array<xrt_hand_joint, N> &finger)
 {
-	for (int i = 0; i < N - 1; i++) {
+	for (size_t i = 0; i < N - 1; i++) {
 		// Don't do fingertips. (Fingertip would be index 4.)
 		struct xrt_vec3 forwards =
 		    m_vec3_normalize(get_joint_position(set, finger[i + 1]) - get_joint_position(set, finger[i]));
@@ -160,7 +160,7 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 	}
 
 	using Finger = std::array<xrt_hand_joint, 5>;
-	static const std::array<Finger, 4> fingers_with_joints_in_them = {
+	static const std::array<Finger, 4> fingers_with_joints_in_them = {{
 
 	    {XRT_HAND_JOINT_INDEX_METACARPAL, XRT_HAND_JOINT_INDEX_PROXIMAL, XRT_HAND_JOINT_INDEX_INTERMEDIATE,
 	     XRT_HAND_JOINT_INDEX_DISTAL, XRT_HAND_JOINT_INDEX_TIP},
@@ -174,7 +174,7 @@ applyJointOrientations(struct xrt_hand_joint_set *set, bool is_right)
 	    {XRT_HAND_JOINT_LITTLE_METACARPAL, XRT_HAND_JOINT_LITTLE_PROXIMAL, XRT_HAND_JOINT_LITTLE_INTERMEDIATE,
 	     XRT_HAND_JOINT_LITTLE_DISTAL, XRT_HAND_JOINT_LITTLE_TIP},
 
-	};
+	}};
 	for (Finger const &finger : fingers_with_joints_in_them) {
 		set_finger(set, pinky_to_index_prox, finger);
 	}
@@ -332,14 +332,14 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 #else
 
 	if (!f->have_prev_hand) {
-		f->last_hands_filtered.push_back(*f->last_hands_unfiltered.back());
+		f->last_hands_filtered.push_back(f->last_hands_unfiltered.back());
 		uint64_t ts = f->last_hands_unfiltered.back().timestamp;
 		f->prev_ts_for_alpha = ts;
 		f->first_ts = ts;
 		f->prev_filtered_ts = ts;
 		f->prev_dy = 0;
 		f->have_prev_hand = true;
-		*out_hand = *f->last_hands_unfiltered.back();
+		*out_hand = f->last_hands_unfiltered.back();
 	}
 	uint64_t ts = f->last_hands_unfiltered.back().timestamp;
 	double dt, alpha_d;
