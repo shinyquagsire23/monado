@@ -35,6 +35,12 @@ target_link_libraries(tests_history_buf PRIVATE tests_main)
 target_link_libraries(tests_history_buf PRIVATE aux_util aux_math)
 add_test(NAME tests_history_buf COMMAND tests_history_buf --success)
 
+# id ring buffer (closely related to history buf)
+add_executable(tests_id_ringbuffer tests_id_ringbuffer.cpp)
+target_link_libraries(tests_id_ringbuffer PRIVATE tests_main)
+target_link_libraries(tests_id_ringbuffer PRIVATE aux_util)
+add_test(NAME tests_id_ringbuffer COMMAND tests_id_ringbuffer --success)
+
 # pacing
 add_executable(tests_pacing tests_pacing.cpp)
 target_link_libraries(tests_pacing PRIVATE tests_main)

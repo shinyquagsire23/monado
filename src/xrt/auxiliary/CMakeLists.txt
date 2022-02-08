@@ -171,6 +171,8 @@ add_library(
 	util/u_hashmap.h
 	util/u_hashset.cpp
 	util/u_hashset.h
+	util/u_id_ringbuffer.cpp
+	util/u_id_ringbuffer.h
 	util/u_json.c
 	util/u_json.h
 	util/u_json.hpp
