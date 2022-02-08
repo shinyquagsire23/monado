@@ -45,6 +45,12 @@ class RingBufferHelper
 public:
 	//! Construct for a given size
 	explicit constexpr RingBufferHelper(size_t capacity) : capacity_(capacity) {}
+	RingBufferHelper(RingBufferHelper const &) = default;
+	RingBufferHelper(RingBufferHelper &&) = default;
+	RingBufferHelper &
+	operator=(RingBufferHelper const &) = default;
+	RingBufferHelper &
+	operator=(RingBufferHelper &&) = default;
 
 	//! Get the inner index for a given age (if possible)
 	bool
@@ -99,7 +105,8 @@ public:
 	back_inner_index() const noexcept;
 
 private:
-	const size_t capacity_;
+	// Would be const, but that would mess up our ability to copy/move containers using this.
+	size_t capacity_;
 
 	//! The inner index containing the most recently added element, if any
 	size_t latest_inner_idx_ = 0;
