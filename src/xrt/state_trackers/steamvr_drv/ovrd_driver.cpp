@@ -755,9 +755,11 @@ public:
 		float ipd_meters = 0.063;
 		struct xrt_vec3 ipd_vec = {ipd_meters, 0, 0};
 
-		for (int view = 0; view < 2; view++) {
-			xdev->get_view_pose(xdev, &ipd_vec, view, &m_view_pose[view]);
-		}
+		timepoint_ns now_ns = os_monotonic_get_ns();
+
+		//! @todo more than 2 views
+		struct xrt_space_relation head_relation;
+		xrt_device_get_view_poses(xdev, &ipd_vec, now_ns, 2, &head_relation, m_fovs, m_view_pose);
 
 		//! @todo more versatile IPD calculation
 		float actual_ipd = -m_view_pose[0].position.x + m_view_pose[1].position.x;
@@ -803,6 +805,7 @@ private:
 	float m_flDisplayFrequency = -1;
 	float m_flIPD = -1;
 
+	struct xrt_fov m_fovs[2];
 	struct xrt_pose m_view_pose[2];
 
 	bool m_poseUpdating = true;
