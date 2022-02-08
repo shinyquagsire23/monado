@@ -17,6 +17,8 @@
 #include "ht_model.hpp"
 #include "ht_nms.hpp"
 
+#include <core/session/onnxruntime_c_api.h>
+
 #include <array>
 
 #undef HEAVY_SCRIBBLE

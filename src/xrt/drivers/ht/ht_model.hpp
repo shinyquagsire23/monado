@@ -11,11 +11,21 @@
 
 #pragma once
 
-#include <core/session/onnxruntime_c_api.h>
+#include "ht_driver.hpp"
+
 #include <opencv2/core/mat.hpp>
 
 #include <filesystem>
 #include <array>
+
+// forward-declare
+struct OrtApi;
+struct OrtEnv;
+struct OrtMemoryInfo;
+struct OrtSession;
+struct OrtSessionOptions;
+struct OrtValue;
+struct ht_device;
 
 class ht_model
 {
