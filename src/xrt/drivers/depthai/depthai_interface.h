@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+#undef DEPTHAI_HAS_MULTICAM_SUPPORT
+
 
 struct t_stereo_camera_calibration;
 
@@ -42,6 +44,17 @@ depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx);
  */
 struct xrt_fs *
 depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx);
+
+
+#ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
+/*!
+ * Create a DepthAI frameserver using two rgb cameras.
+ *
+ * @ingroup drv_depthai
+ */
+struct xrt_fs *
+depthai_fs_stereo_rgb(struct xrt_frame_context *xfctx);
+#endif
 
 /*!
  * Get the stereo calibration from a depthAI frameserver.

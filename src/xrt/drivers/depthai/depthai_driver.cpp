@@ -125,7 +125,7 @@ struct depthai_fs
 	dai::Device *device;
 	dai::DataOutputQueue *queue;
 
-	dai::ColorCameraProperties::SensorResolution color_sensor_resoultion;
+	dai::ColorCameraProperties::SensorResolution color_sensor_resolution;
 	dai::ColorCameraProperties::ColorOrder color_order;
 
 	dai::MonoCameraProperties::SensorResolution grayscale_sensor_resolution;
@@ -368,7 +368,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		depthai->width = 1920;
 		depthai->height = 1080;
 		depthai->format = XRT_FORMAT_R8G8B8;
-		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
+		depthai->color_sensor_resolution = dai::ColorCameraProperties::SensorResolution::THE_1080_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
 		depthai->fps = 60; // API says max is 118, anything over 60 seems broken with the v2.13.3 release.
 		depthai->interleaved = true;
@@ -406,7 +406,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 	if (depthai->format == XRT_FORMAT_R8G8B8) {
 		colorCam = p.create<dai::node::ColorCamera>();
 		colorCam->setPreviewSize(depthai->width, depthai->height);
-		colorCam->setResolution(depthai->color_sensor_resoultion);
+		colorCam->setResolution(depthai->color_sensor_resolution);
 		colorCam->setImageOrientation(depthai->image_orientation);
 		colorCam->setInterleaved(depthai->interleaved);
 		colorCam->setFps(depthai->fps);
@@ -434,7 +434,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 }
 
 static void
-depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
+depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 {
 	// Hardcoded to OV_9282 L/R
 	depthai->width = 1280;
@@ -443,7 +443,7 @@ depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
 	depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
 	depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 	depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-	depthai->fps = 60; // Currently only supports 60.
+	depthai->fps = 60; // Currently supports up to 60.
 
 	dai::Pipeline p = {};
 
@@ -474,6 +474,51 @@ depthai_setup_stereo_pipeline(struct depthai_fs *depthai)
 	depthai->queue = depthai->device->getOutputQueue(name, 4, false).get(); // out of shared pointer
 }
 
+#ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
+static void
+depthai_setup_stereo_rgb_pipeline(struct depthai_fs *depthai)
+{
+	// Hardcoded to OV_9782 L/R
+	depthai->width = 1280;
+	depthai->height = 800;
+	depthai->format = XRT_FORMAT_R8G8B8;
+	depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
+	depthai->color_sensor_resolution = dai::ColorCameraProperties::SensorResolution::THE_800_P;
+	depthai->image_orientation = dai::CameraImageOrientation::AUTO;
+	depthai->fps = 30; // Supports up to 60, but pushing 60fps over USB is typically hard
+
+	dai::Pipeline p = {};
+
+	const char *name = "frames";
+	std::shared_ptr<dai::node::XLinkOut> xlinkOut = p.create<dai::node::XLinkOut>();
+	xlinkOut->setStreamName(name);
+
+	dai::CameraBoardSocket sockets[2] = {
+	    dai::CameraBoardSocket::CAM_B,
+	    dai::CameraBoardSocket::CAM_C,
+	};
+
+	for (int i = 0; i < 2; i++) {
+		std::shared_ptr<dai::node::ColorCamera> grayCam = nullptr;
+
+		grayCam = p.create<dai::node::ColorCamera>();
+		grayCam->setPreviewSize(1280, 800);
+		grayCam->setBoardSocket(sockets[i]);
+		grayCam->setResolution(depthai->color_sensor_resolution);
+		grayCam->setImageOrientation(depthai->image_orientation);
+		grayCam->setInterleaved(true);
+		grayCam->setFps(depthai->fps);
+		grayCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::RGB);
+
+		// Link plugins CAM -> XLINK
+		grayCam->preview.link(xlinkOut->input);
+	}
+
+	// Start the pipeline
+	depthai->device->startPipeline(p);
+	depthai->queue = depthai->device->getOutputQueue(name, 4, false).get(); // out of shared pointer
+}
+#endif
 
 /*
  *
@@ -690,7 +735,7 @@ depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
 	}
 
 	// Last bit is to setup the pipeline.
-	depthai_setup_stereo_pipeline(depthai);
+	depthai_setup_stereo_grayscale_pipeline(depthai);
 
 	// And finally add us to the context when we are done.
 	xrt_frame_context_add(xfctx, &depthai->node);
@@ -699,6 +744,26 @@ depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
 
 	return &depthai->base;
 }
+
+#ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
+extern "C" struct xrt_fs *
+depthai_fs_stereo_rgb(struct xrt_frame_context *xfctx)
+{
+	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	if (depthai == nullptr) {
+		return nullptr;
+	}
+
+	// Last bit is to setup the pipeline.
+	depthai_setup_stereo_rgb_pipeline(depthai);
+
+	// And finally add us to the context when we are done.
+
+	xrt_frame_context_add(xfctx, &depthai->node);
+	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
+	return &depthai->base;
+}
+#endif
 
 extern "C" bool
 depthai_fs_get_stereo_calibration(struct xrt_fs *xfs, struct t_stereo_camera_calibration **c_ptr)
