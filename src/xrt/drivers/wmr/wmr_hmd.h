@@ -53,6 +53,7 @@ struct wmr_headset_descriptor
 
 	int (*init_func)(struct wmr_hmd *wh);
 	void (*deinit_func)(struct wmr_hmd *wh);
+	void (*screen_enable_func)(struct wmr_hmd *wh, bool enable);
 };
 
 struct wmr_hmd_distortion_params
@@ -87,19 +88,29 @@ struct wmr_hmd
 	enum u_logging_level log_level;
 
 	/*!
-	 * This is the hololens sensor device, this is were we get all of the
+	 * This is the Hololens Sensors device, this is where we get all of the
 	 * IMU data and read the config from.
 	 *
 	 * During start it is owned by the thread creating the device, after
 	 * init it is owned by the reading thread, there is no mutex protecting
 	 * this field as it's only used by the reading thread in @p oth.
 	 */
+
 	struct os_hid_device *hid_hololens_sensors_dev;
+
+	/*!
+	 * This is the vendor specific companion device of the Hololens Sensors.
+	 * When activated, it will report the physical IPD adjustment and proximity
+	 * sensor status of the headset. It also allows enabling/disabling the HMD
+	 * screen on Reverb G1/G2.
+	 */
 	struct os_hid_device *hid_control_dev;
 
-	//! Latest raw IPD value from the device.
+	//! Current desired HMD screen state.
+	bool hmd_screen_enable;
+	//! Latest raw IPD value read from the device.
 	uint16_t raw_ipd;
-	//! Latest proximity sensor value from the device.
+	//! Latest proximity sensor value read from the device.
 	uint8_t proximity_sensor;
 
 	//! Distortion related parameters
@@ -155,6 +166,7 @@ struct wmr_hmd
 
 	struct
 	{
+		struct u_var_button hmd_screen_enable_btn;
 		struct u_var_button switch_tracker_btn;
 	} gui;
 };

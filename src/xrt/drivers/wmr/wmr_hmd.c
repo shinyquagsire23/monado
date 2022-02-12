@@ -53,21 +53,25 @@ static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
 static void
 wmr_hmd_deactivate_reverb(struct wmr_hmd *wh);
+static void
+wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable);
 static int
 wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh);
 static void
 wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh);
+static void
+wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable);
 
 const struct wmr_headset_descriptor headset_map[] = {
-    {WMR_HEADSET_GENERIC, NULL, "Unknown WMR HMD", NULL, NULL}, /* Catch-all for unknown headsets */
+    {WMR_HEADSET_GENERIC, NULL, "Unknown WMR HMD", NULL, NULL, NULL}, /* Catch-all for unknown headsets */
     {WMR_HEADSET_REVERB_G1, "HP Reverb VR Headset VR1000-2xxx", "HP Reverb", wmr_hmd_activate_reverb,
-     wmr_hmd_deactivate_reverb},
+     wmr_hmd_deactivate_reverb, wmr_hmd_screen_enable_reverb},
     {WMR_HEADSET_REVERB_G2, "HP Reverb Virtual Reality Headset G2", "HP Reverb G2", wmr_hmd_activate_reverb,
-     wmr_hmd_deactivate_reverb},
+     wmr_hmd_deactivate_reverb, wmr_hmd_screen_enable_reverb},
     {WMR_HEADSET_SAMSUNG_800ZAA, "Samsung Windows Mixed Reality 800ZAA", "Samsung Odyssey+",
-     wmr_hmd_activate_odyssey_plus, wmr_hmd_deactivate_odyssey_plus},
-    {WMR_HEADSET_LENOVO_EXPLORER, "Lenovo VR-2511N", "Lenovo Explorer", NULL, NULL},
-    {WMR_HEADSET_MEDION_ERAZER_X1000, "Medion Erazer X1000", "Medion Erazer", NULL, NULL},
+     wmr_hmd_activate_odyssey_plus, wmr_hmd_deactivate_odyssey_plus, wmr_hmd_screen_enable_odyssey_plus},
+    {WMR_HEADSET_LENOVO_EXPLORER, "Lenovo VR-2511N", "Lenovo Explorer", NULL, NULL, NULL},
+    {WMR_HEADSET_MEDION_ERAZER_X1000, "Medion Erazer X1000", "Medion Erazer", NULL, NULL, NULL},
 };
 const int headset_map_n = sizeof(headset_map) / sizeof(headset_map[0]);
 
@@ -484,7 +488,6 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 
 	WMR_TRACE(wh, "Activating HP Reverb G1/G2 HMD...");
 
-
 	// Hack to power up the Reverb G1 display, thanks to OpenHMD contibutors.
 	// Sleep before we start seems to improve reliability.
 	// 300ms is what Windows seems to do, so cargo cult that.
@@ -509,30 +512,61 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 	data[0] = 0x06;
 	HID_GET(hid, data, "data_3");
 
-	// Wake up the display.
-	unsigned char cmd[2] = {0x04, 0x01};
-	HID_SEND(hid, cmd, "screen_on");
+	WMR_INFO(wh, "Sent activation report.");
 
-	WMR_INFO(wh, "Sent activation report, sleeping for compositor.");
+	// Enable the HMD screen now, if required. Otherwise, if screen should initially be disabled, then
+	// proactively disable it now. Why? Because some cases of irregular termination of Monado will
+	// leave either the 'Hololens Sensors' device or its 'companion' device alive across restarts.
+	wmr_hmd_screen_enable_reverb(wh, wh->hmd_screen_enable);
 
-	/*
-	 * Sleep so display completes power up and modes be enumerated.
-	 * Two seconds seems to be needed, 1 was not enough.
-	 */
+	// Allow time for enumeration of available displays by host system, so the compositor can select among them.
+	WMR_INFO(wh,
+	         "Sleep until the HMD display is powered up so, the available displays can be enumerated by the host "
+	         "system.");
+
+	// Two seconds seems to be needed, 1 was not enough.
 	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
-
 
 	return 0;
 }
 
 static void
+wmr_hmd_refresh_debug_gui(struct wmr_hmd *wh)
+{
+	// Update debug GUI button labels.
+	if (wh) {
+		struct u_var_button *btn = &wh->gui.hmd_screen_enable_btn;
+		snprintf(btn->label, sizeof(btn->label),
+		         wh->hmd_screen_enable ? "HMD Screen [On]" : "HMD Screen [Off]");
+	}
+}
+
+static void
 wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
+{
+	// Turn the screen off
+	wmr_hmd_screen_enable_reverb(wh, false);
+
+	// To do: Power down IMU, and maybe more.
+	// struct os_hid_device *hid = wh->hid_control_dev;
+}
+
+static void
+wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable)
 {
 	struct os_hid_device *hid = wh->hid_control_dev;
 
-	/* Turn the screen off */
 	unsigned char cmd[2] = {0x04, 0x00};
-	HID_SEND(hid, cmd, "screen_off");
+	if (enable) {
+		cmd[1] = enable ? 0x01 : 0x00;
+	}
+
+	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+
+	wh->hmd_screen_enable = enable;
+
+	// Update debug GUI button labels.
+	wmr_hmd_refresh_debug_gui(wh);
 }
 
 static int
@@ -553,11 +587,15 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 	data[0] = 0x14;
 	HID_GET(hid, data, "data_3");
 
-	// Wake up the display.
-	unsigned char cmd[2] = {0x12, 0x01};
-	HID_SEND(hid, cmd, "screen_on");
+	// Enable the HMD screen now, if required. Otherwise, if screen should initially be disabled, then
+	// proactively disable it now. Why? Because some cases of irregular termination of Monado will
+	// leave either the 'Hololens Sensors' device or its 'companion' device alive across restarts.
+	wmr_hmd_screen_enable_odyssey_plus(wh, wh->hmd_screen_enable);
 
-	WMR_INFO(wh, "Sent activation report, sleeping for compositor.");
+	// Allow time for enumeration of available displays by host system, so the compositor can select among them.
+	WMR_INFO(wh,
+	         "Sleep until the HMD display is powered up, so the available displays can be enumerated by the host "
+	         "system.");
 
 	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
 
@@ -567,12 +605,39 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 static void
 wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh)
 {
+	// Turn the screen off
+	wmr_hmd_screen_enable_odyssey_plus(wh, false);
+
+	// To do: Power down IMU, and maybe more.
+	// struct os_hid_device *hid = wh->hid_control_dev;
+}
+
+static void
+wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable)
+{
 	struct os_hid_device *hid = wh->hid_control_dev;
 
 	unsigned char cmd[2] = {0x12, 0x00};
-	HID_SEND(hid, cmd, "screen_off");
+	if (enable) {
+		cmd[1] = enable ? 0x01 : 0x00;
+	}
+
+	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+
+	wh->hmd_screen_enable = enable;
+
+	// Update debug GUI button labels.
+	wmr_hmd_refresh_debug_gui(wh);
 }
 
+static void
+wmr_hmd_screen_enable_toggle(void *wh_ptr)
+{
+	struct wmr_hmd *wh = (struct wmr_hmd *)wh_ptr;
+	if (wh && wh->hmd_desc && wh->hmd_desc->screen_enable_func) {
+		wh->hmd_desc->screen_enable_func(wh, !wh->hmd_screen_enable);
+	}
+}
 
 /*
  *
@@ -1189,6 +1254,17 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
 
+	u_var_add_gui_header(wh, NULL, "Hololens Sensors' Companion device");
+	u_var_add_u8(wh, &wh->proximity_sensor, "HMD Proximity");
+	u_var_add_u16(wh, &wh->raw_ipd, "HMD IPD");
+
+	if (wh->hmd_desc->screen_enable_func) {
+		// Enabling/disabling the HMD screen at runtime is supported. Add button to debug GUI.
+		wh->gui.hmd_screen_enable_btn.cb = wmr_hmd_screen_enable_toggle;
+		wh->gui.hmd_screen_enable_btn.ptr = wh;
+		u_var_add_button(wh, &wh->gui.hmd_screen_enable_btn, "HMD Screen [On/Off]");
+	}
+
 	u_var_add_gui_header(wh, NULL, "Misc");
 	u_var_add_log_level(wh, &wh->log_level, "log_level");
 
@@ -1263,6 +1339,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	wh->base.compute_distortion = compute_distortion_wmr;
 	u_distortion_mesh_fill_in_compute(&wh->base);
+
+	// Set initial HMD screen power state.
+	wh->hmd_screen_enable = true;
 
 	/* We're set up. Activate the HMD and turn on the IMU */
 	if (wh->hmd_desc->init_func && wh->hmd_desc->init_func(wh) != 0) {
