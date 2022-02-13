@@ -751,6 +751,8 @@ ipc_server_main(int argc, char **argv)
 {
 	struct ipc_server *s = U_TYPED_CALLOC(struct ipc_server);
 
+	U_LOG_I("Monado Service %s starting up...", u_git_tag);
+
 	/* ---- HACK ---- */
 	// need to create early before any vars are added
 	oxr_sdl2_hack_create(&s->hack);
