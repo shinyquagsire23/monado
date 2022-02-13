@@ -649,7 +649,8 @@ XrResult
 oxr_session_get_view_relation_at(struct oxr_logger *,
                                  struct oxr_session *sess,
                                  XrTime at_time,
-                                 struct xrt_space_relation *out_relation);
+                                 struct xrt_space_relation *out_relation,
+                                 struct xrt_device **out_xdev);
 
 XrResult
 oxr_session_locate_views(struct oxr_logger *log,
@@ -710,10 +711,19 @@ oxr_space_locate(
 XrResult
 oxr_space_ref_relation(struct oxr_logger *log,
                        struct oxr_session *sess,
-                       XrReferenceSpaceType space,
-                       XrReferenceSpaceType baseSpc,
+                       struct oxr_space *space,
+                       struct oxr_space *baseSpc,
                        XrTime time,
                        struct xrt_space_relation *out_relation);
+
+XrResult
+oxr_view_relation_ref_relation(struct oxr_logger *log,
+                               struct oxr_session *sess,
+                               struct xrt_space_relation *view_relation,
+                               struct xrt_device *view_xdev,
+                               struct oxr_space *baseSpc,
+                               XrTime time,
+                               struct xrt_space_relation *out_relation);
 
 bool
 initial_head_relation_valid(struct oxr_session *sess);

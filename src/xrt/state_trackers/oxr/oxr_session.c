@@ -262,11 +262,16 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 	}
 }
 
+/**
+ * Gets the view relation in global space. Even though @out_xdev is returned, the tracking origin offset is already
+ * applied.
+ */
 XrResult
 oxr_session_get_view_relation_at(struct oxr_logger *log,
                                  struct oxr_session *sess,
                                  XrTime at_time,
-                                 struct xrt_space_relation *out_relation)
+                                 struct xrt_space_relation *out_relation,
+                                 struct xrt_device **out_xdev)
 {
 	// @todo This function needs to be massively expanded to support all
 	//       use cases this drive. The main use of this function is to get
@@ -284,6 +289,8 @@ oxr_session_get_view_relation_at(struct oxr_logger *log,
 	struct xrt_relation_chain xrc = {0};
 	oxr_xdev_get_relation_chain(log, sess->sys->inst, xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xrc);
 	m_relation_chain_resolve(&xrc, out_relation);
+
+	*out_xdev = xdev;
 
 	return oxr_session_success_result(sess);
 }
@@ -378,7 +385,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 
 	const uint64_t xdisplay_time =
 	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, viewLocateInfo->displayTime);
-	//! @todo Head relation currently not used.
+
 	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
 	struct xrt_fov fovs[2] = {0};
 	struct xrt_pose poses[2] = {0};
@@ -392,26 +399,16 @@ oxr_session_locate_views(struct oxr_logger *log,
 	    fovs,                  //
 	    poses);
 
+	// head_relation is in xdev space. Bring it into global space by applying tracking origin offset.
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &head_relation);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
+	m_relation_chain_resolve(&xrc, &head_relation);
 
-	/*
-	 * Get the pure_relation if needed.
-	 */
-
-	// Get the viewLocateInfo->space to view space relation.
-	struct xrt_space_relation pure_relation;
-
-	/*!
-	 * @todo Introduce oxr_space_ref_relation_with_relation that takes
-	 * relation and transforms it into the correct relationship.
-	 */
-	// If we are going from stage space use the head pose.
-	oxr_space_ref_relation(           //
-	    log,                          //
-	    sess,                         //
-	    XR_REFERENCE_SPACE_TYPE_VIEW, //
-	    baseSpc->type,                //
-	    viewLocateInfo->displayTime,  //
-	    &pure_relation);              //
+	// transform head_relation into base_space
+	struct xrt_space_relation base_spc_head_relation;
+	oxr_view_relation_ref_relation(log, sess, &head_relation, xdev, baseSpc, viewLocateInfo->displayTime,
+	                               &base_spc_head_relation);
 
 	// @todo the fov information that we get from xdev->hmd->views[i].fov is
 	//       not properly filled out in oh_device.c, fix before wasting time
@@ -432,8 +429,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 		struct xrt_space_relation result = {0};
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
-		m_relation_chain_push_relation(&xrc, &pure_relation);
-		m_relation_chain_push_pose_if_not_identity(&xrc, &baseSpc->pose);
+		m_relation_chain_push_relation(&xrc, &base_spc_head_relation);
+		m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &baseSpc->pose);
 		m_relation_chain_resolve(&xrc, &result);
 		union {
 			struct xrt_pose xrt;
@@ -908,17 +905,17 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			/*! @todo: testing, relating to view space unsupported
 			 * in other parts of monado */
 
-			struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+			struct xrt_device *view_xdev = NULL;
 
 			struct xrt_space_relation view_relation;
-			oxr_session_get_view_relation_at(log, sess, at_time, &view_relation);
+			oxr_session_get_view_relation_at(log, sess, at_time, &view_relation, &view_xdev);
 
 			m_relation_chain_push_relation(&chain, &value.hand_pose);
 			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
 
 			m_relation_chain_push_inverted_relation(&chain, &view_relation);
 			m_relation_chain_push_inverted_pose_if_not_identity(&chain,
-			                                                    &head_xdev->tracking_origin->offset);
+			                                                    &view_xdev->tracking_origin->offset);
 
 		} else if (!baseSpc->is_reference) {
 			// action space

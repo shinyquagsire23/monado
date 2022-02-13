@@ -166,77 +166,115 @@ global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel)
 }
 
 /*!
+ * Transform @view_relation given in global space into baseSpc without the app given offset pose for baseSpc
+ * applied.
+ */
+XrResult
+oxr_view_relation_ref_relation(struct oxr_logger *log,
+                               struct oxr_session *sess,
+                               struct xrt_space_relation *view_relation,
+                               struct xrt_device *view_xdev,
+                               struct oxr_space *baseSpc,
+                               XrTime time,
+                               struct xrt_space_relation *out_relation)
+{
+	*out_relation = *view_relation;
+
+	//! @todo: find a central place to set up local space
+	if (!ensure_initial_head_relation(log, sess, out_relation)) {
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return XR_SUCCESS;
+	}
+
+	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
+		// device poses are already in stage = "global" space
+	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+		global_to_local_space(sess, out_relation);
+	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		// view relation in view space should be identity
+		m_space_relation_ident(out_relation);
+	} else {
+		OXR_WARN_ONCE(log, "unsupported base reference space in space_ref_relation");
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return XR_SUCCESS;
+	}
+
+	return XR_SUCCESS;
+}
+
+static XrResult
+oxr_view_ref_relation(struct oxr_logger *log,
+                      struct oxr_session *sess,
+                      struct oxr_space *baseSpc,
+                      XrTime time,
+                      struct xrt_space_relation *out_relation)
+{
+	struct xrt_device *view_xdev = NULL;
+	struct xrt_space_relation view_relation;
+	oxr_session_get_view_relation_at(log, sess, time, &view_relation, &view_xdev);
+	return oxr_view_relation_ref_relation(log, sess, &view_relation, view_xdev, baseSpc, time, out_relation);
+}
+
+static XrResult
+oxr_stage_ref_relation(struct oxr_logger *log,
+                       struct oxr_session *sess,
+                       struct oxr_space *baseSpc,
+                       XrTime time,
+                       struct xrt_space_relation *out_relation)
+{
+	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+		math_pose_invert(&sess->initial_head_relation.pose, &out_relation->pose);
+	} else {
+		OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return XR_SUCCESS;
+	}
+	return XR_SUCCESS;
+}
+
+static XrResult
+oxr_locale_ref_relation(struct oxr_logger *log,
+                        struct oxr_session *sess,
+                        struct oxr_space *baseSpc,
+                        XrTime time,
+                        struct xrt_space_relation *out_relation)
+{
+	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
+		out_relation->pose = sess->initial_head_relation.pose;
+	} else {
+		OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return XR_SUCCESS;
+	}
+	return XR_SUCCESS;
+}
+
+/*!
  * This returns only the relation between two spaces without any of the app
  * given relations applied, assumes that both spaces are reference spaces.
  */
 XrResult
 oxr_space_ref_relation(struct oxr_logger *log,
                        struct oxr_session *sess,
-                       XrReferenceSpaceType space,
-                       XrReferenceSpaceType baseSpc,
+                       struct oxr_space *space,
+                       struct oxr_space *baseSpc,
                        XrTime time,
                        struct xrt_space_relation *out_relation)
 {
 	m_space_relation_ident(out_relation);
 
-
-	if (space == baseSpc) {
-		// m_space_relation_ident() sets to identity.
-	} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_session_get_view_relation_at(log, sess, time, out_relation);
-
-		if (!ensure_initial_head_relation(log, sess, out_relation)) {
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
-
-		if (baseSpc == XR_REFERENCE_SPACE_TYPE_STAGE) {
-			// device poses are already in stage = "global" space
-		} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			global_to_local_space(sess, out_relation);
-		} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
-
-		} else {
-			OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
-	} else if (baseSpc == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_session_get_view_relation_at(log, sess, time, out_relation);
-
-		if (!ensure_initial_head_relation(log, sess, out_relation)) {
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
-		if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
-			// device poses are already in stage = "global" space
-		} else if (space == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			global_to_local_space(sess, out_relation);
-		} else if (space == XR_REFERENCE_SPACE_TYPE_VIEW) {
-
-		} else {
-			OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
+	if (space->type == baseSpc->type) {
+		// m_space_relation_ident() already set this to identity.
+	} else if (space->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		oxr_view_ref_relation(log, sess, baseSpc, time, out_relation);
+	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		oxr_view_ref_relation(log, sess, space, time, out_relation);
+		//! @todo invert complete relation
 		math_pose_invert(&out_relation->pose, &out_relation->pose);
-
-	} else if (space == XR_REFERENCE_SPACE_TYPE_STAGE) {
-		if (baseSpc == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			math_pose_invert(&sess->initial_head_relation.pose, &out_relation->pose);
-		} else {
-			OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
-	} else if (space == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		if (baseSpc == XR_REFERENCE_SPACE_TYPE_STAGE) {
-			out_relation->pose = sess->initial_head_relation.pose;
-		} else {
-			OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-			return XR_SUCCESS;
-		}
+	} else if (space->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
+		oxr_stage_ref_relation(log, sess, baseSpc, time, out_relation);
+	} else if (space->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+		oxr_locale_ref_relation(log, sess, baseSpc, time, out_relation);
 	} else {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
@@ -257,8 +295,8 @@ remove_angular_and_linear_stuff(struct xrt_space_relation *out_relation)
 }
 
 /*!
- * This returns only the relation between two spaces without any of the app
- * given relations applied, assumes that only one is a action space.
+ * This returns only the relation between two space without the app given offset pose for baseSpc applied,
+ * assumes that only one is a action space.
  */
 static XrResult
 oxr_space_action_relation(struct oxr_logger *log,
@@ -327,7 +365,7 @@ oxr_space_action_relation(struct oxr_logger *log,
 
 /*!
  * This returns only the relation between two directly-associated spaces without
- * any of the app given relations applied.
+ * the app given offset pose for baseSpc applied.
  */
 static XrResult
 get_pure_space_relation(struct oxr_logger *log,
@@ -339,7 +377,7 @@ get_pure_space_relation(struct oxr_logger *log,
 	struct oxr_session *sess = spc->sess;
 
 	if (spc->is_reference && baseSpc->is_reference) {
-		return oxr_space_ref_relation(log, sess, spc->type, baseSpc->type, time, out_relation);
+		return oxr_space_ref_relation(log, sess, spc, baseSpc, time, out_relation);
 	}
 	/// @todo Deal with action to action by keeping a true_space that we can always go via. (poor mans space graph)
 	if (!spc->is_reference && !baseSpc->is_reference) {
