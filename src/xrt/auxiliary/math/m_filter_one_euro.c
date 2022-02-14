@@ -146,7 +146,7 @@ m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, fl
 	double dt = 0;
 	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
-	double dy = *in_y - f->prev_y;
+	double dy = (*in_y - f->prev_y) / dt;
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
 	f->prev_dy = exp_smooth(alpha_d, dy, f->prev_dy);
@@ -178,7 +178,7 @@ m_filter_euro_vec2_run(struct m_filter_euro_vec2 *f, uint64_t ts, const struct x
 	double dt = 0;
 	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
-	struct xrt_vec2 dy = m_vec2_sub((*in_y), f->prev_y);
+	struct xrt_vec2 dy = m_vec2_div_scalar(m_vec2_sub((*in_y), f->prev_y), dt);
 	f->prev_dy = exp_smooth_vec2(alpha_d, dy, f->prev_dy);
 
 	double dy_mag = m_vec2_len(f->prev_dy);
@@ -205,7 +205,7 @@ m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
 	double dt = 0;
 	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, false);
 
-	struct xrt_vec2 dy = m_vec2_sub((*in_y), f->prev_y);
+	struct xrt_vec2 dy = m_vec2_div_scalar(m_vec2_sub((*in_y), f->prev_y), dt);
 	struct xrt_vec2 prev_dy = exp_smooth_vec2(alpha_d, dy, f->prev_dy);
 
 	double dy_mag = m_vec2_len(prev_dy);
@@ -237,7 +237,7 @@ m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct x
 	double dt = 0;
 	double alpha_d = filter_one_euro_compute_alpha_d(&f->base, &dt, ts, true);
 
-	struct xrt_vec3 dy = m_vec3_sub((*in_y), f->prev_y);
+	struct xrt_vec3 dy = m_vec3_div_scalar(m_vec3_sub((*in_y), f->prev_y), dt);
 	f->prev_dy = exp_smooth_vec3(alpha_d, dy, f->prev_dy);
 
 	double dy_mag = m_vec3_len(f->prev_dy);
@@ -271,6 +271,13 @@ m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct x
 
 	struct xrt_quat dy;
 	math_quat_unrotate(&f->prev_y, in_y, &dy);
+
+	// Scale dy with dt through a conversion to angle_axis
+	struct xrt_vec3 dy_aa;
+	math_quat_ln(&dy, &dy_aa);
+	dy_aa = m_vec3_div_scalar(dy_aa, dt);
+	math_quat_exp(&dy_aa, &dy);
+
 	f->prev_dy = exp_smooth_quat(alpha_d, dy, f->prev_dy);
 
 	double dy_mag = math_quat_len(&f->prev_dy);

@@ -243,7 +243,7 @@ struct TrackerSlam
 		m_filter_euro_quat rot_oe;     //!< One euro rotation filter
 		const float min_cutoff = M_PI; //!< Default minimum cutoff frequency
 		const float min_dcutoff = 1;   //!< Default minimum cutoff frequency for the derivative
-		const float beta = 1;          //!< Default speed coefficient
+		const float beta = 0.16;       //!< Default speed coefficient
 
 	} filter;
 };

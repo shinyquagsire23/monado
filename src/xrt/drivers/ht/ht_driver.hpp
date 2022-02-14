@@ -69,13 +69,13 @@ using namespace xrt::auxiliary::util;
 
 #define FCMIN_BBOX_POSITION 30.0f
 #define FCMIN_D_BB0X_POSITION 25.0f
-#define BETA_BB0X_POSITION 0.6f
+#define BETA_BB0X_POSITION 0.01f
 
 
 
 #define FCMIN_HAND 4.0f
 #define FCMIN_D_HAND 12.0f
-#define BETA_HAND 0.05f
+#define BETA_HAND 0.0083f
 
 class ht_model;
 
