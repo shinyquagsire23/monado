@@ -379,6 +379,19 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	//! @todo We should be creating the handle ourselves in the future.
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
+
+	/*!
+	 * @!todo This is a temporary solution, the first step in getting proper
+	 * synchronization on Vulkan. The second is to create a fence and share
+	 * it similarly to what the EGL client code does. Even with a fence it
+	 * won't help that much as the multi-compositor waits on the fence in
+	 * commit before proceeding. To fix that a thread will be added in the
+	 * multi-compositor to wait on the fence and allow commit to return.
+	 * Better still is using Semaphores for it all.
+	 */
+	struct vk_bundle *vk = &c->vk;
+	vk->vkDeviceWaitIdle(vk->device);
+
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
