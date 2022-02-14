@@ -164,3 +164,16 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
 	Eigen::Quaternionf inc_quat = map_quat(*quat1) * map_quat(*quat0).conjugate();
 	map_vec3(*out_ang_vel) = 2.f * quat_ln(inc_quat) / dt;
 }
+
+extern "C" void
+math_quat_exp(const struct xrt_vec3 *axis_angle, struct xrt_quat *out_quat)
+{
+	map_quat(*out_quat) = quat_exp(map_vec3(*axis_angle));
+}
+
+extern "C" void
+math_quat_ln(const struct xrt_quat *quat, struct xrt_vec3 *out_axis_angle)
+{
+	Eigen::Quaternionf eigen_quat = map_quat(*quat);
+	map_vec3(*out_axis_angle) = quat_ln(eigen_quat);
+}

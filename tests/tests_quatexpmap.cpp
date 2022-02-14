@@ -15,13 +15,12 @@ using std::vector;
 
 TEST_CASE("m_quatexpmap")
 {
+	xrt_vec3 axis1 = m_vec3_normalize({4, -7, 3});
+	xrt_vec3 axis2 = m_vec3_normalize({-1, -2, -3});
+	xrt_vec3 axis3 = m_vec3_normalize({1, -1, 1});
+	xrt_vec3 axis4 = m_vec3_normalize({-11, 23, 91});
 	SECTION("Test integrate velocity and finite difference mappings")
 	{
-		xrt_vec3 axis1 = m_vec3_normalize({4, -7, 3});
-		xrt_vec3 axis2 = m_vec3_normalize({-1, -2, -3});
-		xrt_vec3 axis3 = m_vec3_normalize({1, -1, 1});
-		xrt_vec3 axis4 = m_vec3_normalize({-11, 23, 91});
-
 		vector<xrt_vec3> q1_axes{{axis1, axis2}};
 		float q1_angle = GENERATE(M_PI, -M_PI / 6);
 		vector<xrt_vec3> vel_axes{{axis3, axis4}};
@@ -53,6 +52,22 @@ TEST_CASE("m_quatexpmap")
 				INFO("new_vel=" << new_vel.x << ", " << new_vel.y << ", " << new_vel.z);
 				CHECK(m_vec3_len(new_vel - vel) <= 0.001);
 			}
+		}
+	}
+
+	SECTION("Test quat_exp and quat_ln are inverses")
+	{
+		// We use rotations with less than PI radians as quat_ln will return the negative rotation otherwise
+		vector<xrt_vec3> aas = {{0, 0, 0}, axis1 * M_PI * 0.01, axis2 * M_PI * 0.5, axis3 * 0.99 * M_PI};
+
+		for (xrt_vec3 aa : aas) {
+			xrt_quat quat{};
+			math_quat_exp(&aa, &quat);
+
+			xrt_vec3 expected_aa{};
+			math_quat_ln(&quat, &expected_aa);
+
+			CHECK(m_vec3_len(expected_aa - aa) <= 0.001);
 		}
 	}
 }

@@ -299,6 +299,27 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
                             struct xrt_vec3 *out_ang_vel);
 
 /*!
+ * Converts a rotation vector in axis-angle form to its corresponding unit quaternion.
+ *
+ * @relates xrt_quat
+ * @see xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_quat_exp(const struct xrt_vec3 *axis_angle, struct xrt_quat *out_quat);
+
+
+/*!
+ * Converts a unit quaternion into its corresponding axis-angle vector representation.
+ *
+ * @relates xrt_quat
+ * @see xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_quat_ln(const struct xrt_quat *quat, struct xrt_vec3 *out_axis_angle);
+
+/*!
  * Used to rotate a derivative like a angular velocity.
  *
  * @relates xrt_quat
