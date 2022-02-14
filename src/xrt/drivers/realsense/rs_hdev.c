@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2021-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,9 +13,17 @@
  * your camera specifics (stereo/mono, intrinsics, extrinsics, etc).
  */
 
+#include "xrt/xrt_device.h"
+#include "xrt/xrt_frameserver.h"
+#include "xrt/xrt_frame.h"
+#include "xrt/xrt_prober.h"
+#include "xrt/xrt_config_have.h"
+
 #include "math/m_filter_fifo.h"
 #include "math/m_space.h"
+
 #include "os/os_time.h"
+
 #include "util/u_device.h"
 #include "util/u_logging.h"
 #include "util/u_debug.h"
@@ -23,20 +31,17 @@
 #include "util/u_sink.h"
 #include "util/u_config_json.h"
 #include "util/u_format.h"
-#include "tracking/t_tracking.h"
 
-#include "xrt/xrt_device.h"
-#include "xrt/xrt_frameserver.h"
-#include "xrt/xrt_frame.h"
-#include "xrt/xrt_prober.h"
-#include "xrt/xrt_config_have.h"
+#include "tracking/t_tracking.h"
 
 #include "rs_driver.h"
 
-#include <librealsense2/rs.h>
-#include <librealsense2/h/rs_pipeline.h>
+#include <math.h>
 #include <stdio.h>
 #include <assert.h>
+#include <librealsense2/rs.h>
+#include <librealsense2/h/rs_pipeline.h>
+
 
 // These defaults come from a D455 camera, they might not work for other devices
 #define DEFAULT_STEREO true
