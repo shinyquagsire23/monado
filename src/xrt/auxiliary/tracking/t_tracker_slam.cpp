@@ -217,6 +217,9 @@ struct TrackerSlam
 	//! @todo Should be automatically computed instead of required to be filled manually through the UI.
 	xrt_vec3 gravity_correction{0, 0, -MATH_GRAVITY_M_S2};
 
+	struct xrt_space_relation last_rel = XRT_SPACE_RELATION_ZERO; //!< Last reported/tracked pose
+	timepoint_ns last_ts;                                         //!< Last reported/tracked pose timestamp
+
 	//! Filters are used to smooth out the resulting trajectory
 	struct
 	{
@@ -358,7 +361,7 @@ filter_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out
 		}
 
 		if (out_relation->relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
-			// Don't save w component as we can retrieve it knowing these are unit quaternions
+			// Don't save w component as we can retrieve it knowing these are (almost) unit quaternions
 			xrt_vec3 rot = {out_relation->pose.orientation.x, out_relation->pose.orientation.y,
 			                out_relation->pose.orientation.z};
 			m_ff_vec3_f32_push(t.filter.rot_ff, &rot, when_ns);
@@ -371,9 +374,14 @@ filter_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out
 		xrt_vec3 avg_rot; // Naive but good enough rotation average
 		m_ff_vec3_f32_filter(t.filter.rot_ff, when_ns - window, when_ns, &avg_rot);
 
+		// Considering the naive averaging this W is a bit wrong, but it feels reasonably well
 		float avg_rot_w = sqrtf(1 - (avg_rot.x * avg_rot.x + avg_rot.y * avg_rot.y + avg_rot.z * avg_rot.z));
 		out_relation->pose.orientation = xrt_quat{avg_rot.x, avg_rot.y, avg_rot.z, avg_rot_w};
 		out_relation->pose.position = avg_pos;
+
+		//! @todo Implement the quaternion averaging with a m_ff_vec4_f32 and
+		//! normalization. Although it would be best to have a way of generalizing
+		//! types before so as to not have redundant copies of ff logic.
 	}
 
 	if (t.filter.use_exponential_smoothing_filter) {
@@ -400,9 +408,18 @@ extern "C" void
 t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
 	auto &t = *container_of(xts, TrackerSlam, base);
+
+	if (when_ns == t.last_ts) {
+		*out_relation = t.last_rel;
+		return;
+	}
+
 	flush_poses(t);
 	predict_pose(t, when_ns, out_relation);
 	filter_pose(t, when_ns, out_relation);
+
+	t.last_rel = *out_relation;
+	t.last_ts = when_ns;
 }
 
 //! Receive and send IMU samples to the external SLAM system
