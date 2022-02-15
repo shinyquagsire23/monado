@@ -38,10 +38,12 @@ TEST_CASE("m_relation_history")
 	SECTION("populated buffer")
 	{
 		xrt_space_relation relation = XRT_SPACE_RELATION_ZERO;
-		relation.relation_flags = (xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+		relation.relation_flags = (xrt_space_relation_flags)( //
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |         //
+		    XRT_SPACE_RELATION_POSITION_VALID_BIT |           //
+		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |      //
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |        //
+		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);    //
 		relation.linear_velocity.x = 1.f;
 
 		// arbitrary value
@@ -131,10 +133,12 @@ TEST_CASE("RelationHistory")
 	SECTION("populated buffer")
 	{
 		xrt_space_relation relation = XRT_SPACE_RELATION_ZERO;
-		relation.relation_flags = (xrt_space_relation_flags)(
-		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
-		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+		relation.relation_flags = (xrt_space_relation_flags)( //
+		    XRT_SPACE_RELATION_POSITION_TRACKED_BIT |         //
+		    XRT_SPACE_RELATION_POSITION_VALID_BIT |           //
+		    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |      //
+		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |        //
+		    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);    //
 		relation.linear_velocity.x = 1.f;
 
 		// arbitrary value
