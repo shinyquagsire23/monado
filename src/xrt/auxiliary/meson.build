@@ -296,6 +296,7 @@ lib_aux_vk = static_library(
 		'vk/vk_image_readback_to_xf_pool.h',
 		'vk/vk_image_readback_to_xf_pool.c',
 		'vk/vk_state_creators.c',
+		'vk/vk_sync_objects.c',
 	),
 	include_directories: [
 		xrt_include,

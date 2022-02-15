@@ -561,39 +561,6 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkDeviceMemory *out_mem);
 
 /*!
- * @brief Creates a Vulkan fence from a native graphics sync handle.
- *
- * In case of error, ownership is never transferred and the caller should close the handle themselves.
- *
- * In case of success, the underlying Vulkan functionality's ownership semantics apply: ownership of the @p native
- * handle may have transferred, a reference may have been added, or the Vulkan object may rely on the caller to keep the
- * native handle alive until the Vulkan object is destroyed. Which option applies depends on the particular native
- * handle type used.
- *
- * See the corresponding Vulkan specification text:
- * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#synchronization-fences-importing
- *
- * @ingroup aux_vk
- */
-VkResult
-vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence);
-
-/*!
- * @brief Creates a Vulkan semaphore from a native graphics sync handle.
- *
- * In case of error, ownership is never transferred and the caller should close the handle themselves.
- *
- * In case of success, the underlying Vulkan functionality's ownership semantics apply: ownership of the @p native
- * handle may have transferred, a reference may have been added, or the Vulkan object may rely on the caller to keep the
- * native handle alive until the Vulkan object is destroyed. Which option applies depends on the particular native
- * handle type used.
- *
- * @ingroup aux_vk
- */
-VkResult
-vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
-
-/*!
  * @ingroup aux_vk
  * Helper to create a VkImage
  */
@@ -916,6 +883,46 @@ vk_insert_image_memory_barrier(struct vk_bundle *vk,
                                VkPipelineStageFlags dstStageMask,
                                VkImageSubresourceRange subresourceRange);
 
+
+
+/*
+ *
+ * Sync objects, in the vk_sync_objects.c file.
+ *
+ */
+
+/*!
+ * @brief Creates a Vulkan fence from a native graphics sync handle.
+ *
+ * In case of error, ownership is never transferred and the caller should close the handle themselves.
+ *
+ * In case of success, the underlying Vulkan functionality's ownership semantics apply: ownership of the @p native
+ * handle may have transferred, a reference may have been added, or the Vulkan object may rely on the caller to keep the
+ * native handle alive until the Vulkan object is destroyed. Which option applies depends on the particular native
+ * handle type used.
+ *
+ * See the corresponding Vulkan specification text:
+ * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#synchronization-fences-importing
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence);
+
+/*!
+ * @brief Creates a Vulkan semaphore from a native graphics sync handle.
+ *
+ * In case of error, ownership is never transferred and the caller should close the handle themselves.
+ *
+ * In case of success, the underlying Vulkan functionality's ownership semantics apply: ownership of the @p native
+ * handle may have transferred, a reference may have been added, or the Vulkan object may rely on the caller to keep the
+ * native handle alive until the Vulkan object is destroyed. Which option applies depends on the particular native
+ * handle type used.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 
 
 #ifdef __cplusplus
