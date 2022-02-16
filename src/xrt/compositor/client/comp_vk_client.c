@@ -416,6 +416,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
+	VkAccessFlags client_access = vk_swapchain_access_flags(info->bits);
+	VkImageLayout client_layout = vk_swapchain_optimal_layout(info->format);
+
 	struct client_vk_swapchain *sc = U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
@@ -439,8 +442,15 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		 * not be a bug in the validation layer. That may or may not be
 		 * fixed in the future version of the validation layer.
 		 */
-		vk_set_image_layout(vk, cmd_buffer, sc->base.images[i], 0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, subresource_range);
+		vk_set_image_layout(                 //
+		    vk,                              // vk_bundle
+		    cmd_buffer,                      // cmd_buffer
+		    sc->base.images[i],              // image
+		    0,                               // src_access_mask
+		    client_access,                   // dst_access_mask
+		    VK_IMAGE_LAYOUT_UNDEFINED,       // old_layout
+		    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // new_layout
+		    subresource_range);              // subresource_range
 	}
 
 	ret = vk_submit_cmd_buffer(vk, cmd_buffer);
@@ -487,9 +497,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		VkImageMemoryBarrier acquire = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		    .srcAccessMask = 0,
-		    .dstAccessMask = vk_swapchain_access_flags(info->bits),
+		    .dstAccessMask = client_access,
 		    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		    .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		    .newLayout = client_layout,
 		    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		    .image = sc->base.images[i],
@@ -498,9 +508,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 		VkImageMemoryBarrier release = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		    .srcAccessMask = vk_swapchain_access_flags(info->bits),
+		    .srcAccessMask = client_access,
 		    .dstAccessMask = 0,
-		    .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		    .oldLayout = client_layout,
 		    .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		    .srcQueueFamilyIndex = vk->queue_family_index,
 		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL,

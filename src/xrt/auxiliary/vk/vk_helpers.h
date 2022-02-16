@@ -659,6 +659,12 @@ VkAccessFlags
 vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
 
 /*!
+ * Return the optimal layout for this format, only supports colour and depth.
+ */
+VkImageLayout
+vk_swapchain_optimal_layout(VkFormat format);
+
+/*!
  * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
  * `VK_IMAGE_USAGE_SAMPLED_BIT` to color formats so they can be used by the
  * compositor and client.

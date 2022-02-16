@@ -1866,6 +1866,34 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
 	return result;
 }
 
+VkImageLayout
+vk_swapchain_optimal_layout(VkFormat format)
+{
+	switch (format) {
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_D32_SFLOAT:
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: //
+		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		break;
+	case VK_FORMAT_R16G16B16A16_UNORM:
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+	case VK_FORMAT_R16G16B16_UNORM:
+	case VK_FORMAT_R16G16B16_SFLOAT:
+	case VK_FORMAT_R8G8B8A8_SRGB:
+	case VK_FORMAT_B8G8R8A8_SRGB:
+	case VK_FORMAT_R8G8B8_SRGB:
+	case VK_FORMAT_R8G8B8A8_UNORM:
+	case VK_FORMAT_B8G8R8A8_UNORM:
+	case VK_FORMAT_R8G8B8_UNORM:
+	case VK_FORMAT_B8G8R8_UNORM: //
+		return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		break;
+	default: //
+		assert(false && !"Format not supported!");
+	}
+}
+
 static bool
 check_feature(VkFormat format,
               enum xrt_swapchain_usage_bits usage,
