@@ -17,6 +17,123 @@
 #include "vk/vk_helpers.h"
 
 
+/*
+ *
+ * Export.
+ *
+ */
+
+VkResult
+vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t *out_native)
+{
+	xrt_graphics_sync_handle_t native = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	VkFence fence = VK_NULL_HANDLE;
+	VkResult ret;
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	const VkExternalFenceHandleTypeFlags handle_type = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	const VkExternalFenceHandleTypeFlags handle_type = VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+#error "Need port to export fence sync handles"
+#endif
+
+	VkExportFenceCreateInfo export_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO,
+	    .pNext = NULL,
+	    .handleTypes = handle_type,
+	};
+
+	VkFenceCreateInfo create_info = {
+	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	    .flags = 0, // Not signalled.
+	    .pNext = (const void *)&export_create_info,
+	};
+
+	ret = vk->vkCreateFence(vk->device, &create_info, NULL, &fence);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
+		return ret;
+	}
+
+
+	/*
+	 * Submit fence.
+	 */
+
+	os_mutex_lock(&vk->queue_mutex);
+
+	ret = vk->vkQueueSubmit( //
+	    vk->queue,           // queue
+	    0,                   // submitCount
+	    NULL,                // pSubmits
+	    fence);              // fence
+
+	os_mutex_unlock(&vk->queue_mutex);
+
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkQueueSubmit: %s", vk_result_string(ret));
+		vk->vkDestroyFence(vk->device, fence, NULL);
+		return ret;
+	}
+
+
+	/*
+	 * Get native handle.
+	 */
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	VkFenceGetFdInfoKHR get_fd_info = {
+	    .sType = VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR,
+	    .fence = fence,
+	    .handleType = handle_type,
+	};
+
+	ret = vk->vkGetFenceFdKHR(vk->device, &get_fd_info, &native);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkGetFenceFdKHR: %s", vk_result_string(ret));
+		vk->vkDestroyFence(vk->device, fence, NULL);
+		return ret;
+	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	//! @todo Not tested.
+	VkFenceGetWin32HandleInfoKHR get_handle_info = {
+	    .sType = VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR,
+	    .fence = fence,
+	    .handleType = handle_type,
+	};
+
+	ret = vk->vkGetFenceWin32HandleKHR(vk->device, &get_handle_info, &native);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkGetFenceWin32HandleKHR: %s", vk_result_string(ret));
+		vk->vkDestroyFence(vk->device, fence, NULL);
+		return ret;
+	}
+#else
+#error "Need port to import fence sync handles"
+#endif
+
+
+	/*
+	 * Clean up
+	 */
+
+	vk->vkDestroyFence(vk->device, fence, NULL);
+	fence = VK_NULL_HANDLE;
+
+	//*out_fence = fence;
+	*out_native = native;
+
+	return VK_SUCCESS;
+}
+
+
+/*
+ *
+ * Import.
+ *
+ */
+
 VkResult
 vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence)
 {

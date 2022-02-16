@@ -908,6 +908,19 @@ vk_insert_image_memory_barrier(struct vk_bundle *vk,
  */
 
 /*!
+ * @brief Creates a Vulkan fence, submits it to the default VkQueue and return
+ * its native graphics sync handle.
+ *
+ * In case of error, out_native is not touched by the function.
+ *
+ * See @ref vk_create_fence_sync_from_native for ownership semantics on import.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t *out_native);
+
+/*!
  * @brief Creates a Vulkan fence from a native graphics sync handle.
  *
  * In case of error, ownership is never transferred and the caller should close the handle themselves.
