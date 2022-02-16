@@ -547,8 +547,7 @@ wmr_hmd_deactivate_reverb(struct wmr_hmd *wh)
 	// Turn the screen off
 	wmr_hmd_screen_enable_reverb(wh, false);
 
-	// To do: Power down IMU, and maybe more.
-	// struct os_hid_device *hid = wh->hid_control_dev;
+	//! @todo Power down IMU, and maybe more.
 }
 
 static void
@@ -608,8 +607,7 @@ wmr_hmd_deactivate_odyssey_plus(struct wmr_hmd *wh)
 	// Turn the screen off
 	wmr_hmd_screen_enable_odyssey_plus(wh, false);
 
-	// To do: Power down IMU, and maybe more.
-	// struct os_hid_device *hid = wh->hid_control_dev;
+	//! @todo Power down IMU, and maybe more.
 }
 
 static void
