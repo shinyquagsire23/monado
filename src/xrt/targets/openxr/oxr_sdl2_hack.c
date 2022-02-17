@@ -80,7 +80,7 @@ struct gui_imgui
 static void
 sdl2_window_init(struct sdl2_program *p)
 {
-	const char *title = "Monado! ☺";
+	const char *title = "Monado! ✨⚡🔥";
 	int x = SDL_WINDOWPOS_UNDEFINED;
 	int y = SDL_WINDOWPOS_UNDEFINED;
 	int w = 1920;
