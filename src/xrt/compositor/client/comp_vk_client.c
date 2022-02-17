@@ -421,16 +421,17 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
+	VkAccessFlags client_access = vk_swapchain_access_flags(info->bits);
+	VkImageLayout client_layout = vk_swapchain_optimal_layout(info->format);
+	VkImageAspectFlags client_aspect = vk_swapchain_aspect_mask(info->format);
+
 	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .aspectMask = client_aspect,
 	    .baseMipLevel = 0,
 	    .levelCount = VK_REMAINING_MIP_LEVELS,
 	    .baseArrayLayer = 0,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
-
-	VkAccessFlags client_access = vk_swapchain_access_flags(info->bits);
-	VkImageLayout client_layout = vk_swapchain_optimal_layout(info->format);
 
 	struct client_vk_swapchain *sc = U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
@@ -484,7 +485,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		}
 
 		VkImageSubresourceRange subresource_range = {
-		    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		    .aspectMask = client_aspect,
 		    .baseMipLevel = 0,
 		    .levelCount = VK_REMAINING_MIP_LEVELS,
 		    .baseArrayLayer = 0,

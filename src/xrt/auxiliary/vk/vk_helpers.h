@@ -655,6 +655,7 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
+
 VkAccessFlags
 vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
 
@@ -663,6 +664,12 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
  */
 VkImageLayout
 vk_swapchain_optimal_layout(VkFormat format);
+
+/*!
+ * Return the aspect mask for this format, only supports colour and depth.
+ */
+VkImageAspectFlags
+vk_swapchain_aspect_mask(VkFormat format);
 
 /*!
  * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
