@@ -37,6 +37,8 @@ choose_best_vk_mode_auto(struct comp_target *ct, VkDisplayModePropertiesKHR *mod
 	// First priority: choose mode that maximizes rendered pixels.
 	// Second priority: choose mode with highest refresh rate.
 	for (int i = 1; i < mode_count; i++) {
+		current = &mode_properties[i].parameters;
+
 		COMP_DEBUG(ct->c, "Available Vk direct mode %d: %dx%d@%.2f", i, current->visibleRegion.width,
 		           current->visibleRegion.height, (float)current->refreshRate / 1000.);
 
