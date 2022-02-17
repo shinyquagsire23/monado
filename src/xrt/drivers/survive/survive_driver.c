@@ -70,6 +70,8 @@
 // initializing survive_driver once creates xrt_devices for all connected devices
 static bool survive_already_initialized = false;
 
+DEBUG_GET_ONCE_BOOL_OPTION(survive_disable_hand_emulation, "SURVIVE_DISABLE_HAND_EMULATION", false)
+
 #define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->log_level, __VA_ARGS__)
 #define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->log_level, __VA_ARGS__)
 #define SURVIVE_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->sys->log_level, __VA_ARGS__)
@@ -1109,7 +1111,7 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.binding_profiles = binding_profiles_index;
 		survive->base.binding_profile_count = ARRAY_SIZE(binding_profiles_index);
 
-		survive->base.hand_tracking_supported = true;
+		survive->base.hand_tracking_supported = !debug_get_bool_option_survive_disable_hand_emulation();
 
 	} else if (survive->ctrl.config.variant == CONTROLLER_VIVE_WAND) {
 		survive->base.name = XRT_DEVICE_VIVE_WAND;
