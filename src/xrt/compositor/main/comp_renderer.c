@@ -481,7 +481,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 		return true;
 	}
 
-	COMP_DEBUG(c, "Creating iamges and renderings (force_recreate: %s).", force_recreate ? "true" : "false");
+	COMP_DEBUG(c, "Creating images and renderings (force_recreate: %s).", force_recreate ? "true" : "false");
 
 	/*
 	 * This makes sure that any pending command buffer has completed
