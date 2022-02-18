@@ -826,6 +826,8 @@ vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 
 /*!
  * Returns the access flags for the compositor to app barriers.
+ *
+ * CSCI = Compositor SwapChain Images.
  */
 VkAccessFlags
 vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits);
@@ -833,6 +835,8 @@ vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits);
 /*!
  * Return the optimal layout for this format, this is the layout as given to the
  * app so is bound to the OpenXR spec.
+ *
+ * CSCI = Compositor SwapChain Images.
  */
 VkImageLayout
 vk_csci_get_barrier_optimal_layout(VkFormat format);
@@ -841,6 +845,8 @@ vk_csci_get_barrier_optimal_layout(VkFormat format);
  * Return the barrier aspect mask for this format, this is intended for the
  * barriers that flush the data out before and after transfers between the
  * application and compositor.
+ *
+ * CSCI = Compositor SwapChain Images.
  */
 VkImageAspectFlags
 vk_csci_get_barrier_aspect_mask(VkFormat format);
@@ -859,6 +865,8 @@ vk_csci_get_barrier_aspect_mask(VkFormat format);
  *
  * For stencil formats always adds:
  * * `VK_IMAGE_USAGE_SAMPLED_BIT` for compositor reading in shaders.
+ *
+ * CSCI = Compositor SwapChain Images.
  */
 VkImageUsageFlags
 vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
@@ -868,6 +876,8 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
  * should be set. For color it's the color, for depth and stencil it's only
  * depth as both are disallowed by the Vulkan spec, for depth only depth, and
  * for stencil only it's stencil.
+ *
+ * CSCI = Compositor SwapChain Images.
  */
 VkImageAspectFlags
 vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bits);

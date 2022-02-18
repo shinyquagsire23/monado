@@ -4,6 +4,14 @@
  * @file
  * @brief  Flags helpers for compositor swapchain images.
  *
+ * These functions all concern only the compositor swapchain images that are
+ * shared between the compositor and the application. That's why they are
+ * grouped together and they are here because they need to be shared between
+ * the @ref vk_image_collection and @ref comp_swapchain code so that they apply
+ * the same flags everywhere.
+ *
+ * CSCI = Compositor SwapChain Images.
+ *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Benjamin Saunders <ben.e.saunders@gmail.com>
