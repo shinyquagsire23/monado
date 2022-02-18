@@ -329,6 +329,12 @@ vk_power_state_string(VkDisplayPowerStateEXT code);
 const char *
 vk_color_space_string(VkColorSpaceKHR code);
 
+const char *
+vk_format_feature_string(VkFormatFeatureFlagBits code);
+
+const char *
+xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code);
+
 
 /*
  *
@@ -656,29 +662,6 @@ VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
 
-VkAccessFlags
-vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
-
-/*!
- * Return the optimal layout for this format, only supports colour and depth.
- */
-VkImageLayout
-vk_swapchain_optimal_layout(VkFormat format);
-
-/*!
- * Return the aspect mask for this format, only supports colour and depth.
- */
-VkImageAspectFlags
-vk_swapchain_aspect_mask(VkFormat format);
-
-/*!
- * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
- * `VK_IMAGE_USAGE_SAMPLED_BIT` to color formats so they can be used by the
- * compositor and client.
- */
-VkImageUsageFlags
-vk_swapchain_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
-
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
                         const VkDescriptorPoolSize *pool_sizes,
@@ -833,6 +816,36 @@ vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
  */
 VkResult
 vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
+
+
+/*
+ *
+ * Compositor swapchain image flags helpers, in the vk_compositor_flags.c file.
+ *
+ */
+
+VkAccessFlags
+vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits);
+
+/*!
+ * Return the optimal layout for this format, only supports colour and depth.
+ */
+VkImageLayout
+vk_swapchain_optimal_layout(VkFormat format);
+
+/*!
+ * Return the aspect mask for this format, only supports colour and depth.
+ */
+VkImageAspectFlags
+vk_swapchain_aspect_mask(VkFormat format);
+
+/*!
+ * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
+ * `VK_IMAGE_USAGE_SAMPLED_BIT` to color formats so they can be used by the
+ * compositor and client.
+ */
+VkImageUsageFlags
+vk_swapchain_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
 
 
 #ifdef __cplusplus
