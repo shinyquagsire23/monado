@@ -42,6 +42,9 @@ enum xrt_settings_camera_type
 
 #define XRT_MAX_TRACKING_OVERRIDES 16
 
+/*!
+ * Tracking override type.
+ */
 enum xrt_tracking_override_type
 {
 	XRT_TRACKING_OVERRIDE_DIRECT = 0,

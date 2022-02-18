@@ -32,6 +32,7 @@ extern "C" {
  *
  * The pose provided by get_tracked_pose will be provided by the tracker device.
  *
+ * @param override_type The kind of override this wrapper device will provide.
  * @param tracking_override_target An existing device that will be mimiced by the created device.
  * @param tracking_override_tracker An existing device that will be used to provide tracking data.
  * @param tracking_override_input_name The input name of the tracker device. XRT_INPUT_GENERIC_TRACKER_POSE for generic
