@@ -17,6 +17,7 @@ foreach(
 	tests_id_ringbuffer
 	tests_input_transform
 	tests_json
+	tests_lowpass
 	tests_lowpass_int
 	tests_pacing
 	tests_quatexpmap
@@ -34,6 +35,7 @@ endforeach()
 target_link_libraries(tests_cxx_wrappers PRIVATE xrt-interfaces)
 target_link_libraries(tests_history_buf PRIVATE aux_math)
 target_link_libraries(tests_input_transform PRIVATE st_oxr xrt-interfaces xrt-external-openxr)
+target_link_libraries(tests_lowpass PRIVATE aux_tracking)
 target_link_libraries(tests_lowpass_int PRIVATE aux_tracking)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
