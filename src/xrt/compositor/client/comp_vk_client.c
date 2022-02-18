@@ -421,9 +421,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
-	VkAccessFlags client_access = vk_swapchain_access_flags(info->bits);
-	VkImageLayout client_layout = vk_swapchain_optimal_layout(info->format);
-	VkImageAspectFlags client_aspect = vk_swapchain_aspect_mask(info->format);
+	VkAccessFlags client_access = vk_csci_get_access_flags(info->bits);
+	VkImageLayout client_layout = vk_csci_get_optimal_layout(info->format);
+	VkImageAspectFlags client_aspect = vk_csci_get_aspect_mask(info->format);
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = client_aspect,

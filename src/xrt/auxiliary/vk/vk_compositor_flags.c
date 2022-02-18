@@ -35,7 +35,7 @@ check_feature(VkFormat format,
               VkFormatFeatureFlags flag)
 {
 	if ((format_features & flag) == 0) {
-		U_LOG_E("vk_swapchain_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
+		U_LOG_E("vk_csci_get_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
 		        xrt_swapchain_usage_string(usage), vk_format_feature_string(flag),
 		        vk_color_format_string(format), format_features, flag);
 		return false;
@@ -51,7 +51,7 @@ check_feature(VkFormat format,
  */
 
 VkAccessFlags
-vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
+vk_csci_get_access_flags(enum xrt_swapchain_usage_bits bits)
 {
 	VkAccessFlags result = 0;
 	if ((bits & XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS) != 0) {
@@ -82,7 +82,7 @@ vk_swapchain_access_flags(enum xrt_swapchain_usage_bits bits)
 }
 
 VkImageLayout
-vk_swapchain_optimal_layout(VkFormat format)
+vk_csci_get_optimal_layout(VkFormat format)
 {
 	switch (format) {
 	case VK_FORMAT_D16_UNORM:
@@ -108,7 +108,7 @@ vk_swapchain_optimal_layout(VkFormat format)
 }
 
 VkImageAspectFlags
-vk_swapchain_aspect_mask(VkFormat format)
+vk_csci_get_aspect_mask(VkFormat format)
 {
 	switch (format) {
 	case VK_FORMAT_D16_UNORM:
@@ -135,7 +135,7 @@ vk_swapchain_aspect_mask(VkFormat format)
 }
 
 VkImageUsageFlags
-vk_swapchain_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits)
+vk_csci_get_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits)
 {
 	VkFormatProperties prop;
 	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);

@@ -319,7 +319,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage = vk_swapchain_usage_flags(vk, (VkFormat)info->format, info->bits);
+	VkImageUsageFlags image_usage = vk_csci_get_usage_flags(vk, (VkFormat)info->format, info->bits);
 	if (image_usage == 0) {
 		U_LOG_E("vk_create_image_from_native: Unsupported swapchain usage flags");
 		return VK_ERROR_FEATURE_NOT_PRESENT;
