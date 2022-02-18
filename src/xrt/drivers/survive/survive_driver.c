@@ -1,5 +1,5 @@
 // Copyright 2019-2021, Collabora, Ltd.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Adapter to Libsurvive.
