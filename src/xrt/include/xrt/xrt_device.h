@@ -384,6 +384,8 @@ struct xrt_device
 /*!
  * Helper function for @ref xrt_device::update_inputs.
  *
+ * @copydoc xrt_device::update_inputs
+ *
  * @public @memberof xrt_device
  */
 static inline void
@@ -394,6 +396,8 @@ xrt_device_update_inputs(struct xrt_device *xdev)
 
 /*!
  * Helper function for @ref xrt_device::get_tracked_pose.
+ *
+ * @copydoc xrt_device::get_tracked_pose
  *
  * @public @memberof xrt_device
  */
@@ -408,6 +412,8 @@ xrt_device_get_tracked_pose(struct xrt_device *xdev,
 
 /*!
  * Helper function for @ref xrt_device::get_hand_tracking.
+ *
+ * @copydoc xrt_device::get_hand_tracking
  *
  * @public @memberof xrt_device
  */
@@ -424,6 +430,8 @@ xrt_device_get_hand_tracking(struct xrt_device *xdev,
 /*!
  * Helper function for @ref xrt_device::set_output.
  *
+ * @copydoc xrt_device::set_output
+ *
  * @public @memberof xrt_device
  */
 static inline void
@@ -435,9 +443,7 @@ xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union 
 /*!
  * Helper function for @ref xrt_device::get_view_poses.
  *
- * @out_head_relation in the device's tracking space without tracking_origin offset applied.
- * @out_poses are view poses relative th @out_head_relation.
- *
+ * @copydoc xrt_device::get_view_poses
  * @public @memberof xrt_device
  */
 static inline void
@@ -456,6 +462,8 @@ xrt_device_get_view_poses(struct xrt_device *xdev,
 /*!
  * Helper function for @ref xrt_device::compute_distortion.
  *
+ * @copydoc xrt_device::get_view_poses
+ *
  * @public @memberof xrt_device
  */
 static inline void
@@ -466,6 +474,8 @@ xrt_device_compute_distortion(struct xrt_device *xdev, int view, float u, float 
 
 /*!
  * Helper function for @ref xrt_device::destroy.
+ *
+ * Handles nulls, sets your pointer to null.
  *
  * @public @memberof xrt_device
  */
