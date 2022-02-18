@@ -166,7 +166,7 @@ global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel)
 }
 
 /*!
- * Transform @view_relation given in global space into baseSpc without the app given offset pose for baseSpc
+ * Transform @p view_relation given in global space into @p baseSpc without the app-given offset pose for @p baseSpc
  * applied.
  */
 XrResult
