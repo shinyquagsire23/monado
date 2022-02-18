@@ -6,7 +6,11 @@
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @ingroup drv_survive
  */
+#pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int
 survive_device_autoprobe(struct xrt_auto_prober *xap,
@@ -14,3 +18,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
                          bool no_hmds,
                          struct xrt_prober *xp,
                          struct xrt_device **out_xdevs);
+
+#ifdef __cplusplus
+}
+#endif
