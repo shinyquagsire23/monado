@@ -65,6 +65,7 @@ lib_st_oxr = static_library(
 	include_directories: [
 		xrt_include,
 		openxr_include,
+		renderdoc_include,
 	],
 	dependencies: [aux, vulkan],
 	c_args: compile_args,

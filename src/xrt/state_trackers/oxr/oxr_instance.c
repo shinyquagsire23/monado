@@ -415,6 +415,36 @@ oxr_instance_create(struct oxr_logger *log,
 
 	debug_print_devices(log, sys);
 
+
+#ifdef XRT_FEATURE_RENDERDOC
+
+#ifdef XRT_OS_LINUX
+	void *mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD);
+	if (mod) {
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void **)&inst->rdoc_api);
+		assert(ret == 1);
+	}
+#endif
+#ifdef XRT_OS_ANDROID
+	void *mod = dlopen("libVkLayer_GLES_RenderDoc.so", RTLD_NOW | RTLD_NOLOAD);
+	if (mod) {
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)dlsym(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void **)&inst->rdoc_api);
+		assert(ret == 1);
+	}
+#endif
+#ifdef XRT_OS_WINDOWS
+	HMODULE mod = GetModuleHandleA("renderdoc.dll");
+	if (mod) {
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void **)&rdoc_api);
+		assert(ret == 1);
+	}
+#endif
+
+#endif
+
 	*out_instance = inst;
 
 	return XR_SUCCESS;

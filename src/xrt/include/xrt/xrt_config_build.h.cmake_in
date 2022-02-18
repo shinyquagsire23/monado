@@ -30,3 +30,5 @@
 #cmakedefine XRT_FEATURE_COLOR_LOG
 
 #cmakedefine XRT_FEATURE_TRACING
+
+#cmakedefine XRT_FEATURE_RENDERDOC

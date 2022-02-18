@@ -25,6 +25,10 @@
 #include "oxr_extension_support.h"
 #include "oxr_subaction.h"
 
+#ifdef XRT_FEATURE_RENDERDOC
+#include "renderdoc_app.h"
+#include <dlfcn.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -1247,6 +1251,10 @@ struct oxr_instance
 	bool debug_views;
 	bool debug_spaces;
 	bool debug_bindings;
+
+#ifdef XRT_FEATURE_RENDERDOC
+	RENDERDOC_API_1_4_1 *rdoc_api;
+#endif
 };
 
 /*!

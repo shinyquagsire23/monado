@@ -11,6 +11,7 @@ openxr_include = include_directories('openxr_includes')
 catch2_include = include_directories('Catch2')
 stb_include = include_directories('stb')
 slam_tracker_include = include_directories('slam_tracker')
+renderdoc_include = include_directories('renderdoc_api')
 
 if slam.found()
 	external_slam = declare_dependency(

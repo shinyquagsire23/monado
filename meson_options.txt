@@ -168,3 +168,9 @@ option('systemd-user-unit-dir',
 	type: 'string',
 	description: 'Directory for user systemd units (defaults to /usr/lib/systemd/user)'
 )
+
+option('renderdoc',
+	type: 'boolean',
+	value: false,
+	description: 'Enable support for the RenderDoc API'
+)

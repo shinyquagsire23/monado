@@ -132,7 +132,15 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 	// NULL explicitly allowed here because it's a basically empty struct.
 	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, frameBeginInfo, XR_TYPE_FRAME_BEGIN_INFO);
 
-	return oxr_session_frame_begin(&log, sess);
+	XrResult res = oxr_session_frame_begin(&log, sess);
+
+#ifdef XRT_FEATURE_RENDERDOC
+	if (sess->sys->inst->rdoc_api) {
+		sess->sys->inst->rdoc_api->StartFrameCapture(NULL, NULL);
+	}
+#endif
+
+	return res;
 }
 
 XrResult
@@ -145,7 +153,15 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndFrame");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameEndInfo, XR_TYPE_FRAME_END_INFO);
 
-	return oxr_session_frame_end(&log, sess, frameEndInfo);
+#ifdef XRT_FEATURE_RENDERDOC
+	if (sess->sys->inst->rdoc_api) {
+		sess->sys->inst->rdoc_api->EndFrameCapture(NULL, NULL);
+	}
+#endif
+
+	XrResult res = oxr_session_frame_end(&log, sess, frameEndInfo);
+
+	return res;
 }
 
 XrResult
