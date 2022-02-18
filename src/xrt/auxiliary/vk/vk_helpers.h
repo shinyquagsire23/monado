@@ -714,6 +714,12 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 
+/*!
+ * Fills in has_* in vk_bundle given a string of prefiltered instance extensions
+ */
+void
+vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
+
 
 /*
  *
@@ -828,11 +834,6 @@ vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 VkResult
 vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 
-/*!
- * Fills in has_* in vk_bundle given a string of prefiltered instance extensions
- */
-void
-vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
 
 #ifdef __cplusplus
 }
