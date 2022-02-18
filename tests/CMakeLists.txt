@@ -9,52 +9,27 @@ if(ANDROID)
 	target_link_libraries(tests_main PUBLIC log)
 endif()
 
-# Input transform test
-add_executable(tests_input_transform tests_input_transform.cpp)
-target_link_libraries(tests_input_transform PRIVATE tests_main)
-target_link_libraries(
-	tests_input_transform PRIVATE st_oxr xrt-interfaces xrt-external-openxr aux_util
+foreach(
+	testname
+	tests_cxx_wrappers
+	tests_generic_callbacks
+	tests_history_buf
+	tests_id_ringbuffer
+	tests_input_transform
+	tests_json
+	tests_pacing
+	tests_quatexpmap
 	)
-add_test(NAME input_transform COMMAND tests_input_transform --success)
 
-# Generic callbacks
-add_executable(tests_generic_callbacks tests_generic_callbacks.cpp)
-target_link_libraries(tests_generic_callbacks PRIVATE tests_main)
-target_link_libraries(tests_generic_callbacks PRIVATE aux_util)
-add_test(NAME tests_generic_callbacks COMMAND tests_generic_callbacks --success)
+	add_executable(${testname} ${testname}.cpp)
+	target_link_libraries(${testname} PRIVATE tests_main)
+	target_link_libraries(${testname} PRIVATE aux_util)
+	add_test(NAME ${testname} COMMAND ${testname} --success)
+endforeach()
 
-# cJSON Wrapper
-add_executable(tests_json tests_json.cpp)
-target_link_libraries(tests_json PRIVATE tests_main)
-target_link_libraries(tests_json PRIVATE aux_util)
-add_test(NAME tests_json COMMAND tests_json --success)
+# For tests that require more than just aux_util, link those other libs down here.
 
-# history
-add_executable(tests_history_buf tests_history_buf.cpp)
-target_link_libraries(tests_history_buf PRIVATE tests_main)
-target_link_libraries(tests_history_buf PRIVATE aux_util aux_math)
-add_test(NAME tests_history_buf COMMAND tests_history_buf --success)
-
-# id ring buffer (closely related to history buf)
-add_executable(tests_id_ringbuffer tests_id_ringbuffer.cpp)
-target_link_libraries(tests_id_ringbuffer PRIVATE tests_main)
-target_link_libraries(tests_id_ringbuffer PRIVATE aux_util)
-add_test(NAME tests_id_ringbuffer COMMAND tests_id_ringbuffer --success)
-
-# pacing
-add_executable(tests_pacing tests_pacing.cpp)
-target_link_libraries(tests_pacing PRIVATE tests_main)
-target_link_libraries(tests_pacing PRIVATE aux_util aux_math)
-add_test(NAME tests_pacing COMMAND tests_pacing --success)
-
-# misc wrappers
-add_executable(tests_cxx_wrappers tests_cxx_wrappers.cpp)
-target_link_libraries(tests_cxx_wrappers PRIVATE tests_main)
-target_link_libraries(tests_cxx_wrappers PRIVATE aux_util xrt-interfaces)
-add_test(NAME tests_cxx_wrappers COMMAND tests_cxx_wrappers --success)
-
-# quatexpmap
-add_executable(tests_quatexpmap tests_quatexpmap.cpp)
-target_link_libraries(tests_quatexpmap PRIVATE tests_main)
+target_link_libraries(tests_cxx_wrappers PRIVATE xrt-interfaces)
+target_link_libraries(tests_history_buf PRIVATE aux_math)
+target_link_libraries(tests_input_transform PRIVATE st_oxr xrt-interfaces xrt-external-openxr)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
-add_test(NAME tests_quatexpmap COMMAND tests_quatexpmap --success)
