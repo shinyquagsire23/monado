@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -421,12 +421,12 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_VULKAN;
 	}
 
-	VkAccessFlags client_access = vk_csci_get_access_flags(info->bits);
-	VkImageLayout client_layout = vk_csci_get_optimal_layout(info->format);
-	VkImageAspectFlags client_aspect = vk_csci_get_aspect_mask(info->format);
+	VkAccessFlags barrier_access_mask = vk_csci_get_barrier_access_mask(info->bits);
+	VkImageLayout barrier_optimal_layout = vk_csci_get_barrier_optimal_layout(info->format);
+	VkImageAspectFlags barrier_aspect_mask = vk_csci_get_barrier_aspect_mask(info->format);
 
 	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = client_aspect,
+	    .aspectMask = barrier_aspect_mask,
 	    .baseMipLevel = 0,
 	    .levelCount = VK_REMAINING_MIP_LEVELS,
 	    .baseArrayLayer = 0,
@@ -461,7 +461,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		    cmd_buffer,                      // cmd_buffer
 		    sc->base.images[i],              // image
 		    0,                               // src_access_mask
-		    client_access,                   // dst_access_mask
+		    barrier_access_mask,             // dst_access_mask
 		    VK_IMAGE_LAYOUT_UNDEFINED,       // old_layout
 		    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // new_layout
 		    subresource_range);              // subresource_range
@@ -485,7 +485,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		}
 
 		VkImageSubresourceRange subresource_range = {
-		    .aspectMask = client_aspect,
+		    .aspectMask = barrier_aspect_mask,
 		    .baseMipLevel = 0,
 		    .levelCount = VK_REMAINING_MIP_LEVELS,
 		    .baseArrayLayer = 0,
@@ -511,9 +511,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		VkImageMemoryBarrier acquire = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		    .srcAccessMask = 0,
-		    .dstAccessMask = client_access,
+		    .dstAccessMask = barrier_access_mask,
 		    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-		    .newLayout = client_layout,
+		    .newLayout = barrier_optimal_layout,
 		    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 		    .image = sc->base.images[i],
@@ -522,9 +522,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 		VkImageMemoryBarrier release = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		    .srcAccessMask = client_access,
+		    .srcAccessMask = barrier_access_mask,
 		    .dstAccessMask = 0,
-		    .oldLayout = client_layout,
+		    .oldLayout = barrier_optimal_layout,
 		    .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		    .srcQueueFamilyIndex = vk->queue_family_index,
 		    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL,

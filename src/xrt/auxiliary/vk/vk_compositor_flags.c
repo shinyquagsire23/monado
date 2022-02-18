@@ -35,7 +35,7 @@ check_feature(VkFormat format,
               VkFormatFeatureFlags flag)
 {
 	if ((format_features & flag) == 0) {
-		U_LOG_E("vk_csci_get_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
+		U_LOG_E("vk_csci_get_image_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
 		        xrt_swapchain_usage_string(usage), vk_format_feature_string(flag),
 		        vk_color_format_string(format), format_features, flag);
 		return false;
@@ -51,7 +51,7 @@ check_feature(VkFormat format,
  */
 
 VkAccessFlags
-vk_csci_get_access_flags(enum xrt_swapchain_usage_bits bits)
+vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits)
 {
 	VkAccessFlags result = 0;
 	if ((bits & XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS) != 0) {
@@ -82,9 +82,10 @@ vk_csci_get_access_flags(enum xrt_swapchain_usage_bits bits)
 }
 
 VkImageLayout
-vk_csci_get_optimal_layout(VkFormat format)
+vk_csci_get_barrier_optimal_layout(VkFormat format)
 {
 	switch (format) {
+	case VK_FORMAT_S8_UINT:
 	case VK_FORMAT_D16_UNORM:
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
@@ -108,14 +109,16 @@ vk_csci_get_optimal_layout(VkFormat format)
 }
 
 VkImageAspectFlags
-vk_csci_get_aspect_mask(VkFormat format)
+vk_csci_get_barrier_aspect_mask(VkFormat format)
 {
 	switch (format) {
+	case VK_FORMAT_S8_UINT: // Stencil only.
+		return VK_IMAGE_ASPECT_STENCIL_BIT;
 	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_D32_SFLOAT: //
+	case VK_FORMAT_D32_SFLOAT: // Depth only
 		return VK_IMAGE_ASPECT_DEPTH_BIT;
 	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case VK_FORMAT_D32_SFLOAT_S8_UINT: //
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: // Depth % stencil, barrier both.
 		return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	case VK_FORMAT_R16G16B16A16_UNORM:
 	case VK_FORMAT_R16G16B16A16_SFLOAT:
@@ -127,15 +130,45 @@ vk_csci_get_aspect_mask(VkFormat format)
 	case VK_FORMAT_R8G8B8A8_UNORM:
 	case VK_FORMAT_B8G8R8A8_UNORM:
 	case VK_FORMAT_R8G8B8_UNORM:
-	case VK_FORMAT_B8G8R8_UNORM: //
+	case VK_FORMAT_B8G8R8_UNORM: // Color only.
 		return VK_IMAGE_ASPECT_COLOR_BIT;
 	default: //
 		assert(false && !"Format not supported!");
 	}
 }
 
+VkImageAspectFlags
+vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bits)
+{
+	switch (format) {
+	case VK_FORMAT_S8_UINT: // Stencil only.
+		return VK_IMAGE_ASPECT_STENCIL_BIT;
+	case VK_FORMAT_D16_UNORM:
+	case VK_FORMAT_D32_SFLOAT: // Depth only.
+		return VK_IMAGE_ASPECT_DEPTH_BIT;
+	case VK_FORMAT_D24_UNORM_S8_UINT:
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: // Depth & stencil, only want to sample depth.
+		return VK_IMAGE_ASPECT_DEPTH_BIT;
+	case VK_FORMAT_R16G16B16A16_UNORM:
+	case VK_FORMAT_R16G16B16A16_SFLOAT:
+	case VK_FORMAT_R16G16B16_UNORM:
+	case VK_FORMAT_R16G16B16_SFLOAT:
+	case VK_FORMAT_R8G8B8A8_SRGB:
+	case VK_FORMAT_B8G8R8A8_SRGB:
+	case VK_FORMAT_R8G8B8_SRGB:
+	case VK_FORMAT_R8G8B8A8_UNORM:
+	case VK_FORMAT_B8G8R8A8_UNORM:
+	case VK_FORMAT_R8G8B8_UNORM:
+	case VK_FORMAT_B8G8R8_UNORM: // Color only.
+		return VK_IMAGE_ASPECT_COLOR_BIT;
+	default: //
+		assert(false && !"Format not supported!");
+		return 0;
+	}
+}
+
 VkImageUsageFlags
-vk_csci_get_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits)
+vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits)
 {
 	VkFormatProperties prop;
 	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
@@ -147,11 +180,11 @@ vk_csci_get_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchai
 		                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
 			return 0;
 		}
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
 
 	if ((prop.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
-		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
 
 	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
@@ -184,6 +217,19 @@ vk_csci_get_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchai
 	}
 	if ((bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
 		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+	}
+
+	// For compositors to be able to read it.
+	if (true) {
+		VkFormatFeatureFlags format_features = prop.optimalTilingFeatures;
+		VkFormatFeatureFlags flag = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+		if ((format_features & flag) == 0) {
+			U_LOG_E("%s: Compositor needs %s but not supported for format %s (%08x) (%08x)", __func__,
+			        vk_format_feature_string(flag), vk_color_format_string(format), format_features, flag);
+			return 0;
+		}
+
+		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 	}
 
 	return image_usage;

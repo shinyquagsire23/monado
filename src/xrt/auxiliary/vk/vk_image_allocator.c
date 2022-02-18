@@ -106,7 +106,13 @@ get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt
 static VkResult
 create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info, struct vk_image *out_image)
 {
-	VkImageUsageFlags image_usage = vk_csci_get_usage_flags(vk, (VkFormat)info->format, info->bits);
+	// This is the format we allocate the image in, can be changed further down.
+	VkFormat image_format = (VkFormat)info->format;
+
+	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags( //
+	    vk,                                                        //
+	    image_format,                                              //
+	    info->bits);                                               //
 	if (image_usage == 0) {
 		U_LOG_E("create_image: Unsupported swapchain usage flags");
 		return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -132,7 +138,7 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 
 	VkAndroidHardwareBufferFormatPropertiesANDROID a_buffer_format_props = {
 	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
-	    .format = (VkFormat)info->format,
+	    .format = image_format,
 	};
 
 	VkAndroidHardwareBufferPropertiesANDROID a_buffer_props = {
@@ -164,7 +170,6 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 #endif
 	};
 
-	VkFormat format = info->format;
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 	VkExternalFormatANDROID format_android = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID,
@@ -174,8 +179,8 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 
 	// Android can't allocate native sRGB.
 	// Use UNORM and correct gamma later.
-	if (format == VK_FORMAT_R8G8B8A8_SRGB) {
-		format = VK_FORMAT_R8G8B8A8_UNORM;
+	if (image_format == VK_FORMAT_R8G8B8A8_SRGB) {
+		image_format = VK_FORMAT_R8G8B8A8_UNORM;
 	}
 #endif
 
@@ -187,7 +192,7 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 		.pNext = &external_memory_image_create_info,
 #endif
 		.imageType = VK_IMAGE_TYPE_2D,
-		.format = format,
+		.format = image_format,
 		.extent = {.width = info->width, .height = info->height, .depth = 1},
 		.mipLevels = info->mip_count,
 		.arrayLayers = info->array_size,

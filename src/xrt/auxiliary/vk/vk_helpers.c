@@ -319,7 +319,12 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
-	VkImageUsageFlags image_usage = vk_csci_get_usage_flags(vk, (VkFormat)info->format, info->bits);
+	// This is the format we allocate the image in, can be changed further down.
+	VkFormat image_format = (VkFormat)info->format;
+	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags( //
+	    vk,                                                        //
+	    image_format,                                              //
+	    info->bits);                                               //
 	if (image_usage == 0) {
 		U_LOG_E("vk_create_image_from_native: Unsupported swapchain usage flags");
 		return VK_ERROR_FEATURE_NOT_PRESENT;
@@ -355,7 +360,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	VkPhysicalDeviceImageFormatInfo2 format_info = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 	    .pNext = &external_image_format_info,
-	    .format = (VkFormat)info->format,
+	    .format = image_format,
 	    .type = VK_IMAGE_TYPE_2D,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,
@@ -389,7 +394,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
 	    .imageType = VK_IMAGE_TYPE_2D,
-	    .format = (VkFormat)info->format,
+	    .format = image_format,
 	    .extent = {.width = info->width, .height = info->height, .depth = 1},
 	    .mipLevels = info->mip_count,
 	    .arrayLayers = info->array_size,

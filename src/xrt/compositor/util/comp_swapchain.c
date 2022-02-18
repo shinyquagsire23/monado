@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -108,26 +108,6 @@ alloc_and_set_funcs(struct vk_bundle *vk, struct comp_swapchain_gc *cscgc, uint3
 	return sc;
 }
 
-static bool
-is_depth_only_format(VkFormat format)
-{
-	return format == VK_FORMAT_D16_UNORM || format == VK_FORMAT_D32_SFLOAT;
-}
-
-static bool
-is_depth_stencil_format(VkFormat format)
-{
-
-	return format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT ||
-	       format == VK_FORMAT_D32_SFLOAT_S8_UINT;
-}
-
-static bool
-is_stencil_only_format(VkFormat format)
-{
-	return format == VK_FORMAT_S8_UINT;
-}
-
 static void
 do_post_create_vulkan_setup(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
@@ -143,30 +123,10 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	    .a = VK_COMPONENT_SWIZZLE_ONE,
 	};
 
-	bool depth = (info->bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0;
+	// This is the format for the image view, it's not adjusted.
+	VkFormat image_view_format = (VkFormat)info->format;
+	VkImageAspectFlagBits aspect = vk_csci_get_image_view_aspect(image_view_format, info->bits);
 
-	VkImageAspectFlagBits aspect = 0;
-	if (depth) {
-		if (is_depth_only_format(info->format)) {
-			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
-		}
-		if (is_depth_stencil_format(info->format)) {
-			aspect |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-		if (is_stencil_only_format(info->format)) {
-			aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		}
-	} else {
-		aspect |= VK_IMAGE_ASPECT_COLOR_BIT;
-	}
-
-	VkFormat format = info->format;
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	// Force gamma conversion for sRGB on Android
-	if (format == VK_FORMAT_R8G8B8A8_SRGB) {
-		format = VK_FORMAT_R8G8B8A8_UNORM;
-	}
-#endif
 
 	for (uint32_t i = 0; i < image_count; i++) {
 		sc->images[i].views.alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
@@ -187,10 +147,20 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 			    .layerCount = 1,
 			};
 
-			vk_create_view(vk, sc->vkic.images[i].handle, (VkFormat)info->format, subresource_range,
-			               &sc->images[i].views.alpha[layer]);
-			vk_create_view_swizzle(vk, sc->vkic.images[i].handle, format, subresource_range, components,
-			                       &sc->images[i].views.no_alpha[layer]);
+			vk_create_view(                         //
+			    vk,                                 // vk
+			    sc->vkic.images[i].handle,          // image
+			    image_view_format,                  // format
+			    subresource_range,                  // subresource_range
+			    &sc->images[i].views.alpha[layer]); // out_view
+
+			vk_create_view_swizzle(                    //
+			    vk,                                    // vk
+			    sc->vkic.images[i].handle,             // image
+			    image_view_format,                     // format
+			    subresource_range,                     // subresource_range
+			    components,                            // components
+			    &sc->images[i].views.no_alpha[layer]); // out_view
 		}
 	}
 
@@ -217,9 +187,15 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	};
 
 	for (uint32_t i = 0; i < image_count; i++) {
-		vk_set_image_layout(vk, cmd_buffer, sc->vkic.images[i].handle, 0, VK_ACCESS_SHADER_READ_BIT,
-		                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		                    subresource_range);
+		vk_set_image_layout(                          //
+		    vk,                                       //
+		    cmd_buffer,                               //
+		    sc->vkic.images[i].handle,                //
+		    0,                                        //
+		    VK_ACCESS_SHADER_READ_BIT,                //
+		    VK_IMAGE_LAYOUT_UNDEFINED,                //
+		    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
+		    subresource_range);                       //
 	}
 
 	vk_submit_cmd_buffer(vk, cmd_buffer);

@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -824,28 +824,53 @@ vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
  *
  */
 
+/*!
+ * Returns the access flags for the compositor to app barriers.
+ */
 VkAccessFlags
-vk_csci_get_access_flags(enum xrt_swapchain_usage_bits bits);
+vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits);
 
 /*!
- * Return the optimal layout for this format, only supports colour and depth.
+ * Return the optimal layout for this format, this is the layout as given to the
+ * app so is bound to the OpenXR spec.
  */
 VkImageLayout
-vk_csci_get_optimal_layout(VkFormat format);
+vk_csci_get_barrier_optimal_layout(VkFormat format);
 
 /*!
- * Return the aspect mask for this format, only supports colour and depth.
+ * Return the barrier aspect mask for this format, this is intended for the
+ * barriers that flush the data out before and after transfers between the
+ * application and compositor.
  */
 VkImageAspectFlags
-vk_csci_get_aspect_mask(VkFormat format);
+vk_csci_get_barrier_aspect_mask(VkFormat format);
 
 /*!
- * Always adds `VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT` and
- * `VK_IMAGE_USAGE_SAMPLED_BIT` to color formats so they can be used by the
- * compositor and client.
+ * Returns the usage bits for a given selected format and usage.
+ *
+ * For color formats always adds:
+ * * `VK_IMAGE_USAGE_SAMPLED_BIT` for compositor reading in shaders.
+ *
+ * For depth & stencil formats always adds:
+ * * `VK_IMAGE_USAGE_SAMPLED_BIT` for compositor reading in shaders.
+ *
+ * For depth formats always adds:
+ * * `VK_IMAGE_USAGE_SAMPLED_BIT` for compositor reading in shaders.
+ *
+ * For stencil formats always adds:
+ * * `VK_IMAGE_USAGE_SAMPLED_BIT` for compositor reading in shaders.
  */
 VkImageUsageFlags
-vk_csci_get_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
+vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits bits);
+
+/*!
+ * For images views created by the compositor to sample the images, what aspect
+ * should be set. For color it's the color, for depth and stencil it's only
+ * depth as both are disallowed by the Vulkan spec, for depth only depth, and
+ * for stencil only it's stencil.
+ */
+VkImageAspectFlags
+vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bits);
 
 
 #ifdef __cplusplus
