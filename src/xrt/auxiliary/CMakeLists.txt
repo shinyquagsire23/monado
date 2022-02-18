@@ -101,6 +101,7 @@ add_library(
 	tracking/t_imu.h
 	tracking/t_lowpass_vector.hpp
 	tracking/t_lowpass.hpp
+	tracking/t_lowpass_integer.hpp
 	tracking/t_tracking.h
 	)
 target_link_libraries(
