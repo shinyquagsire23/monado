@@ -19,6 +19,11 @@
 extern "C" {
 #endif
 
+#ifdef XRT_DOXYGEN
+#define WMR_PACKED
+#else
+#define WMR_PACKED __attribute__((packed))
+#endif
 
 /*!
  * WMR Motion Controller protocol constant and structures
@@ -79,7 +84,7 @@ struct wmr_controller_fw_cmd
 			uint8_t block_id;
 
 			__le32 addr;
-		} __attribute__((packed)) cmd;
+		} WMR_PACKED cmd;
 		uint8_t buf[64];
 	};
 };
@@ -103,7 +108,7 @@ struct wmr_controller_fw_cmd_response
 			uint8_t len;       /* Bytes in this response data */
 
 			uint8_t data[68];
-		} __attribute__((packed)) response;
+		} WMR_PACKED response;
 		uint8_t buf[78];
 	};
 };
@@ -112,6 +117,7 @@ struct wmr_controller_fw_cmd_response
  * @}
  */
 
+#undef WMR_PACKED
 
 /*!
  * WMR Motion Controller protocol helpers
