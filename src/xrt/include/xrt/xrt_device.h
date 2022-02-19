@@ -75,11 +75,6 @@ struct xrt_view
 	 * the vertex positions.
 	 */
 	struct xrt_matrix_2x2 rot;
-
-	/*!
-	 * FoV expressed as in OpenXR.
-	 */
-	struct xrt_fov fov;
 };
 
 /*!
@@ -148,6 +143,9 @@ struct xrt_hmd_parts
 			//! Total number of elements in mesh::indices array.
 			uint32_t index_count_total;
 		} mesh;
+
+		//! distortion is subject to the field of view
+		struct xrt_fov fov[2];
 	} distortion;
 };
 

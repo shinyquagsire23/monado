@@ -359,15 +359,15 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	{
 		/* right eye */
 		math_compute_fovs(1.0, hCOP, hFOV * DEGREES_TO_RADIANS, 1, vCOP, vFOV * DEGREES_TO_RADIANS,
-		                  &hd->base.hmd->views[1].fov);
+		                  &hd->base.hmd->distortion.fov[1]);
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		hd->base.hmd->views[0].fov.angle_up = hd->base.hmd->views[1].fov.angle_up;
-		hd->base.hmd->views[0].fov.angle_down = hd->base.hmd->views[1].fov.angle_down;
+		hd->base.hmd->distortion.fov[0].angle_up = hd->base.hmd->distortion.fov[1].angle_up;
+		hd->base.hmd->distortion.fov[0].angle_down = hd->base.hmd->distortion.fov[1].angle_down;
 
-		hd->base.hmd->views[0].fov.angle_left = -hd->base.hmd->views[1].fov.angle_right;
-		hd->base.hmd->views[0].fov.angle_right = -hd->base.hmd->views[1].fov.angle_left;
+		hd->base.hmd->distortion.fov[0].angle_left = -hd->base.hmd->distortion.fov[1].angle_right;
+		hd->base.hmd->distortion.fov[0].angle_right = -hd->base.hmd->distortion.fov[1].angle_left;
 	}
 
 	switch (variant) {

@@ -326,8 +326,8 @@ oxr_instance_create(struct oxr_logger *log,
 		    "and right eye angle_right with %f radians (%i°)",
 		    left_override, radtodeg_for_display(left_override), -left_override,
 		    radtodeg_for_display(-left_override));
-		dev->hmd->views[0].fov.angle_left = left_override;
-		dev->hmd->views[1].fov.angle_right = -left_override;
+		dev->hmd->distortion.fov[0].angle_left = left_override;
+		dev->hmd->distortion.fov[1].angle_right = -left_override;
 	}
 
 	const float right_override = debug_get_float_option_lfov_right();
@@ -337,24 +337,24 @@ oxr_instance_create(struct oxr_logger *log,
 		    "and right eye angle_left with %f radians (%i°)",
 		    right_override, radtodeg_for_display(right_override), -right_override,
 		    radtodeg_for_display(-right_override));
-		dev->hmd->views[0].fov.angle_right = right_override;
-		dev->hmd->views[1].fov.angle_left = -right_override;
+		dev->hmd->distortion.fov[0].angle_right = right_override;
+		dev->hmd->distortion.fov[1].angle_left = -right_override;
 	}
 
 	const float up_override = debug_get_float_option_lfov_up();
 	if (up_override != 0.0f) {
 		U_LOG_I("Overriding both eyes angle_up with %f radians (%i°)", up_override,
 		        radtodeg_for_display(up_override));
-		dev->hmd->views[0].fov.angle_up = up_override;
-		dev->hmd->views[1].fov.angle_up = up_override;
+		dev->hmd->distortion.fov[0].angle_up = up_override;
+		dev->hmd->distortion.fov[1].angle_up = up_override;
 	}
 
 	const float down_override = debug_get_float_option_lfov_down();
 	if (down_override != 0.0f) {
 		U_LOG_I("Overriding both eyes angle_down with %f radians (%i°)", down_override,
 		        radtodeg_for_display(down_override));
-		dev->hmd->views[0].fov.angle_down = down_override;
-		dev->hmd->views[1].fov.angle_down = down_override;
+		dev->hmd->distortion.fov[0].angle_down = down_override;
+		dev->hmd->distortion.fov[1].angle_down = down_override;
 	}
 
 	// Sets the enabled extensions, this is where we should do any extra validation.

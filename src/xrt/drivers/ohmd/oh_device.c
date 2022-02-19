@@ -740,7 +740,7 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 		/* right eye */
 		if (!math_compute_fovs(info.views[1].display.w_meters, info.views[1].lens_center_x_meters,
 		                       info.views[1].fov, info.views[1].display.h_meters,
-		                       info.views[1].lens_center_y_meters, 0, &ohd->base.hmd->views[1].fov)) {
+		                       info.views[1].lens_center_y_meters, 0, &ohd->base.hmd->distortion.fov[1])) {
 			OHMD_ERROR(ohd, "Failed to compute the partial fields of view.");
 			free(ohd);
 			return NULL;
@@ -748,11 +748,11 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		ohd->base.hmd->views[0].fov.angle_up = ohd->base.hmd->views[1].fov.angle_up;
-		ohd->base.hmd->views[0].fov.angle_down = ohd->base.hmd->views[1].fov.angle_down;
+		ohd->base.hmd->distortion.fov[0].angle_up = ohd->base.hmd->distortion.fov[1].angle_up;
+		ohd->base.hmd->distortion.fov[0].angle_down = ohd->base.hmd->distortion.fov[1].angle_down;
 
-		ohd->base.hmd->views[0].fov.angle_left = -ohd->base.hmd->views[1].fov.angle_right;
-		ohd->base.hmd->views[0].fov.angle_right = -ohd->base.hmd->views[1].fov.angle_left;
+		ohd->base.hmd->distortion.fov[0].angle_left = -ohd->base.hmd->distortion.fov[1].angle_right;
+		ohd->base.hmd->distortion.fov[0].angle_right = -ohd->base.hmd->distortion.fov[1].angle_left;
 	}
 
 	// clang-format off

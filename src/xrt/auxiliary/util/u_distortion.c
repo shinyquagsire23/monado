@@ -46,7 +46,7 @@ u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *
 	parts->views[0].display.w_pixels = w_pixels;
 	parts->views[0].display.h_pixels = h_pixels;
 	parts->views[0].rot = u_device_rotation_ident;
-	parts->views[0].fov = args->fov;
+	parts->distortion.fov[0] = args->fov;
 
 	parts->views[1].viewport.x_pixels = w_pixels;
 	parts->views[1].viewport.y_pixels = 0;
@@ -55,7 +55,7 @@ u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *
 	parts->views[1].display.w_pixels = w_pixels;
 	parts->views[1].display.h_pixels = h_pixels;
 	parts->views[1].rot = u_device_rotation_ident;
-	parts->views[1].fov = args->fov;
+	parts->distortion.fov[1] = args->fov;
 
 
 	/*

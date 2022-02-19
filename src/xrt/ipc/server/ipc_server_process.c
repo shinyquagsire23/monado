@@ -252,10 +252,10 @@ init_shm(struct ipc_server *s)
 		if (xdev->hmd != NULL) {
 			ism->hmd.views[0].display.w_pixels = xdev->hmd->views[0].display.w_pixels;
 			ism->hmd.views[0].display.h_pixels = xdev->hmd->views[0].display.h_pixels;
-			ism->hmd.views[0].fov = xdev->hmd->views[0].fov;
+			ism->hmd.views[0].fov = xdev->hmd->distortion.fov[0];
 			ism->hmd.views[1].display.w_pixels = xdev->hmd->views[1].display.w_pixels;
 			ism->hmd.views[1].display.h_pixels = xdev->hmd->views[1].display.h_pixels;
-			ism->hmd.views[1].fov = xdev->hmd->views[1].fov;
+			ism->hmd.views[1].fov = xdev->hmd->distortion.fov[1];
 
 			for (size_t i = 0; i < xdev->hmd->blend_mode_count; i++) {
 				// Not super necessary, we also do this assert in oxr_system.c

@@ -410,7 +410,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 	oxr_view_relation_ref_relation(log, sess, &head_relation, xdev, baseSpc, viewLocateInfo->displayTime,
 	                               &base_spc_head_relation);
 
-	// @todo the fov information that we get from xdev->hmd->views[i].fov is
+	// @todo the fov information that we get from xdev->hmd->distortion.fov[i] is
 	//       not properly filled out in oh_device.c, fix before wasting time
 	//       on debugging weird rendering when adding stuff here.
 

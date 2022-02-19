@@ -912,7 +912,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
-		                       0, &survive->base.hmd->views[eye].fov)) {
+		                       0, &survive->base.hmd->distortion.fov[eye])) {
 			SURVIVE_ERROR(survive, "Failed to compute the partial fields of view.");
 			free(survive);
 			return NULL;

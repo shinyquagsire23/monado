@@ -1041,10 +1041,10 @@ CDeviceDriver_Monado::GetEyeOutputViewport(
 void
 CDeviceDriver_Monado::GetProjectionRaw(vr::EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom)
 {
-	*pfLeft = tanf(m_xdev->hmd->views[eEye].fov.angle_left);
-	*pfRight = tanf(m_xdev->hmd->views[eEye].fov.angle_right);
-	*pfTop = tanf(-m_xdev->hmd->views[eEye].fov.angle_up);
-	*pfBottom = tanf(-m_xdev->hmd->views[eEye].fov.angle_down);
+	*pfLeft = tanf(m_xdev->hmd->distortion.fov[eEye].angle_left);
+	*pfRight = tanf(m_xdev->hmd->distortion.fov[eEye].angle_right);
+	*pfTop = tanf(-m_xdev->hmd->distortion.fov[eEye].angle_up);
+	*pfBottom = tanf(-m_xdev->hmd->distortion.fov[eEye].angle_down);
 	ovrd_log("Projection Raw: L%f R%f T%f B%f\n", *pfLeft, *pfRight, *pfTop, *pfBottom);
 }
 

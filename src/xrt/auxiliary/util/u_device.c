@@ -101,11 +101,11 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
 		PRINT_INT(   "views[0].display.w_pixels    ", xdev->hmd->views[0].display.w_pixels);
 		PRINT_INT(   "views[0].display.h_pixels    ", xdev->hmd->views[0].display.h_pixels);
 		PRINT_MAT2X2("views[0].rot            ", xdev->hmd->views[0].rot);
-		PRINT_ANGLE( "views[0].fov.angle_left ", xdev->hmd->views[0].fov.angle_left);
-		PRINT_ANGLE( "views[0].fov.angle_right", xdev->hmd->views[0].fov.angle_right);
-		PRINT_ANGLE( "views[0].fov.angle_up   ", xdev->hmd->views[0].fov.angle_up);
-		PRINT_ANGLE( "views[0].fov.angle_down ", xdev->hmd->views[0].fov.angle_down);
-//		PRINT_ANGLE( "info.views[0].fov       ", info.views[0].fov);
+		PRINT_ANGLE( "distortion.fov[0].angle_left ", xdev->hmd->distortion.fov[0].angle_left);
+		PRINT_ANGLE( "distortion.fov[0].angle_right", xdev->hmd->distortion.fov[0].angle_right);
+		PRINT_ANGLE( "distortion.fov[0].angle_up   ", xdev->hmd->distortion.fov[0].angle_up);
+		PRINT_ANGLE( "distortion.fov[0].angle_down ", xdev->hmd->distortion.fov[0].angle_down);
+//		PRINT_ANGLE( "distortion.fov[0]       ", xdev->hmd->distortion.fov[0]);
 		PRINT_INT(   "views[1].viewport.x_pixels   ", xdev->hmd->views[1].viewport.x_pixels);
 		PRINT_INT(   "views[1].viewport.y_pixels   ", xdev->hmd->views[1].viewport.y_pixels);
 		PRINT_INT(   "views[1].viewport.w_pixels   ", xdev->hmd->views[1].viewport.w_pixels);
@@ -113,11 +113,11 @@ u_device_dump_config(struct xrt_device *xdev, const char *prefix, const char *pr
 		PRINT_INT(   "views[1].display.w_pixels    ", xdev->hmd->views[1].display.w_pixels);
 		PRINT_INT(   "views[1].display.h_pixels    ", xdev->hmd->views[1].display.h_pixels);
 		PRINT_MAT2X2("views[1].rot            ", xdev->hmd->views[1].rot);
-		PRINT_ANGLE( "views[1].fov.angle_left ", xdev->hmd->views[1].fov.angle_left);
-		PRINT_ANGLE( "views[1].fov.angle_right", xdev->hmd->views[1].fov.angle_right);
-		PRINT_ANGLE( "views[1].fov.angle_up   ", xdev->hmd->views[1].fov.angle_up);
-		PRINT_ANGLE( "views[1].fov.angle_down ", xdev->hmd->views[1].fov.angle_down);
-//		PRINT_ANGLE( "info.views[1].fov       ", info.views[0].fov);
+		PRINT_ANGLE( "distortion.fov[1].angle_left ", xdev->hmd->distortion.fov[1].angle_left);
+		PRINT_ANGLE( "distortion.fov[1].angle_right", xdev->hmd->distortion.fov[1].angle_right);
+		PRINT_ANGLE( "distortion.fov[1].angle_up   ", xdev->hmd->distortion.fov[1].angle_up);
+		PRINT_ANGLE( "distortion.fov[1].angle_down ", xdev->hmd->distortion.fov[1].angle_down);
+//		PRINT_ANGLE( "distortion.fov[1]       ", xdev->hmd->distortion.fov[1]);
 	}
 	// clang-format on
 }
@@ -209,17 +209,17 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 	{
 		/* right eye */
 		if (!math_compute_fovs(w_meters, lens_center_x_meters[1], info->views[1].fov, h_meters,
-		                       lens_center_y_meters[1], 0, &xdev->hmd->views[1].fov)) {
+		                       lens_center_y_meters[1], 0, &xdev->hmd->distortion.fov[1])) {
 			return false;
 		}
 	}
 	{
 		/* left eye - just mirroring right eye now */
-		xdev->hmd->views[0].fov.angle_up = xdev->hmd->views[1].fov.angle_up;
-		xdev->hmd->views[0].fov.angle_down = xdev->hmd->views[1].fov.angle_down;
+		xdev->hmd->distortion.fov[0].angle_up = xdev->hmd->distortion.fov[1].angle_up;
+		xdev->hmd->distortion.fov[0].angle_down = xdev->hmd->distortion.fov[1].angle_down;
 
-		xdev->hmd->views[0].fov.angle_left = -xdev->hmd->views[1].fov.angle_right;
-		xdev->hmd->views[0].fov.angle_right = -xdev->hmd->views[1].fov.angle_left;
+		xdev->hmd->distortion.fov[0].angle_left = -xdev->hmd->distortion.fov[1].angle_right;
+		xdev->hmd->distortion.fov[0].angle_right = -xdev->hmd->distortion.fov[1].angle_left;
 	}
 
 	return true;
@@ -457,7 +457,7 @@ u_device_get_view_poses(struct xrt_device *xdev,
 	xrt_device_get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_timestamp_ns, out_head_relation);
 
 	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(xdev->hmd->views); i++) {
-		out_fovs[i] = xdev->hmd->views[i].fov;
+		out_fovs[i] = xdev->hmd->distortion.fov[i];
 	}
 
 	for (uint32_t i = 0; i < view_count; i++) {

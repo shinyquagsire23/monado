@@ -855,7 +855,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
-		                       0, &d->base.hmd->views[eye].fov)) {
+		                       0, &d->base.hmd->distortion.fov[eye])) {
 			VIVE_ERROR(d, "Failed to compute the partial fields of view.");
 			free(d);
 			return NULL;

@@ -150,12 +150,12 @@ sample_hmd_create(void)
 	const double vCOP = 0.5;
 	if (
 	    /* right eye */
-	    !math_compute_fovs(1, hCOP, hFOV, 1, vCOP, vFOV, &sh->base.hmd->views[1].fov) ||
+	    !math_compute_fovs(1, hCOP, hFOV, 1, vCOP, vFOV, &sh->base.hmd->distortion.fov[1]) ||
 	    /*
 	     * left eye - same as right eye, except the horizontal center of projection is moved in the opposite
 	     * direction now
 	     */
-	    !math_compute_fovs(1, 1.0 - hCOP, hFOV, 1, vCOP, vFOV, &sh->base.hmd->views[0].fov)) {
+	    !math_compute_fovs(1, 1.0 - hCOP, hFOV, 1, vCOP, vFOV, &sh->base.hmd->distortion.fov[0])) {
 		// If those failed, it means our math was impossible.
 		SH_ERROR(sh, "Failed to setup basic device info");
 		sample_hmd_destroy(&sh->base);

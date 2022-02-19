@@ -204,11 +204,11 @@ ns_vipd_parse(struct ns_hmd *ns)
 	try_get_fov(ns, config_json, &temp_data->fov[0], &temp_data->fov[1]);
 
 	// stupid
-	memcpy(&ns->base.hmd->views[0].fov, &temp_data->fov[0], sizeof(struct xrt_fov));
-	memcpy(&ns->base.hmd->views[1].fov, &temp_data->fov[1], sizeof(struct xrt_fov));
+	memcpy(&ns->base.hmd->distortion.fov[0], &temp_data->fov[0], sizeof(struct xrt_fov));
+	memcpy(&ns->base.hmd->distortion.fov[1], &temp_data->fov[1], sizeof(struct xrt_fov));
 
-	printf("%f %f %f %f\n", ns->base.hmd->views[1].fov.angle_down, ns->base.hmd->views[1].fov.angle_left,
-	       ns->base.hmd->views[1].fov.angle_right, ns->base.hmd->views[1].fov.angle_up);
+	printf("%f %f %f %f\n", ns->base.hmd->distortion.fov[1].angle_down, ns->base.hmd->distortion.fov[1].angle_left,
+	       ns->base.hmd->distortion.fov[1].angle_right, ns->base.hmd->distortion.fov[1].angle_up);
 
 	ns->head_pose_to_eye[0].orientation.x = 0.0f;
 	ns->head_pose_to_eye[0].orientation.y = 0.0f;
@@ -287,8 +287,8 @@ ns_p2d_parse(struct ns_hmd *ns)
 
 	try_get_fov(ns, config_json, &ns->dist_p2d.fov[0], &ns->dist_p2d.fov[1]);
 
-	memcpy(&ns->base.hmd->views[0].fov, &ns->dist_p2d.fov[0], sizeof(struct xrt_fov));
-	memcpy(&ns->base.hmd->views[1].fov, &ns->dist_p2d.fov[1], sizeof(struct xrt_fov));
+	memcpy(&ns->base.hmd->distortion.fov[0], &ns->dist_p2d.fov[0], sizeof(struct xrt_fov));
+	memcpy(&ns->base.hmd->distortion.fov[1], &ns->dist_p2d.fov[1], sizeof(struct xrt_fov));
 
 	ns->base.compute_distortion = &ns_p2d_mesh_calc;
 	memcpy(&ns->head_pose_to_eye, &temp_eyes_center_to_eye, sizeof(struct xrt_pose) * 2);
@@ -399,8 +399,8 @@ ns_3d_parse(struct ns_hmd *ns)
 		goto cleanup_l3d;
 
 	// Locked in, okay to touch anything inside ns struct
-	ns_3d_fov_calculate(&ns->base.hmd->views[0].fov, our_ns_3d_data->eyes[0].camera_projection);
-	ns_3d_fov_calculate(&ns->base.hmd->views[1].fov, our_ns_3d_data->eyes[1].camera_projection);
+	ns_3d_fov_calculate(&ns->base.hmd->distortion.fov[0], our_ns_3d_data->eyes[0].camera_projection);
+	ns_3d_fov_calculate(&ns->base.hmd->distortion.fov[1], our_ns_3d_data->eyes[1].camera_projection);
 
 	ns->head_pose_to_eye[0] = our_ns_3d_data->eyes[0].eye_pose; // Left eye.
 	ns->head_pose_to_eye[1] = our_ns_3d_data->eyes[1].eye_pose; // Right eye.

@@ -1406,18 +1406,19 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		math_matrix_3x3_inverse(&wh->config.eye_params[eye].affine_xform,
 		                        &wh->distortion_params[eye].inv_affine_xform);
 
-		compute_distortion_bounds(
-		    wh, eye, &wh->base.hmd->views[eye].fov.angle_left, &wh->base.hmd->views[eye].fov.angle_right,
-		    &wh->base.hmd->views[eye].fov.angle_down, &wh->base.hmd->views[eye].fov.angle_up);
+		compute_distortion_bounds(wh, eye, &wh->base.hmd->distortion.fov[eye].angle_left,
+		                          &wh->base.hmd->distortion.fov[eye].angle_right,
+		                          &wh->base.hmd->distortion.fov[eye].angle_down,
+		                          &wh->base.hmd->distortion.fov[eye].angle_up);
 
 		WMR_INFO(wh, "FoV eye %d angles left %f right %f down %f up %f", eye,
-		         wh->base.hmd->views[eye].fov.angle_left, wh->base.hmd->views[eye].fov.angle_right,
-		         wh->base.hmd->views[eye].fov.angle_down, wh->base.hmd->views[eye].fov.angle_up);
+		         wh->base.hmd->distortion.fov[eye].angle_left, wh->base.hmd->distortion.fov[eye].angle_right,
+		         wh->base.hmd->distortion.fov[eye].angle_down, wh->base.hmd->distortion.fov[eye].angle_up);
 
-		wh->distortion_params[eye].tex_x_range.x = tanf(wh->base.hmd->views[eye].fov.angle_left);
-		wh->distortion_params[eye].tex_x_range.y = tanf(wh->base.hmd->views[eye].fov.angle_right);
-		wh->distortion_params[eye].tex_y_range.x = tanf(wh->base.hmd->views[eye].fov.angle_down);
-		wh->distortion_params[eye].tex_y_range.y = tanf(wh->base.hmd->views[eye].fov.angle_up);
+		wh->distortion_params[eye].tex_x_range.x = tanf(wh->base.hmd->distortion.fov[eye].angle_left);
+		wh->distortion_params[eye].tex_x_range.y = tanf(wh->base.hmd->distortion.fov[eye].angle_right);
+		wh->distortion_params[eye].tex_y_range.x = tanf(wh->base.hmd->distortion.fov[eye].angle_down);
+		wh->distortion_params[eye].tex_y_range.y = tanf(wh->base.hmd->distortion.fov[eye].angle_up);
 
 		WMR_INFO(wh, "Render texture range %f, %f to %f, %f", wh->distortion_params[eye].tex_x_range.x,
 		         wh->distortion_params[eye].tex_y_range.x, wh->distortion_params[eye].tex_x_range.y,
