@@ -1,13 +1,15 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  An @ref xrt_frame_sink that does gst things.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Aaron Boxer <aaron.boxer@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
+#include "util/u_trace_marker.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_format.h"
@@ -15,6 +17,8 @@
 #include "gstreamer/gst_sink.h"
 #include "gstreamer/gst_pipeline.h"
 #include "gstreamer/gst_internal.h"
+#include "gst/video/video-format.h"
+#include "gst/video/gstvideometa.h"
 
 #include <assert.h>
 
@@ -35,9 +39,23 @@ wrapped_buffer_destroy(gpointer data)
 	xrt_frame_reference(&xf, NULL);
 }
 
+static GstVideoFormat
+gst_fmt_from_xf_format(enum xrt_format format_in)
+{
+	switch (format_in) {
+	case XRT_FORMAT_R8G8B8: return GST_VIDEO_FORMAT_RGB;
+	case XRT_FORMAT_R8G8B8A8: return GST_VIDEO_FORMAT_RGBA;
+	case XRT_FORMAT_R8G8B8X8: return GST_VIDEO_FORMAT_RGBx;
+	case XRT_FORMAT_YUYV422: return GST_VIDEO_FORMAT_YUY2;
+	case XRT_FORMAT_L8: return GST_VIDEO_FORMAT_GRAY8;
+	default: assert(false);
+	}
+}
+
 static void
 push_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 {
+	SINK_TRACE_MARKER();
 	struct gstreamer_sink *gs = (struct gstreamer_sink *)xfs;
 	GstBuffer *buffer;
 	GstFlowReturn ret;
@@ -62,6 +80,13 @@ push_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 	    taken->size,                      // gsize size
 	    taken,                            // gpointer user_data
 	    wrapped_buffer_destroy);          // GDestroyNotify notify
+
+	int stride = xf->stride;
+
+	gsize offsets[4] = {0, 0, 0, 0};
+	gint strides[4] = {stride, 0, 0, 0};
+	gst_buffer_add_video_meta_full(buffer, GST_VIDEO_FRAME_FLAG_NONE, gst_fmt_from_xf_format(xf->format), xf->width,
+	                               xf->height, 1, offsets, strides);
 
 	//! Get the timestampe from the frame.
 	uint64_t xtimestamp_ns = xf->timestamp;
@@ -152,6 +177,8 @@ gstreamer_sink_create_with_pipeline(struct gstreamer_pipeline *gp,
 	const char *format_str = NULL;
 	switch (format) {
 	case XRT_FORMAT_R8G8B8: format_str = "RGB"; break;
+	case XRT_FORMAT_R8G8B8A8: format_str = "RGBA"; break;
+	case XRT_FORMAT_R8G8B8X8: format_str = "RGBx"; break;
 	case XRT_FORMAT_YUYV422: format_str = "YUY2"; break;
 	case XRT_FORMAT_L8: format_str = "GRAY8"; break;
 	default: assert(false); break;
