@@ -47,6 +47,7 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 {
 	// This is the format we allocate the image in, can be changed further down.
 	VkFormat image_format = (VkFormat)info->format;
+	VkImageCreateFlags image_create_flags = 0;
 
 	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags( //
 	    vk,                                                        //
@@ -125,16 +126,43 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	};
 	CHAIN(format_android);
 
+#ifdef VK_KHR_image_format_list
+	VkImageFormatListCreateInfoKHR image_format_list_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+	    .pNext = NULL,
+	    .viewFormatCount = 2,
+	    .pViewFormats =
+	        (VkFormat[2]){
+	            VK_FORMAT_R8G8B8A8_UNORM,
+	            VK_FORMAT_R8G8B8A8_SRGB,
+	        },
+	};
+#endif
 	// Android can't allocate native sRGB.
 	// Use UNORM and correct gamma later.
 	if (image_format == VK_FORMAT_R8G8B8A8_SRGB) {
 		image_format = VK_FORMAT_R8G8B8A8_UNORM;
+
+		// https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#VUID-VkImageViewCreateInfo-image-01019
+		image_create_flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
+		// https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkImageCreateInfo.html#VUID-VkImageCreateInfo-pNext-02396
+		format_android.externalFormat = 0;
+		assert(a_buffer_format_props.format != VK_FORMAT_UNDEFINED); // Make sure there is a Vulkan format.
+		assert(format_android.externalFormat == 0);
+
+#ifdef VK_KHR_image_format_list
+		if (vk->has_KHR_image_format_list) {
+			CHAIN(image_format_list_create_info);
+		}
+#endif
 	}
 #endif
 
 	VkImageCreateInfo create_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = next_chain,
+	    .flags = image_create_flags,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = image_format,
 	    .extent = {.width = info->width, .height = info->height, .depth = 1},
