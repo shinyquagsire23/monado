@@ -226,12 +226,8 @@ struct ipc_shared_memory
 				uint32_t w_pixels;
 				uint32_t h_pixels;
 			} display;
-
-			/*!
-			 * Fov expressed in OpenXR.
-			 */
-			struct xrt_fov fov;
 		} views[2];
+
 		enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
 		size_t blend_mode_count;
 	} hmd;
