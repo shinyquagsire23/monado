@@ -1,9 +1,10 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  @ref xrt_frame_sink converters and other helpers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
@@ -81,6 +82,15 @@ void
 u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
                              struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs);
+
+/*!
+ * @public @memberof xrt_frame_sink
+ * @see xrt_frame_context
+ */
+void
+u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(struct xrt_frame_context *xfctx,
+                                                struct xrt_frame_sink *downstream,
+                                                struct xrt_frame_sink **out_xfs);
 /*!
  * @public @memberof xrt_frame_sink
  * @see xrt_frame_context

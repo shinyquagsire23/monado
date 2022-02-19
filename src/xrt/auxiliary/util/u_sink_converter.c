@@ -1,9 +1,10 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  @ref xrt_frame_sink converters and other helpers.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_util
  */
 
@@ -520,6 +521,22 @@ convert_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 }
 
 static void
+convert_frame_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	SINK_TRACE_MARKER();
+
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+	switch (xf->format) {
+	case XRT_FORMAT_L8:
+	case XRT_FORMAT_R8G8B8A8:
+	case XRT_FORMAT_R8G8B8X8:
+	case XRT_FORMAT_R8G8B8: s->downstream->push_frame(s->downstream, xf); return;
+	default: convert_frame_r8g8b8_or_l8(xs, xf);
+	}
+}
+
+static void
 convert_frame_r8g8b8_bayer_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 {
 	SINK_TRACE_MARKER();
@@ -815,6 +832,26 @@ u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
 {
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_r8g8b8_or_l8;
+	s->node.break_apart = break_apart;
+	s->node.destroy = destroy;
+	s->downstream = downstream;
+
+#ifdef USE_TABLE
+	generate_lookup_YUV_to_RGBX();
+#endif
+
+	xrt_frame_context_add(xfctx, &s->node);
+
+	*out_xfs = &s->base;
+}
+
+void
+u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(struct xrt_frame_context *xfctx,
+                                                struct xrt_frame_sink *downstream,
+                                                struct xrt_frame_sink **out_xfs)
+{
+	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
+	s->base.push_frame = convert_frame_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8;
 	s->node.break_apart = break_apart;
 	s->node.destroy = destroy;
 	s->downstream = downstream;
