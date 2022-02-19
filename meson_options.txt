@@ -26,6 +26,7 @@ option('drivers',
 		'qwerty',
 		'ulv2',
 		'euroc',
+		'sample',
 	],
 	value: ['auto'],
 	description: 'Set of drivers to build')

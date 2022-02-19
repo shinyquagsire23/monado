@@ -348,3 +348,17 @@ lib_drv_euroc = static_library(
 	dependencies: [aux, opencv],
 	build_by_default: 'euroc' in drivers,
 )
+
+# We build the sample driver to make sure it stays valid,
+# but it never gets linked into a final target (src/xrt/targets/meson.build)
+lib_drv_sample = static_library(
+	'drv_sample',
+	files(
+		'sample/sample_hmd.c',
+		'sample/sample_interface.h',
+		'sample/sample_prober.c',
+	),
+	include_directories: [xrt_include],
+	dependencies: [aux],
+	build_by_default: 'sample' in drivers,
+)
