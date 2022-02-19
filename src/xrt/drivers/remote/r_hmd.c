@@ -145,8 +145,8 @@ r_hmd_create(struct r_hub *r)
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * (M_PI / 180.0f);
-	info.views[1].fov = 85.0f * (M_PI / 180.0f);
+	info.fov[0] = 85.0f * (M_PI / 180.0f);
+	info.fov[1] = 85.0f * (M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&rh->base, &info)) {
 		U_LOG_E("Failed to setup basic device info");

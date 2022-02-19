@@ -208,7 +208,7 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 
 	{
 		/* right eye */
-		if (!math_compute_fovs(w_meters, lens_center_x_meters[1], info->views[1].fov, h_meters,
+		if (!math_compute_fovs(w_meters, lens_center_x_meters[1], info->fov[1], h_meters,
 		                       lens_center_y_meters[1], 0, &xdev->hmd->distortion.fov[1])) {
 			return false;
 		}

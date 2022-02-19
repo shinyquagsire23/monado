@@ -206,8 +206,8 @@ illixr_hmd_create(const char *path_in, const char *comp_in)
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.views[0].fov = 85.0f * (M_PI / 180.0f);
-	info.views[1].fov = 85.0f * (M_PI / 180.0f);
+	info.fov[0] = 85.0f * (M_PI / 180.0f);
+	info.fov[1] = 85.0f * (M_PI / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&dh->base, &info)) {
 		DH_ERROR(dh, "Failed to setup basic device info");

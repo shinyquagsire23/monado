@@ -63,10 +63,7 @@ struct u_device_simple_info
 	float lens_horizontal_separation_meters;
 	float lens_vertical_position_meters;
 
-	struct
-	{
-		float fov;
-	} views[2];
+	float fov[2];
 };
 
 /*!
