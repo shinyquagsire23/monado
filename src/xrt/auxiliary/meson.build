@@ -289,6 +289,8 @@ lib_aux_vk = static_library(
 		'vk/vk_image_allocator.h',
 		'vk/vk_image_allocator.c',
 		'vk/vk_state_creators.c',
+		'vk/vk_image_readback_to_xf_pool.h',
+		'vk/vk_image_readback_to_xf_pool.c',
 	),
 	include_directories: [
 		xrt_include,
