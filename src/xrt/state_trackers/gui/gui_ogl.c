@@ -4,6 +4,7 @@
  * @file
  * @brief  OpenGL functions to drive the gui.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup gui
  */
 
@@ -79,17 +80,28 @@ destroy(struct xrt_frame_node *node)
 }
 
 static void
-update_r8g8b8(struct gui_ogl_sink *s, GLint w, GLint h, uint8_t *data)
+update_r8g8b8x8(struct gui_ogl_sink *s, GLint w, GLint h, GLint stride, uint8_t *data)
 {
 	glBindTexture(GL_TEXTURE_2D, s->tex.id);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, stride / 4);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static void
+update_r8g8b8(struct gui_ogl_sink *s, GLint w, GLint h, GLint stride, uint8_t *data)
+{
+	glBindTexture(GL_TEXTURE_2D, s->tex.id);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, stride / 3);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 static void
-update_l8(struct gui_ogl_sink *s, GLint w, GLint h, uint8_t *data)
+update_l8(struct gui_ogl_sink *s, GLint w, GLint h, GLint stride, uint8_t *data)
 {
 	glBindTexture(GL_TEXTURE_2D, s->tex.id);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 	GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
@@ -112,11 +124,12 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 		return;
 	}
 
-	GLint w, h;
+	GLint w, h, stride;
 	uint8_t *data;
 
 	w = frame->width;
 	h = frame->height;
+	stride = frame->stride;
 
 	if (tex->w != (uint32_t)w || tex->h != (uint32_t)h) {
 		tex->w = w;
@@ -132,8 +145,10 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 	data = frame->data;
 
 	switch (frame->format) {
-	case XRT_FORMAT_R8G8B8: update_r8g8b8(s, w, h, data); break;
-	case XRT_FORMAT_L8: update_l8(s, w, h, data); break;
+	case XRT_FORMAT_R8G8B8: update_r8g8b8(s, w, h, stride, data); break;
+	case XRT_FORMAT_R8G8B8A8:
+	case XRT_FORMAT_R8G8B8X8: update_r8g8b8x8(s, w, h, stride, data); break;
+	case XRT_FORMAT_L8: update_l8(s, w, h, stride, data); break;
 	default: break;
 	}
 

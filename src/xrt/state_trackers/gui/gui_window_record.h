@@ -27,6 +27,7 @@ struct gui_ogl_texture;
 
 enum gui_record_bitrate
 {
+	GUI_RECORD_BITRATE_32768,
 	GUI_RECORD_BITRATE_4096,
 	GUI_RECORD_BITRATE_2048,
 	GUI_RECORD_BITRATE_1024,

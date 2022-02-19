@@ -60,6 +60,7 @@ create_pipeline(struct gui_record_window *rw)
 
 	switch (rw->gst.bitrate) {
 	default:
+	case GUI_RECORD_BITRATE_32768: bitrate = "32768"; break;
 	case GUI_RECORD_BITRATE_4096: bitrate = "4096"; break;
 	case GUI_RECORD_BITRATE_2048: bitrate = "2048"; break;
 	case GUI_RECORD_BITRATE_1024: bitrate = "1024"; break;
@@ -166,7 +167,8 @@ draw_gst(struct gui_record_window *rw)
 	os_mutex_unlock(&rw->gst.mutex);
 
 	igComboStr("Pipeline", (int *)&rw->gst.pipeline, "SW Fast\0SW Medium\0SW Slow\0SW Veryslow\0VAAPI H264\0\0", 5);
-	igComboStr("Bitrate", (int *)&rw->gst.bitrate, "4096bps\0002048bps\0001024bps\0\0", 3);
+	igComboStr("Bitrate", (int *)&rw->gst.bitrate, "32768bps (Be careful!)\0004096bps\0002048bps\0001024bps\0\0",
+	           3);
 
 	igInputText("Filename", rw->gst.filename, sizeof(rw->gst.filename), 0, NULL, NULL);
 
@@ -266,13 +268,15 @@ gui_window_record_init(struct gui_record_window *rw)
 	}
 
 	snprintf(rw->gst.filename, sizeof(rw->gst.filename), "/tmp/capture.mp4");
+	rw->gst.bitrate = GUI_RECORD_BITRATE_4096;
 #endif
+
 
 	// Setup the preview texture.
 	rw->texture.scale = 1;
 	struct xrt_frame_sink *tmp = NULL;
 	rw->texture.ogl = gui_ogl_sink_create("View", &rw->texture.xfctx, &tmp);
-	u_sink_create_to_r8g8b8_or_l8(&rw->texture.xfctx, tmp, &tmp);
+	u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(&rw->texture.xfctx, tmp, &tmp);
 	u_sink_queue_create(&rw->texture.xfctx, 1, tmp, &rw->texture.sink);
 
 	return true;
