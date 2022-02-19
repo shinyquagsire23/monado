@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,23 +6,33 @@
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup comp_main
  */
 
+#include "xrt/xrt_defines.h"
+#include "xrt/xrt_frame.h"
 #include "xrt/xrt_compositor.h"
 
 #include "os/os_time.h"
 
+#include "math/m_api.h"
+#include "math/m_vec3.h"
+#include "math/m_matrix_4x4_f64.h"
 #include "math/m_space.h"
 
 #include "util/u_misc.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_sink.h"
+#include "util/u_var.h"
+#include "util/u_frame.h"
 
 #include "main/comp_layer_renderer.h"
-#include "math/m_api.h"
-#include "math/m_vec3.h"
-#include "math/m_matrix_4x4_f64.h"
+
+
+#include "vk/vk_helpers.h"
+#include "vk/vk_image_readback_to_xf_pool.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -51,6 +61,19 @@ struct comp_renderer
 	//! The compositor we were created by
 	struct comp_compositor *c;
 	struct comp_settings *settings;
+
+	struct
+	{
+		// Hint: enable/disable is in c->mirroring_to_debug_gui. It's there because comp_renderer is just a
+		// forward decl to comp_compositor.c
+		struct u_sink_debug debug_sink;
+		VkExtent2D image_extent;
+		uint64_t sequence;
+
+		struct vk_image_readback_to_xf_pool *pool;
+
+	} mirror_to_debug_gui;
+
 
 	struct
 	{
@@ -433,19 +456,11 @@ renderer_create_layer_renderer(struct comp_renderer *r)
 	}
 
 	VkExtent2D extent;
-	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		// Swapping width and height, since we are pre rotating
-		extent = (VkExtent2D){
-		    .width = r->c->xdev->hmd->screens[0].h_pixels,
-		    .height = r->c->xdev->hmd->screens[0].w_pixels,
-		};
-	} else {
-		extent = (VkExtent2D){
-		    .width = r->c->xdev->hmd->screens[0].w_pixels,
-		    .height = r->c->xdev->hmd->screens[0].h_pixels,
-		};
-	}
+
+	extent = (VkExtent2D){
+	    .width = r->c->view_extents.width,
+	    .height = r->c->view_extents.height,
+	};
 
 	r->lr = comp_layer_renderer_create(vk, &r->c->shaders, extent, VK_FORMAT_B8G8R8A8_SRGB);
 	if (layer_count != 0) {
@@ -541,6 +556,17 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	// Try to early-allocate these, in case we can.
 	renderer_ensure_images_and_renderings(r, false);
+
+	double orig_width = r->lr->extent.width;
+	double orig_height = r->lr->extent.height;
+
+	double mul = 1080.0 / orig_height;
+
+	r->mirror_to_debug_gui.image_extent.width = orig_width * mul;
+	r->mirror_to_debug_gui.image_extent.height = orig_height * mul;
+
+	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
+	                                    XRT_FORMAT_R8G8B8X8);
 }
 
 static void
@@ -731,6 +757,9 @@ static void
 renderer_destroy(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
+
+	// Left eye readback
+	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
@@ -1235,6 +1264,154 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 }
 #endif
 
+static bool
+can_mirror_to_debug_gui(struct comp_renderer *r)
+{
+	return r->c->mirroring_to_debug_gui && u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink);
+}
+
+static void
+mirror_to_debug_gui_do_blit(struct comp_renderer *r)
+{
+	struct vk_bundle *vk = &r->c->base.vk;
+
+	struct vk_image_readback_to_xf *wrap = NULL;
+
+	if (!vk_image_readback_to_xf_pool_get_unused_frame(vk, r->mirror_to_debug_gui.pool, &wrap)) {
+		return;
+	}
+
+	VkCommandBuffer cmd;
+	vk_init_cmd_buffer(vk, &cmd);
+
+	VkImage copy_from = r->lr->framebuffers[0].image;
+
+#if 0
+	bool fast = r->c->base.slot.one_projection_layer_fast_path;
+
+
+	if (fast) {
+		switch (layer->data.type) {
+		case XRT_LAYER_STEREO_PROJECTION: {
+			copy_from = layer->sc_array[0]->vkic.images[layer->data.stereo.l.sub.image_index].handle;
+		} break;
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH: {
+			copy_from = layer->sc_array[0]->vkic.images[layer->data.stereo_depth.l.sub.image_index].handle;
+		} break;
+		default: assert(false);
+		}
+	} else {
+		
+		
+	}
+#endif
+
+
+
+	VkImageSubresourceRange first_color_level_subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = 1,
+	    .baseArrayLayer = 0,
+	    .layerCount = 1,
+	};
+
+	// Barrier to make destination a destination
+	vk_insert_image_memory_barrier(           //
+	    vk,                                   // vk_bundle
+	    cmd,                                  // cmdbuffer
+	    wrap->image,                          // image
+	    VK_ACCESS_HOST_READ_BIT,              // srcAccessMask
+	    VK_ACCESS_TRANSFER_WRITE_BIT,         // dstAccessMask
+	    wrap->layout,                         // oldImageLayout
+	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newImageLayout
+	    VK_PIPELINE_STAGE_HOST_BIT,           // srcStageMask
+	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // dstStageMask
+	    first_color_level_subresource_range); // subresourceRange
+
+	// Barrier to make source a source
+	vk_insert_image_memory_barrier(               //
+	    vk,                                       // vk_bundle
+	    cmd,                                      // cmdbuffer
+	    copy_from,                                // image
+	    VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
+	    VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
+	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // oldImageLayout
+	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // newImageLayout
+	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // srcStageMask
+	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // dstStageMask
+	    first_color_level_subresource_range);     // subresourceRange
+
+
+	VkImageBlit blit = {0};
+	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit.srcSubresource.layerCount = 1;
+
+	blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit.dstSubresource.layerCount = 1;
+
+	blit.srcOffsets[1].x = r->lr->extent.width;
+	blit.srcOffsets[1].y = r->lr->extent.height;
+	blit.srcOffsets[1].z = 1;
+
+
+	blit.dstOffsets[1].x = r->mirror_to_debug_gui.image_extent.width;
+	blit.dstOffsets[1].y = r->mirror_to_debug_gui.image_extent.height;
+	blit.dstOffsets[1].z = 1;
+
+	vk->vkCmdBlitImage(                       //
+	    cmd,                                  // commandBuffer
+	    copy_from,                            // srcImage
+	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // srcImageLayout
+	    wrap->image,                          // dstImage
+	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // dstImageLayout
+	    1,                                    // regionCount
+	    &blit,                                // pRegions
+	    VK_FILTER_LINEAR                      // filter
+	);
+
+	wrap->layout = VK_IMAGE_LAYOUT_GENERAL;
+
+	// Reset destination
+	vk_insert_image_memory_barrier(           //
+	    vk,                                   // vk_bundle
+	    cmd,                                  // cmdbuffer
+	    wrap->image,                          // image
+	    VK_ACCESS_TRANSFER_WRITE_BIT,         // srcAccessMask
+	    VK_ACCESS_HOST_READ_BIT,              // dstAccessMask
+	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // oldImageLayout
+	    wrap->layout,                         // newImageLayout
+	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
+	    VK_PIPELINE_STAGE_HOST_BIT,           // dstStageMask
+	    first_color_level_subresource_range); // subresourceRange
+
+	// Reset src
+	vk_insert_image_memory_barrier(               //
+	    vk,                                       // vk_bundle
+	    cmd,                                      // cmdbuffer
+	    copy_from,                                // image
+	    VK_ACCESS_TRANSFER_READ_BIT,              // srcAccessMask
+	    VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
+	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // oldImageLayout
+	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // newImageLayout
+	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // srcStageMask
+	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // dstStageMask
+	    first_color_level_subresource_range);     // subresourceRange
+
+	// Waits for command to finish.
+	vk_submit_cmd_buffer(vk, cmd);
+
+	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp =
+	    r->c->frame.rendering.predicted_display_time_ns;
+	wrap->base_frame.source_id = r->mirror_to_debug_gui.sequence++;
+
+
+	struct xrt_frame *frame = &wrap->base_frame;
+	wrap = NULL;
+	u_sink_debug_push_frame(&r->mirror_to_debug_gui.debug_sink, frame);
+	xrt_frame_reference(&frame, NULL);
+}
+
 void
 comp_renderer_draw(struct comp_renderer *r)
 {
@@ -1282,8 +1459,13 @@ comp_renderer_draw(struct comp_renderer *r)
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
 	                                 c->frame.rendering.present_slop_ns);
 
+
 	// Clear the frame.
 	c->frame.rendering.id = -1;
+
+	if (can_mirror_to_debug_gui(r)) {
+		mirror_to_debug_gui_do_blit(r);
+	}
 
 	/*
 	 * This fixes a lot of validation issues as it makes sure that the
@@ -1293,6 +1475,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * This is done after a swap so isn't time critical.
 	 */
 	renderer_wait_gpu_idle(r);
+
+
 
 	if (use_compute) {
 		comp_rendering_compute_close(&crc);
@@ -1351,4 +1535,12 @@ comp_renderer_destroy(struct comp_renderer **ptr_r)
 	renderer_destroy(r);
 	free(r);
 	*ptr_r = NULL;
+}
+
+void
+comp_renderer_add_debug_vars(struct comp_renderer *r)
+{
+	// 1.2 % 2.3;
+	u_var_add_bool(r->c, &r->c->mirroring_to_debug_gui, "Display left eye to GUI (slow)");
+	u_var_add_sink_debug(r->c, &r->mirror_to_debug_gui.debug_sink, "Left view!");
 }

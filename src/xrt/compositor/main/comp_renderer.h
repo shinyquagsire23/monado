@@ -128,6 +128,9 @@ comp_renderer_allocate_layers(struct comp_renderer *self, uint32_t layer_count);
 void
 comp_renderer_destroy_layers(struct comp_renderer *self);
 
+void
+comp_renderer_add_debug_vars(struct comp_renderer *self);
+
 #ifdef __cplusplus
 }
 #endif

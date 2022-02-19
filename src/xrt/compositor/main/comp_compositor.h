@@ -99,6 +99,12 @@ struct comp_compositor
 	//! State for generating the correct set of events.
 	enum comp_state state;
 
+	// Extents of one view, in pixels.
+	VkExtent2D view_extents;
+
+	//! Are we mirroring any of the views to the debug gui? If so, turn off the fast path.
+	bool mirroring_to_debug_gui;
+
 	/*!
 	 * @brief Data exclusive to the begin_frame/end_frame for computing an
 	 * estimate of the app's needs.

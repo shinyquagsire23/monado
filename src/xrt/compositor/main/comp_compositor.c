@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup comp_main
  *
  *
@@ -363,7 +364,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	 * We have a fast path for single projection layer that goes directly
 	 * to the distortion shader, so no need to use the layer renderer.
 	 */
-	bool fast_path = can_do_one_projection_layer_fast_path(c);
+	bool fast_path = can_do_one_projection_layer_fast_path(c) && !c->mirroring_to_debug_gui;
 	c->base.slot.one_projection_layer_fast_path = fast_path;
 
 
@@ -1171,6 +1172,25 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->last_frame_time_ns = os_monotonic_get_ns();
 
+	float scale = c->settings.viewport_scale;
+
+	if (scale > 2.0) {
+		scale = 2.0;
+		COMP_DEBUG(c, "Clamped scale to 200%%\n");
+	}
+
+	uint32_t w0 = (uint32_t)(xdev->hmd->views[0].display.w_pixels * scale);
+	uint32_t h0 = (uint32_t)(xdev->hmd->views[0].display.h_pixels * scale);
+	uint32_t w1 = (uint32_t)(xdev->hmd->views[1].display.w_pixels * scale);
+	uint32_t h1 = (uint32_t)(xdev->hmd->views[1].display.h_pixels * scale);
+
+	uint32_t w0_2 = xdev->hmd->views[0].display.w_pixels * 2;
+	uint32_t h0_2 = xdev->hmd->views[0].display.h_pixels * 2;
+	uint32_t w1_2 = xdev->hmd->views[1].display.w_pixels * 2;
+	uint32_t h1_2 = xdev->hmd->views[1].display.h_pixels * 2;
+
+	c->view_extents.width = w0;
+	c->view_extents.height = h0;
 
 	// Need to select window backend before creating Vulkan, then
 	// swapchain will initialize the window fully and the swapchain,
@@ -1256,22 +1276,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	memcpy(sys_info->compositor_vk_deviceUUID, c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
 	memcpy(sys_info->client_vk_deviceUUID, c->settings.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
 
-	float scale = c->settings.viewport_scale;
 
-	if (scale > 2.0) {
-		scale = 2.0;
-		COMP_DEBUG(c, "Clamped scale to 200%%\n");
-	}
-
-	uint32_t w0 = (uint32_t)(xdev->hmd->views[0].display.w_pixels * scale);
-	uint32_t h0 = (uint32_t)(xdev->hmd->views[0].display.h_pixels * scale);
-	uint32_t w1 = (uint32_t)(xdev->hmd->views[1].display.w_pixels * scale);
-	uint32_t h1 = (uint32_t)(xdev->hmd->views[1].display.h_pixels * scale);
-
-	uint32_t w0_2 = xdev->hmd->views[0].display.w_pixels * 2;
-	uint32_t h0_2 = xdev->hmd->views[0].display.h_pixels * 2;
-	uint32_t w1_2 = xdev->hmd->views[1].display.w_pixels * 2;
-	uint32_t h1_2 = xdev->hmd->views[1].display.h_pixels * 2;
 
 	// clang-format off
 	sys_info->views[0].recommended.width_pixels  = w0;
@@ -1327,6 +1332,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	ft->center_reference_timing = true;
 
 	u_var_add_f32_timing(c, ft, "Frame Times (Compositor)");
+
+	comp_renderer_add_debug_vars(c->r);
 
 	c->compositor_frame_times.debug_var = ft;
 
