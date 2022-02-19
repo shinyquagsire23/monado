@@ -402,7 +402,10 @@ _init_frame_buffer(struct comp_layer_renderer *self, VkFormat format, VkRenderPa
 {
 	struct vk_bundle *vk = self->vk;
 
-	VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageUsageFlags usage =                 //
+	    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | //
+	    VK_IMAGE_USAGE_SAMPLED_BIT |          //
+	    VK_IMAGE_USAGE_TRANSFER_SRC_BIT;      //
 
 	VkResult res = vk_create_image_simple(vk, self->extent, format, usage, &self->framebuffers[eye].memory,
 	                                      &self->framebuffers[eye].image);
