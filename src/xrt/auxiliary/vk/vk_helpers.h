@@ -593,6 +593,7 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
 
 /*!
  * @ingroup aux_vk
+ * Helper to create a VkImage
  */
 VkResult
 vk_create_image_simple(struct vk_bundle *vk,
@@ -601,6 +602,20 @@ vk_create_image_simple(struct vk_bundle *vk,
                        VkImageUsageFlags usage,
                        VkDeviceMemory *out_mem,
                        VkImage *out_image);
+
+/*!
+ * @ingroup aux_vk
+ * Helper to create a VkImage, with more options for tiling and memory storage.
+ */
+VkResult
+vk_create_image_advanced(struct vk_bundle *vk,
+                         VkExtent3D extent,
+                         VkFormat format,
+                         VkImageTiling image_tiling,
+                         VkImageUsageFlags image_usage_flags,
+                         VkMemoryPropertyFlags memory_property_flags,
+                         VkDeviceMemory *out_mem,
+                         VkImage *out_image);
 
 /*!
  * @ingroup aux_vk
