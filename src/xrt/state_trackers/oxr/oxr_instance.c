@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -44,11 +44,6 @@ DEBUG_GET_ONCE_BOOL_OPTION(debug_spaces, "OXR_DEBUG_SPACES", false)
 DEBUG_GET_ONCE_BOOL_OPTION(debug_bindings, "OXR_DEBUG_BINDINGS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(lifecycle_verbose, "OXR_LIFECYCLE_VERBOSE", false)
 
-DEBUG_GET_ONCE_FLOAT_OPTION(lfov_left, "OXR_OVERRIDE_LFOV_LEFT", 0.0f)
-DEBUG_GET_ONCE_FLOAT_OPTION(lfov_right, "OXR_OVERRIDE_LFOV_RIGHT", 0.0f)
-DEBUG_GET_ONCE_FLOAT_OPTION(lfov_up, "OXR_OVERRIDE_LFOV_UP", 0.0f)
-DEBUG_GET_ONCE_FLOAT_OPTION(lfov_down, "OXR_OVERRIDE_LFOV_DOWN", 0.0f)
-
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x, "OXR_TRACKING_ORIGIN_OFFSET_X", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y, "OXR_TRACKING_ORIGIN_OFFSET_Y", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z, "OXR_TRACKING_ORIGIN_OFFSET_Z", 0.0f)
@@ -63,12 +58,6 @@ oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **
 extern void
 oxr_sdl2_hack_stop(void **hack_ptr);
 /* ---- HACK ---- */
-
-static inline int32_t
-radtodeg_for_display(float radians)
-{
-	return (int32_t)(radians * 180 * M_1_PI);
-}
 
 static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
@@ -318,44 +307,6 @@ oxr_instance_create(struct oxr_logger *log,
 
 	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left), GET_XDEV_BY_ROLE(sys, right),
 	                                &global_tracking_origin_offset);
-
-	const float left_override = debug_get_float_option_lfov_left();
-	if (left_override != 0.0f) {
-		U_LOG_I(
-		    "Overriding left eye angle_left with %f radians (%i°), "
-		    "and right eye angle_right with %f radians (%i°)",
-		    left_override, radtodeg_for_display(left_override), -left_override,
-		    radtodeg_for_display(-left_override));
-		dev->hmd->distortion.fov[0].angle_left = left_override;
-		dev->hmd->distortion.fov[1].angle_right = -left_override;
-	}
-
-	const float right_override = debug_get_float_option_lfov_right();
-	if (right_override != 0.0f) {
-		U_LOG_I(
-		    "Overriding left eye angle_right with %f radians (%i°), "
-		    "and right eye angle_left with %f radians (%i°)",
-		    right_override, radtodeg_for_display(right_override), -right_override,
-		    radtodeg_for_display(-right_override));
-		dev->hmd->distortion.fov[0].angle_right = right_override;
-		dev->hmd->distortion.fov[1].angle_left = -right_override;
-	}
-
-	const float up_override = debug_get_float_option_lfov_up();
-	if (up_override != 0.0f) {
-		U_LOG_I("Overriding both eyes angle_up with %f radians (%i°)", up_override,
-		        radtodeg_for_display(up_override));
-		dev->hmd->distortion.fov[0].angle_up = up_override;
-		dev->hmd->distortion.fov[1].angle_up = up_override;
-	}
-
-	const float down_override = debug_get_float_option_lfov_down();
-	if (down_override != 0.0f) {
-		U_LOG_I("Overriding both eyes angle_down with %f radians (%i°)", down_override,
-		        radtodeg_for_display(down_override));
-		dev->hmd->distortion.fov[0].angle_down = down_override;
-		dev->hmd->distortion.fov[1].angle_down = down_override;
-	}
 
 	// Sets the enabled extensions, this is where we should do any extra validation.
 	inst->extensions = *extensions;

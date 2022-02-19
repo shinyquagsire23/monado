@@ -1,4 +1,4 @@
-// Copyright 2018-2021, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -410,13 +410,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 	oxr_view_relation_ref_relation(log, sess, &head_relation, xdev, baseSpc, viewLocateInfo->displayTime,
 	                               &base_spc_head_relation);
 
-	// @todo the fov information that we get from xdev->hmd->distortion.fov[i] is
-	//       not properly filled out in oh_device.c, fix before wasting time
-	//       on debugging weird rendering when adding stuff here.
-
+	// Clear here and filled in loop.
 	viewState->viewStateFlags = 0;
-
-
 
 	for (uint32_t i = 0; i < view_count; i++) {
 		/*
