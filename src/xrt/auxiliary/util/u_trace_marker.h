@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -60,6 +60,7 @@ u_trace_marker_init(void);
 #define IPC_TRACE_MARKER() U_TRACE_EVENT(ipc, __func__)
 #define OXR_TRACE_MARKER() U_TRACE_EVENT(oxr, __func__)
 #define COMP_TRACE_MARKER() U_TRACE_EVENT(comp, __func__)
+#define COMP_TRACE_IDENT(IDENT) U_TRACE_EVENT(comp, #IDENT)
 #define SINK_TRACE_MARKER() U_TRACE_EVENT(sink, __func__)
 
 
