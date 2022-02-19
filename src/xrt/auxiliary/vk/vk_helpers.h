@@ -834,7 +834,6 @@ vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 VkResult
 vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 
-
 /*
  *
  * Compositor swapchain image flags helpers, in the vk_compositor_flags.c file.
@@ -898,6 +897,25 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
  */
 VkImageAspectFlags
 vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bits);
+
+
+/*!
+ *
+ * Adds barrier to image
+ *
+ */
+void
+vk_insert_image_memory_barrier(struct vk_bundle *vk,
+                               VkCommandBuffer cmdbuffer,
+                               VkImage image,
+                               VkAccessFlags srcAccessMask,
+                               VkAccessFlags dstAccessMask,
+                               VkImageLayout oldImageLayout,
+                               VkImageLayout newImageLayout,
+                               VkPipelineStageFlags srcStageMask,
+                               VkPipelineStageFlags dstStageMask,
+                               VkImageSubresourceRange subresourceRange);
+
 
 
 #ifdef __cplusplus

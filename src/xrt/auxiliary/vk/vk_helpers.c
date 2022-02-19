@@ -2054,3 +2054,41 @@ vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSu
 	os_mutex_unlock(&vk->queue_mutex);
 	return ret;
 }
+
+void
+vk_insert_image_memory_barrier(struct vk_bundle *vk,
+                               VkCommandBuffer cmdbuffer,
+                               VkImage image,
+                               VkAccessFlags srcAccessMask,
+                               VkAccessFlags dstAccessMask,
+                               VkImageLayout oldImageLayout,
+                               VkImageLayout newImageLayout,
+                               VkPipelineStageFlags srcStageMask,
+                               VkPipelineStageFlags dstStageMask,
+                               VkImageSubresourceRange subresourceRange)
+{
+
+	VkImageMemoryBarrier image_memory_barrier = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .srcAccessMask = srcAccessMask,
+	    .dstAccessMask = dstAccessMask,
+	    .oldLayout = oldImageLayout,
+	    .newLayout = newImageLayout,
+	    .image = image,
+	    .subresourceRange = subresourceRange,
+	};
+
+	vk->vkCmdPipelineBarrier(   //
+	    cmdbuffer,              // commandBuffer
+	    srcStageMask,           // srcStageMask
+	    dstStageMask,           // dstStageMask
+	    0,                      // dependencyFlags
+	    0,                      // memoryBarrierCount
+	    NULL,                   // pMemoryBarriers
+	    0,                      // bufferMemoryBarrierCount
+	    NULL,                   // pBufferMemoryBarriers
+	    1,                      // imageMemoryBarrierCount
+	    &image_memory_barrier); // pImageMemoryBarriers
+}
