@@ -64,6 +64,7 @@ def get_device_cmds():
         Cmd("vkCmdCopyBufferToImage"),
         Cmd("vkCmdCopyImage"),
         Cmd("vkCmdCopyImageToBuffer"),
+        Cmd("vkCmdBlitImage"),
         Cmd("vkEndCommandBuffer"),
         Cmd("vkFreeCommandBuffers"),
         None,

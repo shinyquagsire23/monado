@@ -13,6 +13,7 @@
  *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_vk
  */
 
@@ -211,6 +212,7 @@ struct vk_bundle
 	PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage;
 	PFN_vkCmdCopyImage vkCmdCopyImage;
 	PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer;
+	PFN_vkCmdBlitImage vkCmdBlitImage;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
 

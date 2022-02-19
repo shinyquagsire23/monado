@@ -13,6 +13,7 @@
  *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup aux_vk
  */
 
@@ -1059,6 +1060,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdCopyBufferToImage                      = GET_DEV_PROC(vk, vkCmdCopyBufferToImage);
 	vk->vkCmdCopyImage                              = GET_DEV_PROC(vk, vkCmdCopyImage);
 	vk->vkCmdCopyImageToBuffer                      = GET_DEV_PROC(vk, vkCmdCopyImageToBuffer);
+	vk->vkCmdBlitImage                              = GET_DEV_PROC(vk, vkCmdBlitImage);
 	vk->vkEndCommandBuffer                          = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers                        = GET_DEV_PROC(vk, vkFreeCommandBuffers);
 
