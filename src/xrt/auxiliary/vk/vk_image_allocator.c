@@ -22,11 +22,27 @@
 #ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
 #include "android/android_ahardwarebuffer_allocator.h"
 #endif
+
+
 /*
  *
  * Helper functions.
  *
  */
+
+VkExternalMemoryHandleTypeFlags
+get_image_memory_handle_type(void)
+{
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+#else
+#error "need port"
+#endif
+}
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
 
@@ -136,11 +152,13 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 		return ret;
 	}
 
+	// Out->pNext
 	VkAndroidHardwareBufferFormatPropertiesANDROID a_buffer_format_props = {
 	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
 	    .format = image_format,
 	};
 
+	// Out
 	VkAndroidHardwareBufferPropertiesANDROID a_buffer_props = {
 	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
 	    .pNext = &a_buffer_format_props,
@@ -154,28 +172,36 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 #endif
 
 	/*
+	 *
+	 * Start of create image call.
+	 *
+	 */
+	void *next_chain = NULL;
+#define CHAIN(STRUCT)                                                                                                  \
+	do {                                                                                                           \
+		(STRUCT).pNext = next_chain;                                                                           \
+		next_chain = (void *)&(STRUCT);                                                                        \
+	} while (false)
+
+	/*
 	 * Create the image.
 	 */
 
+	VkExternalMemoryHandleTypeFlags memory_handle_type = get_image_memory_handle_type();
+
 	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
-		.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-		.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-#else
-#error "need port"
-#endif
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	    .handleTypes = memory_handle_type,
+	    .pNext = next_chain,
 	};
+	CHAIN(external_memory_image_create_info);
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
 	VkExternalFormatANDROID format_android = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID,
-	    .pNext = &external_memory_image_create_info,
 	    .externalFormat = a_buffer_format_props.externalFormat,
 	};
+	CHAIN(format_android);
 
 	// Android can't allocate native sRGB.
 	// Use UNORM and correct gamma later.
@@ -185,22 +211,18 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 #endif
 
 	VkImageCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-		.pNext = &format_android,
-#else
-		.pNext = &external_memory_image_create_info,
-#endif
-		.imageType = VK_IMAGE_TYPE_2D,
-		.format = image_format,
-		.extent = {.width = info->width, .height = info->height, .depth = 1},
-		.mipLevels = info->mip_count,
-		.arrayLayers = info->array_size,
-		.samples = VK_SAMPLE_COUNT_1_BIT,
-		.tiling = VK_IMAGE_TILING_OPTIMAL,
-		.usage = image_usage,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+	    .pNext = next_chain,
+	    .imageType = VK_IMAGE_TYPE_2D,
+	    .format = image_format,
+	    .extent = {.width = info->width, .height = info->height, .depth = 1},
+	    .mipLevels = info->mip_count,
+	    .arrayLayers = info->array_size,
+	    .samples = VK_SAMPLE_COUNT_1_BIT,
+	    .tiling = VK_IMAGE_TILING_OPTIMAL,
+	    .usage = image_usage,
+	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+	    .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	ret = vk->vkCreateImage(vk->device, &create_info, NULL, &image);
@@ -209,18 +231,23 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 		return ret;
 	}
 
+	// In
 	VkImageMemoryRequirementsInfo2 memory_requirements_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
 	    .image = image,
 	};
 
+	// Out->pNext
 	VkMemoryDedicatedRequirements memory_dedicated_requirements = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
 	};
+
+	// Out
 	VkMemoryRequirements2 memory_requirements = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
 	    .pNext = &memory_dedicated_requirements,
 	};
+
 	vk->vkGetImageMemoryRequirements2(vk->device, &memory_requirements_info, &memory_requirements);
 
 	/*
@@ -245,40 +272,20 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	/*
 	 * Create and bind the memory.
 	 */
-	// vkAllocateMemory parameters
+
+	// In->pNext->pNext
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
 	    .image = image,
 	    .buffer = VK_NULL_HANDLE,
 	};
 
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-
+	// In->pNext
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = use_dedicated_allocation ? &dedicated_memory_info : NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	    .handleTypes = memory_handle_type,
 	};
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-
-	VkExportMemoryAllocateInfo export_alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
-	    .pNext = use_dedicated_allocation ? &dedicated_memory_info : NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-	};
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-
-	VkExportMemoryAllocateInfo export_alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
-	    .pNext = use_dedicated_allocation ? &dedicated_memory_info : NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
-	};
-
-#else
-#error "need port"
-#endif
 
 	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
 	if (ret != VK_SUCCESS) {
@@ -378,8 +385,12 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		// Ensure that all handles are consumed or none are.
 		xrt_graphics_buffer_handle_t buf = u_graphics_buffer_ref(native_images[i].handle);
 
-		ret = vk_create_image_from_native(vk, xscci, &native_images[i], &out_vkic->images[i].handle,
-		                                  &out_vkic->images[i].memory);
+		ret = vk_create_image_from_native( //
+		    vk,                            // vk_bundle
+		    xscci,                         // info
+		    &native_images[i],             // image_native
+		    &out_vkic->images[i].handle,   // out_image
+		    &out_vkic->images[i].memory);  // out_mem
 		if (ret != VK_SUCCESS) {
 			u_graphics_buffer_unref(&buf);
 			break;
