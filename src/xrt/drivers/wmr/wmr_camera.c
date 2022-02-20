@@ -40,7 +40,7 @@
 
 #define CAM_ENDPOINT 0x05
 
-#define NUM_XFERS 2
+#define NUM_XFERS 4
 
 #define WMR_CAMERA_CMD_GAIN 0x80
 #define WMR_CAMERA_CMD_ON 0x81
