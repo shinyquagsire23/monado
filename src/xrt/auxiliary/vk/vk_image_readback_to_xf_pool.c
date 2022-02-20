@@ -99,7 +99,6 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 	    (void **)&data);   // ppData
 
 
-	enum xrt_format xformat = pool->desired_format;
 
 	int i = pool->num_images++;
 
@@ -116,7 +115,7 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 	im->base_frame.width = extent.width;
 	im->base_frame.height = extent.height;
 	im->base_frame.size = stride * extent.height;
-	im->base_frame.format = xformat;
+	im->base_frame.format = pool->desired_format;
 
 	return;
 }
@@ -164,7 +163,6 @@ vk_image_readback_to_xf_pool_get_unused_frame(struct vk_bundle *vk,
 	vk_xf_readback_pool_try_create_new_frame(vk, pool);
 
 	bool found = find_created_not_used_wrap_locked(pool, out);
-	(*out)->base_frame.format = pool->desired_format;
 
 	// Finally unluck.
 	os_mutex_unlock(&pool->mutex);
