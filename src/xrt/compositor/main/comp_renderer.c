@@ -590,16 +590,17 @@ renderer_wait_for_last_fence(struct comp_renderer *r)
 }
 
 static void
-renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd)
+renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineStageFlags pipeline_stage_flag)
 {
 	COMP_TRACE_MARKER();
 
 	struct vk_bundle *vk = &r->c->base.vk;
 	VkResult ret;
 
-	VkPipelineStageFlags stage_flags[1] = {
-	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	};
+
+#define WAIT_SEMAPHORE_COUNT 1
+	VkPipelineStageFlags stage_flags[WAIT_SEMAPHORE_COUNT] = {pipeline_stage_flag};
+	VkSemaphore wait_semaphores[WAIT_SEMAPHORE_COUNT] = {r->semaphores.present_complete};
 
 	// Wait for the last fence, if any.
 	renderer_wait_for_last_fence(r);
@@ -613,8 +614,8 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd)
 
 	VkSubmitInfo comp_submit_info = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &r->semaphores.present_complete,
+	    .waitSemaphoreCount = WAIT_SEMAPHORE_COUNT,
+	    .pWaitSemaphores = wait_semaphores,
 	    .pWaitDstStageMask = stage_flags,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &cmd,
@@ -858,7 +859,7 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 
 		renderer_build_rendering(r, rr, rtr, src_samplers, src_image_views, src_norm_rects);
 
-		renderer_submit_queue(r, rr->cmd);
+		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		return;
 	}
@@ -882,7 +883,7 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
-		renderer_submit_queue(r, rr->cmd);
+		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
@@ -895,7 +896,7 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
-		renderer_submit_queue(r, rr->cmd);
+		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
@@ -1074,7 +1075,7 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 
 	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
-	renderer_submit_queue(r, crc->cmd);
+	renderer_submit_queue(r, crc->cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 }
 
 
