@@ -618,25 +618,23 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
 
 	VkSampler sampler = r->compute.default_sampler;
 	VkSampler src_samplers[2] = {sampler, sampler};
-	VkImageView src_image_views[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+	VkImageView src_image_views[2] = {r->dummy.color.image_view, r->dummy.color.image_view};
 	VkSampler distortion_samplers[6] = {sampler, sampler, sampler, sampler, sampler, sampler};
-	VkImageView distortion_image_views[6] = {VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-	                                         VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE};
 
 	update_compute_discriptor_set(     //
-	    vk,                            //
-	    r->compute.src_binding,        //
-	    src_samplers,                  //
-	    src_image_views,               //
-	    r->compute.distortion_binding, //
-	    distortion_samplers,           //
-	    distortion_image_views,        //
-	    r->compute.target_binding,     //
-	    target_image_view,             //
-	    r->compute.ubo_binding,        //
-	    r->compute.ubo.buffer,         //
-	    VK_WHOLE_SIZE,                 //
-	    crc->descriptor_set);          //
+	    vk,                            // vk_bundle
+	    r->compute.src_binding,        // src_binding
+	    src_samplers,                  // src_samplers[2]
+	    src_image_views,               // src_image_views[2]
+	    r->compute.distortion_binding, // distortion_binding
+	    distortion_samplers,           // distortion_samplers[6]
+	    r->distortion.image_views,     // distortion_image_views[6]
+	    r->compute.target_binding,     // target_binding
+	    target_image_view,             // target_image_view
+	    r->compute.ubo_binding,        // ubo_binding
+	    r->compute.ubo.buffer,         // ubo_buffer
+	    VK_WHOLE_SIZE,                 // ubo_size
+	    crc->descriptor_set);          // descriptor_set
 
 	vk->vkCmdBindPipeline(              //
 	    crc->cmd,                       // commandBuffer

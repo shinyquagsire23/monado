@@ -508,6 +508,40 @@ comp_resources_init(struct comp_resources *r,
 
 
 	/*
+	 * Dummy
+	 */
+
+	{
+		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+		VkExtent2D extent = {1, 1};
+
+		VkImageSubresourceRange subresource_range = {
+		    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+		    .baseMipLevel = 0,
+		    .levelCount = 1,
+		    .baseArrayLayer = 0,
+		    .layerCount = 1,
+		};
+
+		C(vk_create_image_simple(    //
+		    vk,                      // vk_bundle
+		    extent,                  // extent
+		    format,                  // format
+		    usage,                   // usage
+		    &r->dummy.color.memory,  // out_mem
+		    &r->dummy.color.image)); // out_image
+
+		C(vk_create_view(                 //
+		    vk,                           // vk_bundle
+		    r->dummy.color.image,         // image
+		    format,                       // format
+		    subresource_range,            // subresource_range
+		    &r->dummy.color.image_view)); // out_view
+	}
+
+
+	/*
 	 * Shared
 	 */
 
@@ -687,6 +721,9 @@ comp_resources_close(struct comp_resources *r)
 
 	struct vk_bundle *vk = r->vk;
 
+	D(ImageView, r->dummy.color.image_view);
+	D(Image, r->dummy.color.image);
+	DF(Memory, r->dummy.color.memory);
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);

@@ -240,6 +240,16 @@ struct comp_resources
 
 	struct
 	{
+		struct
+		{
+			VkImage image;
+			VkImageView image_view;
+			VkDeviceMemory memory;
+		} color;
+	} dummy;
+
+	struct
+	{
 		//! Descriptor pool for compute work.
 		VkDescriptorPool descriptor_pool;
 
