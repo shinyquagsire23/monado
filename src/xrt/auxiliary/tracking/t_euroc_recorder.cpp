@@ -165,6 +165,8 @@ euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bo
 	u_frame_clone(src_frame, &copy);
 
 	xrt_sink_push_frame(is_left ? er->writer_queues.left : er->writer_queues.right, copy);
+
+	xrt_frame_reference(&copy, NULL);
 }
 
 extern "C" void
