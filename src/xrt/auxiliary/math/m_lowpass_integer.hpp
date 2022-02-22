@@ -4,7 +4,7 @@
  * @file
  * @brief  Low-pass IIR filter for integers
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup aux_tracking
+ * @ingroup aux_math
  */
 
 #pragma once
@@ -22,7 +22,7 @@
 #include <stdexcept>
 #include <cassert>
 
-namespace xrt::auxiliary::tracking {
+namespace xrt::auxiliary::math {
 
 
 namespace detail {
@@ -166,4 +166,4 @@ private:
 	detail::IntegerLowPassIIR<Scalar, Scalar> impl_;
 };
 
-} // namespace xrt::auxiliary::tracking
+} // namespace xrt::auxiliary::math

@@ -1,10 +1,10 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019, 2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Low-pass IIR filter on vectors
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup aux_tracking
+ * @ingroup aux_math
  */
 
 #pragma once
@@ -13,12 +13,12 @@
 #error "This header is C++-only."
 #endif
 
-#include "tracking/t_lowpass.hpp"
+#include "math/m_lowpass_float.hpp"
 
 #include <Eigen/Core>
 
 
-namespace xrt::auxiliary::tracking {
+namespace xrt::auxiliary::math {
 
 /*!
  * A very simple low-pass filter, using a "one-pole infinite impulse response"
@@ -98,4 +98,4 @@ private:
 	detail::LowPassIIR<Vector, Scalar> impl_;
 };
 
-} // namespace xrt::auxiliary::tracking
+} // namespace xrt::auxiliary::math

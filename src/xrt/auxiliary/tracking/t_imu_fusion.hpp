@@ -13,8 +13,8 @@
 #error "This header is C++-only."
 #endif
 
-#include "tracking/t_lowpass.hpp"
-#include "tracking/t_lowpass_vector.hpp"
+#include "math/m_lowpass_float.hpp"
+#include "math/m_lowpass_float_vector.hpp"
 #include "math/m_api.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
@@ -187,7 +187,7 @@ private:
 	 * user-caused acceleration, and do not reflect the direction of
 	 * gravity.
 	 */
-	LowPassIIRVectorFilter<3, double> accel_filter_{200 /* hz cutoff frequency */};
+	math::LowPassIIRVectorFilter<3, double> accel_filter_{200 /* hz cutoff frequency */};
 
 	/*!
 	 * @brief Even-lower low pass filter on the length of the acceleration
@@ -197,7 +197,7 @@ private:
 	 * Over time, the length of the accelerometer data will average out to
 	 * be the acceleration due to gravity.
 	 */
-	LowPassIIRFilter<double> gravity_filter_{1 /* hz cutoff frequency */};
+	math::LowPassIIRFilter<double> gravity_filter_{1 /* hz cutoff frequency */};
 	uint64_t last_accel_timestamp_{0};
 	uint64_t last_gyro_timestamp_{0};
 	double gyro_min_squared_length_{1.e-8};

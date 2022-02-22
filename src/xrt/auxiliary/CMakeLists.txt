@@ -44,6 +44,9 @@ add_library(
 	math/m_imu_3dof.h
 	math/m_imu_pre.c
 	math/m_imu_pre.h
+	math/m_lowpass_float.hpp
+	math/m_lowpass_float_vector.hpp
+	math/m_lowpass_integer.hpp
 	math/m_optics.c
 	math/m_permutation.c
 	math/m_permutation.h
@@ -99,9 +102,6 @@ add_library(
 	tracking/t_imu_fusion.hpp
 	tracking/t_imu.cpp
 	tracking/t_imu.h
-	tracking/t_lowpass_vector.hpp
-	tracking/t_lowpass.hpp
-	tracking/t_lowpass_integer.hpp
 	tracking/t_tracking.h
 	)
 target_link_libraries(

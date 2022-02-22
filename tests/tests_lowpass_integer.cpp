@@ -2,29 +2,27 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Scalar float low pass filter tests.
+ * @brief Integer low pass filter tests.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
-#include <tracking/t_lowpass.hpp>
+#include <math/m_lowpass_integer.hpp>
 
 #include "catch/catch.hpp"
 
-using xrt::auxiliary::tracking::LowPassIIRFilter;
-static constexpr float InitialState = 300;
-static constexpr timepoint_ns InitialTime = 12345;
-static constexpr timepoint_ns StepSize = U_TIME_1MS_IN_NS * 20;
 
-TEMPLATE_TEST_CASE("t_lowpass", "", float, double)
+using xrt::auxiliary::math::Rational;
+using xrt::auxiliary::math::IntegerLowPassIIRFilter;
+static constexpr uint16_t InitialState = 300;
+
+TEMPLATE_TEST_CASE("IntegerLowPassIIRFilter", "", int32_t, uint32_t)
 {
-	LowPassIIRFilter<TestType> filter(100);
+	IntegerLowPassIIRFilter<TestType> filter(Rational<TestType>{1, 2});
 
 	CHECK_FALSE(filter.isInitialized());
-	timepoint_ns now = InitialTime;
 
-	filter.addSample(InitialState, now);
+	filter.addSample(InitialState);
 	CHECK(filter.getState() == InitialState);
-	CHECK(filter.getTimestampNs() == now);
 	CHECK(filter.isInitialized());
 
 	auto prev = filter.getState();
@@ -32,12 +30,10 @@ TEMPLATE_TEST_CASE("t_lowpass", "", float, double)
 	{
 		constexpr auto newTarget = InitialState * 2;
 		for (int i = 0; i < 20; ++i) {
-			now += StepSize;
-			filter.addSample(newTarget, now);
+			filter.addSample(newTarget);
 			REQUIRE(filter.isInitialized());
-			CHECK(filter.getTimestampNs() == now);
 			// not going to exceed this
-			if (prev == newTarget) {
+			if (prev == newTarget || prev == newTarget - 1) {
 				REQUIRE(filter.getState() == prev);
 			} else {
 				REQUIRE(filter.getState() > prev);
@@ -50,10 +46,9 @@ TEMPLATE_TEST_CASE("t_lowpass", "", float, double)
 	{
 		constexpr auto newTarget = InitialState / 2;
 		for (int i = 0; i < 20; ++i) {
-			now += StepSize;
-			filter.addSample(newTarget, now);
+
+			filter.addSample(newTarget);
 			REQUIRE(filter.isInitialized());
-			CHECK(filter.getTimestampNs() == now);
 			if (prev == newTarget) {
 				REQUIRE(filter.getState() == newTarget);
 			} else {
@@ -65,10 +60,9 @@ TEMPLATE_TEST_CASE("t_lowpass", "", float, double)
 	SECTION("Stay Same")
 	{
 		for (int i = 0; i < 20; ++i) {
-			now += StepSize;
-			filter.addSample(InitialState, now);
+
+			filter.addSample(InitialState);
 			REQUIRE(filter.isInitialized());
-			CHECK(filter.getTimestampNs() == now);
 			REQUIRE(filter.getState() == InitialState);
 		}
 	}

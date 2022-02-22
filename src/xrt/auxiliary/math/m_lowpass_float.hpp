@@ -1,10 +1,10 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019, 2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Low-pass IIR filter
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup aux_tracking
+ * @ingroup aux_math
  */
 
 #pragma once
@@ -20,7 +20,7 @@
 #include <type_traits>
 
 
-namespace xrt::auxiliary::tracking {
+namespace xrt::auxiliary::math {
 
 namespace detail {
 	/*!
@@ -176,4 +176,4 @@ private:
 	detail::LowPassIIR<Scalar, Scalar> impl_;
 };
 
-} // namespace xrt::auxiliary::tracking
+} // namespace xrt::auxiliary::math
