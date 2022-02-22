@@ -8,20 +8,21 @@
  */
 package org.freedesktop.monado.auxiliary
 
-import android.app.Activity
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.annotation.RequiresApi
 
 /** Helper class that handles system ui visibility. */
-class SystemUiController(activity: Activity) {
+class SystemUiController(view: View) {
     private val impl: Impl =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            WindowInsetsControllerImpl(activity)
+            WindowInsetsControllerImpl(view)
         } else {
-            SystemUiVisibilityImpl(activity)
+            SystemUiVisibilityImpl(view)
         }
 
     /** Hide system ui and make fullscreen. */
@@ -29,19 +30,18 @@ class SystemUiController(activity: Activity) {
         impl.hide()
     }
 
-    private abstract class Impl(var activity: Activity) {
+    private abstract class Impl(var view: View) {
+        private val uiHandler: Handler = Handler(Looper.getMainLooper())
         abstract fun hide()
         fun runOnUiThread(runnable: Runnable) {
-            activity.runOnUiThread(runnable)
+            uiHandler.post(runnable)
         }
     }
 
     @Suppress("DEPRECATION")
-    private class SystemUiVisibilityImpl(activity: Activity) : Impl(activity) {
+    private class SystemUiVisibilityImpl(view: View) : Impl(view) {
         override fun hide() {
-            activity.runOnUiThread {
-                activity.window.decorView.systemUiVisibility = FLAG_FULL_SCREEN_IMMERSIVE_STICKY
-            }
+            runOnUiThread { view.systemUiVisibility = FLAG_FULL_SCREEN_IMMERSIVE_STICKY }
         }
 
         companion object {
@@ -59,7 +59,7 @@ class SystemUiController(activity: Activity) {
 
         init {
             runOnUiThread {
-                activity.window.decorView.setOnSystemUiVisibilityChangeListener { visibility: Int ->
+                view.setOnSystemUiVisibilityChangeListener { visibility: Int ->
                     // If not fullscreen, fix it.
                     if (0 == visibility and View.SYSTEM_UI_FLAG_FULLSCREEN) {
                         hide()
@@ -70,10 +70,10 @@ class SystemUiController(activity: Activity) {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.R)
-    private class WindowInsetsControllerImpl(activity: Activity) : Impl(activity) {
+    private class WindowInsetsControllerImpl(view: View) : Impl(view) {
         override fun hide() {
-            activity.runOnUiThread {
-                val controller = activity.window.insetsController
+            runOnUiThread {
+                val controller = view.windowInsetsController
                 controller!!.hide(
                     WindowInsets.Type.displayCutout() or
                         WindowInsets.Type.statusBars() or
@@ -86,7 +86,7 @@ class SystemUiController(activity: Activity) {
 
         init {
             runOnUiThread {
-                activity.window.insetsController!!.addOnControllableInsetsChangedListener {
+                view.windowInsetsController?.addOnControllableInsetsChangedListener {
                     _: WindowInsetsController?,
                     typeMask: Int ->
                     if (

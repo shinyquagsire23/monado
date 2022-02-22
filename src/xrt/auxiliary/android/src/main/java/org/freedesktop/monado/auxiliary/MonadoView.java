@@ -51,7 +51,7 @@ public class MonadoView extends SurfaceView
         Activity activity;
         if (context instanceof Activity) {
             activity = (Activity) context;
-            systemUiController = new SystemUiController(activity);
+            systemUiController = new SystemUiController(activity.getWindow().getDecorView());
             systemUiController.hide();
         } else {
             activity = null;
@@ -63,7 +63,7 @@ public class MonadoView extends SurfaceView
         super(activity);
         this.context = activity;
         this.activity = activity;
-        systemUiController = new SystemUiController(activity);
+        systemUiController = new SystemUiController(activity.getWindow().getDecorView());
         systemUiController.hide();
     }
 

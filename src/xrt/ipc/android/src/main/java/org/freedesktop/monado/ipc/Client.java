@@ -191,7 +191,8 @@ public class Client implements ServiceConnection {
                             }
 
                             if (activity != null) {
-                                systemUiController = new SystemUiController(activity);
+                                systemUiController =
+                                        new SystemUiController(activity.getWindow().getDecorView());
                                 systemUiController.hide();
                             }
                         })
