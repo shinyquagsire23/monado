@@ -7,6 +7,7 @@
  */
 
 #include <math/m_lowpass_float.hpp>
+#include <math/m_lowpass_float.h>
 
 #include "catch/catch.hpp"
 
@@ -70,6 +71,72 @@ TEMPLATE_TEST_CASE("LowPassIIRFilter", "", float, double)
 			REQUIRE(filter.isInitialized());
 			CHECK(filter.getTimestampNs() == now);
 			REQUIRE(filter.getState() == InitialState);
+		}
+	}
+}
+
+TEST_CASE("m_lowpass_float")
+{
+
+	struct m_lowpass_float *filter = m_lowpass_float_create(100);
+	CHECK(filter);
+
+	CHECK_FALSE(m_lowpass_float_is_initialized(filter));
+
+	timepoint_ns now = InitialTime;
+
+	m_lowpass_float_add_sample(filter, InitialState, now);
+	REQUIRE(m_lowpass_float_is_initialized(filter));
+	CHECK(m_lowpass_float_get_state(filter) == InitialState);
+
+	m_lowpass_float_add_sample(filter, InitialState, now);
+	CHECK(m_lowpass_float_get_state(filter) == InitialState);
+	CHECK(m_lowpass_float_get_timestamp_ns(filter) == now);
+	CHECK(m_lowpass_float_is_initialized(filter));
+
+	auto prev = m_lowpass_float_get_state(filter);
+	SECTION("Increase")
+	{
+		constexpr auto newTarget = InitialState * 2;
+		for (int i = 0; i < 20; ++i) {
+			now += StepSize;
+			m_lowpass_float_add_sample(filter, newTarget, now);
+			REQUIRE(m_lowpass_float_is_initialized(filter));
+			CHECK(m_lowpass_float_get_timestamp_ns(filter) == now);
+			// not going to exceed this
+			if (prev == newTarget) {
+				REQUIRE(m_lowpass_float_get_state(filter) == prev);
+			} else {
+				REQUIRE(m_lowpass_float_get_state(filter) > prev);
+				prev = m_lowpass_float_get_state(filter);
+			}
+		}
+	}
+
+	SECTION("Decrease")
+	{
+		constexpr auto newTarget = InitialState / 2;
+		for (int i = 0; i < 20; ++i) {
+			now += StepSize;
+			m_lowpass_float_add_sample(filter, newTarget, now);
+			REQUIRE(m_lowpass_float_is_initialized(filter));
+			CHECK(m_lowpass_float_get_timestamp_ns(filter) == now);
+			if (prev == newTarget) {
+				REQUIRE(m_lowpass_float_get_state(filter) == newTarget);
+			} else {
+				REQUIRE(m_lowpass_float_get_state(filter) < prev);
+				prev = m_lowpass_float_get_state(filter);
+			}
+		}
+	}
+	SECTION("Stay Same")
+	{
+		for (int i = 0; i < 20; ++i) {
+			now += StepSize;
+			m_lowpass_float_add_sample(filter, InitialState, now);
+			REQUIRE(m_lowpass_float_is_initialized(filter));
+			CHECK(m_lowpass_float_get_timestamp_ns(filter) == now);
+			REQUIRE(m_lowpass_float_get_state(filter) == InitialState);
 		}
 	}
 }

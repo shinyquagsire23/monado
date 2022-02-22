@@ -44,6 +44,8 @@ add_library(
 	math/m_imu_3dof.h
 	math/m_imu_pre.c
 	math/m_imu_pre.h
+	math/m_lowpass_float.cpp
+	math/m_lowpass_float.h
 	math/m_lowpass_float.hpp
 	math/m_lowpass_float_vector.hpp
 	math/m_lowpass_integer.cpp
