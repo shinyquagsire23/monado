@@ -182,6 +182,8 @@ lib_aux_math = static_library(
 		'math/m_imu_pre.h',
 		'math/m_lowpass_float.hpp',
 		'math/m_lowpass_float_vector.hpp',
+		'math/m_lowpass_integer.cpp',
+		'math/m_lowpass_integer.h',
 		'math/m_lowpass_integer.hpp',
 		'math/m_optics.c',
 		'math/m_permutation.c',
