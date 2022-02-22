@@ -218,12 +218,13 @@ static void
 euroc_player_user_skip(struct euroc_player *ep)
 {
 	timepoint_ns skip_first_ns = ep->playback.skip_first_s * 1000 * 1000 * 1000;
+	timepoint_ns skipped_ts = ep->base_ts + skip_first_ns;
 
-	while (ep->imus->at(ep->imu_seq).timestamp_ns < skip_first_ns) {
+	while (ep->imus->at(ep->imu_seq).timestamp_ns < skipped_ts) {
 		ep->imu_seq++;
 	}
 
-	while (ep->left_imgs->at(ep->img_seq).first < skip_first_ns) {
+	while (ep->left_imgs->at(ep->img_seq).first < skipped_ts) {
 		ep->img_seq++;
 	}
 
