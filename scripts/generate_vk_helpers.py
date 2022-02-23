@@ -132,6 +132,7 @@ def get_device_cmds():
         Cmd("vkGetMemoryWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
         Cmd("vkImportSemaphoreWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
         Cmd("vkImportFenceWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
+        Cmd("vkGetFenceWin32HandleKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
         Cmd("vkGetMemoryFdKHR", requires=("!defined(VK_USE_PLATFORM_WIN32_KHR)",)),
         None,
         Cmd(

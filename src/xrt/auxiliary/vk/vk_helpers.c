@@ -1012,6 +1012,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetMemoryWin32HandleKHR                   = GET_DEV_PROC(vk, vkGetMemoryWin32HandleKHR);
 	vk->vkImportSemaphoreWin32HandleKHR             = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
 	vk->vkImportFenceWin32HandleKHR                 = GET_DEV_PROC(vk, vkImportFenceWin32HandleKHR);
+	vk->vkGetFenceWin32HandleKHR                    = GET_DEV_PROC(vk, vkGetFenceWin32HandleKHR);
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if !defined(VK_USE_PLATFORM_WIN32_KHR)
