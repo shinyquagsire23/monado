@@ -1,8 +1,11 @@
-// Copyright 2021, Collabora Ltd.
+// Copyright 2021-2022, Collabora Ltd.
 // Author: Jakob Bornecrantz <jakob@collabora.com>
 // SPDX-License-Identifier: BSL-1.0
 
 #version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "srgb.inc.glsl"
 
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -30,7 +33,7 @@ void main()
 		return;
 	}
 
-	vec4 colour = vec4(vec3(0.2), 1.0);
+	vec4 colour = vec4(from_linear_to_srgb(vec3(0.1)), 1.0);
 
 	imageStore(target, ivec2(offset.x + ix, offset.y + iy), colour);
 }
