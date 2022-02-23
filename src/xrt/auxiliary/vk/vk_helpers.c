@@ -1901,7 +1901,7 @@ vk_init_from_given(struct vk_bundle *vk,
 		goto err_memset;
 	}
 
-	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &vk->queue);
+	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, vk->queue_index, &vk->queue);
 
 	// Create the pool.
 	ret = vk_init_cmd_pool(vk);
