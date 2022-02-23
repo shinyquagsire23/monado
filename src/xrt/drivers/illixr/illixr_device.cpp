@@ -175,7 +175,6 @@ illixr_hmd_create(const char *path_in, const char *comp_in)
 	dh = U_DEVICE_ALLOCATE(struct illixr_hmd, flags, 1, 0);
 	dh->base.update_inputs = illixr_hmd_update_inputs;
 	dh->base.get_tracked_pose = illixr_hmd_get_tracked_pose;
-	dh->base.get_view_pose = illixr_hmd_get_view_pose;
 	dh->base.get_view_poses = illixr_hmd_get_view_poses;
 	dh->base.destroy = illixr_hmd_destroy;
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
