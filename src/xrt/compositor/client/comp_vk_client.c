@@ -407,26 +407,49 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	//! @todo We should be creating the handle ourselves in the future.
-	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
+	// Got a ready made handle, assume it's in the command stream and call commit directly.
+	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
+		// Commit consumes the sync_handle.
+		return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	}
+
+	struct vk_bundle *vk = &c->vk;
+	VkResult ret = VK_SUCCESS;
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	// Using sync fds currently to match OpenGL extension.
+	bool sync_fence = vk->external.fence_sync_fd;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	bool sync_fence = vk->external.fence_win32_handle;
+#else
+#error "Need port to export fence sync handles"
+#endif
 
 	/*!
-	 * @!todo This is a temporary solution, the first step in getting proper
-	 * synchronization on Vulkan. The second is to create a fence and share
-	 * it similarly to what the EGL client code does. Even with a fence it
-	 * won't help that much as the multi-compositor waits on the fence in
-	 * commit before proceeding. To fix that a thread will be added in the
-	 * multi-compositor to wait on the fence and allow commit to return.
-	 * Better still is using Semaphores for it all.
+	 * @todo Even with a fence it won't help that much as the multi-
+	 * compositor waits on the fence in commit before proceeding. To fix
+	 * that a thread will be added in the multi-compositor to wait on the
+	 * fence and allow commit to return. Better still is using timeline
+	 * semaphores for it all.
 	 */
-	{
+	if (sync_fence) {
+		COMP_TRACE_IDENT(create_and_submit_fence);
+
+		ret = vk_create_and_submit_fence_native(vk, &sync_handle);
+		if (ret != VK_SUCCESS) {
+			// This is really bad, log again.
+			U_LOG_E("Could not create and submit a native fence!");
+			return XRT_ERROR_VULKAN;
+		}
+	} else {
 		COMP_TRACE_IDENT(device_wait_idle);
 
-		struct vk_bundle *vk = &c->vk;
+		// Last course of action fallback.
 		vk->vkDeviceWaitIdle(vk->device);
 	}
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	// Commit consumes the sync_handle.
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
 }
 
 static xrt_result_t
