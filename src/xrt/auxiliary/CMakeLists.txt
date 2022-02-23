@@ -253,9 +253,9 @@ if(XRT_HAVE_VULKAN)
 		vk/vk_helpers.h
 		vk/vk_image_allocator.c
 		vk/vk_image_allocator.h
-		vk/vk_state_creators.c
 		vk/vk_image_readback_to_xf_pool.c
 		vk/vk_image_readback_to_xf_pool.h
+		vk/vk_state_creators.c
 		)
 	target_link_libraries(aux_vk PUBLIC aux_os aux_util)
 	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)
