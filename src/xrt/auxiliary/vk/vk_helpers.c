@@ -171,6 +171,71 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line)
 	return false;
 }
 
+
+/*
+ *
+ * Internal helper functions.
+ *
+ */
+
+static bool
+is_fence_bit_supported(struct vk_bundle *vk, VkExternalFenceHandleTypeFlagBits handle_type)
+{
+	VkPhysicalDeviceExternalFenceInfo external_fence_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO,
+	    .handleType = handle_type,
+	};
+	VkExternalFenceProperties external_fence_props = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES,
+	};
+
+	vk->vkGetPhysicalDeviceExternalFencePropertiesKHR( //
+	    vk->physical_device,                           // physicalDevice
+	    &external_fence_info,                          // pExternalFenceInfo
+	    &external_fence_props);                        // pExternalFenceProperties
+
+	const VkExternalFenceFeatureFlagBits bits =    //
+	    VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT | //
+	    VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT;  //
+
+	VkExternalFenceFeatureFlagBits masked = bits & external_fence_props.externalFenceFeatures;
+	if (masked != bits) {
+		// All must be supported.
+		return false;
+	}
+
+	return true;
+}
+
+static void
+fill_in_external_object_properties(struct vk_bundle *vk)
+{
+	if (vk->vkGetPhysicalDeviceExternalFencePropertiesKHR == NULL) {
+		VK_WARN(vk, "vkGetPhysicalDeviceExternalFencePropertiesKHR not supported, should always be.");
+		return;
+	}
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	vk->external.fence_sync_fd = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT);
+	vk->external.fence_opaque_fd = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT);
+
+	VK_DEBUG(vk, "Supported fences:\n\t%s: %s\n\t%s: %s",      //
+	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT",      //
+	         vk->external.fence_sync_fd ? "true" : "false",    //
+	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT",    //
+	         vk->external.fence_opaque_fd ? "true" : "false"); //
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	vk->external.fence_win32_handle = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+	VK_DEBUG(vk, "Supported fences:\n\t%s: %s",                   //
+	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT",    //
+	         vk->external.fence_win32_handle ? "true" : "false"); //
+#else
+#error "Need port for fence sync handles checkers"
+#endif
+}
+
+
 /*
  *
  * Functions.
@@ -1721,6 +1786,10 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
+	// We fill in these here as we want to be sure we have selected the physical device fully.
+	fill_in_external_object_properties(vk);
+
+	// Now setup all of the device specific functions.
 	ret = vk_get_device_functions(vk);
 	if (ret != VK_SUCCESS) {
 		goto err_destroy;
@@ -1790,6 +1859,9 @@ vk_init_from_given(struct vk_bundle *vk,
 	// Fill out the device memory props here, as we are
 	// passed a vulkan context and do not call selectPhysicalDevice()
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
+
+	// Fill in external object properties.
+	fill_in_external_object_properties(vk);
 
 	// Fill in all device functions.
 	ret = vk_get_device_functions(vk);

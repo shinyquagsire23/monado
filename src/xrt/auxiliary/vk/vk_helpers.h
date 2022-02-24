@@ -58,6 +58,18 @@ struct vk_bundle
 
 	struct os_mutex queue_mutex;
 
+	struct
+	{
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+		bool fence_sync_fd;
+		bool fence_opaque_fd;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+		bool fence_win32_handle;
+#else
+#error "Need port for fence sync handles checkers"
+#endif
+	} external;
+
 	// beginning of GENERATED instance extension code - do not modify - used by scripts
 	bool has_EXT_display_surface_counter;
 	// end of GENERATED instance extension code - do not modify - used by scripts
