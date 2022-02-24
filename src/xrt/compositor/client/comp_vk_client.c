@@ -9,6 +9,7 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "comp_vk_client.h"
 
@@ -49,6 +50,8 @@ client_vk_compositor(struct xrt_compositor *xc)
 static void
 client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct client_vk_compositor *c = sc->c;
 	struct vk_bundle *vk = &c->vk;
@@ -81,6 +84,8 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 static xrt_result_t
 client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
@@ -117,6 +122,8 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 static xrt_result_t
 client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into native swapchain.
@@ -126,28 +133,38 @@ client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint
 static xrt_result_t
 client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
 	VkResult ret;
 
-	ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[index], true, MS_TO_NS(500));
-	vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
+	{
+		COMP_TRACE_IDENT("fence");
 
-	vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[index]);
-	vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
+		ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[index], true, MS_TO_NS(500));
+		vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
 
-	// Release ownership and begin layout transition
-	VkSubmitInfo submitInfo = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &sc->release[index],
-	};
+		vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[index]);
+		vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
+	}
 
-	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[index]);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "Could not submit to queue: %d", ret);
-		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
+	{
+		COMP_TRACE_IDENT("submit");
+
+		// Release ownership and begin layout transition
+		VkSubmitInfo submitInfo = {
+		    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		    .commandBufferCount = 1,
+		    .pCommandBuffers = &sc->release[index],
+		};
+
+		ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[index]);
+		if (ret != VK_SUCCESS) {
+			VK_ERROR(vk, "Could not submit to queue: %d", ret);
+			return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
+		}
 	}
 
 	// Pipe down call into native swapchain.
@@ -164,6 +181,8 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 static xrt_result_t
 client_vk_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
@@ -173,6 +192,8 @@ client_vk_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor
 static void
 client_vk_compositor_destroy(struct xrt_compositor *xc)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct vk_bundle *vk = &c->vk;
 
@@ -194,6 +215,8 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 static xrt_result_t
 client_vk_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
@@ -203,6 +226,8 @@ client_vk_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type
 static xrt_result_t
 client_vk_compositor_end_session(struct xrt_compositor *xc)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
@@ -215,6 +240,8 @@ client_vk_compositor_wait_frame(struct xrt_compositor *xc,
                                 uint64_t *predicted_display_time,
                                 uint64_t *predicted_display_period)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
@@ -245,6 +272,8 @@ client_vk_compositor_layer_begin(struct xrt_compositor *xc,
                                  uint64_t display_time_ns,
                                  enum xrt_blend_mode env_blend_mode)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
@@ -374,11 +403,12 @@ client_vk_compositor_layer_equirect2(struct xrt_compositor *xc,
 static xrt_result_t
 client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	//! @todo We should be creating the handle ourselves in the future.
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
-
 
 	/*!
 	 * @!todo This is a temporary solution, the first step in getting proper
@@ -389,8 +419,12 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	 * multi-compositor to wait on the fence and allow commit to return.
 	 * Better still is using Semaphores for it all.
 	 */
-	struct vk_bundle *vk = &c->vk;
-	vk->vkDeviceWaitIdle(vk->device);
+	{
+		COMP_TRACE_IDENT(device_wait_idle);
+
+		struct vk_bundle *vk = &c->vk;
+		vk->vkDeviceWaitIdle(vk->device);
+	}
 
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
@@ -400,6 +434,8 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct vk_bundle *vk = &c->vk;
 	VkCommandBuffer cmd_buffer;
@@ -570,6 +606,8 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             uint32_t queueFamilyIndex,
                             uint32_t queueIndex)
 {
+	COMP_TRACE_MARKER();
+
 	VkResult ret;
 	struct client_vk_compositor *c = U_TYPED_CALLOC(struct client_vk_compositor);
 
