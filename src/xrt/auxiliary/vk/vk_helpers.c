@@ -820,72 +820,75 @@ vk_get_instance_functions(struct vk_bundle *vk)
 {
 	// clang-format off
 	// beginning of GENERATED instance loader code - do not modify - used by scripts
-	vk->vkDestroyInstance                            = GET_INS_PROC(vk, vkDestroyInstance);
-	vk->vkGetDeviceProcAddr                          = GET_INS_PROC(vk, vkGetDeviceProcAddr);
-	vk->vkCreateDevice                               = GET_INS_PROC(vk, vkCreateDevice);
-	vk->vkDestroySurfaceKHR                          = GET_INS_PROC(vk, vkDestroySurfaceKHR);
+	vk->vkDestroyInstance                                 = GET_INS_PROC(vk, vkDestroyInstance);
+	vk->vkGetDeviceProcAddr                               = GET_INS_PROC(vk, vkGetDeviceProcAddr);
+	vk->vkCreateDevice                                    = GET_INS_PROC(vk, vkCreateDevice);
+	vk->vkDestroySurfaceKHR                               = GET_INS_PROC(vk, vkDestroySurfaceKHR);
 
-	vk->vkCreateDebugReportCallbackEXT               = GET_INS_PROC(vk, vkCreateDebugReportCallbackEXT);
-	vk->vkDestroyDebugReportCallbackEXT              = GET_INS_PROC(vk, vkDestroyDebugReportCallbackEXT);
+	vk->vkCreateDebugReportCallbackEXT                    = GET_INS_PROC(vk, vkCreateDebugReportCallbackEXT);
+	vk->vkDestroyDebugReportCallbackEXT                   = GET_INS_PROC(vk, vkDestroyDebugReportCallbackEXT);
 
-	vk->vkEnumeratePhysicalDevices                   = GET_INS_PROC(vk, vkEnumeratePhysicalDevices);
-	vk->vkGetPhysicalDeviceProperties                = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties);
-	vk->vkGetPhysicalDeviceProperties2               = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties2);
-	vk->vkGetPhysicalDeviceFeatures2                 = GET_INS_PROC(vk, vkGetPhysicalDeviceFeatures2);
-	vk->vkGetPhysicalDeviceMemoryProperties          = GET_INS_PROC(vk, vkGetPhysicalDeviceMemoryProperties);
-	vk->vkGetPhysicalDeviceQueueFamilyProperties     = GET_INS_PROC(vk, vkGetPhysicalDeviceQueueFamilyProperties);
-	vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR    = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
-	vk->vkGetPhysicalDeviceSurfaceFormatsKHR         = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceFormatsKHR);
-	vk->vkGetPhysicalDeviceSurfacePresentModesKHR    = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfacePresentModesKHR);
-	vk->vkGetPhysicalDeviceSurfaceSupportKHR         = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
-	vk->vkGetPhysicalDeviceFormatProperties          = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
-	vk->vkEnumerateDeviceExtensionProperties         = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
-	vk->vkGetPhysicalDeviceImageFormatProperties2    = GET_INS_PROC(vk, vkGetPhysicalDeviceImageFormatProperties2);
+	vk->vkEnumeratePhysicalDevices                        = GET_INS_PROC(vk, vkEnumeratePhysicalDevices);
+	vk->vkGetPhysicalDeviceProperties                     = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties);
+	vk->vkGetPhysicalDeviceProperties2                    = GET_INS_PROC(vk, vkGetPhysicalDeviceProperties2);
+	vk->vkGetPhysicalDeviceFeatures2                      = GET_INS_PROC(vk, vkGetPhysicalDeviceFeatures2);
+	vk->vkGetPhysicalDeviceMemoryProperties               = GET_INS_PROC(vk, vkGetPhysicalDeviceMemoryProperties);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties          = GET_INS_PROC(vk, vkGetPhysicalDeviceQueueFamilyProperties);
+	vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR         = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+	vk->vkGetPhysicalDeviceSurfaceFormatsKHR              = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceFormatsKHR);
+	vk->vkGetPhysicalDeviceSurfacePresentModesKHR         = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfacePresentModesKHR);
+	vk->vkGetPhysicalDeviceSurfaceSupportKHR              = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
+	vk->vkGetPhysicalDeviceFormatProperties               = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
+	vk->vkGetPhysicalDeviceImageFormatProperties2         = GET_INS_PROC(vk, vkGetPhysicalDeviceImageFormatProperties2);
+	vk->vkGetPhysicalDeviceExternalBufferPropertiesKHR    = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalBufferPropertiesKHR);
+	vk->vkGetPhysicalDeviceExternalFencePropertiesKHR     = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalFencePropertiesKHR);
+	vk->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalSemaphorePropertiesKHR);
+	vk->vkEnumerateDeviceExtensionProperties              = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
 
 #if defined(VK_USE_PLATFORM_DISPLAY_KHR)
-	vk->vkCreateDisplayPlaneSurfaceKHR               = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
-	vk->vkGetDisplayPlaneCapabilitiesKHR             = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
-	vk->vkGetPhysicalDeviceDisplayPropertiesKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPropertiesKHR);
-	vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
-	vk->vkGetDisplayModePropertiesKHR                = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
-	vk->vkReleaseDisplayEXT                          = GET_INS_PROC(vk, vkReleaseDisplayEXT);
+	vk->vkCreateDisplayPlaneSurfaceKHR                    = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
+	vk->vkGetDisplayPlaneCapabilitiesKHR                  = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
+	vk->vkGetPhysicalDeviceDisplayPropertiesKHR           = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPropertiesKHR);
+	vk->vkGetPhysicalDeviceDisplayPlanePropertiesKHR      = GET_INS_PROC(vk, vkGetPhysicalDeviceDisplayPlanePropertiesKHR);
+	vk->vkGetDisplayModePropertiesKHR                     = GET_INS_PROC(vk, vkGetDisplayModePropertiesKHR);
+	vk->vkReleaseDisplayEXT                               = GET_INS_PROC(vk, vkReleaseDisplayEXT);
 
 #endif // defined(VK_USE_PLATFORM_DISPLAY_KHR)
 
 #if defined(VK_USE_PLATFORM_XCB_KHR)
-	vk->vkCreateXcbSurfaceKHR                        = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
+	vk->vkCreateXcbSurfaceKHR                             = GET_INS_PROC(vk, vkCreateXcbSurfaceKHR);
 
 #endif // defined(VK_USE_PLATFORM_XCB_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
-	vk->vkCreateWaylandSurfaceKHR                    = GET_INS_PROC(vk, vkCreateWaylandSurfaceKHR);
+	vk->vkCreateWaylandSurfaceKHR                         = GET_INS_PROC(vk, vkCreateWaylandSurfaceKHR);
 
 #endif // defined(VK_USE_PLATFORM_WAYLAND_KHR)
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
-	vk->vkAcquireDrmDisplayEXT                       = GET_INS_PROC(vk, vkAcquireDrmDisplayEXT);
-	vk->vkGetDrmDisplayEXT                           = GET_INS_PROC(vk, vkGetDrmDisplayEXT);
+	vk->vkAcquireDrmDisplayEXT                            = GET_INS_PROC(vk, vkAcquireDrmDisplayEXT);
+	vk->vkGetDrmDisplayEXT                                = GET_INS_PROC(vk, vkGetDrmDisplayEXT);
 
 #endif // defined(VK_USE_PLATFORM_WAYLAND_KHR) && defined(VK_EXT_acquire_drm_display)
 
 #if defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
-	vk->vkGetRandROutputDisplayEXT                   = GET_INS_PROC(vk, vkGetRandROutputDisplayEXT);
-	vk->vkAcquireXlibDisplayEXT                      = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);
+	vk->vkGetRandROutputDisplayEXT                        = GET_INS_PROC(vk, vkGetRandROutputDisplayEXT);
+	vk->vkAcquireXlibDisplayEXT                           = GET_INS_PROC(vk, vkAcquireXlibDisplayEXT);
 
 #endif // defined(VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
-	vk->vkCreateAndroidSurfaceKHR                    = GET_INS_PROC(vk, vkCreateAndroidSurfaceKHR);
+	vk->vkCreateAndroidSurfaceKHR                         = GET_INS_PROC(vk, vkCreateAndroidSurfaceKHR);
 
 #endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-	vk->vkCreateWin32SurfaceKHR                      = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
+	vk->vkCreateWin32SurfaceKHR                           = GET_INS_PROC(vk, vkCreateWin32SurfaceKHR);
 
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if defined(VK_EXT_display_surface_counter)
-	vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT   = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilities2EXT);
+	vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT        = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceCapabilities2EXT);
 #endif // defined(VK_EXT_display_surface_counter)
 
 	// end of GENERATED instance loader code - do not modify - used by scripts

@@ -180,8 +180,11 @@ def get_instance_cmds():
         Cmd("vkGetPhysicalDeviceSurfacePresentModesKHR"),
         Cmd("vkGetPhysicalDeviceSurfaceSupportKHR"),
         Cmd("vkGetPhysicalDeviceFormatProperties"),
-        Cmd("vkEnumerateDeviceExtensionProperties"),
         Cmd("vkGetPhysicalDeviceImageFormatProperties2"),
+        Cmd("vkGetPhysicalDeviceExternalBufferPropertiesKHR"),
+        Cmd("vkGetPhysicalDeviceExternalFencePropertiesKHR"),
+        Cmd("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR"),
+        Cmd("vkEnumerateDeviceExtensionProperties"),
         None,
         Cmd(
             "vkCreateDisplayPlaneSurfaceKHR", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)
