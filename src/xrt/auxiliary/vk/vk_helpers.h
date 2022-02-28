@@ -63,8 +63,18 @@ struct vk_bundle
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 		bool fence_sync_fd;
 		bool fence_opaque_fd;
+
+		bool binary_semaphore_sync_fd;
+		bool binary_semaphore_opaque_fd;
+
+		bool timeline_semaphore_sync_fd;
+		bool timeline_semaphore_opaque_fd;
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 		bool fence_win32_handle;
+
+		bool binary_semaphore_win32_handle;
+
+		bool timeline_semaphore_win32_handle;
 #else
 #error "Need port for fence sync handles checkers"
 #endif

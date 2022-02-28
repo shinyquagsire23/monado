@@ -207,29 +207,153 @@ is_fence_bit_supported(struct vk_bundle *vk, VkExternalFenceHandleTypeFlagBits h
 	return true;
 }
 
+static bool
+is_binary_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
+{
+	VkPhysicalDeviceExternalSemaphoreInfo external_semaphore_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
+	    .pNext = NULL,
+	    .handleType = handle_type,
+	};
+	VkExternalSemaphoreProperties external_semaphore_props = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
+	};
+
+	vk->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR( //
+	    vk->physical_device,                               // physicalDevice
+	    &external_semaphore_info,                          // pExternalSemaphoreInfo
+	    &external_semaphore_props);                        // pExternalSemaphoreProperties
+
+	const VkExternalSemaphoreFeatureFlagBits bits =    //
+	    VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT | //
+	    VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;  //
+
+	VkExternalSemaphoreFeatureFlagBits masked = bits & external_semaphore_props.externalSemaphoreFeatures;
+	if (masked != bits) {
+		// All must be supported.
+		return false;
+	}
+
+	return true;
+}
+
+static bool
+is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
+{
+#ifdef VK_KHR_timeline_semaphore
+	/*
+	 * This technically is for the device not the physical device,
+	 * but we can use it as a way to gate running the detection code.
+	 */
+	if (!vk->features.timeline_semaphore) {
+		return false;
+	}
+
+	VkSemaphoreTypeCreateInfo semaphore_type_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+	    .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+	    .initialValue = 0,
+	};
+	VkPhysicalDeviceExternalSemaphoreInfo external_semaphore_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
+	    .pNext = (const void *)&semaphore_type_create_info,
+	    .handleType = handle_type,
+	};
+	VkExternalSemaphoreProperties external_semaphore_props = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
+	};
+
+	vk->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR( //
+	    vk->physical_device,                               // physicalDevice
+	    &external_semaphore_info,                          // pExternalSemaphoreInfo
+	    &external_semaphore_props);                        // pExternalSemaphoreProperties
+
+	const VkExternalSemaphoreFeatureFlagBits bits =    //
+	    VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT | //
+	    VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;  //
+
+	VkExternalSemaphoreFeatureFlagBits masked = bits & external_semaphore_props.externalSemaphoreFeatures;
+	if (masked != bits) {
+		// All must be supported.
+		return false;
+	}
+
+	return true;
+#else
+	return false;
+#endif
+}
+
 static void
 fill_in_external_object_properties(struct vk_bundle *vk)
 {
+	// Make sure it's cleared.
+	U_ZERO(&vk->external);
+
 	if (vk->vkGetPhysicalDeviceExternalFencePropertiesKHR == NULL) {
 		VK_WARN(vk, "vkGetPhysicalDeviceExternalFencePropertiesKHR not supported, should always be.");
 		return;
 	}
 
+	if (vk->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR == NULL) {
+		VK_WARN(vk, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR not supported, should always be.");
+		return;
+	}
+
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-	vk->external.fence_sync_fd = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT);
-	vk->external.fence_opaque_fd = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT);
+	vk->external.fence_sync_fd = is_fence_bit_supported( //
+	    vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT);
+	vk->external.fence_opaque_fd = is_fence_bit_supported( //
+	    vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT);
+
+	vk->external.binary_semaphore_sync_fd = is_binary_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT);
+	vk->external.binary_semaphore_opaque_fd = is_binary_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT);
+
+	//! @todo Is this safe to assume working, do we need to check an extension?
+	vk->external.timeline_semaphore_sync_fd = is_timeline_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT);
+	vk->external.timeline_semaphore_opaque_fd = is_timeline_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT);
 
 	VK_DEBUG(vk, "Supported fences:\n\t%s: %s\n\t%s: %s",      //
 	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT",      //
 	         vk->external.fence_sync_fd ? "true" : "false",    //
 	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT",    //
 	         vk->external.fence_opaque_fd ? "true" : "false"); //
+
+	VK_DEBUG(vk, "Supported semaphores:\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s",     //
+	         "features.timeline_semaphore", vk->features.timeline_semaphore ? "true" : "false", //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(binary)",                           //
+	         vk->external.binary_semaphore_sync_fd ? "true" : "false",                          //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(binary)",                         //
+	         vk->external.binary_semaphore_opaque_fd ? "true" : "false",                        //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(timeline)",                         //
+	         vk->external.timeline_semaphore_sync_fd ? "true" : "false",                        //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(timeline)",                       //
+	         vk->external.timeline_semaphore_opaque_fd ? "true" : "false");                     //
+
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-	vk->external.fence_win32_handle = is_fence_bit_supported(vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+	vk->external.fence_win32_handle = is_fence_bit_supported( //
+	    vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+	vk->external.binary_semaphore_win32_handle = is_binary_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+	//! @todo Is this safe to assume working, do we need to check an extension?
+	vk->external.timeline_semaphore_win32_handle = is_timeline_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
 	VK_DEBUG(vk, "Supported fences:\n\t%s: %s",                   //
 	         "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT",    //
 	         vk->external.fence_win32_handle ? "true" : "false"); //
+
+	VK_DEBUG(vk, "Supported semaphores:\n\t%s: %s\n\t%s: %s",                  //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT(binary)",     //
+	         vk->external.binary_semaphore_win32_handle ? "true" : "false",    //
+	         "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT(timeline)",   //
+	         vk->external.timeline_semaphore_win32_handle ? "true" : "false"); //
 #else
 #error "Need port for fence sync handles checkers"
 #endif
