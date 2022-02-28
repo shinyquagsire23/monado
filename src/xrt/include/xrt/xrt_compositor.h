@@ -491,7 +491,7 @@ xrt_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 struct xrt_compositor_fence
 {
 	/*!
-	 * Destroys the fence.
+	 * Waits on the fence with the given timeout.
 	 */
 	xrt_result_t (*wait)(struct xrt_compositor_fence *xcf, uint64_t timeout);
 
