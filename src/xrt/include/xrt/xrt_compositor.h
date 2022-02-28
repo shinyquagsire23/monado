@@ -537,6 +537,81 @@ xrt_compositor_fence_destroy(struct xrt_compositor_fence **xcf_ptr)
 
 /*
  *
+ * Compositor semaphore.
+ *
+ */
+
+/*!
+ * Compositor semaphore used for synchronization, needs to be as capable as a
+ * Vulkan pipeline semaphore.
+ */
+struct xrt_compositor_semaphore
+{
+	/*!
+	 * Reference helper.
+	 */
+	struct xrt_reference reference;
+
+	/*!
+	 * Does a CPU side wait on the semaphore to reach the given value.
+	 */
+	xrt_result_t (*wait)(struct xrt_compositor_semaphore *xcsem, uint64_t value, uint64_t timeout_ns);
+
+	/*!
+	 * Destroys the semaphore.
+	 */
+	void (*destroy)(struct xrt_compositor_semaphore *xcsem);
+};
+
+/*!
+ * Update the reference counts on compositor semaphore(s).
+ *
+ * @param[in,out] dst Pointer to a object reference: if the object reference is
+ *                non-null will decrement its counter. The reference that
+ *                @p dst points to will be set to @p src.
+ * @param[in] src New object for @p dst to refer to (may be null).
+ *                If non-null, will have its refcount increased.
+ * @ingroup xrt_iface
+ * @relates xrt_compositor_semaphore
+ */
+static inline void
+xrt_compositor_semaphore_reference(struct xrt_compositor_semaphore **dst, struct xrt_compositor_semaphore *src)
+{
+	struct xrt_compositor_semaphore *old_dst = *dst;
+
+	if (old_dst == src) {
+		return;
+	}
+
+	if (src) {
+		xrt_reference_inc(&src->reference);
+	}
+
+	*dst = src;
+
+	if (old_dst) {
+		if (xrt_reference_dec(&old_dst->reference)) {
+			old_dst->destroy(old_dst);
+		}
+	}
+}
+
+/*!
+ * @copydoc xrt_compositor_semaphore::wait
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor_semaphore
+ */
+static inline xrt_result_t
+xrt_compositor_semaphore_wait(struct xrt_compositor_semaphore *xcsem, uint64_t value, uint64_t timeout)
+{
+	return xcsem->wait(xcsem, value, timeout);
+}
+
+
+/*
+ *
  * Events.
  *
  */
@@ -676,6 +751,13 @@ struct xrt_compositor
 	xrt_result_t (*import_fence)(struct xrt_compositor *xc,
 	                             xrt_graphics_sync_handle_t handle,
 	                             struct xrt_compositor_fence **out_xcf);
+
+	/*!
+	 * Create a compositor semaphore, also returns a native handle.
+	 */
+	xrt_result_t (*create_semaphore)(struct xrt_compositor *xc,
+	                                 xrt_graphics_sync_handle_t *out_handle,
+	                                 struct xrt_compositor_semaphore **out_xcsem);
 
 	/*!
 	 * Poll events from this compositor.
@@ -944,6 +1026,21 @@ struct xrt_compositor
 	                             xrt_graphics_sync_handle_t sync_handle);
 
 	/*!
+	 * @brief Commits all of the submitted layers, with a semaphore.
+	 *
+	 * Only after this call will the compositor actually use the layers.
+	 * @param xc          Self pointer
+	 * @param frame_id    The frame id this commit is for.
+	 * @param xcsem       Semaphore that will be signalled when the app GPU
+	 *                    work has completed.
+	 * @param value       Semaphore value upone completion of GPU work.
+	 */
+	xrt_result_t (*layer_commit_with_semaphore)(struct xrt_compositor *xc,
+	                                            int64_t frame_id,
+	                                            struct xrt_compositor_semaphore *xcsem,
+	                                            uint64_t value);
+
+	/*!
 	 * Teardown the compositor.
 	 *
 	 * The state tracker must have made sure that no frames or sessions are
@@ -1000,6 +1097,21 @@ xrt_comp_import_fence(struct xrt_compositor *xc,
                       struct xrt_compositor_fence **out_xcf)
 {
 	return xc->import_fence(xc, handle, out_xcf);
+}
+
+/*!
+ * @copydoc xrt_compositor::create_semaphore
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_create_semaphore(struct xrt_compositor *xc,
+                          xrt_graphics_sync_handle_t *out_handle,
+                          struct xrt_compositor_semaphore **out_xcsem)
+{
+	return xc->create_semaphore(xc, out_handle, out_xcsem);
 }
 
 /*!
@@ -1267,6 +1379,22 @@ static inline xrt_result_t
 xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
 	return xc->layer_commit(xc, frame_id, sync_handle);
+}
+
+/*!
+ * @copydoc xrt_compositor::layer_commit_with_semaphore
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc,
+                                     int64_t frame_id,
+                                     struct xrt_compositor_semaphore *xcsem,
+                                     uint64_t value)
+{
+	return xc->layer_commit_with_semaphore(xc, frame_id, xcsem, value);
 }
 
 /*!
