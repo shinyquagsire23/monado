@@ -233,11 +233,11 @@ oxr_stage_ref_relation(struct oxr_logger *log,
 }
 
 static XrResult
-oxr_locale_ref_relation(struct oxr_logger *log,
-                        struct oxr_session *sess,
-                        struct oxr_space *baseSpc,
-                        XrTime time,
-                        struct xrt_space_relation *out_relation)
+oxr_local_ref_relation(struct oxr_logger *log,
+                       struct oxr_session *sess,
+                       struct oxr_space *baseSpc,
+                       XrTime time,
+                       struct xrt_space_relation *out_relation)
 {
 	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
 		out_relation->pose = sess->initial_head_relation.pose;
@@ -274,7 +274,7 @@ oxr_space_ref_relation(struct oxr_logger *log,
 	} else if (space->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
 		oxr_stage_ref_relation(log, sess, baseSpc, time, out_relation);
 	} else if (space->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		oxr_locale_ref_relation(log, sess, baseSpc, time, out_relation);
+		oxr_local_ref_relation(log, sess, baseSpc, time, out_relation);
 	} else {
 		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
 		return XR_SUCCESS;
