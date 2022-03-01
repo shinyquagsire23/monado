@@ -636,8 +636,12 @@ static const char *required_device_extensions[] = {
 };
 
 static const char *optional_device_extensions[] = {
-    VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
-    VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,
+    VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME, //
+    VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,   //
+
+#ifdef VK_KHR_timeline_semaphore
+    VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+#endif
 #ifdef VK_EXT_robustness2
     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
 #endif
@@ -738,6 +742,7 @@ compositor_init_vulkan(struct comp_compositor *c)
 	    .only_compute_queue = c->settings.use_compute,
 	    .selected_gpu_index = c->settings.selected_gpu_index,
 	    .client_gpu_index = c->settings.client_gpu_index,
+	    .timeline_semaphore = true, // Flag is optional, not a hard requirement.
 	};
 
 	struct comp_vulkan_results vk_res = {0};
