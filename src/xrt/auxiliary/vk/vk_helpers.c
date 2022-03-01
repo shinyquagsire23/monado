@@ -1832,12 +1832,14 @@ vk_init_from_given(struct vk_bundle *vk,
                    VkPhysicalDevice physical_device,
                    VkDevice device,
                    uint32_t queue_family_index,
-                   uint32_t queue_index)
+                   uint32_t queue_index,
+                   enum u_logging_level log_level)
 {
 	VkResult ret;
 
 	// First memset it clear.
 	U_ZERO(vk);
+	vk->log_level = log_level;
 
 	ret = vk_get_loader_functions(vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {

@@ -661,9 +661,17 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	c->base.base.info.format_count = xcn->base.info.format_count;
 
 	// Default to info.
-	c->vk.log_level = U_LOGGING_INFO;
+	enum u_logging_level log_level = U_LOGGING_INFO;
 
-	ret = vk_init_from_given(&c->vk, getProc, instance, physicalDevice, device, queueFamilyIndex, queueIndex);
+	ret = vk_init_from_given( //
+	    &c->vk,               // vk_bundle
+	    getProc,              // vkGetInstanceProcAddr
+	    instance,             // instance
+	    physicalDevice,       // physical_device
+	    device,               // device
+	    queueFamilyIndex,     // queue_family_index
+	    queueIndex,           // queue_index
+	    log_level);           // log_level
 	if (ret != VK_SUCCESS) {
 		goto err_free;
 	}
