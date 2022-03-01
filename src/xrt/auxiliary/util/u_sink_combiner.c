@@ -130,7 +130,7 @@ combine_frames(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame **out_
 	}
 	default: assert(!"Unimplemented!");
 	}
-#if 1
+#if 0
 	// So that we can test if this works on a really slow computer
 	os_nanosleep(0.1f * U_TIME_1S_IN_NS);
 #endif
