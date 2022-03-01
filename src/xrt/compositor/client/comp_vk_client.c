@@ -663,15 +663,19 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	// Default to info.
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
-	ret = vk_init_from_given( //
-	    &c->vk,               // vk_bundle
-	    getProc,              // vkGetInstanceProcAddr
-	    instance,             // instance
-	    physicalDevice,       // physical_device
-	    device,               // device
-	    queueFamilyIndex,     // queue_family_index
-	    queueIndex,           // queue_index
-	    log_level);           // log_level
+	// For now always disabled.
+	bool timeline_semaphore_enabled = false;
+
+	ret = vk_init_from_given(       //
+	    &c->vk,                     // vk_bundle
+	    getProc,                    // vkGetInstanceProcAddr
+	    instance,                   // instance
+	    physicalDevice,             // physical_device
+	    device,                     // device
+	    queueFamilyIndex,           // queue_family_index
+	    queueIndex,                 // queue_index
+	    timeline_semaphore_enabled, // timeline_semaphore_enabled
+	    log_level);                 // log_level
 	if (ret != VK_SUCCESS) {
 		goto err_free;
 	}

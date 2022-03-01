@@ -506,6 +506,7 @@ vk_init_from_given(struct vk_bundle *vk,
                    VkDevice device,
                    uint32_t queue_family_index,
                    uint32_t queue_index,
+                   bool timeline_semaphore_enabled,
                    enum u_logging_level log_level);
 
 /*!

@@ -1833,6 +1833,7 @@ vk_init_from_given(struct vk_bundle *vk,
                    VkDevice device,
                    uint32_t queue_family_index,
                    uint32_t queue_index,
+                   bool timeline_semaphore_enabled,
                    enum u_logging_level log_level)
 {
 	VkResult ret;
@@ -1861,6 +1862,18 @@ vk_init_from_given(struct vk_bundle *vk,
 	// Fill out the device memory props here, as we are
 	// passed a vulkan context and do not call selectPhysicalDevice()
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
+
+
+#ifdef VK_KHR_timeline_semaphore
+	/*
+	 * Has the timeline semaphore extension and feature been enabled?
+	 * Need to do this before fill_in_external_object_properties.
+	 */
+	if (timeline_semaphore_enabled) {
+		vk->has_KHR_timeline_semaphore = true;
+		vk->features.timeline_semaphore = true;
+	}
+#endif
 
 	// Fill in external object properties.
 	fill_in_external_object_properties(vk);
