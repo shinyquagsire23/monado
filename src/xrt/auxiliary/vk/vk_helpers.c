@@ -1691,7 +1691,7 @@ vk_create_device(struct vk_bundle *vk,
 
 	struct vk_device_features device_features = {0};
 	filter_device_features(vk, vk->physical_device, optional_device_features, &device_features);
-	vk->timeline_semaphores = device_features.timeline_semaphore;
+	vk->features.timeline_semaphore = device_features.timeline_semaphore;
 
 	/*
 	 * Queue

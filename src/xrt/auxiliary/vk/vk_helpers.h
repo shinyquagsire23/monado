@@ -82,10 +82,15 @@ struct vk_bundle
 	bool has_EXT_display_control;
 	// end of GENERATED device extension code - do not modify - used by scripts
 
+	struct
+	{
+		//! Were timeline semaphore requested, available, and enabled?
+		bool timeline_semaphore;
+	} features;
+
+	//! Is the GPU a tegra device.
 	bool is_tegra;
 
-	//! Were timeline semaphores requested, available, and enabled?
-	bool timeline_semaphores;
 
 	VkDebugReportCallbackEXT debug_report_cb;
 
