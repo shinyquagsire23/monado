@@ -12,6 +12,14 @@
 typedef enum xrt_result
 {
 	XRT_SUCCESS = 0,
+
+	/*!
+	 * The operation was given a timeout and timed out.
+	 *
+	 * The value 2 picked so it matches VK_TIMEOUT.
+	 */
+	XRT_TIMEOUT = 2,
+
 	XRT_ERROR_IPC_FAILURE = -1,
 	XRT_ERROR_NO_IMAGE_AVAILABLE = -2,
 	XRT_ERROR_VULKAN = -3,
