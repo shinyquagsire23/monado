@@ -67,6 +67,8 @@ create_pipeline(struct gui_record_window *rw)
 	}
 
 	switch (rw->gst.pipeline) {
+	case GUI_RECORD_PIPELINE_SOFTWARE_ULTRAFAST: speed_preset = "ultrafast"; break;
+	case GUI_RECORD_PIPELINE_SOFTWARE_VERYFAST: speed_preset = "veryfast"; break;
 	case GUI_RECORD_PIPELINE_SOFTWARE_FAST: speed_preset = "fast"; break;
 	case GUI_RECORD_PIPELINE_SOFTWARE_MEDIUM: speed_preset = "medium"; break;
 	case GUI_RECORD_PIPELINE_SOFTWARE_SLOW: speed_preset = "slow"; break;
@@ -166,7 +168,8 @@ draw_gst(struct gui_record_window *rw)
 	bool recording = rw->gst.gp != NULL;
 	os_mutex_unlock(&rw->gst.mutex);
 
-	igComboStr("Pipeline", (int *)&rw->gst.pipeline, "SW Fast\0SW Medium\0SW Slow\0SW Veryslow\0VAAPI H264\0\0", 5);
+	igComboStr("Pipeline", (int *)&rw->gst.pipeline,
+	           "SW Ultrafast\0SW Veryfast\0SW Fast\0SW Medium\0SW Slow\0SW Veryslow\0VAAPI H264\0\0", 5);
 	igComboStr("Bitrate", (int *)&rw->gst.bitrate, "32768bps (Be careful!)\0004096bps\0002048bps\0001024bps\0\0",
 	           3);
 
@@ -269,6 +272,7 @@ gui_window_record_init(struct gui_record_window *rw)
 
 	snprintf(rw->gst.filename, sizeof(rw->gst.filename), "/tmp/capture.mp4");
 	rw->gst.bitrate = GUI_RECORD_BITRATE_4096;
+	rw->gst.pipeline = GUI_RECORD_PIPELINE_SOFTWARE_FAST;
 #endif
 
 
