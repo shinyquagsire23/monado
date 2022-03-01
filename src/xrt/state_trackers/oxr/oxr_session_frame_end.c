@@ -804,55 +804,9 @@ handle_space(struct oxr_logger *log,
 		math_quat_normalize(&pose.orientation);
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &pose, &pose);
-	} else if (spc->is_reference) {
-		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &pose, &pose);
-
-		// Remove the tracking system origin offset.
-		math_pose_transform(inv_offset, &pose, &pose);
-
-		if (spc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			if (!initial_head_relation_valid(sess)) {
-				return false;
-			}
-			math_pose_transform(&sess->initial_head_relation.pose, &pose, &pose);
-		}
-
-	} else {
-		//! @todo Action space handling not very complete
-
-		struct oxr_action_input *input = NULL;
-
-		oxr_action_get_pose_input(log, sess, spc->act_key, &spc->subaction_paths, &input);
-
-		// If the input isn't active.
-		if (input == NULL) {
-			//! @todo just don't render the quad here?
-			return false;
-		}
-
-
-		struct xrt_space_relation out_relation;
-
-		oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev, input->input->name, timestamp,
-		                            &out_relation);
-
-		struct xrt_pose device_pose = out_relation.pose;
-
-		// The space might have a pose, transform that in as well.
-		math_pose_transform(&spc->pose, &device_pose, &device_pose);
-
-		math_pose_transform(&device_pose, &pose, &pose);
-
-		// Remove the tracking system origin offset.
-		math_pose_transform(inv_offset, &pose, &pose);
-	}
-
-
-	*out_pose = pose;
+	struct xrt_space_relation rel;
+	oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel);
+	*out_pose = rel.pose;
 
 	return true;
 }
@@ -947,7 +901,6 @@ submit_projection_layer(struct oxr_session *sess,
 	data.stereo.r.pose = pose[1];
 	fill_in_sub_image(scs[0], &proj->views[0].subImage, &data.stereo.l.sub);
 	fill_in_sub_image(scs[1], &proj->views[1].subImage, &data.stereo.r.sub);
-
 
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 	const XrCompositionLayerDepthInfoKHR *d_l = OXR_GET_INPUT_FROM_CHAIN(

@@ -123,21 +123,30 @@ get_ref_space_type_short_str(struct oxr_space *spc)
 	}
 }
 
+static void
+print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose);
+
 static bool
-ensure_initial_head_relation(struct oxr_logger *log, struct oxr_session *sess, struct xrt_space_relation *head_relation)
+set_up_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time)
 {
-	if ((head_relation->relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) == 0) {
+	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_space_relation head_relation;
+	oxr_xdev_get_space_relation(log, sess->sys->inst, head_xdev, XRT_INPUT_GENERIC_HEAD_POSE, time, &head_relation);
+
+	if ((head_relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) == 0) {
 		return false;
 	}
 
-	if (!initial_head_relation_valid(sess)) {
-		sess->initial_head_relation = *head_relation;
+	if (!is_local_space_set_up(sess)) {
+		sess->local_space_pure_relation = head_relation;
 
 		// take only head rotation around y axis
 		// https://stackoverflow.com/a/5783030
-		sess->initial_head_relation.pose.orientation.x = 0;
-		sess->initial_head_relation.pose.orientation.z = 0;
-		math_quat_normalize(&sess->initial_head_relation.pose.orientation);
+		sess->local_space_pure_relation.pose.orientation.x = 0;
+		sess->local_space_pure_relation.pose.orientation.z = 0;
+		math_quat_normalize(&sess->local_space_pure_relation.pose.orientation);
+
+		print_pose(sess, "local space updated", &head_relation.pose);
 
 		//! @todo: Handle relation velocities if necessary
 	}
@@ -145,222 +154,171 @@ ensure_initial_head_relation(struct oxr_logger *log, struct oxr_session *sess, s
 }
 
 bool
-initial_head_relation_valid(struct oxr_session *sess)
+is_local_space_set_up(struct oxr_session *sess)
 {
-	return sess->initial_head_relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
+	return (sess->local_space_pure_relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
+}
+
+
+/*!
+ * Returns the pure relation in global space of an oxr_space, meaning the tracking_origin offsets are already applied.
+ *
+ * @todo: Until a proper reference space system is implemented, the xdev assigned to the head role should be used as @p
+ * ref_xdev for consistency.
+ */
+static bool
+oxr_space_ref_get_pure_relation(struct oxr_logger *log,
+                                struct oxr_session *sess,
+                                XrReferenceSpaceType ref_type,
+                                struct xrt_device *ref_xdev,
+                                XrTime time,
+                                struct xrt_space_relation *out_relation)
+{
+	switch (ref_type) {
+	case XR_REFERENCE_SPACE_TYPE_LOCAL: {
+		if (!is_local_space_set_up(sess)) {
+			if (!set_up_local_space(log, sess, time)) {
+				return false;
+			}
+			return false;
+		}
+
+		*out_relation = sess->local_space_pure_relation;
+		return true;
+	}
+	case XR_REFERENCE_SPACE_TYPE_STAGE: {
+		//! @todo: stage space origin assumed to be the same as HMD xdev space origin for now.
+		m_space_relation_ident(out_relation);
+		return true;
+	}
+	case XR_REFERENCE_SPACE_TYPE_VIEW: {
+		oxr_xdev_get_space_relation(log, sess->sys->inst, ref_xdev, XRT_INPUT_GENERIC_HEAD_POSE, time,
+		                            out_relation);
+		return true;
+	}
+
+	case XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT:
+	case XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO:
+		// not implemented
+		return false;
+	case XR_REFERENCE_SPACE_TYPE_MAX_ENUM: return false; ;
+	}
+	return true;
 }
 
 bool
-global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel)
+oxr_space_pure_relation_in_space(struct oxr_logger *log,
+                                 XrTime time,
+                                 struct xrt_space_relation *relation,
+                                 struct oxr_space *spc,
+                                 bool apply_space_pose,
+                                 struct xrt_space_relation *out_relation)
 {
-	if (!initial_head_relation_valid(sess)) {
+	struct xrt_space_relation pure_space_relation;
+	struct xrt_device *xdev;
+	oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev);
+
+	struct xrt_relation_chain xrc = {0};
+
+	m_relation_chain_push_relation(&xrc, relation);
+	m_relation_chain_push_inverted_relation(&xrc, &pure_space_relation);
+
+	if (apply_space_pose) {
+		m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &spc->pose);
+	}
+
+	m_relation_chain_resolve(&xrc, out_relation);
+	return true;
+}
+
+bool
+oxr_space_pure_pose_in_space(struct oxr_logger *log,
+                             XrTime time,
+                             struct xrt_pose *pose,
+                             struct oxr_space *spc,
+                             bool apply_space_pose,
+                             struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_relation rel;
+	m_space_relation_from_pose(pose, &rel);
+	return oxr_space_pure_relation_in_space(log, time, &rel, spc, apply_space_pose, out_relation);
+}
+
+bool
+oxr_space_pure_relation_from_space(struct oxr_logger *log,
+                                   XrTime time,
+                                   struct xrt_space_relation *relation,
+                                   struct oxr_space *spc,
+                                   struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_relation pure_space_relation;
+	struct xrt_device *xdev;
+	oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev);
+
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &pure_space_relation);
+	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &spc->pose);
+	m_relation_chain_push_relation(&xrc, relation);
+	m_relation_chain_resolve(&xrc, out_relation);
+	return true;
+}
+
+bool
+oxr_space_pure_pose_from_space(struct oxr_logger *log,
+                               XrTime time,
+                               struct xrt_pose *pose,
+                               struct oxr_space *spc,
+                               struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_relation rel;
+	m_space_relation_from_pose(pose, &rel);
+	return oxr_space_pure_relation_from_space(log, time, &rel, spc, out_relation);
+}
+
+bool
+oxr_space_get_pure_relation(struct oxr_logger *log,
+                            struct oxr_space *spc,
+                            XrTime time,
+                            struct xrt_space_relation *out_relation,
+                            struct xrt_device **out_xdev)
+{
+	if (spc->is_reference) {
+		struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(spc->sess->sys, head);
+		*out_xdev = head_xdev;
+		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->type, head_xdev, time, out_relation);
+	}
+
+	struct oxr_action_input *input = NULL;
+	oxr_action_get_pose_input(log, spc->sess, spc->act_key, &spc->subaction_paths, &input);
+
+	// If the input isn't active.
+	if (input == NULL) {
+		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+		return false;
+	}
+
+	*out_xdev = input->xdev;
+	oxr_xdev_get_space_relation(log, spc->sess->sys->inst, input->xdev, input->input->name, time, out_relation);
+
+	return true;
+}
+
+bool
+global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel)
+{
+	if (!is_local_space_set_up(sess)) {
+		if (!set_up_local_space(log, sess, time)) {
+			return false;
+		}
 		return false;
 	}
 
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, rel);
-	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &sess->initial_head_relation.pose);
+	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &sess->local_space_pure_relation.pose);
 	m_relation_chain_resolve(&xrc, rel);
 
 	return true;
-}
-
-/*!
- * Transform @p view_relation given in global space into @p baseSpc without the app-given offset pose for @p baseSpc
- * applied.
- */
-XrResult
-oxr_view_relation_ref_relation(struct oxr_logger *log,
-                               struct oxr_session *sess,
-                               struct xrt_space_relation *view_relation,
-                               struct xrt_device *view_xdev,
-                               struct oxr_space *baseSpc,
-                               XrTime time,
-                               struct xrt_space_relation *out_relation)
-{
-	*out_relation = *view_relation;
-
-	//! @todo: find a central place to set up local space
-	if (!ensure_initial_head_relation(log, sess, out_relation)) {
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-
-	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
-		// device poses are already in stage = "global" space
-	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		global_to_local_space(sess, out_relation);
-	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		// view relation in view space should be identity
-		m_space_relation_ident(out_relation);
-	} else {
-		OXR_WARN_ONCE(log, "unsupported base reference space in space_ref_relation");
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-
-	return XR_SUCCESS;
-}
-
-static XrResult
-oxr_view_ref_relation(struct oxr_logger *log,
-                      struct oxr_session *sess,
-                      struct oxr_space *baseSpc,
-                      XrTime time,
-                      struct xrt_space_relation *out_relation)
-{
-	struct xrt_device *view_xdev = NULL;
-	struct xrt_space_relation view_relation;
-	oxr_session_get_view_relation_at(log, sess, time, &view_relation, &view_xdev);
-	return oxr_view_relation_ref_relation(log, sess, &view_relation, view_xdev, baseSpc, time, out_relation);
-}
-
-static XrResult
-oxr_stage_ref_relation(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       struct oxr_space *baseSpc,
-                       XrTime time,
-                       struct xrt_space_relation *out_relation)
-{
-	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		math_pose_invert(&sess->initial_head_relation.pose, &out_relation->pose);
-	} else {
-		OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-	return XR_SUCCESS;
-}
-
-static XrResult
-oxr_local_ref_relation(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       struct oxr_space *baseSpc,
-                       XrTime time,
-                       struct xrt_space_relation *out_relation)
-{
-	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
-		out_relation->pose = sess->initial_head_relation.pose;
-	} else {
-		OXR_WARN_ONCE(log, "unsupported base space in space_ref_relation");
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-	return XR_SUCCESS;
-}
-
-/*!
- * This returns only the relation between two spaces without any of the app
- * given relations applied, assumes that both spaces are reference spaces.
- */
-XrResult
-oxr_space_ref_relation(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       struct oxr_space *space,
-                       struct oxr_space *baseSpc,
-                       XrTime time,
-                       struct xrt_space_relation *out_relation)
-{
-	m_space_relation_ident(out_relation);
-
-	if (space->type == baseSpc->type) {
-		// m_space_relation_ident() already set this to identity.
-	} else if (space->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_view_ref_relation(log, sess, baseSpc, time, out_relation);
-	} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		oxr_view_ref_relation(log, sess, space, time, out_relation);
-		//! @todo invert complete relation
-		math_pose_invert(&out_relation->pose, &out_relation->pose);
-	} else if (space->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
-		oxr_stage_ref_relation(log, sess, baseSpc, time, out_relation);
-	} else if (space->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		oxr_local_ref_relation(log, sess, baseSpc, time, out_relation);
-	} else {
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-
-	return XR_SUCCESS;
-}
-
-static void
-remove_angular_and_linear_stuff(struct xrt_space_relation *out_relation)
-{
-	const enum xrt_space_relation_flags flags =
-	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
-
-	out_relation->relation_flags &= ~flags;
-	out_relation->linear_velocity = (struct xrt_vec3){0, 0, 0};
-	out_relation->angular_velocity = (struct xrt_vec3){0, 0, 0};
-}
-
-/*!
- * This returns only the relation between two space without the app given offset pose for baseSpc applied,
- * assumes that only one is a action space.
- */
-static XrResult
-oxr_space_action_relation(struct oxr_logger *log,
-                          struct oxr_session *sess,
-                          struct oxr_space *spc,
-                          struct oxr_space *baseSpc,
-                          XrTime at_time,
-                          struct xrt_space_relation *out_relation)
-{
-	struct oxr_action_input *input = NULL;
-	struct oxr_space *act_spc, *ref_spc = NULL;
-	bool invert = false;
-
-	// Find the action space
-	if (baseSpc->is_reference) {
-		// Note spc, is assumed to be the action space.
-		act_spc = spc;
-		ref_spc = baseSpc;
-	}
-
-	// Find the action space.
-	if (spc->is_reference) {
-		// Note baseSpc, is assumed to be the action space.
-		act_spc = baseSpc;
-		ref_spc = spc;
-		invert = true;
-	}
-
-	// Internal error check.
-	if (act_spc == NULL || act_spc->is_reference || ref_spc == NULL || !ref_spc->is_reference) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "This is bad!");
-	}
-
-	// Reset so no relation is returned.
-	m_space_relation_ident(out_relation);
-
-	//! @todo Can not relate to the view space right now.
-	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-		//! @todo Error code?
-		OXR_WARN_ONCE(log, "relating to view space unsupported");
-		return XR_SUCCESS;
-	}
-
-	oxr_action_get_pose_input(log, sess, act_spc->act_key, &act_spc->subaction_paths, &input);
-
-	// If the input isn't active.
-	if (input == NULL) {
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
-
-	oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev, input->input->name, at_time, out_relation);
-
-	if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-		global_to_local_space(sess, out_relation);
-	}
-
-	if (invert) {
-		math_pose_invert(&out_relation->pose, &out_relation->pose);
-		// Remove this since we can't (for now) invert the derivatives.
-		remove_angular_and_linear_stuff(out_relation);
-	}
-
-	return XR_SUCCESS;
 }
 
 /*!
@@ -374,26 +332,19 @@ get_pure_space_relation(struct oxr_logger *log,
                         XrTime time,
                         struct xrt_space_relation *out_relation)
 {
-	struct oxr_session *sess = spc->sess;
+	struct xrt_space_relation space_pure_relation;
+	struct xrt_device *space_xdev;
+	oxr_space_get_pure_relation(log, spc, time, &space_pure_relation, &space_xdev);
 
-	if (spc->is_reference && baseSpc->is_reference) {
-		return oxr_space_ref_relation(log, sess, spc, baseSpc, time, out_relation);
-	}
-	/// @todo Deal with action to action by keeping a true_space that we can always go via. (poor mans space graph)
-	if (!spc->is_reference && !baseSpc->is_reference) {
-		// WARNING order not thought through here!
-		// struct xrt_pose pose1;
-		// struct xrt_pose pose2;
-		// get_pure_space_relation(log, session->true_space, baseSpc,
-		//                         time, &pose1);
-		// get_pure_space_relation(log, space, session->true_space,
-		//                         time, &pose2);
-		// math_pose_relate_2(&pose1, &pose2, out_pose);
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return XR_SUCCESS;
-	}
+	struct xrt_space_relation base_space_pure_relation;
+	struct xrt_device *base_space_xdev;
+	oxr_space_get_pure_relation(log, baseSpc, time, &base_space_pure_relation, &base_space_xdev);
 
-	oxr_space_action_relation(log, sess, spc, baseSpc, time, out_relation);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &space_pure_relation);
+	m_relation_chain_push_inverted_relation(&xrc, &base_space_pure_relation);
+	m_relation_chain_resolve(&xrc, out_relation);
+
 	return XR_SUCCESS;
 }
 
@@ -468,8 +419,6 @@ oxr_space_locate(
 	print_space("baseSpace", baseSpc);
 
 	// Get the pure space relation.
-	//! @todo for longer paths in "space graph" than one edge, this will be
-	//! a loop.
 	struct xrt_space_relation pure;
 	XrResult ret = get_pure_space_relation(log, spc, baseSpc, time, &pure);
 	if (ret != XR_SUCCESS) {

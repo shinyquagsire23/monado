@@ -708,35 +708,77 @@ oxr_space_reference_create(struct oxr_logger *log,
                            const XrReferenceSpaceCreateInfo *createInfo,
                            struct oxr_space **out_space);
 
+/*!
+ * Transforms a relation given in pure global space into the oxr_space @p spc.
+ * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
+ */
+bool
+oxr_space_pure_relation_in_space(struct oxr_logger *log,
+                                 XrTime time,
+                                 struct xrt_space_relation *relation,
+                                 struct oxr_space *spc,
+                                 bool apply_space_pose,
+                                 struct xrt_space_relation *out_relation);
+
+/*!
+ * Transforms a pose given in pure global space into a relation in the oxr_space @p spc.
+ * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
+ */
+bool
+oxr_space_pure_pose_in_space(struct oxr_logger *log,
+                             XrTime time,
+                             struct xrt_pose *pose,
+                             struct oxr_space *spc,
+                             bool apply_space_pose,
+                             struct xrt_space_relation *out_relation);
+
+/*!
+ * Transforms a relation in an given oxr_space @p spc into pure global space, taking the pose offset of @p spc into
+ * account.
+ */
+bool
+oxr_space_pure_relation_from_space(struct oxr_logger *log,
+                                   XrTime time,
+                                   struct xrt_space_relation *relation,
+                                   struct oxr_space *spc,
+                                   struct xrt_space_relation *out_relation);
+
+/*!
+ * Transforms a posen in a given oxr_space @p spc into a relation in "pure" global space, taking the pose offset of @p
+ * spc into account.
+ */
+bool
+oxr_space_pure_pose_from_space(struct oxr_logger *log,
+                               XrTime time,
+                               struct xrt_pose *pose,
+                               struct oxr_space *spc,
+                               struct xrt_space_relation *out_relation);
+
+/*!
+ * Returns the pure relation in global space of an oxr_space, meaning the tracking_origin offsets are already applied
+ * and sets @p out_xdev to the device the space is associated with.
+ *
+ * @todo: This function currently assumes all reference spaces are associated with the HMD.
+ */
+bool
+oxr_space_get_pure_relation(struct oxr_logger *log,
+                            struct oxr_space *spc,
+                            XrTime time,
+                            struct xrt_space_relation *out_relation,
+                            struct xrt_device **out_xdev);
+
 XrResult
 oxr_space_locate(
     struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location);
 
-XrResult
-oxr_space_ref_relation(struct oxr_logger *log,
-                       struct oxr_session *sess,
-                       struct oxr_space *space,
-                       struct oxr_space *baseSpc,
-                       XrTime time,
-                       struct xrt_space_relation *out_relation);
-
-XrResult
-oxr_view_relation_ref_relation(struct oxr_logger *log,
-                               struct oxr_session *sess,
-                               struct xrt_space_relation *view_relation,
-                               struct xrt_device *view_xdev,
-                               struct oxr_space *baseSpc,
-                               XrTime time,
-                               struct xrt_space_relation *out_relation);
-
 bool
-initial_head_relation_valid(struct oxr_session *sess);
+is_local_space_set_up(struct oxr_session *sess);
 
 XrSpaceLocationFlags
 xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags);
 
 bool
-global_to_local_space(struct oxr_session *sess, struct xrt_space_relation *rel);
+global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel);
 
 /*
  *
@@ -1376,7 +1418,7 @@ struct oxr_session
 
 	/*! initial relation of head in "global" space.
 	 * Used as reference for local space.  */
-	struct xrt_space_relation initial_head_relation;
+	struct xrt_space_relation local_space_pure_relation;
 };
 
 /*!

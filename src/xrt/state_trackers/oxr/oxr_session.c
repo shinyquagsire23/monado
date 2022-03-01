@@ -399,16 +399,18 @@ oxr_session_locate_views(struct oxr_logger *log,
 	    fovs,                  //
 	    poses);
 
-	// head_relation is in xdev space. Bring it into global space by applying tracking origin offset.
+
+	struct xrt_space_relation pure_head_relation;
+
+	// head_relation is in xdev space. Bring it into pure global space by applying tracking origin offset.
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, &head_relation);
 	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &head_relation);
+	m_relation_chain_resolve(&xrc, &pure_head_relation);
 
-	// transform head_relation into base_space
-	struct xrt_space_relation base_spc_head_relation;
-	oxr_view_relation_ref_relation(log, sess, &head_relation, xdev, baseSpc, viewLocateInfo->displayTime,
-	                               &base_spc_head_relation);
+	struct xrt_space_relation head_relation_in_base_space;
+	oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
+	                                 &head_relation_in_base_space);
 
 	// Clear here and filled in loop.
 	viewState->viewStateFlags = 0;
@@ -424,8 +426,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 		struct xrt_space_relation result = {0};
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
-		m_relation_chain_push_relation(&xrc, &base_spc_head_relation);
-		m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &baseSpc->pose);
+		m_relation_chain_push_relation(&xrc, &head_relation_in_base_space);
 		m_relation_chain_resolve(&xrc, &result);
 		union {
 			struct xrt_pose xrt;
@@ -865,12 +866,20 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	struct xrt_device *xdev = hand_tracker->xdev;
 	enum xrt_input_name name = hand_tracker->input_name;
 
-	struct xrt_pose *tracking_origin_offset = &xdev->tracking_origin->offset;
-
 	XrTime at_time = locateInfo->time;
 	struct xrt_hand_joint_set value;
 
 	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time, &value);
+
+	struct xrt_space_relation pure_hand_relation = value.hand_pose;
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &pure_hand_relation);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
+	m_relation_chain_resolve(&xrc, &pure_hand_relation);
+
+	struct xrt_space_relation hand_pose_in_base_space;
+	oxr_space_pure_relation_in_space(log, at_time, &pure_hand_relation, baseSpc, true, &hand_pose_in_base_space);
+
 
 	for (uint32_t i = 0; i < locations->jointCount; i++) {
 		locations->jointLocations[i].locationFlags =
@@ -882,71 +891,8 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		struct xrt_space_relation result;
 		struct xrt_relation_chain chain = {0};
 		m_relation_chain_push_relation(&chain, &r);
-
-
-		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_STAGE) {
-
-			m_relation_chain_push_relation(&chain, &value.hand_pose);
-			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
-
-		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-
-			// for local space, first do stage space and transform
-			// result to local @todo: improve local space
-			m_relation_chain_push_relation(&chain, &value.hand_pose);
-			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
-
-		} else if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
-			/*! @todo: testing, relating to view space unsupported
-			 * in other parts of monado */
-
-			struct xrt_device *view_xdev = NULL;
-
-			struct xrt_space_relation view_relation;
-			oxr_session_get_view_relation_at(log, sess, at_time, &view_relation, &view_xdev);
-
-			m_relation_chain_push_relation(&chain, &value.hand_pose);
-			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
-
-			m_relation_chain_push_inverted_relation(&chain, &view_relation);
-			m_relation_chain_push_inverted_pose_if_not_identity(&chain,
-			                                                    &view_xdev->tracking_origin->offset);
-
-		} else if (!baseSpc->is_reference) {
-			// action space
-
-			struct oxr_action_input *input = NULL;
-			oxr_action_get_pose_input(log, sess, baseSpc->act_key, &baseSpc->subaction_paths, &input);
-
-			// If the input isn't active.
-			if (input == NULL) {
-				locations->isActive = false;
-				return XR_SUCCESS;
-			}
-
-			struct xrt_space_relation act_space_relation;
-
-			oxr_xdev_get_space_relation(log, sess->sys->inst, input->xdev, input->input->name, at_time,
-			                            &act_space_relation);
-
-
-			m_relation_chain_push_relation(&chain, &value.hand_pose);
-			m_relation_chain_push_pose_if_not_identity(&chain, tracking_origin_offset);
-
-			m_relation_chain_push_inverted_relation(&chain, &act_space_relation);
-			m_relation_chain_push_inverted_pose_if_not_identity(&chain,
-			                                                    &input->xdev->tracking_origin->offset);
-		}
-
-		m_relation_chain_push_inverted_pose_if_not_identity(&chain, &baseSpc->pose);
+		m_relation_chain_push_relation(&chain, &hand_pose_in_base_space);
 		m_relation_chain_resolve(&chain, &result);
-
-		if (baseSpc->type == XR_REFERENCE_SPACE_TYPE_LOCAL) {
-			if (!global_to_local_space(sess, &result)) {
-				locations->isActive = false;
-				return XR_SUCCESS;
-			}
-		}
 
 		xrt_to_xr_pose(&result.pose, &locations->jointLocations[i].pose);
 
