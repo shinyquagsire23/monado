@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 #include "util/u_trace_marker.h"
 
 #include "util/comp_base.h"
+#include "util/comp_semaphore.h"
 
 
 /*
@@ -74,6 +75,16 @@ base_import_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t handle, 
 	struct comp_base *cb = comp_base(xc);
 
 	return comp_fence_import(&cb->vk, handle, out_xcf);
+}
+
+static xrt_result_t
+base_create_semaphore(struct xrt_compositor *xc,
+                      xrt_graphics_sync_handle_t *out_handle,
+                      struct xrt_compositor_semaphore **out_xcsem)
+{
+	struct comp_base *cb = comp_base(xc);
+
+	return comp_semaphore_create(&cb->vk, out_handle, out_xcsem);
 }
 
 static xrt_result_t
@@ -234,6 +245,7 @@ comp_base_init(struct comp_base *cb)
 {
 	cb->base.base.create_swapchain = base_create_swapchain;
 	cb->base.base.import_swapchain = base_import_swapchain;
+	cb->base.base.create_semaphore = base_create_semaphore;
 	cb->base.base.import_fence = base_import_fence;
 	cb->base.base.layer_begin = base_layer_begin;
 	cb->base.base.layer_stereo_projection = base_layer_stereo_projection;

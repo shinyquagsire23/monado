@@ -67,6 +67,8 @@ if(XRT_HAVE_VULKAN)
 		comp_util STATIC
 		util/comp_base.h
 		util/comp_base.c
+		util/comp_semaphore.h
+		util/comp_semaphore.c
 		util/comp_swapchain.h
 		util/comp_swapchain.c
 		util/comp_sync.h
