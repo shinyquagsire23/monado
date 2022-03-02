@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -63,7 +63,7 @@ fence_wait(struct xrt_compositor_fence *xcf, uint64_t timeout)
 
 	VkResult ret = vk->vkWaitForFences(vk->device, 1, &f->fence, VK_TRUE, timeout);
 	if (ret == VK_TIMEOUT) {
-		return XRT_SUCCESS;
+		return XRT_TIMEOUT;
 	}
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
