@@ -99,6 +99,54 @@ os_mutex_destroy(struct os_mutex *om)
 
 /*
  *
+ * Conditional variable.
+ *
+ */
+struct os_cond
+{
+	pthread_cond_t cond;
+};
+
+/*!
+ * Init.
+ */
+static inline int
+os_cond_init(struct os_cond *oc)
+{
+	return pthread_cond_init(&oc->cond, NULL);
+}
+
+/*!
+ * Signal.
+ */
+static inline void
+os_cond_signal(struct os_cond *oc)
+{
+	pthread_cond_signal(&oc->cond);
+}
+
+/*!
+ * Wait.
+ */
+static inline void
+os_cond_wait(struct os_cond *oc, struct os_mutex *om)
+{
+	pthread_cond_wait(&oc->cond, &om->mutex);
+}
+
+/*!
+ * Clean up.
+ */
+static inline void
+os_cond_destroy(struct os_cond *oc)
+{
+	pthread_cond_destroy(&oc->cond);
+}
+
+
+
+/*
+ *
  * Thread.
  *
  */
