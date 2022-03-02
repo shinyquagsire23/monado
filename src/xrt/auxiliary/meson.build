@@ -87,6 +87,10 @@ lib_aux_util = static_library(
 		'util/u_verify.h',
 		'util/u_process.c',
 		'util/u_process.h',
+		'util/u_worker.c',
+		'util/u_worker.cpp',
+		'util/u_worker.h',
+		'util/u_worker.hpp',
 	) + [
 		u_git_tag_c,
 	],
