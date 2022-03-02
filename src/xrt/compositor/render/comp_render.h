@@ -121,7 +121,7 @@ struct comp_buffer
 	//! Buffer.
 	VkBuffer buffer;
 
-	//! Size of the buffer.
+	//! Size requested for the buffer.
 	VkDeviceSize size;
 
 	//! Size of the memory allocation.

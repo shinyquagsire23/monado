@@ -125,14 +125,21 @@ comp_buffer_init(struct vk_bundle *vk,
                  VkMemoryPropertyFlags memory_property_flags,
                  VkDeviceSize size)
 {
-	return create_buffer(vk,                        //
-	                     usage_flags,               // usage_flags
-	                     memory_property_flags,     // memory_property_flags
-	                     size,                      // size
-	                     &buffer->buffer,           // out_buffer
-	                     &buffer->memory,           // out_memory
-	                     &buffer->alignment,        // out_alignment
-	                     &buffer->allocation_size); // out_allocation_size
+	VkResult ret;
+
+	ret = create_buffer(vk,                        //
+	                    usage_flags,               // usage_flags
+	                    memory_property_flags,     // memory_property_flags
+	                    size,                      // size
+	                    &buffer->buffer,           // out_buffer
+	                    &buffer->memory,           // out_memory
+	                    &buffer->alignment,        // out_alignment
+	                    &buffer->allocation_size); // out_allocation_size
+	if (ret == VK_SUCCESS) {
+		buffer->size = size;
+	}
+
+	return ret;
 }
 
 void
