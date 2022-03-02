@@ -445,8 +445,25 @@ static void
 wait_fence(struct xrt_compositor_fence **xcf_ptr)
 {
 	COMP_TRACE_MARKER();
-	xrt_compositor_fence_wait(*xcf_ptr, UINT64_MAX);
+	xrt_result_t ret = XRT_SUCCESS;
+
+	// 100ms
+	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
+
+	do {
+		ret = xrt_compositor_fence_wait(*xcf_ptr, timeout_ns);
+		if (ret != XRT_TIMEOUT) {
+			break;
+		}
+
+		U_LOG_W("Waiting on client fence timed out > 100ms!");
+	} while (true);
+
 	xrt_compositor_fence_destroy(xcf_ptr);
+
+	if (ret != XRT_SUCCESS) {
+		U_LOG_E("Fence waiting failed!");
+	}
 }
 
 static void
