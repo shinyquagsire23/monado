@@ -253,7 +253,9 @@ oxr_space_pure_relation_from_space(struct oxr_logger *log,
 {
 	struct xrt_space_relation pure_space_relation;
 	struct xrt_device *xdev;
-	oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev);
+	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev)) {
+		return false;
+	}
 
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, &pure_space_relation);

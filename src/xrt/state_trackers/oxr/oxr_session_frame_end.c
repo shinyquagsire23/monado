@@ -805,7 +805,9 @@ handle_space(struct oxr_logger *log,
 	}
 
 	struct xrt_space_relation rel;
-	oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel);
+	if (!oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel)) {
+		return false;
+	}
 	*out_pose = rel.pose;
 
 	return true;
