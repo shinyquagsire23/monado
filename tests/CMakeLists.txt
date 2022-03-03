@@ -22,6 +22,7 @@ foreach(
 	tests_pacing
 	tests_quatexpmap
 	tests_rational
+	tests_worker
 	)
 
 	add_executable(${testname} ${testname}.cpp)
