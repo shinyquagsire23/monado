@@ -145,7 +145,7 @@ struct xrt_imu_sample
 /*!
  * @interface xrt_imu_sink
  *
- * An object that is sent IMU samples.
+ * An object to send IMU samples to.
  *
  * Similar to @ref xrt_frame_sink but the interface implementation must manage
  * its own resources, not through a context graph.
@@ -158,6 +158,16 @@ struct xrt_imu_sink
 	 * Push an IMU sample into the sink
 	 */
 	void (*push_imu)(struct xrt_imu_sink *, struct xrt_imu_sample *sample);
+};
+
+/*!
+ * @interface xrt_pose_sink
+ *
+ * An object to send pairs of timestamps and poses to. @see xrt_imu_sink.
+ */
+struct xrt_pose_sink
+{
+	void (*push_pose)(struct xrt_pose_sink *, timepoint_ns ts, struct xrt_pose *pose);
 };
 
 /*!
@@ -305,6 +315,13 @@ static inline void
 xrt_sink_push_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 {
 	sink->push_imu(sink, sample);
+}
+
+//! @public @memberof xrt_pose_sink
+static inline void
+xrt_sink_push_pose(struct xrt_pose_sink *sink, timepoint_ns ts, struct xrt_pose *pose)
+{
+	sink->push_pose(sink, ts, pose);
 }
 
 //! @public @memberof xrt_tracked_psmv
