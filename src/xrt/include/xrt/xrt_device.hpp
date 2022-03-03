@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,25 +10,14 @@
 #pragma once
 
 #include "xrt_device.h"
+#include "xrt_deleters.hpp"
 
 #include <memory>
 
 namespace xrt {
 
-namespace deleters {
-	//! Deleter type for xrt_device
-	struct xrt_device_deleter
-	{
-		void
-		operator()(xrt_device *dev) const noexcept
-		{
-			xrt_device_destroy(&dev);
-		}
-	};
-
-} // namespace deleters
 
 //! Unique-ownership smart pointer for a @ref xrt_device implementation.
-using unique_xrt_device = std::unique_ptr<xrt_device, deleters::xrt_device_deleter>;
+using unique_xrt_device = std::unique_ptr<xrt_device, deleters::ptr_ptr_deleter<xrt_device, xrt_device_destroy>>;
 
 } // namespace xrt
