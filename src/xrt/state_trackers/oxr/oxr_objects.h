@@ -645,17 +645,6 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess);
 void
 oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess);
 
-/*!
- * Get the view space relation at the given time in relation to the
- * local or stage space.
- */
-XrResult
-oxr_session_get_view_relation_at(struct oxr_logger *,
-                                 struct oxr_session *sess,
-                                 XrTime at_time,
-                                 struct xrt_space_relation *out_relation,
-                                 struct xrt_device **out_xdev);
-
 XrResult
 oxr_session_locate_views(struct oxr_logger *log,
                          struct oxr_session *sess,

@@ -262,39 +262,6 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 	}
 }
 
-/**
- * Gets the view relation in global space. Even though @p out_xdev is returned, the tracking origin offset is already
- * applied.
- */
-XrResult
-oxr_session_get_view_relation_at(struct oxr_logger *log,
-                                 struct oxr_session *sess,
-                                 XrTime at_time,
-                                 struct xrt_space_relation *out_relation,
-                                 struct xrt_device **out_xdev)
-{
-	/// @todo This function needs to be massively expanded to support all
-	///       use cases this drive. The main use of this function is to get
-	///       either the predicted position of the headset device. Right now
-	///       it only returns the current position. But it must also deal
-	///       with past values are allowed by the spec. See displayTime
-	///       argument on the xrLocateViews function. It will also drive
-	///       the function xrLocateSpace view using the view space.
-	/// @todo If using orientation tracking only implement a neck model to
-	///       get at least a slightly better position.
-
-	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
-
-	// Applies the offset in the function.
-	struct xrt_relation_chain xrc = {0};
-	oxr_xdev_get_relation_chain(log, sess->sys->inst, xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_time, &xrc);
-	m_relation_chain_resolve(&xrc, out_relation);
-
-	*out_xdev = xdev;
-
-	return oxr_session_success_result(sess);
-}
-
 void
 print_view_fov(struct oxr_session *sess, uint32_t index, const struct xrt_fov *fov)
 {
