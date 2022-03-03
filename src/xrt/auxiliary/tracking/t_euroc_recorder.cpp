@@ -47,6 +47,12 @@ struct euroc_recorder
 	struct xrt_frame_sink writer_right_sink;
 
 	queue<xrt_imu_sample> imu_queue{}; //!< IMU pushes get saved here and are delayed until left_frame pushes
+
+	// CSV file handles, ofstream implementation is already buffered.
+	// Using pointers because of `container_of`
+	ofstream *imu_csv;
+	ofstream *left_cam_csv;
+	ofstream *right_cam_csv;
 };
 
 
@@ -68,17 +74,34 @@ euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 	string path = er->path;
 
 	create_directories(path + "/mav0/imu0");
-	ofstream imu_csv{path + "/mav0/imu0/data.csv"};
-	imu_csv << "#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],"
-	           "a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\r\n";
+	er->imu_csv = new ofstream{path + "/mav0/imu0/data.csv"};
+	*er->imu_csv << std::fixed << std::setprecision(CSV_PRECISION);
+	*er->imu_csv << "#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],"
+	                "a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]" CSV_EOL;
 
 	create_directories(path + "/mav0/cam0/data");
-	ofstream left_cam_csv{path + "/mav0/cam0/data.csv"};
-	left_cam_csv << "#timestamp [ns],filename\r\n";
+	er->left_cam_csv = new ofstream{path + "/mav0/cam0/data.csv"};
+	*er->left_cam_csv << "#timestamp [ns],filename" CSV_EOL;
 
 	create_directories(path + "/mav0/cam1/data");
-	ofstream right_cam_csv{path + "/mav0/cam1/data.csv"};
-	right_cam_csv << "#timestamp [ns],filename\r\n";
+	er->right_cam_csv = new ofstream{path + "/mav0/cam1/data.csv"};
+	*er->right_cam_csv << "#timestamp [ns],filename" CSV_EOL;
+}
+
+static void
+euroc_recorder_flush(struct euroc_recorder *er)
+{
+	// Write queued IMU samples to csv stream.
+	while (!er->imu_queue.empty()) {
+		xrt_imu_sample imu = er->imu_queue.front();
+		xrt_sink_push_imu(&er->writer_imu_sink, &imu);
+		er->imu_queue.pop();
+	}
+
+	// Flush csv streams. Not necessary, just doing it to increase flush frequency
+	er->imu_csv->flush();
+	er->left_cam_csv->flush();
+	er->right_cam_csv->flush();
 }
 
 extern "C" void
@@ -91,12 +114,9 @@ euroc_recorder_save_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 	xrt_vec3_f64 a = sample->accel_m_s2;
 	xrt_vec3_f64 w = sample->gyro_rad_secs;
 
-	std::ofstream imu_csv{string(er->path) + "/mav0/imu0/data.csv", std::ios::app};
-	imu_csv.setf(std::ios::fixed);
-	imu_csv << std::setprecision(20);
-	imu_csv << ts << ",";
-	imu_csv << w.x << "," << w.y << "," << w.z << ",";
-	imu_csv << a.x << "," << a.y << "," << a.z << "\r\n";
+	*er->imu_csv << ts << ",";
+	*er->imu_csv << w.x << "," << w.y << "," << w.z << ",";
+	*er->imu_csv << a.x << "," << a.y << "," << a.z << CSV_EOL;
 }
 
 static void
@@ -104,16 +124,15 @@ euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_l
 {
 	euroc_recorder_try_mkfiles(er);
 
-	string path = string(er->path);
 	string cam_name = is_left ? "cam0" : "cam1";
 	uint64_t ts = frame->timestamp;
 
-	ofstream cam_csv{path + "/mav0/" + cam_name + "/data.csv", std::ios::app};
-	cam_csv << ts << "," << ts << ".png\r\n";
+	ofstream *cam_csv = is_left ? er->left_cam_csv : er->right_cam_csv;
+	*cam_csv << ts << "," << ts << ".png" CSV_EOL;
 
 	assert(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8); // Only formats supported
 	auto img_type = frame->format == XRT_FORMAT_L8 ? CV_8UC1 : CV_8UC3;
-	string img_path = path + "/mav0/" + cam_name + "/data/" + std::to_string(ts) + ".png";
+	string img_path = er->path + "/mav0/" + cam_name + "/data/" + std::to_string(ts) + ".png";
 	cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data, frame->stride};
 	cv::imwrite(img_path, img);
 }
@@ -124,12 +143,7 @@ euroc_recorder_save_left(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 	euroc_recorder *er = container_of(sink, euroc_recorder, writer_left_sink);
 	euroc_recorder_save_frame(er, frame, true);
 
-	// Also, write queued IMU samples to disk now.
-	while (!er->imu_queue.empty()) {
-		xrt_imu_sample imu = er->imu_queue.front();
-		xrt_sink_push_imu(&er->writer_imu_sink, &imu);
-		er->imu_queue.pop();
-	}
+	euroc_recorder_flush(er);
 }
 
 extern "C" void
@@ -198,6 +212,9 @@ extern "C" void
 euroc_recorder_node_destroy(struct xrt_frame_node *node)
 {
 	struct euroc_recorder *er = container_of(node, struct euroc_recorder, node);
+	delete er->imu_csv;
+	delete er->left_cam_csv;
+	delete er->right_cam_csv;
 	delete er;
 }
 

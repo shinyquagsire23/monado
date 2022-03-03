@@ -12,6 +12,9 @@
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frame.h"
 
+#define CSV_EOL "\r\n"
+#define CSV_PRECISION 10
+
 #ifdef __cplusplus
 extern "C" {
 #endif
