@@ -27,7 +27,7 @@ namespace xrt::auxiliary::tracking::slam {
 
 // For implementation: same as IMPLEMENTATION_VERSION_*
 // For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
-constexpr int HEADER_VERSION_MAJOR = 1; //!< API Breakages
+constexpr int HEADER_VERSION_MAJOR = 2; //!< API Breakages
 constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
 constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
 
@@ -36,6 +36,8 @@ extern const int IMPLEMENTATION_VERSION_MAJOR;
 extern const int IMPLEMENTATION_VERSION_MINOR;
 extern const int IMPLEMENTATION_VERSION_PATCH;
 
+enum class pose_ext_type : int;
+
 /*!
  * @brief Standard pose type to communicate Monado with the external SLAM system
  */
@@ -43,6 +45,8 @@ struct pose {
   std::int64_t timestamp;   //!< In same clock as input samples
   float px, py, pz;         //!< Position vector
   float rx, ry, rz, rw = 1; //!< Orientation quaternion
+  std::shared_ptr<struct pose_extension> next = nullptr;
+
   pose() = default;
   pose(std::int64_t timestamp,       //
        float px, float py, float pz, //
@@ -50,6 +54,9 @@ struct pose {
       : timestamp(timestamp),   //
         px(px), py(py), pz(pz), //
         rx(rx), ry(ry), rz(rz), rw(rw) {}
+
+  std::shared_ptr<pose_extension>
+  find_pose_extension(pose_ext_type required_type) const;
 };
 
 /*!
@@ -238,5 +245,52 @@ DEFINE_FEATURE(ADD_CAMERA_CALIBRATION, ACC, 1, cam_calibration, void)
  * calibration data that might come from the system-specific config file.
  */
 DEFINE_FEATURE(ADD_IMU_CALIBRATION, AIC, 2, imu_calibration, void)
+
+/*!
+ * Feature ENABLE_POSE_EXT_TIMING
+ *
+ * Use it after constructor but before `start()`.
+ * Returns a vector with names for the timestamps in `pose_ext_timing`.
+ */
+DEFINE_FEATURE(ENABLE_POSE_EXT_TIMING, EPET, 3, void, std::vector<std::string>)
+
+/*
+ * Pose extensions
+ *
+ * A pose extension is a struct that gets linked in the `pose.next` field. You
+ * first ask if the implementation supports enabling such extension with a
+ * `supports_feature()` call with the appropriate `ENABLE_POSE_EXT_*`. Then, it
+ * can be enabled with the corresponding `use_feature()` call.
+ *
+ */
+
+enum class pose_ext_type : int {
+  UNDEFINED = 0,
+  TIMING = 1,
+};
+
+struct pose_extension {
+  pose_ext_type type = pose_ext_type::UNDEFINED;
+  std::shared_ptr<pose_extension> next = nullptr;
+
+  pose_extension(pose_ext_type type) : type(type) {}
+};
+
+inline std::shared_ptr<pose_extension>
+pose::find_pose_extension(pose_ext_type required_type) const {
+  std::shared_ptr<pose_extension> pe = next;
+  while (pe != nullptr && pe->type != required_type) {
+    pe = pe->next;
+  }
+  return pe;
+}
+
+struct pose_ext_timing : pose_extension {
+  //! Internal pipeline timestamps of interest when generating the pose. In
+  //! steady clock ns. Must have the same number of elements in the same run.
+  std::vector<std::int64_t> timestamps{};
+
+  pose_ext_timing() : pose_extension{pose_ext_type::TIMING} {}
+};
 
 } // namespace xrt::auxiliary::tracking::slam
