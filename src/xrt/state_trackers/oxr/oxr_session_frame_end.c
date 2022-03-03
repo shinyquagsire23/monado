@@ -804,10 +804,32 @@ handle_space(struct oxr_logger *log,
 		math_quat_normalize(&pose.orientation);
 	}
 
+	/*
+	 * poses in view space are already in the space the compositor expects
+	 */
+	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+		struct xrt_space_relation rel;
+		struct xrt_relation_chain xrc = {0};
+		m_relation_chain_push_pose(&xrc, &pose);
+		m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose);
+		m_relation_chain_resolve(&xrc, &rel);
+		*out_pose = rel.pose;
+		return true;
+	}
+
 	struct xrt_space_relation rel;
 	if (!oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel)) {
 		return false;
 	}
+
+
+	// The compositor doesn't know about tracking origins, transform into the "raw" HMD tracking space.
+	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &rel);
+	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &head_xdev->tracking_origin->offset);
+	m_relation_chain_resolve(&xrc, &rel);
+
 	*out_pose = rel.pose;
 
 	return true;
