@@ -25,6 +25,8 @@
 #include <future>
 #include <thread>
 
+DEBUG_GET_ONCE_OPTION(euroc_gt_device_name, "EUROC_GT_DEVICE_NAME", NULL)
+
 #define EUROC_PLAYER_STR "Euroc Player"
 #define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
 
@@ -37,8 +39,11 @@ using std::string;
 using std::vector;
 
 using img_sample = pair<timepoint_ns, string>;
+using gt_entry = pair<timepoint_ns, xrt_pose>;
+
 using imu_samples = vector<xrt_imu_sample>;
 using img_samples = vector<img_sample>;
+using gt_trajectory = vector<gt_entry>;
 
 enum euroc_player_ui_state
 {
@@ -78,6 +83,7 @@ struct euroc_player
 		char path[256];
 		bool is_stereo;
 		bool is_colored;
+		bool has_gt; //!< Whether this dataset has groundtruth data available
 		uint32_t width;
 		uint32_t height;
 	} dataset;
@@ -90,6 +96,7 @@ struct euroc_player
 	imu_samples *imus;       //!< List of all IMU samples read from the dataset
 	img_samples *left_imgs;  //!< List of all image names to read from the dataset
 	img_samples *right_imgs; //!< List of all image names to read from the dataset
+	gt_trajectory *gt;       //!< List of all groundtruth poses read from the dataset
 
 	// Timestamp correction fields (can be disabled through `use_source_ts`)
 	timepoint_ns base_ts;   //!< First imu0 timestamp, samples timestamps are relative to this
@@ -176,6 +183,59 @@ euroc_player_preload_imu_data(struct euroc_player *ep,
 	return true;
 }
 
+//! Parse and load ground truth trajectory into `trajectory`.
+//! If read_n > 0, read at most that amount of samples
+//! Returns whether the appropriate data.csv file could be opened
+//! @note Groundtruth data can come from different devices so we use the first of:
+//! 1. vicon0: found in euroc "vicon room" datasets
+//! 2. mocap0: found in TUM-VI datasets with euroc format
+//! 3. state_groundtruth_estimate0: found in euroc as a postprocessed ground truth (we only use first 7 columns)
+//! 4. leica0: found in euroc "machine hall" datasets, only positional ground truth
+//! You can also add your own gt device name with the EUROC_GT_DEVICE_NAME environment variable.
+static bool
+euroc_player_preload_gt_data(const string &dataset_path, gt_trajectory *trajectory, int64_t read_n = -1)
+{
+	vector<string> gt_devices = {"vicon0", "mocap0", "state_groundtruth_estimate0", "leica0"};
+	const char *user_gtdev = debug_get_option_euroc_gt_device_name();
+	if (user_gtdev) {
+		gt_devices.insert(gt_devices.begin(), user_gtdev);
+	}
+
+	ifstream fin;
+	for (const string &device : gt_devices) {
+		string csv_filename = dataset_path + "/mav0/" + device + "/data.csv";
+		fin = ifstream{csv_filename};
+		if (fin.is_open()) {
+			break;
+		}
+	}
+
+	if (!fin.is_open()) {
+		return false;
+	}
+
+	constexpr int COLUMN_COUNT = 7; // EuRoC groundtruth columns: ts px py pz qw qx qy qz
+	string line;
+	getline(fin, line); // Skip header line
+
+	while (getline(fin, line) && read_n-- != 0) {
+		timepoint_ns timestamp;
+		float v[COLUMN_COUNT] = {0, 0, 0, 1, 0, 0, 0}; // Set identity orientation for leica0
+		size_t i = 0;
+		size_t j = line.find(',');
+		timestamp = stoll(line.substr(i, j));
+		for (size_t k = 0; k < COLUMN_COUNT && j != string::npos; k++) {
+			i = j;
+			j = line.find(',', i + 1);
+			v[k] = stof(line.substr(i + 1, j));
+		}
+
+		xrt_pose pose = {{v[4], v[5], v[6], v[3]}, {v[0], v[1], v[2]}};
+		trajectory->emplace_back(timestamp, pose);
+	}
+	return true;
+}
+
 //! Parse and load image names and timestamps into `samples`
 //! If read_n > 0, read at most that amount of samples
 //! Returns whether the appropriate data.csv file could be opened
@@ -223,6 +283,11 @@ euroc_player_preload(struct euroc_player *ep)
 		ep->right_imgs->clear();
 		euroc_player_preload_img_data(ep->dataset.path, ep->right_imgs, false);
 	}
+
+	if (ep->dataset.has_gt) {
+		ep->gt->clear();
+		euroc_player_preload_gt_data(ep->dataset.path, ep->gt);
+	}
 }
 
 //! Skips the first seconds of the dataset as specified by the user
@@ -253,16 +318,19 @@ euroc_player_fill_dataset_info(struct euroc_player *ep, const char *path)
 
 	snprintf(ep->dataset.path, sizeof(ep->dataset.path), "%s", path);
 	img_samples samples;
-	imu_samples _;
+	imu_samples _1;
+	gt_trajectory _2;
 	bool has_right_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, false, 0);
 	bool has_left_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, true, 1);
-	bool has_imu = euroc_player_preload_imu_data(NULL, ep->dataset.path, &_, 0);
+	bool has_imu = euroc_player_preload_imu_data(NULL, ep->dataset.path, &_1, 0);
+	bool has_gt = euroc_player_preload_gt_data(ep->dataset.path, &_2, 0);
 	bool is_valid_dataset = has_left_camera && has_imu;
 	EUROC_ASSERT(is_valid_dataset, "Invalid dataset %s", path);
 
 	cv::Mat first_left_img = cv::imread(samples[0].second, cv::IMREAD_ANYCOLOR);
 	ep->dataset.is_stereo = has_right_camera;
 	ep->dataset.is_colored = first_left_img.channels() == 3;
+	ep->dataset.has_gt = has_gt;
 	ep->dataset.width = first_left_img.cols;
 	ep->dataset.height = first_left_img.rows;
 	EUROC_INFO(ep, "dataset information\n\tpath: %s\n\tis_stereo: %d, is_colored: %d, width: %d, height: %d",
@@ -645,6 +713,7 @@ euroc_player_destroy(struct xrt_frame_node *node)
 {
 	struct euroc_player *ep = container_of(node, struct euroc_player, node);
 
+	delete ep->gt;
 	delete ep->imus;
 	delete ep->left_imgs;
 	delete ep->right_imgs;
@@ -775,7 +844,8 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	    XRT_STEREO_FORMAT_NONE,
 	};
 
-	// Using pointers to not mix std::vector with a C-compatible struct
+	// Using pointers to not mix vector with a C-compatible struct
+	ep->gt = new gt_trajectory{};
 	ep->imus = new imu_samples{};
 	ep->left_imgs = new img_samples{};
 	ep->right_imgs = new img_samples{};
