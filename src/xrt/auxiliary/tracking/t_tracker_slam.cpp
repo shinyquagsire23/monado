@@ -25,6 +25,8 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/version.hpp>
 
+#include <fstream>
+#include <iomanip>
 #include <map>
 
 #define SLAM_TRACE(...) U_LOG_IFL_T(t.log_level, __VA_ARGS__)
@@ -61,14 +63,21 @@ DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", NULL)
 //! Whether to submit data to the SLAM tracker without user action
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 
+//! Whether to enable CSV writers from the start for later analysis
+DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
+
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
 constexpr int UI_TIMING_POSE_COUNT = 192;
 constexpr int UI_GTDIFF_POSE_COUNT = 192;
 
+using std::ifstream;
+using std::make_unique;
 using std::map;
+using std::ofstream;
 using std::shared_ptr;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 using Trajectory = map<timepoint_ns, xrt_pose>;
 
@@ -169,6 +178,95 @@ public:
 	}
 };
 
+//! Writes poses and their timestamps to a CSV file
+class TrajectoryWriter
+{
+public:
+	bool enabled; // Modified through UI
+
+private:
+	string filename;
+	ofstream file;
+	bool created = false;
+
+	void
+	create()
+	{
+		file = ofstream{filename};
+		file << "#timestamp [ns], p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], "
+		        "q_RS_w [], q_RS_x [], q_RS_y [], q_RS_z []" CSV_EOL;
+		file << std::fixed << std::setprecision(CSV_PRECISION);
+	}
+
+
+public:
+	TrajectoryWriter(const string &fn, bool e) : enabled(e), filename(fn) {}
+
+	void
+	push(timepoint_ns ts, const xrt_pose &pose)
+	{
+		if (!enabled) {
+			return;
+		}
+
+		if (!created) {
+			created = true;
+			create();
+		}
+
+		xrt_vec3 p = pose.position;
+		xrt_quat r = pose.orientation;
+		file << ts << ",";
+		file << p.x << "," << p.y << "," << p.z << ",";
+		file << r.w << "," << r.x << "," << r.y << "," << r.z << CSV_EOL;
+	}
+};
+
+//! Writes timestamps measured when estimating a new pose by the SLAM system
+class TimingWriter
+{
+public:
+	bool enabled; // Modified through UI
+
+private:
+	string filename;
+	vector<string> column_names;
+	ofstream file;
+	bool created = false;
+
+	void
+	create()
+	{
+		file = ofstream{filename};
+		file << "#";
+		for (const string &col : column_names) {
+			string delimiter = &col != &column_names.back() ? "," : CSV_EOL;
+			file << col << delimiter;
+		}
+	}
+
+public:
+	TimingWriter(const string &fn, bool e, const vector<string> &cn) : enabled(e), filename(fn), column_names(cn) {}
+
+	void
+	push(const vector<timepoint_ns> &timestamps)
+	{
+		if (!enabled) {
+			return;
+		}
+
+		if (!created) {
+			created = true;
+			create();
+		}
+
+		for (const timepoint_ns &ts : timestamps) {
+			string delimiter = &ts != &timestamps.back() ? "," : CSV_EOL;
+			file << ts << delimiter;
+		}
+	}
+};
+
 //! SLAM prediction type. Naming scheme as follows:
 //! P: position, O: orientation, A: angular velocity, L: linear velocity
 //! S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
@@ -260,6 +358,12 @@ struct TrackerSlam
 	} filter;
 
 	// Stats and metrics
+
+	// CSV writers for offline analysis (using pointers because of container_of)
+	TimingWriter *slam_times_writer;    //!< Timestamps of the pipeline for performance analysis
+	TrajectoryWriter *slam_traj_writer; //!< Estimated poses from the SLAM system
+	TrajectoryWriter *pred_traj_writer; //!< Predicted poses
+	TrajectoryWriter *filt_traj_writer; //!< Predicted and filtered poses
 
 	//! Tracker timing info for performance evaluation
 	struct
@@ -510,8 +614,10 @@ flush_poses(TrackerSlam &t)
 		t.slam_rels.push(rel, nts);
 
 		gt_ui_push(t, nts, rel.pose);
+		t.slam_traj_writer->push(nts, rel.pose);
 
 		auto tss = timing_ui_push(t, np);
+		t.slam_times_writer->push(tss);
 
 		dequeued = t.slam->try_dequeue_pose(tracked_pose);
 	}
@@ -670,6 +776,10 @@ setup_ui(TrackerSlam &t)
 	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
 
 	u_var_add_gui_header(&t, NULL, "Stats");
+	u_var_add_bool(&t, &t.slam_traj_writer->enabled, "Record tracked trajectory");
+	u_var_add_bool(&t, &t.pred_traj_writer->enabled, "Record predicted trajectory");
+	u_var_add_bool(&t, &t.filt_traj_writer->enabled, "Record filtered trajectory");
+	u_var_add_bool(&t, &t.slam_times_writer->enabled, "Record tracker times");
 	timing_ui_setup(t);
 	// Later, gt_ui_setup will setup the tracking error UI if ground truth becomes available
 }
@@ -696,8 +806,12 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 	}
 
 	flush_poses(t);
+
 	predict_pose(t, when_ns, out_relation);
+	t.pred_traj_writer->push(when_ns, out_relation->pose);
+
 	filter_pose(t, when_ns, out_relation);
+	t.filt_traj_writer->push(when_ns, out_relation->pose);
 
 	t.last_rel = *out_relation;
 	t.last_ts = when_ns;
@@ -812,6 +926,10 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	SLAM_DEBUG("Destroying SLAM tracker");
 	os_thread_helper_destroy(&t_ptr->oth);
 	delete t.gt.trajectory;
+	delete t.slam_times_writer;
+	delete t.slam_traj_writer;
+	delete t.pred_traj_writer;
+	delete t.filt_traj_writer;
 	u_var_remove_root(t_ptr);
 	m_ff_vec3_f32_free(&t.gyro_ff);
 	m_ff_vec3_f32_free(&t.accel_ff);
@@ -921,6 +1039,13 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 		vector<string> cols = *std::static_pointer_cast<FRESULT_EPET>(result);
 		t.timing.columns.insert(t.timing.columns.begin() + 1, cols.begin(), cols.end());
 	}
+
+	// Setup CSV files
+	bool write_csvs = debug_get_bool_option_slam_write_csvs();
+	t.slam_times_writer = new TimingWriter{"timing.csv", write_csvs, t.timing.columns};
+	t.slam_traj_writer = new TrajectoryWriter{"tracking.csv", write_csvs};
+	t.pred_traj_writer = new TrajectoryWriter{"prediction.csv", write_csvs};
+	t.filt_traj_writer = new TrajectoryWriter{"filtering.csv", write_csvs};
 
 	setup_ui(t);
 
