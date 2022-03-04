@@ -95,9 +95,17 @@ if leap.found()
   inc_leap += include_directories('/usr/local/include')
 endif
 
-opencv = dependency('opencv', required: get_option('tracking'))
+opencv = dependency('opencv', required: false)
 if not opencv.found()
-	opencv = dependency('opencv4', required: get_option('tracking'))
+	opencv = dependency('opencv4', required: false)
+endif
+
+if get_option('tracking').enabled() and not opencv.found()
+	error('tracking enabled but opencv not found')
+endif
+
+if get_option('tracking').auto()
+	build_tracking = opencv.found()
 endif
 
 # Find an external SLAM implementation
@@ -109,14 +117,9 @@ foreach slam_system : external_slam_systems
 	endif
 endforeach
 
-if get_option('tracking').enabled() or get_option('tracking').auto()
-	build_tracking = opencv.found()
-endif
-
 if get_option('tracing')
 	build_tracing = percetto.found()
 endif
-
 
 
 # TODO: make these behave well when not present
