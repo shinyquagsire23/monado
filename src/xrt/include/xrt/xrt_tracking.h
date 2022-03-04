@@ -179,6 +179,7 @@ struct xrt_slam_sinks
 	struct xrt_frame_sink *left;
 	struct xrt_frame_sink *right;
 	struct xrt_imu_sink *imu;
+	struct xrt_pose_sink *gt; //!< Can receive ground truth poses if available
 };
 
 /*!
