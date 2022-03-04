@@ -89,6 +89,26 @@ struct ipc_client_swapchain
 	uint32_t id;
 };
 
+/*!
+ * Client proxy for an xrt_compositor_semaphore implementation over IPC.
+ * @implements xrt_compositor_semaphore
+ */
+struct ipc_client_compositor_semaphore
+{
+	struct xrt_compositor_semaphore base;
+
+	struct ipc_client_compositor *icc;
+
+	uint32_t id;
+};
+
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
 static inline struct ipc_client_compositor *
 ipc_client_compositor(struct xrt_compositor *xc)
 {
@@ -99,6 +119,12 @@ static inline struct ipc_client_swapchain *
 ipc_client_swapchain(struct xrt_swapchain *xs)
 {
 	return (struct ipc_client_swapchain *)xs;
+}
+
+static inline struct ipc_client_compositor_semaphore *
+ipc_client_compositor_semaphore(struct xrt_compositor_semaphore *xcsem)
+{
+	return (struct ipc_client_compositor_semaphore *)xcsem;
 }
 
 
@@ -187,6 +213,35 @@ ipc_compositor_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index
 	IPC_CALL_CHK(ipc_call_swapchain_release_image(icc->ipc_c, ics->id, index));
 
 	return res;
+}
+
+
+/*
+ *
+ * Compositor semaphore functions.
+ *
+ */
+
+static xrt_result_t
+ipc_client_compositor_semaphore_wait(struct xrt_compositor_semaphore *xcsem, uint64_t value, uint64_t timeout_ns)
+{
+	struct ipc_client_compositor_semaphore *iccs = ipc_client_compositor_semaphore(xcsem);
+	struct ipc_client_compositor *icc = iccs->icc;
+
+	IPC_ERROR(icc->ipc_c, "Can not call wait on client side!");
+
+	return XRT_ERROR_IPC_FAILURE;
+}
+
+static void
+ipc_client_compositor_semaphore_destroy(struct xrt_compositor_semaphore *xcsem)
+{
+	struct ipc_client_compositor_semaphore *iccs = ipc_client_compositor_semaphore(xcsem);
+	struct ipc_client_compositor *icc = iccs->icc;
+
+	IPC_CALL_CHK(ipc_call_compositor_semaphore_destroy(icc->ipc_c, iccs->id));
+
+	free(iccs);
 }
 
 
@@ -348,6 +403,30 @@ ipc_compositor_swapchain_import(struct xrt_compositor *xc,
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 	return swapchain_server_import(icc, info, native_images, image_count, out_xsc);
+}
+
+static xrt_result_t
+ipc_compositor_semaphore_create(struct xrt_compositor *xc,
+                                xrt_graphics_sync_handle_t *out_handle,
+                                struct xrt_compositor_semaphore **out_xcsem)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+	uint32_t id = 0;
+	xrt_graphics_sync_handle_t handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+
+	IPC_CALL_CHK(ipc_call_compositor_semaphore_create(icc->ipc_c, &id, &handle, 1));
+
+	struct ipc_client_compositor_semaphore *iccs = U_TYPED_CALLOC(struct ipc_client_compositor_semaphore);
+	iccs->base.reference.count = 1;
+	iccs->base.wait = ipc_client_compositor_semaphore_wait;
+	iccs->base.destroy = ipc_client_compositor_semaphore_destroy;
+	iccs->id = id;
+	iccs->icc = icc;
+
+	*out_handle = handle;
+	*out_xcsem = &iccs->base;
+
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
@@ -649,6 +728,35 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 }
 
 static xrt_result_t
+ipc_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
+                                           int64_t frame_id,
+                                           struct xrt_compositor_semaphore *xcsem,
+                                           uint64_t value)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+	struct ipc_client_compositor_semaphore *iccs = ipc_client_compositor_semaphore(xcsem);
+
+	struct ipc_shared_memory *ism = icc->ipc_c->ism;
+	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
+
+	// Last bit of data to put in the shared memory area.
+	slot->layer_count = icc->layers.layer_count;
+
+	IPC_CALL_CHK(ipc_call_compositor_layer_sync_with_semaphore( //
+	    icc->ipc_c,                                             //
+	    frame_id,                                               //
+	    icc->layers.slot_id,                                    //
+	    iccs->id,                                               //
+	    value,                                                  //
+	    &icc->layers.slot_id));                                 //
+
+	// Reset.
+	icc->layers.layer_count = 0;
+
+	return res;
+}
+
+static xrt_result_t
 ipc_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
@@ -675,6 +783,7 @@ ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_nat
 {
 	icc->base.base.create_swapchain = ipc_compositor_swapchain_create;
 	icc->base.base.import_swapchain = ipc_compositor_swapchain_import;
+	icc->base.base.create_semaphore = ipc_compositor_semaphore_create;
 	icc->base.base.begin_session = ipc_compositor_begin_session;
 	icc->base.base.end_session = ipc_compositor_end_session;
 	icc->base.base.wait_frame = ipc_compositor_wait_frame;
@@ -689,6 +798,7 @@ ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_nat
 	icc->base.base.layer_equirect1 = ipc_compositor_layer_equirect1;
 	icc->base.base.layer_equirect2 = ipc_compositor_layer_equirect2;
 	icc->base.base.layer_commit = ipc_compositor_layer_commit;
+	icc->base.base.layer_commit_with_semaphore = ipc_compositor_layer_commit_with_semaphore;
 	icc->base.base.destroy = ipc_compositor_destroy;
 	icc->base.base.poll_events = ipc_compositor_poll_events;
 

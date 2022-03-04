@@ -559,6 +559,63 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
+ipc_handle_compositor_layer_sync_with_semaphore(volatile struct ipc_client_state *ics,
+                                                int64_t frame_id,
+                                                uint32_t slot_id,
+                                                uint32_t semaphore_id,
+                                                uint64_t semaphore_value,
+                                                uint32_t *out_free_slot_id)
+{
+	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+	if (semaphore_id >= IPC_MAX_CLIENT_SEMAPHORES) {
+		IPC_ERROR(ics->server, "Invalid semaphore_id");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+	if (ics->xcsems[semaphore_id] == NULL) {
+		IPC_ERROR(ics->server, "Semaphore of id %u not created!", semaphore_id);
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct xrt_compositor_semaphore *xcsem = ics->xcsems[semaphore_id];
+
+	struct ipc_shared_memory *ism = ics->server->ism;
+	struct ipc_layer_slot *slot = &ism->slots[slot_id];
+
+	// Copy current slot data.
+	struct ipc_layer_slot copy = *slot;
+
+
+
+	/*
+	 * Transfer data to underlying compositor.
+	 */
+
+	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+
+	_update_layers(ics, ics->xc, &copy);
+
+	xrt_comp_layer_commit_with_semaphore(ics->xc, frame_id, xcsem, semaphore_value);
+
+
+	/*
+	 * Manage shared state.
+	 */
+
+	os_mutex_lock(&ics->server->global_state.lock);
+
+	*out_free_slot_id = (ics->server->current_slot_index + 1) % IPC_MAX_SLOTS;
+	ics->server->current_slot_index = *out_free_slot_id;
+
+	os_mutex_unlock(&ics->server->global_state.lock);
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
 ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union xrt_compositor_event *out_xce)
 {
 	IPC_TRACE_MARKER();
@@ -842,6 +899,85 @@ ipc_handle_swapchain_destroy(volatile struct ipc_client_state *ics, uint32_t id)
 
 	return XRT_SUCCESS;
 }
+
+
+/*
+ *
+ * Compositor semaphore function..
+ *
+ */
+
+xrt_result_t
+ipc_handle_compositor_semaphore_create(volatile struct ipc_client_state *ics,
+                                       uint32_t *out_id,
+                                       uint32_t max_handle_count,
+                                       xrt_graphics_sync_handle_t *out_handles,
+                                       uint32_t *out_handle_count)
+{
+	xrt_result_t xret;
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
+	int id = 0;
+	for (; id < IPC_MAX_CLIENT_SEMAPHORES; id++) {
+		if (ics->xcsems[id] == NULL) {
+			break;
+		}
+	}
+
+	if (id == IPC_MAX_CLIENT_SEMAPHORES) {
+		IPC_ERROR(ics->server, "Too many compositor semaphores alive!");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct xrt_compositor_semaphore *xcsem = NULL;
+	xrt_graphics_sync_handle_t handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+
+	xret = xrt_comp_create_semaphore(ics->xc, &handle, &xcsem);
+	if (xret != XRT_SUCCESS) {
+		IPC_ERROR(ics->server, "Failed to create compositor semaphore!");
+		return XRT_SUCCESS;
+	}
+
+	// Set it directly, no need to use reference here.
+	ics->xcsems[id] = xcsem;
+
+	// Set out parameters.
+	*out_id = id;
+	out_handles[0] = handle;
+	*out_handle_count = 1;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_compositor_semaphore_destroy(volatile struct ipc_client_state *ics, uint32_t id)
+{
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
+	if (ics->xcsems[id] == NULL) {
+		IPC_ERROR(ics->server, "Client tried to delete non-existent compositor semaphore!");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	ics->compositor_semaphore_count--;
+
+	// Drop our reference, does NULL checking. Cast away volatile.
+	xrt_compositor_semaphore_reference((struct xrt_compositor_semaphore **)&ics->xcsems[id], NULL);
+
+	return XRT_SUCCESS;
+}
+
+
+/*
+ *
+ * Device functions.
+ *
+ */
 
 xrt_result_t
 ipc_handle_device_update_input(volatile struct ipc_client_state *ics, uint32_t id)

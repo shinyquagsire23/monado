@@ -163,6 +163,12 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics)
 		IPC_TRACE(ics->server, "Destroyed swapchain %d.", j);
 	}
 
+	for (uint32_t j = 0; j < IPC_MAX_CLIENT_SEMAPHORES; j++) {
+		// Drop our reference, does NULL checking. Cast away volatile.
+		xrt_compositor_semaphore_reference((struct xrt_compositor_semaphore **)&ics->xcsems[j], NULL);
+		IPC_TRACE(ics->server, "Destroyed compositor semaphore %d.", j);
+	}
+
 	os_mutex_unlock(&ics->server->global_state.lock);
 
 	// Cast away volatile.

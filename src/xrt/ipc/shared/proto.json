@@ -112,6 +112,18 @@
 		]
 	},
 
+	"compositor_layer_sync_with_semaphore": {
+		"in": [
+			{"name": "frame_id", "type": "int64_t"},
+			{"name": "slot_id", "type": "uint32_t"},
+			{"name": "semaphore_id", "type": "uint32_t"},
+			{"name": "semaphore_value", "type": "uint64_t"}
+		],
+		"out": [
+			{"name": "free_slot_id", "type": "uint32_t"}
+		]
+	},
+
 	"compositor_poll_events": {
 		"out": [
 			{"name": "event", "type": "union xrt_compositor_event"}
@@ -167,6 +179,19 @@
 	},
 
 	"swapchain_destroy": {
+		"in": [
+			{"name": "id", "type": "uint32_t"}
+		]
+	},
+
+	"compositor_semaphore_create": {
+		"out": [
+			{"name": "id", "type": "uint32_t"}
+		],
+		"out_handles": {"type": "xrt_graphics_sync_handle_t"}
+	},
+
+	"compositor_semaphore_destroy": {
 		"in": [
 			{"name": "id", "type": "uint32_t"}
 		]

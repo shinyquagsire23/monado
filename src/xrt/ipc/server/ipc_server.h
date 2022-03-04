@@ -45,6 +45,7 @@ extern "C" {
  */
 
 #define IPC_SERVER_NUM_XDEVS 8
+#define IPC_MAX_CLIENT_SEMAPHORES 8
 #define IPC_MAX_CLIENT_SWAPCHAINS 32
 //#define IPC_MAX_CLIENTS 8
 
@@ -92,6 +93,12 @@ struct ipc_client_state
 
 	//! Data for the swapchains.
 	struct ipc_swapchain_data swapchain_data[IPC_MAX_CLIENT_SWAPCHAINS];
+
+	//! Number of compositor semaphores in use by client
+	uint32_t compositor_semaphore_count;
+
+	//! Ptrs to the semaphores.
+	struct xrt_compositor_semaphore *xcsems[IPC_MAX_CLIENT_SEMAPHORES];
 
 	//! Socket fd used for client comms
 	struct ipc_message_channel imc;
