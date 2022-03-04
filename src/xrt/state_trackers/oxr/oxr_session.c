@@ -479,9 +479,6 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 		return oxr_session_success_result(sess);
 	}
 
-	os_mutex_lock(&sess->active_wait_frames_lock);
-	sess->active_wait_frames++;
-	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Called at %8.3fms", ts_ms(sess));
@@ -490,6 +487,10 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 	// A subsequent xrWaitFrame call must: block until the previous frame
 	// has been begun
 	os_semaphore_wait(&sess->sem, 0);
+
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	sess->active_wait_frames++;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Finished waiting for previous frame begin at %8.3fms", ts_ms(sess));
