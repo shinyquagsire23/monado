@@ -71,6 +71,7 @@ lib_aux_util = static_library(
 		'util/u_sink_queue.c',
 		'util/u_sink_quirk.c',
 		'util/u_sink_split.c',
+		'util/u_sink_stereo_sbs_to_slam_sbs.c',
 		'util/u_string_list.cpp',
 		'util/u_string_list.h',
 		'util/u_string_list.hpp',

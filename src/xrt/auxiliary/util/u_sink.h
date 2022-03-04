@@ -123,6 +123,7 @@ u_sink_quirk_create(struct xrt_frame_context *xfctx,
 /*!
  * @public @memberof xrt_frame_sink
  * @see xrt_frame_context
+ * Takes a frame and pushes it to two sinks
  */
 void
 u_sink_split_create(struct xrt_frame_context *xfctx,
@@ -131,7 +132,17 @@ u_sink_split_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink **out_xfs);
 
 /*!
+ * Splits Stereo SBS frames into two independent frames
+ */
+void
+u_sink_stereo_sbs_to_slam_sbs_create(struct xrt_frame_context *xfctx,
+                                     struct xrt_frame_sink *downstream_left,
+                                     struct xrt_frame_sink *downstream_right,
+                                     struct xrt_frame_sink **out_xfs);
+
+/*!
  * Combines stereo frames.
+ * Opposite of u_sink_stereo_sbs_to_slam_sbs_create
  */
 bool
 u_sink_combiner_create(struct xrt_frame_context *xfctx,
