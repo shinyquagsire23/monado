@@ -23,6 +23,8 @@
 
 #include <opencv2/imgcodecs.hpp>
 
+//! @todo: Now that IMU sinks support groundtruth, we could save it here as well.
+
 using std::ofstream;
 using std::queue;
 using std::string;

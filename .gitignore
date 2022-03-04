@@ -50,6 +50,7 @@ build*/
 *.autosave
 .vs
 CMakeSettings.json
+CMakeUserPresets.json
 
 # Ignore merge-conflict resolution files
 *.orig

@@ -867,7 +867,7 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	ep->in_sinks.left = &ep->left_sink;
 	ep->in_sinks.right = &ep->right_sink;
 	ep->in_sinks.imu = &ep->imu_sink;
-	ep->out_sinks = {0, 0, 0};
+	ep->out_sinks = {0, 0, 0, 0};
 
 	struct xrt_fs *xfs = &ep->base;
 	xfs->enumerate_modes = euroc_player_enumerate_modes;

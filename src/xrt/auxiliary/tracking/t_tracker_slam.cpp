@@ -43,8 +43,8 @@
 
 // Debug assertions, not vital but useful for finding errors
 #ifdef NDEBUG
-#define SLAM_DASSERT(predicate, ...)
-#define SLAM_DASSERT_(predicate)
+#define SLAM_DASSERT(predicate, ...) (void)(predicate)
+#define SLAM_DASSERT_(predicate) (void)(predicate)
 #else
 #define SLAM_DASSERT(predicate, ...) SLAM_ASSERT(predicate, __VA_ARGS__)
 #define SLAM_DASSERT_(predicate) SLAM_ASSERT_(predicate)
@@ -57,7 +57,7 @@ DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", NULL)
 
 //! Whether to submit data to the SLAM tracker without user action
-DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", true)
+DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 
 
 //! Namespace for the interface to the external SLAM tracking system
@@ -84,7 +84,7 @@ typedef int AccessFlag;
 #else
 using cv::ACCESS_RW;
 using cv::AccessFlag;
-#define CV_AUTOSTEP cv::Mat::AUTO_STEP;
+#define CV_AUTOSTEP cv::Mat::AUTO_STEP
 #endif
 
 /*!
@@ -248,6 +248,13 @@ struct TrackerSlam
 	} filter;
 };
 
+
+/*
+ *
+ * Tracker functionality
+ *
+ */
+
 //! Dequeue all tracked poses from the SLAM system and update prediction data with them.
 static bool
 flush_poses(TrackerSlam &t)
@@ -394,14 +401,60 @@ filter_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out
 
 	if (t.filter.use_one_euro_filter) {
 		xrt_pose &p = out_relation->pose;
-		m_filter_euro_vec3_run(&t.filter.pos_oe, when_ns, &p.position, &p.position);
-		m_filter_euro_quat_run(&t.filter.rot_oe, when_ns, &p.orientation, &p.orientation);
+		if (out_relation->relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
+			m_filter_euro_vec3_run(&t.filter.pos_oe, when_ns, &p.position, &p.position);
+		}
+		if (out_relation->relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
+			m_filter_euro_quat_run(&t.filter.rot_oe, when_ns, &p.orientation, &p.orientation);
+		}
 	}
+}
+
+static void
+setup_ui(TrackerSlam &t)
+{
+	t.pred_combo.count = PREDICTION_COUNT;
+	t.pred_combo.options = "None\0Interpolate SLAM poses\0Also gyro\0Also accel (needs gravity correction)\0\0";
+	t.pred_combo.value = (int *)&t.pred_type;
+	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
+	m_ff_vec3_f32_alloc(&t.accel_ff, 1000);
+	m_ff_vec3_f32_alloc(&t.filter.pos_ff, 1000);
+	m_ff_vec3_f32_alloc(&t.filter.rot_ff, 1000);
+
+	u_var_add_root(&t, "SLAM Tracker", true);
+	u_var_add_log_level(&t, &t.log_level, "Log Level");
+	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
+	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
+
+	u_var_add_gui_header(&t, NULL, "Trajectory Filter");
+	u_var_add_bool(&t, &t.filter.use_moving_average_filter, "Enable moving average filter");
+	u_var_add_f64(&t, &t.filter.window, "Window size (ms)");
+	u_var_add_bool(&t, &t.filter.use_exponential_smoothing_filter, "Enable exponential smoothing filter");
+	u_var_add_f32(&t, &t.filter.alpha, "Smoothing factor");
+	u_var_add_bool(&t, &t.filter.use_one_euro_filter, "Enable one euro filter");
+	u_var_add_f32(&t, &t.filter.pos_oe.base.fc_min, "Position minimum cutoff");
+	u_var_add_f32(&t, &t.filter.pos_oe.base.beta, "Position beta speed");
+	u_var_add_f32(&t, &t.filter.pos_oe.base.fc_min_d, "Position minimum delta cutoff");
+	u_var_add_f32(&t, &t.filter.rot_oe.base.fc_min, "Orientation minimum cutoff");
+	u_var_add_f32(&t, &t.filter.rot_oe.base.beta, "Orientation beta speed");
+	u_var_add_f32(&t, &t.filter.rot_oe.base.fc_min_d, "Orientation minimum delta cutoff");
+
+	u_var_add_gui_header(&t, NULL, "Prediction");
+	u_var_add_combo(&t, &t.pred_combo, "Prediction Type");
+	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
+	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
+	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
 }
 
 } // namespace xrt::auxiliary::tracking::slam
 
 using namespace xrt::auxiliary::tracking::slam;
+
+/*
+ *
+ * External functions
+ *
+ */
 
 //! Get a filtered prediction from the SLAM tracked poses.
 extern "C" void
@@ -450,7 +503,7 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	m_ff_vec3_f32_push(t.accel_ff, &accel, ts);
 
 	// Check monotonically increasing timestamps
-	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts)
+	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts);
 	t.last_imu_ts = ts;
 }
 
@@ -604,36 +657,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
 	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
 
-	// Setup UI
-	t.pred_combo.count = PREDICTION_COUNT;
-	t.pred_combo.options = "None\0SP SO SA SL\0SP SO IA SL\0SP SO IA IL\0\0";
-	t.pred_combo.value = (int *)&t.pred_type;
-	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
-	m_ff_vec3_f32_alloc(&t.accel_ff, 1000);
-	m_ff_vec3_f32_alloc(&t.filter.pos_ff, 1000);
-	m_ff_vec3_f32_alloc(&t.filter.rot_ff, 1000);
-
-	u_var_add_root(&t, "SLAM Tracker", true);
-	u_var_add_log_level(&t, &t.log_level, "Log Level");
-	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
-	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
-	u_var_add_gui_header(&t, NULL, "Trajectory Filter");
-	u_var_add_bool(&t, &t.filter.use_moving_average_filter, "Enable moving average filter");
-	u_var_add_f64(&t, &t.filter.window, "Window size (ms)");
-	u_var_add_bool(&t, &t.filter.use_exponential_smoothing_filter, "Enable exponential smoothing filter");
-	u_var_add_f32(&t, &t.filter.alpha, "Smoothing factor");
-	u_var_add_bool(&t, &t.filter.use_one_euro_filter, "Enable one euro filter");
-	u_var_add_f32(&t, &t.filter.pos_oe.base.fc_min, "Position minimum cutoff");
-	u_var_add_f32(&t, &t.filter.pos_oe.base.beta, "Position beta speed");
-	u_var_add_f32(&t, &t.filter.pos_oe.base.fc_min_d, "Position minimum delta cutoff");
-	u_var_add_f32(&t, &t.filter.rot_oe.base.fc_min, "Orientation minimum cutoff");
-	u_var_add_f32(&t, &t.filter.rot_oe.base.beta, "Orientation beta speed");
-	u_var_add_f32(&t, &t.filter.rot_oe.base.fc_min_d, "Orientation minimum delta cutoff");
-	u_var_add_gui_header(&t, NULL, "Prediction");
-	u_var_add_combo(&t, &t.pred_combo, "Prediction Type");
-	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
-	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
-	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
+	setup_ui(t);
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;

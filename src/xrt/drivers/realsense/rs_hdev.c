@@ -82,8 +82,8 @@
 
 // Debug assertions, not vital but useful for finding errors
 #ifdef NDEBUG
-#define RS_DASSERT(predicate, ...)
-#define RS_DASSERT_(predicate)
+#define RS_DASSERT(predicate, ...) (void)(predicate)
+#define RS_DASSERT_(predicate) (void)(predicate)
 #else
 #define RS_DASSERT(predicate, ...) RS_ASSERT(predicate, __VA_ARGS__)
 #define RS_DASSERT_(predicate) RS_ASSERT_(predicate)
