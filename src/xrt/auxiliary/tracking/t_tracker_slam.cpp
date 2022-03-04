@@ -25,6 +25,8 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/version.hpp>
 
+#include <map>
+
 #define SLAM_TRACE(...) U_LOG_IFL_T(t.log_level, __VA_ARGS__)
 #define SLAM_DEBUG(...) U_LOG_IFL_D(t.log_level, __VA_ARGS__)
 #define SLAM_INFO(...) U_LOG_IFL_I(t.log_level, __VA_ARGS__)
@@ -59,9 +61,17 @@ DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", NULL)
 //! Whether to submit data to the SLAM tracker without user action
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 
-
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
+constexpr int UI_TIMING_POSE_COUNT = 192;
+constexpr int UI_GTDIFF_POSE_COUNT = 192;
+
+using std::map;
+using std::shared_ptr;
+using std::string;
+using std::vector;
+using Trajectory = map<timepoint_ns, xrt_pose>;
+
 using xrt::auxiliary::math::RelationHistory;
 
 using cv::Mat;
@@ -179,6 +189,7 @@ enum prediction_type
  * @implements xrt_frame_node
  * @implements xrt_frame_sink
  * @implements xrt_imu_sink
+ * @implements xrt_pose_sink
  */
 struct TrackerSlam
 {
@@ -190,6 +201,7 @@ struct TrackerSlam
 	struct xrt_frame_sink left_sink = {};  //!< Sends left camera frames to the SLAM system
 	struct xrt_frame_sink right_sink = {}; //!< Sends right camera frames to the SLAM system
 	struct xrt_imu_sink imu_sink = {};     //!< Sends imu samples to the SLAM system
+	struct xrt_pose_sink gt_sink = {};     //!< Register groundtruth trajectory for stats
 	bool submit;                           //!< Whether to submit data pushed to sinks to the SLAM tracker
 
 	enum u_logging_level log_level; //!< Logging level for the SLAM tracker, set by SLAM_LOG var
@@ -246,8 +258,214 @@ struct TrackerSlam
 		const float beta = 0.16;       //!< Default speed coefficient
 
 	} filter;
+
+	// Stats and metrics
+
+	//! Tracker timing info for performance evaluation
+	struct
+	{
+		float dur_ms[UI_TIMING_POSE_COUNT]; //!< Timing durations in ms
+		int idx = 0;                        //!< Index of latest entry in @ref dur_ms
+		u_var_combo start_ts;               //!< UI combo box to select initial timing measurement
+		u_var_combo end_ts;                 //!< UI combo box to select final timing measurement
+		int start_ts_idx;                   //!< Selected initial timing measurement in @ref start_ts
+		int end_ts_idx;                     //!< Selected final timing measurement in @ref end_ts
+		struct u_var_timing ui;             //!< Realtime UI for tracker durations
+		bool ext_enabled = false;           //!< Whether the SLAM system supports the timing extension
+		vector<string> columns;             //!< Column names of the measured timestamps
+		string joined_columns;              //!< Column names as a null separated string
+	} timing;
+
+	//! Ground truth related fields
+	struct
+	{
+		Trajectory *trajectory;               //!< Empty if we've not received groundtruth
+		xrt_pose origin;                      //!< First ground truth pose
+		float diffs_mm[UI_GTDIFF_POSE_COUNT]; //!< Positional error wrt ground truth
+		int diff_idx = 0;                     //!< Index of last error in @ref diffs_mm
+		struct u_var_timing diff_ui;          //!< Realtime UI for positional error
+		bool override_tracking = false;       //!< Force the tracker to report gt poses instead
+	} gt;
 };
 
+
+/*
+ *
+ * Timing functionality
+ *
+ */
+
+static void
+timing_ui_setup(TrackerSlam &t)
+{
+	// Construct null-separated array of options for the combo box
+	using namespace std::string_literals;
+	t.timing.joined_columns = "";
+	for (const string &name : t.timing.columns) {
+		t.timing.joined_columns += name + "\0"s;
+	}
+	t.timing.joined_columns += "\0"s;
+
+	t.timing.start_ts.count = t.timing.columns.size();
+	t.timing.start_ts.options = t.timing.joined_columns.c_str();
+	t.timing.start_ts.value = &t.timing.start_ts_idx;
+	t.timing.start_ts_idx = 0;
+	u_var_add_combo(&t, &t.timing.start_ts, "Start timestamp");
+
+	t.timing.end_ts.count = t.timing.columns.size();
+	t.timing.end_ts.options = t.timing.joined_columns.c_str();
+	t.timing.end_ts.value = &t.timing.end_ts_idx;
+	t.timing.end_ts_idx = t.timing.columns.size() - 1;
+	u_var_add_combo(&t, &t.timing.end_ts, "End timestamp");
+
+	t.timing.ui.values.data = t.timing.dur_ms;
+	t.timing.ui.values.length = UI_TIMING_POSE_COUNT;
+	t.timing.ui.values.index_ptr = &t.timing.idx;
+	t.timing.ui.reference_timing = 16.6;
+	t.timing.ui.center_reference_timing = true;
+	t.timing.ui.range = t.timing.ui.reference_timing;
+	t.timing.ui.dynamic_rescale = true;
+	t.timing.ui.unit = "ms";
+	u_var_add_f32_timing(&t, &t.timing.ui, "External tracker times");
+}
+
+//! Updates timing UI with info from a computed pose and returns that info
+static vector<timepoint_ns>
+timing_ui_push(TrackerSlam &t, const pose &p)
+{
+	timepoint_ns now = os_monotonic_get_ns();
+	vector<timepoint_ns> tss = {p.timestamp, now};
+
+	// Add extra timestamps if the SLAM tracker provides them
+	if (t.timing.ext_enabled) {
+		shared_ptr<pose_extension> ext = p.find_pose_extension(pose_ext_type::TIMING);
+		SLAM_DASSERT(ext != nullptr, "An enabled extension was null");
+		pose_ext_timing pet = *std::static_pointer_cast<pose_ext_timing>(ext);
+		tss.insert(tss.begin() + 1, pet.timestamps.begin(), pet.timestamps.end());
+	}
+
+	// The two timestamps to compare in the graph
+	timepoint_ns start = tss.at(t.timing.start_ts_idx);
+	timepoint_ns end = tss.at(t.timing.end_ts_idx);
+
+	// Push to the UI graph
+	float tss_ms = (end - start) / U_TIME_1MS_IN_NS;
+	t.timing.idx = (t.timing.idx + 1) % UI_TIMING_POSE_COUNT;
+	t.timing.dur_ms[t.timing.idx] = tss_ms;
+	constexpr float a = 1.0f / UI_TIMING_POSE_COUNT; // Exponential moving average
+	t.timing.ui.reference_timing = (1 - a) * t.timing.ui.reference_timing + a * tss_ms;
+
+	return tss;
+}
+
+
+/*
+ *
+ * Ground truth functionality
+ *
+ */
+
+//! Gets an interpolated groundtruth pose (if available) at a specified timestamp
+static xrt_pose
+get_gt_pose_at(const Trajectory &gt, timepoint_ns ts)
+{
+	if (gt.empty()) {
+		return XRT_POSE_IDENTITY;
+	}
+
+	Trajectory::const_iterator rit = gt.upper_bound(ts);
+
+	if (rit == gt.begin()) { // Too far in the past, return first gt pose
+		return gt.begin()->second;
+	}
+
+	if (rit == gt.end()) { // Too far in the future, return last gt pose
+		return std::prev(gt.end())->second;
+	}
+
+	Trajectory::const_iterator lit = std::prev(rit);
+
+	const auto &[lts, lpose] = *lit;
+	const auto &[rts, rpose] = *rit;
+
+	float t = double(ts - lts) / double(rts - lts);
+	SLAM_DASSERT_(0 <= t && t <= 1);
+
+	xrt_pose res{};
+	math_quat_slerp(&lpose.orientation, &rpose.orientation, t, &res.orientation);
+	res.position = m_vec3_lerp(lpose.position, rpose.position, t);
+	return res;
+}
+
+//! Converts a pose from the tracker to ground truth
+static struct xrt_pose
+xr2gt_pose(const xrt_pose &gt_origin, const xrt_pose &xr_pose)
+{
+	//! @todo Right now this is hardcoded for Basalt and the EuRoC vicon datasets
+	//! groundtruth and ignores orientation. Applies a fixed transformation so
+	//! that the tracked and groundtruth trajectories origins and general motion
+	//! match. The usual way of evaluating trajectory errors in SLAM requires to
+	//! first align the trajectories through a non-linear optimization (e.g. gauss
+	//! newton) so that they are as similar as possible. For this you need the
+	//! entire tracked trajectory to be known beforehand, which makes it not
+	//! suitable for reporting an error metric in realtime. See this 2-page paper
+	//! for more info on trajectory alignment:
+	//! https://ylatif.github.io/movingsensors/cameraReady/paper07.pdf
+
+	xrt_vec3 pos = xr_pose.position;
+	xrt_quat z180{0, 0, 1, 0};
+	math_quat_rotate_vec3(&z180, &pos, &pos);
+	math_quat_rotate_vec3(&gt_origin.orientation, &pos, &pos);
+	pos += gt_origin.position;
+
+	return {XRT_QUAT_IDENTITY, pos};
+}
+
+//! The inverse of @ref xr2gt_pose.
+static struct xrt_pose
+gt2xr_pose(const xrt_pose &gt_origin, const xrt_pose &gt_pose)
+{
+	xrt_vec3 pos = gt_pose.position;
+	pos -= gt_origin.position;
+	xrt_quat gt_origin_orientation_inv = gt_origin.orientation;
+	math_quat_invert(&gt_origin_orientation_inv, &gt_origin_orientation_inv);
+	math_quat_rotate_vec3(&gt_origin_orientation_inv, &pos, &pos);
+	xrt_quat zn180{0, 0, -1, 0};
+	math_quat_rotate_vec3(&zn180, &pos, &pos);
+
+	return {XRT_QUAT_IDENTITY, pos};
+}
+
+static void
+gt_ui_setup(TrackerSlam &t)
+{
+	t.gt.diff_ui.values.data = t.gt.diffs_mm;
+	t.gt.diff_ui.values.length = UI_GTDIFF_POSE_COUNT;
+	t.gt.diff_ui.values.index_ptr = &t.gt.diff_idx;
+	t.gt.diff_ui.reference_timing = 0;
+	t.gt.diff_ui.center_reference_timing = true;
+	t.gt.diff_ui.range = 100; // 10cm
+	t.gt.diff_ui.dynamic_rescale = true;
+	t.gt.diff_ui.unit = "mm";
+	u_var_add_f32_timing(&t, &t.gt.diff_ui, "Tracking absolute error");
+}
+
+static void
+gt_ui_push(TrackerSlam &t, timepoint_ns ts, xrt_pose tracked_pose)
+{
+	if (t.gt.trajectory->empty()) {
+		return;
+	}
+
+	xrt_pose gt_pose = get_gt_pose_at(*t.gt.trajectory, ts);
+	xrt_pose xr_pose = xr2gt_pose(t.gt.origin, tracked_pose);
+
+	float len_mm = m_vec3_len(xr_pose.position - gt_pose.position) * 1000;
+	t.gt.diff_idx = (t.gt.diff_idx + 1) % UI_GTDIFF_POSE_COUNT;
+	t.gt.diffs_mm[t.gt.diff_idx] = len_mm;
+	constexpr float a = 1.0f / UI_GTDIFF_POSE_COUNT; // Exponential moving average
+	t.gt.diff_ui.reference_timing = (1 - a) * t.gt.diff_ui.reference_timing + a * len_mm;
+}
 
 /*
  *
@@ -290,6 +508,11 @@ flush_poses(TrackerSlam &t)
 		math_quat_finite_difference(&lrot, &nrot, dt, &rel.angular_velocity);
 
 		t.slam_rels.push(rel, nts);
+
+		gt_ui_push(t, nts, rel.pose);
+
+		auto tss = timing_ui_push(t, np);
+
 		dequeued = t.slam->try_dequeue_pose(tracked_pose);
 	}
 
@@ -425,6 +648,7 @@ setup_ui(TrackerSlam &t)
 	u_var_add_log_level(&t, &t.log_level, "Log Level");
 	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
 	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
+	u_var_add_bool(&t, &t.gt.override_tracking, "Track with ground truth (if available)");
 
 	u_var_add_gui_header(&t, NULL, "Trajectory Filter");
 	u_var_add_bool(&t, &t.filter.use_moving_average_filter, "Enable moving average filter");
@@ -444,6 +668,10 @@ setup_ui(TrackerSlam &t)
 	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
 	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
+
+	u_var_add_gui_header(&t, NULL, "Stats");
+	timing_ui_setup(t);
+	// Later, gt_ui_setup will setup the tracking error UI if ground truth becomes available
 }
 
 } // namespace xrt::auxiliary::tracking::slam
@@ -473,6 +701,24 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 
 	t.last_rel = *out_relation;
 	t.last_ts = when_ns;
+
+	if (t.gt.override_tracking) {
+		out_relation->pose = gt2xr_pose(t.gt.origin, get_gt_pose_at(*t.gt.trajectory, when_ns));
+	}
+}
+
+//! Receive and register ground truth to use for trajectory error metrics.
+extern "C" void
+t_slam_gt_sink_push(struct xrt_pose_sink *sink, timepoint_ns ts, struct xrt_pose *pose)
+{
+	auto &t = *container_of(sink, TrackerSlam, gt_sink);
+
+	if (t.gt.trajectory->empty()) {
+		t.gt.origin = *pose;
+		gt_ui_setup(t);
+	}
+
+	t.gt.trajectory->insert_or_assign(ts, *pose);
 }
 
 //! Receive and send IMU samples to the external SLAM system
@@ -565,6 +811,7 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	auto &t = *t_ptr; // Needed by SLAM_DEBUG
 	SLAM_DEBUG("Destroying SLAM tracker");
 	os_thread_helper_destroy(&t_ptr->oth);
+	delete t.gt.trajectory;
 	u_var_remove_root(t_ptr);
 	m_ff_vec3_f32_free(&t.gyro_ff);
 	m_ff_vec3_f32_free(&t.accel_ff);
@@ -637,10 +884,12 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	t.left_sink.push_frame = t_slam_frame_sink_push_left;
 	t.right_sink.push_frame = t_slam_frame_sink_push_right;
 	t.imu_sink.push_imu = t_slam_imu_sink_push;
+	t.gt_sink.push_pose = t_slam_gt_sink_push;
 
 	t.sinks.left = &t.left_sink;
 	t.sinks.right = &t.right_sink;
 	t.sinks.imu = &t.imu_sink;
+	t.sinks.gt = &t.gt_sink;
 
 	t.submit = debug_get_bool_option_slam_submit_from_start();
 
@@ -656,6 +905,22 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 
 	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
 	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
+
+	t.gt.trajectory = new Trajectory{};
+
+	// Probe for timing extension.
+	// We provide two timing columns by default, even if the external system does
+	// not support the timing extension for reporting internal timestamps.
+	t.timing.columns = {"sampled", "received_by_monado"};
+	bool has_timing_extension = t.slam->supports_feature(F_ENABLE_POSE_EXT_TIMING);
+	if (has_timing_extension) {
+		shared_ptr<void> result;
+		t.slam->use_feature(FID_EPET, nullptr, result);
+		t.timing.ext_enabled = true;
+
+		vector<string> cols = *std::static_pointer_cast<FRESULT_EPET>(result);
+		t.timing.columns.insert(t.timing.columns.begin() + 1, cols.begin(), cols.end());
+	}
 
 	setup_ui(t);
 

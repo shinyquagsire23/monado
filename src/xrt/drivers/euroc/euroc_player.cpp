@@ -110,6 +110,7 @@ struct euroc_player
 	{
 		bool stereo;              //!< Whether to stream both left and right sinks or only left
 		bool color;               //!< If RGB available but this is false, images will be loaded in grayscale
+		bool gt;                  //!< Whether to send groundtruth data (if available) to the SLAM tracker
 		float skip_first_s;       //!< Amount of initial seconds of the dataset to skip
 		float scale;              //!< Scale of each frame; e.g., 0.5 (half), 1.0 (avoids resize)
 		double speed;             //!< Intended reproduction speed, could be slower due to read times
@@ -454,6 +455,19 @@ euroc_player_push_next_imu(struct euroc_player *ep)
 	xrt_sink_push_imu(ep->in_sinks.imu, &sample);
 }
 
+static void
+euroc_player_push_all_gt(struct euroc_player *ep)
+{
+	if (!ep->out_sinks.gt) {
+		return;
+	}
+
+	for (auto [ts, pose] : *ep->gt) {
+		ts = euroc_player_mapped_playback_ts(ep, ts);
+		xrt_sink_push_pose(ep->out_sinks.gt, ts, &pose);
+	}
+}
+
 template <typename SamplesType>
 timepoint_ns
 euroc_player_get_next_euroc_ts(struct euroc_player *ep)
@@ -547,6 +561,10 @@ euroc_player_stream(void *ptr)
 		}
 	}
 
+	// Push ground truth trajectory now if available (and not disabled)
+	if (ep->playback.gt) {
+		euroc_player_push_all_gt(ep);
+	}
 
 	// Launch image and IMU producers
 	auto serve_imus = async(launch::async, [ep] { euroc_player_stream_samples<imu_samples>(ep); });
@@ -563,6 +581,7 @@ euroc_player_stream(void *ptr)
 
 	return NULL;
 }
+
 
 // Frame server functionality
 
@@ -698,6 +717,7 @@ euroc_player_is_running(struct xrt_fs *xfs)
 	return ep->is_running;
 }
 
+
 // Frame node functionality
 
 static void
@@ -728,6 +748,7 @@ euroc_player_destroy(struct xrt_frame_node *node)
 
 	return;
 }
+
 
 // UI functionality
 
@@ -774,6 +795,8 @@ euroc_player_start_btn_cb(void *ptr)
 static void
 euroc_player_pause_btn_cb(void *ptr)
 {
+	//! @note: if you have groundtruth, pausing will unsync it from the tracker.
+
 	struct euroc_player *ep = (struct euroc_player *)ptr;
 	ep->playback.paused = !ep->playback.paused;
 
@@ -815,6 +838,7 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_ro_text(ep, "Set these before starting the stream", "Note");
 	u_var_add_bool(ep, &ep->playback.stereo, "Stereo (if available)");
 	u_var_add_bool(ep, &ep->playback.color, "Color (if available)");
+	u_var_add_bool(ep, &ep->playback.gt, "Groundtruth (if available)");
 	u_var_add_f32(ep, &ep->playback.skip_first_s, "First seconds to skip");
 	u_var_add_f32(ep, &ep->playback.scale, "Scale");
 	u_var_add_f64(ep, &ep->playback.speed, "Speed");
@@ -852,6 +876,7 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 
 	ep->playback.stereo = ep->dataset.is_stereo;
 	ep->playback.color = ep->dataset.is_colored;
+	ep->playback.gt = ep->dataset.has_gt;
 	ep->playback.skip_first_s = 0.0;
 	ep->playback.scale = 1.0;
 	ep->playback.speed = 1.0;
