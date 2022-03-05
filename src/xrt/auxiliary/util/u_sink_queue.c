@@ -52,6 +52,8 @@ struct u_sink_queue
 
 	pthread_t thread;
 	pthread_mutex_t mutex;
+
+	//! So we can wake the mainloop up
 	pthread_cond_t cond;
 
 	//! Should we keep running.
@@ -141,7 +143,7 @@ queue_mainloop(void *ptr)
 			pthread_cond_wait(&q->cond, &q->mutex);
 		}
 
-		// Where we woken up to turn off.
+		// In this case, queue_break_apart woke us up to turn us off.
 		if (!q->running) {
 			break;
 		}
