@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <pthread.h>
+#include <type_traits>
+
 
 using namespace xrt::auxiliary::tracking;
 
@@ -42,6 +44,7 @@ namespace xrt::auxiliary::tracking::psmv {
  */
 struct View
 {
+public:
 	cv::Mat undistort_rectify_map_x;
 	cv::Mat undistort_rectify_map_y;
 
@@ -68,6 +71,9 @@ struct View
 	}
 };
 
+// Has to be standard layout because is embedded in TrackerPSMV.
+static_assert(std::is_standard_layout<View>::value);
+
 /*!
  * The core object of the PS Move tracking setup.
  *
@@ -77,6 +83,7 @@ struct View
  */
 struct TrackerPSMV
 {
+public:
 	struct xrt_tracked_psmv base = {};
 	struct xrt_frame_sink sink = {};
 	struct xrt_frame_node node = {};
@@ -110,11 +117,13 @@ struct TrackerPSMV
 
 	cv::Ptr<cv::SimpleBlobDetector> sbd;
 
-	std::unique_ptr<PSMVFusionInterface> filter;
+	std::shared_ptr<PSMVFusionInterface> filter;
 
 	xrt_vec3 tracked_object_position;
 };
 
+// Has to be standard layout because of first element casts we do.
+static_assert(std::is_standard_layout<TrackerPSMV>::value);
 
 /*!
  * @brief Perform per-view (two in a stereo camera image) processing on an
