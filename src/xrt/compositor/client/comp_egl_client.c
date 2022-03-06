@@ -218,6 +218,8 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
 	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
 
+	client_gl_compositor_close(&ceglc->base);
+
 	free(ceglc);
 }
 
@@ -341,7 +343,8 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		insert_fence_func = insert_fence_android_native;
 	}
 
-	if (!client_gl_compositor_init(&ceglc->base, xcn, sc_create, insert_fence_func)) {
+	//! @todo implement client_gl_context_begin_func and client_gl_context_end_func
+	if (!client_gl_compositor_init(&ceglc->base, xcn, NULL, NULL, sc_create, insert_fence_func)) {
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
 		old_restore(&old, display);

@@ -47,12 +47,23 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct client_gl_memobj_swapchain *sc = client_gl_memobj_swapchain(xsc);
 
 	uint32_t image_count = sc->base.base.base.image_count;
+
+	struct client_gl_compositor *c = sc->base.gl_compositor;
+	enum xrt_result xret = c->context_begin(&c->base.base);
+
 	if (image_count > 0) {
-		glDeleteTextures(image_count, &sc->base.base.images[0]);
+		if (xret == XRT_SUCCESS) {
+			glDeleteTextures(image_count, &sc->base.base.images[0]);
+			glDeleteMemoryObjectsEXT(image_count, &sc->memory[0]);
+		}
+
 		U_ZERO_ARRAY(sc->base.base.images);
-		glDeleteMemoryObjectsEXT(image_count, &sc->memory[0]);
 		U_ZERO_ARRAY(sc->memory);
 		sc->base.base.base.image_count = 0;
+	}
+
+	if (xret == XRT_SUCCESS) {
+		c->context_end(&c->base.base);
 	}
 
 	// Drop our reference, does NULL checking.
@@ -88,8 +99,9 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 	sc->base.xscn = xscn;
 	sc->base.tex_target = tex_target;
 
-	struct xrt_swapchain_gl *xscgl = &sc->base.base;
+	sc->base.gl_compositor = c;
 
+	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 	glGenTextures(native_xsc->image_count, xscgl->images);
 
 	glCreateMemoryObjectsEXT(native_xsc->image_count, &sc->memory[0]);

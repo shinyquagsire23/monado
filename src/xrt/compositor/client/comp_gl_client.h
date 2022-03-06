@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_compositor.h"
+#include "os/os_threading.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +42,25 @@ struct client_gl_swapchain
 
 	//! The texture target of images in this swapchain.
 	uint32_t tex_target;
+
+	//! The compositor this swapchain was created on. Used when swapchain functions need access to the GL context.
+	struct client_gl_compositor *gl_compositor;
 };
+
+/*!
+ * Fetches the OpenGL context that is current on this thread and makes the OpenGL context given in the graphics binding
+ * current instead. Only one thread at a time can operate on the sections between @ref client_gl_context_begin_func and
+ * @ref client_gl_context_end_func, therefore client_gl_context_end_func MUST be called to avoid blocking the next
+ * thread calling @ref client_gl_context_begin_func.
+ *
+ * If the return value is not XRT_SUCCESS, @ref client_gl_context_end_func should not be called.
+ */
+typedef xrt_result_t (*client_gl_context_begin_func)(struct xrt_compositor *xc);
+
+/*!
+ * Makes the OpenGL context current that was current before @ref client_gl_context_begin_func was called.
+ */
+typedef void (*client_gl_context_end_func)(struct xrt_compositor *xc);
 
 /*!
  * The type of a swapchain create constructor.
@@ -85,6 +104,16 @@ struct client_gl_compositor
 	struct xrt_compositor_native *xcn;
 
 	/*!
+	 * Function pointer for making the OpenGL context current.
+	 */
+	client_gl_context_begin_func context_begin;
+
+	/*!
+	 * Function pointer for restoring prior OpenGL context.
+	 */
+	client_gl_context_end_func context_end;
+
+	/*!
 	 * Function pointer for creating the client swapchain.
 	 */
 	client_gl_swapchain_create_func create_swapchain;
@@ -94,6 +123,9 @@ struct client_gl_compositor
 	 * xrt_compositor::layer_commit.
 	 */
 	client_gl_insert_fence_func insert_fence;
+
+	//! @ref app_ctx Can only be current on one thread; block other threads while we know it is bound to a thread.
+	struct os_mutex context_mutex;
 };
 
 
@@ -130,8 +162,20 @@ client_gl_compositor(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
+                          client_gl_context_begin_func context_begin,
+                          client_gl_context_end_func context_end,
                           client_gl_swapchain_create_func create_swapchain,
                           client_gl_insert_fence_func insert_fence);
+
+/*!
+ * Free all resources from the client_gl_compositor, does not free the
+ * @ref client_gl_compositor itself. Nor does it free the
+ * @ref xrt_compositor_native given at init as that is not owned by us.
+ *
+ * @public @memberof client_gl_compositor
+ */
+void
+client_gl_compositor_close(struct client_gl_compositor *c);
 
 
 #ifdef __cplusplus

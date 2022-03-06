@@ -41,6 +41,8 @@ struct client_gl_memobj_swapchain
  *
  * This is most commonly used on desktop OpenGL.
  *
+ * The caller must ensure that the app context is current.
+ *
  * @see client_gl_swapchain_create_func, client_gl_compositor_init
  */
 struct xrt_swapchain *

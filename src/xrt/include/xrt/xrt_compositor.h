@@ -25,6 +25,7 @@ extern "C" {
 
 struct xrt_device;
 struct xrt_image_native;
+struct xrt_compositor;
 
 typedef struct VkCommandBuffer_T *VkCommandBuffer;
 #ifdef XRT_64_BIT

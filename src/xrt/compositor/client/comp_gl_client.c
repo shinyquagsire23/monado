@@ -373,10 +373,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	xrt_result_t xret = XRT_SUCCESS;
 
+	xret = c->context_begin(xc);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
 	if (info->array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
 			U_LOG_E("Only one array layer is supported with OpenGL ES 2");
+			c->context_end(xc);
 			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
@@ -384,6 +390,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
 		U_LOG_E("Invalid format!");
+		c->context_end(xc);
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 
@@ -394,6 +401,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 
 	if (xret != XRT_SUCCESS) {
+		c->context_end(xc);
 		return xret;
 	}
 	assert(xscn != NULL);
@@ -412,11 +420,13 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
 		// Drop our reference, does NULL checking.
 		xrt_swapchain_reference(&xsc, NULL);
+		c->context_end(xc);
 		return XRT_ERROR_OPENGL;
 	}
 
 	if (sc == NULL) {
 		U_LOG_E("Could not create OpenGL swapchain.");
+		c->context_end(xc);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -434,6 +444,8 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	sc->xscn = xscn;
 
 	glBindTexture(tex_target, prev_texture);
+
+	c->context_end(xc);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;
@@ -454,9 +466,29 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 	assert(!"Destroy should be implemented by the winsys code that uses the GL code.");
 }
 
+static xrt_result_t
+client_gl_context_begin_nop(struct xrt_compositor *xc)
+{
+	return XRT_SUCCESS;
+}
+
+static void
+client_gl_context_end_nop(struct xrt_compositor *xc)
+{
+	// No return
+}
+
+void
+client_gl_compositor_close(struct client_gl_compositor *c)
+{
+	os_mutex_destroy(&c->context_mutex);
+}
+
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
+                          client_gl_context_begin_func context_begin,
+                          client_gl_context_end_func context_end,
                           client_gl_swapchain_create_func create_swapchain,
                           client_gl_insert_fence_func insert_fence)
 {
@@ -477,6 +509,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
+	c->context_begin = context_begin ? context_begin : client_gl_context_begin_nop;
+	c->context_end = context_end ? context_end : client_gl_context_end_nop;
 	c->create_swapchain = create_swapchain;
 	c->insert_fence = insert_fence;
 	c->xcn = xcn;
@@ -492,6 +526,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 		c->base.base.info.formats[count++] = f;
 	}
 	c->base.base.info.format_count = count;
+
+	os_mutex_init(&c->context_mutex);
 
 	return true;
 }

@@ -16,6 +16,13 @@
 extern "C" {
 #endif
 
+struct client_gl_context
+{
+	Display *dpy;
+	GLXContext ctx;
+	GLXDrawable read;
+	GLXDrawable draw;
+};
 
 /*!
  * @class client_gl_xlib_compositor
@@ -28,6 +35,16 @@ struct client_gl_xlib_compositor
 {
 	//! OpenGL compositor wrapper base.
 	struct client_gl_compositor base;
+
+	/*!
+	 * Temporary storage for "current" OpenGL context while app_context is
+	 * made current via context_begin/context_end. We only need one because
+	 * app_context can only be made current in one thread at a time too.
+	 */
+	struct client_gl_context temp_context;
+
+	//! GL context provided in graphics binding.
+	struct client_gl_context app_context;
 };
 
 /*!
