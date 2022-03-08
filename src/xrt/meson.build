@@ -5,6 +5,7 @@ xrt_include = include_directories('include')
 
 subdir('include')
 subdir('auxiliary')
+subdir('tracking')
 subdir('drivers')
 subdir('compositor')
 subdir('state_trackers')
