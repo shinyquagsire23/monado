@@ -25,6 +25,7 @@
 #include "util/u_config_json.h"
 
 #include "os/os_time.h"
+#include "xrt/xrt_device.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -118,9 +119,12 @@ cemu_device_destroy(struct xrt_device *xdev)
 	struct cemu_system *system = dev->sys;
 
 	// Remove the variable tracking.
+	u_device_free(&system->out_hand[dev->hand_index]->base);
 
-	u_device_free(&dev->base);
+	system->out_hand[dev->hand_index] = NULL;
+
 	if ((system->out_hand[0] == NULL) && (system->out_hand[1] == NULL)) {
+		xrt_device_destroy(&system->in_hand);
 		u_var_remove_root(system);
 		free(system);
 	}
