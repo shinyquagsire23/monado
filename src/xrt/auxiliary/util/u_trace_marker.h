@@ -66,6 +66,8 @@ u_trace_marker_init(void);
 #define COMP_TRACE_IDENT(IDENT) U_TRACE_EVENT(comp, #IDENT)
 #define SINK_TRACE_MARKER() U_TRACE_EVENT(sink, __func__)
 #define SINK_TRACE_IDENT(IDENT) U_TRACE_EVENT(sink, #IDENT)
+#define TRACK_TRACE_MARKER() U_TRACE_EVENT(track, __func__)
+#define TRACK_TRACE_IDENT(IDENT) U_TRACE_EVENT(track, #IDENT)
 
 
 /*
@@ -94,6 +96,7 @@ u_trace_marker_init(void);
 	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
 	C(sink, "sink")     /* Sink/frameserver calls */                                                               \
 	C(comp, "comp")     /* Compositor calls  */                                                                    \
+	C(track, "track")   /* Tracking calls  */                                                                      \
 	C(timing, "timing") /* Timing calls */
 
 PERCETTO_CATEGORY_DECLARE(U_TRACE_CATEGORIES)
