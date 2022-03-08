@@ -11,3 +11,8 @@ fi
 mkdir -p ~/.local/share/monado
 cd ~/.local/share/monado
 git clone https://gitlab.freedesktop.org/monado/utilities/hand-tracking-models
+# Some weird distros aren't configured to automagically do the LFS things; do them just in case.
+cd hand-tracking-models
+git lfs install
+git lfs fetch
+git lfs pull
