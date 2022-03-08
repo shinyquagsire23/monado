@@ -52,16 +52,20 @@ u_trace_marker_setup(enum u_trace_which which);
 void
 u_trace_marker_init(void);
 
+#define VK_TRACE_MARKER(IDENT) U_TRACE_EVENT(vk, __func__)
 #define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
-#define DRV_TRACE_IDENT(IDENT) U_TRACE_EVENT(drv, #IDENT)
-#define SINK_TRACE_IDENT(IDENT) U_TRACE_EVENT(sink, #IDENT)
 #define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
+#define XRT_TRACE_IDENT(IDENT) U_TRACE_EVENT(xrt, #IDENT)
 #define DRV_TRACE_MARKER() U_TRACE_EVENT(drv, __func__)
+#define DRV_TRACE_IDENT(IDENT) U_TRACE_EVENT(drv, #IDENT)
 #define IPC_TRACE_MARKER() U_TRACE_EVENT(ipc, __func__)
+#define IPC_TRACE_IDENT(IDENT) U_TRACE_EVENT(ipc, #IDENT)
 #define OXR_TRACE_MARKER() U_TRACE_EVENT(oxr, __func__)
+#define OXR_TRACE_IDENT(IDENT) U_TRACE_EVENT(oxr, #IDENT)
 #define COMP_TRACE_MARKER() U_TRACE_EVENT(comp, __func__)
 #define COMP_TRACE_IDENT(IDENT) U_TRACE_EVENT(comp, #IDENT)
 #define SINK_TRACE_MARKER() U_TRACE_EVENT(sink, __func__)
+#define SINK_TRACE_IDENT(IDENT) U_TRACE_EVENT(sink, #IDENT)
 
 
 /*
@@ -86,10 +90,10 @@ u_trace_marker_init(void);
 	C(vk, "vk")         /* Vulkan calls */                                                                         \
 	C(xrt, "xrt")       /* Misc XRT calls */                                                                       \
 	C(drv, "drv")       /* Driver calls */                                                                         \
-	C(sink, "sink")     /* Sink/frameserver calls */                                                               \
-	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
-	C(comp, "comp")     /* Compositor calls  */                                                                    \
 	C(ipc, "ipc")       /* IPC calls */                                                                            \
+	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
+	C(sink, "sink")     /* Sink/frameserver calls */                                                               \
+	C(comp, "comp")     /* Compositor calls  */                                                                    \
 	C(timing, "timing") /* Timing calls */
 
 PERCETTO_CATEGORY_DECLARE(U_TRACE_CATEGORIES)
