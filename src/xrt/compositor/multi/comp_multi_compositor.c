@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 #include <unistd.h>
@@ -159,6 +160,19 @@ multi_compositor_import_fence(struct xrt_compositor *xc,
 	struct multi_compositor *mc = multi_compositor(xc);
 
 	return xrt_comp_import_fence(&mc->msc->xcn->base, handle, out_xcf);
+}
+
+static xrt_result_t
+multi_compositor_create_semaphore(struct xrt_compositor *xc,
+                                  xrt_graphics_sync_handle_t *out_handle,
+                                  struct xrt_compositor_semaphore **out_xcsem)
+{
+	COMP_TRACE_MARKER();
+
+	struct multi_compositor *mc = multi_compositor(xc);
+
+	// We don't wrap the semaphore and it's safe to pass it out directly.
+	return xrt_comp_create_semaphore(&mc->msc->xcn->base, out_handle, out_xcsem);
 }
 
 static xrt_result_t
@@ -537,6 +551,48 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	return XRT_SUCCESS;
 }
 
+static void
+wait_semaphore(struct xrt_compositor_semaphore *xcsem, uint64_t value)
+{
+	COMP_TRACE_MARKER();
+	xrt_result_t ret = XRT_SUCCESS;
+
+	// 100ms
+	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
+
+	do {
+		ret = xrt_compositor_semaphore_wait(xcsem, value, timeout_ns);
+		if (ret != XRT_TIMEOUT) {
+			break;
+		}
+
+		U_LOG_W("Waiting on client semaphore value '%" PRIu64 "' timed out > 100ms!", value);
+	} while (true);
+}
+
+static xrt_result_t
+multi_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
+                                             int64_t frame_id,
+                                             struct xrt_compositor_semaphore *xcsem,
+                                             uint64_t value)
+{
+	COMP_TRACE_MARKER();
+
+	struct multi_compositor *mc = multi_compositor(xc);
+
+	// Wait for the semaphore.
+	wait_semaphore(xcsem, value);
+
+	wait_for_scheduled_free(mc);
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	os_mutex_lock(&mc->msc->list_and_timing_lock);
+	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
+	os_mutex_unlock(&mc->msc->list_and_timing_lock);
+
+	return XRT_SUCCESS;
+}
+
 static xrt_result_t
 multi_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_xce)
 {
@@ -614,6 +670,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	mc->base.base.create_swapchain = multi_compositor_create_swapchain;
 	mc->base.base.import_swapchain = multi_compositor_import_swapchain;
 	mc->base.base.import_fence = multi_compositor_import_fence;
+	mc->base.base.create_semaphore = multi_compositor_create_semaphore;
 	mc->base.base.begin_session = multi_compositor_begin_session;
 	mc->base.base.end_session = multi_compositor_end_session;
 	mc->base.base.predict_frame = multi_compositor_predict_frame;
@@ -630,6 +687,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	mc->base.base.layer_equirect1 = multi_compositor_layer_equirect1;
 	mc->base.base.layer_equirect2 = multi_compositor_layer_equirect2;
 	mc->base.base.layer_commit = multi_compositor_layer_commit;
+	mc->base.base.layer_commit_with_semaphore = multi_compositor_layer_commit_with_semaphore;
 	mc->base.base.destroy = multi_compositor_destroy;
 	mc->base.base.poll_events = multi_compositor_poll_events;
 	mc->msc = msc;
