@@ -1,15 +1,17 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Defines and common includes for camera-based hand tracker
+ * @brief  Old RGB hand tracking header.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_ht
+ * @ingroup tracking
  */
 
 #pragma once
 
-#include "ht_interface.h"
+#include "tracking/t_hand_tracking.h"
+
 #include "os/os_threading.h"
 
 #include "xrt/xrt_device.h"
@@ -29,43 +31,24 @@
 
 #include "util/u_template_historybuf.hpp"
 
-#ifdef XRT_HAVE_GST
-#include "gstreamer/gst_pipeline.h"
-#include "gstreamer/gst_sink.h"
-#endif
-
 #include <opencv2/opencv.hpp>
 
 #include <vector>
+namespace xrt::tracking::ht::old_rgb {
 
 using namespace xrt::auxiliary::util;
 
-#define HT_TRACE(htd, ...) U_LOG_XDEV_IFL_T(&htd->base, htd->log_level, __VA_ARGS__)
-#define HT_DEBUG(htd, ...) U_LOG_XDEV_IFL_D(&htd->base, htd->log_level, __VA_ARGS__)
-#define HT_INFO(htd, ...) U_LOG_XDEV_IFL_I(&htd->base, htd->log_level, __VA_ARGS__)
-#define HT_WARN(htd, ...) U_LOG_XDEV_IFL_W(&htd->base, htd->log_level, __VA_ARGS__)
-#define HT_ERROR(htd, ...) U_LOG_XDEV_IFL_E(&htd->base, htd->log_level, __VA_ARGS__)
+#define HT_TRACE(htd, ...) U_LOG_IFL_T(htd->log_level, __VA_ARGS__)
+#define HT_DEBUG(htd, ...) U_LOG_IFL_D(htd->log_level, __VA_ARGS__)
+#define HT_INFO(htd, ...) U_LOG_IFL_I(htd->log_level, __VA_ARGS__)
+#define HT_WARN(htd, ...) U_LOG_IFL_W(htd->log_level, __VA_ARGS__)
+#define HT_ERROR(htd, ...) U_LOG_IFL_E(htd->log_level, __VA_ARGS__)
 
-// #define ht_
-
-
-// To make clang-tidy happy
-#define opencv_distortion_param_num 4
-
-/*
- *
- * Compile-time defines to choose where to get camera frames from and what kind of output to give out
- *
- */
 #undef EXPERIMENTAL_DATASET_RECORDING
 
 #define FCMIN_BBOX_ORIENTATION 3.0f
 #define FCMIN_D_BB0X_ORIENTATION 10.0f
 #define BETA_BB0X_ORIENTATION 0.0f
-
-// #define FCMIN_BBOX_POSITION 15.0f
-// #define FCMIN_D_BB0X_POSITION 12.0f
-// #define BETA_BB0X_POSITION 0.3f
 
 #define FCMIN_BBOX_POSITION 30.0f
 #define FCMIN_D_BB0X_POSITION 25.0f
@@ -78,10 +61,6 @@ using namespace xrt::auxiliary::util;
 #define BETA_HAND 0.0083f
 
 class ht_model;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum HandJoint7Keypoint
 {
@@ -127,7 +106,7 @@ enum HandJoint21Keypoint
 struct Palm7KP
 {
 	struct xrt_vec2 kps[7];
-	float confidence; // BETWEEN 0 and 1. okay???? okay????!???
+	float confidence; // between 0 and 1
 };
 
 struct DetectionModelOutput
@@ -184,12 +163,6 @@ struct HandHistory3D
 
 struct HandHistory2DBBox
 {
-	// Ugh, I should definitely iterate these somehow...
-	// m_filter_euro_vec2 m_filter_wrist;
-	// m_filter_euro_vec2 m_filter_index;
-	// m_filter_euro_vec2 m_filter_middle;
-	// m_filter_euro_vec2 m_filter_pinky;
-
 	m_filter_euro_vec2 m_filter_center;
 	m_filter_euro_vec2 m_filter_direction;
 
@@ -201,16 +174,15 @@ struct HandHistory2DBBox
 };
 
 // Forward declaration for ht_view
-struct ht_device;
+struct HandTracking;
 
 struct ht_view
 {
-	ht_device *htd;
+	HandTracking *htd;
 	ht_model *htm;
-	int view; // :)))
+	int view;
 
-	// Loaded from config file
-	cv::Matx<double, opencv_distortion_param_num, 1> distortion;
+	cv::Matx<double, 4, 1> distortion;
 	cv::Matx<double, 3, 3> cameraMatrix;
 	cv::Matx33d rotate_camera_to_stereo_camera; // R1 or R2
 
@@ -218,13 +190,6 @@ struct ht_view
 	cv::Mat debug_out_to_this;
 
 	std::vector<HandHistory2DBBox> bbox_histories;
-};
-
-enum ht_detection_scribble
-{
-	HT_DETECTION_SCRIBBLE_ALL,
-	HT_DETECTION_SCRIBBLE_SOME,
-	HT_DETECTION_SCRIBBLE_NONE
 };
 
 struct ht_dynamic_config
@@ -252,100 +217,89 @@ struct ht_startup_config
 	char model_slug[1024];
 };
 
-// This is all ad-hoc! Review very welcome!
-struct ht_device
+/*!
+ * Main class of old style RGB hand tracking.
+ *
+ * @ingroup aux_tracking
+ */
+struct HandTracking
 {
-	struct xrt_device base;
+public:
+	// Base thing, has to be first.
+	t_hand_tracking_sync base = {};
 
-	struct xrt_tracking_origin tracking_origin; // probably cargo-culted
+	struct u_sink_debug debug_sink = {};
 
-	struct xrt_frame_sink sink;
-	struct xrt_frame_node node;
-
-	struct u_sink_debug debug_sink; // this must be bad.
-
-
-	struct
-	{
-		struct xrt_frame_context xfctx;
-
-		struct xrt_fs *xfs;
-
-		struct xrt_fs_mode mode;
-
-		struct xrt_prober *prober;
-
-		struct xrt_size one_view_size_px;
-	} camera;
-
-
+	struct xrt_size one_view_size_px = {};
 
 #if defined(EXPERIMENTAL_DATASET_RECORDING)
 	struct
 	{
-		struct u_var_button start_json_record;
-	} gui;
+		struct u_var_button start_json_record = {};
+	} gui = {};
+
 	struct
 	{
-		struct gstreamer_pipeline *gp;
-		struct gstreamer_sink *gs;
-		struct xrt_frame_sink *sink;
-		struct xrt_frame_context xfctx;
-		uint64_t offset_ns;
-		uint64_t last_frame_ns;
-		uint64_t current_index;
+		struct gstreamer_pipeline *gp = nullptr;
+		struct gstreamer_sink *gs = nullptr;
+		struct xrt_frame_sink *sink = nullptr;
+		struct xrt_frame_context xfctx = {};
+		uint64_t offset_ns = {};
+		uint64_t last_frame_ns = {};
+		uint64_t current_index = {};
 
-		cJSON *output_root;
-		cJSON *output_array;
-	} gst;
+		cJSON *output_root = nullptr;
+		cJSON *output_array = nullptr;
+	} gst = {};
 #endif
 
-	struct xrt_frame *frame_for_process;
-	cv::Mat *mat_for_process;
+	struct ht_view views[2] = {};
 
-	struct ht_view views[2];
+	float baseline = {};
+	struct xrt_quat stereo_camera_to_left_camera = {};
 
-	float baseline;
-	struct xrt_quat stereo_camera_to_left_camera;
+	uint64_t current_frame_timestamp = {}; // SUPER dumb.
 
-	uint64_t current_frame_timestamp; // SUPER dumb.
+	std::vector<HandHistory3D> histories_3d = {};
 
-	std::vector<HandHistory3D> histories_3d;
-
-	struct os_mutex openxr_hand_data_mediator;
-	struct xrt_hand_joint_set hands_for_openxr[2];
-	uint64_t hands_for_openxr_timestamp;
+	struct os_mutex openxr_hand_data_mediator = {};
+	struct xrt_hand_joint_set hands_for_openxr[2] = {};
+	uint64_t hands_for_openxr_timestamp = {};
 
 	// Only change these when you have unlocked_between_frames, ie. when the hand tracker is between frames.
-	bool tracking_should_die;
-	bool tracking_should_record_dataset;
-	struct os_mutex unlocked_between_frames;
+	bool tracking_should_die = {};
+	bool tracking_should_record_dataset = {};
+	struct os_mutex unlocked_between_frames = {};
 
 	// Change this whenever you want
-	bool debug_scribble = true;
+	volatile bool debug_scribble = true;
 
-	ht_run_type run_type;
+	struct ht_startup_config startup_config = {};
+	struct ht_dynamic_config dynamic_config = {};
 
+	enum u_logging_level log_level = U_LOGGING_INFO;
 
+public:
+	explicit HandTracking();
+	~HandTracking();
 
-	struct ht_startup_config startup_config;
-	struct ht_dynamic_config dynamic_config;
+	static inline HandTracking &
+	fromC(t_hand_tracking_sync *ht_sync)
+	{
+		return *reinterpret_cast<HandTracking *>(ht_sync);
+	}
 
+	static void
+	cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
+	                 struct xrt_frame *left_frame,
+	                 struct xrt_frame *right_frame,
+	                 struct xrt_hand_joint_set *out_left_hand,
+	                 struct xrt_hand_joint_set *out_right_hand,
+									 uint64_t *out_timestamp_ns);
 
-	int dynamic_config_to_use;
-
-
-
-	enum u_logging_level log_level;
+	static void
+	cCallbackDestroy(t_hand_tracking_sync *ht_sync);
 };
 
-static inline struct ht_device *
-ht_device(struct xrt_device *xdev)
-{
-	return (struct ht_device *)xdev;
-}
 
-
-#ifdef __cplusplus
-}
-#endif
+} // namespace xrt::tracking::ht::old_rgb

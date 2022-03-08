@@ -215,14 +215,8 @@ endif()
 if(XRT_BUILD_DRIVER_HANDTRACKING)
 	add_library(
 		drv_ht STATIC
-		ht/ht_algorithm.cpp
-		ht/ht_driver.cpp
-		ht/ht_driver.hpp
+		ht/ht_driver.c
 		ht/ht_interface.h
-		ht/ht_model.cpp
-		ht/ht_hand_math.cpp
-		ht/ht_image_math.cpp
-		ht/ht_nms.cpp
 		)
 	target_link_libraries(
 		drv_ht
@@ -234,6 +228,8 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 			aux_gstreamer
 			ONNXRuntime::ONNXRuntime
 			${OpenCV_LIBRARIES}
+			t_ht_old_rgb
+			hand_async
 		)
 	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 	list(APPEND ENABLED_DRIVERS ht)

@@ -6,15 +6,28 @@
  * @author Moses Turner <moses@collabora.com>
  * @ingroup drv_ht
  */
+#pragma once
 
 #include "math/m_vec2.h"
 #include "math/m_vec3.h"
 
-#include "ht_image_math.hpp"
-
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
+
+/*!
+ * This is a template so that we can use xrt_vec3 or xrt_vec2.
+ * Please don't use this for anything other than xrt_vec3 or xrt_vec2!
+ */
+template <typename T>
+T
+transformVecBy2x3(T in, cv::Matx23f warp_back)
+{
+	T rr;
+	rr.x = (in.x * warp_back(0, 0)) + (in.y * warp_back(0, 1)) + warp_back(0, 2);
+	rr.y = (in.x * warp_back(1, 0)) + (in.y * warp_back(1, 1)) + warp_back(1, 2);
+	return rr;
+}
 
 cv::Scalar
 hsv2rgb(float fH, float fS, float fV)

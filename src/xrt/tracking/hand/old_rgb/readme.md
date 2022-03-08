@@ -8,7 +8,7 @@ SPDX-License-Identifier: BSL-1.0
 # What is this?
 This is a driver to do optical hand tracking. The actual code mostly written by Moses Turner, with tons of help from Marcus Edel, Jakob Bornecrantz, Ryan Pavlik, and Christoph Haag. Jakob Bornecrantz and Marcus Edel are the main people who gathered training data for the initial Collabora models.
 
-Currently, it works with the Valve Index. In the past, it was tested with a Luxonis 1090ffc, and in the future it should work fine with devices like the T265, Leap Motion Controller (w/ LeapUVC), or PS4/PS5 cam, should there be enough interest for any of those. 
+In `main` it only works with Valve Index, although we've used a lot of Luxonis cameras in development. In the future it should work fine with devices like the T265, or PS4/PS5 cam, should there be enough interest for any of those. 
 
 Under good lighting, I would say it's around as good as Oculus Quest 2's hand tracking. Not that I'm trying to make any claims; that's just what I honestly would tell somebody if they are wondering if it's worth testing out.
 

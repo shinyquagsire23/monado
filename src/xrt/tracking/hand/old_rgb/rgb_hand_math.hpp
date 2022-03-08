@@ -1,3 +1,5 @@
+#pragma once
+
 // Copyright 2021, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
@@ -11,8 +13,7 @@
 #include "math/m_api.h"
 #include "math/m_vec3.h"
 
-#include "ht_driver.hpp"
-#include "ht_hand_math.hpp"
+#include "rgb_sync.hpp"
 #include "util/u_time.h"
 #include "xrt/xrt_defines.h"
 
@@ -299,7 +300,7 @@ exp_smooth(double alpha, double y, double prev_y)
 }
 
 void
-handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
+handEuroFiltersRun(struct HandTracking *htd, HandHistory3D *f, Hand3D *out_hand)
 {
 	// Assume present hand is in element 0!
 #if 0
@@ -375,7 +376,7 @@ handEuroFiltersRun(struct ht_device *htd, HandHistory3D *f, Hand3D *out_hand)
 }
 
 bool
-rejectTooFar(struct ht_device *htd, Hand3D *hand)
+rejectTooFar(struct HandTracking *htd, Hand3D *hand)
 {
 	static const float max_dist = 1.0f; // this sucks too - make it bigger if you can.
 	const float max_dist_from_camera_sqrd = max_dist * max_dist;
@@ -394,7 +395,7 @@ reject:
 }
 
 bool
-rejectTooClose(struct ht_device *htd, Hand3D *hand)
+rejectTooClose(struct HandTracking *htd, Hand3D *hand)
 {
 	const float min_dist = 0.12f; // Be a bit aggressive here - it's nice to not let people see our tracking fail
 	                              // when the hands are way too close
@@ -418,7 +419,7 @@ reject:
 }
 
 bool
-rejectTinyPalm(struct ht_device *htd, Hand3D *hand)
+rejectTinyPalm(struct HandTracking *htd, Hand3D *hand)
 {
 	// This one sucks, because some people really have tiny hands. If at some point you can stop using it, stop
 	// using it.

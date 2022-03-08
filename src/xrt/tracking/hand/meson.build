@@ -1,6 +1,8 @@
 # Copyright 2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+subdir('old_rgb')
+
 
 ###
 # Async wrapper around sync helper.

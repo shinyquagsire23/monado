@@ -1,11 +1,20 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Camera based hand tracking mainloop algorithm.
- * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_ht
+ * @brief  Old RGB hand tracking main file.
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup aux_tracking
  */
+
+#include "rgb_interface.h"
+#include "rgb_sync.hpp"
+#include "xrt/xrt_frame.h"
+
+
+using namespace xrt::tracking::ht::old_rgb;
+
+
 
 #include "xrt/xrt_defines.h"
 
@@ -13,14 +22,76 @@
 #include "util/u_frame.h"
 #include "util/u_trace_marker.h"
 
-#include "ht_algorithm.hpp"
-#include "ht_driver.hpp"
-#include "ht_hand_math.hpp"
-#include "ht_image_math.hpp"
-#include "ht_model.hpp"
+
 #include "templates/NaivePermutationSort.hpp"
 
 #include <future>
+
+
+// Copyright 2021, Collabora, Ltd.
+// SPDX-License-Identifier: BSL-1.0
+/*!
+ * @file
+ * @brief  Camera based hand tracking driver code.
+ * @author Moses Turner <moses@collabora.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @ingroup drv_ht
+ */
+
+#include "gstreamer/gst_pipeline.h"
+#include "gstreamer/gst_sink.h"
+
+#include "xrt/xrt_defines.h"
+#include "xrt/xrt_frame.h"
+#include "xrt/xrt_frameserver.h"
+
+#include "os/os_time.h"
+#include "os/os_threading.h"
+
+#include "math/m_api.h"
+#include "math/m_eigen_interop.hpp"
+
+#include "util/u_device.h"
+#include "util/u_frame.h"
+#include "util/u_sink.h"
+#include "util/u_format.h"
+#include "util/u_logging.h"
+#include "util/u_time.h"
+#include "util/u_trace_marker.h"
+#include "util/u_time.h"
+#include "util/u_json.h"
+#include "util/u_config_json.h"
+
+#include "tracking/t_frame_cv_mat_wrapper.hpp"
+#include "tracking/t_calibration_opencv.hpp"
+
+#include "rgb_hand_math.hpp"
+#include "rgb_image_math.hpp"
+#include "rgb_model.hpp"
+
+#include <cjson/cJSON.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/calib3d.hpp>
+
+#include <math.h>
+#include <float.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+#include <cmath>
+
+#include <limits>
+#include <thread>
+#include <future>
+#include <fstream>
+#include <numeric>
+#include <sstream>
+#include <iostream>
+#include <exception>
+#include <algorithm>
+
+
 
 // Flags to tell state tracker that these are indeed valid joints
 static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_relation_flags)(
@@ -29,7 +100,7 @@ static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_rela
 
 
 static void
-htProcessJoint(struct ht_device *htd,
+htProcessJoint(struct HandTracking *htd,
                struct xrt_vec3 model_out,
                struct xrt_hand_joint_set *hand,
                enum xrt_hand_joint idx)
@@ -62,7 +133,7 @@ errHistory2D(const HandHistory2DBBox &past, const Palm7KP &present)
 static std::vector<Hand2D>
 htImageToKeypoints(struct ht_view *htv)
 {
-	struct ht_device *htd = htv->htd;
+	struct HandTracking *htd = htv->htd;
 	ht_model *htm = htv->htm;
 
 	cv::Mat raw_input = htv->run_model_on_this;
@@ -247,7 +318,7 @@ jsonAddJoint(cJSON *into_this, xrt_pose loc, const char *name)
 }
 
 void
-jsonMaybeAddSomeHands(struct ht_device *htd, bool err)
+jsonMaybeAddSomeHands(struct HandTracking *htd, bool err)
 {
 	if (!htd->tracking_should_record_dataset) {
 		return;
@@ -311,37 +382,7 @@ jsonMaybeAddSomeHands(struct ht_device *htd, bool err)
 
 
 static void
-htExitFrame(struct ht_device *htd,
-            bool err,
-            struct xrt_hand_joint_set final_hands_ordered_by_handedness[2],
-            uint64_t timestamp)
-{
-
-	os_mutex_lock(&htd->openxr_hand_data_mediator);
-	if (err) {
-		htd->hands_for_openxr[0].is_active = false;
-		htd->hands_for_openxr[1].is_active = false;
-	} else {
-		memcpy(&htd->hands_for_openxr[0], &final_hands_ordered_by_handedness[0],
-		       sizeof(struct xrt_hand_joint_set));
-		memcpy(&htd->hands_for_openxr[1], &final_hands_ordered_by_handedness[1],
-		       sizeof(struct xrt_hand_joint_set));
-		htd->hands_for_openxr_timestamp = timestamp;
-		HT_DEBUG(htd, "Adding ts %zu", htd->hands_for_openxr_timestamp);
-	}
-	os_mutex_unlock(&htd->openxr_hand_data_mediator);
-#ifdef EXPERIMENTAL_DATASET_RECORDING
-	if (htd->tracking_should_record_dataset) {
-		// Add nothing-entry to json file.
-		jsonMaybeAddSomeHands(htd, err);
-		htd->gst.current_index++;
-	}
-#endif
-}
-
-
-static void
-htJointDisparityMath(struct ht_device *htd, Hand2D *hand_in_left, Hand2D *hand_in_right, Hand3D *out_hand)
+htJointDisparityMath(struct HandTracking *htd, Hand2D *hand_in_left, Hand2D *hand_in_right, Hand3D *out_hand)
 {
 	for (int i = 0; i < 21; i++) {
 		// Believe it or not, this is where the 3D stuff happens!
@@ -361,29 +402,416 @@ htJointDisparityMath(struct ht_device *htd, Hand2D *hand_in_left, Hand2D *hand_i
 }
 int64_t last_frame, this_frame;
 
+DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)
+
+/*!
+ * Setup helper functions.
+ */
+
+static bool
+getCalibration(struct HandTracking *htd, t_stereo_camera_calibration *calibration)
+{
+	xrt::auxiliary::tracking::StereoCameraCalibrationWrapper wrap(calibration);
+	xrt_vec3 trans = {(float)wrap.camera_translation_mat(0, 0), (float)wrap.camera_translation_mat(1, 0),
+	                  (float)wrap.camera_translation_mat(2, 0)};
+	htd->baseline = m_vec3_len(trans);
+
+#if 0
+	std::cout << "\n\nTRANSLATION VECTOR IS\n" << wrap.camera_translation_mat;
+	std::cout << "\n\nROTATION FROM LEFT TO RIGHT IS\n" << wrap.camera_rotation_mat << "\n";
+#endif
+
+	cv::Matx34d P1;
+	cv::Matx34d P2;
+
+	cv::Matx44d Q;
+
+	// The only reason we're calling stereoRectify is because we want R1 and R2 for the
+	cv::stereoRectify(wrap.view[0].intrinsics_mat,                  // cameraMatrix1
+	                  wrap.view[0].distortion_mat,                  // distCoeffs1
+	                  wrap.view[1].intrinsics_mat,                  // cameraMatrix2
+	                  wrap.view[1].distortion_mat,                  // distCoeffs2
+	                  wrap.view[0].image_size_pixels_cv,            // imageSize*
+	                  wrap.camera_rotation_mat,                     // R
+	                  wrap.camera_translation_mat,                  // T
+	                  htd->views[0].rotate_camera_to_stereo_camera, // R1
+	                  htd->views[1].rotate_camera_to_stereo_camera, // R2
+	                  P1,                                           // P1
+	                  P2,                                           // P2
+	                  Q,                                            // Q
+	                  0,                                            // flags
+	                  -1.0f,                                        // alpha
+	                  cv::Size(),                                   // newImageSize
+	                  NULL,                                         // validPixROI1
+	                  NULL);                                        // validPixROI2
+
+	//* Good enough guess that view 0 and view 1 are the same size.
+
+	for (int i = 0; i < 2; i++) {
+		htd->views[i].cameraMatrix = wrap.view[i].intrinsics_mat;
+
+		htd->views[i].distortion = wrap.view[i].distortion_fisheye_mat;
+	}
+
+	htd->one_view_size_px.w = wrap.view[0].image_size_pixels.w;
+	htd->one_view_size_px.h = wrap.view[0].image_size_pixels.h;
+
+	U_LOG_E("%d %d %p %p", htd->one_view_size_px.w, htd->one_view_size_px.h,
+	        (void *)&htd->one_view_size_px.w, (void *)&htd->one_view_size_px.h);
+
+
+
+	cv::Matx33d rotate_stereo_camera_to_left_camera = htd->views[0].rotate_camera_to_stereo_camera.inv();
+
+	xrt_matrix_3x3 s;
+	s.v[0] = rotate_stereo_camera_to_left_camera(0, 0);
+	s.v[1] = rotate_stereo_camera_to_left_camera(0, 1);
+	s.v[2] = rotate_stereo_camera_to_left_camera(0, 2);
+
+	s.v[3] = rotate_stereo_camera_to_left_camera(1, 0);
+	s.v[4] = rotate_stereo_camera_to_left_camera(1, 1);
+	s.v[5] = rotate_stereo_camera_to_left_camera(1, 2);
+
+	s.v[6] = rotate_stereo_camera_to_left_camera(2, 0);
+	s.v[7] = rotate_stereo_camera_to_left_camera(2, 1);
+	s.v[8] = rotate_stereo_camera_to_left_camera(2, 2);
+
+	xrt_quat tmp;
+
+	math_quat_from_matrix_3x3(&s, &tmp);
+
+	// Weird that I have to invert this quat, right? I think at some point - like probably just above this - I must
+	// have swapped row-major and col-major - remember, if you transpose a rotation matrix, you get its inverse.
+	// Doesn't matter that I don't understand - non-inverted looks definitely wrong, inverted looks definitely
+	// right.
+	math_quat_invert(&tmp, &htd->stereo_camera_to_left_camera);
+
+#if 0
+	U_LOG_E("%f %f %f %f", htd->stereo_camera_to_left_camera.w, htd->stereo_camera_to_left_camera.x,
+	        htd->stereo_camera_to_left_camera.y, htd->stereo_camera_to_left_camera.z);
+#endif
+
+	return true;
+}
+
+#if 0
+static void
+getStartupConfig(struct HandTracking *htd, const cJSON *startup_config)
+{
+	const cJSON *palm_detection_type = u_json_get(startup_config, "palm_detection_model");
+	const cJSON *keypoint_estimation_type = u_json_get(startup_config, "keypoint_estimation_model");
+	const cJSON *uvc_wire_format = u_json_get(startup_config, "uvc_wire_format");
+
+	// IsString does its own null-checking
+	if (cJSON_IsString(palm_detection_type)) {
+		bool is_collabora = (strcmp(cJSON_GetStringValue(palm_detection_type), "collabora") == 0);
+		bool is_mediapipe = (strcmp(cJSON_GetStringValue(palm_detection_type), "mediapipe") == 0);
+		if (!is_collabora && !is_mediapipe) {
+			HT_WARN(htd, "Unknown palm detection type %s - should be \"collabora\" or \"mediapipe\"",
+			        cJSON_GetStringValue(palm_detection_type));
+		}
+		htd->startup_config.palm_detection_use_mediapipe = is_mediapipe;
+	}
+
+	if (cJSON_IsString(keypoint_estimation_type)) {
+		bool is_collabora = (strcmp(cJSON_GetStringValue(keypoint_estimation_type), "collabora") == 0);
+		bool is_mediapipe = (strcmp(cJSON_GetStringValue(keypoint_estimation_type), "mediapipe") == 0);
+		if (!is_collabora && !is_mediapipe) {
+			HT_WARN(htd, "Unknown keypoint estimation type %s - should be \"collabora\" or \"mediapipe\"",
+			        cJSON_GetStringValue(keypoint_estimation_type));
+		}
+		htd->startup_config.keypoint_estimation_use_mediapipe = is_mediapipe;
+	}
+
+	if (cJSON_IsString(uvc_wire_format)) {
+		bool is_yuv = (strcmp(cJSON_GetStringValue(uvc_wire_format), "yuv") == 0);
+		bool is_mjpeg = (strcmp(cJSON_GetStringValue(uvc_wire_format), "mjpeg") == 0);
+		if (!is_yuv && !is_mjpeg) {
+			HT_WARN(htd, "Unknown wire format type %s - should be \"yuv\" or \"mjpeg\"",
+			        cJSON_GetStringValue(uvc_wire_format));
+		}
+		if (is_yuv) {
+			HT_DEBUG(htd, "Using YUYV422!");
+			htd->startup_config.desired_format = XRT_FORMAT_YUYV422;
+		} else {
+			HT_DEBUG(htd, "Using MJPEG!");
+			htd->startup_config.desired_format = XRT_FORMAT_MJPEG;
+		}
+	}
+}
+
+static void
+getUserConfig(struct HandTracking *htd)
+{
+	// The game here is to avoid bugs + be paranoid, not to be fast. If you see something that seems "slow" - don't
+	// fix it. Any of the tracking code is way stickier than this could ever be.
+
+	struct u_config_json config_json = {};
+
+	u_config_json_open_or_create_main_file(&config_json);
+	if (!config_json.file_loaded) {
+		return;
+	}
+
+	cJSON *ht_config_json = cJSON_GetObjectItemCaseSensitive(config_json.root, "config_ht");
+	if (ht_config_json == NULL) {
+		return;
+	}
+
+	// Don't get it twisted: initializing these to NULL is not cargo-culting.
+	// Uninitialized values on the stack aren't guaranteed to be 0, so these could end up pointing to what we
+	// *think* is a valid address but what is *not* one.
+	char *startup_config_string = NULL;
+	char *dynamic_config_string = NULL;
+
+	{
+		const cJSON *startup_config_string_json = u_json_get(ht_config_json, "startup_config_index");
+		if (cJSON_IsString(startup_config_string_json)) {
+			startup_config_string = cJSON_GetStringValue(startup_config_string_json);
+		}
+
+		const cJSON *dynamic_config_string_json = u_json_get(ht_config_json, "dynamic_config_index");
+		if (cJSON_IsString(dynamic_config_string_json)) {
+			dynamic_config_string = cJSON_GetStringValue(dynamic_config_string_json);
+		}
+	}
+
+	if (startup_config_string != NULL) {
+		const cJSON *startup_config_obj =
+		    u_json_get(u_json_get(ht_config_json, "startup_configs"), startup_config_string);
+		getStartupConfig(htd, startup_config_obj);
+	}
+
+	if (dynamic_config_string != NULL) {
+		const cJSON *dynamic_config_obj =
+		    u_json_get(u_json_get(ht_config_json, "dynamic_configs"), dynamic_config_string);
+		{
+			ht_dynamic_config *hdc = &htd->dynamic_config;
+			// Do the thing
+			u_json_get_string_into_array(u_json_get(dynamic_config_obj, "name"), hdc->name, 64);
+
+			u_json_get_float(u_json_get(dynamic_config_obj, "hand_fc_min"), &hdc->hand_fc_min.val);
+			u_json_get_float(u_json_get(dynamic_config_obj, "hand_fc_min_d"), &hdc->hand_fc_min_d.val);
+			u_json_get_float(u_json_get(dynamic_config_obj, "hand_beta"), &hdc->hand_beta.val);
+
+			u_json_get_float(u_json_get(dynamic_config_obj, "nms_iou"), &hdc->nms_iou.val);
+			u_json_get_float(u_json_get(dynamic_config_obj, "nms_threshold"), &hdc->nms_threshold.val);
+
+			u_json_get_bool(u_json_get(dynamic_config_obj, "scribble_nms_detections"),
+			                &hdc->scribble_nms_detections);
+			u_json_get_bool(u_json_get(dynamic_config_obj, "scribble_raw_detections"),
+			                &hdc->scribble_raw_detections);
+			u_json_get_bool(u_json_get(dynamic_config_obj, "scribble_2d_keypoints"),
+			                &hdc->scribble_2d_keypoints);
+			u_json_get_bool(u_json_get(dynamic_config_obj, "scribble_bounding_box"),
+			                &hdc->scribble_bounding_box);
+
+			char *dco_str = cJSON_Print(dynamic_config_obj);
+			U_LOG_D("Config %s %s", dynamic_config_string, dco_str);
+			free(dco_str);
+		}
+	}
+
+
+
+	cJSON_Delete(config_json.root);
+	return;
+}
+#endif
+
+static void
+userConfigSetDefaults(struct HandTracking *htd)
+{
+	// Admit defeat: for now, Mediapipe's are still better than ours.
+	htd->startup_config.palm_detection_use_mediapipe = true;
+	htd->startup_config.keypoint_estimation_use_mediapipe = true;
+
+	// Make sure you build DebugOptimized!
+	htd->startup_config.desired_format = XRT_FORMAT_YUYV422;
+
+
+	ht_dynamic_config *hdc = &htd->dynamic_config;
+
+	hdc->scribble_nms_detections = true;
+	hdc->scribble_raw_detections = false;
+	hdc->scribble_2d_keypoints = true;
+	hdc->scribble_bounding_box = false;
+
+	hdc->hand_fc_min.min = 0.0f;
+	hdc->hand_fc_min.max = 50.0f;
+	hdc->hand_fc_min.step = 0.05f;
+	hdc->hand_fc_min.val = FCMIN_HAND;
+
+	hdc->hand_fc_min_d.min = 0.0f;
+	hdc->hand_fc_min_d.max = 50.0f;
+	hdc->hand_fc_min_d.step = 0.05f;
+	hdc->hand_fc_min_d.val = FCMIN_D_HAND;
+
+
+	hdc->hand_beta.min = 0.0f;
+	hdc->hand_beta.max = 50.0f;
+	hdc->hand_beta.step = 0.05f;
+	hdc->hand_beta.val = BETA_HAND;
+
+	hdc->max_vel.min = 0.0f;
+	hdc->max_vel.max = 50.0f;
+	hdc->max_vel.step = 0.05f;
+	hdc->max_vel.val = 30.0f; // 30 m/s; about 108 kph. If your hand is going this fast, our tracking failing is the
+	                          // least of your problems.
+
+	hdc->max_acc.min = 0.0f;
+	hdc->max_acc.max = 100.0f;
+	hdc->max_acc.step = 0.1f;
+	hdc->max_acc.val = 100.0f; // 100 m/s^2; about 10 Gs. Ditto.
+
+	hdc->nms_iou.min = 0.0f;
+	hdc->nms_iou.max = 1.0f;
+	hdc->nms_iou.step = 0.01f;
+
+
+	hdc->nms_threshold.min = 0.0f;
+	hdc->nms_threshold.max = 1.0f;
+	hdc->nms_threshold.step = 0.01f;
+
+	hdc->new_detection_threshold.min = 0.0f;
+	hdc->new_detection_threshold.max = 1.0f;
+	hdc->new_detection_threshold.step = 0.01f;
+
+
+	hdc->nms_iou.val = 0.05f;
+	hdc->nms_threshold.val = 0.3f;
+	hdc->new_detection_threshold.val = 0.6f;
+}
+
+
+static void
+getModelsFolder(struct HandTracking *htd)
+{
+// Please bikeshed me on this! I don't know where is the best place to put this stuff!
+#if 0
+	char exec_location[1024] = {};
+	readlink("/proc/self/exe", exec_location, 1024);
+
+	HT_DEBUG(htd, "Exec at %s\n", exec_location);
+
+	int end = 0;
+	while (exec_location[end] != '\0') {
+		HT_DEBUG(htd, "%d", end);
+		end++;
+	}
+
+	while (exec_location[end] != '/' && end != 0) {
+		HT_DEBUG(htd, "%d %c", end, exec_location[end]);
+		exec_location[end] = '\0';
+		end--;
+	}
+
+	strcat(exec_location, "../share/monado/hand-tracking-models/");
+	strcpy(htd->startup_config.model_slug, exec_location);
+#else
+	const char *xdg_home = getenv("XDG_CONFIG_HOME");
+	const char *home = getenv("HOME");
+	if (xdg_home != NULL) {
+		strcpy(htd->startup_config.model_slug, xdg_home);
+	} else if (home != NULL) {
+		strcpy(htd->startup_config.model_slug, home);
+	} else {
+		assert(false);
+	}
+	strcat(htd->startup_config.model_slug, "/.local/share/monado/hand-tracking-models/");
+#endif
+}
+
+
+
+static void
+htExitFrame(struct HandTracking *htd,
+            bool err,
+            struct xrt_hand_joint_set final_hands_ordered_by_handedness[2],
+            uint64_t timestamp,
+            struct xrt_hand_joint_set *out_left,
+            struct xrt_hand_joint_set *out_right,
+						uint64_t *out_timestamp_ns)
+{
+
+	os_mutex_lock(&htd->openxr_hand_data_mediator);
+	if (err) {
+		out_left->is_active = false;
+		out_right->is_active = false;
+	} else {
+		*out_left = final_hands_ordered_by_handedness[0];
+		*out_right = final_hands_ordered_by_handedness[1];
+
+
+		*out_timestamp_ns = timestamp;
+		HT_DEBUG(htd, "Adding ts %zu", htd->hands_for_openxr_timestamp);
+	}
+	os_mutex_unlock(&htd->openxr_hand_data_mediator);
+#ifdef EXPERIMENTAL_DATASET_RECORDING
+	if (htd->tracking_should_record_dataset) {
+		// Add nothing-entry to json file.
+		jsonMaybeAddSomeHands(htd, err);
+		htd->gst.current_index++;
+	}
+#endif
+}
+
+/*
+ *
+ * Member functions.
+ *
+ */
+
+HandTracking::HandTracking()
+{
+	this->base.process = &HandTracking::cCallbackProcess;
+	this->base.destroy = &HandTracking::cCallbackDestroy;
+}
+
+HandTracking::~HandTracking()
+{
+	//
+}
+
+//!@todo vVERY BAD
+static void
+combine_frames_r8g8b8_hack(struct xrt_frame *l, struct xrt_frame *r, struct xrt_frame *f)
+{
+	// SINK_TRACE_MARKER();
+
+	uint32_t height = l->height;
+
+	for (uint32_t y = 0; y < height; y++) {
+		uint8_t *dst = f->data + f->stride * y;
+		uint8_t *src = l->data + l->stride * y;
+
+		for (uint32_t x = 0; x < l->width * 3; x++) {
+			*dst++ = *src++;
+		}
+
+		dst = f->data + f->stride * y + l->width * 3;
+		src = r->data + r->stride * y;
+		for (uint32_t x = 0; x < r->width * 3; x++) {
+			*dst++ = *src++;
+		}
+	}
+}
+
 void
-htRunAlgorithm(struct ht_device *htd)
+HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
+                               struct xrt_frame *left_frame,
+                               struct xrt_frame *right_frame,
+                               struct xrt_hand_joint_set *out_left_hand,
+                               struct xrt_hand_joint_set *out_right_hand,
+															 uint64_t *out_timestamp_ns)
 {
 	XRT_TRACE_MARKER();
 
-#ifdef EXPERIMENTAL_DATASET_RECORDING
+	HandTracking *htd = (struct HandTracking *)ht_sync;
 
-	if (htd->tracking_should_record_dataset) {
-		U_LOG_E("PUSHING!");
-		uint64_t start = os_monotonic_get_ns();
-		xrt_sink_push_frame(htd->gst.sink, htd->frame_for_process);
-		uint64_t end = os_monotonic_get_ns();
+	// U_LOG_E("htd is at %p", htd);
 
-		if ((end - start) > 0.1 * U_TIME_1MS_IN_NS) {
-			U_LOG_E("Encoder overloaded!");
-		}
-
-		htd->gst.offset_ns = gstreamer_sink_get_timestamp_offset(htd->gst.gs);
-		htd->gst.last_frame_ns = htd->frame_for_process->timestamp - htd->gst.offset_ns;
-	}
-#endif
-
-	htd->current_frame_timestamp = htd->frame_for_process->timestamp;
+	htd->current_frame_timestamp = left_frame->timestamp;
 
 	int64_t start, end;
 	start = os_monotonic_get_ns();
@@ -393,32 +821,39 @@ htRunAlgorithm(struct ht_device *htd)
 	 * Setup views.
 	 */
 
-	const int full_width = htd->frame_for_process->width;
-	const int full_height = htd->frame_for_process->height;
-	const int view_width = htd->camera.one_view_size_px.w;
-	const int view_height = htd->camera.one_view_size_px.h;
+	assert(left_frame->width == right_frame->width);
+	assert(left_frame->height == right_frame->height);
 
-	// assert(full_width == view_width * 2);
+	const int full_height = left_frame->height;
+	const int full_width = left_frame->width*2;
+
+	const int view_width = htd->one_view_size_px.w;
+	const int view_height = htd->one_view_size_px.h;
+
 	assert(full_height == view_height);
 
 	const cv::Size full_size = cv::Size(full_width, full_height);
 	const cv::Size view_size = cv::Size(view_width, view_height);
 	const cv::Point view_offsets[2] = {cv::Point(0, 0), cv::Point(view_width, 0)};
 
-	cv::Mat full_frame(full_size, CV_8UC3, htd->frame_for_process->data, htd->frame_for_process->stride);
-	htd->views[0].run_model_on_this = full_frame(cv::Rect(view_offsets[0], view_size));
-	htd->views[1].run_model_on_this = full_frame(cv::Rect(view_offsets[1], view_size));
+	// cv::Mat full_frame(full_size, CV_8UC3, htd->frame_for_process->data, htd->frame_for_process->stride);
+	htd->views[0].run_model_on_this = cv::Mat(view_size, CV_8UC3, left_frame->data, left_frame->stride);
+	htd->views[1].run_model_on_this = cv::Mat(view_size, CV_8UC3, right_frame->data, right_frame->stride);
 
-	htd->mat_for_process = &full_frame;
 
-	// Check this every frame. We really, really, really don't want it to ever suddenly be null.
-	htd->debug_scribble = htd->debug_sink.sink != nullptr;
+	// Convenience
+	uint64_t timestamp = left_frame->timestamp;
+
+	htd->debug_scribble = u_sink_debug_is_active(&htd->debug_sink);
 
 	cv::Mat debug_output = {};
-	xrt_frame *debug_frame = nullptr; // only use if htd->debug_scribble
+	xrt_frame *debug_frame = nullptr;
+
 
 	if (htd->debug_scribble) {
-		u_frame_clone(htd->frame_for_process, &debug_frame);
+		u_frame_create_one_off(XRT_FORMAT_R8G8B8, full_width, full_height, &debug_frame);
+		combine_frames_r8g8b8_hack(left_frame, right_frame, debug_frame);
+
 		debug_output = cv::Mat(full_size, CV_8UC3, debug_frame->data, debug_frame->stride);
 		htd->views[0].debug_out_to_this = debug_output(cv::Rect(view_offsets[0], view_size));
 		htd->views[1].debug_out_to_this = debug_output(cv::Rect(view_offsets[1], view_size));
@@ -462,8 +897,6 @@ htRunAlgorithm(struct ht_device *htd)
 	}
 
 
-	// Convenience
-	uint64_t timestamp = htd->frame_for_process->timestamp;
 
 	if (htd->debug_scribble) {
 		u_sink_debug_push_frame(&htd->debug_sink, debug_frame);
@@ -474,11 +907,9 @@ htRunAlgorithm(struct ht_device *htd)
 	// In the long run, this'll be a silly thing - we shouldn't always take the detection model's word for it
 	// especially when part of the pipeline is an arbitrary confidence threshold.
 	if (hands_in_left_view.size() == 0 || hands_in_right_view.size() == 0) {
-		htExitFrame(htd, true, NULL, 0);
+		htExitFrame(htd, true, NULL, timestamp, out_left_hand, out_right_hand, out_timestamp_ns);
 		return;
 	}
-
-
 
 	std::vector<Hand3D> possible_3d_hands;
 
@@ -597,7 +1028,7 @@ htRunAlgorithm(struct ht_device *htd)
 
 	if (htd->histories_3d.size() == 0) {
 		HT_DEBUG(htd, "Bailing");
-		htExitFrame(htd, true, NULL, 0);
+		htExitFrame(htd, true, NULL, timestamp, out_left_hand, out_right_hand, out_timestamp_ns);
 		return;
 	}
 
@@ -756,6 +1187,77 @@ htRunAlgorithm(struct ht_device *htd)
 		applyJointWidths(put_in_set);
 		applyJointOrientations(put_in_set, xr_indices[i]);
 	}
+	htExitFrame(htd, false, final_hands_ordered_by_handedness, filtered_hands[0].timestamp, out_left_hand, out_right_hand, out_timestamp_ns);
+}
 
-	htExitFrame(htd, false, final_hands_ordered_by_handedness, filtered_hands[0].timestamp);
+void
+HandTracking::cCallbackDestroy(t_hand_tracking_sync *ht_sync)
+{
+	auto ht_ptr = &HandTracking::fromC(ht_sync);
+
+	delete ht_ptr->views[0].htm;
+	delete ht_ptr->views[1].htm;
+	delete ht_ptr;
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+extern "C" t_hand_tracking_sync *
+t_hand_tracking_sync_old_rgb_create(struct t_stereo_camera_calibration *calib)
+{
+	XRT_TRACE_MARKER();
+
+	auto htd = new HandTracking();
+
+	U_LOG_E("htd is at %p", (void*)htd);
+
+	// Setup logging first. We like logging.
+	htd->log_level = debug_get_log_option_ht_log();
+
+	/*
+	 * Get configuration
+	 */
+
+	assert(calib != NULL);
+	getCalibration(htd, calib);
+	// Set defaults - most people won't have a config json and it won't get past here.
+	userConfigSetDefaults(htd);
+	getModelsFolder(htd);
+
+
+	htd->views[0].htd = htd;
+	htd->views[1].htd = htd; // :)
+
+	htd->views[0].htm = new ht_model(htd);
+	htd->views[1].htm = new ht_model(htd);
+
+	htd->views[0].view = 0;
+	htd->views[1].view = 1;
+
+	u_var_add_root(htd, "Camera-based Hand Tracker", true);
+
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.hand_fc_min, "hand_fc_min");
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.hand_fc_min_d, "hand_fc_min_d");
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.hand_beta, "hand_beta");
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.nms_iou, "nms_iou");
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.nms_threshold, "nms_threshold");
+	u_var_add_draggable_f32(htd, &htd->dynamic_config.new_detection_threshold, "new_detection_threshold");
+
+	u_var_add_bool(htd, &htd->dynamic_config.scribble_raw_detections, "Scribble raw detections");
+	u_var_add_bool(htd, &htd->dynamic_config.scribble_nms_detections, "Scribble NMS detections");
+	u_var_add_bool(htd, &htd->dynamic_config.scribble_2d_keypoints, "Scribble 2D keypoints");
+	u_var_add_bool(htd, &htd->dynamic_config.scribble_bounding_box, "Scribble bounding box");
+
+	u_var_add_sink_debug(htd, &htd->debug_sink, "i");
+
+
+	HT_DEBUG(htd, "Hand Tracker initialized!");
+
+
+	return &htd->base;
 }

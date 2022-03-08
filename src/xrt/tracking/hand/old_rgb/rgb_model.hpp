@@ -11,17 +11,65 @@
 
 // Many C api things were stolen from here (MIT license):
 // https://github.com/microsoft/onnxruntime-inference-examples/blob/main/c_cxx/fns_candy_style_transfer/fns_candy_style_transfer.c
+#pragma once
 
-#include "ht_driver.hpp"
-#include "ht_image_math.hpp"
-#include "ht_model.hpp"
-#include "ht_nms.hpp"
+#include "rgb_sync.hpp"
+#include "rgb_image_math.hpp"
+#include "rgb_nms.hpp"
 
 #include <core/session/onnxruntime_c_api.h>
 
+#include <filesystem>
 #include <array>
 
 #undef HEAVY_SCRIBBLE
+
+// forward-declare
+struct OrtApi;
+struct OrtEnv;
+struct OrtMemoryInfo;
+struct OrtSession;
+struct OrtSessionOptions;
+struct OrtValue;
+
+namespace xrt::tracking::ht::old_rgb {
+
+
+// struct ht_device;
+
+class ht_model
+{
+	HandTracking *device = nullptr;
+
+	const OrtApi *api = nullptr;
+	OrtEnv *env = nullptr;
+
+	OrtMemoryInfo *palm_detection_meminfo = nullptr;
+	OrtSession *palm_detection_session = nullptr;
+	OrtValue *palm_detection_tensor = nullptr;
+	std::array<float, 3 * 128 * 128> palm_detection_data;
+
+	std::mutex hand_landmark_lock;
+	OrtMemoryInfo *hand_landmark_meminfo = nullptr;
+	OrtSession *hand_landmark_session = nullptr;
+	OrtValue *hand_landmark_tensor = nullptr;
+	std::array<float, 3 * 224 * 224> hand_landmark_data;
+
+	void
+	init_palm_detection(OrtSessionOptions *opts);
+	void
+	init_hand_landmark(OrtSessionOptions *opts);
+
+public:
+	ht_model(struct HandTracking *htd);
+	~ht_model();
+
+	std::vector<Palm7KP>
+	palm_detection(ht_view *htv, const cv::Mat &input);
+	Hand2D
+	hand_landmark(const cv::Mat input);
+};
+
 
 /*
  * Anchors data taken from mediapipe's palm detection, used for single-shot detector model.
@@ -337,7 +385,7 @@ ht_model::init_hand_landmark(OrtSessionOptions *opts)
 	assert(is_tensor);
 }
 
-ht_model::ht_model(struct ht_device *htd) : device(htd), api(OrtGetApiBase()->GetApi(ORT_API_VERSION))
+ht_model::ht_model(struct HandTracking *htd) : device(htd), api(OrtGetApiBase()->GetApi(ORT_API_VERSION))
 {
 	ORT(CreateEnv(ORT_LOGGING_LEVEL_WARNING, "monado_ht", &this->env));
 
@@ -594,3 +642,5 @@ ht_model::hand_landmark(const cv::Mat input)
 
 	return hand;
 }
+
+} // namespace xrt::tracking::ht::old_rgb

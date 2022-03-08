@@ -84,22 +84,19 @@ lib_drv_ulv2 = static_library(
        build_by_default: 'ulv2' in drivers,
 )
 
-lib_drv_ht = static_library(
-	'drv_ht',
-	files(
-		'ht/ht_algorithm.cpp',
-		'ht/ht_driver.cpp',
-		'ht/ht_driver.hpp',
-		'ht/ht_interface.h',
-		'ht/ht_model.cpp',
-		'ht/ht_hand_math.cpp',
-		'ht/ht_image_math.cpp',
-		'ht/ht_nms.cpp',
-	),
-	include_directories: [xrt_include, cjson_include],
-	dependencies: [aux, opencv, onnxruntime, eigen3],
-	build_by_default: 'handtracking' in drivers,
-)
+if 'handtracking' in drivers
+	lib_drv_ht = static_library(
+		'drv_ht',
+		files(
+			'ht/ht_driver.c',
+			'ht/ht_interface.h',
+		),
+		include_directories: [xrt_include, cjson_include],
+		dependencies: [aux],
+		link_with: [lib_t_hand_async, lib_t_ht_old_rgb],
+		# build_by_default: 'handtracking' in drivers,
+	)
+endif
 
 lib_drv_cemu = static_library(
 	'drv_cemu',

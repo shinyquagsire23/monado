@@ -8,9 +8,24 @@
  * @ingroup drv_ht
  */
 
-#include "ht_nms.hpp"
-
+#include "rgb_sync.hpp"
 #include <math.h>
+
+struct Box
+{
+	float cx;
+	float cy;
+	float w;
+	float h;
+};
+
+struct NMSPalm
+{
+	Box bbox;
+	struct xrt_vec2 keypoints[7];
+	float confidence;
+};
+
 
 static float
 overlap(float x1, float w1, float x2, float w2)
