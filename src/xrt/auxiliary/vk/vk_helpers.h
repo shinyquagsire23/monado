@@ -970,6 +970,17 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 VkResult
 vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 
+#ifdef VK_KHR_timeline_semaphore
+/*!
+ * @brief Creates a Vulkan timeline semaphore from a native graphics sync
+ * handle, see @ref vk_create_semaphore_from_native for more details.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
+#endif
+
 
 #ifdef __cplusplus
 }

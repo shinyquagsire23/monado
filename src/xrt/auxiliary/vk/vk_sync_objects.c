@@ -19,6 +19,35 @@
 
 /*
  *
+ * Helper functions.
+ *
+ */
+
+#ifdef VK_KHR_timeline_semaphore
+static VkExternalSemaphoreHandleTypeFlagBits
+vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
+{
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	if (vk->external.timeline_semaphore_opaque_fd) {
+		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+	} else {
+		return 0;
+	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	if (vk->external.timeline_semaphore_win32_handle) {
+		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+	} else {
+		return 0;
+	}
+#else
+#error "Need to port semaphore type code."
+#endif
+}
+#endif
+
+
+/*
+ *
  * Export.
  *
  */
@@ -197,26 +226,34 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 }
 
 VkResult
-vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
+create_semaphore_from_native(struct vk_bundle *vk,
+                             VkExternalSemaphoreHandleTypeFlagBits handle_type,
+                             const void *next,
+                             xrt_graphics_sync_handle_t native,
+                             VkSemaphore *out_sem)
 {
 	VkResult ret;
 
 	VkSemaphoreCreateInfo semaphore_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	    .pNext = next,
 	};
+
 	ret = vk->vkCreateSemaphore(vk->device, &semaphore_create_info, NULL, out_sem);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateSemaphore: %s", vk_result_string(ret));
 		// Nothing to cleanup
 		return ret;
 	}
+
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	VkImportSemaphoreFdInfoKHR import_semaphore_fd_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
 	    .semaphore = *out_sem,
-	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT,
+	    .handleType = handle_type,
 	    .fd = native,
 	};
+
 	ret = vk->vkImportSemaphoreFdKHR(vk->device, &import_semaphore_fd_info);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkImportSemaphoreFdKHR: %s", vk_result_string(ret));
@@ -227,9 +264,10 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
 	VkImportSemaphoreWin32HandleInfoKHR import_semaphore_handle_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
 	    .semaphore = *out_sem,
-	    .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	    .handleType = handle_type,
 	    .handle = native,
 	};
+
 	ret = vk->vkImportSemaphoreWin32HandleKHR(vk->device, &import_semaphore_handle_info);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkImportSemaphoreWin32HandleKHR: %s", vk_result_string(ret));
@@ -239,5 +277,55 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
 #else
 #error "Not implemented for this underlying handle type!"
 #endif
-	return ret;
+
+	return VK_SUCCESS;
 }
+
+VkResult
+vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
+{
+	VkExternalSemaphoreHandleTypeFlagBits handle_type = 0;
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+#error "Not implemented for this underlying handle type!"
+#endif
+
+	return create_semaphore_from_native( //
+	    vk,                              // vk_bundle
+	    handle_type,                     // handle_type
+	    NULL,                            // next
+	    native,                          // native
+	    out_sem);                        // out_sem
+}
+
+#ifdef VK_KHR_timeline_semaphore
+VkResult
+vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
+{
+	VkExternalSemaphoreHandleTypeFlagBits handle_type = 0;
+
+	handle_type = vk_get_timeline_semaphore_handle_type(vk);
+	if (handle_type == 0) {
+		VK_ERROR(vk, "No timeline semaphore type supported for export/import.");
+		return VK_ERROR_FEATURE_NOT_PRESENT;
+	}
+
+	VkSemaphoreTypeCreateInfo type_info = {
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+	    .pNext = NULL,
+	    .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+	    .initialValue = 0,
+	};
+
+	return create_semaphore_from_native( //
+	    vk,                              // vk_bundle
+	    handle_type,                     // handle_type
+	    &type_info,                      // next
+	    native,                          // native
+	    out_sem);                        // out_sem
+}
+#endif
