@@ -30,7 +30,7 @@ include:
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
 # Variables for build and usage of Debian bullseye-ndk image
 .monado.variables.debian:bullseye-ndk:
@@ -43,25 +43,25 @@ include:
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
 # Variables for build and usage of Ubuntu hirsute image
 .monado.variables.ubuntu:hirsute:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.04"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
 # Variables for build and usage of Ubuntu impish image
 .monado.variables.ubuntu:impish:
   variables:
     FDO_DISTRIBUTION_VERSION: "21.10"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
 # Variables for build and usage of Arch rolling image
 .monado.variables.arch:rolling:
   variables:
     FDO_DISTRIBUTION_VERSION: "rolling"
-    FDO_DISTRIBUTION_TAG: "2022-01-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
 stages:
   - container_prep

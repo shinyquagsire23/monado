@@ -68,7 +68,7 @@ distributions:
       # This image does some extra work.
       - codename: bullseye
         script: i386_and_proclamation_container_prep.sh
-        tag: "2022-01-24.0"
+        tag: "2022-04-22.0"
         deb_version_suffix: bpo11
         packages:
           <<: *default_debian_packages
@@ -155,7 +155,7 @@ distributions:
       # LTS
       - codename: focal
         distro_version: "20.04"
-        tag: "2022-01-24.0"
+        tag: "2022-04-22.0"
         deb_version_suffix: ubuntu2004
         packages:
           <<: *default_debian_packages
@@ -166,14 +166,14 @@ distributions:
 
       - codename: hirsute
         distro_version: "21.04"
-        tag: "2022-01-24.0"
+        tag: "2022-04-22.0"
         deb_version_suffix: ubuntu2104
         packages:
           <<: *default_debian_packages
 
       - codename: impish
         distro_version: "21.10"
-        tag: "2022-01-24.0"
+        tag: "2022-04-22.0"
         deb_version_suffix: ubuntu2110
         packages:
           <<: *default_debian_packages
@@ -186,7 +186,7 @@ distributions:
   - name: arch
     images:
       - codename: rolling
-        tag: "2022-01-24.0"
+        tag: "2022-04-22.0"
         packages:
           git:
           gcc:
