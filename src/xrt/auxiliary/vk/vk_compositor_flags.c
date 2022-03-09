@@ -113,6 +113,7 @@ vk_csci_get_barrier_optimal_layout(VkFormat format)
 		return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	default: //
 		assert(false && !"Format not supported!");
+		return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 }
 
@@ -142,6 +143,7 @@ vk_csci_get_barrier_aspect_mask(VkFormat format)
 		return VK_IMAGE_ASPECT_COLOR_BIT;
 	default: //
 		assert(false && !"Format not supported!");
+		return 0;
 	}
 }
 

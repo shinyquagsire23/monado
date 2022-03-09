@@ -48,7 +48,7 @@ gst_fmt_from_xf_format(enum xrt_format format_in)
 	case XRT_FORMAT_R8G8B8X8: return GST_VIDEO_FORMAT_RGBx;
 	case XRT_FORMAT_YUYV422: return GST_VIDEO_FORMAT_YUY2;
 	case XRT_FORMAT_L8: return GST_VIDEO_FORMAT_GRAY8;
-	default: assert(false);
+	default: assert(false); return GST_VIDEO_FORMAT_UNKNOWN;
 	}
 }
 
