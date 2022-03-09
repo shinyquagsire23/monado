@@ -179,6 +179,9 @@ _xdg_toplevel_close_cb(void *data, struct xdg_toplevel *toplevel)
 static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     _xdg_toplevel_configure_cb,
     _xdg_toplevel_close_cb,
+#if XDG_TOPLEVEL_CONFIGURE_BOUNDS_SINCE_VERSION >= 4
+    NULL,
+#endif
 };
 
 static void
