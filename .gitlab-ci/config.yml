@@ -14,7 +14,6 @@ fdo_ci_templates_sha: 34039cd573a2df832d465bc9e4c5f543571f5241
   wget:
   unzip:
   cmake:
-  meson:
   ninja-build:
   libeigen3-dev:
   curl:
@@ -110,14 +109,6 @@ distributions:
               # OpenCV doesn't play nicely with us in multi-arch.
               XRT_HAVE_OPENCV: "OFF"
 
-          - name: "debian:meson"
-
-          - name: "debian:meson:32bit"
-            args:
-              - --prefix=/usr
-              - --libdir=/usr/lib/i386-linux-gnu
-              - --cross-file=.gitlab-ci/i386-cross.txt
-
       # This one is pretty minimal, compared to the others.
       # Though, we now install the android SDK in it...
       - codename: bullseye-ndk
@@ -173,8 +164,6 @@ distributions:
             cmake_defines:
               BUILD_DOC: "OFF"
 
-          - name: "ubuntu:meson"
-
       - codename: hirsute
         distro_version: "21.04"
         tag: "2022-01-24.0"
@@ -203,7 +192,6 @@ distributions:
           gcc:
           clang:
           cmake:
-          meson:
           ninja:
           pkgconfig:
           python3:
@@ -233,8 +221,6 @@ distributions:
             cmake_defines:
               CMAKE_C_COMPILER: /usr/bin/clang
               CMAKE_CXX_COMPILER: /usr/bin/clang++
-
-          - name: "arch:meson"
 
 android:
   platform: 26

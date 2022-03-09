@@ -157,16 +157,8 @@ reuse:
   script:
     - rm -rf build
 
-{#- meson builds -#}
-{%- if "meson" in job.name %}
-
-    - meson setup build .
-    {%- if job.args %} {{ job.args | join(' ') }}{% endif %}
-
-    - ninja -C build
-
 {#- regular or NDK cmake builds -#}
-{%- elif "cmake" in job.name or "ndk" in job.name %}
+{%- if "cmake" in job.name or "ndk" in job.name %}
 
     - cmake -GNinja -B build -S . {{- make_cmake_args(job.cmake_defines) }}
     - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
