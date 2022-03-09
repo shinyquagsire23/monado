@@ -68,6 +68,13 @@ struct client_vk_compositor
 	//! Owning reference to the backing native compositor
 	struct xrt_compositor_native *xcn;
 
+	struct
+	{
+		VkSemaphore semaphore;
+		struct xrt_compositor_semaphore *xcsem;
+		uint64_t value;
+	} sync;
+
 	struct vk_bundle vk;
 };
 

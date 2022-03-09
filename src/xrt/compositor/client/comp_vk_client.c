@@ -9,6 +9,7 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 
 #include "comp_vk_client.h"
@@ -18,6 +19,7 @@
 #include <assert.h>
 
 #define MS_TO_NS(ms) (ms * 1000L * 1000L)
+
 
 /*!
  * Down-cast helper.
@@ -40,6 +42,176 @@ client_vk_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_vk_compositor *)xc;
 }
+
+
+/*
+ *
+ * Semaphore helpers.
+ *
+ */
+
+#ifdef VK_KHR_timeline_semaphore
+static xrt_result_t
+setup_semaphore(struct client_vk_compositor *c)
+{
+	xrt_graphics_sync_handle_t handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	struct xrt_compositor_semaphore *xcsem = NULL;
+	struct vk_bundle *vk = &c->vk;
+	xrt_result_t xret;
+	VkResult ret;
+
+	xret = xrt_comp_create_semaphore(&c->xcn->base, &handle, &xcsem);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Failed to create semaphore!");
+		return xret;
+	}
+
+	VkSemaphore semaphore = VK_NULL_HANDLE;
+	ret = vk_create_timeline_semaphore_from_native(vk, handle, &semaphore);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateSemaphore: %s", vk_result_string(ret));
+		u_graphics_sync_unref(&handle);
+		xrt_compositor_semaphore_reference(&xcsem, NULL);
+		return XRT_ERROR_VULKAN;
+	}
+
+	c->sync.semaphore = semaphore;
+	c->sync.xcsem = xcsem; // No need to reference.
+
+	return XRT_SUCCESS;
+}
+#endif
+
+
+/*
+ *
+ * Frame submit helpers.
+ *
+ */
+
+static bool
+submit_handle(struct client_vk_compositor *c,
+              int64_t frame_id,
+              xrt_graphics_sync_handle_t sync_handle,
+              xrt_result_t *out_xret)
+{
+	// Did we get a ready made handle, assume it's in the command stream and call commit directly.
+	if (!xrt_graphics_sync_handle_is_valid(sync_handle)) {
+		return false;
+	}
+
+	// Commit consumes the sync_handle.
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	return true;
+}
+
+static bool
+submit_semaphore(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+{
+#ifdef VK_KHR_timeline_semaphore
+	if (c->sync.xcsem == NULL) {
+		return false;
+	}
+
+	struct vk_bundle *vk = &c->vk;
+	VkResult ret;
+
+	VkSemaphore semaphores[1] = {
+	    c->sync.semaphore,
+	};
+	uint64_t values[1] = {
+	    ++(c->sync.value),
+	};
+
+	VkTimelineSemaphoreSubmitInfo semaphore_submit_info = {
+	    .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
+	    .waitSemaphoreValueCount = 0,
+	    .pWaitSemaphoreValues = NULL,
+	    .signalSemaphoreValueCount = ARRAY_SIZE(values),
+	    .pSignalSemaphoreValues = values,
+	};
+	VkSubmitInfo submit_info = {
+	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+	    .pNext = &semaphore_submit_info,
+	    .signalSemaphoreCount = ARRAY_SIZE(semaphores),
+	    .pSignalSemaphores = semaphores,
+	};
+
+	ret = vk->vkQueueSubmit( //
+	    vk->queue,           // queue
+	    1,                   // submitCount
+	    &submit_info,        // pSubmits
+	    VK_NULL_HANDLE);     // fence
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkQueueSubmit: %s", vk_result_string(ret));
+		*out_xret = XRT_ERROR_VULKAN;
+		return true;
+	}
+
+	*out_xret = xrt_comp_layer_commit_with_semaphore( //
+	    &c->xcn->base,                                // xc
+	    frame_id,                                     // frame_id
+	    c->sync.xcsem,                                // xcsem
+	    values[0]);                                   // value
+
+	return true;
+#else
+	return false;
+#endif
+}
+
+static bool
+submit_fence(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+{
+	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	struct vk_bundle *vk = &c->vk;
+	VkResult ret;
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	// Using sync fds currently to match OpenGL extension.
+	bool sync_fence = vk->external.fence_sync_fd;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	bool sync_fence = vk->external.fence_win32_handle;
+#else
+#error "Need port to export fence sync handles"
+#endif
+
+	if (!sync_fence) {
+		return false;
+	}
+
+	{
+		COMP_TRACE_IDENT(create_and_submit_fence);
+
+		ret = vk_create_and_submit_fence_native(vk, &sync_handle);
+		if (ret != VK_SUCCESS) {
+			// This is really bad, log again.
+			U_LOG_E("Could not create and submit a native fence!");
+			*out_xret = XRT_ERROR_VULKAN;
+			return true; // If we fail we should still return.
+		}
+	}
+
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	return true;
+}
+
+static bool
+submit_fallback(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+{
+	struct vk_bundle *vk = &c->vk;
+
+	{
+		COMP_TRACE_IDENT(device_wait_idle);
+
+		// Last course of action fallback.
+		vk->vkDeviceWaitIdle(vk->device);
+	}
+
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	return true;
+}
+
 
 /*
  *
@@ -196,6 +368,12 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct vk_bundle *vk = &c->vk;
+
+	if (c->sync.semaphore != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore(vk->device, c->sync.semaphore, NULL);
+		c->sync.semaphore = VK_NULL_HANDLE;
+	}
+	xrt_compositor_semaphore_reference(&c->sync.xcsem, NULL);
 
 	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		// Make sure that any of the command buffers from this command
@@ -407,49 +585,19 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	// Got a ready made handle, assume it's in the command stream and call commit directly.
-	if (xrt_graphics_sync_handle_is_valid(sync_handle)) {
-		// Commit consumes the sync_handle.
-		return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
-	}
-
-	struct vk_bundle *vk = &c->vk;
-	VkResult ret = VK_SUCCESS;
-
-#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-	// Using sync fds currently to match OpenGL extension.
-	bool sync_fence = vk->external.fence_sync_fd;
-#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-	bool sync_fence = vk->external.fence_win32_handle;
-#else
-#error "Need port to export fence sync handles"
-#endif
-
-	/*!
-	 * @todo Even with a fence it won't help that much as the multi-
-	 * compositor waits on the fence in commit before proceeding. To fix
-	 * that a thread will be added in the multi-compositor to wait on the
-	 * fence and allow commit to return. Better still is using timeline
-	 * semaphores for it all.
-	 */
-	if (sync_fence) {
-		COMP_TRACE_IDENT(create_and_submit_fence);
-
-		ret = vk_create_and_submit_fence_native(vk, &sync_handle);
-		if (ret != VK_SUCCESS) {
-			// This is really bad, log again.
-			U_LOG_E("Could not create and submit a native fence!");
-			return XRT_ERROR_VULKAN;
-		}
+	xrt_result_t xret = XRT_SUCCESS;
+	if (submit_handle(c, frame_id, sync_handle, &xret)) {
+		return xret;
+	} else if (submit_semaphore(c, frame_id, &xret)) {
+		return xret;
+	} else if (submit_fence(c, frame_id, &xret)) {
+		return xret;
+	} else if (submit_fallback(c, frame_id, &xret)) {
+		return xret;
 	} else {
-		COMP_TRACE_IDENT(device_wait_idle);
-
-		// Last course of action fallback.
-		vk->vkDeviceWaitIdle(vk->device);
+		// Really bad state.
+		return XRT_ERROR_VULKAN;
 	}
-
-	// Commit consumes the sync_handle.
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
 }
 
 static xrt_result_t
@@ -632,6 +780,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 {
 	COMP_TRACE_MARKER();
 
+	xrt_result_t xret;
 	VkResult ret;
 	struct client_vk_compositor *c = U_TYPED_CALLOC(struct client_vk_compositor);
 
@@ -682,9 +831,23 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	if (ret != VK_SUCCESS) {
 		goto err_free;
 	}
+
+#ifdef VK_KHR_timeline_semaphore
+	if (c->vk.features.timeline_semaphore) {
+		xret = setup_semaphore(c);
+		if (xret != XRT_SUCCESS) {
+			goto err_mutex;
+		}
+	}
+#endif
+
 	return c;
 
+
+err_mutex:
+	vk_deinit_mutex(&c->vk);
 err_free:
 	free(c);
+
 	return NULL;
 }
