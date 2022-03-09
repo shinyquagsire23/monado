@@ -185,7 +185,7 @@ combiner_right_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 		/*
 		 * Check timestamps.
 		 */
-		int64_t diff_ns = frames[0]->timestamp - frames[1]->timestamp;
+		XRT_MAYBE_UNUSED int64_t diff_ns = frames[0]->timestamp - frames[1]->timestamp;
 
 
 		// u_sink_force_genlock should have done this for us already

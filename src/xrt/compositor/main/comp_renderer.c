@@ -869,7 +869,7 @@ dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
 	 * Fast path.
 	 */
 
-	const uint32_t layer_count = c->base.slot.layer_count;
+	XRT_MAYBE_UNUSED const uint32_t layer_count = c->base.slot.layer_count;
 	assert(layer_count >= 1);
 
 	int i = 0;
