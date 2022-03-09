@@ -500,16 +500,18 @@ ns_config_load(struct ns_hmd *ns, const char *config_path)
 
 	if (file_size == 0) {
 		NS_INFO(ns, "Empty config file!");
+		fclose(config_file);
 		goto parse_error;
 	} else if (file_size > 3 * pow(1024, 2)) { // 3 MiB
 		NS_INFO(ns, "Huge config file! (%f MiB!!) Something's wrong here.", ((float)file_size) / pow(1024, 2));
+		fclose(config_file);
 		goto parse_error;
 	}
 
 	char *json = calloc(file_size + 1, 1);
 	json_allocated = true;
 
-	fread(json, 1, file_size, config_file);
+	(void)fread(json, 1, file_size, config_file);
 	fclose(config_file);
 	json[file_size] = '\0';
 
