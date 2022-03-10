@@ -180,7 +180,6 @@ oxr_space_ref_get_pure_relation(struct oxr_logger *log,
 			if (!set_up_local_space(log, sess, time)) {
 				return false;
 			}
-			return false;
 		}
 
 		*out_relation = sess->local_space_pure_relation;
@@ -312,7 +311,6 @@ global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime t
 		if (!set_up_local_space(log, sess, time)) {
 			return false;
 		}
-		return false;
 	}
 
 	struct xrt_relation_chain xrc = {0};
