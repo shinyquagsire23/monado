@@ -34,6 +34,7 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	    vkGetInstanceProcAddr,                                   //
 	    next->physicalDevice,                                    //
 	    next->device,                                            //
+	    false,                                                   //
 	    next->queueFamilyIndex,                                  //
 	    next->queueIndex);                                       //
 

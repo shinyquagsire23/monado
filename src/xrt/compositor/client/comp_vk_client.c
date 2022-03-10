@@ -626,6 +626,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             PFN_vkGetInstanceProcAddr getProc,
                             VkPhysicalDevice physicalDevice,
                             VkDevice device,
+                            bool timeline_semaphore_enabled,
                             uint32_t queueFamilyIndex,
                             uint32_t queueIndex)
 {
@@ -662,9 +663,6 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 
 	// Default to info.
 	enum u_logging_level log_level = U_LOGGING_INFO;
-
-	// For now always disabled.
-	bool timeline_semaphore_enabled = false;
 
 	ret = vk_init_from_given(       //
 	    &c->vk,                     // vk_bundle

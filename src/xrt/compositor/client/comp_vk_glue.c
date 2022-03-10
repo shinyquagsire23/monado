@@ -69,11 +69,19 @@ xrt_gfx_vk_provider_create(struct xrt_compositor_native *xcn,
                            PFN_vkGetInstanceProcAddr get_instance_proc_addr,
                            VkPhysicalDevice physical_device,
                            VkDevice device,
+                           bool timeline_semaphore_enabled,
                            uint32_t queue_family_index,
                            uint32_t queue_index)
 {
-	struct client_vk_compositor *vcc = client_vk_compositor_create(
-	    xcn, instance, get_instance_proc_addr, physical_device, device, queue_family_index, queue_index);
+	struct client_vk_compositor *vcc = client_vk_compositor_create( //
+	    xcn,                                                        //
+	    instance,                                                   //
+	    get_instance_proc_addr,                                     //
+	    physical_device,                                            //
+	    device,                                                     //
+	    timeline_semaphore_enabled,                                 //
+	    queue_family_index,                                         //
+	    queue_index);                                               //
 
 	return &vcc->base;
 }
