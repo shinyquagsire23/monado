@@ -1161,6 +1161,13 @@ struct oxr_system
 	//! The device returned with the last xrGetVulkanGraphicsDeviceKHR or xrGetVulkanGraphicsDevice2KHR call.
 	//! XR_NULL_HANDLE if neither has been called.
 	VkPhysicalDevice suggested_vulkan_physical_device;
+
+	struct
+	{
+		// No better place to keep this state.
+		bool timeline_semaphore_enabled;
+	} vk;
+
 #endif
 };
 

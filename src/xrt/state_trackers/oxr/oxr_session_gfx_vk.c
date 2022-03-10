@@ -34,7 +34,7 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	    vkGetInstanceProcAddr,                                   //
 	    next->physicalDevice,                                    //
 	    next->device,                                            //
-	    false,                                                   //
+	    sess->sys->vk.timeline_semaphore_enabled,                //
 	    next->queueFamilyIndex,                                  //
 	    next->queueIndex);                                       //
 

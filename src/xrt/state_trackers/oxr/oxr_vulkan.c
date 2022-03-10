@@ -110,6 +110,13 @@ static const char *required_vk_device_extensions[] = {
 #endif
 };
 
+static const char *optional_device_extensions[] = {
+#ifdef VK_KHR_timeline_semaphore
+    VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
+#else
+    NULL, // avoid zero sized array with UB
+#endif
+};
 
 XrResult
 oxr_vk_create_vulkan_instance(struct oxr_logger *log,
@@ -147,6 +154,78 @@ oxr_vk_create_vulkan_instance(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static XrResult
+vk_get_device_ext_props(struct oxr_logger *log,
+                        VkInstance instance,
+                        PFN_vkGetInstanceProcAddr GetInstanceProcAddr,
+                        VkPhysicalDevice physical_device,
+                        VkExtensionProperties **out_props,
+                        uint32_t *out_prop_count)
+{
+	PFN_vkEnumerateDeviceExtensionProperties EnumerateDeviceExtensionProperties =
+	    (PFN_vkEnumerateDeviceExtensionProperties)GetInstanceProcAddr(instance,
+	                                                                  "vkEnumerateDeviceExtensionProperties");
+
+	if (!EnumerateDeviceExtensionProperties) {
+		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to get vkEnumerateDeviceExtensionProperties fp");
+	}
+
+	uint32_t prop_count = 0;
+	VkResult res = EnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, NULL);
+	if (res != VK_SUCCESS) {
+		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties count (%d)",
+		          res);
+	}
+
+
+	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
+
+	res = EnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
+	if (res != VK_SUCCESS) {
+		free(props);
+		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties (%d)", res);
+	}
+
+	// Check above returns on failure.
+	*out_props = props;
+	*out_prop_count = prop_count;
+
+	return XR_SUCCESS;
+}
+
+static bool
+vk_check_extension(VkExtensionProperties *props, uint32_t prop_count, const char *ext)
+{
+	for (uint32_t i = 0; i < prop_count; i++) {
+		if (strcmp(props[i].extensionName, ext) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static XrResult
+vk_get_device_features(struct oxr_logger *log,
+                       VkInstance instance,
+                       PFN_vkGetInstanceProcAddr GetInstanceProcAddr,
+                       VkPhysicalDevice physical_device,
+                       VkPhysicalDeviceFeatures2 *physical_device_features)
+{
+	PFN_vkGetPhysicalDeviceFeatures2 GetPhysicalDeviceFeatures2 =
+	    (PFN_vkGetPhysicalDeviceFeatures2)GetInstanceProcAddr(instance, "vkGetPhysicalDeviceFeatures2");
+
+	if (!GetPhysicalDeviceFeatures2) {
+		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to get vkGetPhysicalDeviceFeatures2 fp");
+	}
+
+	GetPhysicalDeviceFeatures2(    //
+	    physical_device,           // physicalDevice
+	    physical_device_features); // pFeatures
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_vk_create_vulkan_device(struct oxr_logger *log,
                             struct oxr_system *sys,
@@ -154,6 +233,8 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
                             VkDevice *vulkanDevice,
                             VkResult *vulkanResult)
 {
+	XrResult res;
+
 	PFN_vkGetInstanceProcAddr GetInstanceProcAddr = createInfo->pfnGetInstanceProcAddr;
 
 	PFN_vkCreateDevice CreateDevice =
@@ -174,10 +255,81 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 		                            createInfo->vulkanCreateInfo->ppEnabledExtensionNames[i]);
 	}
 
+
+
+	VkExtensionProperties *props = NULL;
+	uint32_t prop_count = 0;
+	res = vk_get_device_ext_props(log, sys->vulkan_enable2_instance, createInfo->pfnGetInstanceProcAddr,
+	                              physical_device, &props, &prop_count);
+	if (res != XR_SUCCESS) {
+		return res;
+	}
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(optional_device_extensions); i++) {
+		if (optional_device_extensions[i] &&
+		    vk_check_extension(props, prop_count, optional_device_extensions[i])) {
+			u_string_list_append_unique(device_extension_list, optional_device_extensions[i]);
+		}
+	}
+
+	free(props);
+
+
+	VkPhysicalDeviceFeatures2 physical_device_features = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+	    .pNext = NULL,
+	};
+
+#ifdef VK_KHR_timeline_semaphore
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline_semaphore_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR,
+	    .pNext = NULL,
+	    .timelineSemaphore = VK_FALSE,
+	};
+
+	if (u_string_list_contains(device_extension_list, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)) {
+		physical_device_features.pNext = &timeline_semaphore_info;
+	}
+#endif
+
+	res = vk_get_device_features(log, sys->vulkan_enable2_instance, createInfo->pfnGetInstanceProcAddr,
+	                             physical_device, &physical_device_features);
+	if (res != XR_SUCCESS) {
+		return res;
+	}
+
+
 	VkDeviceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
 	modified_info.ppEnabledExtensionNames = u_string_list_get_data(device_extension_list);
 	modified_info.enabledExtensionCount = u_string_list_get_size(device_extension_list);
+
+#ifdef VK_KHR_timeline_semaphore
+	VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+	    .pNext = NULL,
+	    .timelineSemaphore = timeline_semaphore_info.timelineSemaphore,
+	};
+
+	if (timeline_semaphore_info.timelineSemaphore) {
+		/*
+		 * Insert timeline semaphore request first to override
+		 * any the app may have put on the next chain.
+		 */
+		// Have to cast away const.
+		timeline_semaphore.pNext = (void *)modified_info.pNext;
+		modified_info.pNext = &timeline_semaphore;
+	}
+#endif
+
 	*vulkanResult = CreateDevice(physical_device, &modified_info, createInfo->vulkanAllocator, vulkanDevice);
+
+#ifdef VK_KHR_timeline_semaphore
+	// Have timeline semaphores added and as such enabled.
+	if (*vulkanResult == VK_SUCCESS) {
+		sys->vk.timeline_semaphore_enabled = timeline_semaphore_info.timelineSemaphore;
+		U_LOG_D("timeline semaphores enabled: %d", timeline_semaphore_info.timelineSemaphore);
+	}
+#endif
 
 	u_string_list_destroy(&device_extension_list);
 
