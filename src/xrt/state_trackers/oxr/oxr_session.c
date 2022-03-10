@@ -375,12 +375,22 @@ oxr_session_locate_views(struct oxr_logger *log,
 	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
 	m_relation_chain_resolve(&xrc, &pure_head_relation);
 
-	struct xrt_space_relation head_relation_in_base_space;
-	oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
-	                                 &head_relation_in_base_space);
-
 	// Clear here and filled in loop.
 	viewState->viewStateFlags = 0;
+
+	struct xrt_space_relation head_relation_in_base_space;
+	if (!oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
+	                                      &head_relation_in_base_space)) {
+		for (uint32_t i = 0; i < view_count; i++) {
+			union {
+				struct xrt_pose xrt;
+				struct XrPosef oxr;
+			} safe_copy_pose = {0};
+			safe_copy_pose.xrt = (struct xrt_pose)XRT_POSE_IDENTITY;
+			views[i].pose = safe_copy_pose.oxr;
+		}
+		return XR_SUCCESS;
+	}
 
 	for (uint32_t i = 0; i < view_count; i++) {
 		/*
