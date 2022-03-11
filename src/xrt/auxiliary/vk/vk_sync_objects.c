@@ -225,7 +225,7 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 	return VK_SUCCESS;
 }
 
-VkResult
+XRT_CHECK_RESULT static VkResult
 create_semaphore_from_native(struct vk_bundle *vk,
                              VkExternalSemaphoreHandleTypeFlagBits handle_type,
                              const void *next,

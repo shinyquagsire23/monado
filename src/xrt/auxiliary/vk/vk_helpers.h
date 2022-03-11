@@ -934,7 +934,7 @@ vk_insert_image_memory_barrier(struct vk_bundle *vk,
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t *out_native);
 
 /*!
@@ -952,7 +952,7 @@ vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence);
 
 /*!
@@ -967,7 +967,7 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 
 #ifdef VK_KHR_timeline_semaphore
@@ -977,7 +977,7 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 #endif
 
