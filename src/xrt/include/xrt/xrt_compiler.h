@@ -65,6 +65,18 @@
 
 
 /*
+ * To make sure return values are checked.
+ */
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define XRT_CHECK_RESULT __attribute__((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define XRT_CHECK_RESULT _Check_return_
+#else
+#define XRT_CHECK_RESULT
+#endif
+
+
+/*
  * To stop inlining.
  */
 #if defined(__GNUC__)
