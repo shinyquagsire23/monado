@@ -24,6 +24,12 @@ endif()
 add_library(xrt-external-flexkalman INTERFACE)
 target_include_directories(xrt-external-flexkalman INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/flexkalman)
 
+# FlexKalman
+add_library(xrt-external-util-headers INTERFACE)
+target_include_directories(
+	xrt-external-util-headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/util-headers
+	)
+
 # Glad
 add_library(xrt-external-glad INTERFACE)
 target_include_directories(xrt-external-glad INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
