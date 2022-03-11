@@ -13,6 +13,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_string_list.h"
 
 #include "xrt/xrt_gfx_vk.h"
 
@@ -109,118 +110,6 @@ static const char *required_vk_device_extensions[] = {
 #endif
 };
 
-static void
-find_to_add(char const *const *enabled,
-            uint32_t enabled_count,
-            const char **required,
-            uint32_t required_count,
-            const char **to_add,
-            uint32_t *to_add_count)
-{
-	for (uint32_t i = 0; i < required_count; i++) {
-		bool already_in_list = false;
-		for (uint32_t j = 0; j < enabled_count; j++) {
-			if (strcmp(enabled[j], required[i]) == 0) {
-				already_in_list = true;
-				break;
-			}
-		}
-
-		if (!already_in_list) {
-			to_add[(*to_add_count)++] = required[i];
-		}
-	}
-}
-
-static bool
-extend_instance_extensions(struct oxr_logger *log, VkInstanceCreateInfo *create_info)
-{
-	uint32_t required_count = ARRAY_SIZE(required_vk_instance_extensions);
-
-	uint32_t to_add_count = 0;
-	const char *to_add[ARRAY_SIZE(required_vk_instance_extensions)];
-
-	uint32_t enabled_count = create_info->enabledExtensionCount;
-	char const *const *enabled = create_info->ppEnabledExtensionNames;
-
-	find_to_add(enabled, enabled_count, required_vk_instance_extensions, required_count, to_add, &to_add_count);
-
-	enum u_logging_level log_level = debug_get_log_option_compositor_log();
-
-	if (to_add_count == 0) {
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "App enabled all required instance exts");
-		}
-		return false;
-	}
-
-	uint32_t total = enabled_count + to_add_count;
-	char const **new_enabled = malloc(sizeof(char *) * total);
-
-	for (uint32_t i = 0; i < enabled_count; i++) {
-		new_enabled[i] = enabled[i];
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "Instance ext (app): %s", enabled[i]);
-		}
-	}
-
-	for (uint32_t i = 0; i < to_add_count; i++) {
-		new_enabled[enabled_count + i] = to_add[i];
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "Instance ext (rt): %s", to_add[i]);
-		}
-	}
-
-	create_info->ppEnabledExtensionNames = new_enabled;
-	create_info->enabledExtensionCount = total;
-
-	return true;
-}
-
-static bool
-extend_device_extensions(struct oxr_logger *log, VkDeviceCreateInfo *create_info)
-{
-	uint32_t required_count = ARRAY_SIZE(required_vk_device_extensions);
-
-	uint32_t to_add_count = 0;
-	const char *to_add[ARRAY_SIZE(required_vk_device_extensions)];
-
-	uint32_t enabled_count = create_info->enabledExtensionCount;
-	char const *const *enabled = create_info->ppEnabledExtensionNames;
-
-	find_to_add(enabled, enabled_count, required_vk_device_extensions, required_count, to_add, &to_add_count);
-
-	enum u_logging_level log_level = debug_get_log_option_compositor_log();
-
-	if (to_add_count == 0) {
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "App enabled all required device exts");
-		}
-		return false;
-	}
-
-	uint32_t total = enabled_count + to_add_count;
-	char const **new_enabled = malloc(sizeof(char *) * total);
-
-	for (uint32_t i = 0; i < enabled_count; i++) {
-		new_enabled[i] = enabled[i];
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "Device ext (app): %s", enabled[i]);
-		}
-	}
-
-	for (uint32_t i = 0; i < to_add_count; i++) {
-		new_enabled[enabled_count + i] = to_add[i];
-		if (log_level <= U_LOGGING_DEBUG) {
-			oxr_log(log, "Device ext (rt): %s", to_add[i]);
-		}
-	}
-
-	create_info->ppEnabledExtensionNames = new_enabled;
-	create_info->enabledExtensionCount = total;
-
-	return true;
-}
 
 XrResult
 oxr_vk_create_vulkan_instance(struct oxr_logger *log,
@@ -239,16 +128,21 @@ oxr_vk_create_vulkan_instance(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	const VkAllocationCallbacks *vulkanAllocator = createInfo->vulkanAllocator;
+	struct u_string_list *instance_ext_list = u_string_list_create_from_array(
+	    required_vk_instance_extensions, ARRAY_SIZE(required_vk_instance_extensions));
+
+	for (uint32_t i = 0; i < createInfo->vulkanCreateInfo->enabledExtensionCount; i++) {
+		u_string_list_append_unique(instance_ext_list,
+		                            createInfo->vulkanCreateInfo->ppEnabledExtensionNames[i]);
+	}
 
 	VkInstanceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
-	bool free_list = extend_instance_extensions(log, &modified_info);
+	modified_info.ppEnabledExtensionNames = u_string_list_get_data(instance_ext_list);
+	modified_info.enabledExtensionCount = u_string_list_get_size(instance_ext_list);
 
-	*vulkanResult = CreateInstance(&modified_info, vulkanAllocator, vulkanInstance);
+	*vulkanResult = CreateInstance(&modified_info, createInfo->vulkanAllocator, vulkanInstance);
 
-	if (free_list) {
-		free((void *)modified_info.ppEnabledExtensionNames);
-	}
+	u_string_list_destroy(&instance_ext_list);
 
 	return XR_SUCCESS;
 }
@@ -270,17 +164,22 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 		return XR_SUCCESS;
 	}
 
-	const VkAllocationCallbacks *vulkanAllocator = createInfo->vulkanAllocator;
 	VkPhysicalDevice physical_device = createInfo->vulkanPhysicalDevice;
 
-	VkDeviceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
-	bool free_list = extend_device_extensions(log, &modified_info);
+	struct u_string_list *device_extension_list =
+	    u_string_list_create_from_array(required_vk_device_extensions, ARRAY_SIZE(required_vk_device_extensions));
 
-	*vulkanResult = CreateDevice(physical_device, &modified_info, vulkanAllocator, vulkanDevice);
-
-	if (free_list) {
-		free((void *)modified_info.ppEnabledExtensionNames);
+	for (uint32_t i = 0; i < createInfo->vulkanCreateInfo->enabledExtensionCount; i++) {
+		u_string_list_append_unique(device_extension_list,
+		                            createInfo->vulkanCreateInfo->ppEnabledExtensionNames[i]);
 	}
+
+	VkDeviceCreateInfo modified_info = *createInfo->vulkanCreateInfo;
+	modified_info.ppEnabledExtensionNames = u_string_list_get_data(device_extension_list);
+	modified_info.enabledExtensionCount = u_string_list_get_size(device_extension_list);
+	*vulkanResult = CreateDevice(physical_device, &modified_info, createInfo->vulkanAllocator, vulkanDevice);
+
+	u_string_list_destroy(&device_extension_list);
 
 	return XR_SUCCESS;
 }
