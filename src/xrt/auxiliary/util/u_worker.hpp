@@ -34,7 +34,7 @@ private:
 
 
 public:
-	explicit SharedThreadPool(SharedThreadPool const &copy)
+	SharedThreadPool(SharedThreadPool const &copy)
 	{
 		u_worker_thread_pool_reference(&mPool, copy.mPool);
 	}
@@ -51,7 +51,7 @@ public:
 	/*!
 	 * @copydoc u_worker_thread_pool_create.
 	 */
-	explicit SharedThreadPool(uint32_t starting_worker_count, uint32_t thread_count)
+	SharedThreadPool(uint32_t starting_worker_count, uint32_t thread_count)
 	{
 		mPool = u_worker_thread_pool_create(starting_worker_count, thread_count);
 	}
@@ -95,7 +95,7 @@ private:
 
 
 public:
-	explicit SharedThreadGroup(SharedThreadPool const &stp)
+	SharedThreadGroup(SharedThreadPool const &stp)
 	{
 		mGroup = u_worker_group_create(stp.mPool);
 	}
@@ -142,7 +142,7 @@ public:
 	 * Give all Functors when constructed, some what partially
 	 * avoids use after leaving scope issues of function delegates.
 	 */
-	TaskCollection(SharedThreadGroup const &stc, std::vector<Functor> funcs)
+	TaskCollection(SharedThreadGroup const &stc, std::vector<Functor> const &funcs)
 	{
 		assert(funcs.size() <= kSize);
 
