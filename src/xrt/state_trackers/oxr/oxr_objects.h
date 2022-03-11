@@ -701,7 +701,7 @@ oxr_space_reference_create(struct oxr_logger *log,
  * Transforms a relation given in pure global space into the oxr_space @p spc.
  * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
  */
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_relation_in_space(struct oxr_logger *log,
                                  XrTime time,
                                  struct xrt_space_relation *relation,
@@ -713,7 +713,7 @@ oxr_space_pure_relation_in_space(struct oxr_logger *log,
  * Transforms a pose given in pure global space into a relation in the oxr_space @p spc.
  * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
  */
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_pose_in_space(struct oxr_logger *log,
                              XrTime time,
                              struct xrt_pose *pose,
@@ -725,7 +725,7 @@ oxr_space_pure_pose_in_space(struct oxr_logger *log,
  * Transforms a relation in an given oxr_space @p spc into pure global space, taking the pose offset of @p spc into
  * account.
  */
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_relation_from_space(struct oxr_logger *log,
                                    XrTime time,
                                    struct xrt_space_relation *relation,
@@ -736,7 +736,7 @@ oxr_space_pure_relation_from_space(struct oxr_logger *log,
  * Transforms a posen in a given oxr_space @p spc into a relation in "pure" global space, taking the pose offset of @p
  * spc into account.
  */
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_pose_from_space(struct oxr_logger *log,
                                XrTime time,
                                struct xrt_pose *pose,
@@ -749,7 +749,7 @@ oxr_space_pure_pose_from_space(struct oxr_logger *log,
  *
  * @todo: This function currently assumes all reference spaces are associated with the HMD.
  */
-bool
+XRT_CHECK_RESULT bool
 oxr_space_get_pure_relation(struct oxr_logger *log,
                             struct oxr_space *spc,
                             XrTime time,
@@ -760,13 +760,13 @@ XrResult
 oxr_space_locate(
     struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location);
 
-bool
+XRT_CHECK_RESULT bool
 is_local_space_set_up(struct oxr_session *sess);
 
 XrSpaceLocationFlags
 xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags);
 
-bool
+XRT_CHECK_RESULT bool
 global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel);
 
 /*

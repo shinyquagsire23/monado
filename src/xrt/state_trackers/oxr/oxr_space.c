@@ -166,7 +166,7 @@ is_local_space_set_up(struct oxr_session *sess)
  * @todo: Until a proper reference space system is implemented, the xdev assigned to the head role should be used as @p
  * ref_xdev for consistency.
  */
-static bool
+XRT_CHECK_RESULT static bool
 oxr_space_ref_get_pure_relation(struct oxr_logger *log,
                                 struct oxr_session *sess,
                                 XrReferenceSpaceType ref_type,
@@ -215,7 +215,9 @@ oxr_space_pure_relation_in_space(struct oxr_logger *log,
 {
 	struct xrt_space_relation pure_space_relation;
 	struct xrt_device *xdev;
-	oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev);
+	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev)) {
+		return false;
+	}
 
 	struct xrt_relation_chain xrc = {0};
 
@@ -325,7 +327,7 @@ global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime t
  * This returns only the relation between two directly-associated spaces without
  * the app given offset pose for baseSpc applied.
  */
-static XrResult
+XRT_CHECK_RESULT static bool
 get_pure_space_relation(struct oxr_logger *log,
                         struct oxr_space *spc,
                         struct oxr_space *baseSpc,
@@ -334,18 +336,22 @@ get_pure_space_relation(struct oxr_logger *log,
 {
 	struct xrt_space_relation space_pure_relation;
 	struct xrt_device *space_xdev;
-	oxr_space_get_pure_relation(log, spc, time, &space_pure_relation, &space_xdev);
+	if (!oxr_space_get_pure_relation(log, spc, time, &space_pure_relation, &space_xdev)) {
+		return false;
+	}
 
 	struct xrt_space_relation base_space_pure_relation;
 	struct xrt_device *base_space_xdev;
-	oxr_space_get_pure_relation(log, baseSpc, time, &base_space_pure_relation, &base_space_xdev);
+	if (!oxr_space_get_pure_relation(log, baseSpc, time, &base_space_pure_relation, &base_space_xdev)) {
+		return false;
+	}
 
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, &space_pure_relation);
 	m_relation_chain_push_inverted_relation(&xrc, &base_space_pure_relation);
 	m_relation_chain_resolve(&xrc, out_relation);
 
-	return XR_SUCCESS;
+	return true;
 }
 
 static void
@@ -420,11 +426,12 @@ oxr_space_locate(
 
 	// Get the pure space relation.
 	struct xrt_space_relation pure;
-	XrResult ret = get_pure_space_relation(log, spc, baseSpc, time, &pure);
-	if (ret != XR_SUCCESS) {
+	bool has_pure_relation = get_pure_space_relation(log, spc, baseSpc, time, &pure);
+	if (!has_pure_relation) {
 		location->locationFlags = 0;
-		return ret;
+		return XR_SUCCESS;
 	}
+
 
 	// Combine space and base space poses with pure relation
 	struct xrt_space_relation result;

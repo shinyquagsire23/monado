@@ -856,8 +856,32 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	m_relation_chain_resolve(&xrc, &pure_hand_relation);
 
 	struct xrt_space_relation hand_pose_in_base_space;
-	oxr_space_pure_relation_in_space(log, at_time, &pure_hand_relation, baseSpc, true, &hand_pose_in_base_space);
+	bool has_hand_pose_in_base_sapce = oxr_space_pure_relation_in_space( //
+	    log,                                                             //
+	    at_time,                                                         //
+	    &pure_hand_relation,                                             //
+	    baseSpc,                                                         //
+	    true,                                                            //
+	    &hand_pose_in_base_space);                                       //
 
+	// Can we not relate to this space or did we not get values?
+	if (!has_hand_pose_in_base_sapce || !value.is_active) {
+		locations->isActive = false;
+
+		// Loop over all joints and zero flags.
+		for (uint32_t i = 0; i < locations->jointCount; i++) {
+			locations->jointLocations[i].locationFlags = XRT_SPACE_RELATION_BITMASK_NONE;
+			if (vel) {
+				XrHandJointVelocityEXT *v = &vel->jointVelocities[i];
+				v->velocityFlags = XRT_SPACE_RELATION_BITMASK_NONE;
+			}
+		}
+
+		return XR_SUCCESS;
+	}
+
+	// We know we are active.
+	locations->isActive = true;
 
 	for (uint32_t i = 0; i < locations->jointCount; i++) {
 		locations->jointLocations[i].locationFlags =
@@ -892,15 +916,6 @@ oxr_session_hand_joints(struct oxr_logger *log,
 			v->angularVelocity.x = result.angular_velocity.x;
 			v->angularVelocity.y = result.angular_velocity.y;
 			v->angularVelocity.z = result.angular_velocity.z;
-		}
-	}
-
-	if (value.is_active) {
-		locations->isActive = true;
-	} else {
-		locations->isActive = false;
-		for (uint32_t i = 0; i < locations->jointCount; i++) {
-			locations->jointLocations[i].locationFlags = XRT_SPACE_RELATION_BITMASK_NONE;
 		}
 	}
 
