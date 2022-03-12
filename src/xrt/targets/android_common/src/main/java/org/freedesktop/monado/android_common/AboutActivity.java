@@ -82,7 +82,7 @@ public class AboutActivity extends AppCompatActivity {
         if (!isInProcess) {
             findViewById(R.id.drawOverOtherAppsFrame).setVisibility(View.VISIBLE);
             DisplayOverOtherAppsStatusFragment drawOverFragment = new DisplayOverOtherAppsStatusFragment();
-            fragmentTransaction.add(R.id.drawOverOtherAppsFrame, drawOverFragment, null);
+            fragmentTransaction.replace(R.id.drawOverOtherAppsFrame, drawOverFragment, null);
         }
 
         if (noticeFragmentProvider != null) {
