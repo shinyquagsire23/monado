@@ -89,10 +89,6 @@ local.properties
 .project
 .classpath
 
-gradlew
-gradlew.bat
-gradle-wrapper.jar
-
 # Ignore Sourcetrail things
 *.srctrlbm
 *.srctrldb
