@@ -20,6 +20,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_chain.h"
 
 
 const struct xrt_pose origin = XRT_POSE_IDENTITY;
@@ -437,6 +438,9 @@ oxr_space_locate(
 		print_space_slog(&slog, "baseSpace", baseSpc);
 	}
 
+	// Used in a lot of places.
+	XrSpaceVelocity *vel = OXR_GET_OUTPUT_FROM_CHAIN(location->next, XR_TYPE_SPACE_LOCATION, XrSpaceVelocity);
+
 	// Get the pure space relation.
 	struct xrt_space_relation pure;
 	bool has_pure_relation = get_pure_space_relation(log, spc, baseSpc, time, &pure);
@@ -445,7 +449,6 @@ oxr_space_locate(
 
 		OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, location->pose);
 
-		XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
 		if (vel) {
 			vel->velocityFlags = 0;
 			U_ZERO(&vel->linearVelocity);
@@ -474,7 +477,6 @@ oxr_space_locate(
 	OXR_XRT_POSE_TO_XRPOSEF(result.pose, location->pose);
 	location->locationFlags = xrt_to_xr_space_location_flags(result.relation_flags);
 
-	XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
 	if (vel) {
 		vel->velocityFlags = 0;
 		if ((result.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0) {
