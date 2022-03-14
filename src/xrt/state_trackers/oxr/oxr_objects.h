@@ -175,6 +175,37 @@ enum oxr_image_state
 
 /*
  *
+ * Helpers
+ *
+ */
+
+/*!
+ * Safely copy a xrt_pose to a XrPosef.
+ */
+#define OXR_XRT_POSE_TO_XRPOSEF(FROM, TO)                                                                              \
+	do {                                                                                                           \
+		union {                                                                                                \
+			struct xrt_pose xrt;                                                                           \
+			XrPosef oxr;                                                                                   \
+		} safe_copy = {FROM};                                                                                  \
+		TO = safe_copy.oxr;                                                                                    \
+	} while (false)
+
+/*!
+ * Safely copy a xrt_fov to a XrFovf.
+ */
+#define OXR_XRT_FOV_TO_XRFOVF(FROM, TO)                                                                                \
+	do {                                                                                                           \
+		union {                                                                                                \
+			struct xrt_fov xrt;                                                                            \
+			XrFovf oxr;                                                                                    \
+		} safe_copy = {FROM};                                                                                  \
+		TO = safe_copy.oxr;                                                                                    \
+	} while (false)
+
+
+/*
+ *
  * oxr_handle_base.c
  *
  */

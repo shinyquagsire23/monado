@@ -443,12 +443,7 @@ oxr_space_locate(
 	if (!has_pure_relation) {
 		location->locationFlags = 0;
 
-		// Copy
-		union {
-			struct xrt_pose xrt;
-			XrPosef oxr;
-		} safe_copy = {XRT_POSE_IDENTITY};
-		location->pose = safe_copy.oxr;
+		OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, location->pose);
 
 		XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
 		if (vel) {
@@ -476,14 +471,7 @@ oxr_space_locate(
 	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &baseSpc->pose);
 	m_relation_chain_resolve(&xrc, &result);
 
-	// Copy
-	union {
-		struct xrt_pose xrt;
-		XrPosef oxr;
-	} safe_copy = {0};
-	safe_copy.xrt = result.pose;
-
-	location->pose = safe_copy.oxr;
+	OXR_XRT_POSE_TO_XRPOSEF(result.pose, location->pose);
 	location->locationFlags = xrt_to_xr_space_location_flags(result.relation_flags);
 
 	XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;

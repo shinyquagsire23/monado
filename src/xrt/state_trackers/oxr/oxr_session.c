@@ -382,12 +382,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 	if (!oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
 	                                      &head_relation_in_base_space)) {
 		for (uint32_t i = 0; i < view_count; i++) {
-			union {
-				struct xrt_pose xrt;
-				struct XrPosef oxr;
-			} safe_copy_pose = {0};
-			safe_copy_pose.xrt = (struct xrt_pose)XRT_POSE_IDENTITY;
-			views[i].pose = safe_copy_pose.oxr;
+			OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, views[i].pose);
 		}
 		return XR_SUCCESS;
 	}
@@ -405,12 +400,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
 		m_relation_chain_push_relation(&xrc, &head_relation_in_base_space);
 		m_relation_chain_resolve(&xrc, &result);
-		union {
-			struct xrt_pose xrt;
-			struct XrPosef oxr;
-		} safe_copy_pose = {0};
-		safe_copy_pose.xrt = result.pose;
-		views[i].pose = safe_copy_pose.oxr;
+		OXR_XRT_POSE_TO_XRPOSEF(result.pose, views[i].pose);
 
 
 		/*
@@ -418,13 +408,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 		 */
 
 		const struct xrt_fov fov = fovs[i];
-
-		union {
-			struct xrt_fov xrt;
-			XrFovf oxr;
-		} safe_copy_fov = {0};
-		safe_copy_fov.xrt = fov;
-		views[i].fov = safe_copy_fov.oxr;
+		OXR_XRT_FOV_TO_XRFOVF(fov, views[i].fov);
 
 
 		/*
