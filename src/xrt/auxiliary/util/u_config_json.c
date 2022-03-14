@@ -519,7 +519,7 @@ u_gui_state_scene_to_string(enum u_gui_state_scene scene)
 {
 	switch (scene) {
 	case GUI_STATE_SCENE_CALIBRATE: return "calibrate";
-	default: assert(false);
+	default: assert(false); return NULL;
 	}
 }
 
