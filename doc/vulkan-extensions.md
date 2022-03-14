@@ -42,6 +42,7 @@ minimize frustration.
 | [`VK_KHR_external_memory`][] (8) (+platform: 6)    | yes                                                                                                                          |||||||
 | [`VK_KHR_external_semaphore`][] (8) (+platform: 7) | yes (soon)                                                                                                                   |||||||
 | [`VK_KHR_swapchain`][]                             |        | yes                                                                                                                  ||||||
+| [`VK_KHR_timeline_semaphore`][]                    | opt    | opt            | opt                | opt                    | opt                      | opt            | opt            |
 
 [`VK_EXT_debug_report`][] is also used.
 
