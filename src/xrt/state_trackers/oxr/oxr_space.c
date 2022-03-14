@@ -368,15 +368,27 @@ print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose)
 }
 
 static void
-print_space(const char *name, struct oxr_space *spc)
+print_vec3_slog(struct oxr_sink_logger *slog, const char *prefix, struct xrt_vec3 *v)
 {
-	if (!spc->sess->sys->inst->debug_spaces) {
-		return;
-	}
+	oxr_slog(slog, "%s (%f, %f, %f)", prefix, v->x, v->y, v->z);
+}
 
+static void
+print_pose_slog(struct oxr_sink_logger *slog, const char *prefix, struct xrt_pose *pose)
+{
+	struct xrt_vec3 *p = &pose->position;
+	struct xrt_quat *q = &pose->orientation;
+
+	oxr_slog(slog, "%s (%f, %f, %f) (%f, %f, %f, %f)", prefix, p->x, p->y, p->z, q->x, q->y, q->z, q->w);
+}
+
+static void
+print_space_slog(struct oxr_sink_logger *slog, const char *name, struct oxr_space *spc)
+{
 	const char *type_str = get_ref_space_type_short_str(spc);
-	U_LOG_D("\t%s->type %s\n\t%s->pose", name, type_str, name);
-	print_pose(spc->sess, "", &spc->pose);
+	oxr_slog(slog, "\n\t%s->type: %s\n\t%s->pose: ", name, type_str, name);
+
+	print_pose_slog(slog, "", &spc->pose);
 }
 
 XrSpaceLocationFlags
@@ -418,11 +430,12 @@ XrResult
 oxr_space_locate(
     struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location)
 {
-	if (spc->sess->sys->inst->debug_spaces) {
-		U_LOG_D("%s", __func__);
+	struct oxr_sink_logger slog = {0};
+	bool print = spc->sess->sys->inst->debug_spaces;
+	if (print) {
+		print_space_slog(&slog, "space", spc);
+		print_space_slog(&slog, "baseSpace", baseSpc);
 	}
-	print_space("space", spc);
-	print_space("baseSpace", baseSpc);
 
 	// Get the pure space relation.
 	struct xrt_space_relation pure;
@@ -442,6 +455,13 @@ oxr_space_locate(
 			vel->velocityFlags = 0;
 			U_ZERO(&vel->linearVelocity);
 			U_ZERO(&vel->angularVelocity);
+		}
+
+		if (print) {
+			oxr_slog(&slog, "\n\tReturning invalid pose");
+			oxr_log_slog(log, &slog);
+		} else {
+			oxr_slog_abort(&slog);
 		}
 
 		return XR_SUCCESS;
@@ -497,7 +517,24 @@ oxr_space_locate(
 	    *(XrVector3f *)&result.angular_acceleration;
 #endif
 
-	print_pose(spc->sess, "\trelation->pose", (struct xrt_pose *)&location->pose);
+
+	if (print) {
+		print_pose_slog(&slog, "\n\tpure->pose", (struct xrt_pose *)&pure.pose);
+		print_pose_slog(&slog, "\n\trelation->pose", (struct xrt_pose *)&location->pose);
+		if (vel) {
+			if ((vel->velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT) != 0) {
+				print_vec3_slog(&slog, "\n\trelation->linearVelocity",
+				                (struct xrt_vec3 *)&vel->linearVelocity);
+			}
+			if ((vel->velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT) != 0) {
+				print_vec3_slog(&slog, "\n\trelation->angularVelocity",
+				                (struct xrt_vec3 *)&vel->angularVelocity);
+			}
+		}
+		oxr_log_slog(log, &slog);
+	} else {
+		oxr_slog_abort(&slog);
+	}
 
 	return oxr_session_success_result(spc->sess);
 }
