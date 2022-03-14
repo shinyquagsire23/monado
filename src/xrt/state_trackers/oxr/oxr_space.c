@@ -429,6 +429,21 @@ oxr_space_locate(
 	bool has_pure_relation = get_pure_space_relation(log, spc, baseSpc, time, &pure);
 	if (!has_pure_relation) {
 		location->locationFlags = 0;
+
+		// Copy
+		union {
+			struct xrt_pose xrt;
+			XrPosef oxr;
+		} safe_copy = {XRT_POSE_IDENTITY};
+		location->pose = safe_copy.oxr;
+
+		XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
+		if (vel) {
+			vel->velocityFlags = 0;
+			U_ZERO(&vel->linearVelocity);
+			U_ZERO(&vel->angularVelocity);
+		}
+
 		return XR_SUCCESS;
 	}
 
