@@ -12,6 +12,8 @@
 
 #include "xrt/xrt_compiler.h"
 
+#include <stdarg.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +45,25 @@ enum u_logging_level
 	U_LOGGING_ERROR, //!< Error messages: indicating a problem
 	U_LOGGING_RAW,   //!< Special level for raw printing, prints a new-line.
 };
+
+/*!
+ * Function typedef for setting the logging sink.
+ *
+ * @param file   Source file name associated with a message.
+ * @param line   Source file line associated with a message.
+ * @param func   Function name associated with a message.
+ * @param level  Message level: used for formatting or forwarding to native log functions.
+ * @param format Format string.
+ * @param args   Format parameters.
+ * @param data   User data.
+ */
+typedef void (*u_log_sink_function_t)(const char *file,
+                                      int line,
+                                      const char *func,
+                                      enum u_logging_level level,
+                                      const char *format,
+                                      va_list args,
+                                      void *data);
 
 /*!
  * For places where you really just want printf, prints a new-line.
@@ -160,6 +181,16 @@ u_log_xdev(const char *file,
            struct xrt_device *xdev,
            const char *format,
            ...) XRT_PRINTF_FORMAT(6, 7);
+
+/*!
+ * Sets the logging sink, log is still passed on to the platform defined output
+ * as well as the sink.
+ *
+ * @param func Logging function for the calls to be sent to.
+ * @param data User data to be passed into @p func.
+ */
+void
+u_log_set_sink(u_log_sink_function_t func, void *data);
 
 /*!
  * @}

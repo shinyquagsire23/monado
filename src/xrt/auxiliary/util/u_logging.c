@@ -25,6 +25,18 @@ u_log_get_global_level(void)
 	return debug_get_log_option_global_log();
 }
 
+// Logging sink global data.
+static u_log_sink_function_t g_log_sink_func;
+static void *g_log_sink_data;
+
+#define DISPATCH_SINK(FILE, LINE, FUNC, LEVEL, FORMAT, ARGS)                                                           \
+	if (g_log_sink_func != NULL) {                                                                                 \
+		va_list copy;                                                                                          \
+		va_copy(ARGS, copy);                                                                                   \
+		g_log_sink_func(FILE, LINE, FUNC, LEVEL, FORMAT, copy, g_log_sink_data);                               \
+		va_end(copy);                                                                                          \
+	}
+
 #if defined(XRT_OS_ANDROID)
 
 #include <android/log.h>
@@ -51,6 +63,7 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	__android_log_vprint(prio, func, format, args);
 	va_end(args);
 }
@@ -67,6 +80,7 @@ u_log_xdev(const char *file,
 	android_LogPriority prio = u_log_convert_priority(level);
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	__android_log_vprint(prio, func, format, args);
 	va_end(args);
 }
@@ -107,6 +121,7 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
 	*(buf + printed) = '\n';
@@ -130,6 +145,7 @@ u_log_xdev(const char *file,
 
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
 	OutputDebugStringA(buf);
@@ -216,6 +232,7 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	vfprintf(stderr, format, args);
 	va_end(args);
 
@@ -235,6 +252,7 @@ u_log_xdev(const char *file,
 
 	va_list args;
 	va_start(args, format);
+	DISPATCH_SINK(file, line, func, level, format, args);
 	vfprintf(stderr, format, args);
 	va_end(args);
 
