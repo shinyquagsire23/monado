@@ -466,6 +466,10 @@ oxr_space_locate(
 	}
 
 
+	/*
+	 * Combine and copy
+	 */
+
 	// Combine space and base space poses with pure relation
 	struct xrt_space_relation result;
 	struct xrt_relation_chain xrc = {0};
@@ -498,15 +502,10 @@ oxr_space_locate(
 		}
 	}
 
-#if 0
-	location->linearVelocity = *(XrVector3f *)&result.linear_velocity;
-	location->angularVelocity = *(XrVector3f *)&result.angular_velocity;
-	location->linearAcceleration =
-	    *(XrVector3f *)&result.linear_acceleration;
-	location->angularAcceleration =
-	    *(XrVector3f *)&result.angular_acceleration;
-#endif
 
+	/*
+	 * Print
+	 */
 
 	if (print) {
 		print_pose_slog(&slog, "\n\tpure->pose", (struct xrt_pose *)&pure.pose);
