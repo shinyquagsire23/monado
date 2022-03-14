@@ -468,16 +468,24 @@ oxr_space_locate(
 
 	XrSpaceVelocity *vel = (XrSpaceVelocity *)location->next;
 	if (vel) {
-		vel->linearVelocity.x = result.linear_velocity.x;
-		vel->linearVelocity.y = result.linear_velocity.y;
-		vel->linearVelocity.z = result.linear_velocity.z;
+		vel->velocityFlags = 0;
+		if ((result.relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0) {
+			vel->linearVelocity.x = result.linear_velocity.x;
+			vel->linearVelocity.y = result.linear_velocity.y;
+			vel->linearVelocity.z = result.linear_velocity.z;
+			vel->velocityFlags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
+		} else {
+			U_ZERO(&vel->linearVelocity);
+		}
 
-		vel->angularVelocity.x = result.angular_velocity.x;
-		vel->angularVelocity.y = result.angular_velocity.y;
-		vel->angularVelocity.z = result.angular_velocity.z;
-
-		vel->velocityFlags |= (location->locationFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT);
-		vel->velocityFlags |= (location->locationFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT);
+		if ((result.relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0) {
+			vel->angularVelocity.x = result.angular_velocity.x;
+			vel->angularVelocity.y = result.angular_velocity.y;
+			vel->angularVelocity.z = result.angular_velocity.z;
+			vel->velocityFlags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
+		} else {
+			U_ZERO(&vel->angularVelocity);
+		}
 	}
 
 #if 0
