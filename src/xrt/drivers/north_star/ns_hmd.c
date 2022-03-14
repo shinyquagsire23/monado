@@ -494,9 +494,9 @@ ns_config_load(struct ns_hmd *ns, const char *config_path)
 		goto parse_error;
 	}
 
-	fseek(config_file, 0, SEEK_END);    // Go to end of file
-	int file_size = ftell(config_file); // See offset we're at. This should be the file size in bytes.
-	rewind(config_file);                // Go back to the beginning of the file
+	fseek(config_file, 0, SEEK_END);     // Go to end of file
+	long file_size = ftell(config_file); // See offset we're at. This should be the file size in bytes.
+	rewind(config_file);                 // Go back to the beginning of the file
 
 	if (file_size == 0) {
 		NS_INFO(ns, "Empty config file!");
@@ -509,7 +509,11 @@ ns_config_load(struct ns_hmd *ns, const char *config_path)
 	char *json = calloc(file_size + 1, 1);
 	json_allocated = true;
 
-	(void)fread(json, 1, file_size, config_file);
+	size_t ret = fread(json, 1, file_size, config_file);
+	if ((long)ret != file_size) {
+		NS_ERROR(ns, "Failed to read configuration file at path \"%s\"", config_path);
+		goto parse_error;
+	}
 	fclose(config_file);
 	config_file = NULL;
 	json[file_size] = '\0';
