@@ -302,7 +302,9 @@ oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **
 		return;
 	}
 
-	xrt_instance_get_prober(xinst, &p->base.xp);
+	if (xinst != NULL) {
+		xrt_instance_get_prober(xinst, &p->base.xp);
+	}
 
 	for (size_t i = 0; i < NUM_XDEVS; i++) {
 		p->base.xdevs[i] = xdevs[i];

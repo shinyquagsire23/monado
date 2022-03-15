@@ -317,6 +317,8 @@ struct os_thread_helper
 static inline int
 os_thread_helper_init(struct os_thread_helper *oth)
 {
+	U_ZERO(oth);
+
 	int ret = pthread_mutex_init(&oth->mutex, NULL);
 	if (ret != 0) {
 		return ret;
