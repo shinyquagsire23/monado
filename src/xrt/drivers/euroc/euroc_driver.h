@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
+DEBUG_GET_OPTION(euroc_path, "EUROC_PATH", NULL)
 
 /*!
  * @}

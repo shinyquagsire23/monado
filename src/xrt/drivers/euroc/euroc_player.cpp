@@ -12,6 +12,7 @@
 #include "os/os_threading.h"
 #include "util/u_debug.h"
 #include "util/u_misc.h"
+#include "util/u_time.h"
 #include "util/u_var.h"
 #include "util/u_sink.h"
 #include "tracking/t_frame_cv_mat_wrapper.hpp"
@@ -26,6 +27,12 @@
 #include <thread>
 
 DEBUG_GET_ONCE_OPTION(euroc_gt_device_name, "EUROC_GT_DEVICE_NAME", NULL)
+DEBUG_GET_ONCE_OPTION(euroc_skip_first, "EUROC_SKIP_FIRST", "0%")
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_play_from_start, "EUROC_PLAY_FROM_START", false)
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_use_source_ts, "EUROC_USE_SOURCE_TS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_print_progress, "EUROC_PRINT_PROGRESS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_max_speed, "EUROC_MAX_SPEED", false)
+DEBUG_GET_ONCE_FLOAT_OPTION(euroc_playback_speed, "EUROC_PLAYBACK_SPEED", 1.0)
 
 #define EUROC_PLAYER_STR "Euroc Player"
 #define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
@@ -35,6 +42,7 @@ using std::ifstream;
 using std::is_same_v;
 using std::launch;
 using std::pair;
+using std::stof;
 using std::string;
 using std::vector;
 
@@ -111,14 +119,18 @@ struct euroc_player
 		bool stereo;              //!< Whether to stream both left and right sinks or only left
 		bool color;               //!< If RGB available but this is false, images will be loaded in grayscale
 		bool gt;                  //!< Whether to send groundtruth data (if available) to the SLAM tracker
-		float skip_first_s;       //!< Amount of initial seconds of the dataset to skip
+		bool skip_perc;           //!< Whether @ref skip_first represents percentage or seconds
+		float skip_first;         //!< How much of the first dataset samples to skip, @see skip_perc
 		float scale;              //!< Scale of each frame; e.g., 0.5 (half), 1.0 (avoids resize)
-		double speed;             //!< Intended reproduction speed, could be slower due to read times
+		bool max_speed;           //!< If true, push samples as fast as possible, other wise @see speed
+		double speed;             //!< Intended reproduction speed if @ref max_speed is false
 		bool send_all_imus_first; //!< If enabled all imu samples will be sent before img samples
 		bool paused;              //!< Whether to pause the playback
 		bool use_source_ts;       //!< If true, use the original timestamps from the dataset
 	} playback;
 	timepoint_ns last_pause_ts; //!< Last time the stream was paused
+	bool play_from_start;       //!< If set, the euroc player does not way for user input to start
+	bool print_progress;        //!< Whether to print progress to stdout (useful for CLI runs)
 
 	// UI related fields
 	enum euroc_player_ui_state ui_state;
@@ -295,7 +307,18 @@ euroc_player_preload(struct euroc_player *ep)
 static void
 euroc_player_user_skip(struct euroc_player *ep)
 {
-	timepoint_ns skip_first_ns = ep->playback.skip_first_s * 1000 * 1000 * 1000;
+
+	float skip_first_s = 0;
+	if (ep->playback.skip_perc) {
+		float skip_percentage = ep->playback.skip_first;
+		timepoint_ns last_ts = MAX(ep->left_imgs->back().first, ep->imus->back().timestamp_ns);
+		double dataset_length_s = (last_ts - ep->base_ts) / U_TIME_1S_IN_NS;
+		skip_first_s = dataset_length_s * skip_percentage / 100.0f;
+	} else {
+		skip_first_s = ep->playback.skip_first;
+	}
+
+	time_duration_ns skip_first_ns = skip_first_s * U_TIME_1S_IN_NS;
 	timepoint_ns skipped_ts = ep->base_ts + skip_first_ns;
 
 	while (ep->imus->at(ep->imu_seq).timestamp_ns < skipped_ts) {
@@ -445,6 +468,12 @@ euroc_player_push_next_frame(struct euroc_player *ep)
 
 	snprintf(ep->progress_text, sizeof(ep->progress_text), "Frames %lu/%lu - IMUs %lu/%lu", ep->img_seq,
 	         ep->left_imgs->size(), ep->imu_seq, ep->imus->size());
+
+	if (ep->print_progress) {
+		printf("Playback %.2f%% - Frame %lu/%lu\r", float(ep->img_seq) / float(ep->left_imgs->size()) * 100,
+		       ep->img_seq, ep->left_imgs->size());
+		fflush(stdout);
+	}
 }
 
 static void
@@ -537,7 +566,11 @@ euroc_player_stream_samples(struct euroc_player *ep)
 			constexpr int64_t PAUSE_POLL_INTERVAL_NS = 15L * U_TIME_1MS_IN_NS;
 			os_nanosleep(PAUSE_POLL_INTERVAL_NS);
 		}
-		sleep_until_next_sample(ep);
+
+		if (!ep->playback.max_speed) {
+			sleep_until_next_sample(ep);
+		}
+
 		push_next_sample(ep);
 	}
 }
@@ -661,9 +694,9 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 }
 
 //! This is the @ref xrt_fs stream start method, however as the euroc playback
-//! is heavily customizable, it will be managed through the UI. So this will not
-//! really start outputting frames but mainly prepare everything to start doing
-//! so when the user decides.
+//! is heavily customizable, it will be managed through the UI. So, unless
+//! EUROC_PLAY_FROM_START is set, this will not start outputting frames until
+//! the user clicks the start button.
 static bool
 euroc_player_stream_start(struct xrt_fs *xfs,
                           struct xrt_frame_sink *xs,
@@ -676,6 +709,9 @@ euroc_player_stream_start(struct xrt_fs *xfs,
 		EUROC_INFO(ep, "Starting Euroc Player in tracking mode");
 		if (ep->out_sinks.left == NULL) {
 			EUROC_WARN(ep, "No left sink provided, will keep running but tracking is unlikely to work");
+		}
+		if (ep->play_from_start) {
+			euroc_player_start_btn_cb(ep);
 		}
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
 		EUROC_INFO(ep, "Starting Euroc Player in calibration mode, will stream only left frames right away");
@@ -839,8 +875,10 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_bool(ep, &ep->playback.stereo, "Stereo (if available)");
 	u_var_add_bool(ep, &ep->playback.color, "Color (if available)");
 	u_var_add_bool(ep, &ep->playback.gt, "Groundtruth (if available)");
-	u_var_add_f32(ep, &ep->playback.skip_first_s, "First seconds to skip");
+	u_var_add_bool(ep, &ep->playback.skip_perc, "Skip percentage, otherwise skips seconds");
+	u_var_add_f32(ep, &ep->playback.skip_first, "How much to skip");
 	u_var_add_f32(ep, &ep->playback.scale, "Scale");
+	u_var_add_bool(ep, &ep->playback.max_speed, "Max speed");
 	u_var_add_f64(ep, &ep->playback.speed, "Speed");
 	u_var_add_bool(ep, &ep->playback.send_all_imus_first, "Send all IMU samples first");
 	u_var_add_bool(ep, &ep->playback.use_source_ts, "Use original timestamps");
@@ -877,13 +915,17 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	ep->playback.stereo = ep->dataset.is_stereo;
 	ep->playback.color = ep->dataset.is_colored;
 	ep->playback.gt = ep->dataset.has_gt;
-	ep->playback.skip_first_s = 0.0;
+	ep->playback.skip_perc = string(debug_get_option_euroc_skip_first()).back() == '%';
+	ep->playback.skip_first = stof(debug_get_option_euroc_skip_first());
 	ep->playback.scale = 1.0;
-	ep->playback.speed = 1.0;
+	ep->playback.max_speed = debug_get_bool_option_euroc_max_speed();
+	ep->playback.speed = debug_get_float_option_euroc_playback_speed();
 	ep->playback.send_all_imus_first = false;
-	ep->playback.use_source_ts = false;
+	ep->playback.use_source_ts = debug_get_bool_option_euroc_use_source_ts();
+	ep->play_from_start = debug_get_bool_option_euroc_play_from_start();
 
 	ep->log_level = debug_get_log_option_euroc_log();
+	ep->print_progress = debug_get_bool_option_euroc_print_progress();
 	euroc_player_setup_gui(ep);
 
 	ep->left_sink.push_frame = receive_left_frame;
