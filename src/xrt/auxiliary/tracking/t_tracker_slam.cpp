@@ -25,6 +25,7 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/version.hpp>
 
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -58,13 +59,19 @@
 DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
 
 //! Config file path, format is specific to the SLAM implementation in use
-DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", NULL)
+DEBUG_GET_OPTION(slam_config, "SLAM_CONFIG", NULL)
 
 //! Whether to submit data to the SLAM tracker without user action
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 
+//! Which level of prediction to use, @see prediction_type.
+DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", 2)
+
 //! Whether to enable CSV writers from the start for later analysis
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
+
+//! Path to write CSVs to
+DEBUG_GET_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
@@ -79,6 +86,7 @@ using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using std::filesystem::create_directories;
 using Trajectory = map<timepoint_ns, xrt_pose>;
 
 using xrt::auxiliary::math::RelationHistory;
@@ -192,7 +200,9 @@ private:
 	void
 	create()
 	{
-		file = ofstream{filename};
+		string csv_path = debug_get_option_slam_csv_path();
+		create_directories(csv_path);
+		file = ofstream{csv_path + "/" + filename};
 		file << "#timestamp [ns], p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], "
 		        "q_RS_w [], q_RS_x [], q_RS_y [], q_RS_z []" CSV_EOL;
 		file << std::fixed << std::setprecision(CSV_PRECISION);
@@ -237,7 +247,9 @@ private:
 	void
 	create()
 	{
-		file = ofstream{filename};
+		string csv_path = debug_get_option_slam_csv_path();
+		create_directories(csv_path);
+		file = ofstream{csv_path + "/" + filename};
 		file << "#";
 		for (const string &col : column_names) {
 			string delimiter = &col != &column_names.back() ? "," : CSV_EOL;
@@ -317,7 +329,7 @@ struct TrackerSlam
 	// Prediction
 
 	//!< Type of prediction to use
-	prediction_type pred_type = PREDICTION_SP_SO_IA_SL;
+	prediction_type pred_type;
 	u_var_combo pred_combo;         //!< UI combo box to select @ref pred_type
 	RelationHistory slam_rels{};    //!< A history of relations produced purely from external SLAM tracker data
 	struct m_ff_vec3_f32 *gyro_ff;  //!< Last gyroscope samples
@@ -800,6 +812,8 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 {
 	auto &t = *container_of(xts, TrackerSlam, base);
 
+	//! @todo This should not be cached, the same timestamp can be requested at a
+	//! later time on the frame for a better prediction.
 	if (when_ns == t.last_ts) {
 		*out_relation = t.last_rel;
 		return;
@@ -871,6 +885,8 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 static void
 push_frame(TrackerSlam &t, struct xrt_frame *frame, bool is_left)
 {
+	SLAM_DASSERT(t.last_left_ts != INT64_MIN || is_left, "First frame was a right frame");
+
 	// Construct and send the image sample
 	cv::Mat img = t.cv_wrapper->wrap(frame);
 	SLAM_DASSERT_(frame->timestamp < INT64_MAX);
@@ -1020,6 +1036,8 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	xrt_frame_context_add(xfctx, &t.node);
 
 	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
+
+	t.pred_type = (prediction_type)debug_get_num_option_slam_prediction_type();
 
 	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
 	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
