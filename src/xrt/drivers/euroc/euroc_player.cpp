@@ -20,6 +20,7 @@
 
 #include "euroc_driver.h"
 
+#include <algorithm>
 #include <chrono>
 #include <stdio.h>
 #include <fstream>
@@ -38,6 +39,7 @@ DEBUG_GET_ONCE_FLOAT_OPTION(euroc_playback_speed, "EUROC_PLAYBACK_SPEED", 1.0)
 #define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
 
 using std::async;
+using std::find_if;
 using std::ifstream;
 using std::is_same_v;
 using std::launch;
@@ -83,7 +85,7 @@ struct euroc_player
 	struct os_thread_helper play_thread;
 	enum u_logging_level log_level;
 	struct xrt_fs_mode mode; //!< The only fs mode the euroc dataset provides
-	bool is_running;         //!< Set only at start and stop of frameserver stream
+	bool is_running;         //!< Set only at start, stop and end of frameserver stream
 
 	//! Contains information about the source dataset; set only at start
 	struct
@@ -107,7 +109,7 @@ struct euroc_player
 	gt_trajectory *gt;       //!< List of all groundtruth poses read from the dataset
 
 	// Timestamp correction fields (can be disabled through `use_source_ts`)
-	timepoint_ns base_ts;   //!< First imu0 timestamp, samples timestamps are relative to this
+	timepoint_ns base_ts;   //!< First sample timestamp, stream timestamps are relative to this
 	timepoint_ns start_ts;  //!< When did the dataset started to be played
 	timepoint_ns offset_ts; //!< Amount of ns to offset start_ns (pauses, skips, etc)
 
@@ -152,14 +154,10 @@ euroc_player_set_ui_state(struct euroc_player *ep, euroc_player_ui_state state);
 // Euroc functionality
 
 //! Parse and load all IMU samples into `samples`, assumes data.csv is well formed
-//! If `ep` is not null, will set `ep->base_ts` with the first timestamp read
 //! If `read_n` > 0, read at most that amount of samples
 //! Returns whether the appropriate data.csv file could be opened
 static bool
-euroc_player_preload_imu_data(struct euroc_player *ep,
-                              const string &dataset_path,
-                              imu_samples *samples,
-                              int64_t read_n = -1)
+euroc_player_preload_imu_data(const string &dataset_path, imu_samples *samples, int64_t read_n = -1)
 {
 	string csv_filename = dataset_path + "/mav0/imu0/data.csv";
 	ifstream fin{csv_filename};
@@ -170,7 +168,6 @@ euroc_player_preload_imu_data(struct euroc_player *ep,
 	constexpr int COLUMN_COUNT = 6; // EuRoC imu columns: ts wx wy wz ax ay az
 	string line;
 	getline(fin, line); // Skip header line
-	bool set_base_ts = ep != NULL;
 
 	while (getline(fin, line) && read_n-- != 0) {
 		timepoint_ns timestamp;
@@ -182,12 +179,6 @@ euroc_player_preload_imu_data(struct euroc_player *ep,
 			i = j;
 			j = line.find(',', i + 1);
 			v[k] = stod(line.substr(i + 1, j));
-		}
-
-		// Save first IMU sample timestamp
-		if (set_base_ts) {
-			ep->base_ts = timestamp;
-			set_base_ts = false;
 		}
 
 		xrt_imu_sample sample{timestamp, {v[3], v[4], v[5]}, {v[0], v[1], v[2]}};
@@ -283,11 +274,38 @@ euroc_player_preload_img_data(const string &dataset_path, img_samples *samples, 
 	return true;
 }
 
+//! Trims left and right sequences so that they start and end at the same sample
+//! Note that this function does not guarantee that the dataset is free of framedrops.
+static void
+euroc_player_match_stereo_seqs(struct euroc_player *ep)
+{
+	img_samples ls = *ep->left_imgs;
+	img_samples rs = *ep->right_imgs;
+
+	// Assumes dataset is properly formatted with monotonically increasing timestamps
+	timepoint_ns first_ts = MAX(ls.at(0).first, rs.at(0).first);
+	timepoint_ns last_ts = MIN(ls.back().first, rs.back().first);
+
+	auto is_first = [first_ts](const img_sample &s) { return s.first == first_ts; };
+	auto is_last = [last_ts](const img_sample &s) { return s.first == last_ts; };
+
+	img_samples::iterator lfirst = find_if(ls.begin(), ls.end(), is_first);
+	img_samples::iterator llast = find_if(ls.begin(), ls.end(), is_last);
+	EUROC_ASSERT_(lfirst != ls.end() && llast != ls.end());
+
+	img_samples::iterator rfirst = find_if(rs.begin(), rs.end(), is_first);
+	img_samples::iterator rlast = find_if(rs.begin(), rs.end(), is_last);
+	EUROC_ASSERT_(rfirst != rs.end() && rlast != rs.end());
+
+	ep->left_imgs->assign(lfirst, llast + 1);
+	ep->right_imgs->assign(rfirst, rlast + 1);
+}
+
 static void
 euroc_player_preload(struct euroc_player *ep)
 {
 	ep->imus->clear();
-	euroc_player_preload_imu_data(ep, ep->dataset.path, ep->imus);
+	euroc_player_preload_imu_data(ep->dataset.path, ep->imus);
 
 	ep->left_imgs->clear();
 	euroc_player_preload_img_data(ep->dataset.path, ep->left_imgs, true);
@@ -295,6 +313,8 @@ euroc_player_preload(struct euroc_player *ep)
 	if (ep->dataset.is_stereo) {
 		ep->right_imgs->clear();
 		euroc_player_preload_img_data(ep->dataset.path, ep->right_imgs, false);
+
+		euroc_player_match_stereo_seqs(ep);
 	}
 
 	if (ep->dataset.has_gt) {
@@ -321,11 +341,11 @@ euroc_player_user_skip(struct euroc_player *ep)
 	time_duration_ns skip_first_ns = skip_first_s * U_TIME_1S_IN_NS;
 	timepoint_ns skipped_ts = ep->base_ts + skip_first_ns;
 
-	while (ep->imus->at(ep->imu_seq).timestamp_ns < skipped_ts) {
+	while (ep->imu_seq < ep->imus->size() && ep->imus->at(ep->imu_seq).timestamp_ns < skipped_ts) {
 		ep->imu_seq++;
 	}
 
-	while (ep->left_imgs->at(ep->img_seq).first < skipped_ts) {
+	while (ep->img_seq < ep->left_imgs->size() && ep->left_imgs->at(ep->img_seq).first < skipped_ts) {
 		ep->img_seq++;
 	}
 
@@ -346,7 +366,7 @@ euroc_player_fill_dataset_info(struct euroc_player *ep, const char *path)
 	gt_trajectory _2;
 	bool has_right_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, false, 0);
 	bool has_left_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, true, 1);
-	bool has_imu = euroc_player_preload_imu_data(NULL, ep->dataset.path, &_1, 0);
+	bool has_imu = euroc_player_preload_imu_data(ep->dataset.path, &_1, 0);
 	bool has_gt = euroc_player_preload_gt_data(ep->dataset.path, &_2, 0);
 	bool is_valid_dataset = has_left_camera && has_imu;
 	EUROC_ASSERT(is_valid_dataset, "Invalid dataset %s", path);
@@ -381,8 +401,7 @@ os_monotonic_get_ts()
 	return its;
 }
 
-//! @returns maps a timestamp to current time (wrt. ep->start_ts)
-//! from the original euroc timestamp (uses first imu0 timestamp as base time)
+//! @returns maps a dataset timestamp to current time
 static timepoint_ns
 euroc_player_mapped_ts(struct euroc_player *ep, timepoint_ns ts)
 {
@@ -583,9 +602,9 @@ euroc_player_stream(void *ptr)
 	EUROC_INFO(ep, "Starting euroc playback");
 
 	euroc_player_preload(ep);
-	euroc_player_user_skip(ep);
-
+	ep->base_ts = MIN(ep->left_imgs->at(0).first, ep->imus->at(0).timestamp_ns);
 	ep->start_ts = os_monotonic_get_ts();
+	euroc_player_user_skip(ep);
 
 	// Push all IMU samples now if requested
 	if (ep->playback.send_all_imus_first) {
@@ -608,6 +627,8 @@ euroc_player_stream(void *ptr)
 	// Wait for the end of both streams
 	serve_imgs.get();
 	serve_imus.get();
+
+	ep->is_running = false;
 
 	EUROC_INFO(ep, "Euroc dataset playback finished");
 	euroc_player_set_ui_state(ep, STREAM_ENDED);
@@ -761,7 +782,6 @@ euroc_player_break_apart(struct xrt_frame_node *node)
 {
 	struct euroc_player *ep = container_of(node, struct euroc_player, node);
 	euroc_player_stream_stop(&ep->base);
-	return;
 }
 
 static void
