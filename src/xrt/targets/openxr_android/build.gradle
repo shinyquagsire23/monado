@@ -1,7 +1,6 @@
-import groovy.xml.XmlUtil
-
 // Copyright 2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
+import groovy.xml.XmlUtil
 
 plugins {
     id 'com.android.application'
