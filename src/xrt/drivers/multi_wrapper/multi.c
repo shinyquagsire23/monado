@@ -195,6 +195,7 @@ get_view_poses(struct xrt_device *xdev,
 	struct xrt_device *target = d->tracking_override.target;
 	xrt_device_get_view_poses(target, default_eye_relation, at_timestamp_ns, view_count, out_head_relation,
 	                          out_fovs, out_poses);
+	get_tracked_pose(xdev, XRT_INPUT_GENERIC_HEAD_POSE, at_timestamp_ns, out_head_relation);
 }
 
 static bool
