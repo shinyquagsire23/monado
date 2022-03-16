@@ -229,9 +229,7 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
  * @relates xrt_instance
  */
 int
-xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst
-
-);
+xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst);
 
 /*!
  * @}
