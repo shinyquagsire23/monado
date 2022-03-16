@@ -472,6 +472,7 @@ rs_ddev_create(int device_idx)
 	rs->base.destroy = rs_ddev_destroy;
 	rs->base.name = XRT_DEVICE_REALSENSE;
 	rs->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
+	rs->base.tracking_origin->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 
 	// Print name.
 	snprintf(rs->base.str, XRT_DEVICE_NAME_LEN, "Intel RealSense Device-SLAM");
