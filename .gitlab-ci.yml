@@ -36,7 +36,7 @@ include:
 .monado.variables.debian:bullseye-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-01-25.0"
+    FDO_DISTRIBUTION_TAG: "2022-03-16.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Ubuntu focal image
