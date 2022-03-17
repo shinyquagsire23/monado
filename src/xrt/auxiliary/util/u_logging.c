@@ -29,6 +29,13 @@ u_log_get_global_level(void)
 static u_log_sink_function_t g_log_sink_func;
 static void *g_log_sink_data;
 
+void
+u_log_set_sink(u_log_sink_function_t func, void *data)
+{
+	g_log_sink_func = func;
+	g_log_sink_data = data;
+}
+
 #define DISPATCH_SINK(FILE, LINE, FUNC, LEVEL, FORMAT, ARGS)                                                           \
 	if (g_log_sink_func != NULL) {                                                                                 \
 		va_list copy;                                                                                          \
