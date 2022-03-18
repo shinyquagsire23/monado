@@ -279,15 +279,6 @@ open_tracking_settings(struct u_config_json *json)
 		return NULL;
 	}
 
-	int ver = -1;
-	bool bad = false;
-
-	bad |= !get_obj_int(t, "version", &ver);
-	if (bad || ver >= 1) {
-		U_LOG_E("Missing or unknown version tag '%i' in tracking config", ver);
-		return NULL;
-	}
-
 	return t;
 }
 
@@ -362,6 +353,15 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 	char tmp[16];
 
 	bool bad = false;
+
+	int ver = -1;
+
+	bad |= !get_obj_int(t, "version", &ver);
+	if (bad || ver >= 1) {
+		U_LOG_E("Missing or unknown version tag '%i' in tracking config", ver);
+		return NULL;
+	}
+
 
 	bad |= !get_obj_str(t, "camera_name", s->camera_name, sizeof(s->camera_name));
 	bad |= !get_obj_int(t, "camera_mode", &s->camera_mode);
