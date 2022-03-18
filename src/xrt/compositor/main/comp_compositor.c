@@ -214,39 +214,6 @@ compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static void
-compositor_add_frame_timing(struct comp_compositor *c)
-{
-	int last_index = c->compositor_frame_times.index;
-
-	c->compositor_frame_times.index++;
-	c->compositor_frame_times.index %= NUM_FRAME_TIMES;
-
-	// update fps only once every FPS_NUM_TIMINGS
-	if (c->compositor_frame_times.index == 0) {
-		float total_s = 0;
-
-		// frame *timings* are durations between *times*
-		int NUM_FRAME_TIMINGS = NUM_FRAME_TIMES - 1;
-
-		for (int i = 0; i < NUM_FRAME_TIMINGS; i++) {
-			uint64_t frametime_ns =
-			    c->compositor_frame_times.times_ns[i + 1] - c->compositor_frame_times.times_ns[i];
-			float frametime_s = frametime_ns * 1.f / 1000.f * 1.f / 1000.f * 1.f / 1000.f;
-			total_s += frametime_s;
-		}
-		float avg_frametime_s = total_s / ((float)NUM_FRAME_TIMINGS);
-		c->compositor_frame_times.fps = 1.f / avg_frametime_s;
-	}
-
-	c->compositor_frame_times.times_ns[c->compositor_frame_times.index] = os_monotonic_get_ns();
-
-	uint64_t diff = c->compositor_frame_times.times_ns[c->compositor_frame_times.index] -
-	                c->compositor_frame_times.times_ns[last_index];
-	c->compositor_frame_times.timings_ms[c->compositor_frame_times.index] =
-	    (float)diff * 1.f / 1000.f * 1.f / 1000.f;
-}
-
-static void
 do_graphics_layers(struct comp_compositor *c)
 {
 	// Always zero for now.
@@ -376,7 +343,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 
 	comp_renderer_draw(c->r);
 
-	compositor_add_frame_timing(c);
+	u_frame_times_widget_push_sample(&c->compositor_frame_times, os_monotonic_get_ns());
 
 	// Record the time of this frame.
 	c->last_frame_time_ns = os_monotonic_get_ns();
@@ -465,9 +432,9 @@ compositor_destroy(struct xrt_compositor *xc)
 		vk->instance = VK_NULL_HANDLE;
 	}
 
-	if (c->compositor_frame_times.debug_var) {
-		free(c->compositor_frame_times.debug_var);
-	}
+	u_var_remove_root(c);
+
+	u_frame_times_widget_teardown(&c->compositor_frame_times);
 
 	comp_base_fini(&c->base);
 
@@ -1311,36 +1278,23 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	sys_info->supported_blend_mode_count = (uint8_t)xdev->hmd->blend_mode_count;
 
 	u_var_add_root(c, "Compositor", true);
-	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
-	u_var_add_bool(c, &c->debug.atw_off, "Debug: ATW OFF");
-
-	struct u_var_timing *ft = U_TYPED_CALLOC(struct u_var_timing);
 
 	float target_frame_time_ms = ns_to_ms(c->settings.nominal_frame_interval_ns);
+	u_frame_times_widget_init(&c->compositor_frame_times, target_frame_time_ms, 10.f);
+
+	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
+	u_var_add_bool(c, &c->debug.atw_off, "Debug: ATW OFF");
+	u_var_add_f32_timing(c, c->compositor_frame_times.debug_var, "Frame Times (Compositor)");
+
+
 
 	//! @todo: Query all supported refresh rates of the current mode
 	sys_info->num_refresh_rates = 1;
 	sys_info->refresh_rates[0] = 1. / time_ns_to_s(c->settings.nominal_frame_interval_ns);
 
-	uint64_t now = os_monotonic_get_ns();
-	for (int i = 0; i < NUM_FRAME_TIMES; i++) {
-		c->compositor_frame_times.times_ns[i] = now + i;
-	}
-	ft->values.data = c->compositor_frame_times.timings_ms;
-	ft->values.length = NUM_FRAME_TIMES;
-	ft->values.index_ptr = &c->compositor_frame_times.index;
 
-	ft->reference_timing = target_frame_time_ms;
-	ft->range = 10.f;
-	ft->unit = "ms";
-	ft->dynamic_rescale = false;
-	ft->center_reference_timing = true;
-
-	u_var_add_f32_timing(c, ft, "Frame Times (Compositor)");
 
 	comp_renderer_add_debug_vars(c->r);
-
-	c->compositor_frame_times.debug_var = ft;
 
 	c->state = COMP_STATE_READY;
 

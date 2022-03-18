@@ -27,6 +27,7 @@
 #include "util/u_sink.h"
 #include "util/u_var.h"
 #include "util/u_frame.h"
+#include "util/u_frame_times_widget.h"
 
 #include "main/comp_layer_renderer.h"
 
@@ -66,6 +67,13 @@ struct comp_renderer
 	{
 		// Hint: enable/disable is in c->mirroring_to_debug_gui. It's there because comp_renderer is just a
 		// forward decl to comp_compositor.c
+
+		struct u_frame_times_widget push_frame_times;
+
+		float target_frame_time_ms;
+		uint64_t last_push_ts_ns;
+		int push_every_frame_out_of_X;
+
 		struct u_sink_debug debug_sink;
 		VkExtent2D image_extent;
 		uint64_t sequence;
@@ -776,6 +784,9 @@ renderer_destroy(struct comp_renderer *r)
 	}
 
 	comp_layer_renderer_destroy(&(r->lr));
+
+	u_var_remove_root(r);
+	u_frame_times_widget_teardown(&r->mirror_to_debug_gui.push_frame_times);
 }
 
 static VkImageView
@@ -1265,10 +1276,44 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 }
 #endif
 
+static void
+mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
+{
+	// One out of every zero frames is not what we want!
+	// Also one out of every negative two frames, etc. is nonsensical
+	if (r->mirror_to_debug_gui.push_every_frame_out_of_X < 1) {
+		r->mirror_to_debug_gui.push_every_frame_out_of_X = 1;
+	}
+
+	r->mirror_to_debug_gui.target_frame_time_ms = (double)r->mirror_to_debug_gui.push_every_frame_out_of_X *
+	                                              (double)r->c->settings.nominal_frame_interval_ns /
+	                                              (double)U_TIME_1MS_IN_NS;
+
+	r->mirror_to_debug_gui.push_frame_times.debug_var->reference_timing =
+	    r->mirror_to_debug_gui.target_frame_time_ms;
+	r->mirror_to_debug_gui.push_frame_times.debug_var->range = r->mirror_to_debug_gui.target_frame_time_ms;
+}
+
 static bool
 can_mirror_to_debug_gui(struct comp_renderer *r)
 {
-	return r->c->mirroring_to_debug_gui && u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink);
+	if (!r->c->mirroring_to_debug_gui || !u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink)) {
+		return false;
+	}
+
+	uint64_t now = r->c->frame.rendering.predicted_display_time_ns;
+
+	double diff_s = (double)(now - r->mirror_to_debug_gui.last_push_ts_ns) / (double)U_TIME_1MS_IN_NS;
+
+	// Completely unscientific - lower values probably works fine too.
+	// I figure we don't have very many 500Hz displays and this woorks great for 120-144hz
+	double slop_ms = 2;
+
+	if (diff_s < r->mirror_to_debug_gui.target_frame_time_ms - slop_ms) {
+		return false;
+	}
+	r->mirror_to_debug_gui.last_push_ts_ns = now;
+	return true;
 }
 
 static void
@@ -1286,28 +1331,6 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	vk_init_cmd_buffer(vk, &cmd);
 
 	VkImage copy_from = r->lr->framebuffers[0].image;
-
-#if 0
-	bool fast = r->c->base.slot.one_projection_layer_fast_path;
-
-
-	if (fast) {
-		switch (layer->data.type) {
-		case XRT_LAYER_STEREO_PROJECTION: {
-			copy_from = layer->sc_array[0]->vkic.images[layer->data.stereo.l.sub.image_index].handle;
-		} break;
-		case XRT_LAYER_STEREO_PROJECTION_DEPTH: {
-			copy_from = layer->sc_array[0]->vkic.images[layer->data.stereo_depth.l.sub.image_index].handle;
-		} break;
-		default: assert(false);
-		}
-	} else {
-		
-		
-	}
-#endif
-
-
 
 	VkImageSubresourceRange first_color_level_subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -1410,6 +1433,9 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	struct xrt_frame *frame = &wrap->base_frame;
 	wrap = NULL;
 	u_sink_debug_push_frame(&r->mirror_to_debug_gui.debug_sink, frame);
+	u_frame_times_widget_push_sample(&r->mirror_to_debug_gui.push_frame_times,
+	                                 r->c->frame.rendering.predicted_display_time_ns);
+
 	xrt_frame_reference(&frame, NULL);
 }
 
@@ -1464,6 +1490,7 @@ comp_renderer_draw(struct comp_renderer *r)
 	// Clear the frame.
 	c->frame.rendering.id = -1;
 
+	mirror_to_debug_gui_fixup_ui_state(r);
 	if (can_mirror_to_debug_gui(r)) {
 		mirror_to_debug_gui_do_blit(r);
 	}
@@ -1541,7 +1568,19 @@ comp_renderer_destroy(struct comp_renderer **ptr_r)
 void
 comp_renderer_add_debug_vars(struct comp_renderer *r)
 {
-	// 1.2 % 2.3;
-	u_var_add_bool(r->c, &r->c->mirroring_to_debug_gui, "Display left eye to GUI (slow)");
-	u_var_add_sink_debug(r->c, &r->mirror_to_debug_gui.debug_sink, "Left view!");
+	r->mirror_to_debug_gui.push_every_frame_out_of_X = 2;
+
+	u_frame_times_widget_init(&r->mirror_to_debug_gui.push_frame_times, 0.f, 0.f);
+	mirror_to_debug_gui_fixup_ui_state(r);
+
+	u_var_add_root(r, "Readback", true);
+
+	u_var_add_bool(r, &r->c->mirroring_to_debug_gui, "Readback left eye to debug GUI");
+	u_var_add_i32(r, &r->mirror_to_debug_gui.push_every_frame_out_of_X, "Push 1 frame out of every X frames");
+
+	u_var_add_ro_f32(r, &r->mirror_to_debug_gui.push_frame_times.fps, "FPS (Readback)");
+	u_var_add_f32_timing(r, r->mirror_to_debug_gui.push_frame_times.debug_var, "Frame Times (Readback)");
+
+
+	u_var_add_sink_debug(r, &r->mirror_to_debug_gui.debug_sink, "Left view!");
 }

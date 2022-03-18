@@ -16,6 +16,7 @@
 #include "util/u_threading.h"
 #include "util/u_index_fifo.h"
 #include "util/u_logging.h"
+#include "util/u_frame_times_widget.h"
 
 #include "util/comp_base.h"
 #include "util/comp_sync.h"
@@ -33,7 +34,6 @@
 extern "C" {
 #endif
 
-#define NUM_FRAME_TIMES 50
 #define COMP_MAX_LAYERS 16
 
 /*
@@ -115,22 +115,7 @@ struct comp_compositor
 		int64_t last_end;
 	} app_profiling;
 
-	struct
-	{
-		//! Current Index for times_ns.
-		int index;
-
-		//! Timestamps of last-rendered (immersive) frames.
-		int64_t times_ns[NUM_FRAME_TIMES];
-
-		//! Frametimes between last-rendered (immersive) frames.
-		float timings_ms[NUM_FRAME_TIMES];
-
-		//! Average FPS of last NUM_FRAME_TIMES rendered frames.
-		float fps;
-
-		struct u_var_timing *debug_var;
-	} compositor_frame_times;
+	struct u_frame_times_widget compositor_frame_times;
 
 	struct
 	{
