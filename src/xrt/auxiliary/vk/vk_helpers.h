@@ -300,19 +300,20 @@ struct vk_bundle
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR;
-	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
-	PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
 	PFN_vkGetFenceWin32HandleKHR vkGetFenceWin32HandleKHR;
+	PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR;
+	PFN_vkImportFenceWin32HandleKHR vkImportFenceWin32HandleKHR;
+	PFN_vkImportSemaphoreWin32HandleKHR vkImportSemaphoreWin32HandleKHR;
+
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if !defined(VK_USE_PLATFORM_WIN32_KHR)
 	PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR;
-
-	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
-	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
-
-	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
 	PFN_vkGetFenceFdKHR vkGetFenceFdKHR;
+	PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR;
+	PFN_vkImportFenceFdKHR vkImportFenceFdKHR;
+	PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR;
+
 #endif // !defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)

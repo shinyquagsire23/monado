@@ -1202,19 +1202,20 @@ vk_get_device_functions(struct vk_bundle *vk)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkGetMemoryWin32HandleKHR                   = GET_DEV_PROC(vk, vkGetMemoryWin32HandleKHR);
-	vk->vkImportSemaphoreWin32HandleKHR             = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
-	vk->vkImportFenceWin32HandleKHR                 = GET_DEV_PROC(vk, vkImportFenceWin32HandleKHR);
 	vk->vkGetFenceWin32HandleKHR                    = GET_DEV_PROC(vk, vkGetFenceWin32HandleKHR);
+	vk->vkGetSemaphoreWin32HandleKHR                = GET_DEV_PROC(vk, vkGetSemaphoreWin32HandleKHR);
+	vk->vkImportFenceWin32HandleKHR                 = GET_DEV_PROC(vk, vkImportFenceWin32HandleKHR);
+	vk->vkImportSemaphoreWin32HandleKHR             = GET_DEV_PROC(vk, vkImportSemaphoreWin32HandleKHR);
+
 #endif // defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if !defined(VK_USE_PLATFORM_WIN32_KHR)
 	vk->vkGetMemoryFdKHR                            = GET_DEV_PROC(vk, vkGetMemoryFdKHR);
-
-	vk->vkImportSemaphoreFdKHR                      = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
-	vk->vkGetSemaphoreFdKHR                         = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
-
-	vk->vkImportFenceFdKHR                          = GET_DEV_PROC(vk, vkImportFenceFdKHR);
 	vk->vkGetFenceFdKHR                             = GET_DEV_PROC(vk, vkGetFenceFdKHR);
+	vk->vkGetSemaphoreFdKHR                         = GET_DEV_PROC(vk, vkGetSemaphoreFdKHR);
+	vk->vkImportFenceFdKHR                          = GET_DEV_PROC(vk, vkImportFenceFdKHR);
+	vk->vkImportSemaphoreFdKHR                      = GET_DEV_PROC(vk, vkImportSemaphoreFdKHR);
+
 #endif // !defined(VK_USE_PLATFORM_WIN32_KHR)
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
