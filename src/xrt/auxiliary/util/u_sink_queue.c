@@ -98,20 +98,20 @@ queue_pop(struct u_sink_queue *q)
 static bool
 queue_try_refpush(struct u_sink_queue *q, struct xrt_frame *xf)
 {
-	if (!queue_is_full(q)) {
-		struct u_sink_queue_elem *elem = U_TYPED_CALLOC(struct u_sink_queue_elem);
-		xrt_frame_reference(&elem->frame, xf);
-		elem->next = NULL;
-		if (q->back == NULL) { // First frame
-			q->front = elem;
-		} else { // Next frame
-			q->back->next = elem;
-		}
-		q->back = elem;
-		q->size++;
-		return true;
+	if (queue_is_full(q)) {
+		return false;
 	}
-	return false;
+	struct u_sink_queue_elem *elem = U_TYPED_CALLOC(struct u_sink_queue_elem);
+	xrt_frame_reference(&elem->frame, xf);
+	elem->next = NULL;
+	if (q->back == NULL) { // First frame
+		q->front = elem;
+	} else { // Next frame
+		q->back->next = elem;
+	}
+	q->back = elem;
+	q->size++;
+	return true;
 }
 
 //! Clears the queue and unreferences all of its frames.
