@@ -957,6 +957,39 @@ XRT_CHECK_RESULT VkResult
 vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence);
 
 /*!
+ * Creates a Vulkan semaphore and a native graphics sync handle.
+ *
+ * In case of success, the underlying Vulkan functionality's ownership semantics
+ * apply: ownership of the @p native handle may have transferred, a reference
+ * may have been added, or the Vulkan object may rely on the caller to keep the
+ * native handle alive until the Vulkan object is destroyed. Which option
+ * applies depends on the particular native handle type used.
+ *
+ * In case of error, neither @p out_sem and @p out_native is not touched by the
+ * function so the caller only becomes responsible for the output on success.
+ *
+ * See the corresponding Vulkan specification text:
+ * https://www.khronos.org/registry/vulkan/specs/1.3-extensions/html/vkspec.html#synchronization-semaphores
+ *
+ * @ingroup aux_vk
+ */
+XRT_CHECK_RESULT VkResult
+vk_create_semaphore_and_native(struct vk_bundle *vk, VkSemaphore *out_sem, xrt_graphics_sync_handle_t *out_native);
+
+#ifdef VK_KHR_timeline_semaphore
+/*
+ * Creates a Vulkan timeline semaphore and a native graphics sync
+ * handle, see @ref vk_create_semaphore_and_native for more details.
+ *
+ * @ingroup aux_vk
+ */
+XRT_CHECK_RESULT VkResult
+vk_create_timeline_semaphore_and_native(struct vk_bundle *vk,
+                                        VkSemaphore *out_sem,
+                                        xrt_graphics_sync_handle_t *out_native);
+#endif
+
+/*!
  * @brief Creates a Vulkan semaphore from a native graphics sync handle.
  *
  * In case of error, ownership is never transferred and the caller should close the handle themselves.

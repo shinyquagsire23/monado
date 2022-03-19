@@ -81,76 +81,11 @@ comp_semaphore_create(struct vk_bundle *vk,
 		return XRT_ERROR_VULKAN;
 	}
 
-	VkExternalSemaphoreHandleTypeFlags handle_type = 0;
-
-
-#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-	if (!vk->external.timeline_semaphore_opaque_fd) {
-		VK_ERROR(vk, "External timeline semaphore opaque fd not supported!");
-		return XRT_ERROR_VULKAN;
-	} else {
-		handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
-	}
-#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-	if (!vk->external.timeline_semaphore_win32_handle) {
-		VK_ERROR(vk, "External timeline semaphore win32 handle not supported!");
-		return XRT_ERROR_VULKAN;
-	} else {
-		handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-	}
-#else
-#error "Need to port semaphore creation code."
-#endif
-
-
-	VkExportSemaphoreCreateInfo export_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
-	    .handleTypes = handle_type,
-	};
-
-	VkSemaphoreTypeCreateInfo type_info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-	    .pNext = &export_info,
-	    .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-	    .initialValue = 0,
-	};
-
-	VkSemaphoreCreateInfo semaphore_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	    .pNext = &type_info,
-	    .flags = 0,
-	};
-
-	VkSemaphore semaphore = VK_NULL_HANDLE;
-	ret = vk->vkCreateSemaphore( //
-	    vk->device,              // dev
-	    &semaphore_create_info,  // pCreateInfo
-	    NULL,                    // pAllocator
-	    &semaphore);             // pSemaphore
+	VkSemaphore semaphore;
+	ret = vk_create_timeline_semaphore_and_native(vk, &semaphore, out_handle);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateSemaphore: %s", vk_result_string(ret));
 		return XRT_ERROR_VULKAN;
 	}
-
-
-#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-	VkSemaphoreGetFdInfoKHR get_fd_info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR,
-	    .semaphore = semaphore,
-	    .handleType = handle_type,
-	};
-
-	ret = vk->vkGetSemaphoreFdKHR(vk->device, &get_fd_info, out_handle);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkGetSemaphoreFdKHR: %s", vk_result_string(ret));
-		vk->vkDestroySemaphore(vk->device, semaphore, NULL);
-		return XRT_ERROR_VULKAN;
-	}
-#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
-#error "No windows port"
-#else
-#error "Need to port semaphore creation code."
-#endif
 
 
 	struct comp_semaphore *csem = U_TYPED_CALLOC(struct comp_semaphore);
