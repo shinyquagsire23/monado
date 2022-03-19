@@ -287,7 +287,7 @@ ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *cali
 
 	// This puts u_sink_create_to_r8g8b8_or_l8 on its own thread, so that nothing gets backed up if it runs slower
 	// than the native camera framerate.
-	u_sink_queue_create(&htd->xfctx, 1, tmp, &tmp);
+	u_sink_simple_queue_create(&htd->xfctx, tmp, &tmp);
 
 	struct xrt_fs_mode *modes;
 	uint32_t count;

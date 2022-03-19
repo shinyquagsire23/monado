@@ -126,7 +126,7 @@ create_pipeline(struct gui_record_window *rw)
 	if (do_convert) {
 		u_sink_create_to_r8g8b8_or_l8(&rw->gst.xfctx, tmp, &tmp);
 	}
-	u_sink_queue_create(&rw->gst.xfctx, 1, tmp, &tmp);
+	u_sink_simple_queue_create(&rw->gst.xfctx, tmp, &tmp);
 
 	os_mutex_lock(&rw->gst.mutex);
 	rw->gst.gs = gs;
@@ -281,7 +281,7 @@ gui_window_record_init(struct gui_record_window *rw)
 	struct xrt_frame_sink *tmp = NULL;
 	rw->texture.ogl = gui_ogl_sink_create("View", &rw->texture.xfctx, &tmp);
 	u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(&rw->texture.xfctx, tmp, &tmp);
-	u_sink_queue_create(&rw->texture.xfctx, 1, tmp, &rw->texture.sink);
+	u_sink_simple_queue_create(&rw->texture.xfctx, tmp, &rw->texture.sink);
 
 	return true;
 }

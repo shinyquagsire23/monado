@@ -330,16 +330,16 @@ scene_render_select(struct gui_scene *scene, struct gui_program *p)
 
 	p->texs[p->num_texs++] = gui_ogl_sink_create("Calibration", cs->xfctx, &rgb);
 	u_sink_create_to_r8g8b8_or_l8(cs->xfctx, rgb, &rgb);
-	u_sink_queue_create(cs->xfctx, 1, rgb, &rgb);
+	u_sink_simple_queue_create(cs->xfctx, rgb, &rgb);
 
 	p->texs[p->num_texs++] = gui_ogl_sink_create("Raw", cs->xfctx, &raw);
 	u_sink_create_to_r8g8b8_or_l8(cs->xfctx, raw, &raw);
-	u_sink_queue_create(cs->xfctx, 1, raw, &raw);
+	u_sink_simple_queue_create(cs->xfctx, raw, &raw);
 
 	t_calibration_stereo_create(cs->xfctx, &cs->params, &cs->status, rgb, &cali);
 	u_sink_split_create(cs->xfctx, raw, cali, &cali);
 	u_sink_deinterleaver_create(cs->xfctx, cali, &cali);
-	u_sink_queue_create(cs->xfctx, 1, cali, &cali);
+	u_sink_simple_queue_create(cs->xfctx, cali, &cali);
 
 	// Just after the camera create a quirk stream.
 	struct u_sink_quirk_params qp;
