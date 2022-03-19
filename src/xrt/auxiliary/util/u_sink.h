@@ -110,6 +110,16 @@ u_sink_queue_create(struct xrt_frame_context *xfctx,
                     struct xrt_frame_sink *downstream,
                     struct xrt_frame_sink **out_xfs);
 
+
+/*!
+ * @public @memberof xrt_frame_sink
+ * @see xrt_frame_context
+ */
+bool
+u_sink_simple_queue_create(struct xrt_frame_context *xfctx,
+                           struct xrt_frame_sink *downstream,
+                           struct xrt_frame_sink **out_xfs);
+
 /*!
  * @public @memberof xrt_frame_sink
  * @see xrt_frame_context

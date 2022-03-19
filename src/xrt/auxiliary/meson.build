@@ -69,6 +69,7 @@ lib_aux_util = static_library(
 		'util/u_sink_converter.c',
 		'util/u_sink_deinterleaver.c',
 		'util/u_sink_queue.c',
+		'util/u_sink_simple_queue.c',
 		'util/u_sink_quirk.c',
 		'util/u_sink_split.c',
 		'util/u_sink_stereo_sbs_to_slam_sbs.c',
