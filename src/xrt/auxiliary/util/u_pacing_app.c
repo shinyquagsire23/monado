@@ -199,8 +199,10 @@ predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t peri
 	// Start from the last time that the driver displayed something.
 	uint64_t val = last_sample_displayed(pa);
 
-	// Return a time after the last returned display time.
-	while (val <= last_return_predicted_display(pa)) {
+	// Return a time after the last returned display time. Add half the
+	// display period to the comparison for robustness when the last display
+	// time shifts slightly with respect to the last sample.
+	while (val <= last_return_predicted_display(pa) + (period_ns / 2)) {
 		val += period_ns;
 	}
 
