@@ -32,7 +32,7 @@ struct OrtSession;
 struct OrtSessionOptions;
 struct OrtValue;
 
-namespace xrt::tracking::ht::old_rgb {
+namespace xrt::tracking::hand::old_rgb {
 
 
 // struct ht_device;
@@ -643,4 +643,4 @@ ht_model::hand_landmark(const cv::Mat input)
 	return hand;
 }
 
-} // namespace xrt::tracking::ht::old_rgb
+} // namespace xrt::tracking::hand::old_rgb

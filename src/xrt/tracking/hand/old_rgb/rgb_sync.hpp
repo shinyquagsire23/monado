@@ -34,7 +34,7 @@
 #include <opencv2/opencv.hpp>
 
 #include <vector>
-namespace xrt::tracking::ht::old_rgb {
+namespace xrt::tracking::hand::old_rgb {
 
 using namespace xrt::auxiliary::util;
 
@@ -302,4 +302,4 @@ public:
 };
 
 
-} // namespace xrt::tracking::ht::old_rgb
+} // namespace xrt::tracking::hand::old_rgb

@@ -12,7 +12,7 @@
 #include "xrt/xrt_frame.h"
 
 
-using namespace xrt::tracking::ht::old_rgb;
+using namespace xrt::tracking::hand::old_rgb;
 
 
 
