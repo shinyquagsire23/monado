@@ -125,6 +125,7 @@ struct oxr_action_attachment;
 struct oxr_action_set_attachment;
 struct oxr_action_input;
 struct oxr_action_output;
+struct oxr_dpad_state;
 struct oxr_binding;
 struct oxr_interaction_profile;
 struct oxr_action_set_ref;
@@ -635,6 +636,54 @@ oxr_action_get_input_source_localized_name(struct oxr_logger *log,
 /*!
  * @}
  */
+
+
+/*!
+ *
+ * @name oxr_dpad.c
+ * @{
+ *
+ */
+
+/*!
+ * Initialises a dpad state, has to be zero init before a call to this function.
+ *
+ * @public @memberof oxr_dpad_state_get
+ */
+bool
+oxr_dpad_state_init(struct oxr_dpad_state *state);
+
+/*!
+ * Look for a entry in the state for the given action set key,
+ * returns NULL if no entry has been made for that action set.
+ *
+ * @public @memberof oxr_dpad_state_get
+ */
+struct oxr_dpad_entry *
+oxr_dpad_state_get(struct oxr_dpad_state *state, uint64_t key);
+
+/*!
+ * Look for a entry in the state for the given action set key,
+ * allocates a new entry if none was found.
+ *
+ * @public @memberof oxr_dpad_state_get
+ */
+struct oxr_dpad_entry *
+oxr_dpad_state_get_or_add(struct oxr_dpad_state *state, uint64_t key);
+
+/*!
+ * Frees all state and entries attached to this dpad state.
+ *
+ * @public @memberof oxr_dpad_state_get
+ */
+void
+oxr_dpad_state_deinit(struct oxr_dpad_state *state);
+
+
+/*!
+ * @}
+ */
+
 
 /*!
  *
@@ -1800,6 +1849,31 @@ struct oxr_action_attachment
 #define OXR_CACHE_MEMBER(X) struct oxr_action_cache X;
 	OXR_FOR_EACH_SUBACTION_PATH(OXR_CACHE_MEMBER)
 #undef OXR_CACHE_MEMBER
+};
+
+/*!
+ * A entry in the dpad state for one action set.
+ *
+ * @ingroup oxr_input
+ */
+struct oxr_dpad_entry
+{
+#ifdef XR_EXT_dpad_binding
+	XrInteractionProfileDpadBindingEXT dpads[4];
+	uint32_t dpad_count;
+#endif
+
+	uint64_t key;
+};
+
+/*!
+ * Holds dpad binding state for a single interaction profile.
+ *
+ * @ingroup oxr_input
+ */
+struct oxr_dpad_state
+{
+	struct u_hashmap_int *uhi;
 };
 
 /*!

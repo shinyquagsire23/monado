@@ -18,6 +18,7 @@ add_library(
 	oxr_api_verify.h
 	oxr_binding.c
 	oxr_chain.h
+	oxr_dpad.c
 	oxr_event.c
 	oxr_extension_support.h
 	oxr_handle_base.c
