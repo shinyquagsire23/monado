@@ -39,7 +39,7 @@ u_log_set_sink(u_log_sink_function_t func, void *data)
 #define DISPATCH_SINK(FILE, LINE, FUNC, LEVEL, FORMAT, ARGS)                                                           \
 	if (g_log_sink_func != NULL) {                                                                                 \
 		va_list copy;                                                                                          \
-		va_copy(ARGS, copy);                                                                                   \
+		va_copy(copy, ARGS);                                                                                   \
 		g_log_sink_func(FILE, LINE, FUNC, LEVEL, FORMAT, copy, g_log_sink_data);                               \
 		va_end(copy);                                                                                          \
 	}
