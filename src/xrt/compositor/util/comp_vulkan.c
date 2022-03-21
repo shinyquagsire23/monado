@@ -109,6 +109,8 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 {
 	VkResult ret;
 
+	assert(vk_args->required_instance_version != 0);
+
 	struct u_string_list *instance_ext_list = vk_build_instance_extensions(
 	    vk, vk_args->required_instance_extensions, vk_args->optional_instance_extensions);
 
@@ -123,7 +125,7 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 	    .pApplicationName = "Monado Compositor",
 	    .pEngineName = "Monado",
-	    .apiVersion = VK_MAKE_VERSION(1, 0, 2),
+	    .apiVersion = vk_args->required_instance_version,
 	};
 
 	VkInstanceCreateInfo instance_info = {

@@ -25,6 +25,9 @@ extern "C" {
  */
 struct comp_vulkan_arguments
 {
+	//! Vulkan version that is required.
+	uint32_t required_instance_version;
+
 	//! Function to get all Vulkan functions from.
 	PFN_vkGetInstanceProcAddr get_instance_proc_address;
 
