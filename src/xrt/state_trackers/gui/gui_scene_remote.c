@@ -285,27 +285,23 @@ on_connected(struct gui_remote *gr, struct gui_program *p)
 	const struct r_remote_data *r = &gr->reset;
 	struct r_remote_data *d = &gr->data;
 
-	const ImVec2 hmd_size = {0, 46};
-	const uint32_t hand_size = 23 * 5;
-	const ImVec2 ctrl_size = {0, 64 + hand_size + 52};
-
-	igBeginChildStr("hmd", hmd_size, false, 0);
+	igPushIDPtr(&d->hmd); // Make all IDs unique.
 	POSE(hmd);
-	igEndChild();
+	igPopID(); // Pop unique IDs
 
-	igBeginChildStr("left", ctrl_size, false, 0);
+	igPushIDPtr(&d->left); // Make all IDs unique.
 	POSE(left);
 	LIN_ANG(left);
 	BUTTONS(left);
 	HAND(left);
-	igEndChild();
+	igPopID(); // Pop unique IDs
 
-	igBeginChildStr("right", ctrl_size, false, 0);
+	igPushIDPtr(&d->right); // Make all IDs unique.
 	POSE(right);
 	LIN_ANG(right);
 	BUTTONS(right);
 	HAND(right);
-	igEndChild();
+	igPopID(); // Pop unique IDs
 
 	igCheckbox("Predefined poses", &gr->cheat_menu);
 	if (gr->cheat_menu) {
