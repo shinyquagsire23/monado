@@ -22,6 +22,7 @@ getting started information and general documentation.
 * @ref frame-pacing
 * @ref tracing
 * @ref implementing-extension
+* @ref howto-remote-driver
 
 ## Source layout
 
