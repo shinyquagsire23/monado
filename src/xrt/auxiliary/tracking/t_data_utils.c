@@ -120,7 +120,9 @@ dump_distortion(struct t_camera_calibration *view)
 void
 t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **out_c, uint32_t distortion_num)
 {
-	assert(distortion_num == 5 || distortion_num == 14);
+	// Four parameters for kannala-brandt, 5, 8, 12, or 14 for the normal OpenCV pinhole distortion model
+	assert(distortion_num == 4 || distortion_num == 5 || distortion_num == 8 || distortion_num == 12 ||
+	       distortion_num == 14);
 
 	struct t_stereo_camera_calibration *c = U_TYPED_CALLOC(struct t_stereo_camera_calibration);
 	c->view[0].distortion_num = distortion_num;
