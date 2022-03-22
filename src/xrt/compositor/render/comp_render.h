@@ -144,6 +144,16 @@ comp_buffer_init(struct vk_bundle *vk,
                  VkDeviceSize size);
 
 /*!
+ * Initialize a buffer, making it exportable.
+ */
+VkResult
+comp_buffer_init_exportable(struct vk_bundle *vk,
+                            struct comp_buffer *buffer,
+                            VkBufferUsageFlags usage_flags,
+                            VkMemoryPropertyFlags memory_property_flags,
+                            VkDeviceSize size);
+
+/*!
  * Frees all resources that this buffer has, but does not free the buffer itself.
  */
 void

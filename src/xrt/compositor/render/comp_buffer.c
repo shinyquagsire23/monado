@@ -26,6 +26,7 @@ create_buffer(struct vk_bundle *vk,
               VkBufferUsageFlags usage_flags,
               VkMemoryPropertyFlags memory_property_flags,
               VkDeviceSize size,
+              const void *pNext_for_allocate,
               VkBuffer *out_buffer,
               VkDeviceMemory *out_memory,
               VkDeviceSize *out_alignment,
@@ -71,6 +72,7 @@ create_buffer(struct vk_bundle *vk,
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 	    .allocationSize = mem_reqs.size,
 	    .memoryTypeIndex = memory_type_index,
+	    .pNext = pNext_for_allocate,
 	};
 
 	VkDeviceMemory memory = VK_NULL_HANDLE;
@@ -131,6 +133,60 @@ comp_buffer_init(struct vk_bundle *vk,
 	                    usage_flags,               // usage_flags
 	                    memory_property_flags,     // memory_property_flags
 	                    size,                      // size
+	                    NULL,                      // pNext_for_allocate
+	                    &buffer->buffer,           // out_buffer
+	                    &buffer->memory,           // out_memory
+	                    &buffer->alignment,        // out_alignment
+	                    &buffer->allocation_size); // out_allocation_size
+	if (ret == VK_SUCCESS) {
+		buffer->size = size;
+	}
+
+	return ret;
+}
+
+VkResult
+comp_buffer_init_exportable(struct vk_bundle *vk,
+                            struct comp_buffer *buffer,
+                            VkBufferUsageFlags usage_flags,
+                            VkMemoryPropertyFlags memory_property_flags,
+                            VkDeviceSize size)
+{
+	VkResult ret;
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
+	VkExportMemoryAllocateInfo export_alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+	    .pNext = NULL,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	};
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+	VkExportMemoryAllocateInfo export_alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+	    .pNext = NULL,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	};
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+
+	VkExportMemoryAllocateInfo export_alloc_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+	    .pNext = NULL,
+	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
+	};
+
+#else
+#error "need port"
+#endif
+
+	ret = create_buffer(vk,                        //
+	                    usage_flags,               // usage_flags
+	                    memory_property_flags,     // memory_property_flags
+	                    size,                      // size
+	                    &export_alloc_info,        // pNext_for_allocate
 	                    &buffer->buffer,           // out_buffer
 	                    &buffer->memory,           // out_memory
 	                    &buffer->alignment,        // out_alignment
