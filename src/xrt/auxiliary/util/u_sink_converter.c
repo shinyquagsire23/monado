@@ -233,6 +233,21 @@ from_YUYV422_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size
 }
 
 static void
+from_YUYV422_to_L8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
+{
+	SINK_TRACE_MARKER();
+
+	for (uint32_t y = 0; y < h; y++) {
+		const uint8_t *src = data + (y * stride);
+		uint8_t *dst = dst_frame->data + (y * dst_frame->stride);
+
+		for (uint32_t x = 0; x < w; x++) {
+			dst[x] = src[x * 2];
+		}
+	}
+}
+
+static void
 from_UYVY422_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, size_t stride, const uint8_t *data)
 {
 	SINK_TRACE_MARKER();
@@ -459,6 +474,32 @@ static bool
 create_frame_with_format(struct xrt_frame *xf, enum xrt_format format, struct xrt_frame **out_frame)
 {
 	return create_frame_with_format_of_size(xf, xf->width, xf->height, format, out_frame);
+}
+
+static void
+convert_frame_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
+{
+	SINK_TRACE_MARKER();
+
+	struct u_sink_converter *s = (struct u_sink_converter *)xs;
+
+	struct xrt_frame *converted = NULL;
+
+	switch (xf->format) {
+	case XRT_FORMAT_L8: s->downstream->push_frame(s->downstream, xf); return;
+	case XRT_FORMAT_YUYV422:
+		if (!create_frame_with_format(xf, XRT_FORMAT_L8, &converted)) {
+			return;
+		}
+		from_YUYV422_to_L8(converted, xf->width, xf->height, xf->stride, xf->data);
+		break;
+	default: U_LOG_E("Can not convert from '%s' to L8!", u_format_str(xf->format)); return;
+	}
+
+	s->downstream->push_frame(s->downstream, converted);
+
+	// Refcount in case it's being held downstream.
+	xrt_frame_reference(&converted, NULL);
 }
 
 static void
@@ -801,13 +842,16 @@ destroy(struct xrt_frame_node *node)
 
 void
 u_sink_create_format_converter(struct xrt_frame_context *xfctx,
-                               enum xrt_format f,
+                               enum xrt_format format,
                                struct xrt_frame_sink *downstream,
                                struct xrt_frame_sink **out_xfs)
 {
-	if (f != XRT_FORMAT_R8G8B8) {
-		U_LOG_E("Format '%s' not supported", u_format_str(f));
-		return;
+	void (*func)(struct xrt_frame_sink *, struct xrt_frame *);
+
+	switch (format) {
+	case XRT_FORMAT_R8G8B8: func = convert_frame_r8g8b8; break;
+	case XRT_FORMAT_L8: func = convert_frame_l8; break;
+	default: U_LOG_E("Format '%s' not supported", u_format_str(format)); return;
 	}
 
 #ifdef USE_TABLE
@@ -815,7 +859,7 @@ u_sink_create_format_converter(struct xrt_frame_context *xfctx,
 #endif
 
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
-	s->base.push_frame = convert_frame_r8g8b8;
+	s->base.push_frame = func;
 	s->node.break_apart = break_apart;
 	s->node.destroy = destroy;
 	s->downstream = downstream;

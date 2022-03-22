@@ -170,6 +170,7 @@ u_sink_force_genlock_create(struct xrt_frame_context *xfctx,
                             struct xrt_frame_sink **out_left_xfs,
                             struct xrt_frame_sink **out_right_xfs);
 
+
 /*
  *
  * Debugging sink,
