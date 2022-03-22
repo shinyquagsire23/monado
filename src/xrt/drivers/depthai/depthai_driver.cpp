@@ -213,7 +213,8 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 
 	// Copy translation
 	for (uint32_t i = 0; i < 3; i++) {
-		c->camera_translation[i] = extrinsics[i][3];
+		// Is in centimeters, odd. Monado uses meters.
+		c->camera_translation[i] = extrinsics[i][3] / 100.0f;
 	}
 
 	// Copy rotation
