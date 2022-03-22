@@ -107,6 +107,11 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     }
 
     @Keep
+    public static float getDisplayRefreshRate(Activity activity) {
+        return activity.getWindowManager().getDefaultDisplay().getRefreshRate();
+    }
+
+    @Keep
     public long getNativePointer() {
         if (nativeCounterpart == null) {
             return 0;

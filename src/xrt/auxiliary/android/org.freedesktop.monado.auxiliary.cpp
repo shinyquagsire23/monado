@@ -20,6 +20,7 @@ namespace org::freedesktop::monado::auxiliary {
 	          "attachToActivity", "(Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;")),
 	      getDisplayMetrics(classRef().getStaticMethod("getDisplayMetrics",
 	                                                   "(Landroid/app/Activity;)Landroid/util/DisplayMetrics;")),
+	      getDisplayRefreshRate(classRef().getStaticMethod("getDisplayRefreshRate", "(Landroid/app/Activity;)F")),
 	      getNativePointer(classRef().getMethod("getNativePointer", "()J")),
 	      markAsDiscardedByNative(classRef().getMethod("markAsDiscardedByNative", "()V")),
 	      waitGetSurfaceHolder(classRef().getMethod("waitGetSurfaceHolder", "(I)Landroid/view/SurfaceHolder;"))

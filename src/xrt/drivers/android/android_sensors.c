@@ -82,10 +82,19 @@ android_sensor_callback(int fd, int events, void *data)
 	return 1;
 }
 
+static inline int32_t
+android_get_sensor_poll_rate(const struct android_device *d)
+{
+	const float freq_multiplier = 3.0f;
+	return (d == NULL) ? POLL_RATE_USEC
+	                   : (int32_t)(d->base.hmd->screens[0].nominal_frame_interval_ns * freq_multiplier * 0.001f);
+}
+
 static void *
 android_run_thread(void *ptr)
 {
 	struct android_device *d = (struct android_device *)ptr;
+	const int32_t poll_rate_usec = android_get_sensor_poll_rate(d);
 
 #if __ANDROID_API__ >= 26
 	d->sensor_manager = ASensorManager_getInstanceForPackage(XRT_ANDROID_PACKAGE);
@@ -104,11 +113,11 @@ android_run_thread(void *ptr)
 	// Start sensors in case this was not done already.
 	if (d->accelerometer != NULL) {
 		ASensorEventQueue_enableSensor(d->event_queue, d->accelerometer);
-		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer, POLL_RATE_USEC);
+		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer, poll_rate_usec);
 	}
 	if (d->gyroscope != NULL) {
 		ASensorEventQueue_enableSensor(d->event_queue, d->gyroscope);
-		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope, POLL_RATE_USEC);
+		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope, poll_rate_usec);
 	}
 
 	int ret = 0;
@@ -234,7 +243,10 @@ android_device_create()
 		metrics.width_pixels = 2960;
 		metrics.height_pixels = 1440;
 		metrics.density_dpi = 572;
+		metrics.refresh_rate = 60.0f;
 	}
+
+	d->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / metrics.refresh_rate);
 
 	const uint32_t w_pixels = metrics.width_pixels;
 	const uint32_t h_pixels = metrics.height_pixels;

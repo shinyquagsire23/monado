@@ -175,6 +175,11 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		MonadoView::staticInitClass((jclass)clazz.object().getHandle());
 
 		jni::Object displayMetrics = MonadoView::getDisplayMetrics(Activity((jobject)activity));
+		//! @todo implement non-deprecated codepath for api 30+
+		float displayRefreshRate = MonadoView::getDisplayRefreshRate(Activity((jobject)activity));
+		if (displayRefreshRate == 0.0) {
+			displayRefreshRate = 60.0f;
+		}
 
 		*out_metrics = {.width_pixels = displayMetrics.get<int>("widthPixels"),
 		                .height_pixels = displayMetrics.get<int>("heightPixels"),
@@ -182,7 +187,8 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		                .density = displayMetrics.get<float>("xdpi"),
 		                .scaled_density = displayMetrics.get<float>("ydpi"),
 		                .xdpi = displayMetrics.get<float>("density"),
-		                .ydpi = displayMetrics.get<float>("scaledDensity")};
+		                .ydpi = displayMetrics.get<float>("scaledDensity"),
+		                .refresh_rate = displayRefreshRate};
 		return true;
 
 	} catch (std::exception const &e) {

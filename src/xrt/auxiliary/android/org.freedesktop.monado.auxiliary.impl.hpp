@@ -37,6 +37,12 @@ namespace org::freedesktop::monado::auxiliary {
 		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, activity.object());
 	}
 
+	inline float
+	MonadoView::getDisplayRefreshRate(android::app::Activity const &activity)
+	{
+		return Meta::data().clazz().call<float>(Meta::data().getDisplayRefreshRate, activity.object());
+	}
+
 	inline void *
 	MonadoView::getNativePointer()
 	{

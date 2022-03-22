@@ -32,6 +32,7 @@ struct xrt_android_display_metrics
 	float scaled_density;
 	float xdpi;
 	float ydpi;
+	float refresh_rate;
 };
 
 /*!

@@ -87,6 +87,18 @@ namespace org::freedesktop::monado::auxiliary {
 		getDisplayMetrics(android::app::Activity const &activity);
 
 		/*!
+		 * Wrapper for the getDisplayRefreshRate static method
+		 *
+		 * Java prototype:
+		 * `public static float getDisplayRefreshRate(android.app.Activity);`
+		 *
+		 * JNI signature: (Landroid/app/Activity;)F;
+		 *
+		 */
+		static float
+		getDisplayRefreshRate(android::app::Activity const &activity);
+
+		/*!
 		 * Wrapper for the getNativePointer method
 		 *
 		 * Java prototype:
@@ -140,6 +152,7 @@ namespace org::freedesktop::monado::auxiliary {
 			jni::method_t attachToActivity;
 			jni::method_t attachToActivity1;
 			jni::method_t getDisplayMetrics;
+			jni::method_t getDisplayRefreshRate;
 			jni::method_t getNativePointer;
 			jni::method_t markAsDiscardedByNative;
 			jni::method_t waitGetSurfaceHolder;
