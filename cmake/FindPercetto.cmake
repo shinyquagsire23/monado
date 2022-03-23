@@ -39,6 +39,28 @@ set_package_properties(
     URL "https://github.com/olvaffe/percetto/"
     DESCRIPTION "A C wrapper around the C++ Perfetto tracing SDK.")
 
+include(FindPackageHandleStandardArgs)
+
+# See if it's being built in a current project.
+if(NOT Percetto_FOUND)
+    if(TARGET percetto::percetto)
+        # OK, good - this is what we wanted
+    elseif(TARGET Percetto::percetto)
+        # we now prefer lowercase
+        add_library(percetto::percetto INTERFACE IMPORTED)
+        set_target_properties(
+            percetto::percetto PROPERTIES INTERFACE_LINK_LIBRARIES
+                                          Percetto::percetto)
+    endif()
+
+    if(TARGET percetto::percetto)
+        set(Percetto_LIBRARY percetto::percetto)
+        find_package_handle_standard_args(Percetto
+                                          REQUIRED_VARS Percetto_LIBRARY)
+        return()
+    endif()
+endif()
+
 # See if we can find something made by android prefab (gradle), or exported by CMake
 find_package(Percetto QUIET CONFIG NAMES percetto Percetto)
 if(Percetto_FOUND)
@@ -49,8 +71,8 @@ if(Percetto_FOUND)
         # we now prefer lowercase
         add_library(percetto::percetto INTERFACE IMPORTED)
         set_target_properties(
-            percetto::percetto
-            PROPERTIES INTERFACE_LINK_LIBRARIES Percetto::percetto)
+            percetto::percetto PROPERTIES INTERFACE_LINK_LIBRARIES
+                                          Percetto::percetto)
     else()
         message(FATAL_ERROR "assumptions failed")
     endif()
@@ -85,7 +107,6 @@ find_library(
     HINTS ${PC_percetto_LIBRARY_DIRS}
     PATH_SUFFIXES lib)
 
-include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Percetto REQUIRED_VARS Percetto_INCLUDE_DIR
                                                          Percetto_LIBRARY)
 if(Percetto_FOUND)
