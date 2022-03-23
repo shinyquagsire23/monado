@@ -69,7 +69,7 @@ oxr_space_action_create(struct oxr_logger *log,
 	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath, &subaction_paths);
 
 	spc->sess = sess;
-	spc->is_reference = false;
+	spc->space_type = OXR_SPACE_TYPE_ACTION;
 	spc->subaction_paths = subaction_paths;
 	spc->act_key = key;
 	memcpy(&spc->pose, &createInfo->poseInActionSpace, sizeof(spc->pose));
@@ -99,8 +99,7 @@ oxr_space_reference_create(struct oxr_logger *log,
 	struct oxr_space *spc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE, oxr_space_destroy, &sess->handle);
 	spc->sess = sess;
-	spc->is_reference = true;
-	spc->type = createInfo->referenceSpaceType;
+	spc->space_type = xr_ref_space_to_oxr(createInfo->referenceSpaceType);
 	memcpy(&spc->pose, &createInfo->poseInReferenceSpace, sizeof(spc->pose));
 
 	*out_space = spc;
@@ -112,15 +111,15 @@ oxr_space_reference_create(struct oxr_logger *log,
 static const char *
 get_ref_space_type_short_str(struct oxr_space *spc)
 {
-	if (!spc->is_reference) {
-		return "action";
-	}
+	switch (spc->space_type) {
+	case OXR_SPACE_TYPE_ACTION: return "action";
 
-	switch (spc->type) {
-	case XR_REFERENCE_SPACE_TYPE_VIEW: return "view";
-	case XR_REFERENCE_SPACE_TYPE_LOCAL: return "local";
-	case XR_REFERENCE_SPACE_TYPE_STAGE: return "stage";
-	default: return "unknown";
+	case OXR_SPACE_TYPE_REFERENCE_VIEW: return "view";
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL: return "local";
+	case OXR_SPACE_TYPE_REFERENCE_STAGE: return "stage";
+	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT: return "unbounded";
+	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return "combined_eye";
+	default: return "unknown_space";
 	}
 }
 
@@ -170,13 +169,13 @@ is_local_space_set_up(struct oxr_session *sess)
 XRT_CHECK_RESULT static bool
 oxr_space_ref_get_pure_relation(struct oxr_logger *log,
                                 struct oxr_session *sess,
-                                XrReferenceSpaceType ref_type,
+                                enum oxr_space_type space_type,
                                 struct xrt_device *ref_xdev,
                                 XrTime time,
                                 struct xrt_space_relation *out_relation)
 {
-	switch (ref_type) {
-	case XR_REFERENCE_SPACE_TYPE_LOCAL: {
+	switch (space_type) {
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL: {
 		if (!is_local_space_set_up(sess)) {
 			if (!set_up_local_space(log, sess, time)) {
 				return false;
@@ -186,22 +185,22 @@ oxr_space_ref_get_pure_relation(struct oxr_logger *log,
 		*out_relation = sess->local_space_pure_relation;
 		return true;
 	}
-	case XR_REFERENCE_SPACE_TYPE_STAGE: {
+	case OXR_SPACE_TYPE_REFERENCE_STAGE: {
 		//! @todo: stage space origin assumed to be the same as HMD xdev space origin for now.
 		m_space_relation_ident(out_relation);
 		return true;
 	}
-	case XR_REFERENCE_SPACE_TYPE_VIEW: {
+	case OXR_SPACE_TYPE_REFERENCE_VIEW: {
 		oxr_xdev_get_space_relation(log, sess->sys->inst, ref_xdev, XRT_INPUT_GENERIC_HEAD_POSE, time,
 		                            out_relation);
 		return true;
 	}
 
-	case XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT:
-	case XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO:
+	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT:
+	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO:
 		// not implemented
-		return false;
-	case XR_REFERENCE_SPACE_TYPE_MAX_ENUM: return false; ;
+		return oxr_error(log, false, "Reference Space type %d not implemented!", space_type);
+	case OXR_SPACE_TYPE_ACTION: return oxr_error(log, false, "Space is not a reference space!");
 	}
 	return true;
 }
@@ -286,25 +285,28 @@ oxr_space_get_pure_relation(struct oxr_logger *log,
                             struct xrt_space_relation *out_relation,
                             struct xrt_device **out_xdev)
 {
-	if (spc->is_reference) {
+	if (oxr_space_type_is_reference(spc->space_type)) {
 		struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(spc->sess->sys, head);
 		*out_xdev = head_xdev;
-		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->type, head_xdev, time, out_relation);
+		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->space_type, head_xdev, time, out_relation);
+	} else if (spc->space_type == OXR_SPACE_TYPE_ACTION) {
+		struct oxr_action_input *input = NULL;
+		oxr_action_get_pose_input(log, spc->sess, spc->act_key, &spc->subaction_paths, &input);
+
+		// If the input isn't active.
+		if (input == NULL) {
+			out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
+			return false;
+		}
+
+		*out_xdev = input->xdev;
+		oxr_xdev_get_space_relation(log, spc->sess->sys->inst, input->xdev, input->input->name, time,
+		                            out_relation);
+
+		return true;
 	}
 
-	struct oxr_action_input *input = NULL;
-	oxr_action_get_pose_input(log, spc->sess, spc->act_key, &spc->subaction_paths, &input);
-
-	// If the input isn't active.
-	if (input == NULL) {
-		out_relation->relation_flags = XRT_SPACE_RELATION_BITMASK_NONE;
-		return false;
-	}
-
-	*out_xdev = input->xdev;
-	oxr_xdev_get_space_relation(log, spc->sess->sys->inst, input->xdev, input->input->name, time, out_relation);
-
-	return true;
+	return oxr_error(log, false, "Unknown space type");
 }
 
 bool

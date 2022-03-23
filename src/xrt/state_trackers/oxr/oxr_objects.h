@@ -1738,6 +1738,64 @@ struct oxr_action_attachment
  * @}
  */
 
+enum oxr_space_type
+{
+	OXR_SPACE_TYPE_REFERENCE_VIEW = 1,
+	OXR_SPACE_TYPE_REFERENCE_LOCAL = 2,
+	OXR_SPACE_TYPE_REFERENCE_STAGE = 3,
+	OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT,
+	OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO,
+
+	OXR_SPACE_TYPE_ACTION,
+};
+
+static inline bool
+oxr_space_type_is_reference(enum oxr_space_type space_type)
+{
+	switch (space_type) {
+	case OXR_SPACE_TYPE_REFERENCE_VIEW:
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL:
+	case OXR_SPACE_TYPE_REFERENCE_STAGE:
+	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT:
+	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return true;
+
+	case OXR_SPACE_TYPE_ACTION: return false;
+	}
+	return false;
+}
+
+static inline XrReferenceSpaceType
+oxr_ref_space_to_xr(enum oxr_space_type space_type)
+{
+	switch (space_type) {
+	case OXR_SPACE_TYPE_REFERENCE_VIEW: return XR_REFERENCE_SPACE_TYPE_VIEW;
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL: return XR_REFERENCE_SPACE_TYPE_LOCAL;
+	case OXR_SPACE_TYPE_REFERENCE_STAGE: return XR_REFERENCE_SPACE_TYPE_STAGE;
+	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT: return XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT;
+	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO;
+
+	case OXR_SPACE_TYPE_ACTION: return XR_REFERENCE_SPACE_TYPE_MAX_ENUM;
+	}
+	return XR_REFERENCE_SPACE_TYPE_MAX_ENUM;
+}
+
+static inline enum oxr_space_type
+xr_ref_space_to_oxr(XrReferenceSpaceType space_type)
+{
+	switch (space_type) {
+	case XR_REFERENCE_SPACE_TYPE_VIEW: return OXR_SPACE_TYPE_REFERENCE_VIEW;
+	case XR_REFERENCE_SPACE_TYPE_LOCAL: return OXR_SPACE_TYPE_REFERENCE_LOCAL;
+	case XR_REFERENCE_SPACE_TYPE_STAGE: return OXR_SPACE_TYPE_REFERENCE_STAGE;
+	case XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT: return OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT;
+	case XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO: return OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO;
+
+	case XR_REFERENCE_SPACE_TYPE_MAX_ENUM: return (enum oxr_space_type) - 1;
+	}
+
+	// wrap around or negative depending on enum data type, invalid value either way.
+	return (enum oxr_space_type) - 1;
+}
+
 /*!
  * Can be one of several reference space types, or a space that is bound to an
  * action.
@@ -1758,14 +1816,11 @@ struct oxr_space
 	//! Pose that was given during creation.
 	struct xrt_pose pose;
 
-	//! What kind of reference space is this, if any.
-	XrReferenceSpaceType type;
-
 	//! Action key from which action this space was created from.
 	uint32_t act_key;
 
-	//! Is this a reference space?
-	bool is_reference;
+	//! What kind of space is this?
+	enum oxr_space_type space_type;
 
 	//! Which sub action path is this?
 	struct oxr_subaction_paths subaction_paths;

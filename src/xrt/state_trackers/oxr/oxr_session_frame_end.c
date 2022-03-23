@@ -807,7 +807,7 @@ handle_space(struct oxr_logger *log,
 	/*
 	 * poses in view space are already in the space the compositor expects
 	 */
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		struct xrt_space_relation rel;
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose(&xrc, &pose);
@@ -857,7 +857,7 @@ submit_quad_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
@@ -908,7 +908,7 @@ submit_projection_layer(struct oxr_session *sess,
 		}
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
@@ -1021,7 +1021,7 @@ submit_cylinder_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
@@ -1066,7 +1066,7 @@ submit_equirect1_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
@@ -1124,7 +1124,7 @@ submit_equirect2_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	if (spc->is_reference && spc->type == XR_REFERENCE_SPACE_TYPE_VIEW) {
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
 	}
 
