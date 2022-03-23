@@ -1,11 +1,11 @@
-# Copyright 2021 Collabora, Ltd.
+# Copyright 2021-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 #
 # Original Author:
-# 2021 Ryan Pavlik <ryan.pavlik@collabora.com>
+# 2021-2022 Ryan Pavlik <ryan.pavlik@collabora.com>
 
 #[[.rst:
 FindPercetto
@@ -18,7 +18,7 @@ Targets
 
 If successful, the following imported targets are created.
 
-* ``Percetto::percetto``
+* ``percetto::percetto``
 
 Cache variables
 ^^^^^^^^^^^^^^^
@@ -39,32 +39,21 @@ set_package_properties(
     URL "https://github.com/olvaffe/percetto/"
     DESCRIPTION "A C wrapper around the C++ Perfetto tracing SDK.")
 
-# See if we can find something made by android prefab (gradle)
+# See if we can find something made by android prefab (gradle), or exported by CMake
 find_package(Percetto QUIET CONFIG NAMES percetto Percetto)
 if(Percetto_FOUND)
-    if(TARGET Percetto::percetto)
-        # OK, good - unexpected, but good.
-        get_target_property(Percetto_LIBRARY Percetto::percetto
-                            IMPORTED_LOCATION)
-        get_target_property(Percetto_INCLUDE_DIR Percetto::percetto
-                            INTERFACE_INCLUDE_DIRECTORIES)
-    elseif(TARGET percetto::percetto)
-        # Let's make our own of the right name
-        add_library(Percetto::percetto STATIC IMPORTED)
-        get_target_property(Percetto_INCLUDE_DIR percetto::percetto
-                            INTERFACE_INCLUDE_DIRECTORIES)
-        get_target_property(Percetto_LIBRARY percetto::percetto
-                            IMPORTED_LOCATION)
+    find_package_handle_standard_args(Percetto CONFIG_MODE)
+    if(TARGET percetto::percetto)
+        # OK, good - this is what we wanted
+    elseif(TARGET Percetto::percetto)
+        # we now prefer lowercase
+        add_library(percetto::percetto INTERFACE IMPORTED)
         set_target_properties(
-            Percetto::percetto
-            PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${Percetto_INCLUDE_DIR}"
-                       IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                       IMPORTED_LOCATION ${Percetto_LIBRARY})
+            percetto::percetto
+            PROPERTIES INTERFACE_LINK_LIBRARIES Percetto::percetto)
     else()
         message(FATAL_ERROR "assumptions failed")
     endif()
-    find_package_handle_standard_args(
-        Percetto REQUIRED_VARS Percetto_LIBRARY Percetto_INCLUDE_DIR)
     return()
 endif()
 
@@ -100,11 +89,11 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Percetto REQUIRED_VARS Percetto_INCLUDE_DIR
                                                          Percetto_LIBRARY)
 if(Percetto_FOUND)
-    if(NOT TARGET Percetto::percetto)
-        add_library(Percetto::percetto STATIC IMPORTED)
+    if(NOT TARGET percetto::percetto)
+        add_library(percetto::percetto UNKNOWN IMPORTED)
 
         set_target_properties(
-            Percetto::percetto
+            percetto::percetto
             PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${Percetto_INCLUDE_DIR}"
                        IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                        IMPORTED_LOCATION ${Percetto_LIBRARY})
