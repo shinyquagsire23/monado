@@ -316,12 +316,6 @@ oxr_session_locate_views(struct oxr_logger *log,
 	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, viewLocateInfo->space);
 	uint32_t view_count = 2;
 
-	// Does this apply for all calls?
-	if (!baseSpc->is_reference) {
-		viewState->viewStateFlags = 0;
-		return oxr_session_success_result(sess);
-	}
-
 	// Start two call handling.
 	if (viewCountOutput != NULL) {
 		*viewCountOutput = view_count;
