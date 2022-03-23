@@ -1411,7 +1411,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 		struct xrt_pose head_in_left_cam;
 		vive_get_stereo_camera_calibration(&ss->hmd->hmd.config, &cal, &head_in_left_cam);
 
-		struct xrt_device *ht = ht_device_create(xp, cal);
+		struct xrt_device *ht = ht_device_create_index(xp, cal);
 		if (ht != NULL) { // Returns NULL if there's a problem and the hand tracker can't start. By no means a
 			          // fatal error.
 			struct xrt_device *wrap =

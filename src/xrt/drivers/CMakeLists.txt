@@ -228,9 +228,16 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 			aux_gstreamer
 			ONNXRuntime::ONNXRuntime
 			${OpenCV_LIBRARIES}
+			t_ht_mercury
 			t_ht_old_rgb
 			hand_async
 		)
+
+		if(XRT_BUILD_DRIVER_DEPTHAI)
+			target_sources(drv_ht PRIVATE ht/ht_prober.c)
+			target_link_libraries(drv_ht PRIVATE drv_depthai)
+		endif()
+
 	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 	list(APPEND ENABLED_DRIVERS ht)
 

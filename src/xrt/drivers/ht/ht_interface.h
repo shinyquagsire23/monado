@@ -11,6 +11,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_config_drivers.h"
 
 #include "tracking/t_tracking.h"
 #include "xrt/xrt_prober.h"
@@ -32,7 +33,15 @@ extern "C" {
  * @ingroup drv_ht
  */
 struct xrt_device *
-ht_device_create(struct xrt_prober *xp, struct t_stereo_camera_calibration *calib);
+ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration *calib);
+
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+struct xrt_device *
+ht_device_create_depthai_ov9282(void);
+
+struct xrt_auto_prober *
+ht_create_auto_prober();
+#endif
 
 /*!
  * @dir drivers/ht

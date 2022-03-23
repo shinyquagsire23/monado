@@ -83,6 +83,12 @@
 #include "euroc/euroc_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+#include "ht/ht_interface.h"
+#endif
+#endif
+
 
 /*!
  * Each entry should be a vendor ID (VID), product ID (PID), a "found" function,
@@ -197,6 +203,11 @@ xrt_auto_prober_creator target_auto_list[] = {
     dummy_create_auto_prober,
 #endif
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#ifdef XRT_BUILD_DRIVER_DEPTHAI
+    ht_create_auto_prober,
+#endif
+#endif
     NULL, // Terminate
 };
 
