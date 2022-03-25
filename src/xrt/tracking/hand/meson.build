@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: BSL-1.0
 
 subdir('old_rgb')
-
+subdir('mercury')
 
 ###
 # Async wrapper around sync helper.

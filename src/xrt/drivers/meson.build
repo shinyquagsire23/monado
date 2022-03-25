@@ -93,7 +93,7 @@ if 'handtracking' in drivers
 		),
 		include_directories: [xrt_include, cjson_include],
 		dependencies: [aux],
-		link_with: [lib_t_hand_async, lib_t_ht_old_rgb],
+		link_with: [lib_t_hand_async, lib_t_ht_old_rgb, t_ht_mercury],
 		# build_by_default: 'handtracking' in drivers,
 	)
 endif
