@@ -1195,7 +1195,7 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 	struct xrt_slam_sinks *sinks = NULL;
 
 #ifdef XRT_HAVE_SLAM
-	int create_status = t_slam_create(&wh->slam.xfctx, &wh->slam.tracker, &sinks);
+	int create_status = t_slam_create(&wh->slam.xfctx, NULL, &wh->slam.tracker, &sinks);
 	if (create_status != 0) {
 		return NULL;
 	}

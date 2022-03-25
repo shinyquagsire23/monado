@@ -11,6 +11,8 @@
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 #include "util/u_debug.h"
+#include "util/u_logging.h"
+#include "util/u_misc.h"
 #include "util/u_var.h"
 #include "os/os_threading.h"
 #include "math/m_filter_fifo.h"
@@ -20,6 +22,7 @@
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 #include "tracking/t_euroc_recorder.h"
+#include "tracking/t_tracking.h"
 
 #include <slam_tracker.hpp>
 #include <opencv2/core/mat.hpp>
@@ -55,23 +58,13 @@
 #define SLAM_DASSERT_(predicate) SLAM_ASSERT_(predicate)
 #endif
 
-//! SLAM tracking logging level
+//! @see t_slam_tracker_config
 DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
-
-//! Config file path, format is specific to the SLAM implementation in use
-DEBUG_GET_OPTION(slam_config, "SLAM_CONFIG", NULL)
-
-//! Whether to submit data to the SLAM tracker without user action
+DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", nullptr)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
-
-//! Which level of prediction to use, @see prediction_type.
-DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", 2)
-
-//! Whether to enable CSV writers from the start for later analysis
+DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_SL))
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
-
-//! Path to write CSVs to
-DEBUG_GET_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
+DEBUG_GET_ONCE_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
@@ -193,6 +186,7 @@ public:
 	bool enabled; // Modified through UI
 
 private:
+	string directory;
 	string filename;
 	ofstream file;
 	bool created = false;
@@ -200,9 +194,8 @@ private:
 	void
 	create()
 	{
-		string csv_path = debug_get_option_slam_csv_path();
-		create_directories(csv_path);
-		file = ofstream{csv_path + "/" + filename};
+		create_directories(directory);
+		file = ofstream{directory + "/" + filename};
 		file << "#timestamp [ns], p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], "
 		        "q_RS_w [], q_RS_x [], q_RS_y [], q_RS_z []" CSV_EOL;
 		file << std::fixed << std::setprecision(CSV_PRECISION);
@@ -210,7 +203,7 @@ private:
 
 
 public:
-	TrajectoryWriter(const string &fn, bool e) : enabled(e), filename(fn) {}
+	TrajectoryWriter(const string &dir, const string &fn, bool e) : enabled(e), directory(dir), filename(fn) {}
 
 	void
 	push(timepoint_ns ts, const xrt_pose &pose)
@@ -239,6 +232,7 @@ public:
 	bool enabled; // Modified through UI
 
 private:
+	string directory;
 	string filename;
 	vector<string> column_names;
 	ofstream file;
@@ -247,9 +241,8 @@ private:
 	void
 	create()
 	{
-		string csv_path = debug_get_option_slam_csv_path();
-		create_directories(csv_path);
-		file = ofstream{csv_path + "/" + filename};
+		create_directories(directory);
+		file = ofstream{directory + "/" + filename};
 		file << "#";
 		for (const string &col : column_names) {
 			string delimiter = &col != &column_names.back() ? "," : CSV_EOL;
@@ -258,7 +251,9 @@ private:
 	}
 
 public:
-	TimingWriter(const string &fn, bool e, const vector<string> &cn) : enabled(e), filename(fn), column_names(cn) {}
+	TimingWriter(const string &dir, const string &fn, bool e, const vector<string> &cn)
+	    : enabled(e), directory(dir), filename(fn), column_names(cn)
+	{}
 
 	void
 	push(const vector<timepoint_ns> &timestamps)
@@ -277,18 +272,6 @@ public:
 			file << ts << delimiter;
 		}
 	}
-};
-
-//! SLAM prediction type. Naming scheme as follows:
-//! P: position, O: orientation, A: angular velocity, L: linear velocity
-//! S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
-enum prediction_type
-{
-	PREDICTION_NONE = 0,    //!< No prediction, always return the last SLAM tracked pose
-	PREDICTION_SP_SO_SA_SL, //!< Predicts from last two SLAM poses only
-	PREDICTION_SP_SO_IA_SL, //!< Predicts from last SLAM pose with angular velocity computed from IMU
-	PREDICTION_SP_SO_IA_IL, //!< Predicts from last SLAM pose with angular and linear velocity computed from IMU
-	PREDICTION_COUNT,
 };
 
 /*!
@@ -328,8 +311,8 @@ struct TrackerSlam
 
 	// Prediction
 
-	//!< Type of prediction to use
-	prediction_type pred_type;
+	//! Type of prediction to use
+	t_slam_prediction_type pred_type;
 	u_var_combo pred_combo;         //!< UI combo box to select @ref pred_type
 	RelationHistory slam_rels{};    //!< A history of relations produced purely from external SLAM tracker data
 	struct m_ff_vec3_f32 *gyro_ff;  //!< Last gyroscope samples
@@ -645,7 +628,7 @@ flush_poses(TrackerSlam &t)
 static void
 predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
-	bool valid_pred_type = t.pred_type >= PREDICTION_NONE && t.pred_type <= PREDICTION_SP_SO_IA_IL;
+	bool valid_pred_type = t.pred_type >= SLAM_PRED_NONE && t.pred_type <= SLAM_PRED_SP_SO_IA_IL;
 	SLAM_DASSERT(valid_pred_type, "Invalid prediction type (%d)", t.pred_type);
 
 	// Get last relation computed purely from SLAM data
@@ -660,27 +643,27 @@ predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *ou
 	}
 
 	// Use only last SLAM pose without prediction if PREDICTION_NONE
-	if (t.pred_type == PREDICTION_NONE) {
+	if (t.pred_type == SLAM_PRED_NONE) {
 		*out_relation = rel;
 		return;
 	}
 
 	// Use only SLAM data if asking for an old point in time or PREDICTION_SP_SO_SA_SL
 	SLAM_DASSERT_(rel_ts < INT64_MAX);
-	if (t.pred_type == PREDICTION_SP_SO_SA_SL || when_ns <= (int64_t)rel_ts) {
+	if (t.pred_type == SLAM_PRED_SP_SO_SA_SL || when_ns <= (int64_t)rel_ts) {
 		t.slam_rels.get(when_ns, out_relation);
 		return;
 	}
 
 	// Update angular velocity with gyro data
-	if (t.pred_type >= PREDICTION_SP_SO_IA_SL) {
+	if (t.pred_type >= SLAM_PRED_SP_SO_IA_SL) {
 		xrt_vec3 avg_gyro{};
 		m_ff_vec3_f32_filter(t.gyro_ff, rel_ts, when_ns, &avg_gyro);
 		math_quat_rotate_derivative(&rel.pose.orientation, &avg_gyro, &rel.angular_velocity);
 	}
 
 	// Update linear velocity with accel data
-	if (t.pred_type >= PREDICTION_SP_SO_IA_IL) {
+	if (t.pred_type >= SLAM_PRED_SP_SO_IA_IL) {
 		xrt_vec3 avg_accel{};
 		m_ff_vec3_f32_filter(t.accel_ff, rel_ts, when_ns, &avg_accel);
 		xrt_vec3 world_accel{};
@@ -754,7 +737,7 @@ filter_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out
 static void
 setup_ui(TrackerSlam &t)
 {
-	t.pred_combo.count = PREDICTION_COUNT;
+	t.pred_combo.count = SLAM_PRED_COUNT;
 	t.pred_combo.options = "None\0Interpolate SLAM poses\0Also gyro\0Also accel (needs gravity correction)\0\0";
 	t.pred_combo.value = (int *)&t.pred_type;
 	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
@@ -977,10 +960,31 @@ t_slam_start(struct xrt_tracked_slam *xts)
 	return ret;
 }
 
-extern "C" int
-t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink)
+extern "C" void
+t_slam_fill_default_config(struct t_slam_tracker_config *config)
 {
-	enum u_logging_level log_level = debug_get_log_option_slam_log();
+	config->log_level = debug_get_log_option_slam_log();
+	config->slam_config = debug_get_option_slam_config();
+	config->submit_from_start = debug_get_bool_option_slam_submit_from_start();
+	config->prediction = t_slam_prediction_type(debug_get_num_option_slam_prediction_type());
+	config->write_csvs = debug_get_bool_option_slam_write_csvs();
+	config->csv_path = debug_get_option_slam_csv_path();
+}
+
+extern "C" int
+t_slam_create(struct xrt_frame_context *xfctx,
+              struct t_slam_tracker_config *config,
+              struct xrt_tracked_slam **out_xts,
+              struct xrt_slam_sinks **out_sink)
+{
+	struct t_slam_tracker_config *default_config = nullptr;
+	if (config == nullptr) {
+		default_config = U_TYPED_CALLOC(struct t_slam_tracker_config);
+		t_slam_fill_default_config(default_config);
+		config = default_config;
+	}
+
+	enum u_logging_level log_level = config->log_level;
 
 	// Check that the external SLAM system built is compatible
 	int ima = IMPLEMENTATION_VERSION_MAJOR;
@@ -997,7 +1001,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	U_LOG_IFL_I(log_level, "Initializing compatible external SLAM system.");
 
 	// Check the user has provided a SLAM_CONFIG file
-	const char *config_file = debug_get_option_slam_config();
+	const char *config_file = config->slam_config;
 	if (!config_file) {
 		U_LOG_IFL_W(log_level,
 		            "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
@@ -1025,7 +1029,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	t.sinks.imu = &t.imu_sink;
 	t.sinks.gt = &t.gt_sink;
 
-	t.submit = debug_get_bool_option_slam_submit_from_start();
+	t.submit = config->submit_from_start;
 
 	t.node.break_apart = t_slam_node_break_apart;
 	t.node.destroy = t_slam_node_destroy;
@@ -1037,7 +1041,7 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 
 	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
 
-	t.pred_type = (prediction_type)debug_get_num_option_slam_prediction_type();
+	t.pred_type = config->prediction;
 
 	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
 	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
@@ -1059,13 +1063,18 @@ t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts
 	}
 
 	// Setup CSV files
-	bool write_csvs = debug_get_bool_option_slam_write_csvs();
-	t.slam_times_writer = new TimingWriter{"timing.csv", write_csvs, t.timing.columns};
-	t.slam_traj_writer = new TrajectoryWriter{"tracking.csv", write_csvs};
-	t.pred_traj_writer = new TrajectoryWriter{"prediction.csv", write_csvs};
-	t.filt_traj_writer = new TrajectoryWriter{"filtering.csv", write_csvs};
+	bool write_csvs = config->write_csvs;
+	string dir = config->csv_path;
+	t.slam_times_writer = new TimingWriter{dir, "timing.csv", write_csvs, t.timing.columns};
+	t.slam_traj_writer = new TrajectoryWriter{dir, "tracking.csv", write_csvs};
+	t.pred_traj_writer = new TrajectoryWriter{dir, "prediction.csv", write_csvs};
+	t.filt_traj_writer = new TrajectoryWriter{dir, "filtering.csv", write_csvs};
 
 	setup_ui(t);
+
+	if (default_config != nullptr) {
+		free(default_config);
+	}
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;

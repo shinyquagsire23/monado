@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "util/u_logging.h"
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
 
@@ -382,11 +383,49 @@ t_hand_create(struct xrt_frame_context *xfctx,
 int
 t_hand_start(struct xrt_tracked_hand *xth);
 
+//! SLAM prediction type. Naming scheme as follows:
+//! P: position, O: orientation, A: angular velocity, L: linear velocity
+//! S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
+enum t_slam_prediction_type
+{
+	SLAM_PRED_NONE = 0,    //!< No prediction, always return the last SLAM tracked pose
+	SLAM_PRED_SP_SO_SA_SL, //!< Predicts from last two SLAM poses only
+	SLAM_PRED_SP_SO_IA_SL, //!< Predicts from last SLAM pose with angular velocity computed from IMU
+	SLAM_PRED_SP_SO_IA_IL, //!< Predicts from last SLAM pose with angular and linear velocity computed from IMU
+	SLAM_PRED_COUNT,
+};
+
+/*!
+ * SLAM tracker configuration.
+ *
+ * @see xrt_tracked_slam
+ */
+struct t_slam_tracker_config
+{
+	enum u_logging_level log_level; //!< SLAM tracking logging level
+	const char *slam_config;        //!< Config file path, format is specific to the SLAM implementation in use
+	bool submit_from_start;         //!< Whether to submit data to the SLAM tracker without user action
+	enum t_slam_prediction_type prediction; //! Which level of prediction to use
+	bool write_csvs;                        //!< Whether to enable CSV writers from the start for later analysis
+	const char *csv_path;                   //!< Path to write CSVs to
+};
+
+/*!
+ * Fills in a @ref t_slam_tracker_config with default values.
+ *
+ * @see xrt_tracked_Slam
+ */
+void
+t_slam_fill_default_config(struct t_slam_tracker_config *config);
+
 /*!
  * @public @memberof xrt_tracked_slam
  */
 int
-t_slam_create(struct xrt_frame_context *xfctx, struct xrt_tracked_slam **out_xts, struct xrt_slam_sinks **out_sink);
+t_slam_create(struct xrt_frame_context *xfctx,
+              struct t_slam_tracker_config *config,
+              struct xrt_tracked_slam **out_xts,
+              struct xrt_slam_sinks **out_sink);
 
 /*!
  * @public @memberof xrt_tracked_slam

@@ -264,7 +264,7 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 		assert(fact->xfs->source_id == 0xECD0FEED && "xfs is not Euroc, unsynced open_video_device?");
 
 #ifdef XRT_HAVE_SLAM
-		int ret = t_slam_create(&fact->xfctx, &fact->xts, &sinks);
+		int ret = t_slam_create(&fact->xfctx, NULL, &fact->xts, &sinks);
 		if (ret != 0) {
 			U_LOG_W("Unable to initialize SLAM tracking, the Euroc driver will not be tracked");
 		}
@@ -289,7 +289,7 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 		assert(fact->xfs->source_id == 0x2EA15E115E && "xfs is not RealSense, unsynced open_video_device?");
 
 #ifdef XRT_HAVE_SLAM
-		int ret = t_slam_create(&fact->xfctx, &fact->xts, &sinks);
+		int ret = t_slam_create(&fact->xfctx, NULL, &fact->xts, &sinks);
 		if (ret != 0) {
 			U_LOG_W("Unable to initialize SLAM tracking, the RealSense driver will not be tracked");
 		}
