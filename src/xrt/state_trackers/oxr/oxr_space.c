@@ -439,7 +439,7 @@ oxr_space_locate(
 	}
 
 	// Used in a lot of places.
-	XrSpaceVelocity *vel = OXR_GET_OUTPUT_FROM_CHAIN(location->next, XR_TYPE_SPACE_LOCATION, XrSpaceVelocity);
+	XrSpaceVelocity *vel = OXR_GET_OUTPUT_FROM_CHAIN(location->next, XR_TYPE_SPACE_VELOCITY, XrSpaceVelocity);
 
 	// Get the pure space relation.
 	struct xrt_space_relation pure;
