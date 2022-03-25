@@ -24,6 +24,9 @@ const char *
 debug_get_option(const char *name, const char *_default);
 
 bool
+debug_string_to_bool(const char *string);
+
+bool
 debug_get_bool_option(const char *name, bool _default);
 
 long

@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 DEBUG_GET_ONCE_BOOL_OPTION(euroc_hmd, "EUROC_HMD", false)
+DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 
 struct xrt_device *
 euroc_device_create(struct xrt_prober *xp);

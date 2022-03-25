@@ -19,21 +19,30 @@
 #include "math/m_filter_fifo.h"
 
 #include "euroc_driver.h"
+#include "euroc_interface.h"
 
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include <stdio.h>
 #include <fstream>
 #include <future>
 #include <thread>
 
-DEBUG_GET_ONCE_OPTION(euroc_gt_device_name, "EUROC_GT_DEVICE_NAME", NULL)
-DEBUG_GET_ONCE_OPTION(euroc_skip_first, "EUROC_SKIP_FIRST", "0%")
-DEBUG_GET_ONCE_BOOL_OPTION(euroc_play_from_start, "EUROC_PLAY_FROM_START", false)
-DEBUG_GET_ONCE_BOOL_OPTION(euroc_use_source_ts, "EUROC_USE_SOURCE_TS", false)
-DEBUG_GET_ONCE_BOOL_OPTION(euroc_print_progress, "EUROC_PRINT_PROGRESS", false)
-DEBUG_GET_ONCE_BOOL_OPTION(euroc_max_speed, "EUROC_MAX_SPEED", false)
-DEBUG_GET_ONCE_FLOAT_OPTION(euroc_playback_speed, "EUROC_PLAYBACK_SPEED", 1.0)
+//! @see euroc_player_playback_config
+DEBUG_GET_ONCE_OPTION(gt_device_name, "EUROC_GT_DEVICE_NAME", nullptr)
+DEBUG_GET_ONCE_OPTION(stereo, "EUROC_STEREO", nullptr)
+DEBUG_GET_ONCE_OPTION(color, "EUROC_COLOR", nullptr)
+DEBUG_GET_ONCE_OPTION(gt, "EUROC_GT", nullptr)
+DEBUG_GET_ONCE_OPTION(skip_first, "EUROC_SKIP_FIRST", "0%")
+DEBUG_GET_ONCE_FLOAT_OPTION(scale, "EUROC_SCALE", 1.0f)
+DEBUG_GET_ONCE_BOOL_OPTION(max_speed, "EUROC_MAX_SPEED", false)
+DEBUG_GET_ONCE_FLOAT_OPTION(speed, "EUROC_SPEED", 1.0f)
+DEBUG_GET_ONCE_BOOL_OPTION(paused, "EUROC_PAUSED", false)
+DEBUG_GET_ONCE_BOOL_OPTION(send_all_imus_first, "EUROC_SEND_ALL_IMUS_FIRST", false)
+DEBUG_GET_ONCE_BOOL_OPTION(user_source_ts, "EUROC_USER_SOURCE_TS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(play_from_start, "EUROC_PLAY_FROM_START", false)
+DEBUG_GET_ONCE_BOOL_OPTION(print_progress, "EUROC_PRINT_PROGRESS", false)
 
 #define EUROC_PLAYER_STR "Euroc Player"
 #define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
@@ -82,21 +91,13 @@ struct euroc_player
 	struct xrt_slam_sinks in_sinks;   //!< Pointers to intermediate sinks
 	struct xrt_slam_sinks out_sinks;  //!< Pointers to downstream sinks
 
+	enum u_logging_level log_level;               //!< Log messages with this priority and onwards
+	struct euroc_player_dataset_info dataset;     //!< Contains information about the source dataset
+	struct euroc_player_playback_config playback; //!< Playback information. Prefer to fill it before stream start
+	struct xrt_fs_mode mode;                      //!< The only fs mode the euroc dataset provides
+	bool is_running;                              //!< Set only at start, stop and end of frameserver stream
+	timepoint_ns last_pause_ts;                   //!< Last time the stream was paused
 	struct os_thread_helper play_thread;
-	enum u_logging_level log_level;
-	struct xrt_fs_mode mode; //!< The only fs mode the euroc dataset provides
-	bool is_running;         //!< Set only at start, stop and end of frameserver stream
-
-	//! Contains information about the source dataset; set only at start
-	struct
-	{
-		char path[256];
-		bool is_stereo;
-		bool is_colored;
-		bool has_gt; //!< Whether this dataset has groundtruth data available
-		uint32_t width;
-		uint32_t height;
-	} dataset;
 
 	//! Next frame number to use, index in `left_imgs` and `right_imgs`.
 	//! Note that this expects that both cameras provide the same amount of frames.
@@ -112,27 +113,6 @@ struct euroc_player
 	timepoint_ns base_ts;   //!< First sample timestamp, stream timestamps are relative to this
 	timepoint_ns start_ts;  //!< When did the dataset started to be played
 	timepoint_ns offset_ts; //!< Amount of ns to offset start_ns (pauses, skips, etc)
-
-	//! Playback information.
-	//! Prefer to fill it before starting to push frames. Modifying them on
-	//! runtime will work with the debug sinks but probably not elsewhere
-	struct
-	{
-		bool stereo;              //!< Whether to stream both left and right sinks or only left
-		bool color;               //!< If RGB available but this is false, images will be loaded in grayscale
-		bool gt;                  //!< Whether to send groundtruth data (if available) to the SLAM tracker
-		bool skip_perc;           //!< Whether @ref skip_first represents percentage or seconds
-		float skip_first;         //!< How much of the first dataset samples to skip, @see skip_perc
-		float scale;              //!< Scale of each frame; e.g., 0.5 (half), 1.0 (avoids resize)
-		bool max_speed;           //!< If true, push samples as fast as possible, other wise @see speed
-		double speed;             //!< Intended reproduction speed if @ref max_speed is false
-		bool send_all_imus_first; //!< If enabled all imu samples will be sent before img samples
-		bool paused;              //!< Whether to pause the playback
-		bool use_source_ts;       //!< If true, use the original timestamps from the dataset
-	} playback;
-	timepoint_ns last_pause_ts; //!< Last time the stream was paused
-	bool play_from_start;       //!< If set, the euroc player does not way for user input to start
-	bool print_progress;        //!< Whether to print progress to stdout (useful for CLI runs)
 
 	// UI related fields
 	enum euroc_player_ui_state ui_state;
@@ -187,29 +167,40 @@ euroc_player_preload_imu_data(const string &dataset_path, imu_samples *samples, 
 	return true;
 }
 
-//! Parse and load ground truth trajectory into `trajectory`.
-//! If read_n > 0, read at most that amount of samples
-//! Returns whether the appropriate data.csv file could be opened
-//! @note Groundtruth data can come from different devices so we use the first of:
-//! 1. vicon0: found in euroc "vicon room" datasets
-//! 2. mocap0: found in TUM-VI datasets with euroc format
-//! 3. state_groundtruth_estimate0: found in euroc as a postprocessed ground truth (we only use first 7 columns)
-//! 4. leica0: found in euroc "machine hall" datasets, only positional ground truth
-//! You can also add your own gt device name with the EUROC_GT_DEVICE_NAME environment variable.
+/*!
+ * Parse and load ground truth device name and trajectory into `gtdev` and
+ * `trajectory` respectively
+ *
+ * @param[in] dataset_path
+ * @param[in, out] gtdev The name of the groundtruth device found in the dataset if any or `nullptr`.
+ * Groundtruth data can come from different devices, so we use the first of:
+ * 1. The value prespecified in `gtdev`
+ * 2. vicon0: found in euroc "vicon room" datasets
+ * 3. mocap0: found in TUM-VI datasets with euroc format
+ * 4. state_groundtruth_estimate0: found in euroc as a postprocessed ground truth (we only use first 7 columns)
+ * 5. leica0: found in euroc "machine hall" datasets, only positional ground truth
+ * @param[out] trajectory The read trajectory
+ * @param[in] read_n If > 0, read at most that amount of gt poses
+ *
+ * @returns Whether the appropriate data.csv file could be opened
+ */
 static bool
-euroc_player_preload_gt_data(const string &dataset_path, gt_trajectory *trajectory, int64_t read_n = -1)
+euroc_player_preload_gt_data(const string &dataset_path,
+                             const char **gtdev,
+                             gt_trajectory *trajectory,
+                             int64_t read_n = -1)
 {
-	vector<string> gt_devices = {"vicon0", "mocap0", "state_groundtruth_estimate0", "leica0"};
-	const char *user_gtdev = debug_get_option_euroc_gt_device_name();
-	if (user_gtdev) {
-		gt_devices.insert(gt_devices.begin(), user_gtdev);
+	vector<const char *> gt_devices = {"vicon0", "mocap0", "state_groundtruth_estimate0", "leica0"};
+	if (*gtdev != nullptr && !string(*gtdev).empty()) {
+		gt_devices.insert(gt_devices.begin(), *gtdev);
 	}
 
 	ifstream fin;
-	for (const string &device : gt_devices) {
+	for (const char *device : gt_devices) {
 		string csv_filename = dataset_path + "/mav0/" + device + "/data.csv";
 		fin = ifstream{csv_filename};
 		if (fin.is_open()) {
+			*gtdev = device;
 			break;
 		}
 	}
@@ -319,7 +310,7 @@ euroc_player_preload(struct euroc_player *ep)
 
 	if (ep->dataset.has_gt) {
 		ep->gt->clear();
-		euroc_player_preload_gt_data(ep->dataset.path, ep->gt);
+		euroc_player_preload_gt_data(ep->dataset.path, &ep->dataset.gt_device_name, ep->gt);
 	}
 }
 
@@ -355,31 +346,25 @@ euroc_player_user_skip(struct euroc_player *ep)
 //! Determine and fill attributes of the dataset pointed by `path`
 //! Assertion fails if `path` does not point to an euroc dataset
 static void
-euroc_player_fill_dataset_info(struct euroc_player *ep, const char *path)
+euroc_player_fill_dataset_info(const char *path, euroc_player_dataset_info *dataset)
 {
-	const char *euroc_path = debug_get_option_euroc_path();
-	EUROC_ASSERT(strcmp(euroc_path, path) == 0, "Unexpected path=%s differs from EUROC_PATH=%s", path, euroc_path);
-
-	snprintf(ep->dataset.path, sizeof(ep->dataset.path), "%s", path);
+	snprintf(dataset->path, sizeof(dataset->path), "%s", path);
 	img_samples samples;
 	imu_samples _1;
 	gt_trajectory _2;
-	bool has_right_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, false, 0);
-	bool has_left_camera = euroc_player_preload_img_data(ep->dataset.path, &samples, true, 1);
-	bool has_imu = euroc_player_preload_imu_data(ep->dataset.path, &_1, 0);
-	bool has_gt = euroc_player_preload_gt_data(ep->dataset.path, &_2, 0);
+	bool has_right_camera = euroc_player_preload_img_data(dataset->path, &samples, false, 0);
+	bool has_left_camera = euroc_player_preload_img_data(dataset->path, &samples, true, 1);
+	bool has_imu = euroc_player_preload_imu_data(dataset->path, &_1, 0);
+	bool has_gt = euroc_player_preload_gt_data(dataset->path, &dataset->gt_device_name, &_2, 0);
 	bool is_valid_dataset = has_left_camera && has_imu;
 	EUROC_ASSERT(is_valid_dataset, "Invalid dataset %s", path);
 
 	cv::Mat first_left_img = cv::imread(samples[0].second, cv::IMREAD_ANYCOLOR);
-	ep->dataset.is_stereo = has_right_camera;
-	ep->dataset.is_colored = first_left_img.channels() == 3;
-	ep->dataset.has_gt = has_gt;
-	ep->dataset.width = first_left_img.cols;
-	ep->dataset.height = first_left_img.rows;
-	EUROC_INFO(ep, "dataset information\n\tpath: %s\n\tis_stereo: %d, is_colored: %d, width: %d, height: %d",
-	           ep->dataset.path, ep->dataset.is_stereo, ep->dataset.is_colored, ep->dataset.width,
-	           ep->dataset.height);
+	dataset->is_stereo = has_right_camera;
+	dataset->is_colored = first_left_img.channels() == 3;
+	dataset->has_gt = has_gt;
+	dataset->width = first_left_img.cols;
+	dataset->height = first_left_img.rows;
 }
 
 
@@ -488,7 +473,7 @@ euroc_player_push_next_frame(struct euroc_player *ep)
 	snprintf(ep->progress_text, sizeof(ep->progress_text), "Frames %lu/%lu - IMUs %lu/%lu", ep->img_seq,
 	         ep->left_imgs->size(), ep->imu_seq, ep->imus->size());
 
-	if (ep->print_progress) {
+	if (ep->playback.print_progress) {
 		printf("Playback %.2f%% - Frame %lu/%lu\r", float(ep->img_seq) / float(ep->left_imgs->size()) * 100,
 		       ep->img_seq, ep->left_imgs->size());
 		fflush(stdout);
@@ -731,7 +716,7 @@ euroc_player_stream_start(struct xrt_fs *xfs,
 		if (ep->out_sinks.left == NULL) {
 			EUROC_WARN(ep, "No left sink provided, will keep running but tracking is unlikely to work");
 		}
-		if (ep->play_from_start) {
+		if (ep->playback.play_from_start) {
 			euroc_player_start_btn_cb(ep);
 		}
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
@@ -910,13 +895,59 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_sink_debug(ep, &ep->ui_right_sink, "Right Camera");
 }
 
+extern "C" void
+euroc_player_fill_default_config_for(struct euroc_player_config *config, const char *dataset_path)
+{
+	struct euroc_player_dataset_info dataset = {};
+	dataset.gt_device_name = debug_get_option_gt_device_name();
+	euroc_player_fill_dataset_info(dataset_path, &dataset);
+
+	struct euroc_player_playback_config playback = {};
+	const char *stereo = debug_get_option_stereo();
+	const char *color = debug_get_option_color();
+	const char *gt = debug_get_option_gt();
+	const char *skip_option = debug_get_option_skip_first();
+	playback.stereo = stereo == nullptr ? dataset.is_stereo : debug_string_to_bool(stereo);
+	playback.color = color == nullptr ? dataset.is_colored : debug_string_to_bool(color);
+	playback.gt = gt == nullptr ? dataset.has_gt : debug_string_to_bool(gt);
+	playback.skip_perc = string(skip_option).back() == '%';
+	playback.skip_first = stof(skip_option);
+	playback.scale = debug_get_float_option_scale();
+	playback.max_speed = debug_get_bool_option_max_speed();
+	playback.speed = debug_get_float_option_speed();
+	playback.paused = debug_get_bool_option_paused();
+	playback.send_all_imus_first = debug_get_bool_option_send_all_imus_first();
+	playback.use_source_ts = debug_get_bool_option_user_source_ts();
+	playback.play_from_start = debug_get_bool_option_play_from_start();
+	playback.print_progress = debug_get_bool_option_print_progress();
+
+	config->log_level = debug_get_log_option_euroc_log();
+	config->dataset = dataset;
+	config->playback = playback;
+}
+
 // Euroc driver creation
 
-struct xrt_fs *
-euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
+extern "C" struct xrt_fs *
+euroc_player_create(struct xrt_frame_context *xfctx, const char *path, struct euroc_player_config *config)
 {
 	struct euroc_player *ep = U_TYPED_CALLOC(struct euroc_player);
-	euroc_player_fill_dataset_info(ep, path);
+
+	struct euroc_player_config *default_config = nullptr;
+	if (config == nullptr) {
+		default_config = U_TYPED_CALLOC(struct euroc_player_config);
+		euroc_player_fill_default_config_for(default_config, path);
+		config = default_config;
+	}
+
+	ep->log_level = config->log_level;
+	ep->dataset = config->dataset;
+	ep->playback = config->playback;
+
+	if (default_config != nullptr) {
+		free(default_config);
+	}
+
 	ep->mode = xrt_fs_mode{
 	    ep->dataset.width,
 	    ep->dataset.height,
@@ -925,6 +956,9 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	    // xrt_fs interface as it will be managed through two different sinks.
 	    XRT_STEREO_FORMAT_NONE,
 	};
+	EUROC_INFO(ep, "dataset information\n\tpath: %s\n\tis_stereo: %d, is_colored: %d, width: %d, height: %d",
+	           ep->dataset.path, ep->dataset.is_stereo, ep->dataset.is_colored, ep->dataset.width,
+	           ep->dataset.height);
 
 	// Using pointers to not mix vector with a C-compatible struct
 	ep->gt = new gt_trajectory{};
@@ -932,20 +966,6 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path)
 	ep->left_imgs = new img_samples{};
 	ep->right_imgs = new img_samples{};
 
-	ep->playback.stereo = ep->dataset.is_stereo;
-	ep->playback.color = ep->dataset.is_colored;
-	ep->playback.gt = ep->dataset.has_gt;
-	ep->playback.skip_perc = string(debug_get_option_euroc_skip_first()).back() == '%';
-	ep->playback.skip_first = stof(debug_get_option_euroc_skip_first());
-	ep->playback.scale = 1.0;
-	ep->playback.max_speed = debug_get_bool_option_euroc_max_speed();
-	ep->playback.speed = debug_get_float_option_euroc_playback_speed();
-	ep->playback.send_all_imus_first = false;
-	ep->playback.use_source_ts = debug_get_bool_option_euroc_use_source_ts();
-	ep->play_from_start = debug_get_bool_option_euroc_play_from_start();
-
-	ep->log_level = debug_get_log_option_euroc_log();
-	ep->print_progress = debug_get_bool_option_euroc_print_progress();
 	euroc_player_setup_gui(ep);
 
 	ep->left_sink.push_frame = receive_left_frame;

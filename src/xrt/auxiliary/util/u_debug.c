@@ -50,13 +50,11 @@ debug_get_option(const char *name, const char *_default)
 }
 
 bool
-debug_get_bool_option(const char *name, bool _default)
+debug_string_to_bool(const char *raw)
 {
-	const char *raw = os_getenv(name);
 	bool ret;
-
 	if (raw == NULL) {
-		ret = _default;
+		ret = false;
 	} else if (!strcmp(raw, "false")) {
 		ret = false;
 	} else if (!strcmp(raw, "FALSE")) {
@@ -82,6 +80,14 @@ debug_get_bool_option(const char *name, bool _default)
 	} else {
 		ret = true;
 	}
+	return ret;
+}
+
+bool
+debug_get_bool_option(const char *name, bool _default)
+{
+	const char *raw = os_getenv(name);
+	bool ret = raw == NULL ? _default : debug_string_to_bool(raw);
 
 	if (debug_get_bool_option_print()) {
 		U_LOG_RAW("%s=%s (%s)", name, ret ? "TRUE" : "FALSE", raw == NULL ? "nil" : raw);
