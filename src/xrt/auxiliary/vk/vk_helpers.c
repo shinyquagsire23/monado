@@ -607,6 +607,8 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
+	VkResult ret = VK_SUCCESS;
+
 	// This is the format we allocate the image in, can be changed further down.
 	VkFormat image_format = (VkFormat)info->format;
 	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags( //
@@ -618,33 +620,15 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		return VK_ERROR_FEATURE_NOT_PRESENT;
 	}
 
-	VkImage image = VK_NULL_HANDLE;
-	VkResult ret = VK_SUCCESS;
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
 
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-	};
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-	};
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
-	};
-#else
-#error "need port"
-#endif
-
+	// In->pNext
 	VkPhysicalDeviceExternalImageFormatInfo external_image_format_info = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
-	    .handleType = external_memory_image_create_info.handleTypes,
+	    .handleType = handle_type,
 	};
 
+	// In
 	VkPhysicalDeviceImageFormatInfo2 format_info = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 	    .pNext = &external_image_format_info,
@@ -654,10 +638,12 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .usage = image_usage,
 	};
 
+	// Out->pNext
 	VkExternalImageFormatProperties external_format_properties = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
 	};
 
+	// Out
 	VkImageFormatProperties2 format_properties = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 	    .pNext = &external_format_properties,
@@ -678,6 +664,13 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
 
+	// In->pNext
+	VkExternalMemoryImageCreateInfoKHR external_memory_image_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+	    .handleTypes = handle_type,
+	};
+
+	// In
 	VkImageCreateInfo vk_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = &external_memory_image_create_info,
@@ -697,6 +690,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		vk_info.flags |= VK_IMAGE_CREATE_PROTECTED_BIT;
 	}
 
+	VkImage image = VK_NULL_HANDLE;
 	ret = vk->vkCreateImage(vk->device, &vk_info, NULL, &image);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkCreateImage: %s", vk_result_string(ret));
