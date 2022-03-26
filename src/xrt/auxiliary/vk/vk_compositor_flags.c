@@ -44,8 +44,8 @@ check_feature(VkFormat format,
 {
 	if ((format_features & flag) == 0) {
 		U_LOG_E("vk_csci_get_image_usage_flags: %s requested but %s not supported for format %s (%08x) (%08x)",
-		        xrt_swapchain_usage_string(usage), vk_format_feature_string(flag),
-		        vk_color_format_string(format), format_features, flag);
+		        xrt_swapchain_usage_string(usage), vk_format_feature_string(flag), vk_format_string(format),
+		        format_features, flag);
 		return false;
 	}
 	return true;
@@ -235,7 +235,7 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
 		VkFormatFeatureFlags flag = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 		if ((format_features & flag) == 0) {
 			U_LOG_E("%s: Compositor needs %s but not supported for format %s (%08x) (%08x)", __func__,
-			        vk_format_feature_string(flag), vk_color_format_string(format), format_features, flag);
+			        vk_format_feature_string(flag), vk_format_string(format), format_features, flag);
 			return 0;
 		}
 

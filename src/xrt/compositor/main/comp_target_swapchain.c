@@ -377,7 +377,7 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 
 	// Dump formats
 	for (uint32_t i = 0; i < format_count; i++) {
-		COMP_SPEW(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_color_format_string(formats[i].format),
+		COMP_SPEW(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_format_string(formats[i].format),
 		          vk_color_space_string(formats[i].colorSpace));
 	}
 
@@ -464,10 +464,10 @@ cleanup:
 	           "VkSurfaceFormatKHR"
 	           "\n\tpicked: [format = %s, colorSpace = %s]"
 	           "\n\tpreferred: [format = %s, colorSpace = %s]",
-	           vk_color_format_string(format->format),              //
-	           vk_color_space_string(format->colorSpace),           //
-	           vk_color_format_string(cts->preferred.color_format), //
-	           vk_color_space_string(cts->preferred.color_space));  //
+	           vk_format_string(format->format),                   //
+	           vk_color_space_string(format->colorSpace),          //
+	           vk_format_string(cts->preferred.color_format),      //
+	           vk_color_space_string(cts->preferred.color_space)); //
 
 	return true;
 

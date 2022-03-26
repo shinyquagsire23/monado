@@ -352,7 +352,7 @@ const char *
 vk_result_string(VkResult code);
 
 const char *
-vk_color_format_string(VkFormat code);
+vk_format_string(VkFormat code);
 
 const char *
 vk_present_mode_string(VkPresentModeKHR code);
