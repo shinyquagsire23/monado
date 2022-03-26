@@ -1100,25 +1100,7 @@ compositor_init_renderer(struct comp_compositor *c)
 	return c->r != NULL;
 }
 
-bool
-comp_is_format_supported(struct comp_compositor *c, VkFormat format)
-{
-	struct vk_bundle *vk = get_vk(c);
-	VkFormatProperties prop;
 
-	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
-
-	// This is a fairly crude way of checking support,
-	// but works well enough.
-	return prop.optimalTilingFeatures != 0;
-}
-
-#define ADD_IF_SUPPORTED(format)                                                                                       \
-	do {                                                                                                           \
-		if (comp_is_format_supported(c, format)) {                                                             \
-			info->formats[formats++] = format;                                                             \
-		}                                                                                                      \
-	} while (false)
 
 xrt_result_t
 xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
@@ -1196,49 +1178,21 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	 */
 
 	struct xrt_compositor_info *info = &c->base.base.base.info;
+
+
 	/*
-	 * These are the available formats we will expose to our clients.
-	 *
-	 * In order of what we prefer. Start with a SRGB format that works on
-	 * both OpenGL and Vulkan. The two linear formats that works on both
-	 * OpenGL and Vulkan. A SRGB format that only works on Vulkan. The last
-	 * two formats should not be used as they are linear but doesn't have
-	 * enough bits to express it without resulting in banding.
+	 * Formats.
 	 */
-	uint32_t formats = 0;
 
-	// color formats
+	struct comp_vulkan_formats formats = {0};
+	comp_vulkan_formats_check(get_vk(c), &formats);
+	comp_vulkan_formats_copy_to_info(&formats, info);
+	comp_vulkan_formats_log(c->settings.log_level, &formats);
+
+
 	/*
-	 * The format VK_FORMAT_A2B10G10R10_UNORM_PACK32 is not listed since
-	 * 10 bits are not considered enough to do linear colours without
-	 * banding. If there was a sRGB variant of it then we would have used it
-	 * instead but there isn't. Since it's not a popular format it's best
-	 * not to list it rather then listing it and people falling into the
-	 * trap. The absolute minimum is R11G11B10, but is a really weird format
-	 * so we are not exposing it.
+	 * Rest of info.
 	 */
-	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16A16_UNORM);  // OGL VK
-	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16A16_SFLOAT); // OGL VK
-	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16_UNORM);     // OGL VK - Uncommon.
-	ADD_IF_SUPPORTED(VK_FORMAT_R16G16B16_SFLOAT);    // OGL VK - Uncommon.
-	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_SRGB);       // OGL VK
-	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_SRGB);       // VK
-	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8_SRGB);         // OGL VK - Uncommon.
-	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8A8_UNORM);      // OGL VK - Bad colour precision.
-	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8A8_UNORM);      // VK     - Bad colour precision.
-	ADD_IF_SUPPORTED(VK_FORMAT_R8G8B8_UNORM);        // OGL VK - Uncommon. Bad colour precision.
-	ADD_IF_SUPPORTED(VK_FORMAT_B8G8R8_UNORM);        // VK     - Uncommon. Bad colour precision.
-
-	// depth formats
-	ADD_IF_SUPPORTED(VK_FORMAT_D16_UNORM);  // OGL VK
-	ADD_IF_SUPPORTED(VK_FORMAT_D32_SFLOAT); // OGL VK
-
-	// depth stencil formats
-	ADD_IF_SUPPORTED(VK_FORMAT_D24_UNORM_S8_UINT);  // OGL VK
-	ADD_IF_SUPPORTED(VK_FORMAT_D32_SFLOAT_S8_UINT); // OGL VK
-
-	assert(formats <= XRT_MAX_SWAPCHAIN_FORMATS);
-	info->format_count = formats;
 
 	struct xrt_system_compositor_info sys_info_storage;
 	struct xrt_system_compositor_info *sys_info = &sys_info_storage;
