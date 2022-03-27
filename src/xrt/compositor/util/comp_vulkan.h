@@ -88,6 +88,92 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
                         struct comp_vulkan_results *vk_res);
 
 
+/*
+ *
+ * Format checking.
+ *
+ */
+
+/*!
+ * Helper for all of the supported formats to check support for.
+ *
+ * These are the available formats we will expose to our clients.
+ *
+ * In order of what we prefer. Start with a SRGB format that works on
+ * both OpenGL and Vulkan. The two linear formats that works on both
+ * OpenGL and Vulkan. A SRGB format that only works on Vulkan. The last
+ * two formats should not be used as they are linear but doesn't have
+ * enough bits to express it without resulting in banding.
+ *
+ * The format VK_FORMAT_A2B10G10R10_UNORM_PACK32 is not listed since
+ * 10 bits are not considered enough to do linear colours without
+ * banding. If there was a sRGB variant of it then we would have used it
+ * instead but there isn't. Since it's not a popular format it's best
+ * not to list it rather then listing it and people falling into the
+ * trap. The absolute minimum is R11G11B10, but is a really weird format
+ * so we are not exposing it.
+
+ * @ingroup comp_util
+ */
+#define COMP_VULKAN_FORMATS(THING_COLOR, THING_DS)                                                                     \
+	/* color formats */                                                                                            \
+	THING_COLOR(R16G16B16A16_UNORM)  /* OGL VK */                                                                  \
+	THING_COLOR(R16G16B16A16_SFLOAT) /* OGL VK */                                                                  \
+	THING_COLOR(R16G16B16_UNORM)     /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R16G16B16_SFLOAT)    /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R8G8B8A8_SRGB)       /* OGL VK */                                                                  \
+	THING_COLOR(B8G8R8A8_SRGB)       /* VK */                                                                      \
+	THING_COLOR(R8G8B8_SRGB)         /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R8G8B8A8_UNORM)      /* OGL VK - Bad colour precision. */                                          \
+	THING_COLOR(B8G8R8A8_UNORM)      /* VK     - Bad colour precision. */                                          \
+	THING_COLOR(R8G8B8_UNORM)        /* OGL VK - Uncommon. Bad colour precision. */                                \
+	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad colour precision. */                                \
+	/* depth formats */                                                                                            \
+	THING_DS(D16_UNORM)  /* OGL VK */                                                                              \
+	THING_DS(D32_SFLOAT) /* OGL VK */                                                                              \
+	/* depth stencil formats */                                                                                    \
+	THING_DS(D24_UNORM_S8_UINT)  /* OGL VK */                                                                      \
+	THING_DS(D32_SFLOAT_S8_UINT) /* OGL VK */
+
+/*!
+ * Struct with supported format, these are not only check for optimal flags
+ * but also the ability to import and export them.
+ */
+struct comp_vulkan_formats
+{
+#define FIELD(IDENT) bool has_##IDENT;
+	COMP_VULKAN_FORMATS(FIELD, FIELD)
+#undef FIELD
+};
+
+/*!
+ * Fills in a @ref comp_vulkan_formats struct with the supported formats, use
+ * @ref comp_vulkan_formats_copy_to_info to fill a compositor info struct.
+ *
+ * @ingroup comp_util
+ */
+void
+comp_vulkan_formats_check(struct vk_bundle *vk, struct comp_vulkan_formats *formats);
+
+/*!
+ * Fills in a @ref xrt_compositor_info struct with the formats listed from a
+ * @ref comp_vulkan_formats. This and @ref comp_vulkan_formats_check are split
+ * to allow the compositor to allow/deny certain formats.
+ *
+ * @ingroup comp_util
+ */
+void
+comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, struct xrt_compositor_info *info);
+
+/*!
+ * Logs the formats at info level.
+ *
+ * @ingroup comp_util
+ */
+void
+comp_vulkan_formats_log(enum u_logging_level log_level, const struct comp_vulkan_formats *formats);
+
+
 #ifdef __cplusplus
 }
 #endif

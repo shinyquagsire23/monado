@@ -223,6 +223,106 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 
 /*
  *
+ * Format checking function.
+ *
+ */
+
+static bool
+is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits xbits)
+{
+	/*
+	 * First check if the format is supported at all.
+	 */
+
+	VkFormatProperties prop;
+	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
+	const VkFormatFeatureFlagBits bits = prop.optimalTilingFeatures;
+
+	if ((bits & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0) {
+		VK_DEBUG(vk, "Format '%s' can not be sampled from in optimal layout!", vk_format_string(format));
+		return false;
+	}
+
+	if ((xbits & XRT_SWAPCHAIN_USAGE_COLOR) != 0 && (bits & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0) {
+		VK_DEBUG(vk, "Color format '%s' can not be used as render target in optimal layout!",
+		         vk_format_string(format));
+		return false;
+	}
+
+	if ((xbits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0 &&
+	    (bits & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+		VK_DEBUG(vk, "Depth/stencil format '%s' can not be used as render target in optimal layout!",
+		         vk_format_string(format));
+		return false;
+	}
+
+
+	/*
+	 * Check exportability.
+	 */
+
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
+	VkResult ret;
+
+	VkImageUsageFlags usage = vk_csci_get_image_usage_flags(vk, format, xbits);
+
+	// In->pNext
+	VkPhysicalDeviceExternalImageFormatInfo external_image_format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+	    .handleType = handle_type,
+	};
+
+	// In
+	VkPhysicalDeviceImageFormatInfo2 format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+	    .pNext = &external_image_format_info,
+	    .format = format,
+	    .type = VK_IMAGE_TYPE_2D,
+	    .tiling = VK_IMAGE_TILING_OPTIMAL,
+	    .usage = usage,
+	};
+
+	// Out->pNext
+	VkExternalImageFormatProperties external_format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+	};
+
+	// Out
+	VkImageFormatProperties2 format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+	    .pNext = &external_format_properties,
+	};
+
+	ret = vk->vkGetPhysicalDeviceImageFormatProperties2(vk->physical_device, &format_info, &format_properties);
+	if (ret == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+		VK_DEBUG(vk, "Format '%s' as external image is not supported!", vk_format_string(format));
+		return false;
+	} else if (ret != VK_SUCCESS) {
+		// This is not a expected path.
+		VK_ERROR(vk, "vkGetPhysicalDeviceImageFormatProperties2: %s for format '%s'", vk_result_string(ret),
+		         vk_format_string(format));
+		return false;
+	}
+
+	VkExternalMemoryFeatureFlags features =
+	    external_format_properties.externalMemoryProperties.externalMemoryFeatures;
+
+	if ((features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0) {
+		VK_DEBUG(vk, "Format '%s' is not importable!", vk_format_string(format));
+		return false;
+	}
+
+	if ((features & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) == 0) {
+		VK_DEBUG(vk, "Format '%s' is not exportable!", vk_format_string(format));
+		return false;
+	}
+
+	return true;
+}
+
+
+/*
+ *
  * 'Exported' function.
  *
  */
@@ -261,4 +361,51 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 	}
 
 	return true;
+}
+
+void
+comp_vulkan_formats_check(struct vk_bundle *vk, struct comp_vulkan_formats *formats)
+{
+#define CHECK_COLOR(FORMAT)                                                                                            \
+	formats->has_##FORMAT = is_format_supported(vk, VK_FORMAT_##FORMAT, XRT_SWAPCHAIN_USAGE_COLOR);
+#define CHECK_DS(FORMAT)                                                                                               \
+	formats->has_##FORMAT = is_format_supported(vk, VK_FORMAT_##FORMAT, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL);
+
+	COMP_VULKAN_FORMATS(CHECK_COLOR, CHECK_DS)
+
+#undef CHECK_COLOR
+#undef CHECK_DS
+}
+
+void
+comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, struct xrt_compositor_info *info)
+{
+	uint32_t format_count = 0;
+
+#define ADD_IF_SUPPORTED(FORMAT)                                                                                       \
+	if (formats->has_##FORMAT) {                                                                                   \
+		info->formats[format_count++] = VK_FORMAT_##FORMAT;                                                    \
+	}
+
+	COMP_VULKAN_FORMATS(ADD_IF_SUPPORTED, ADD_IF_SUPPORTED)
+
+#undef ADD_IF_SUPPORTED
+
+	assert(format_count <= XRT_MAX_SWAPCHAIN_FORMATS);
+	info->format_count = format_count;
+}
+
+void
+comp_vulkan_formats_log(enum u_logging_level log_level, const struct comp_vulkan_formats *formats)
+{
+#define PRINT_NAME(FORMAT) "\n\tVK_FORMAT_" #FORMAT ": %s"
+#define PRINT_BOOLEAN(FORMAT) , formats->has_##FORMAT ? "true" : "false"
+
+	U_LOG_IFL_I(log_level, "Supported formats:"                   //
+	            COMP_VULKAN_FORMATS(PRINT_NAME, PRINT_NAME)       //
+	            COMP_VULKAN_FORMATS(PRINT_BOOLEAN, PRINT_BOOLEAN) //
+	);
+
+#undef PRINT_NAME
+#undef PRINT_BOOLEAN
 }
