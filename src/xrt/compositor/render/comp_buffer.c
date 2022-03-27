@@ -121,11 +121,11 @@ err_buffer:
  */
 
 VkResult
-comp_buffer_init(struct vk_bundle *vk,
-                 struct comp_buffer *buffer,
-                 VkBufferUsageFlags usage_flags,
-                 VkMemoryPropertyFlags memory_property_flags,
-                 VkDeviceSize size)
+render_buffer_init(struct vk_bundle *vk,
+                   struct render_buffer *buffer,
+                   VkBufferUsageFlags usage_flags,
+                   VkMemoryPropertyFlags memory_property_flags,
+                   VkDeviceSize size)
 {
 	VkResult ret;
 
@@ -146,11 +146,11 @@ comp_buffer_init(struct vk_bundle *vk,
 }
 
 VkResult
-comp_buffer_init_exportable(struct vk_bundle *vk,
-                            struct comp_buffer *buffer,
-                            VkBufferUsageFlags usage_flags,
-                            VkMemoryPropertyFlags memory_property_flags,
-                            VkDeviceSize size)
+render_buffer_init_exportable(struct vk_bundle *vk,
+                              struct render_buffer *buffer,
+                              VkBufferUsageFlags usage_flags,
+                              VkMemoryPropertyFlags memory_property_flags,
+                              VkDeviceSize size)
 {
 	VkResult ret;
 
@@ -199,7 +199,7 @@ comp_buffer_init_exportable(struct vk_bundle *vk,
 }
 
 void
-comp_buffer_close(struct vk_bundle *vk, struct comp_buffer *buffer)
+render_buffer_close(struct vk_bundle *vk, struct render_buffer *buffer)
 {
 	if (buffer->buffer != VK_NULL_HANDLE) {
 		vk->vkDestroyBuffer(vk->device, buffer->buffer, NULL);
@@ -212,7 +212,7 @@ comp_buffer_close(struct vk_bundle *vk, struct comp_buffer *buffer)
 }
 
 VkResult
-comp_buffer_map(struct vk_bundle *vk, struct comp_buffer *buffer)
+render_buffer_map(struct vk_bundle *vk, struct render_buffer *buffer)
 {
 	return vk->vkMapMemory(vk->device,       //
 	                       buffer->memory,   // memory
@@ -223,7 +223,7 @@ comp_buffer_map(struct vk_bundle *vk, struct comp_buffer *buffer)
 }
 
 void
-comp_buffer_unmap(struct vk_bundle *vk, struct comp_buffer *buffer)
+render_buffer_unmap(struct vk_bundle *vk, struct render_buffer *buffer)
 {
 	if (buffer->mapped != NULL) {
 		vk->vkUnmapMemory(vk->device, buffer->memory);
@@ -232,7 +232,7 @@ comp_buffer_unmap(struct vk_bundle *vk, struct comp_buffer *buffer)
 }
 
 VkResult
-comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size)
+render_buffer_map_and_write(struct vk_bundle *vk, struct render_buffer *buffer, void *data, VkDeviceSize size)
 {
 	VkResult ret;
 
@@ -242,7 +242,7 @@ comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void
 	}
 
 	if (buffer->mapped == NULL) {
-		ret = comp_buffer_map(vk, buffer);
+		ret = render_buffer_map(vk, buffer);
 		if (ret != VK_SUCCESS) {
 			return ret;
 		}
@@ -254,7 +254,7 @@ comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void
 }
 
 VkResult
-comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size)
+render_buffer_write(struct vk_bundle *vk, struct render_buffer *buffer, void *data, VkDeviceSize size)
 {
 	if (size > buffer->allocation_size) {
 		VK_ERROR(vk, "Trying to write more the buffer size!");
@@ -263,7 +263,7 @@ comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, 
 
 	bool mapped = buffer->mapped != NULL;
 	if (!mapped) {
-		VkResult ret = comp_buffer_map(vk, buffer);
+		VkResult ret = render_buffer_map(vk, buffer);
 		if (ret != VK_SUCCESS) {
 			return ret;
 		}
@@ -273,7 +273,7 @@ comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, 
 
 	// Only unmap if we did the mapping.
 	if (!mapped) {
-		comp_buffer_unmap(vk, buffer);
+		render_buffer_unmap(vk, buffer);
 	}
 
 	return VK_SUCCESS;

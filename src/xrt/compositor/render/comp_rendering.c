@@ -40,19 +40,19 @@
 	}
 
 /*!
- * Get the @ref vk_bundle from @ref comp_rendering_target_resources.
+ * Get the @ref vk_bundle from @ref render_gfx_target_resources.
  */
 static inline struct vk_bundle *
-vk_from_rtr(struct comp_rendering_target_resources *rtr)
+vk_from_rtr(struct render_gfx_target_resources *rtr)
 {
 	return rtr->r->vk;
 }
 
 /*!
- * Get the @ref vk_bundle from @ref comp_rendering.
+ * Get the @ref vk_bundle from @ref render_gfx.
  */
 static inline struct vk_bundle *
-vk_from_rr(struct comp_rendering *rr)
+vk_from_rr(struct render_gfx *rr)
 {
 	return rr->r->vk;
 }
@@ -436,10 +436,10 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr,
-                                     struct comp_resources *r,
-                                     VkImageView target,
-                                     struct comp_target_data *data)
+render_gfx_target_resources_init(struct render_gfx_target_resources *rtr,
+                                 struct render_resources *r,
+                                 VkImageView target,
+                                 struct render_gfx_target_data *data)
 {
 	struct vk_bundle *vk = r->vk;
 	rtr->r = r;
@@ -475,7 +475,7 @@ comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr
 }
 
 void
-comp_rendering_target_resources_close(struct comp_rendering_target_resources *rtr)
+render_gfx_target_resources_close(struct render_gfx_target_resources *rtr)
 {
 	struct vk_bundle *vk = vk_from_rtr(rtr);
 
@@ -492,7 +492,7 @@ comp_rendering_target_resources_close(struct comp_rendering_target_resources *rt
  */
 
 bool
-comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r)
+render_gfx_init(struct render_gfx *rr, struct render_resources *r)
 {
 	struct vk_bundle *vk = r->vk;
 	rr->r = r;
@@ -527,7 +527,7 @@ comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r)
 }
 
 void
-comp_rendering_finalize(struct comp_rendering *rr)
+render_gfx_finalize(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
@@ -535,10 +535,10 @@ comp_rendering_finalize(struct comp_rendering *rr)
 }
 
 void
-comp_rendering_close(struct comp_rendering *rr)
+render_gfx_close(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
-	struct comp_resources *r = rr->r;
+	struct render_resources *r = rr->r;
 
 	vk_destroy_command_buffer(vk, rr->cmd);
 	rr->cmd = VK_NULL_HANDLE;
@@ -563,7 +563,7 @@ comp_rendering_close(struct comp_rendering *rr)
  */
 
 bool
-comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rtr)
+render_gfx_begin_target(struct render_gfx *rr, struct render_gfx_target_resources *rtr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
@@ -582,7 +582,7 @@ comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_r
 }
 
 void
-comp_draw_end_target(struct comp_rendering *rr)
+render_gfx_end_target(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
@@ -594,7 +594,7 @@ comp_draw_end_target(struct comp_rendering *rr)
 }
 
 void
-comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewport_data *viewport_data)
+render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewport_data *viewport_data)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
@@ -647,20 +647,20 @@ comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewp
 }
 
 void
-comp_draw_end_view(struct comp_rendering *rr)
+render_gfx_end_view(struct render_gfx *rr)
 {
 	//! Must have a current target.
 	assert(rr->rtr != NULL);
 }
 
 void
-comp_draw_distortion(struct comp_rendering *rr)
+render_gfx_distortion(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
-	struct comp_resources *r = rr->r;
+	struct render_resources *r = rr->r;
 
 	uint32_t view = rr->current_view;
-	struct comp_rendering_view *v = &rr->views[view];
+	struct render_gfx_view *v = &rr->views[view];
 
 	/*
 	 * Descriptors and pipeline.
@@ -728,17 +728,17 @@ comp_draw_distortion(struct comp_rendering *rr)
 }
 
 void
-comp_draw_update_distortion(struct comp_rendering *rr,
-                            uint32_t view_index,
-                            VkSampler sampler,
-                            VkImageView image_view,
-                            struct comp_mesh_ubo_data *data)
+render_gfx_update_distortion(struct render_gfx *rr,
+                             uint32_t view_index,
+                             VkSampler sampler,
+                             VkImageView image_view,
+                             struct render_gfx_mesh_ubo_data *data)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
-	struct comp_resources *r = rr->r;
-	struct comp_rendering_view *v = &rr->views[view_index];
+	struct render_resources *r = rr->r;
+	struct render_gfx_view *v = &rr->views[view_index];
 
-	comp_buffer_write(vk, &r->mesh.ubos[view_index], data, sizeof(struct comp_mesh_ubo_data));
+	render_buffer_write(vk, &r->mesh.ubos[view_index], data, sizeof(struct render_gfx_mesh_ubo_data));
 
 	update_mesh_discriptor_set(          //
 	    vk,                              // vk_bundle

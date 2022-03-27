@@ -49,10 +49,10 @@
  */
 
 /*!
- * Get the @ref vk_bundle from @ref comp_rendering_compute.
+ * Get the @ref vk_bundle from @ref render_compute.
  */
 static inline struct vk_bundle *
-vk_from_crc(struct comp_rendering_compute *crc)
+vk_from_crc(struct render_compute *crc)
 {
 	return crc->r->vk;
 }
@@ -61,7 +61,7 @@ vk_from_crc(struct comp_rendering_compute *crc)
  * For dispatching compute to the view, calculate the number of groups.
  */
 static void
-calc_dispatch_dims(const struct comp_viewport_data views[2], uint32_t *out_w, uint32_t *out_h)
+calc_dispatch_dims(const struct render_viewport_data views[2], uint32_t *out_w, uint32_t *out_h)
 {
 #define IMAX(a, b) ((a) > (b) ? (a) : (b))
 	uint32_t w = IMAX(views[0].w, views[1].w);
@@ -255,7 +255,7 @@ update_compute_discriptor_set_target(struct vk_bundle *vk,
  */
 
 bool
-comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_resources *r)
+render_compute_init(struct render_compute *crc, struct render_resources *r)
 {
 	assert(crc->r == NULL);
 
@@ -274,7 +274,7 @@ comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_reso
 }
 
 bool
-comp_rendering_compute_begin(struct comp_rendering_compute *crc)
+render_compute_begin(struct render_compute *crc)
 {
 	struct vk_bundle *vk = vk_from_crc(crc);
 
@@ -284,7 +284,7 @@ comp_rendering_compute_begin(struct comp_rendering_compute *crc)
 }
 
 bool
-comp_rendering_compute_end(struct comp_rendering_compute *crc)
+render_compute_end(struct render_compute *crc)
 {
 	struct vk_bundle *vk = vk_from_crc(crc);
 
@@ -294,7 +294,7 @@ comp_rendering_compute_end(struct comp_rendering_compute *crc)
 }
 
 void
-comp_rendering_compute_close(struct comp_rendering_compute *crc)
+render_compute_close(struct render_compute *crc)
 {
 	assert(crc->r != NULL);
 
@@ -311,21 +311,21 @@ comp_rendering_compute_close(struct comp_rendering_compute *crc)
 }
 
 void
-comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
-                                           VkSampler src_samplers[2],
-                                           VkImageView src_image_views[2],
-                                           const struct xrt_normalized_rect src_norm_rects[2],
-                                           const struct xrt_pose src_poses[2],
-                                           const struct xrt_fov src_fovs[2],
-                                           const struct xrt_pose new_poses[2],
-                                           VkImage target_image,
-                                           VkImageView target_image_view,
-                                           const struct comp_viewport_data views[2])
+render_compute_projection_timewarp(struct render_compute *crc,
+                                   VkSampler src_samplers[2],
+                                   VkImageView src_image_views[2],
+                                   const struct xrt_normalized_rect src_norm_rects[2],
+                                   const struct xrt_pose src_poses[2],
+                                   const struct xrt_fov src_fovs[2],
+                                   const struct xrt_pose new_poses[2],
+                                   VkImage target_image,
+                                   VkImageView target_image_view,
+                                   const struct render_viewport_data views[2])
 {
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
-	struct comp_resources *r = crc->r;
+	struct render_resources *r = crc->r;
 
 
 	/*
@@ -333,18 +333,19 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 	 */
 
 	struct xrt_matrix_4x4 time_warp_matrix[2];
-	comp_calc_time_warp_matrix( //
-	    &src_poses[0],          //
-	    &src_fovs[0],           //
-	    &new_poses[0],          //
-	    &time_warp_matrix[0]);  //
-	comp_calc_time_warp_matrix( //
-	    &src_poses[1],          //
-	    &src_fovs[1],           //
-	    &new_poses[1],          //
-	    &time_warp_matrix[1]);  //
+	render_calc_time_warp_matrix( //
+	    &src_poses[0],            //
+	    &src_fovs[0],             //
+	    &new_poses[0],            //
+	    &time_warp_matrix[0]);    //
+	render_calc_time_warp_matrix( //
+	    &src_poses[1],            //
+	    &src_fovs[1],             //
+	    &new_poses[1],            //
+	    &time_warp_matrix[1]);    //
 
-	struct comp_ubo_compute_data *data = (struct comp_ubo_compute_data *)r->compute.ubo.mapped;
+	struct render_compute_distortion_ubo_data *data =
+	    (struct render_compute_distortion_ubo_data *)r->compute.ubo.mapped;
 	data->views[0] = views[0];
 	data->views[1] = views[1];
 	data->pre_transforms[0] = r->distortion.uv_to_tanangle[0];
@@ -449,25 +450,26 @@ comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
 }
 
 void
-comp_rendering_compute_projection(struct comp_rendering_compute *crc,
-                                  VkSampler src_samplers[2],
-                                  VkImageView src_image_views[2],
-                                  const struct xrt_normalized_rect src_norm_rects[2],
-                                  VkImage target_image,
-                                  VkImageView target_image_view,
-                                  const struct comp_viewport_data views[2])
+render_compute_projection(struct render_compute *crc,
+                          VkSampler src_samplers[2],
+                          VkImageView src_image_views[2],
+                          const struct xrt_normalized_rect src_norm_rects[2],
+                          VkImage target_image,
+                          VkImageView target_image_view,
+                          const struct render_viewport_data views[2])
 {
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
-	struct comp_resources *r = crc->r;
+	struct render_resources *r = crc->r;
 
 
 	/*
 	 * UBO
 	 */
 
-	struct comp_ubo_compute_data *data = (struct comp_ubo_compute_data *)r->compute.ubo.mapped;
+	struct render_compute_distortion_ubo_data *data =
+	    (struct render_compute_distortion_ubo_data *)r->compute.ubo.mapped;
 	data->views[0] = views[0];
 	data->views[1] = views[1];
 	data->post_transforms[0] = src_norm_rects[0];
@@ -568,15 +570,15 @@ comp_rendering_compute_projection(struct comp_rendering_compute *crc,
 }
 
 void
-comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
-                             VkImage target_image,                     //
-                             VkImageView target_image_view,            //
-                             const struct comp_viewport_data views[2]) //
+render_compute_clear(struct render_compute *crc,                 //
+                     VkImage target_image,                       //
+                     VkImageView target_image_view,              //
+                     const struct render_viewport_data views[2]) //
 {
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
-	struct comp_resources *r = crc->r;
+	struct render_resources *r = crc->r;
 
 
 	/*
@@ -589,7 +591,8 @@ comp_rendering_compute_clear(struct comp_rendering_compute *crc,       //
 		math_matrix_4x4_identity(&transforms[i]);
 	}
 
-	struct comp_ubo_compute_data *data = (struct comp_ubo_compute_data *)r->compute.ubo.mapped;
+	struct render_compute_distortion_ubo_data *data =
+	    (struct render_compute_distortion_ubo_data *)r->compute.ubo.mapped;
 	data->views[0] = views[0];
 	data->views[1] = views[1];
 

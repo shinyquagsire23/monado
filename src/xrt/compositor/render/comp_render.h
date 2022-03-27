@@ -57,10 +57,10 @@ extern "C" {
  * in [-1, 1] space that needs a perspective divide.
  */
 void
-comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
-                           const struct xrt_fov *src_fov,
-                           const struct xrt_pose *new_pose,
-                           struct xrt_matrix_4x4 *matrix);
+render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
+                             const struct xrt_fov *src_fov,
+                             const struct xrt_pose *new_pose,
+                             struct xrt_matrix_4x4 *matrix);
 
 
 /*
@@ -72,7 +72,7 @@ comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
 /*!
  * Holds all shaders.
  */
-struct comp_shaders
+struct render_shaders
 {
 	VkShaderModule clear_comp;
 	VkShaderModule distortion_comp;
@@ -95,13 +95,13 @@ struct comp_shaders
  * Loads all of the shaders that the compositor uses.
  */
 bool
-comp_shaders_load(struct comp_shaders *s, struct vk_bundle *vk);
+render_shaders_load(struct render_shaders *s, struct vk_bundle *vk);
 
 /*!
  * Unload and cleanup shaders.
  */
 void
-comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk);
+render_shaders_close(struct render_shaders *s, struct vk_bundle *vk);
 
 
 /*
@@ -113,7 +113,7 @@ comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk);
 /*!
  * Helper struct holding a buffer and its memory.
  */
-struct comp_buffer
+struct render_buffer
 {
 	//! Backing memory.
 	VkDeviceMemory memory;
@@ -137,51 +137,51 @@ struct comp_buffer
  * Initialize a buffer.
  */
 VkResult
-comp_buffer_init(struct vk_bundle *vk,
-                 struct comp_buffer *buffer,
-                 VkBufferUsageFlags usage_flags,
-                 VkMemoryPropertyFlags memory_property_flags,
-                 VkDeviceSize size);
+render_buffer_init(struct vk_bundle *vk,
+                   struct render_buffer *buffer,
+                   VkBufferUsageFlags usage_flags,
+                   VkMemoryPropertyFlags memory_property_flags,
+                   VkDeviceSize size);
 
 /*!
  * Initialize a buffer, making it exportable.
  */
 VkResult
-comp_buffer_init_exportable(struct vk_bundle *vk,
-                            struct comp_buffer *buffer,
-                            VkBufferUsageFlags usage_flags,
-                            VkMemoryPropertyFlags memory_property_flags,
-                            VkDeviceSize size);
+render_buffer_init_exportable(struct vk_bundle *vk,
+                              struct render_buffer *buffer,
+                              VkBufferUsageFlags usage_flags,
+                              VkMemoryPropertyFlags memory_property_flags,
+                              VkDeviceSize size);
 
 /*!
  * Frees all resources that this buffer has, but does not free the buffer itself.
  */
 void
-comp_buffer_close(struct vk_bundle *vk, struct comp_buffer *buffer);
+render_buffer_close(struct vk_bundle *vk, struct render_buffer *buffer);
 
 /*!
- * Maps the memory, sets comp_buffer::mapped to the memory.
+ * Maps the memory, sets render_buffer::mapped to the memory.
  */
 VkResult
-comp_buffer_map(struct vk_bundle *vk, struct comp_buffer *buffer);
+render_buffer_map(struct vk_bundle *vk, struct render_buffer *buffer);
 
 /*!
  * Unmaps the memory.
  */
 void
-comp_buffer_unmap(struct vk_bundle *vk, struct comp_buffer *buffer);
+render_buffer_unmap(struct vk_bundle *vk, struct render_buffer *buffer);
 
 /*!
  * Maps the buffer, and copies the given data to the buffer.
  */
 VkResult
-comp_buffer_map_and_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size);
+render_buffer_map_and_write(struct vk_bundle *vk, struct render_buffer *buffer, void *data, VkDeviceSize size);
 
 /*!
  * Writes the given data to the buffer, will map it temporarily if not mapped.
  */
 VkResult
-comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, VkDeviceSize size);
+render_buffer_write(struct vk_bundle *vk, struct render_buffer *buffer, void *data, VkDeviceSize size);
 
 
 /*
@@ -193,7 +193,7 @@ comp_buffer_write(struct vk_bundle *vk, struct comp_buffer *buffer, void *data, 
 /*!
  * Holds all pools and static resources for rendering.
  */
-struct comp_resources
+struct render_resources
 {
 	//! Vulkan resources.
 	struct vk_bundle *vk;
@@ -203,7 +203,7 @@ struct comp_resources
 	 */
 
 	//! All shaders loaded.
-	struct comp_shaders *shaders;
+	struct render_shaders *shaders;
 
 
 	/*
@@ -232,8 +232,8 @@ struct comp_resources
 		//! Pipeline layout used for mesh.
 		VkPipelineLayout pipeline_layout;
 
-		struct comp_buffer vbo;
-		struct comp_buffer ibo;
+		struct render_buffer vbo;
+		struct render_buffer ibo;
 
 		uint32_t vertex_count;
 		uint32_t index_counts[2];
@@ -245,7 +245,7 @@ struct comp_resources
 		VkDescriptorPool descriptor_pool;
 
 		//! Info ubos, only supports two views currently.
-		struct comp_buffer ubos[2];
+		struct render_buffer ubos[2];
 	} mesh;
 
 	struct
@@ -294,7 +294,7 @@ struct comp_resources
 		VkPipeline distortion_timewarp_pipeline;
 
 		//! Target info.
-		struct comp_buffer ubo;
+		struct render_buffer ubo;
 	} compute;
 
 	struct
@@ -319,16 +319,32 @@ struct comp_resources
  * @ingroup comp_main
  */
 bool
-comp_resources_init(struct comp_resources *r,
-                    struct comp_shaders *shaders,
-                    struct vk_bundle *vk,
-                    struct xrt_device *xdev);
+render_resources_init(struct render_resources *r,
+                      struct render_shaders *shaders,
+                      struct vk_bundle *vk,
+                      struct xrt_device *xdev);
 
 /*!
  * Free all pools and static resources, does not free the struct itself.
  */
 void
-comp_resources_close(struct comp_resources *r);
+render_resources_close(struct render_resources *r);
+
+
+/*
+ *
+ * Shared between both gfx and compute.
+ *
+ */
+
+/*!
+ *  The pure data information about a view that the renderer is rendering to.
+ */
+struct render_viewport_data
+{
+	uint32_t x, y;
+	uint32_t w, h;
+};
 
 
 /*
@@ -338,12 +354,13 @@ comp_resources_close(struct comp_resources *r);
  */
 
 /*!
- * Each rendering (@ref comp_rendering) render to one or more targets
- * (@ref comp_rendering_target_resources), each target can have one or more
- * views (@ref comp_rendering_view), this struct holds all the data that is
+ * Each rendering (@ref render_gfx
+) render to one or more targets
+ * (@ref render_gfx_target_resources), each target can have one or more
+ * views (@ref render_gfx_view), this struct holds all the data that is
  * specific to the target.
  */
-struct comp_target_data
+struct render_gfx_target_data
 {
 	// The format that should be used to read from the target.
 	VkFormat format;
@@ -356,9 +373,9 @@ struct comp_target_data
 };
 
 /*!
- * Each rendering (@ref comp_rendering) render to one or more targets
- * (@ref comp_rendering_target_resources), each target can have one or more
- * views (@ref comp_rendering_view), this struct holds all the vulkan resources
+ * Each rendering (@ref render_gfx) render to one or more targets
+ * (@ref render_gfx_target_resources), each target can have one or more
+ * views (@ref render_gfx_view), this struct holds all the vulkan resources
  * that is specific to the target.
  *
  * Technically the framebuffer could be moved out of this struct and all of this
@@ -366,13 +383,13 @@ struct comp_target_data
  * external status of the target, but is combined to reduce the number of
  * objects needed to render.
  */
-struct comp_rendering_target_resources
+struct render_gfx_target_resources
 {
 	//! Collections of static resources.
-	struct comp_resources *r;
+	struct render_resources *r;
 
 	//! The data for this target.
-	struct comp_target_data data;
+	struct render_gfx_target_data data;
 
 	//! Render pass used for rendering, does not depend on framebuffer.
 	VkRenderPass render_pass;
@@ -392,16 +409,16 @@ struct comp_rendering_target_resources
  * Init a target resource struct, caller has to keep target alive until closed.
  */
 bool
-comp_rendering_target_resources_init(struct comp_rendering_target_resources *rtr,
-                                     struct comp_resources *r,
-                                     VkImageView target,
-                                     struct comp_target_data *data);
+render_gfx_target_resources_init(struct render_gfx_target_resources *rtr,
+                                 struct render_resources *r,
+                                 VkImageView target,
+                                 struct render_gfx_target_data *data);
 
 /*!
  * Frees all resources held by the target, does not free the struct itself.
  */
 void
-comp_rendering_target_resources_close(struct comp_rendering_target_resources *rtr);
+render_gfx_target_resources_close(struct render_gfx_target_resources *rtr);
 
 
 /*
@@ -411,12 +428,12 @@ comp_rendering_target_resources_close(struct comp_rendering_target_resources *rt
  */
 
 /*!
- * Each rendering (@ref comp_rendering) render to one or more targets
- * (@ref comp_rendering_target_resources), each target can have one or more
- * views (@ref comp_rendering_view), this struct holds all the vulkan resources
+ * Each rendering (@ref render_gfx) render to one or more targets
+ * (@ref render_gfx_target_resources), each target can have one or more
+ * views (@ref render_gfx_view), this struct holds all the vulkan resources
  * that is specific to the view.
  */
-struct comp_rendering_view
+struct render_gfx_view
 {
 	struct
 	{
@@ -428,19 +445,19 @@ struct comp_rendering_view
  * A rendering is used to create command buffers needed to do one frame of
  * compositor rendering, it holds onto resources used by the command buffer.
  */
-struct comp_rendering
+struct render_gfx
 {
 	//! Resources that we are based on.
-	struct comp_resources *r;
+	struct render_resources *r;
 
 	//! The current target we are rendering too, can change during command building.
-	struct comp_rendering_target_resources *rtr;
+	struct render_gfx_target_resources *rtr;
 
 	//! Command buffer where all commands are recorded.
 	VkCommandBuffer cmd;
 
 	//! Holds per view data.
-	struct comp_rendering_view views[2];
+	struct render_gfx_view views[2];
 
 	//! The current view we are rendering to.
 	uint32_t current_view;
@@ -450,19 +467,19 @@ struct comp_rendering
  * Init struct and create resources needed for rendering.
  */
 bool
-comp_rendering_init(struct comp_rendering *rr, struct comp_resources *r);
+render_gfx_init(struct render_gfx *rr, struct render_resources *r);
 
 /*!
  * Frees any unneeded resources and ends the command buffer so it can be used.
  */
 void
-comp_rendering_finalize(struct comp_rendering *rr);
+render_gfx_finalize(struct render_gfx *rr);
 
 /*!
  * Frees all resources held by the rendering, does not free the struct itself.
  */
 void
-comp_rendering_close(struct comp_rendering *rr);
+render_gfx_close(struct render_gfx *rr);
 
 
 /*
@@ -472,18 +489,9 @@ comp_rendering_close(struct comp_rendering *rr);
  */
 
 /*!
- *  The pure data information about a view that the renderer is rendering to.
- */
-struct comp_viewport_data
-{
-	uint32_t x, y;
-	uint32_t w, h;
-};
-
-/*!
  * UBO data that is sent to the mesh shaders.
  */
-struct comp_mesh_ubo_data
+struct render_gfx_mesh_ubo_data
 {
 	struct xrt_matrix_2x2 vertex_rot;
 
@@ -493,22 +501,22 @@ struct comp_mesh_ubo_data
 /*!
  * This function allocates everything to start a single rendering. This is the
  * first function you call when you start rendering, you follow up with a call
- * to comp_draw_begin_view.
+ * to render_gfx_begin_view.
  */
 bool
-comp_draw_begin_target(struct comp_rendering *rr, struct comp_rendering_target_resources *rtr);
+render_gfx_begin_target(struct render_gfx *rr, struct render_gfx_target_resources *rtr);
 
 void
-comp_draw_end_target(struct comp_rendering *rr);
+render_gfx_end_target(struct render_gfx *rr);
 
 void
-comp_draw_begin_view(struct comp_rendering *rr, uint32_t view, struct comp_viewport_data *viewport_data);
+render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewport_data *viewport_data);
 
 void
-comp_draw_end_view(struct comp_rendering *rr);
+render_gfx_end_view(struct render_gfx *rr);
 
 void
-comp_draw_distortion(struct comp_rendering *rr);
+render_gfx_distortion(struct render_gfx *rr);
 
 
 /*
@@ -518,11 +526,11 @@ comp_draw_distortion(struct comp_rendering *rr);
  */
 
 void
-comp_draw_update_distortion(struct comp_rendering *rr,
-                            uint32_t view,
-                            VkSampler sampler,
-                            VkImageView image_view,
-                            struct comp_mesh_ubo_data *data);
+render_gfx_update_distortion(struct render_gfx *rr,
+                             uint32_t view,
+                             VkSampler sampler,
+                             VkImageView image_view,
+                             struct render_gfx_mesh_ubo_data *data);
 
 
 
@@ -537,10 +545,10 @@ comp_draw_update_distortion(struct comp_rendering *rr,
  * of compositor rendering using compute shaders, it holds onto resources used
  * by the command buffer.
  */
-struct comp_rendering_compute
+struct render_compute
 {
 	//! Shared resources.
-	struct comp_resources *r;
+	struct render_resources *r;
 
 	//! Command buffer where all commands are recorded.
 	VkCommandBuffer cmd;
@@ -552,9 +560,10 @@ struct comp_rendering_compute
 /*!
  * UBO data that is sent to the compute distortion shaders.
  */
-struct comp_ubo_compute_data
+struct render_compute_distortion_ubo_data
+
 {
-	struct comp_viewport_data views[2];
+	struct render_viewport_data views[2];
 	struct xrt_normalized_rect pre_transforms[2];
 	struct xrt_normalized_rect post_transforms[2];
 	struct xrt_matrix_4x4 transforms[2];
@@ -564,46 +573,46 @@ struct comp_ubo_compute_data
  * Init struct and create resources needed for compute rendering.
  */
 bool
-comp_rendering_compute_init(struct comp_rendering_compute *crc, struct comp_resources *r);
+render_compute_init(struct render_compute *crc, struct render_resources *r);
 
 /*!
  * Frees all resources held by the compute rendering, does not free the struct itself.
  */
 void
-comp_rendering_compute_close(struct comp_rendering_compute *crc);
+render_compute_close(struct render_compute *crc);
 
 bool
-comp_rendering_compute_begin(struct comp_rendering_compute *crc);
+render_compute_begin(struct render_compute *crc);
 
 void
-comp_rendering_compute_projection_timewarp(struct comp_rendering_compute *crc,
-                                           VkSampler src_samplers[2],
-                                           VkImageView src_image_views[2],
-                                           const struct xrt_normalized_rect src_rects[2],
-                                           const struct xrt_pose src_poses[2],
-                                           const struct xrt_fov src_fovs[2],
-                                           const struct xrt_pose new_poses[2],
-                                           VkImage target_image,
-                                           VkImageView target_image_view,
-                                           const struct comp_viewport_data views[2]);
+render_compute_projection_timewarp(struct render_compute *crc,
+                                   VkSampler src_samplers[2],
+                                   VkImageView src_image_views[2],
+                                   const struct xrt_normalized_rect src_rects[2],
+                                   const struct xrt_pose src_poses[2],
+                                   const struct xrt_fov src_fovs[2],
+                                   const struct xrt_pose new_poses[2],
+                                   VkImage target_image,
+                                   VkImageView target_image_view,
+                                   const struct render_viewport_data views[2]);
 
 void
-comp_rendering_compute_projection(struct comp_rendering_compute *crc,            //
-                                  VkSampler src_samplers[2],                     //
-                                  VkImageView src_image_views[2],                //
-                                  const struct xrt_normalized_rect src_rects[2], //
-                                  VkImage target_image,                          //
-                                  VkImageView target_image_view,                 //
-                                  const struct comp_viewport_data views[2]);     //
+render_compute_projection(struct render_compute *crc,                    //
+                          VkSampler src_samplers[2],                     //
+                          VkImageView src_image_views[2],                //
+                          const struct xrt_normalized_rect src_rects[2], //
+                          VkImage target_image,                          //
+                          VkImageView target_image_view,                 //
+                          const struct render_viewport_data views[2]);   //
 
 void
-comp_rendering_compute_clear(struct comp_rendering_compute *crc,        //
-                             VkImage target_image,                      //
-                             VkImageView target_image_view,             //
-                             const struct comp_viewport_data views[2]); //
+render_compute_clear(struct render_compute *crc,                  //
+                     VkImage target_image,                        //
+                     VkImageView target_image_view,               //
+                     const struct render_viewport_data views[2]); //
 
 bool
-comp_rendering_compute_end(struct comp_rendering_compute *crc);
+render_compute_end(struct render_compute *crc);
 
 
 /*!

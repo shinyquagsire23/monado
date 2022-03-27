@@ -89,8 +89,8 @@ create_mesh_descriptor_set_layout(struct vk_bundle *vk,
 
 static bool
 init_mesh_vertex_buffers(struct vk_bundle *vk,
-                         struct comp_buffer *vbo,
-                         struct comp_buffer *ibo,
+                         struct render_buffer *vbo,
+                         struct render_buffer *ibo,
                          uint32_t vertex_count,
                          uint32_t stride,
                          void *vertices,
@@ -113,16 +113,16 @@ init_mesh_vertex_buffers(struct vk_bundle *vk,
 		return true;
 	}
 
-	C(comp_buffer_init(vk,                    // vk_bundle
-	                   vbo,                   // buffer
-	                   vbo_usage_flags,       // usage_flags
-	                   memory_property_flags, // memory_property_flags
-	                   vbo_size));            // size
+	C(render_buffer_init(vk,                    // vk_bundle
+	                     vbo,                   // buffer
+	                     vbo_usage_flags,       // usage_flags
+	                     memory_property_flags, // memory_property_flags
+	                     vbo_size));            // size
 
-	C(comp_buffer_write(vk,         // vk_bundle
-	                    vbo,        // buffer
-	                    vertices,   // data
-	                    vbo_size)); // size
+	C(render_buffer_write(vk,         // vk_bundle
+	                      vbo,        // buffer
+	                      vertices,   // data
+	                      vbo_size)); // size
 
 
 	// Don't create index buffer if size is zero.
@@ -130,22 +130,22 @@ init_mesh_vertex_buffers(struct vk_bundle *vk,
 		return true;
 	}
 
-	C(comp_buffer_init(vk,                    // vk_bundle
-	                   ibo,                   // buffer
-	                   ibo_usage_flags,       // usage_flags
-	                   memory_property_flags, // memory_property_flags
-	                   ibo_size));            // size
+	C(render_buffer_init(vk,                    // vk_bundle
+	                     ibo,                   // buffer
+	                     ibo_usage_flags,       // usage_flags
+	                     memory_property_flags, // memory_property_flags
+	                     ibo_size));            // size
 
-	C(comp_buffer_write(vk,         // vk_bundle
-	                    ibo,        // buffer
-	                    indices,    // data
-	                    ibo_size)); // size
+	C(render_buffer_write(vk,         // vk_bundle
+	                      ibo,        // buffer
+	                      indices,    // data
+	                      ibo_size)); // size
 
 	return true;
 }
 
 static bool
-init_mesh_ubo_buffers(struct vk_bundle *vk, struct comp_buffer *l_ubo, struct comp_buffer *r_ubo)
+init_mesh_ubo_buffers(struct vk_bundle *vk, struct render_buffer *l_ubo, struct render_buffer *r_ubo)
 {
 	// Using the same flags for all ubos.
 	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -153,21 +153,21 @@ init_mesh_ubo_buffers(struct vk_bundle *vk, struct comp_buffer *l_ubo, struct co
 	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	// Distortion ubo size.
-	VkDeviceSize ubo_size = sizeof(struct comp_mesh_ubo_data);
+	VkDeviceSize ubo_size = sizeof(struct render_gfx_mesh_ubo_data);
 
-	C(comp_buffer_init(vk,                    //
-	                   l_ubo,                 //
-	                   ubo_usage_flags,       //
-	                   memory_property_flags, //
-	                   ubo_size));            // size
-	C(comp_buffer_map(vk, l_ubo));
+	C(render_buffer_init(vk,                    //
+	                     l_ubo,                 //
+	                     ubo_usage_flags,       //
+	                     memory_property_flags, //
+	                     ubo_size));            // size
+	C(render_buffer_map(vk, l_ubo));
 
-	C(comp_buffer_init(vk,                    //
-	                   r_ubo,                 //
-	                   ubo_usage_flags,       //
-	                   memory_property_flags, //
-	                   ubo_size));            // size
-	C(comp_buffer_map(vk, r_ubo));
+	C(render_buffer_init(vk,                    //
+	                     r_ubo,                 //
+	                     ubo_usage_flags,       //
+	                     memory_property_flags, //
+	                     ubo_size));            // size
+	C(render_buffer_map(vk, r_ubo));
 
 
 	return true;
@@ -418,9 +418,9 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 static XRT_MAYBE_UNUSED VkResult
 create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
                                               struct xrt_device *xdev,
-                                              struct comp_buffer *r_buffer,
-                                              struct comp_buffer *g_buffer,
-                                              struct comp_buffer *b_buffer,
+                                              struct render_buffer *r_buffer,
+                                              struct render_buffer *g_buffer,
+                                              struct render_buffer *b_buffer,
                                               uint32_t view)
 {
 	VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -429,13 +429,13 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
 
 	VkDeviceSize size = sizeof(struct texture);
 
-	C(comp_buffer_init(vk, r_buffer, usage_flags, properties, size));
-	C(comp_buffer_init(vk, g_buffer, usage_flags, properties, size));
-	C(comp_buffer_init(vk, b_buffer, usage_flags, properties, size));
+	C(render_buffer_init(vk, r_buffer, usage_flags, properties, size));
+	C(render_buffer_init(vk, g_buffer, usage_flags, properties, size));
+	C(render_buffer_init(vk, b_buffer, usage_flags, properties, size));
 
-	C(comp_buffer_map(vk, r_buffer));
-	C(comp_buffer_map(vk, g_buffer));
-	C(comp_buffer_map(vk, b_buffer));
+	C(render_buffer_map(vk, r_buffer));
+	C(render_buffer_map(vk, g_buffer));
+	C(render_buffer_map(vk, b_buffer));
 
 	struct texture *r = r_buffer->mapped;
 	struct texture *g = g_buffer->mapped;
@@ -459,9 +459,9 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
 		}
 	}
 
-	comp_buffer_unmap(vk, r_buffer);
-	comp_buffer_unmap(vk, g_buffer);
-	comp_buffer_unmap(vk, b_buffer);
+	render_buffer_unmap(vk, r_buffer);
+	render_buffer_unmap(vk, g_buffer);
+	render_buffer_unmap(vk, b_buffer);
 
 	return VK_SUCCESS;
 }
@@ -473,10 +473,10 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
  */
 
 bool
-comp_resources_init(struct comp_resources *r,
-                    struct comp_shaders *shaders,
-                    struct vk_bundle *vk,
-                    struct xrt_device *xdev)
+render_resources_init(struct render_resources *r,
+                      struct render_shaders *shaders,
+                      struct vk_bundle *vk,
+                      struct xrt_device *xdev)
 {
 	/*
 	 * Main pointers.
@@ -657,20 +657,20 @@ comp_resources_init(struct comp_resources *r,
 	VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
 	                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
 	                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	size_t ubo_size = sizeof(struct comp_ubo_compute_data);
+	size_t ubo_size = sizeof(struct render_compute_distortion_ubo_data);
 
-	C(comp_buffer_init(        //
+	C(render_buffer_init(      //
 	    vk,                    // vk_bundle
 	    &r->compute.ubo,       // buffer
 	    ubo_usage_flags,       // usage_flags
 	    memory_property_flags, // memory_property_flags
 	    ubo_size));            // size
-	C(comp_buffer_map(         //
+	C(render_buffer_map(       //
 	    vk,                    // vk_bundle
 	    &r->compute.ubo));     // buffer
 
 
-	struct comp_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
+	struct render_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
 
 	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
 	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
@@ -698,7 +698,7 @@ comp_resources_init(struct comp_resources *r,
 	os_mutex_unlock(&vk->queue_mutex);
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(buffers); i++) {
-		comp_buffer_close(vk, &buffers[i]);
+		render_buffer_close(vk, &buffers[i]);
 	}
 
 
@@ -712,7 +712,7 @@ comp_resources_init(struct comp_resources *r,
 }
 
 void
-comp_resources_close(struct comp_resources *r)
+render_resources_close(struct render_resources *r)
 {
 	// We were never initialised or already closed, always safe to call this function.
 	if (r->vk == NULL) {
@@ -728,10 +728,10 @@ comp_resources_close(struct comp_resources *r)
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
 	D(DescriptorPool, r->mesh.descriptor_pool);
-	comp_buffer_close(vk, &r->mesh.vbo);
-	comp_buffer_close(vk, &r->mesh.ibo);
-	comp_buffer_close(vk, &r->mesh.ubos[0]);
-	comp_buffer_close(vk, &r->mesh.ubos[1]);
+	render_buffer_close(vk, &r->mesh.vbo);
+	render_buffer_close(vk, &r->mesh.ibo);
+	render_buffer_close(vk, &r->mesh.ubos[0]);
+	render_buffer_close(vk, &r->mesh.ubos[1]);
 
 	D(DescriptorPool, r->compute.descriptor_pool);
 	D(DescriptorSetLayout, r->compute.descriptor_set_layout);
@@ -749,7 +749,7 @@ comp_resources_close(struct comp_resources *r)
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
 		DF(Memory, r->distortion.device_memories[i]);
 	}
-	comp_buffer_close(vk, &r->compute.ubo);
+	render_buffer_close(vk, &r->compute.ubo);
 
 	// Finally forget about the vk bundle. We do not own it!
 	r->vk = NULL;

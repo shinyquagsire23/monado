@@ -44,7 +44,6 @@
 
 static VkResult
 shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderModule *out_module)
-
 {
 	VkResult ret;
 
@@ -73,13 +72,13 @@ shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderMod
 	do {                                                                                                           \
 		VkResult ret = c;                                                                                      \
 		if (ret != VK_SUCCESS) {                                                                               \
-			comp_shaders_close(s, vk);                                                                     \
+			render_shaders_close(s, vk);                                                                   \
 			return false;                                                                                  \
 		}                                                                                                      \
 	} while (false)
 
 bool
-comp_shaders_load(struct comp_shaders *s, struct vk_bundle *vk)
+render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 {
 	C(shader_load(vk,                         // vk_bundle
 	              shaders_clear_comp,         // data
@@ -144,7 +143,7 @@ comp_shaders_load(struct comp_shaders *s, struct vk_bundle *vk)
 	}
 
 void
-comp_shaders_close(struct comp_shaders *s, struct vk_bundle *vk)
+render_shaders_close(struct render_shaders *s, struct vk_bundle *vk)
 {
 	D(clear_comp);
 	D(distortion_comp);

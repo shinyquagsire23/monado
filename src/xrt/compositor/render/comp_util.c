@@ -71,10 +71,10 @@ calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
 }
 
 void
-comp_calc_time_warp_matrix(const struct xrt_pose *src_pose,
-                           const struct xrt_fov *src_fov,
-                           const struct xrt_pose *new_pose,
-                           struct xrt_matrix_4x4 *matrix)
+render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
+                             const struct xrt_fov *src_fov,
+                             const struct xrt_pose *new_pose,
+                             struct xrt_matrix_4x4 *matrix)
 {
 	// Src projection matrix.
 	struct xrt_matrix_4x4_f64 src_proj;

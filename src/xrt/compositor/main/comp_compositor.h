@@ -91,7 +91,7 @@ struct comp_compositor
 	struct comp_settings settings;
 
 	//! Vulkan shaders that the compositor uses.
-	struct comp_shaders shaders;
+	struct render_shaders shaders;
 
 	//! Timestamp of last-rendered (immersive) frame.
 	int64_t last_frame_time_ns;
@@ -129,7 +129,7 @@ struct comp_compositor
 		bool atw_off;
 	} debug;
 
-	struct comp_resources nr;
+	struct render_resources nr;
 };
 
 

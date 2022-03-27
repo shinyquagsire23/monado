@@ -468,8 +468,11 @@ comp_layer_renderer_destroy_layers(struct comp_layer_renderer *self)
 }
 
 static bool
-_init(
-    struct comp_layer_renderer *self, struct comp_shaders *s, struct vk_bundle *vk, VkExtent2D extent, VkFormat format)
+_init(struct comp_layer_renderer *self,
+      struct render_shaders *s,
+      struct vk_bundle *vk,
+      VkExtent2D extent,
+      VkFormat format)
 {
 	self->vk = vk;
 
@@ -532,7 +535,7 @@ _init(
 }
 
 struct comp_layer_renderer *
-comp_layer_renderer_create(struct vk_bundle *vk, struct comp_shaders *s, VkExtent2D extent, VkFormat format)
+comp_layer_renderer_create(struct vk_bundle *vk, struct render_shaders *s, VkExtent2D extent, VkFormat format)
 {
 	struct comp_layer_renderer *r = U_TYPED_CALLOC(struct comp_layer_renderer);
 	_init(r, s, vk, extent, format);

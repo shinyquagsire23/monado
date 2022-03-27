@@ -106,7 +106,7 @@ struct comp_renderer
 	 * comp_target images. Each target resources holds all of the resources
 	 * needed to render to that target and its views.
 	 */
-	struct comp_rendering_target_resources *rtr_array;
+	struct render_gfx_target_resources *rtr_array;
 
 	/*!
 	 * Array of fences equal in size to the number of comp_target images.
@@ -168,8 +168,8 @@ renderer_init_semaphores(struct comp_renderer *r)
 
 static void
 calc_viewport_data(struct comp_renderer *r,
-                   struct comp_viewport_data *out_l_viewport_data,
-                   struct comp_viewport_data *out_r_viewport_data)
+                   struct render_viewport_data *out_l_viewport_data,
+                   struct render_viewport_data *out_r_viewport_data)
 {
 	struct comp_compositor *c = r->c;
 
@@ -189,30 +189,30 @@ calc_viewport_data(struct comp_renderer *r,
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
 
-	struct comp_viewport_data l_viewport_data;
-	struct comp_viewport_data r_viewport_data;
+	struct render_viewport_data l_viewport_data;
+	struct render_viewport_data r_viewport_data;
 
 	if (pre_rotate) {
-		l_viewport_data = (struct comp_viewport_data){
+		l_viewport_data = (struct render_viewport_data){
 		    .x = (uint32_t)(l_v->viewport.y_pixels * scale_x),
 		    .y = (uint32_t)(l_v->viewport.x_pixels * scale_y),
 		    .w = (uint32_t)(l_v->viewport.h_pixels * scale_x),
 		    .h = (uint32_t)(l_v->viewport.w_pixels * scale_y),
 		};
-		r_viewport_data = (struct comp_viewport_data){
+		r_viewport_data = (struct render_viewport_data){
 		    .x = (uint32_t)(r_v->viewport.y_pixels * scale_x),
 		    .y = (uint32_t)(r_v->viewport.x_pixels * scale_y),
 		    .w = (uint32_t)(r_v->viewport.h_pixels * scale_x),
 		    .h = (uint32_t)(r_v->viewport.w_pixels * scale_y),
 		};
 	} else {
-		l_viewport_data = (struct comp_viewport_data){
+		l_viewport_data = (struct render_viewport_data){
 		    .x = (uint32_t)(l_v->viewport.x_pixels * scale_x),
 		    .y = (uint32_t)(l_v->viewport.y_pixels * scale_y),
 		    .w = (uint32_t)(l_v->viewport.w_pixels * scale_x),
 		    .h = (uint32_t)(l_v->viewport.h_pixels * scale_y),
 		};
-		r_viewport_data = (struct comp_viewport_data){
+		r_viewport_data = (struct render_viewport_data){
 		    .x = (uint32_t)(r_v->viewport.x_pixels * scale_x),
 		    .y = (uint32_t)(r_v->viewport.y_pixels * scale_y),
 		    .w = (uint32_t)(r_v->viewport.w_pixels * scale_x),
@@ -227,27 +227,27 @@ calc_viewport_data(struct comp_renderer *r,
 //! @pre comp_target_has_images(r->c->target)
 static void
 renderer_build_rendering_target_resources(struct comp_renderer *r,
-                                          struct comp_rendering_target_resources *rtr,
+                                          struct render_gfx_target_resources *rtr,
                                           uint32_t index)
 {
 	COMP_TRACE_MARKER();
 
 	struct comp_compositor *c = r->c;
 
-	struct comp_target_data data;
+	struct render_gfx_target_data data;
 	data.format = r->c->target->format;
 	data.is_external = true;
 	data.width = r->c->target->width;
 	data.height = r->c->target->height;
 
-	comp_rendering_target_resources_init(rtr, &c->nr, r->c->target->images[index].view, &data);
+	render_gfx_target_resources_init(rtr, &c->nr, r->c->target->images[index].view, &data);
 }
 
 //! @pre comp_target_has_images(r->c->target)
 static void
 renderer_build_rendering(struct comp_renderer *r,
-                         struct comp_rendering *rr,
-                         struct comp_rendering_target_resources *rtr,
+                         struct render_gfx *rr,
+                         struct render_gfx_target_resources *rtr,
                          VkSampler src_samplers[2],
                          VkImageView src_image_views[2],
                          struct xrt_normalized_rect src_norm_rects[2])
@@ -268,8 +268,8 @@ renderer_build_rendering(struct comp_renderer *r,
 		pre_rotate = true;
 	}
 
-	struct comp_viewport_data l_viewport_data;
-	struct comp_viewport_data r_viewport_data;
+	struct render_viewport_data l_viewport_data;
+	struct render_viewport_data r_viewport_data;
 
 	calc_viewport_data(r, &l_viewport_data, &r_viewport_data);
 
@@ -281,14 +281,14 @@ renderer_build_rendering(struct comp_renderer *r,
 	 * Init
 	 */
 
-	comp_rendering_init(rr, &c->nr);
+	render_gfx_init(rr, &c->nr);
 
 
 	/*
 	 * Update
 	 */
 
-	struct comp_mesh_ubo_data distortion_data[2] = {
+	struct render_gfx_mesh_ubo_data distortion_data[2] = {
 	    {
 	        .vertex_rot = l_v->rot,
 	        .post_transform = src_norm_rects[0],
@@ -316,62 +316,62 @@ renderer_build_rendering(struct comp_renderer *r,
 		                         &distortion_data[1].vertex_rot); //
 	}
 
-	comp_draw_update_distortion(rr,                   //
-	                            0,                    // view_index
-	                            src_samplers[0],      //
-	                            src_image_views[0],   //
-	                            &distortion_data[0]); //
+	render_gfx_update_distortion(rr,                   //
+	                             0,                    // view_index
+	                             src_samplers[0],      //
+	                             src_image_views[0],   //
+	                             &distortion_data[0]); //
 
-	comp_draw_update_distortion(rr,                   //
-	                            1,                    // view_index
-	                            src_samplers[1],      //
-	                            src_image_views[1],   //
-	                            &distortion_data[1]); //
+	render_gfx_update_distortion(rr,                   //
+	                             1,                    // view_index
+	                             src_samplers[1],      //
+	                             src_image_views[1],   //
+	                             &distortion_data[1]); //
 
 
 	/*
 	 * Target
 	 */
 
-	comp_draw_begin_target( //
-	    rr,                 //
-	    rtr);               //
+	render_gfx_begin_target( //
+	    rr,                  //
+	    rtr);                //
 
 
 	/*
 	 * Viewport one
 	 */
 
-	comp_draw_begin_view(rr,                //
-	                     0,                 // view_index
-	                     &l_viewport_data); // viewport_data
+	render_gfx_begin_view(rr,                //
+	                      0,                 // view_index
+	                      &l_viewport_data); // viewport_data
 
-	comp_draw_distortion(rr);
+	render_gfx_distortion(rr);
 
-	comp_draw_end_view(rr);
+	render_gfx_end_view(rr);
 
 
 	/*
 	 * Viewport two
 	 */
 
-	comp_draw_begin_view(rr,                //
-	                     1,                 // view_index
-	                     &r_viewport_data); // viewport_data
+	render_gfx_begin_view(rr,                //
+	                      1,                 // view_index
+	                      &r_viewport_data); // viewport_data
 
-	comp_draw_distortion(rr);
+	render_gfx_distortion(rr);
 
-	comp_draw_end_view(rr);
+	render_gfx_end_view(rr);
 
 
 	/*
 	 * End
 	 */
 
-	comp_draw_end_target(rr);
+	render_gfx_end_target(rr);
 
 	// Make the command buffer usable.
-	comp_rendering_finalize(rr);
+	render_gfx_finalize(rr);
 }
 
 /*!
@@ -393,7 +393,7 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 
 	bool use_compute = r->settings->use_compute;
 	if (!use_compute) {
-		r->rtr_array = U_TYPED_ARRAY_CALLOC(struct comp_rendering_target_resources, r->buffer_count);
+		r->rtr_array = U_TYPED_ARRAY_CALLOC(struct render_gfx_target_resources, r->buffer_count);
 
 		for (uint32_t i = 0; i < r->buffer_count; ++i) {
 			renderer_build_rendering_target_resources(r, &r->rtr_array[i], i);
@@ -426,7 +426,7 @@ renderer_close_renderings_and_fences(struct comp_renderer *r)
 	// Renderings
 	if (r->buffer_count > 0 && r->rtr_array != NULL) {
 		for (uint32_t i = 0; i < r->buffer_count; i++) {
-			comp_rendering_target_resources_close(&r->rtr_array[i]);
+			render_gfx_target_resources_close(&r->rtr_array[i]);
 		}
 
 		free(r->rtr_array);
@@ -801,8 +801,8 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 
 static void
 do_gfx_mesh_and_proj(struct comp_renderer *r,
-                     struct comp_rendering *rr,
-                     struct comp_rendering_target_resources *rts,
+                     struct render_gfx *rr,
+                     struct render_gfx_target_resources *rts,
                      const struct comp_layer *layer,
                      const struct xrt_layer_projection_view_data *lvd,
                      const struct xrt_layer_projection_view_data *rvd)
@@ -835,14 +835,14 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 }
 
 static void
-dispatch_graphics(struct comp_renderer *r, struct comp_rendering *rr)
+dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 {
 	COMP_TRACE_MARKER();
 
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	struct comp_rendering_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
+	struct render_gfx_target_resources *rtr = &r->rtr_array[r->acquired_buffer];
 	bool one_projection_layer_fast_path = c->base.slot.one_projection_layer_fast_path;
 
 	// No fast path, standard layer renderer path.
@@ -968,7 +968,7 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
 
 static void
 do_projection_layers(struct comp_renderer *r,
-                     struct comp_rendering_compute *crc,
+                     struct render_compute *crc,
                      const struct comp_layer *layer,
                      const struct xrt_layer_projection_view_data *lvd,
                      const struct xrt_layer_projection_view_data *rvd)
@@ -979,7 +979,7 @@ do_projection_layers(struct comp_renderer *r,
 	const struct comp_swapchain_image *left = &layer->sc_array[0]->images[lvd->sub.image_index];
 	const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
 
-	struct comp_viewport_data views[2];
+	struct render_viewport_data views[2];
 	calc_viewport_data(r, &views[0], &views[1]);
 
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
@@ -1017,41 +1017,41 @@ do_projection_layers(struct comp_renderer *r,
 	};
 
 	if (r->c->debug.atw_off) {
-		comp_rendering_compute_projection( //
-		    crc,                           //
-		    src_samplers,                  //
-		    src_image_views,               //
-		    src_norm_rects,                //
-		    target_image,                  //
-		    target_image_view,             //
-		    views);                        //
+		render_compute_projection( //
+		    crc,                   //
+		    src_samplers,          //
+		    src_image_views,       //
+		    src_norm_rects,        //
+		    target_image,          //
+		    target_image_view,     //
+		    views);                //
 	} else {
-		comp_rendering_compute_projection_timewarp( //
-		    crc,                                    //
-		    src_samplers,                           //
-		    src_image_views,                        //
-		    src_norm_rects,                         //
-		    src_poses,                              //
-		    src_fovs,                               //
-		    new_view_poses,                         //
-		    target_image,                           //
-		    target_image_view,                      //
-		    views);                                 //
+		render_compute_projection_timewarp( //
+		    crc,                            //
+		    src_samplers,                   //
+		    src_image_views,                //
+		    src_norm_rects,                 //
+		    src_poses,                      //
+		    src_fovs,                       //
+		    new_view_poses,                 //
+		    target_image,                   //
+		    target_image_view,              //
+		    views);                         //
 	}
 }
 
 static void
-dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
+dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 {
 	COMP_TRACE_MARKER();
 
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	comp_rendering_compute_init(crc, &c->nr);
-	comp_rendering_compute_begin(crc);
+	render_compute_init(crc, &c->nr);
+	render_compute_begin(crc);
 
-	struct comp_viewport_data views[2];
+	struct render_viewport_data views[2];
 	calc_viewport_data(r, &views[0], &views[1]);
 
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
@@ -1075,14 +1075,14 @@ dispatch_compute(struct comp_renderer *r, struct comp_rendering_compute *crc)
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
 	} else {
-		comp_rendering_compute_clear( //
-		    crc,                      //
-		    target_image,             //
-		    target_image_view,        //
-		    views);                   //
+		render_compute_clear(  //
+		    crc,               //
+		    target_image,      //
+		    target_image_view, //
+		    views);            //
 	}
 
-	comp_rendering_compute_end(crc);
+	render_compute_end(crc);
 
 	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
@@ -1475,8 +1475,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	comp_target_update_timings(ct);
 
 	bool use_compute = r->settings->use_compute;
-	struct comp_rendering rr = {0};
-	struct comp_rendering_compute crc = {0};
+	struct render_gfx rr = {0};
+	struct render_compute crc = {0};
 	if (use_compute) {
 		dispatch_compute(r, &crc);
 	} else {
@@ -1507,9 +1507,9 @@ comp_renderer_draw(struct comp_renderer *r)
 
 
 	if (use_compute) {
-		comp_rendering_compute_close(&crc);
+		render_compute_close(&crc);
 	} else {
-		comp_rendering_close(&rr);
+		render_gfx_close(&rr);
 	}
 
 	/*
