@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,7 +10,7 @@
 #include "math/m_api.h"
 #include "math/m_matrix_4x4_f64.h"
 
-#include "render/comp_render.h"
+#include "render/render_interfaces.h"
 
 
 /*!

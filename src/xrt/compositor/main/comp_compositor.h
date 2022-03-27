@@ -22,7 +22,7 @@
 #include "util/comp_sync.h"
 #include "util/comp_swapchain.h"
 
-#include "render/comp_render.h"
+#include "render/render_interfaces.h"
 
 #include "main/comp_target.h"
 #include "main/comp_window.h"

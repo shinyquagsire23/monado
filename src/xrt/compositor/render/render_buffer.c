@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,7 +10,7 @@
 
 #include "main/comp_compositor.h"
 
-#include "render/comp_render.h"
+#include "render/render_interfaces.h"
 
 #include <stdio.h>
 

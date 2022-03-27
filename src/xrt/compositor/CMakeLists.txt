@@ -109,13 +109,13 @@ if(XRT_HAVE_VULKAN)
 	add_library(
 		comp_render STATIC
 		${SHADER_HEADERS}
-		render/comp_buffer.c
-		render/comp_compute.c
-		render/comp_render.h
-		render/comp_rendering.c
-		render/comp_resources.c
-		render/comp_shaders.c
-		render/comp_util.c
+		render/render_buffer.c
+		render/render_compute.c
+		render/render_gfx.c
+		render/render_interfaces.h
+		render/render_resources.c
+		render/render_shaders.c
+		render/render_util.c
 		)
 	target_link_libraries(
 		comp_render
