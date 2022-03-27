@@ -6,10 +6,10 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_render
  */
+
 #include "math/m_api.h"
 #include "math/m_matrix_4x4_f64.h"
 
-#include "main/comp_compositor.h"
 #include "render/comp_render.h"
 
 
