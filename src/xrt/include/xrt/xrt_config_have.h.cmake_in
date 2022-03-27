@@ -17,6 +17,7 @@
 #cmakedefine XRT_HAVE_JPEG
 #cmakedefine XRT_HAVE_LIBUDEV
 #cmakedefine XRT_HAVE_LIBUSB
+#cmakedefine XRT_HAVE_HIDAPI
 #cmakedefine XRT_HAVE_LIBUVC
 #cmakedefine XRT_HAVE_OPENCV
 #cmakedefine XRT_HAVE_OPENGL
