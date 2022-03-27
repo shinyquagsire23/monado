@@ -549,26 +549,6 @@ struct comp_rendering_compute
 	VkDescriptorSet descriptor_set;
 };
 
-struct comp_rendering_compute_data
-{
-	struct
-	{
-		VkImageView source;
-
-		VkImageView distortion;
-
-		struct
-		{
-			uint32_t x;
-			uint32_t y;
-			uint32_t width;
-			uint32_t height;
-		} dst;
-	} views[2];
-
-	VkImageView target;
-};
-
 /*!
  * UBO data that is sent to the compute distortion shaders.
  */
