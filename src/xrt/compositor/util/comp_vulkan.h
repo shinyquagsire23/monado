@@ -128,12 +128,16 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 	THING_COLOR(B8G8R8A8_UNORM)      /* VK     - Bad colour precision. */                                          \
 	THING_COLOR(R8G8B8_UNORM)        /* OGL VK - Uncommon. Bad colour precision. */                                \
 	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad colour precision. */                                \
+	THING_COLOR(R5G6B5_UNORM_PACK16) /* OLG VK - Bad colour precision. */                                          \
 	/* depth formats */                                                                                            \
-	THING_DS(D16_UNORM)  /* OGL VK */                                                                              \
-	THING_DS(D32_SFLOAT) /* OGL VK */                                                                              \
+	THING_DS(D32_SFLOAT)          /* OGL VK */                                                                     \
+	THING_DS(D16_UNORM)           /* OGL VK */                                                                     \
+	THING_DS(X8_D24_UNORM_PACK32) /* OGL VK */                                                                     \
 	/* depth stencil formats */                                                                                    \
 	THING_DS(D24_UNORM_S8_UINT)  /* OGL VK */                                                                      \
-	THING_DS(D32_SFLOAT_S8_UINT) /* OGL VK */
+	THING_DS(D32_SFLOAT_S8_UINT) /* OGL VK */                                                                      \
+	/* stencil format */                                                                                           \
+	THING_DS(S8_UINT)
 
 /*!
  * Struct with supported format, these are not only check for optimal flags
