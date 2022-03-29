@@ -35,6 +35,8 @@ DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_APP_LOG", U_LOGGING_WARN)
  *
  */
 
+#define FRAME_COUNT (8)
+
 enum u_pa_state
 {
 	U_PA_READY,
@@ -72,7 +74,7 @@ struct pacing_app
 {
 	struct u_pacing_app base;
 
-	struct u_pa_frame frames[2];
+	struct u_pa_frame frames[FRAME_COUNT];
 	uint32_t current_frame;
 	uint32_t next_frame;
 
@@ -115,7 +117,7 @@ pacing_app(struct u_pacing_app *upa)
 }
 
 #define DEBUG_PRINT_FRAME_ID() UPA_LOG_T("%" PRIi64, frame_id)
-#define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % ARRAY_SIZE((RT)->frames))
+#define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % FRAME_COUNT)
 
 #define IIR_ALPHA_LT 0.8
 #define IIR_ALPHA_GT 0.8
