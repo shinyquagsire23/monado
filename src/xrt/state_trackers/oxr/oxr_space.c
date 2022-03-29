@@ -259,9 +259,9 @@ oxr_space_pure_relation_from_space(struct oxr_logger *log,
 	}
 
 	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &pure_space_relation);
-	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &spc->pose);
 	m_relation_chain_push_relation(&xrc, relation);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose);
+	m_relation_chain_push_relation(&xrc, &pure_space_relation);
 	m_relation_chain_resolve(&xrc, out_relation);
 	return true;
 }
