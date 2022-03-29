@@ -106,7 +106,7 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
  * enough bits to express it without resulting in banding.
  *
  * The format VK_FORMAT_A2B10G10R10_UNORM_PACK32 is not listed since
- * 10 bits are not considered enough to do linear colours without
+ * 10 bits are not considered enough to do linear colors without
  * banding. If there was a sRGB variant of it then we would have used it
  * instead but there isn't. Since it's not a popular format it's best
  * not to list it rather then listing it and people falling into the
@@ -124,11 +124,11 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 	THING_COLOR(R8G8B8A8_SRGB)       /* OGL VK */                                                                  \
 	THING_COLOR(B8G8R8A8_SRGB)       /* VK */                                                                      \
 	THING_COLOR(R8G8B8_SRGB)         /* OGL VK - Uncommon. */                                                      \
-	THING_COLOR(R8G8B8A8_UNORM)      /* OGL VK - Bad colour precision. */                                          \
-	THING_COLOR(B8G8R8A8_UNORM)      /* VK     - Bad colour precision. */                                          \
-	THING_COLOR(R8G8B8_UNORM)        /* OGL VK - Uncommon. Bad colour precision. */                                \
-	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad colour precision. */                                \
-	THING_COLOR(R5G6B5_UNORM_PACK16) /* OLG VK - Bad colour precision. */                                          \
+	THING_COLOR(R8G8B8A8_UNORM)      /* OGL VK - Bad color precision. */                                           \
+	THING_COLOR(B8G8R8A8_UNORM)      /* VK     - Bad color precision. */                                           \
+	THING_COLOR(R8G8B8_UNORM)        /* OGL VK - Uncommon. Bad color precision. */                                 \
+	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad color precision. */                                 \
+	THING_COLOR(R5G6B5_UNORM_PACK16) /* OLG VK - Bad color precision. */                                           \
 	/* depth formats */                                                                                            \
 	THING_DS(D32_SFLOAT)          /* OGL VK */                                                                     \
 	THING_DS(D16_UNORM)           /* OGL VK */                                                                     \
