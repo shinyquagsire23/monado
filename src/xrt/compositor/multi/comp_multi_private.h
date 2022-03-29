@@ -154,6 +154,11 @@ struct multi_compositor
 	struct os_mutex slot_lock;
 
 	/*!
+	 * The next which the next frames to be picked up will be displayed.
+	 */
+	uint64_t slot_next_frame_display;
+
+	/*!
 	 * Currently being transferred or waited on.
 	 * Not protected by the slot lock as it is only touched by the client thread.
 	 */

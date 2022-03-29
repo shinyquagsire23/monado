@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -282,10 +282,31 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 }
 
 static void
-broadcast_timings(struct multi_system_compositor *msc,
-                  uint64_t predicted_display_time_ns,
-                  uint64_t predicted_display_period_ns,
-                  uint64_t diff_ns)
+broadcast_timings_to_clients(struct multi_system_compositor *msc, uint64_t predicted_display_time_ns)
+{
+	COMP_TRACE_MARKER();
+
+	os_mutex_lock(&msc->list_and_timing_lock);
+
+	for (size_t i = 0; i < ARRAY_SIZE(msc->clients); i++) {
+		struct multi_compositor *mc = msc->clients[i];
+		if (mc == NULL) {
+			continue;
+		}
+
+		os_mutex_lock(&mc->slot_lock);
+		mc->slot_next_frame_display = predicted_display_time_ns;
+		os_mutex_unlock(&mc->slot_lock);
+	}
+
+	os_mutex_unlock(&msc->list_and_timing_lock);
+}
+
+static void
+broadcast_timings_to_pacers(struct multi_system_compositor *msc,
+                            uint64_t predicted_display_time_ns,
+                            uint64_t predicted_display_period_ns,
+                            uint64_t diff_ns)
 {
 	COMP_TRACE_MARKER();
 
@@ -302,6 +323,10 @@ broadcast_timings(struct multi_system_compositor *msc,
 		    predicted_display_time_ns,   //
 		    predicted_display_period_ns, //
 		    diff_ns);                    //
+
+		os_mutex_lock(&mc->slot_lock);
+		mc->slot_next_frame_display = predicted_display_time_ns;
+		os_mutex_unlock(&mc->slot_lock);
 	}
 
 	msc->last_timings.predicted_display_time_ns = predicted_display_time_ns;
@@ -312,25 +337,9 @@ broadcast_timings(struct multi_system_compositor *msc,
 }
 
 static void
-wait_frame(struct xrt_compositor *xc,
-           int64_t *out_frame_id,
-           uint64_t *out_wake_time_ns,
-           uint64_t *out_predicted_gpu_time_ns,
-           uint64_t *out_predicted_display_time_ns,
-           uint64_t *out_predicted_display_period_ns)
+wait_frame(struct xrt_compositor *xc, int64_t frame_id, uint64_t wake_up_time_ns)
 {
 	COMP_TRACE_MARKER();
-
-	int64_t frame_id = -1;
-	uint64_t wake_up_time_ns = 0;
-
-	xrt_comp_predict_frame(               //
-	    xc,                               //
-	    &frame_id,                        //
-	    &wake_up_time_ns,                 //
-	    out_predicted_gpu_time_ns,        //
-	    out_predicted_display_time_ns,    //
-	    out_predicted_display_period_ns); //
 
 	uint64_t now_ns = os_monotonic_get_ns();
 	if (now_ns < wake_up_time_ns) {
@@ -340,9 +349,6 @@ wait_frame(struct xrt_compositor *xc,
 	now_ns = os_monotonic_get_ns();
 
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
-
-	*out_frame_id = frame_id;
-	*out_wake_time_ns = wake_up_time_ns;
 }
 
 static int
@@ -361,24 +367,32 @@ multi_main_loop(struct multi_system_compositor *msc)
 	while (os_thread_helper_is_running_locked(&msc->oth)) {
 		os_thread_helper_unlock(&msc->oth);
 
-		int64_t frame_id;
-		uint64_t wake_time_ns = 0;
+		int64_t frame_id = -1;
+		uint64_t wake_up_time_ns = 0;
 		uint64_t predicted_gpu_time_ns = 0;
 		uint64_t predicted_display_time_ns = 0;
 		uint64_t predicted_display_period_ns = 0;
 
-		wait_frame(                        //
+		// Get the information for the next frame.
+		xrt_comp_predict_frame(            //
 		    xc,                            //
 		    &frame_id,                     //
-		    &wake_time_ns,                 //
+		    &wake_up_time_ns,              //
 		    &predicted_gpu_time_ns,        //
 		    &predicted_display_time_ns,    //
 		    &predicted_display_period_ns); //
 
+		// Do this as soon as we have the new display time.
+		broadcast_timings_to_clients(msc, predicted_display_time_ns);
+
+		// Now we can wait.
+		wait_frame(xc, frame_id, wake_up_time_ns);
+
 		uint64_t now_ns = os_monotonic_get_ns();
 		uint64_t diff_ns = predicted_display_time_ns - now_ns;
 
-		broadcast_timings(msc, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
+		// Now we know the diff, broadcast to pacers.
+		broadcast_timings_to_pacers(msc, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
 
 		xrt_comp_begin_frame(xc, frame_id);
 		xrt_comp_layer_begin(xc, frame_id, 0, 0);
