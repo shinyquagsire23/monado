@@ -64,6 +64,10 @@ if sdl2.found()
 	have_conf.set('XRT_HAVE_SDL2', true)
 endif
 
+if hidapi.found() and 'psvr' in drivers
+	have_conf.set('XRT_HAVE_HIDAPI', true)
+endif
+
 if has_v4l2_header and 'v4l2' in drivers
 	have_conf.set('XRT_HAVE_V4L2', true)
 endif
