@@ -436,40 +436,60 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 		}                                                                                                      \
 	} while (0)
 
+
+/*
+ *
+ * Struct init functions, in the vk_function_loaders.c file.
+ *
+ */
+
 /*!
+ * Can be done on a completely bare bundle.
+ *
  * @ingroup aux_vk
  */
 VkResult
 vk_get_loader_functions(struct vk_bundle *vk, PFN_vkGetInstanceProcAddr g);
 
 /*!
+ * Requires a instance to have been created and set on the bundle.
+ *
  * @ingroup aux_vk
  */
 VkResult
 vk_get_instance_functions(struct vk_bundle *vk);
 
 /*!
- * @brief Initialize mutexes in the @ref vk_bundle.
- *
- * Not required for all uses, but a precondition for some.
+ * Requires a device to have been created and set on the bundle.
  *
  * @ingroup aux_vk
  */
 VkResult
-vk_init_mutex(struct vk_bundle *vk);
+vk_get_device_functions(struct vk_bundle *vk);
+
+
+/*
+ *
+ * Bundle init functions, in the vk_bundle_init.c file.
+ *
+ */
 
 /*!
- * @brief De-initialize mutexes in the @ref vk_bundle.
+ * Only requires @ref vk_get_loader_functions to have been called.
+ *
  * @ingroup aux_vk
  */
-VkResult
-vk_deinit_mutex(struct vk_bundle *vk);
+struct u_string_list *
+vk_build_instance_extensions(struct vk_bundle *vk,
+                             struct u_string_list *required_instance_ext_list,
+                             struct u_string_list *optional_instance_ext_list);
 
 /*!
- * @ingroup aux_vk
+ * Fills in has_* in vk_bundle given a string of prefiltered instance extensions
  */
-VkResult
-vk_init_cmd_pool(struct vk_bundle *vk);
+void
+vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
+
 
 /*!
  * Used to enable device features as a argument @ref vk_create_device.
@@ -484,14 +504,8 @@ struct vk_device_features
 };
 
 /*!
- * @ingroup aux_vk
- */
-struct u_string_list *
-vk_build_instance_extensions(struct vk_bundle *vk,
-                             struct u_string_list *required_instance_ext_list,
-                             struct u_string_list *optional_instance_ext_list);
-
-/*!
+ * Creates a VkDevice and initialises the VkQueue.
+ *
  * @ingroup aux_vk
  */
 VkResult
@@ -502,6 +516,32 @@ vk_create_device(struct vk_bundle *vk,
                  struct u_string_list *required_device_ext_list,
                  struct u_string_list *optional_device_ext_list,
                  const struct vk_device_features *optional_device_features);
+
+/*!
+ * @brief Initialize mutexes in the @ref vk_bundle.
+ *
+ * Not required for all uses, but a precondition for some.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_init_mutex(struct vk_bundle *vk);
+
+/*!
+ * @brief De-initialize mutexes in the @ref vk_bundle.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_deinit_mutex(struct vk_bundle *vk);
+
+/*!
+ * Requires device and queue to have been set up.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_init_cmd_pool(struct vk_bundle *vk);
 
 /*!
  * Initialize a bundle with objects given to us by client code,
@@ -519,6 +559,13 @@ vk_init_from_given(struct vk_bundle *vk,
                    uint32_t queue_index,
                    bool timeline_semaphore_enabled,
                    enum u_logging_level log_level);
+
+
+/*
+ *
+ * Other functions.
+ *
+ */
 
 /*!
  * @ingroup aux_vk
@@ -714,12 +761,6 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  */
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
-
-/*!
- * Fills in has_* in vk_bundle given a string of prefiltered instance extensions
- */
-void
-vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
 
 
 /*

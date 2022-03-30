@@ -242,8 +242,9 @@ DEVICE_EXTENSIONS_TO_CHECK = [
 
 ROOT = Path(__file__).resolve().parent.parent
 DIR = ROOT / "src" / "xrt" / "auxiliary" / "vk"
-HEADER_FN = DIR / "vk_helpers.h"
-IMPL_FN = DIR / "vk_helpers.c"
+HELPERS_H_FN = DIR / "vk_helpers.h"
+BUNDLE_INIT_C_FN = DIR / "vk_bundle_init.c"
+FUNCTION_LOADERS_C_FN = DIR / "vk_function_loaders.c"
 
 BEGIN_TEMPLATE = "\t// beginning of GENERATED %s code - do not modify - used by scripts"
 END_TEMPLATE = "\t// end of GENERATED %s code - do not modify - used by scripts"
@@ -428,8 +429,8 @@ EXT_TEMPLATES = {
 }
 
 
-def process_header():
-    with open(str(HEADER_FN), "r", encoding="utf-8") as fp:
+def process_helpers_h():
+    with open(str(HELPERS_H_FN), "r", encoding="utf-8") as fp:
         lines = [line.rstrip() for line in fp.readlines()]
 
     lines = replace_middle(
@@ -460,13 +461,13 @@ def process_header():
         list(generate_ext_members(DEVICE_EXTENSIONS_TO_CHECK)),
     )
 
-    with open(str(HEADER_FN), "w", encoding="utf-8") as fp:
+    with open(str(HELPERS_H_FN), "w", encoding="utf-8") as fp:
         fp.write("\n".join(lines))
         fp.write("\n")
 
 
-def process_impl():
-    with open(str(IMPL_FN), "r", encoding="utf-8") as fp:
+def process_function_loaders_c():
+    with open(str(FUNCTION_LOADERS_C_FN), "r", encoding="utf-8") as fp:
         lines = [line.rstrip() for line in fp.readlines()]
 
     lines = replace_middle(
@@ -483,6 +484,15 @@ def process_impl():
         list(generate_proc_macro("GET_DEV_PROC", get_device_cmds())),
     )
 
+    with open(str(FUNCTION_LOADERS_C_FN), "w", encoding="utf-8") as fp:
+        fp.write("\n".join(lines))
+        fp.write("\n")
+
+def process_bundle_init_c():
+    with open(str(BUNDLE_INIT_C_FN), "r", encoding="utf-8") as fp:
+        lines = [line.rstrip() for line in fp.readlines()]
+
+
     lines = replace_middle(
         lines,
         INSTANCE_EXT_TEMPLATES["BEGIN"],
@@ -497,11 +507,12 @@ def process_impl():
         list(generate_ext_check(DEVICE_EXTENSIONS_TO_CHECK)),
     )
 
-    with open(str(IMPL_FN), "w", encoding="utf-8") as fp:
+    with open(str(BUNDLE_INIT_C_FN), "w", encoding="utf-8") as fp:
         fp.write("\n".join(lines))
         fp.write("\n")
 
 
 if __name__ == "__main__":
-    process_header()
-    process_impl()
+    process_helpers_h()
+    process_bundle_init_c()
+    process_function_loaders_c()

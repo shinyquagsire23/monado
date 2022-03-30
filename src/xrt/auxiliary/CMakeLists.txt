@@ -252,9 +252,11 @@ if(XRT_HAVE_VULKAN)
 	# Vulkan library.
 	add_library(
 		aux_vk STATIC
+		vk/vk_bundle_init.c
 		vk/vk_command_buffer.c
 		vk/vk_compositor_flags.c
 		vk/vk_documentation.h
+		vk/vk_function_loaders.c
 		vk/vk_helpers.c
 		vk/vk_helpers.h
 		vk/vk_image_allocator.c
