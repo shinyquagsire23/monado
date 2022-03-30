@@ -333,6 +333,7 @@ static int64_t
 vk_format_to_gl(int64_t format)
 {
 	switch (format) {
+	case 4 /*VK_FORMAT_R5G6B5_UNORM_PACK16*/: return 0; // GL_RGB565?
 	case 23 /*VK_FORMAT_R8G8B8_UNORM*/: return GL_RGB8; // Should not be used, colour precision.
 	case 29 /*VK_FORMAT_R8G8B8_SRGB*/: return GL_SRGB8;
 	case 30 /*VK_FORMAT_B8G8R8_UNORM*/: return 0;
@@ -346,7 +347,9 @@ vk_format_to_gl(int64_t format)
 	case 91 /*VK_FORMAT_R16G16B16A16_UNORM*/: return GL_RGBA16;
 	case 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/: return GL_RGBA16F;
 	case 124 /*VK_FORMAT_D16_UNORM*/: return GL_DEPTH_COMPONENT16;
+	case 125 /*VK_FORMAT_X8_D24_UNORM_PACK32*/: return 0; // GL_DEPTH_COMPONENT24?
 	case 126 /*VK_FORMAT_D32_SFLOAT*/: return GL_DEPTH_COMPONENT32F;
+	case 127 /*VK_FORMAT_S8_UINT*/: return 0; // GL_STENCIL_INDEX8?
 	case 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/: return GL_DEPTH24_STENCIL8;
 	case 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/: return GL_DEPTH32F_STENCIL8;
 	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!\n", format); return 0;
