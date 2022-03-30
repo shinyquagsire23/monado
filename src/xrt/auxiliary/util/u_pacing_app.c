@@ -43,6 +43,7 @@ enum u_pa_state
 	U_RT_WAIT_LEFT,
 	U_RT_PREDICTED,
 	U_RT_BEGUN,
+	U_RT_DELIVERED,
 };
 
 struct u_pa_frame
@@ -65,6 +66,7 @@ struct u_pa_frame
 		uint64_t wait_woke_ns;
 		uint64_t begin_ns;
 		uint64_t delivered_ns;
+		uint64_t gpu_done_ns;
 	} when;
 
 	enum u_pa_state state;
@@ -318,8 +320,24 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_BEGUN);
 
-	// Update all data.
 	f->when.delivered_ns = when_ns;
+	f->state = U_RT_DELIVERED;
+}
+
+static void
+pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+{
+	struct pacing_app *pa = pacing_app(upa);
+
+	DEBUG_PRINT_FRAME_ID();
+
+	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == frame_id);
+	assert(f->state == U_RT_DELIVERED);
+
+	// Update all data.
+	f->when.gpu_done_ns = when_ns;
 
 
 	/*
@@ -336,7 +354,7 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 #define NS_TO_MS_F(ns) (time_ns_to_s(ns) * 1000.0)
 
 	uint64_t diff_cpu_ns = f->when.begin_ns - f->when.wait_woke_ns;
-	uint64_t diff_draw_ns = f->when.delivered_ns - f->when.begin_ns;
+	uint64_t diff_draw_ns = f->when.gpu_done_ns - f->when.begin_ns;
 
 	UPA_LOG_D(
 	    "Delivered frame %.2fms %s."                                           //
@@ -366,6 +384,9 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 
 		TE_BEG(pa_draw, f->when.begin_ns, "draw");
 		TE_END(pa_draw, f->when.delivered_ns);
+
+		TE_BEG(pa_wait, f->when.delivered_ns, "wait");
+		TE_END(pa_wait, f->when.gpu_done_ns);
 	}
 
 #undef TE_BEG
@@ -411,6 +432,7 @@ u_pa_create(struct u_pacing_app **out_urt)
 	pa->base.mark_point = pa_mark_point;
 	pa->base.mark_discarded = pa_mark_discarded;
 	pa->base.mark_delivered = pa_mark_delivered;
+	pa->base.mark_gpu_done = pa_mark_gpu_done;
 	pa->base.info = pa_info;
 	pa->base.destroy = pa_destroy;
 	pa->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;

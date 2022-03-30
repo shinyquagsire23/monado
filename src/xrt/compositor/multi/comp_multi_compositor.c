@@ -324,6 +324,12 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct multi_compositor *mc = multi_compositor(xc);
 
+	// As early as possible.
+	uint64_t now_ns = os_monotonic_get_ns();
+	os_mutex_lock(&mc->msc->list_and_timing_lock);
+	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
+	os_mutex_unlock(&mc->msc->list_and_timing_lock);
+
 	assert(mc->progress.layer_count == 0);
 	U_ZERO(&mc->progress);
 
@@ -545,7 +551,7 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	uint64_t now_ns = os_monotonic_get_ns();
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
+	u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;
@@ -587,7 +593,7 @@ multi_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
 	uint64_t now_ns = os_monotonic_get_ns();
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
+	u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	return XRT_SUCCESS;

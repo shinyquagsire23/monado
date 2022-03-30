@@ -326,6 +326,15 @@ struct u_pacing_app
 	void (*mark_delivered)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns);
 
 	/*!
+	 * A frame has been completed rendered by the GPU, this can happen after `xrEndFrame` has returned.
+	 *
+	 * @param     upa      Render timing helper.
+	 * @param[in] frame_id The frame ID to mark as delivered.
+	 * @param[in] when_ns  The time when it the gpu was finished, nominally from @ref os_monotonic_get_ns
+	 */
+	void (*mark_gpu_done)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns);
+
+	/*!
 	 * Add a new sample point from the main render loop.
 	 *
 	 * This is called in the main renderer loop that tightly submits frames to the
@@ -414,6 +423,20 @@ static inline void
 u_pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	upa->mark_delivered(upa, frame_id, when_ns);
+}
+
+/*!
+ * @copydoc u_pacing_app::mark_gpu_done
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+{
+	upa->mark_gpu_done(upa, frame_id, when_ns);
 }
 
 /*!
