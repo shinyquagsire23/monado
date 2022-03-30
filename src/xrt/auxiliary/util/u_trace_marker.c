@@ -31,6 +31,7 @@ PERCETTO_TRACK_DEFINE(pc_info, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(pc_present, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(pa_cpu, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(pa_draw, PERCETTO_TRACK_EVENTS);
+PERCETTO_TRACK_DEFINE(pa_wait, PERCETTO_TRACK_EVENTS);
 
 
 static enum u_trace_which static_which;
@@ -51,6 +52,7 @@ u_trace_marker_setup(enum u_trace_which which)
 
 	I_PERCETTO_TRACK_PTR(pa_cpu)->name = "PA 1 App";
 	I_PERCETTO_TRACK_PTR(pa_draw)->name = "PA 2 Draw";
+	I_PERCETTO_TRACK_PTR(pa_wait)->name = "PA 3 Wait";
 }
 
 void
@@ -77,6 +79,7 @@ u_trace_marker_init(void)
 
 		PERCETTO_REGISTER_TRACK(pa_cpu);
 		PERCETTO_REGISTER_TRACK(pa_draw);
+		PERCETTO_REGISTER_TRACK(pa_wait);
 	}
 }
 
