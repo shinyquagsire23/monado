@@ -126,6 +126,30 @@ struct multi_compositor
 		int64_t z_order;
 	} state;
 
+	struct
+	{
+		//! Fence to wait for.
+		struct xrt_compositor_fence *xcf;
+
+		//! Timeline semaphore to wait for.
+		struct xrt_compositor_semaphore *xcsem;
+
+		//! Timeline semaphore value to wait for.
+		uint64_t value;
+
+		//! Frame id of frame being waited on.
+		int64_t frame_id;
+
+		//! The wait thread itself
+		struct os_thread_helper oth;
+
+		//! Is the thread waiting, if so the client should block.
+		bool waiting;
+
+		//! Is the client thread blocked, if so it should be woken up.
+		bool blocked;
+	} wait_thread;
+
 	//! Lock for all of the slots.
 	struct os_mutex slot_lock;
 

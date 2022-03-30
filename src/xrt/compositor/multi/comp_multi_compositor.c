@@ -120,6 +120,218 @@ drain_events(struct multi_compositor *mc)
 
 /*
  *
+ * Wait helper thread.
+ *
+ */
+
+static void
+wait_fence(struct xrt_compositor_fence **xcf_ptr)
+{
+	COMP_TRACE_MARKER();
+	xrt_result_t ret = XRT_SUCCESS;
+
+	// 100ms
+	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
+
+	do {
+		ret = xrt_compositor_fence_wait(*xcf_ptr, timeout_ns);
+		if (ret != XRT_TIMEOUT) {
+			break;
+		}
+
+		U_LOG_W("Waiting on client fence timed out > 100ms!");
+	} while (true);
+
+	xrt_compositor_fence_destroy(xcf_ptr);
+
+	if (ret != XRT_SUCCESS) {
+		U_LOG_E("Fence waiting failed!");
+	}
+}
+
+static void
+wait_semaphore(struct xrt_compositor_semaphore **xcsem_ptr, uint64_t value)
+{
+	COMP_TRACE_MARKER();
+	xrt_result_t ret = XRT_SUCCESS;
+
+	// 100ms
+	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
+
+	do {
+		ret = xrt_compositor_semaphore_wait(*xcsem_ptr, value, timeout_ns);
+		if (ret != XRT_TIMEOUT) {
+			break;
+		}
+
+		U_LOG_W("Waiting on client semaphore value '%" PRIu64 "' timed out > 100ms!", value);
+	} while (true);
+
+	xrt_compositor_semaphore_reference(xcsem_ptr, NULL);
+}
+
+static void
+wait_for_scheduled_free(struct multi_compositor *mc)
+{
+	COMP_TRACE_MARKER();
+
+	os_mutex_lock(&mc->slot_lock);
+
+	// Block here if the scheduled slot is not clear.
+	while (mc->scheduled.active) {
+
+		// Replace the scheduled frame if it's in the past.
+		uint64_t now_ns = os_monotonic_get_ns();
+		if (mc->scheduled.display_time_ns < now_ns) {
+			break;
+		}
+
+		os_mutex_unlock(&mc->slot_lock);
+
+		os_nanosleep(U_TIME_1MS_IN_NS);
+
+		os_mutex_lock(&mc->slot_lock);
+	}
+
+	slot_move_and_clear(&mc->scheduled, &mc->progress);
+
+	os_mutex_unlock(&mc->slot_lock);
+}
+
+static void *
+run_func(void *ptr)
+{
+	struct multi_compositor *mc = (struct multi_compositor *)ptr;
+
+	os_thread_helper_lock(&mc->wait_thread.oth);
+
+	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {
+
+		if (mc->wait_thread.xcsem == NULL && mc->wait_thread.xcf == NULL) {
+			os_thread_helper_wait_locked(&mc->wait_thread.oth);
+			// Fall through here on stopping to clean up and outstanding waits.
+		}
+
+		int64_t frame_id = mc->wait_thread.frame_id;
+		struct xrt_compositor_fence *xcf = mc->wait_thread.xcf;
+		struct xrt_compositor_semaphore *xcsem = mc->wait_thread.xcsem; // No need to ref, a move.
+		uint64_t value = mc->wait_thread.value;
+
+		mc->wait_thread.frame_id = 0;
+		mc->wait_thread.xcf = NULL;
+		mc->wait_thread.xcsem = NULL;
+		mc->wait_thread.value = 0;
+
+		// We are being stopped, loop back and check running.
+		if (xcf == NULL && xcsem == NULL) {
+			continue;
+		}
+
+		// We now know that we should wait.
+		mc->wait_thread.waiting = true;
+
+		os_thread_helper_unlock(&mc->wait_thread.oth);
+
+		if (xcsem != NULL) {
+			wait_semaphore(&xcsem, value);
+		}
+		if (xcf != NULL) {
+			wait_fence(&xcf);
+		}
+
+		// Sample time outside of lock.
+		uint64_t now_ns = os_monotonic_get_ns();
+
+		os_mutex_lock(&mc->msc->list_and_timing_lock);
+		u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
+		os_mutex_unlock(&mc->msc->list_and_timing_lock);
+
+		// Wait for the delivery slot.
+		wait_for_scheduled_free(mc);
+
+		os_thread_helper_lock(&mc->wait_thread.oth);
+
+		// Finally no longer waiting.
+		//! @todo Move to before wait_for_scheduled_free?
+		mc->wait_thread.waiting = false;
+
+		if (mc->wait_thread.blocked) {
+			os_thread_helper_signal_locked(&mc->wait_thread.oth);
+		}
+	}
+
+	os_thread_helper_unlock(&mc->wait_thread.oth);
+
+	return NULL;
+}
+
+static void
+wait_for_wait_thread_locked(struct multi_compositor *mc)
+{
+	// Should we wait for the last frame.
+	if (mc->wait_thread.waiting) {
+		COMP_TRACE_IDENT(blocked);
+		mc->wait_thread.blocked = true;
+		os_thread_helper_wait_locked(&mc->wait_thread.oth);
+		mc->wait_thread.blocked = false;
+	}
+}
+
+static void
+wait_for_wait_thread(struct multi_compositor *mc)
+{
+	os_thread_helper_lock(&mc->wait_thread.oth);
+
+	wait_for_wait_thread_locked(mc);
+
+	os_thread_helper_unlock(&mc->wait_thread.oth);
+}
+
+static void
+push_fence_to_wait_thread(struct multi_compositor *mc, int64_t frame_id, struct xrt_compositor_fence *xcf)
+{
+	os_thread_helper_lock(&mc->wait_thread.oth);
+
+	// The function begin_layer should have waited, but just in case.
+	assert(!mc->wait_thread.waiting);
+	wait_for_wait_thread_locked(mc);
+
+	assert(mc->wait_thread.xcf == NULL);
+
+	mc->wait_thread.frame_id = frame_id;
+	mc->wait_thread.xcf = xcf;
+
+	os_thread_helper_signal_locked(&mc->wait_thread.oth);
+
+	os_thread_helper_unlock(&mc->wait_thread.oth);
+}
+
+static void
+push_semaphore_to_wait_thread(struct multi_compositor *mc,
+                              int64_t frame_id,
+                              struct xrt_compositor_semaphore *xcsem,
+                              uint64_t value)
+{
+	os_thread_helper_lock(&mc->wait_thread.oth);
+
+	// The function begin_layer should have waited, but just in case.
+	assert(!mc->wait_thread.waiting);
+	wait_for_wait_thread_locked(mc);
+
+	assert(mc->wait_thread.xcsem == NULL);
+
+	mc->wait_thread.frame_id = frame_id;
+	xrt_compositor_semaphore_reference(&mc->wait_thread.xcsem, xcsem);
+	mc->wait_thread.value = value;
+
+	os_thread_helper_signal_locked(&mc->wait_thread.oth);
+
+	os_thread_helper_unlock(&mc->wait_thread.oth);
+}
+
+
+/*
+ *
  * Compositor functions.
  *
  */
@@ -330,6 +542,18 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 	u_pa_mark_delivered(mc->upa, frame_id, now_ns, display_time_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
+	/*
+	 * We have to block here for the waiting thread to push the last
+	 * submitted frame from the progress slot to the scheduled slot,
+	 * it only does after the sync object has signaled completion.
+	 *
+	 * If the previous frame's GPU work has not completed that means we
+	 * will block here, but that is okay as the app has already submitted
+	 * the GPU for this frame. This should have very little impact on GPU
+	 * utilisation, if any.
+	 */
+	wait_for_wait_thread(mc);
+
 	assert(mc->progress.layer_count == 0);
 	U_ZERO(&mc->progress);
 
@@ -461,59 +685,6 @@ multi_compositor_layer_equirect2(struct xrt_compositor *xc,
 	return XRT_SUCCESS;
 }
 
-static void
-wait_fence(struct xrt_compositor_fence **xcf_ptr)
-{
-	COMP_TRACE_MARKER();
-	xrt_result_t ret = XRT_SUCCESS;
-
-	// 100ms
-	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
-
-	do {
-		ret = xrt_compositor_fence_wait(*xcf_ptr, timeout_ns);
-		if (ret != XRT_TIMEOUT) {
-			break;
-		}
-
-		U_LOG_W("Waiting on client fence timed out > 100ms!");
-	} while (true);
-
-	xrt_compositor_fence_destroy(xcf_ptr);
-
-	if (ret != XRT_SUCCESS) {
-		U_LOG_E("Fence waiting failed!");
-	}
-}
-
-static void
-wait_for_scheduled_free(struct multi_compositor *mc)
-{
-	COMP_TRACE_MARKER();
-
-	os_mutex_lock(&mc->slot_lock);
-
-	// Block here if the scheduled slot is not clear.
-	while (mc->scheduled.active) {
-
-		// Replace the scheduled frame if it's in the past.
-		uint64_t now_ns = os_monotonic_get_ns();
-		if (mc->scheduled.display_time_ns < now_ns) {
-			break;
-		}
-
-		os_mutex_unlock(&mc->slot_lock);
-
-		os_nanosleep(U_TIME_1MS_IN_NS);
-
-		os_mutex_lock(&mc->slot_lock);
-	}
-
-	slot_move_and_clear(&mc->scheduled, &mc->progress);
-
-	os_mutex_unlock(&mc->slot_lock);
-}
-
 static xrt_result_t
 multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
@@ -544,36 +715,19 @@ multi_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_g
 	} while (false); // Goto without the labels.
 
 	if (xcf != NULL) {
-		wait_fence(&xcf);
+		push_fence_to_wait_thread(mc, frame_id, xcf);
+	} else {
+		// Assume that the app side compositor waited.
+		uint64_t now_ns = os_monotonic_get_ns();
+
+		os_mutex_lock(&mc->msc->list_and_timing_lock);
+		u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
+		os_mutex_unlock(&mc->msc->list_and_timing_lock);
+
+		wait_for_scheduled_free(mc);
 	}
 
-	wait_for_scheduled_free(mc);
-	uint64_t now_ns = os_monotonic_get_ns();
-
-	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
-	os_mutex_unlock(&mc->msc->list_and_timing_lock);
-
 	return XRT_SUCCESS;
-}
-
-static void
-wait_semaphore(struct xrt_compositor_semaphore *xcsem, uint64_t value)
-{
-	COMP_TRACE_MARKER();
-	xrt_result_t ret = XRT_SUCCESS;
-
-	// 100ms
-	uint64_t timeout_ns = 100 * U_TIME_1MS_IN_NS;
-
-	do {
-		ret = xrt_compositor_semaphore_wait(xcsem, value, timeout_ns);
-		if (ret != XRT_TIMEOUT) {
-			break;
-		}
-
-		U_LOG_W("Waiting on client semaphore value '%" PRIu64 "' timed out > 100ms!", value);
-	} while (true);
 }
 
 static xrt_result_t
@@ -586,15 +740,7 @@ multi_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
 
 	struct multi_compositor *mc = multi_compositor(xc);
 
-	// Wait for the semaphore.
-	wait_semaphore(xcsem, value);
-
-	wait_for_scheduled_free(mc);
-	uint64_t now_ns = os_monotonic_get_ns();
-
-	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_gpu_done(mc->upa, frame_id, now_ns);
-	os_mutex_unlock(&mc->msc->list_and_timing_lock);
+	push_semaphore_to_wait_thread(mc, frame_id, xcsem, value);
 
 	return XRT_SUCCESS;
 }
@@ -630,6 +776,9 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	drain_events(mc);
+
+	// Stop the wait thread.
+	os_thread_helper_stop(&mc->wait_thread.oth);
 
 	// We are now off the rendering list, clear slots for any swapchains.
 	slot_clear(&mc->progress);
@@ -701,6 +850,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 
 	os_mutex_init(&mc->event.mutex);
 	os_mutex_init(&mc->slot_lock);
+	os_thread_helper_init(&mc->wait_thread.oth);
 
 	// Passthrough our formats from the native compositor to the client.
 	mc->base.base.info = msc->xcn->base.info;
@@ -729,6 +879,9 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	    msc->last_timings.diff_ns);                    //
 
 	os_mutex_unlock(&msc->list_and_timing_lock);
+
+	// Last start the wait thread.
+	os_thread_helper_start(&mc->wait_thread.oth, run_func, mc);
 
 	*out_xcn = &mc->base;
 
