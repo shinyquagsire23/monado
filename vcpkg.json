@@ -6,6 +6,8 @@
         "pthreads",
         "libusb",
         "hidapi",
-        "zlib"
+        "zlib",
+        "vulkan",
+        "glslang"
     ]
 }
