@@ -319,11 +319,12 @@ struct u_pacing_app
 	 * A frame has been delivered from the client, see `xrEndFrame`. The GPU might
 	 * still be rendering the work.
 	 *
-	 * @param     upa      Render timing helper.
-	 * @param[in] frame_id The frame ID to mark as delivered.
-	 * @param[in] when_ns  The time when it was delivered, nominally from @ref os_monotonic_get_ns
+	 * @param     upa             Render timing helper.
+	 * @param[in] frame_id        The frame ID to mark as delivered.
+	 * @param[in] when_ns         The time when it was delivered, nominally from @ref os_monotonic_get_ns
+	 * @param[in] display_time_ns The time the frame is to be displayed.
 	 */
-	void (*mark_delivered)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns);
+	void (*mark_delivered)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, uint64_t display_time_ns);
 
 	/*!
 	 * A frame has been completed rendered by the GPU, this can happen after `xrEndFrame` has returned.
@@ -420,9 +421,9 @@ u_pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns
  * @ingroup aux_pacing
  */
 static inline void
-u_pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+u_pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, uint64_t display_time_ns)
 {
-	upa->mark_delivered(upa, frame_id, when_ns);
+	upa->mark_delivered(upa, frame_id, when_ns, display_time_ns);
 }
 
 /*!

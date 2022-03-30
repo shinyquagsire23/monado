@@ -59,6 +59,12 @@ struct u_pa_frame
 	//! When the client should have delivered the frame.
 	uint64_t predicted_delivery_time_ns;
 
+	/*!
+	 * When the app told us to display this frame, can be different
+	 * then the predicted display time so we track that separately.
+	 */
+	uint64_t display_time_ns;
+
 	//! When something happened.
 	struct
 	{
@@ -309,7 +315,7 @@ pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 }
 
 static void
-pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, uint64_t display_time_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
@@ -321,6 +327,7 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	assert(f->state == U_RT_BEGUN);
 
 	f->when.delivered_ns = when_ns;
+	f->display_time_ns = display_time_ns;
 	f->state = U_RT_DELIVERED;
 }
 

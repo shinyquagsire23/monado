@@ -327,7 +327,7 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 	// As early as possible.
 	uint64_t now_ns = os_monotonic_get_ns();
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
-	u_pa_mark_delivered(mc->upa, frame_id, now_ns);
+	u_pa_mark_delivered(mc->upa, frame_id, now_ns, display_time_ns);
 	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	assert(mc->progress.layer_count == 0);
