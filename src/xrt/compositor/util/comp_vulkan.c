@@ -217,6 +217,9 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 		return ret;
 	}
 
+	// Now that we are done debug some used external handles.
+	vk_print_external_handles_info(vk, U_LOGGING_INFO);
+
 	return VK_SUCCESS;
 }
 

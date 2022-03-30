@@ -439,6 +439,33 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
 /*
  *
+ * Printing helpers, in the vk_print.c file.
+ *
+ */
+
+/*!
+ * Print device information to the logger at the given logging level,
+ * if the vk_bundle has that level enabled.
+ *
+ * @ingroup aux_vk
+ */
+void
+vk_print_device_info(struct vk_bundle *vk,
+                     enum u_logging_level log_level,
+                     VkPhysicalDeviceProperties *pdp,
+                     uint32_t gpu_index,
+                     const char *title);
+
+/*!
+ * Print external handle features to the logger at the given logging level,
+ * if the vk_bundle has that level enabled.
+ */
+void
+vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_level);
+
+
+/*
+ *
  * Struct init functions, in the vk_function_loaders.c file.
  *
  */
