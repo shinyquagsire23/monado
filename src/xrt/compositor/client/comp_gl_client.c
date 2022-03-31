@@ -28,6 +28,7 @@
 #include "client/comp_gl_client.h"
 
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include <inttypes.h>
 
@@ -284,6 +285,8 @@ client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
 static xrt_result_t
 client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
 {
+	COMP_TRACE_MARKER();
+
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
 	// We make the sync object, not st/oxr which is our user.
@@ -293,8 +296,12 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
 	if (c->insert_fence != NULL) {
+		COMP_TRACE_IDENT(insert_fence);
+
 		xret = c->insert_fence(xc, &sync_handle);
 	} else {
+		COMP_TRACE_IDENT(glFinish);
+
 		/*!
 		 * @todo The swapchain images should have been externally synchronized.
 		 */
@@ -304,6 +311,8 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	if (xret != XRT_SUCCESS) {
 		return XRT_SUCCESS;
 	}
+
+	COMP_TRACE_IDENT(layer_commit);
 
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
 }
