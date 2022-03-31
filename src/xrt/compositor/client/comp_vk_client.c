@@ -228,14 +228,10 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct client_vk_compositor *c = sc->c;
 	struct vk_bundle *vk = &c->vk;
 
+	// Make sure images are not used anymore.
+	vk->vkDeviceWaitIdle(vk->device);
+
 	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
-
-		VkResult ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[i], true, MS_TO_NS(500));
-		if (vk_has_error(ret, "vkWaitForFences", __FILE__, __LINE__)) {
-			// don't really care, we are going to destroy anyway, just make sure it's not used anymore
-			vk->vkDeviceWaitIdle(vk->device);
-		}
-
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
 			vk->vkDestroyImage(vk->device, sc->base.images[i], NULL);
 			sc->base.images[i] = VK_NULL_HANDLE;
@@ -261,32 +257,35 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 	struct vk_bundle *vk = &sc->c->vk;
 
+	uint32_t index = 0;
+
 	// Pipe down call into native swapchain.
-	xrt_result_t xret = xrt_swapchain_acquire_image(&sc->xscn->base, out_index);
+	xrt_result_t xret = xrt_swapchain_acquire_image(&sc->xscn->base, &index);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
 
 	VkResult ret;
 
-	ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[*out_index], true, MS_TO_NS(500));
-	vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
 
-	ret = vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[*out_index]);
-	vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
+	COMP_TRACE_IDENT(submit);
 
 	// Acquire ownership and complete layout transition
 	VkSubmitInfo submitInfo = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &sc->acquire[*out_index],
+	    .pCommandBuffers = &sc->acquire[index],
 	};
 
-	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[*out_index]);
+	// Note we do not submit a fence here, it's not needed.
+	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
+
+	// Finally done.
+	*out_index = index;
 
 	return XRT_SUCCESS;
 }
@@ -313,17 +312,7 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	VkResult ret;
 
 	{
-		COMP_TRACE_IDENT("fence");
-
-		ret = vk->vkWaitForFences(vk->device, 1, &sc->acquire_release_fence[index], true, MS_TO_NS(500));
-		vk_check_error("vkWaitForFences", ret, XRT_ERROR_VULKAN);
-
-		vk->vkResetFences(vk->device, 1, &sc->acquire_release_fence[index]);
-		vk_check_error("vkResetFences", ret, XRT_ERROR_VULKAN);
-	}
-
-	{
-		COMP_TRACE_IDENT("submit");
+		COMP_TRACE_IDENT(submit);
 
 		// Release ownership and begin layout transition
 		VkSubmitInfo submitInfo = {
@@ -332,12 +321,15 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 		    .pCommandBuffers = &sc->release[index],
 		};
 
-		ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, sc->acquire_release_fence[index]);
+		// Note we do not submit a fence here, it's not needed.
+		ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "Could not submit to queue: %d", ret);
 			return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 		}
 	}
+
+	COMP_TRACE_IDENT(release_image);
 
 	// Pipe down call into native swapchain.
 	return xrt_swapchain_release_image(&sc->xscn->base, index);
@@ -755,12 +747,6 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
 			return XRT_ERROR_VULKAN;
 		}
-
-		VkFenceCreateInfo fence_create_info = {
-		    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
-		};
-		vk->vkCreateFence(vk->device, &fence_create_info, NULL, &sc->acquire_release_fence[i]);
 	}
 
 	*out_xsc = &sc->base.base;
