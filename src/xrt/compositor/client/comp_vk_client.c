@@ -14,12 +14,6 @@
 
 #include "comp_vk_client.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-#define MS_TO_NS(ms) (ms * 1000L * 1000L)
-
 
 /*!
  * Down-cast helper.
@@ -671,8 +665,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
 
-	// Prerecord command buffers for swapchain image ownership/layout
-	// transitions
+	// Prerecord command buffers for swapchain image ownership/layout transitions
 	for (uint32_t i = 0; i < xsc->image_count; i++) {
 		ret = vk_init_cmd_buffer(vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
@@ -691,22 +684,6 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 		};
 
-		/*
-		 * The biggest reason is that VK_IMAGE_LAYOUT_PRESENT_SRC_KHR is
-		 * used here is that this is what hello_xr used to barrier to,
-		 * and it worked on a wide verity of drivers. So it's safe.
-		 *
-		 * There might not be a Vulkan renderer on the other endm
-		 * there could be a OpenGL compositor, heck there could be a X
-		 * server even. On Linux VK_IMAGE_LAYOUT_PRESENT_SRC_KHR is what
-		 * you use if you want to "flush" out all of the pixels to the
-		 * memory buffer that has been shared to you from a X11 server.
-		 *
-		 * This is not what the spec says you should do when it comes to
-		 * external images thou. Instead we should use the queue family
-		 * index `VK_QUEUE_FAMILY_EXTERNAL`. And use semaphores to
-		 * synchronize.
-		 */
 		VkImageMemoryBarrier acquire = {
 		    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		    .srcAccessMask = 0,
@@ -732,10 +709,29 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		};
 
 		//! @todo less conservative pipeline stage masks based on usage
-		vk->vkCmdPipelineBarrier(sc->acquire[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &acquire);
-		vk->vkCmdPipelineBarrier(sc->release[i], VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &release);
+		vk->vkCmdPipelineBarrier(               //
+		    sc->acquire[i],                     // commandBuffer
+		    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,  // srcStageMask
+		    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dstStageMask
+		    0,                                  // dependencyFlags
+		    0,                                  // memoryBarrierCount
+		    NULL,                               // pMemoryBarriers
+		    0,                                  // bufferMemoryBarrierCount
+		    NULL,                               // pBufferMemoryBarriers
+		    1,                                  // imageMemoryBarrierCount
+		    &acquire);                          // pImageMemoryBarriers
+
+		vk->vkCmdPipelineBarrier(                 //
+		    sc->release[i],                       // commandBuffer
+		    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,   // srcStageMask
+		    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
+		    0,                                    // dependencyFlags
+		    0,                                    // memoryBarrierCount
+		    NULL,                                 // pMemoryBarriers
+		    0,                                    // bufferMemoryBarrierCount
+		    NULL,                                 // pBufferMemoryBarriers
+		    1,                                    // imageMemoryBarrierCount
+		    &release);                            // pImageMemoryBarriers
 
 		ret = vk->vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
