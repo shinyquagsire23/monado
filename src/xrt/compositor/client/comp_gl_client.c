@@ -361,7 +361,7 @@ vk_format_to_gl(int64_t format)
 	case 127 /* VK_FORMAT_S8_UINT                  */: return 0; // GL_STENCIL_INDEX8?
 	case 129 /* VK_FORMAT_D24_UNORM_S8_UINT        */: return GL_DEPTH24_STENCIL8;
 	case 130 /* VK_FORMAT_D32_SFLOAT_S8_UINT       */: return GL_DEPTH32F_STENCIL8;
-	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!\n", format); return 0;
+	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!", format); return 0;
 	}
 }
 
@@ -376,9 +376,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	if (info->array_size > 1) {
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
-			U_LOG_E(
-			    "Only one array layer is supported with OpenGL ES "
-			    "2");
+			U_LOG_E("Only one array layer is supported with OpenGL ES 2");
 			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
