@@ -755,7 +755,12 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain *xsc = NULL; // Has to be NULL.
 	xret = xrt_comp_create_swapchain(ics->xc, info, &xsc);
 	if (xret != XRT_SUCCESS) {
-		IPC_ERROR(ics->server, "Error xrt_comp_create_swapchain failed!");
+		if (xret == XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED) {
+			IPC_WARN(ics->server,
+			         "xrt_comp_create_swapchain: Attempted to create valid, but unsupported swapchain");
+		} else {
+			IPC_ERROR(ics->server, "Error xrt_comp_create_swapchain failed!");
+		}
 		return xret;
 	}
 
