@@ -280,7 +280,9 @@ comp_swapchain_create(struct vk_bundle *vk,
 	}
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
-		// This compositor doesn't support creating protected content swapchains.
+		VK_WARN(vk,
+		        "Swapchain info is valid but this compositor doesn't support creating protected content "
+		        "swapchains!");
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 	}
 
