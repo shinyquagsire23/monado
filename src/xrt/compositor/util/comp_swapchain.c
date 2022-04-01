@@ -247,19 +247,6 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 	D(Sampler, image->repeat_sampler);
 }
 
-static bool
-is_format_supported(struct vk_bundle *vk, VkFormat format)
-{
-	VkFormatProperties prop;
-
-	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
-
-	// This is a fairly crude way of checking support,
-	// but works well enough.
-	return prop.optimalTilingFeatures != 0;
-}
-
-
 /*
  *
  * 'Exported' functions.
@@ -274,10 +261,6 @@ comp_swapchain_create(struct vk_bundle *vk,
 {
 	uint32_t image_count = 3;
 	VkResult ret;
-
-	if (!is_format_supported(vk, info->format)) {
-		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
-	}
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
 		VK_WARN(vk,
