@@ -921,11 +921,59 @@ vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 VkResult
 vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
 
+
 /*
  *
  * Compositor swapchain image flags helpers, in the vk_compositor_flags.c file.
  *
  */
+
+/*!
+ * Helper for all of the supported formats to check support for.
+ *
+ * These are the available formats we will expose to our clients.
+ *
+ * In order of what we prefer. Start with a SRGB format that works on
+ * both OpenGL and Vulkan. The two linear formats that works on both
+ * OpenGL and Vulkan. A SRGB format that only works on Vulkan. The last
+ * two formats should not be used as they are linear but doesn't have
+ * enough bits to express it without resulting in banding.
+ *
+ * The format VK_FORMAT_A2B10G10R10_UNORM_PACK32 is not listed since
+ * 10 bits are not considered enough to do linear colors without
+ * banding. If there was a sRGB variant of it then we would have used it
+ * instead but there isn't. Since it's not a popular format it's best
+ * not to list it rather then listing it and people falling into the
+ * trap. The absolute minimum is R11G11B10, but is a really weird format
+ * so we are not exposing it.
+ *
+ * CSCI = Compositor SwapChain Images.
+ *
+ * @ingroup aux_vk
+ */
+#define VK_CSCI_FORMATS(THING_COLOR, THING_DS, THING_D, THING_S)                                                       \
+	/* color formats */                                                                                            \
+	THING_COLOR(R16G16B16A16_UNORM)  /* OGL VK */                                                                  \
+	THING_COLOR(R16G16B16A16_SFLOAT) /* OGL VK */                                                                  \
+	THING_COLOR(R16G16B16_UNORM)     /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R16G16B16_SFLOAT)    /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R8G8B8A8_SRGB)       /* OGL VK */                                                                  \
+	THING_COLOR(B8G8R8A8_SRGB)       /* VK */                                                                      \
+	THING_COLOR(R8G8B8_SRGB)         /* OGL VK - Uncommon. */                                                      \
+	THING_COLOR(R8G8B8A8_UNORM)      /* OGL VK - Bad color precision. */                                           \
+	THING_COLOR(B8G8R8A8_UNORM)      /* VK     - Bad color precision. */                                           \
+	THING_COLOR(R8G8B8_UNORM)        /* OGL VK - Uncommon. Bad color precision. */                                 \
+	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad color precision. */                                 \
+	THING_COLOR(R5G6B5_UNORM_PACK16) /* OLG VK - Bad color precision. */                                           \
+	/* depth formats */                                                                                            \
+	THING_D(D32_SFLOAT)          /* OGL VK */                                                                      \
+	THING_D(D16_UNORM)           /* OGL VK */                                                                      \
+	THING_D(X8_D24_UNORM_PACK32) /* OGL VK */                                                                      \
+	/* depth stencil formats */                                                                                    \
+	THING_DS(D24_UNORM_S8_UINT)  /* OGL VK */                                                                      \
+	THING_DS(D32_SFLOAT_S8_UINT) /* OGL VK */                                                                      \
+	/* stencil format */                                                                                           \
+	THING_S(S8_UINT)
 
 /*!
  * Returns the access flags for the compositor to app barriers.
