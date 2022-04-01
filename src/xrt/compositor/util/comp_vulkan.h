@@ -115,7 +115,7 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 
  * @ingroup comp_util
  */
-#define COMP_VULKAN_FORMATS(THING_COLOR, THING_DS)                                                                     \
+#define COMP_VULKAN_FORMATS(THING_COLOR, THING_DS, THING_D, THING_S)                                                   \
 	/* color formats */                                                                                            \
 	THING_COLOR(R16G16B16A16_UNORM)  /* OGL VK */                                                                  \
 	THING_COLOR(R16G16B16A16_SFLOAT) /* OGL VK */                                                                  \
@@ -130,14 +130,14 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 	THING_COLOR(B8G8R8_UNORM)        /* VK     - Uncommon. Bad color precision. */                                 \
 	THING_COLOR(R5G6B5_UNORM_PACK16) /* OLG VK - Bad color precision. */                                           \
 	/* depth formats */                                                                                            \
-	THING_DS(D32_SFLOAT)          /* OGL VK */                                                                     \
-	THING_DS(D16_UNORM)           /* OGL VK */                                                                     \
-	THING_DS(X8_D24_UNORM_PACK32) /* OGL VK */                                                                     \
+	THING_D(D32_SFLOAT)          /* OGL VK */                                                                      \
+	THING_D(D16_UNORM)           /* OGL VK */                                                                      \
+	THING_D(X8_D24_UNORM_PACK32) /* OGL VK */                                                                      \
 	/* depth stencil formats */                                                                                    \
 	THING_DS(D24_UNORM_S8_UINT)  /* OGL VK */                                                                      \
 	THING_DS(D32_SFLOAT_S8_UINT) /* OGL VK */                                                                      \
 	/* stencil format */                                                                                           \
-	THING_DS(S8_UINT)
+	THING_S(S8_UINT)
 
 /*!
  * Struct with supported format, these are not only check for optimal flags
@@ -146,7 +146,7 @@ comp_vulkan_init_bundle(struct vk_bundle *vk,
 struct comp_vulkan_formats
 {
 #define FIELD(IDENT) bool has_##IDENT;
-	COMP_VULKAN_FORMATS(FIELD, FIELD)
+	COMP_VULKAN_FORMATS(FIELD, FIELD, FIELD, FIELD)
 #undef FIELD
 };
 

@@ -374,7 +374,7 @@ comp_vulkan_formats_check(struct vk_bundle *vk, struct comp_vulkan_formats *form
 #define CHECK_DS(FORMAT)                                                                                               \
 	formats->has_##FORMAT = is_format_supported(vk, VK_FORMAT_##FORMAT, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL);
 
-	COMP_VULKAN_FORMATS(CHECK_COLOR, CHECK_DS)
+	COMP_VULKAN_FORMATS(CHECK_COLOR, CHECK_DS, CHECK_DS, CHECK_DS)
 
 #undef CHECK_COLOR
 #undef CHECK_DS
@@ -390,7 +390,7 @@ comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, stru
 		info->formats[format_count++] = VK_FORMAT_##FORMAT;                                                    \
 	}
 
-	COMP_VULKAN_FORMATS(ADD_IF_SUPPORTED, ADD_IF_SUPPORTED)
+	COMP_VULKAN_FORMATS(ADD_IF_SUPPORTED, ADD_IF_SUPPORTED, ADD_IF_SUPPORTED, ADD_IF_SUPPORTED)
 
 #undef ADD_IF_SUPPORTED
 
@@ -404,9 +404,9 @@ comp_vulkan_formats_log(enum u_logging_level log_level, const struct comp_vulkan
 #define PRINT_NAME(FORMAT) "\n\tVK_FORMAT_" #FORMAT ": %s"
 #define PRINT_BOOLEAN(FORMAT) , formats->has_##FORMAT ? "true" : "false"
 
-	U_LOG_IFL_I(log_level, "Supported formats:"                   //
-	            COMP_VULKAN_FORMATS(PRINT_NAME, PRINT_NAME)       //
-	            COMP_VULKAN_FORMATS(PRINT_BOOLEAN, PRINT_BOOLEAN) //
+	U_LOG_IFL_I(log_level, "Supported formats:"                                                 //
+	            COMP_VULKAN_FORMATS(PRINT_NAME, PRINT_NAME, PRINT_NAME, PRINT_NAME)             //
+	            COMP_VULKAN_FORMATS(PRINT_BOOLEAN, PRINT_BOOLEAN, PRINT_BOOLEAN, PRINT_BOOLEAN) //
 	);
 
 #undef PRINT_NAME
