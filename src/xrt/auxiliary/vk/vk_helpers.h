@@ -743,7 +743,25 @@ vk_set_image_layout(struct vk_bundle *vk,
                     VkImageSubresourceRange subresource_range);
 
 /*!
+ * Adds barrier to image
+ *
+ * @ingroup aux_vk
+ */
+void
+vk_insert_image_memory_barrier(struct vk_bundle *vk,
+                               VkCommandBuffer cmdbuffer,
+                               VkImage image,
+                               VkAccessFlags srcAccessMask,
+                               VkAccessFlags dstAccessMask,
+                               VkImageLayout oldImageLayout,
+                               VkImageLayout newImageLayout,
+                               VkPipelineStageFlags srcStageMask,
+                               VkPipelineStageFlags dstStageMask,
+                               VkImageSubresourceRange subresourceRange);
+
+/*!
  * @pre Requires successful call to vk_init_mutex
+ *
  * @ingroup aux_vk
  */
 VkResult
@@ -974,24 +992,6 @@ vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bit
  */
 VkExternalMemoryHandleTypeFlags
 vk_csci_get_image_external_handle_type(struct vk_bundle *vk);
-
-/*!
- *
- * Adds barrier to image
- *
- */
-void
-vk_insert_image_memory_barrier(struct vk_bundle *vk,
-                               VkCommandBuffer cmdbuffer,
-                               VkImage image,
-                               VkAccessFlags srcAccessMask,
-                               VkAccessFlags dstAccessMask,
-                               VkImageLayout oldImageLayout,
-                               VkImageLayout newImageLayout,
-                               VkPipelineStageFlags srcStageMask,
-                               VkPipelineStageFlags dstStageMask,
-                               VkImageSubresourceRange subresourceRange);
-
 
 
 /*
