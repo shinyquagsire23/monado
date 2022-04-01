@@ -89,92 +89,71 @@ vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits)
 	return result;
 }
 
+
+
 VkImageLayout
 vk_csci_get_barrier_optimal_layout(VkFormat format)
 {
+	// clang-format off
+#define CASE_COLOR(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+#define CASE_DS(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	// clang-format on
+
 	switch (format) {
-	case VK_FORMAT_S8_UINT:
-	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_D32_SFLOAT:
-	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case VK_FORMAT_D32_SFLOAT_S8_UINT: //
-		return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	case VK_FORMAT_R16G16B16A16_UNORM:
-	case VK_FORMAT_R16G16B16A16_SFLOAT:
-	case VK_FORMAT_R16G16B16_UNORM:
-	case VK_FORMAT_R16G16B16_SFLOAT:
-	case VK_FORMAT_R8G8B8A8_SRGB:
-	case VK_FORMAT_B8G8R8A8_SRGB:
-	case VK_FORMAT_R8G8B8_SRGB:
-	case VK_FORMAT_R8G8B8A8_UNORM:
-	case VK_FORMAT_B8G8R8A8_UNORM:
-	case VK_FORMAT_R8G8B8_UNORM:
-	case VK_FORMAT_B8G8R8_UNORM: //
-		return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VK_CSCI_FORMATS(CASE_COLOR, CASE_DS, CASE_DS, CASE_DS)
 	default: //
 		assert(false && !"Format not supported!");
 		return VK_IMAGE_LAYOUT_UNDEFINED;
 	}
+
+#undef CASE_COLOR
+#undef CASE_DS
 }
 
 VkImageAspectFlags
 vk_csci_get_barrier_aspect_mask(VkFormat format)
 {
+	// clang-format off
+#define CASE_COLOR(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_COLOR_BIT;
+#define CASE_DS(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+#define CASE_D(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_DEPTH_BIT;
+#define CASE_S(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_STENCIL_BIT;
+	// clang-format on
+
 	switch (format) {
-	case VK_FORMAT_S8_UINT: // Stencil only.
-		return VK_IMAGE_ASPECT_STENCIL_BIT;
-	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_D32_SFLOAT: // Depth only
-		return VK_IMAGE_ASPECT_DEPTH_BIT;
-	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case VK_FORMAT_D32_SFLOAT_S8_UINT: // Depth % stencil, barrier both.
-		return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-	case VK_FORMAT_R16G16B16A16_UNORM:
-	case VK_FORMAT_R16G16B16A16_SFLOAT:
-	case VK_FORMAT_R16G16B16_UNORM:
-	case VK_FORMAT_R16G16B16_SFLOAT:
-	case VK_FORMAT_R8G8B8A8_SRGB:
-	case VK_FORMAT_B8G8R8A8_SRGB:
-	case VK_FORMAT_R8G8B8_SRGB:
-	case VK_FORMAT_R8G8B8A8_UNORM:
-	case VK_FORMAT_B8G8R8A8_UNORM:
-	case VK_FORMAT_R8G8B8_UNORM:
-	case VK_FORMAT_B8G8R8_UNORM: // Color only.
-		return VK_IMAGE_ASPECT_COLOR_BIT;
+		VK_CSCI_FORMATS(CASE_COLOR, CASE_DS, CASE_D, CASE_S)
 	default: //
 		assert(false && !"Format not supported!");
 		return 0;
 	}
+
+#undef CASE_COLOR
+#undef CASE_DS
+#undef CASE_D
+#undef CASE_S
 }
 
 VkImageAspectFlags
 vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bits)
 {
+	// clang-format off
+#define CASE_COLOR(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_COLOR_BIT;
+#define CASE_DS(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_DEPTH_BIT; // We only want to sample the depth.
+#define CASE_D(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_DEPTH_BIT;
+#define CASE_S(FORMAT) case VK_FORMAT_##FORMAT: return VK_IMAGE_ASPECT_STENCIL_BIT;
+	// clang-format on
+
 	switch (format) {
-	case VK_FORMAT_S8_UINT: // Stencil only.
-		return VK_IMAGE_ASPECT_STENCIL_BIT;
-	case VK_FORMAT_D16_UNORM:
-	case VK_FORMAT_D32_SFLOAT: // Depth only.
-		return VK_IMAGE_ASPECT_DEPTH_BIT;
-	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case VK_FORMAT_D32_SFLOAT_S8_UINT: // Depth & stencil, only want to sample depth.
-		return VK_IMAGE_ASPECT_DEPTH_BIT;
-	case VK_FORMAT_R16G16B16A16_UNORM:
-	case VK_FORMAT_R16G16B16A16_SFLOAT:
-	case VK_FORMAT_R16G16B16_UNORM:
-	case VK_FORMAT_R16G16B16_SFLOAT:
-	case VK_FORMAT_R8G8B8A8_SRGB:
-	case VK_FORMAT_B8G8R8A8_SRGB:
-	case VK_FORMAT_R8G8B8_SRGB:
-	case VK_FORMAT_R8G8B8A8_UNORM:
-	case VK_FORMAT_B8G8R8A8_UNORM:
-	case VK_FORMAT_R8G8B8_UNORM:
-	case VK_FORMAT_B8G8R8_UNORM: // Color only.
-		return VK_IMAGE_ASPECT_COLOR_BIT;
+		VK_CSCI_FORMATS(CASE_COLOR, CASE_DS, CASE_D, CASE_S)
 	default: //
 		assert(false && !"Format not supported!");
 		return 0;
 	}
+
+#undef CASE_COLOR
+#undef CASE_DS
+#undef CASE_D
+#undef CASE_S
 }
 
 VkImageUsageFlags
