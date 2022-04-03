@@ -155,7 +155,6 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	// Out->pNext
 	VkAndroidHardwareBufferFormatPropertiesANDROID a_buffer_format_props = {
 	    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
-	    .format = image_format,
 	};
 
 	// Out
