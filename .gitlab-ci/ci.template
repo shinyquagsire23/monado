@@ -265,7 +265,7 @@ reprepro:package:
 pages:
   stage: pages
   only:
-    - main
+    - main@monado/monado
   needs:
     - debian:cmake
     - reprepro:package
