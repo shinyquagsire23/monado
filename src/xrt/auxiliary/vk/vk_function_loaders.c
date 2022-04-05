@@ -82,6 +82,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceExternalFencePropertiesKHR     = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalFencePropertiesKHR);
 	vk->vkGetPhysicalDeviceExternalSemaphorePropertiesKHR = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalSemaphorePropertiesKHR);
 	vk->vkEnumerateDeviceExtensionProperties              = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
+	vk->vkEnumerateDeviceLayerProperties                  = GET_INS_PROC(vk, vkEnumerateDeviceLayerProperties);
 
 #if defined(VK_USE_PLATFORM_DISPLAY_KHR)
 	vk->vkCreateDisplayPlaneSurfaceKHR                    = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);

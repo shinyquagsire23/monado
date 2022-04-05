@@ -184,6 +184,7 @@ def get_instance_cmds():
         Cmd("vkGetPhysicalDeviceExternalFencePropertiesKHR"),
         Cmd("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR"),
         Cmd("vkEnumerateDeviceExtensionProperties"),
+        Cmd("vkEnumerateDeviceLayerProperties"),
         None,
         Cmd(
             "vkCreateDisplayPlaneSurfaceKHR", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)
