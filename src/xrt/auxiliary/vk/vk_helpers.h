@@ -669,6 +669,23 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkDeviceMemory *out_mem);
 
 /*!
+ * Given a DeviceMemory handle created to be exportable, outputs the native buffer type (FD on desktop Linux)
+ * equivalent.
+ *
+ * Caller assumes ownership of handle which should be unreferenced with @ref u_graphics_buffer_unref
+ *
+ * @param vk Vulkan bundle
+ * @param device_memory The memory to get the handle of
+ * @param[out] out_handle A pointer to the handle to populate
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_get_native_handle_from_device_memory(struct vk_bundle *vk,
+                                        VkDeviceMemory device_memory,
+                                        xrt_graphics_buffer_handle_t *out_handle);
+
+/*!
  * @ingroup aux_vk
  * Helper to create a VkImage
  */

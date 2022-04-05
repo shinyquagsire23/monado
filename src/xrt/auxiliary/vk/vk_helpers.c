@@ -551,6 +551,89 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	return ret;
 }
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
+{
+	// vkGetMemoryFdKHR parameter
+	VkMemoryGetFdInfoKHR fd_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
+	    .memory = device_memory,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	};
+
+	int fd;
+	VkResult ret = vk->vkGetMemoryFdKHR(vk->device, &fd_info, &fd);
+	if (ret != VK_SUCCESS) {
+		// COMP_ERROR(c, "->image - vkGetMemoryFdKHR: %s",
+		//           vk_result_string(ret));
+		return ret;
+	}
+
+	*out_handle = fd;
+
+	return ret;
+}
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
+{
+	// vkGetMemoryAndroidHardwareBufferANDROID parameter
+	VkMemoryGetAndroidHardwareBufferInfoANDROID ahb_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+	    .pNext = NULL,
+	    .memory = device_memory,
+	};
+
+	AHardwareBuffer *buf = NULL;
+	VkResult ret = vk->vkGetMemoryAndroidHardwareBufferANDROID(vk->device, &ahb_info, &buf);
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
+
+	*out_handle = buf;
+
+	return ret;
+}
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
+{
+	// vkGetMemoryWin32HandleKHR parameter
+	VkMemoryGetWin32HandleInfoKHR win32_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
+	    .pNext = NULL,
+	    .memory = device_memory,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
+	};
+
+	HANDLE handle = NULL;
+	VkResult ret = vk->vkGetMemoryWin32HandleKHR(vk->device, &win32_info, &handle);
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
+
+	*out_handle = handle;
+
+	return ret;
+}
+#else
+#error "Needs port"
+#endif
+
+VkResult
+vk_get_native_handle_from_device_memory(struct vk_bundle *vk,
+                                        VkDeviceMemory device_memory,
+                                        xrt_graphics_buffer_handle_t *out_handle)
+{
+	return get_device_memory_handle(vk, device_memory, out_handle);
+}
+
 VkResult
 vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampler *out_sampler)
 {
