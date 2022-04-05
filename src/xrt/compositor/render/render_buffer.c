@@ -154,33 +154,11 @@ render_buffer_init_exportable(struct vk_bundle *vk,
 {
 	VkResult ret;
 
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	    .handleTypes = vk_csci_get_image_external_handle_type(vk),
 	};
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-
-	VkExportMemoryAllocateInfo export_alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
-	    .pNext = NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-	};
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-
-	VkExportMemoryAllocateInfo export_alloc_info = {
-	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
-	    .pNext = NULL,
-	    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
-	};
-
-#else
-#error "need port"
-#endif
 
 	ret = create_buffer(vk,                        //
 	                    usage_flags,               // usage_flags
