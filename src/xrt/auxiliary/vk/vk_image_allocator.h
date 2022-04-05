@@ -41,7 +41,7 @@ struct vk_image_collection
 };
 
 /*!
- * Allocates image(s) using the information specified int he swapcain create
+ * Allocates image(s) using the information specified in the swapchain create
  * info.
  */
 VkResult
