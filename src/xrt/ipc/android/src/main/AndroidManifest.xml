@@ -10,8 +10,7 @@
             android:name="org.freedesktop.monado.ipc.MonadoService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="connectedDevice|mediaPlayback"
-            android:permission="org.khronos.openxr.permission.OPENXR">
+            android:foregroundServiceType="connectedDevice|mediaPlayback">
 
             <intent-filter>
                 <action android:name="${serviceActionName}" />
