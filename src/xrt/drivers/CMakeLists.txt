@@ -348,7 +348,7 @@ endif()
 if(XRT_BUILD_DRIVER_EUROC)
 	add_library(
 		drv_euroc STATIC euroc/euroc_player.cpp euroc/euroc_driver.h euroc/euroc_device.c
-				 euroc/euroc_interface.h
+				 euroc/euroc_interface.h euroc/euroc_runner.c
 		)
 	target_link_libraries(
 		drv_euroc PRIVATE xrt-interfaces aux_util aux_tracking ${OpenCV_LIBRARIES}

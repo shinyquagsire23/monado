@@ -340,6 +340,7 @@ lib_drv_euroc = static_library(
 		'euroc/euroc_driver.h',
 		'euroc/euroc_device.c',
 		'euroc/euroc_interface.h',
+		'euroc/euroc_runner.c',
 	),
 	include_directories: [xrt_include],
 	dependencies: [aux, opencv],

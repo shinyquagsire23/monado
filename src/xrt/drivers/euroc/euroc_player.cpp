@@ -30,6 +30,7 @@
 #include <thread>
 
 //! @see euroc_player_playback_config
+DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_OPTION(gt_device_name, "EUROC_GT_DEVICE_NAME", nullptr)
 DEBUG_GET_ONCE_OPTION(stereo, "EUROC_STEREO", nullptr)
 DEBUG_GET_ONCE_OPTION(color, "EUROC_COLOR", nullptr)

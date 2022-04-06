@@ -24,6 +24,7 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(euroc_hmd, "EUROC_HMD", false)
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
+DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
 
 struct xrt_device *
 euroc_device_create(struct xrt_prober *xp);

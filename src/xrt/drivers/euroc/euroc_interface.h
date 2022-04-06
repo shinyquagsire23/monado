@@ -102,6 +102,22 @@ struct xrt_auto_prober *
 euroc_create_auto_prober(void);
 
 /*!
+ * Tracks an euroc dataset with the SLAM tracker.
+ *
+ * @param should_exit External exit condition, the run will end if it becomes true
+ * @param euroc_path Dataset path
+ * @param slam_config Path to config file for the SLAM system
+ * @param output_path Path to write resulting tracking data to
+ *
+ * @ingroup drv_euroc
+ */
+void
+euroc_run_dataset(const char *euroc_path,
+                  const char *slam_config,
+                  const char *output_path,
+                  const volatile bool *should_exit);
+
+/*!
  * @dir drivers/euroc
  *
  * @brief @ref drv_euroc files.
