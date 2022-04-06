@@ -668,7 +668,6 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 					P_INFO(p, "Skipping disabled driver %s", entry->driver_name);
 					skip = true;
 					break;
-					;
 				}
 			}
 			if (skip) {
