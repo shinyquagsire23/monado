@@ -351,6 +351,18 @@ disable_drivers_from_conflicts(struct prober *p)
 				p->disabled_drivers[index] = (char *)p->entries[entry]->driver_name;
 			}
 		}
+
+		for (size_t ap = 0; ap < XRT_MAX_AUTO_PROBERS; ap++) {
+			if (p->auto_probers[ap] == NULL) {
+				continue;
+			}
+			if (strcmp(p->auto_probers[ap]->name, "Qwerty") != 0) {
+				P_INFO(p, "Disabling %s because we have %s", p->auto_probers[ap]->name, "Qwerty");
+				size_t index = p->num_disabled_drivers++;
+				U_ARRAY_REALLOC_OR_FREE(p->disabled_drivers, char *, p->num_disabled_drivers);
+				p->disabled_drivers[index] = (char *)p->auto_probers[ap]->name;
+			}
+		}
 		return;
 	}
 
