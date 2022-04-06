@@ -24,6 +24,9 @@ int
 cli_cmd_probe(int argc, const char **argv);
 
 int
+cli_cmd_slambatch(int argc, const char **argv);
+
+int
 cli_cmd_test(int argc, const char **argv);
 
 int

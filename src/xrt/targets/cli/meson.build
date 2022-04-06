@@ -7,6 +7,7 @@ cli = executable(
 		'cli_cmd_calibrate.c',
 		'cli_cmd_lighthouse.c',
 		'cli_cmd_probe.c',
+		'cli_cmd_slambatch.c',
 		'cli_cmd_test.c',
 		'cli_common.h',
 		'cli_main.c',
@@ -23,6 +24,7 @@ cli = executable(
 		common_include,
 		drv_include,
 		xrt_include,
+		cjson_include,
 	],
 	dependencies: [
 		libusb,
