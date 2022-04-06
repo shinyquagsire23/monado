@@ -581,6 +581,8 @@ public:
 			grip_name = XRT_INPUT_HYDRA_POSE;
 		} else if (m_xdev->name == XRT_DEVICE_TOUCH_CONTROLLER) {
 			grip_name = XRT_INPUT_TOUCH_GRIP_POSE;
+		} else if (m_xdev->name == XRT_DEVICE_SIMPLE_CONTROLLER) {
+			grip_name = XRT_INPUT_SIMPLE_GRIP_POSE;
 		} else {
 			ovrd_log("Unhandled device name %u\n", m_xdev->name);
 			grip_name = XRT_INPUT_GENERIC_HEAD_POSE; // ???
