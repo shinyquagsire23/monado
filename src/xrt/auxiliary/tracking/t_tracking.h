@@ -13,7 +13,6 @@
 
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
-#include "cjson/cJSON.h"
 
 #include <stdio.h>
 
@@ -34,6 +33,7 @@ extern "C" {
  *
  */
 
+typedef struct cJSON cJSON;
 struct xrt_slam_sinks;
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
@@ -503,10 +503,10 @@ void
 t_calibration_gui_params_load_or_default(struct t_calibration_params *p);
 
 void
-t_calibration_gui_params_to_json(struct cJSON **out_json, struct t_calibration_params *p);
+t_calibration_gui_params_to_json(cJSON **out_json, struct t_calibration_params *p);
 
 void
-t_calibration_gui_params_parse_from_json(const struct cJSON *params, struct t_calibration_params *p);
+t_calibration_gui_params_parse_from_json(const cJSON *params, struct t_calibration_params *p);
 
 /*!
  * @brief Create the camera calibration frame sink.
