@@ -1332,7 +1332,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	vk_init_cmd_buffer(vk, &cmd);
 
 	// For submitting commands.
-	os_mutex_unlock(&vk->cmd_pool_mutex);
+	os_mutex_lock(&vk->cmd_pool_mutex);
 
 	VkImage copy_from = r->lr->framebuffers[0].image;
 
