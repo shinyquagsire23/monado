@@ -125,7 +125,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 
 	// This is the format for the image view, it's not adjusted.
 	VkFormat image_view_format = (VkFormat)info->format;
-	VkImageAspectFlagBits aspect = vk_csci_get_image_view_aspect(image_view_format, info->bits);
+	VkImageAspectFlagBits image_view_aspect = vk_csci_get_image_view_aspect(image_view_format, info->bits);
 
 
 	for (uint32_t i = 0; i < image_count; i++) {
@@ -140,7 +140,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {
-			    .aspectMask = aspect,
+			    .aspectMask = image_view_aspect,
 			    .baseMipLevel = 0,
 			    .levelCount = 1,
 			    .baseArrayLayer = layer,
@@ -178,8 +178,10 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 
 	vk_init_cmd_buffer(vk, &cmd_buffer);
 
+	VkImageAspectFlagBits image_barrier_aspect = vk_csci_get_barrier_aspect_mask(image_view_format);
+
 	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = aspect,
+	    .aspectMask = image_barrier_aspect,
 	    .baseMipLevel = 0,
 	    .levelCount = 1,
 	    .baseArrayLayer = 0,
