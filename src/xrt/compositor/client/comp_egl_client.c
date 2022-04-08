@@ -223,6 +223,13 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 	free(ceglc);
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 xrt_result_t
 xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                EGLDisplay display,

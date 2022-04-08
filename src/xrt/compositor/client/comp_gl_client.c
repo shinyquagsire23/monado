@@ -32,6 +32,13 @@
 
 #include <inttypes.h>
 
+
+/*
+ *
+ * Helpers.
+ *
+ */
+
 /*!
  * Down-cast helper.
  * @private @memberof client_gl_swapchain
@@ -41,6 +48,55 @@ client_gl_swapchain(struct xrt_swapchain *xsc)
 {
 	return (struct client_gl_swapchain *)xsc;
 }
+
+static int64_t
+gl_format_to_vk(int64_t format)
+{
+	switch (format) {
+	case GL_RGB8: return 23 /*VK_FORMAT_R8G8B8_UNORM*/; // Should not be used, colour precision.
+	case GL_SRGB8: return 29 /*VK_FORMAT_R8G8B8_SRGB*/;
+	case GL_RGBA8: return 37 /*VK_FORMAT_R8G8B8A8_UNORM*/; // Should not be used, colour precision.
+	case GL_SRGB8_ALPHA8: return 43 /*VK_FORMAT_R8G8B8A8_SRGB*/;
+	case GL_RGB10_A2: return 64 /*VK_FORMAT_A2B10G10R10_UNORM_PACK32*/;
+	case GL_RGB16: return 84 /*VK_FORMAT_R16G16B16_UNORM*/;
+	case GL_RGB16F: return 90 /*VK_FORMAT_R16G16B16_SFLOAT*/;
+	case GL_RGBA16: return 91 /*VK_FORMAT_R16G16B16A16_UNORM*/;
+	case GL_RGBA16F: return 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/;
+	case GL_DEPTH_COMPONENT16: return 124 /*VK_FORMAT_D16_UNORM*/;
+	case GL_DEPTH_COMPONENT32F: return 126 /*VK_FORMAT_D32_SFLOAT*/;
+	case GL_DEPTH24_STENCIL8: return 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/;
+	case GL_DEPTH32F_STENCIL8: return 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/;
+	default: return 0;
+	}
+}
+
+static int64_t
+vk_format_to_gl(int64_t format)
+{
+	switch (format) {
+	case 4 /*   VK_FORMAT_R5G6B5_UNORM_PACK16      */: return 0;       // GL_RGB565?
+	case 23 /*  VK_FORMAT_R8G8B8_UNORM             */: return GL_RGB8; // Should not be used, colour precision.
+	case 29 /*  VK_FORMAT_R8G8B8_SRGB              */: return GL_SRGB8;
+	case 30 /*  VK_FORMAT_B8G8R8_UNORM             */: return 0;
+	case 37 /*  VK_FORMAT_R8G8B8A8_UNORM           */: return GL_RGBA8; // Should not be used, colour precision.
+	case 43 /*  VK_FORMAT_R8G8B8A8_SRGB            */: return GL_SRGB8_ALPHA8;
+	case 44 /*  VK_FORMAT_B8G8R8A8_UNORM           */: return 0;
+	case 50 /*  VK_FORMAT_B8G8R8A8_SRGB            */: return 0;
+	case 64 /*  VK_FORMAT_A2B10G10R10_UNORM_PACK32 */: return GL_RGB10_A2;
+	case 84 /*  VK_FORMAT_R16G16B16_UNORM          */: return GL_RGB16;
+	case 90 /*  VK_FORMAT_R16G16B16_SFLOAT         */: return GL_RGB16F;
+	case 91 /*  VK_FORMAT_R16G16B16A16_UNORM       */: return GL_RGBA16;
+	case 97 /*  VK_FORMAT_R16G16B16A16_SFLOAT      */: return GL_RGBA16F;
+	case 124 /* VK_FORMAT_D16_UNORM                */: return GL_DEPTH_COMPONENT16;
+	case 125 /* VK_FORMAT_X8_D24_UNORM_PACK32      */: return 0; // GL_DEPTH_COMPONENT24?
+	case 126 /* VK_FORMAT_D32_SFLOAT               */: return GL_DEPTH_COMPONENT32F;
+	case 127 /* VK_FORMAT_S8_UINT                  */: return 0; // GL_STENCIL_INDEX8?
+	case 129 /* VK_FORMAT_D24_UNORM_S8_UINT        */: return GL_DEPTH24_STENCIL8;
+	case 130 /* VK_FORMAT_D32_SFLOAT_S8_UINT       */: return GL_DEPTH32F_STENCIL8;
+	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!", format); return 0;
+	}
+}
+
 
 /*
  *
@@ -317,54 +373,6 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
 }
 
-static int64_t
-gl_format_to_vk(int64_t format)
-{
-	switch (format) {
-	case GL_RGB8: return 23 /*VK_FORMAT_R8G8B8_UNORM*/; // Should not be used, colour precision.
-	case GL_SRGB8: return 29 /*VK_FORMAT_R8G8B8_SRGB*/;
-	case GL_RGBA8: return 37 /*VK_FORMAT_R8G8B8A8_UNORM*/; // Should not be used, colour precision.
-	case GL_SRGB8_ALPHA8: return 43 /*VK_FORMAT_R8G8B8A8_SRGB*/;
-	case GL_RGB10_A2: return 64 /*VK_FORMAT_A2B10G10R10_UNORM_PACK32*/;
-	case GL_RGB16: return 84 /*VK_FORMAT_R16G16B16_UNORM*/;
-	case GL_RGB16F: return 90 /*VK_FORMAT_R16G16B16_SFLOAT*/;
-	case GL_RGBA16: return 91 /*VK_FORMAT_R16G16B16A16_UNORM*/;
-	case GL_RGBA16F: return 97 /*VK_FORMAT_R16G16B16A16_SFLOAT*/;
-	case GL_DEPTH_COMPONENT16: return 124 /*VK_FORMAT_D16_UNORM*/;
-	case GL_DEPTH_COMPONENT32F: return 126 /*VK_FORMAT_D32_SFLOAT*/;
-	case GL_DEPTH24_STENCIL8: return 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/;
-	case GL_DEPTH32F_STENCIL8: return 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/;
-	default: return 0;
-	}
-}
-
-static int64_t
-vk_format_to_gl(int64_t format)
-{
-	switch (format) {
-	case 4 /*   VK_FORMAT_R5G6B5_UNORM_PACK16      */: return 0;       // GL_RGB565?
-	case 23 /*  VK_FORMAT_R8G8B8_UNORM             */: return GL_RGB8; // Should not be used, colour precision.
-	case 29 /*  VK_FORMAT_R8G8B8_SRGB              */: return GL_SRGB8;
-	case 30 /*  VK_FORMAT_B8G8R8_UNORM             */: return 0;
-	case 37 /*  VK_FORMAT_R8G8B8A8_UNORM           */: return GL_RGBA8; // Should not be used, colour precision.
-	case 43 /*  VK_FORMAT_R8G8B8A8_SRGB            */: return GL_SRGB8_ALPHA8;
-	case 44 /*  VK_FORMAT_B8G8R8A8_UNORM           */: return 0;
-	case 50 /*  VK_FORMAT_B8G8R8A8_SRGB            */: return 0;
-	case 64 /*  VK_FORMAT_A2B10G10R10_UNORM_PACK32 */: return GL_RGB10_A2;
-	case 84 /*  VK_FORMAT_R16G16B16_UNORM          */: return GL_RGB16;
-	case 90 /*  VK_FORMAT_R16G16B16_SFLOAT         */: return GL_RGB16F;
-	case 91 /*  VK_FORMAT_R16G16B16A16_UNORM       */: return GL_RGBA16;
-	case 97 /*  VK_FORMAT_R16G16B16A16_SFLOAT      */: return GL_RGBA16F;
-	case 124 /* VK_FORMAT_D16_UNORM                */: return GL_DEPTH_COMPONENT16;
-	case 125 /* VK_FORMAT_X8_D24_UNORM_PACK32      */: return 0; // GL_DEPTH_COMPONENT24?
-	case 126 /* VK_FORMAT_D32_SFLOAT               */: return GL_DEPTH_COMPONENT32F;
-	case 127 /* VK_FORMAT_S8_UINT                  */: return 0; // GL_STENCIL_INDEX8?
-	case 129 /* VK_FORMAT_D24_UNORM_S8_UINT        */: return GL_DEPTH24_STENCIL8;
-	case 130 /* VK_FORMAT_D32_SFLOAT_S8_UINT       */: return GL_DEPTH32F_STENCIL8;
-	default: U_LOG_W("Cannot convert VK format %" PRIu64 " to GL format!", format); return 0;
-	}
-}
-
 static xrt_result_t
 client_gl_swapchain_create(struct xrt_compositor *xc,
                            const struct xrt_swapchain_create_info *info,
@@ -477,6 +485,13 @@ client_gl_context_end_nop(struct xrt_compositor *xc)
 {
 	// No return
 }
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
 
 void
 client_gl_compositor_close(struct client_gl_compositor *c)
