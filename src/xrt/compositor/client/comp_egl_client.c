@@ -213,6 +213,19 @@ insert_fence_android_native(struct xrt_compositor *xc, xrt_graphics_sync_handle_
 	return XRT_SUCCESS;
 }
 
+static xrt_result_t
+client_egl_context_begin(struct xrt_compositor *xc)
+{
+	//! @todo Implement
+	return XRT_SUCCESS;
+}
+
+static void
+client_egl_context_end(struct xrt_compositor *xc)
+{
+	//! @todo Implement
+}
+
 static void
 client_egl_compositor_destroy(struct xrt_compositor *xc)
 {
@@ -350,8 +363,14 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		insert_fence_func = insert_fence_android_native;
 	}
 
-	//! @todo implement client_gl_context_begin_func and client_gl_context_end_func
-	if (!client_gl_compositor_init(&ceglc->base, xcn, NULL, NULL, sc_create, insert_fence_func)) {
+	bool bret = client_gl_compositor_init( //
+	    &ceglc->base,                      // c
+	    xcn,                               // xcn
+	    client_egl_context_begin,          // context_begin
+	    client_egl_context_end,            // context_end
+	    sc_create,                         // create_swapchain
+	    insert_fence_func);                // insert_fence
+	if (!bret) {
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
 		old_restore(&old, display);

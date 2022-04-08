@@ -490,18 +490,6 @@ client_gl_compositor_destroy(struct xrt_compositor *xc)
 	assert(!"Destroy should be implemented by the winsys code that uses the GL code.");
 }
 
-static xrt_result_t
-client_gl_context_begin_nop(struct xrt_compositor *xc)
-{
-	return XRT_SUCCESS;
-}
-
-static void
-client_gl_context_end_nop(struct xrt_compositor *xc)
-{
-	// No return
-}
-
 
 /*
  *
@@ -523,6 +511,9 @@ client_gl_compositor_init(struct client_gl_compositor *c,
                           client_gl_swapchain_create_func create_swapchain,
                           client_gl_insert_fence_func insert_fence)
 {
+	assert(context_begin != NULL);
+	assert(context_end != NULL);
+
 	c->base.base.create_swapchain = client_gl_swapchain_create;
 	c->base.base.begin_session = client_gl_compositor_begin_session;
 	c->base.base.end_session = client_gl_compositor_end_session;
@@ -540,8 +531,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
-	c->context_begin = context_begin ? context_begin : client_gl_context_begin_nop;
-	c->context_end = context_end ? context_end : client_gl_context_end_nop;
+	c->context_begin = context_begin;
+	c->context_end = context_end;
 	c->create_swapchain = create_swapchain;
 	c->insert_fence = insert_fence;
 	c->xcn = xcn;
