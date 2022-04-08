@@ -470,10 +470,17 @@ bool
 render_gfx_init(struct render_gfx *rr, struct render_resources *r);
 
 /*!
- * Frees any unneeded resources and ends the command buffer so it can be used.
+ * Begins the rendering, takes the vk_bundle's pool lock and leaves it locked.
  */
-void
-render_gfx_finalize(struct render_gfx *rr);
+bool
+render_gfx_begin(struct render_gfx *rr);
+
+/*!
+ * Frees any unneeded resources and ends the command buffer so it can be used,
+ * also unlocks the vk_bundle's pool lock that was taken by begin.
+ */
+bool
+render_gfx_end(struct render_gfx *rr);
 
 /*!
  * Frees all resources held by the rendering, does not free the struct itself.
@@ -581,8 +588,19 @@ render_compute_init(struct render_compute *crc, struct render_resources *r);
 void
 render_compute_close(struct render_compute *crc);
 
+/*!
+ * Begin the compute command buffer building, takes the vk_bundle's pool lock
+ * and leaves it locked.
+ */
 bool
 render_compute_begin(struct render_compute *crc);
+
+/*!
+ * Frees any unneeded resources and ends the command buffer so it can be used,
+ * also unlocks the vk_bundle's pool lock that was taken by begin.
+ */
+bool
+render_compute_end(struct render_compute *crc);
 
 void
 render_compute_projection_timewarp(struct render_compute *crc,
@@ -611,8 +629,6 @@ render_compute_clear(struct render_compute *crc,                  //
                      VkImageView target_image_view,               //
                      const struct render_viewport_data views[2]); //
 
-bool
-render_compute_end(struct render_compute *crc);
 
 
 /*!

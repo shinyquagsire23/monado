@@ -504,9 +504,6 @@ render_gfx_init(struct render_gfx *rr, struct render_resources *r)
 
 	C(vk_create_command_buffer(vk, &rr->cmd));
 
-	C(vk_begin_command_buffer(vk, rr->cmd));
-
-
 	/*
 	 * Mesh per view
 	 */
@@ -526,12 +523,34 @@ render_gfx_init(struct render_gfx *rr, struct render_resources *r)
 	return true;
 }
 
-void
-render_gfx_finalize(struct render_gfx *rr)
+bool
+render_gfx_begin(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
-	vk_end_command_buffer(vk, rr->cmd);
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	VkResult ret = vk_begin_command_buffer(vk, rr->cmd);
+	if (ret != VK_SUCCESS) {
+		os_mutex_unlock(&vk->cmd_pool_mutex);
+		return false;
+	}
+
+	// Yes we leave the mutex locked.
+	return true;
+}
+
+bool
+render_gfx_end(struct render_gfx *rr)
+{
+	struct vk_bundle *vk = vk_from_rr(rr);
+
+	VkResult ret = vk_end_command_buffer(vk, rr->cmd);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
+	return true;
 }
 
 void

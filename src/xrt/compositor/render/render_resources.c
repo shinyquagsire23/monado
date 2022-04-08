@@ -293,6 +293,9 @@ queue_upload_for_first_level_and_layer(
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
+	// Take the lock here.
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
 	vk_cmd_image_barrier_gpu_locked(          //
 	    vk,                                   //
 	    cmd,                                  //
@@ -336,6 +339,9 @@ queue_upload_for_first_level_and_layer(
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     //
 	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
 	    subresource_range);                       //
+
+	// Once we are done writing commands.
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	return VK_SUCCESS;
 }

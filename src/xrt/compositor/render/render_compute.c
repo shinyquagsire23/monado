@@ -278,8 +278,14 @@ render_compute_begin(struct render_compute *crc)
 {
 	struct vk_bundle *vk = vk_from_crc(crc);
 
-	C(vk_begin_command_buffer(vk, crc->cmd));
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	VkResult ret = vk_begin_command_buffer(vk, crc->cmd);
+	if (ret != VK_SUCCESS) {
+		os_mutex_unlock(&vk->cmd_pool_mutex);
+		return false;
+	}
 
+	// Yes we leave the mutex locked.
 	return true;
 }
 
@@ -288,7 +294,11 @@ render_compute_end(struct render_compute *crc)
 {
 	struct vk_bundle *vk = vk_from_crc(crc);
 
-	C(vk_end_command_buffer(vk, crc->cmd));
+	VkResult ret = vk_end_command_buffer(vk, crc->cmd);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
 
 	return true;
 }

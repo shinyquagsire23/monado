@@ -282,6 +282,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	 */
 
 	render_gfx_init(rr, &c->nr);
+	render_gfx_begin(rr);
 
 
 	/*
@@ -371,7 +372,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	render_gfx_end_target(rr);
 
 	// Make the command buffer usable.
-	render_gfx_finalize(rr);
+	render_gfx_end(rr);
 }
 
 /*!
