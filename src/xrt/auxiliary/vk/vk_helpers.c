@@ -711,150 +711,6 @@ vk_create_view_swizzle(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-
-/*
- *
- * Command buffer code.
- *
- */
-
-VkResult
-vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
-{
-	VkCommandBuffer cmd_buffer;
-	VkResult ret;
-
-	// Allocate the command buffer.
-	VkCommandBufferAllocateInfo cmd_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .commandPool = vk->cmd_pool,
-	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = 1,
-	};
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
-	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info, &cmd_buffer);
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
-		// Nothing to cleanup
-		return ret;
-	}
-
-	// Start the command buffer as well.
-	VkCommandBufferBeginInfo begin_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	};
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_result_string(ret));
-		goto err_buffer;
-	}
-
-	*out_cmd_buffer = cmd_buffer;
-
-	return VK_SUCCESS;
-
-
-err_buffer:
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
-
-	return ret;
-}
-
-VkResult
-vk_set_image_layout(struct vk_bundle *vk,
-                    VkCommandBuffer cmd_buffer,
-                    VkImage image,
-                    VkAccessFlags src_access_mask,
-                    VkAccessFlags dst_access_mask,
-                    VkImageLayout old_layout,
-                    VkImageLayout new_layout,
-                    VkImageSubresourceRange subresource_range)
-{
-	VkImageMemoryBarrier barrier = {
-	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-	    .srcAccessMask = src_access_mask,
-	    .dstAccessMask = dst_access_mask,
-	    .oldLayout = old_layout,
-	    .newLayout = new_layout,
-	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-	    .image = image,
-	    .subresourceRange = subresource_range,
-	};
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkCmdPipelineBarrier(cmd_buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
-	                         0, NULL, 0, NULL, 1, &barrier);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	return VK_SUCCESS;
-}
-
-VkResult
-vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
-{
-	VkResult ret = VK_SUCCESS;
-	VkFence fence;
-	VkFenceCreateInfo fence_info = {
-	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-	};
-	VkSubmitInfo submitInfo = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &cmd_buffer,
-	};
-
-	// Finish the command buffer first.
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkEndCommandBuffer(cmd_buffer);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
-		goto out;
-	}
-
-	// Create the fence.
-	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
-		goto out;
-	}
-
-	// Do the actual submitting.
-	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, fence);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "Error: Could not submit to queue.\n");
-		goto out_fence;
-	}
-
-	// Then wait for the fence.
-	ret = vk->vkWaitForFences(vk->device, 1, &fence, VK_TRUE, 1000000000);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
-		goto out_fence;
-	}
-
-	// Yes fall through.
-
-out_fence:
-	vk->vkDestroyFence(vk->device, fence, NULL);
-out:
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	return ret;
-}
-
 VkAccessFlags
 vk_get_access_flags(VkImageLayout layout)
 {
@@ -981,6 +837,120 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
 	return true;
 }
 
+
+/*
+ *
+ * Command buffer code.
+ *
+ */
+
+VkResult
+vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
+{
+	VkCommandBuffer cmd_buffer;
+	VkResult ret;
+
+	// Allocate the command buffer.
+	VkCommandBufferAllocateInfo cmd_buffer_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+	    .commandPool = vk->cmd_pool,
+	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+	    .commandBufferCount = 1,
+	};
+
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
+	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info, &cmd_buffer);
+
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
+		// Nothing to cleanup
+		return ret;
+	}
+
+	// Start the command buffer as well.
+	VkCommandBufferBeginInfo begin_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+	};
+
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_result_string(ret));
+		goto err_buffer;
+	}
+
+	*out_cmd_buffer = cmd_buffer;
+
+	return VK_SUCCESS;
+
+
+err_buffer:
+	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
+
+	return ret;
+}
+
+VkResult
+vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
+{
+	VkResult ret = VK_SUCCESS;
+	VkFence fence;
+	VkFenceCreateInfo fence_info = {
+	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+	};
+	VkSubmitInfo submitInfo = {
+	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+	    .commandBufferCount = 1,
+	    .pCommandBuffers = &cmd_buffer,
+	};
+
+	// Finish the command buffer first.
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	ret = vk->vkEndCommandBuffer(cmd_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
+		goto out;
+	}
+
+	// Create the fence.
+	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
+		goto out;
+	}
+
+	// Do the actual submitting.
+	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, fence);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "Error: Could not submit to queue.\n");
+		goto out_fence;
+	}
+
+	// Then wait for the fence.
+	ret = vk->vkWaitForFences(vk->device, 1, &fence, VK_TRUE, 1000000000);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
+		goto out_fence;
+	}
+
+	// Yes fall through.
+
+out_fence:
+	vk->vkDestroyFence(vk->device, fence, NULL);
+out:
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+	return ret;
+}
+
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence)
 {
@@ -993,35 +963,61 @@ vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSu
 	return ret;
 }
 
+VkResult
+vk_set_image_layout(struct vk_bundle *vk,
+                    VkCommandBuffer cmd_buffer,
+                    VkImage image,
+                    VkAccessFlags src_access_mask,
+                    VkAccessFlags dst_access_mask,
+                    VkImageLayout old_layout,
+                    VkImageLayout new_layout,
+                    VkImageSubresourceRange subresource_range)
+{
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	vk_insert_image_memory_barrier(         //
+	    vk,                                 // vk_bundle
+	    cmd_buffer,                         // cmd_buffer
+	    image,                              // image
+	    src_access_mask,                    // src_access_mask
+	    dst_access_mask,                    // dst_access_mask
+	    old_layout,                         // old_image_layout
+	    new_layout,                         // new_image_layout
+	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // src_stage_mask
+	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dst_stage_mask
+	    subresource_range);                 // subresource_range
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+	return VK_SUCCESS;
+}
+
 void
 vk_insert_image_memory_barrier(struct vk_bundle *vk,
-                               VkCommandBuffer cmdbuffer,
+                               VkCommandBuffer cmd_buffer,
                                VkImage image,
-                               VkAccessFlags srcAccessMask,
-                               VkAccessFlags dstAccessMask,
-                               VkImageLayout oldImageLayout,
-                               VkImageLayout newImageLayout,
-                               VkPipelineStageFlags srcStageMask,
-                               VkPipelineStageFlags dstStageMask,
-                               VkImageSubresourceRange subresourceRange)
+                               VkAccessFlags src_access_mask,
+                               VkAccessFlags dst_access_mask,
+                               VkImageLayout old_image_layout,
+                               VkImageLayout new_image_layout,
+                               VkPipelineStageFlags src_stage_mask,
+                               VkPipelineStageFlags dst_stage_mask,
+                               VkImageSubresourceRange subresource_range)
 {
-
 	VkImageMemoryBarrier image_memory_barrier = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-	    .srcAccessMask = srcAccessMask,
-	    .dstAccessMask = dstAccessMask,
-	    .oldLayout = oldImageLayout,
-	    .newLayout = newImageLayout,
+	    .srcAccessMask = src_access_mask,
+	    .dstAccessMask = dst_access_mask,
+	    .oldLayout = old_image_layout,
+	    .newLayout = new_image_layout,
 	    .image = image,
-	    .subresourceRange = subresourceRange,
+	    .subresourceRange = subresource_range,
 	};
 
 	vk->vkCmdPipelineBarrier(   //
-	    cmdbuffer,              // commandBuffer
-	    srcStageMask,           // srcStageMask
-	    dstStageMask,           // dstStageMask
+	    cmd_buffer,             // commandBuffer
+	    src_stage_mask,         // srcStageMask
+	    dst_stage_mask,         // dstStageMask
 	    0,                      // dependencyFlags
 	    0,                      // memoryBarrierCount
 	    NULL,                   // pMemoryBarriers

@@ -739,53 +739,6 @@ vk_create_view_swizzle(struct vk_bundle *vk,
                        VkComponentMapping components,
                        VkImageView *out_view);
 
-/*!
- * @pre Requires successful call to vk_init_mutex
- * @ingroup aux_vk
- */
-VkResult
-vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
-
-/*!
- * @pre Requires successful call to vk_init_mutex
- * @ingroup aux_vk
- */
-VkResult
-vk_set_image_layout(struct vk_bundle *vk,
-                    VkCommandBuffer cmd_buffer,
-                    VkImage image,
-                    VkAccessFlags src_access_mask,
-                    VkAccessFlags dst_access_mask,
-                    VkImageLayout old_layout,
-                    VkImageLayout new_layout,
-                    VkImageSubresourceRange subresource_range);
-
-/*!
- * Adds barrier to image
- *
- * @ingroup aux_vk
- */
-void
-vk_insert_image_memory_barrier(struct vk_bundle *vk,
-                               VkCommandBuffer cmdbuffer,
-                               VkImage image,
-                               VkAccessFlags srcAccessMask,
-                               VkAccessFlags dstAccessMask,
-                               VkImageLayout oldImageLayout,
-                               VkImageLayout newImageLayout,
-                               VkPipelineStageFlags srcStageMask,
-                               VkPipelineStageFlags dstStageMask,
-                               VkImageSubresourceRange subresourceRange);
-
-/*!
- * @pre Requires successful call to vk_init_mutex
- *
- * @ingroup aux_vk
- */
-VkResult
-vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
-
-
 VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
@@ -818,12 +771,83 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 bool
 vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDeviceMemory memory);
 
+
+/*
+ *
+ * Helpers for writing command buffers.
+ *
+ */
+
 /*!
- * @pre Requires successful call to vk_init_mutex
+ * Create a new command buffer, takes the pool lock.
+ *
+ * @pre Requires successful call to vk_init_mutex.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
+
+/*!
+ * A do everything command buffer submission function, during the operation
+ * the pool lock will be taken and released.
+ *
+ * * Creates a new fence.
+ * * Submits @p cmd_buffer to the queue, along with the fence.
+ * * Waits for the fence to complete.
+ * * Destroys the fence.
+ * * Destroy @p cmd_buffer.
+ *
+ * @pre Requires successful call to vk_init_mutex.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
+
+/*!
+ * Submits to the given queue, with the given fence.
+ *
+ * @pre Requires successful call to vk_init_mutex.
+ *
  * @ingroup aux_vk
  */
 VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
+
+/*!
+ * Set the image layout via a berrier command, takes the pool lock.
+ *
+ * @pre Requires successful call to vk_init_mutex.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_set_image_layout(struct vk_bundle *vk,
+                    VkCommandBuffer cmd_buffer,
+                    VkImage image,
+                    VkAccessFlags src_access_mask,
+                    VkAccessFlags dst_access_mask,
+                    VkImageLayout old_layout,
+                    VkImageLayout new_layout,
+                    VkImageSubresourceRange subresource_range);
+
+/*!
+ * Barriers the image, doesn't take the pool lock.
+ *
+ * @ingroup aux_vk
+ */
+void
+vk_insert_image_memory_barrier(struct vk_bundle *vk,
+                               VkCommandBuffer cmd_buffer,
+                               VkImage image,
+                               VkAccessFlags src_access_mask,
+                               VkAccessFlags dst_access_mask,
+                               VkImageLayout old_image_layout,
+                               VkImageLayout new_image_layout,
+                               VkPipelineStageFlags src_stage_mask,
+                               VkPipelineStageFlags dst_stage_mask,
+                               VkImageSubresourceRange subresource_range);
 
 
 /*
