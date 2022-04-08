@@ -368,15 +368,15 @@ render_compute_projection_timewarp(struct render_compute *crc,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	vk_set_image_layout(            //
-	    vk,                         //
-	    crc->cmd,                   //
-	    target_image,               //
-	    0,                          //
-	    VK_ACCESS_SHADER_WRITE_BIT, //
-	    VK_IMAGE_LAYOUT_UNDEFINED,  //
-	    VK_IMAGE_LAYOUT_GENERAL,    //
-	    subresource_range);         //
+	vk_cmd_image_barrier_gpu_locked( //
+	    vk,                          //
+	    crc->cmd,                    //
+	    target_image,                //
+	    0,                           //
+	    VK_ACCESS_SHADER_WRITE_BIT,  //
+	    VK_IMAGE_LAYOUT_UNDEFINED,   //
+	    VK_IMAGE_LAYOUT_GENERAL,     //
+	    subresource_range);          //
 
 	VkSampler sampler = r->compute.default_sampler;
 	VkSampler distortion_samplers[6] = {
@@ -488,15 +488,15 @@ render_compute_projection(struct render_compute *crc,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	vk_set_image_layout(            //
-	    vk,                         //
-	    crc->cmd,                   //
-	    target_image,               //
-	    0,                          //
-	    VK_ACCESS_SHADER_WRITE_BIT, //
-	    VK_IMAGE_LAYOUT_UNDEFINED,  //
-	    VK_IMAGE_LAYOUT_GENERAL,    //
-	    subresource_range);         //
+	vk_cmd_image_barrier_gpu_locked( //
+	    vk,                          //
+	    crc->cmd,                    //
+	    target_image,                //
+	    0,                           //
+	    VK_ACCESS_SHADER_WRITE_BIT,  //
+	    VK_IMAGE_LAYOUT_UNDEFINED,   //
+	    VK_IMAGE_LAYOUT_GENERAL,     //
+	    subresource_range);          //
 
 	VkSampler sampler = r->compute.default_sampler;
 	VkSampler distortion_samplers[6] = {
@@ -609,15 +609,15 @@ render_compute_clear(struct render_compute *crc,                 //
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	vk_set_image_layout(            //
-	    vk,                         //
-	    crc->cmd,                   //
-	    target_image,               //
-	    0,                          //
-	    VK_ACCESS_SHADER_WRITE_BIT, //
-	    VK_IMAGE_LAYOUT_UNDEFINED,  //
-	    VK_IMAGE_LAYOUT_GENERAL,    //
-	    subresource_range);         //
+	vk_cmd_image_barrier_gpu_locked( //
+	    vk,                          //
+	    crc->cmd,                    //
+	    target_image,                //
+	    0,                           //
+	    VK_ACCESS_SHADER_WRITE_BIT,  //
+	    VK_IMAGE_LAYOUT_UNDEFINED,   //
+	    VK_IMAGE_LAYOUT_GENERAL,     //
+	    subresource_range);          //
 
 	VkSampler sampler = r->compute.default_sampler;
 	VkSampler src_samplers[2] = {sampler, sampler};

@@ -293,7 +293,7 @@ queue_upload_for_first_level_and_layer(
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	C(vk_set_image_layout(                    //
+	vk_cmd_image_barrier_gpu_locked(          //
 	    vk,                                   //
 	    cmd,                                  //
 	    dst,                                  //
@@ -301,7 +301,7 @@ queue_upload_for_first_level_and_layer(
 	    VK_ACCESS_TRANSFER_WRITE_BIT,         //
 	    VK_IMAGE_LAYOUT_UNDEFINED,            //
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
-	    subresource_range));                  //
+	    subresource_range);                   //
 
 	VkImageSubresourceLayers subresource_layers = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -327,7 +327,7 @@ queue_upload_for_first_level_and_layer(
 	    1,                                    // regionCount
 	    &region);                             // pRegions
 
-	C(vk_set_image_layout(                        //
+	vk_cmd_image_barrier_gpu_locked(              //
 	    vk,                                       //
 	    cmd,                                      //
 	    dst,                                      //
@@ -335,7 +335,7 @@ queue_upload_for_first_level_and_layer(
 	    VK_ACCESS_SHADER_READ_BIT,                //
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     //
 	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
-	    subresource_range));                      //
+	    subresource_range);                       //
 
 	return VK_SUCCESS;
 }

@@ -1341,7 +1341,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	};
 
 	// Barrier to make destination a destination
-	vk_insert_image_memory_barrier(           //
+	vk_cmd_image_barrier_locked(              //
 	    vk,                                   // vk_bundle
 	    cmd,                                  // cmdbuffer
 	    wrap->image,                          // image
@@ -1354,7 +1354,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    first_color_level_subresource_range); // subresourceRange
 
 	// Barrier to make source a source
-	vk_insert_image_memory_barrier(               //
+	vk_cmd_image_barrier_locked(                  //
 	    vk,                                       // vk_bundle
 	    cmd,                                      // cmdbuffer
 	    copy_from,                                // image
@@ -1397,7 +1397,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	wrap->layout = VK_IMAGE_LAYOUT_GENERAL;
 
 	// Reset destination
-	vk_insert_image_memory_barrier(           //
+	vk_cmd_image_barrier_locked(              //
 	    vk,                                   // vk_bundle
 	    cmd,                                  // cmdbuffer
 	    wrap->image,                          // image
@@ -1410,7 +1410,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    first_color_level_subresource_range); // subresourceRange
 
 	// Reset src
-	vk_insert_image_memory_barrier(               //
+	vk_cmd_image_barrier_locked(                  //
 	    vk,                                       // vk_bundle
 	    cmd,                                      // cmdbuffer
 	    copy_from,                                // image

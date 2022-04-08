@@ -963,44 +963,40 @@ vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSu
 	return ret;
 }
 
-VkResult
-vk_set_image_layout(struct vk_bundle *vk,
-                    VkCommandBuffer cmd_buffer,
-                    VkImage image,
-                    VkAccessFlags src_access_mask,
-                    VkAccessFlags dst_access_mask,
-                    VkImageLayout old_layout,
-                    VkImageLayout new_layout,
-                    VkImageSubresourceRange subresource_range)
+void
+vk_cmd_image_barrier_gpu(struct vk_bundle *vk,
+                         VkCommandBuffer cmd_buffer,
+                         VkImage image,
+                         VkAccessFlags src_access_mask,
+                         VkAccessFlags dst_access_mask,
+                         VkImageLayout old_layout,
+                         VkImageLayout new_layout,
+                         VkImageSubresourceRange subresource_range)
 {
 	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk_insert_image_memory_barrier(         //
-	    vk,                                 // vk_bundle
-	    cmd_buffer,                         // cmd_buffer
-	    image,                              // image
-	    src_access_mask,                    // src_access_mask
-	    dst_access_mask,                    // dst_access_mask
-	    old_layout,                         // old_image_layout
-	    new_layout,                         // new_image_layout
-	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // src_stage_mask
-	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dst_stage_mask
-	    subresource_range);                 // subresource_range
+	vk_cmd_image_barrier_gpu_locked( //
+	    vk,                          // vk_bundle
+	    cmd_buffer,                  // cmd_buffer
+	    image,                       // image
+	    src_access_mask,             // src_access_mask
+	    dst_access_mask,             // dst_access_mask
+	    old_layout,                  // old_image_layout
+	    new_layout,                  // new_image_layout
+	    subresource_range);          // subresource_range
 	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	return VK_SUCCESS;
 }
 
 void
-vk_insert_image_memory_barrier(struct vk_bundle *vk,
-                               VkCommandBuffer cmd_buffer,
-                               VkImage image,
-                               VkAccessFlags src_access_mask,
-                               VkAccessFlags dst_access_mask,
-                               VkImageLayout old_image_layout,
-                               VkImageLayout new_image_layout,
-                               VkPipelineStageFlags src_stage_mask,
-                               VkPipelineStageFlags dst_stage_mask,
-                               VkImageSubresourceRange subresource_range)
+vk_cmd_image_barrier_locked(struct vk_bundle *vk,
+                            VkCommandBuffer cmd_buffer,
+                            VkImage image,
+                            VkAccessFlags src_access_mask,
+                            VkAccessFlags dst_access_mask,
+                            VkImageLayout old_image_layout,
+                            VkImageLayout new_image_layout,
+                            VkPipelineStageFlags src_stage_mask,
+                            VkPipelineStageFlags dst_stage_mask,
+                            VkImageSubresourceRange subresource_range)
 {
 	VkImageMemoryBarrier image_memory_barrier = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -1025,4 +1021,27 @@ vk_insert_image_memory_barrier(struct vk_bundle *vk,
 	    NULL,                   // pBufferMemoryBarriers
 	    1,                      // imageMemoryBarrierCount
 	    &image_memory_barrier); // pImageMemoryBarriers
+}
+
+void
+vk_cmd_image_barrier_gpu_locked(struct vk_bundle *vk,
+                                VkCommandBuffer cmd_buffer,
+                                VkImage image,
+                                VkAccessFlags src_access_mask,
+                                VkAccessFlags dst_access_mask,
+                                VkImageLayout old_layout,
+                                VkImageLayout new_layout,
+                                VkImageSubresourceRange subresource_range)
+{
+	vk_cmd_image_barrier_locked(            //
+	    vk,                                 // vk_bundle
+	    cmd_buffer,                         // cmd_buffer
+	    image,                              // image
+	    src_access_mask,                    // src_access_mask
+	    dst_access_mask,                    // dst_access_mask
+	    old_layout,                         // old_image_layout
+	    new_layout,                         // new_image_layout
+	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // src_stage_mask
+	    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // dst_stage_mask
+	    subresource_range);                 // subresource_range
 }

@@ -649,7 +649,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		 * not be a bug in the validation layer. That may or may not be
 		 * fixed in the future version of the validation layer.
 		 */
-		vk_set_image_layout(                 //
+		vk_cmd_image_barrier_gpu(            //
 		    vk,                              // vk_bundle
 		    cmd_buffer,                      // cmd_buffer
 		    sc->base.images[i],              // image

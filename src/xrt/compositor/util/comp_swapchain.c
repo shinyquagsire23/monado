@@ -189,7 +189,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	};
 
 	for (uint32_t i = 0; i < image_count; i++) {
-		vk_set_image_layout(                          //
+		vk_cmd_image_barrier_gpu(                     //
 		    vk,                                       //
 		    cmd_buffer,                               //
 		    sc->vkic.images[i].handle,                //
