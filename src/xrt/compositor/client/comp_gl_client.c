@@ -97,6 +97,34 @@ vk_format_to_gl(int64_t format)
 	}
 }
 
+/*!
+ * Called with the right context made current.
+ */
+static xrt_graphics_sync_handle_t
+handle_fencing_or_finish(struct client_gl_compositor *c)
+{
+	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+	xrt_result_t xret = XRT_SUCCESS;
+
+	if (c->insert_fence != NULL) {
+		COMP_TRACE_IDENT(insert_fence);
+
+		xret = c->insert_fence(&c->base.base, &sync_handle);
+		if (xret != XRT_SUCCESS) {
+			U_LOG_E("Failed to insert a fence");
+		}
+	}
+
+	// Fallback to glFinish if we haven't inserted a fence.
+	if (sync_handle == XRT_GRAPHICS_SYNC_HANDLE_INVALID) {
+		COMP_TRACE_IDENT(glFinish);
+
+		glFinish();
+	}
+
+	return sync_handle;
+}
+
 
 /*
  *
@@ -348,24 +376,12 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 	// We make the sync object, not st/oxr which is our user.
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
-	xrt_result_t xret = XRT_SUCCESS;
 	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
-	if (c->insert_fence != NULL) {
-		COMP_TRACE_IDENT(insert_fence);
-
-		xret = c->insert_fence(xc, &sync_handle);
-	} else {
-		COMP_TRACE_IDENT(glFinish);
-
-		/*!
-		 * @todo The swapchain images should have been externally synchronized.
-		 */
-		glFinish();
-	}
-
-	if (xret != XRT_SUCCESS) {
-		return XRT_SUCCESS;
+	xrt_result_t xret = c->context_begin(xc);
+	if (xret == XRT_SUCCESS) {
+		sync_handle = handle_fencing_or_finish(c);
+		c->context_end(xc);
 	}
 
 	COMP_TRACE_IDENT(layer_commit);
