@@ -1331,6 +1331,9 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	VkCommandBuffer cmd;
 	vk_init_cmd_buffer(vk, &cmd);
 
+	// For submitting commands.
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
 	VkImage copy_from = r->lr->framebuffers[0].image;
 
 	VkImageSubresourceRange first_color_level_subresource_range = {
@@ -1422,6 +1425,9 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // srcStageMask
 	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // dstStageMask
 	    first_color_level_subresource_range);     // subresourceRange
+
+	// Done submitting commands.
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	// Waits for command to finish.
 	vk_submit_cmd_buffer(vk, cmd);
