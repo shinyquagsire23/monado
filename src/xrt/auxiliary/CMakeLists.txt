@@ -193,6 +193,8 @@ add_library(
 	util/u_pacing_app.c
 	util/u_pacing_compositor.c
 	util/u_pacing_compositor_fake.c
+	util/u_pretty_print.c
+	util/u_pretty_print.h
 	util/u_sink.h
 	util/u_sink_combiner.c
 	util/u_sink_force_genlock.c
