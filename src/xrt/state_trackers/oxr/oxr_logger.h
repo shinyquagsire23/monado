@@ -1,4 +1,4 @@
-// Copyright 2018-2019, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -92,7 +92,7 @@ struct oxr_sink_logger
  * Log string to sink logger.
  */
 void
-oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...);
+oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...) XRT_PRINTF_FORMAT(2, 3);
 
 /*!
  * Abort logging, frees all internal data.

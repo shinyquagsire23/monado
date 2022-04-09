@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -319,10 +319,10 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
 	while (!oxr_type_matches_xrt(current_xform->result_type, result_type)) {
 		if (transform_count >= OXR_MAX_INPUT_TRANSFORMS) {
 			// Couldn't finish the transform to the desired type.
-			oxr_slog(slog,
-			         "\t\t\tSeem to have gotten into a loop, "
-			         "trying to make a rule to transform.\n",
-			         action_name, bound_path_string);
+			oxr_slog(
+			    slog,
+			    "\t\t\tSeem to have gotten into a loop, trying to make a rule to transform. '%s' '%s' \n",
+			    action_name, bound_path_string);
 			*out_transform_count = 0;
 			*out_transforms = NULL;
 			return false;
