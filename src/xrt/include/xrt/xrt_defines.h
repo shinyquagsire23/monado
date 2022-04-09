@@ -611,6 +611,17 @@ enum xrt_input_type
 #define XRT_GET_INPUT_TYPE(name) ((enum xrt_input_type)(name & 0xff))
 
 /*!
+ * @brief Extract the xrt_input_name id from an xrt_input_name.
+ *
+ * @param name A xrt_input_name value
+ *
+ * @relates xrt_input_name
+ * @returns @ref xrt_input_type
+ * @ingroup xrt_iface
+ */
+#define XRT_GET_INPUT_ID(name) ((uint32_t)(name >> 8))
+
+/*!
  * Every internal input source known to monado with a baked in type.
  *
  * @see xrt_input_type
