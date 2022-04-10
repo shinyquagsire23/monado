@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -291,7 +291,7 @@ oxr_space_get_pure_relation(struct oxr_logger *log,
 		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->space_type, head_xdev, time, out_relation);
 	} else if (spc->space_type == OXR_SPACE_TYPE_ACTION) {
 		struct oxr_action_input *input = NULL;
-		oxr_action_get_pose_input(log, spc->sess, spc->act_key, &spc->subaction_paths, &input);
+		oxr_action_get_pose_input(spc->sess, spc->act_key, &spc->subaction_paths, &input);
 
 		// If the input isn't active.
 		if (input == NULL) {

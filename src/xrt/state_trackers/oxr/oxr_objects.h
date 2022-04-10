@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -431,8 +431,7 @@ oxr_classify_sub_action_paths(struct oxr_logger *log,
  * @public @memberof oxr_session
  */
 XrResult
-oxr_action_get_pose_input(struct oxr_logger *log,
-                          struct oxr_session *sess,
+oxr_action_get_pose_input(struct oxr_session *sess,
                           uint32_t act_key,
                           const struct oxr_subaction_paths *subaction_paths_ptr,
                           struct oxr_action_input **out_input);
