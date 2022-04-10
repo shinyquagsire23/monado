@@ -9,6 +9,9 @@
 
 #pragma once
 
+#include "util/u_pretty_print.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -93,6 +96,22 @@ struct oxr_sink_logger
  */
 void
 oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...) XRT_PRINTF_FORMAT(2, 3);
+
+/*!
+ * Add the string to the slog struct.
+ */
+void
+oxr_slog_add_array(struct oxr_sink_logger *slog, const char *str, size_t size);
+
+/*!
+ * Get a pretty print delegate from a @ref oxr_sink_logger.
+ */
+static inline u_pp_delegate_t
+oxr_slog_dg(struct oxr_sink_logger *slog)
+{
+	u_pp_delegate_t dg = {(void *)slog, (u_pp_delegate_func_t)oxr_slog_add_array};
+	return dg;
+}
 
 /*!
  * Abort logging, frees all internal data.

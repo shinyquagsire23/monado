@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -222,6 +222,21 @@ oxr_slog(struct oxr_sink_logger *slog, const char *fmt, ...)
 	va_end(args);
 
 	slog->length += ret;
+}
+
+void
+oxr_slog_add_array(struct oxr_sink_logger *slog, const char *str, size_t size)
+{
+	if (size == 0) {
+		return;
+	}
+
+	size_t size_with_null = size + 1;
+	oxr_slog_ensure(slog, size_with_null);
+
+	memcpy(slog->store + slog->length, str, size);
+
+	slog->length += size;
 }
 
 void
