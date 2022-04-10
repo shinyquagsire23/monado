@@ -38,6 +38,7 @@
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
+#include "oxr_pretty_print.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -262,28 +263,6 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 	}
 }
 
-void
-print_view_fov(struct oxr_session *sess, uint32_t index, const struct xrt_fov *fov)
-{
-	if (!sess->sys->inst->debug_views) {
-		return;
-	}
-
-	U_LOG_D("views[%i].fov = {%f, %f, %f, %f}", index, fov->angle_left, fov->angle_right, fov->angle_up,
-	        fov->angle_down);
-}
-
-void
-print_view_pose(struct oxr_session *sess, uint32_t index, const struct xrt_pose *pose)
-{
-	if (!sess->sys->inst->debug_views) {
-		return;
-	}
-
-	U_LOG_D("views[%i].pose = {{%f, %f, %f, %f}, {%f, %f, %f}}", index, pose->orientation.x, pose->orientation.y,
-	        pose->orientation.z, pose->orientation.w, pose->position.x, pose->position.y, pose->position.z);
-}
-
 static inline XrViewStateFlags
 xrt_to_view_state_flags(enum xrt_space_relation_flags flags)
 {
@@ -312,6 +291,8 @@ oxr_session_locate_views(struct oxr_logger *log,
                          uint32_t *viewCountOutput,
                          XrView *views)
 {
+	struct oxr_sink_logger slog = {0};
+	bool print = sess->sys->inst->debug_views;
 	struct xrt_device *xdev = GET_XDEV_BY_ROLE(sess->sys, head);
 	struct oxr_space *baseSpc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, viewLocateInfo->space);
 	uint32_t view_count = 2;
@@ -329,8 +310,9 @@ oxr_session_locate_views(struct oxr_logger *log,
 	}
 	// End two call handling.
 
-	if (sess->sys->inst->debug_views) {
-		U_LOG_D("viewLocateInfo->displayTime %" PRIu64, viewLocateInfo->displayTime);
+	if (print) {
+		oxr_slog(&slog, "\n\tviewLocateInfo->displayTime: %" PRIu64, viewLocateInfo->displayTime);
+		oxr_pp_space_indented(&slog, baseSpc, "viewLocateInfo->baseSpace");
 	}
 
 	/*
@@ -378,7 +360,26 @@ oxr_session_locate_views(struct oxr_logger *log,
 		for (uint32_t i = 0; i < view_count; i++) {
 			OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, views[i].pose);
 		}
+
+		if (print) {
+			oxr_slog(&slog, "\n\tReturning invalid poses");
+			oxr_log_slog(log, &slog);
+		} else {
+			oxr_slog_abort(&slog);
+		}
+
 		return XR_SUCCESS;
+	}
+
+	if (print) {
+		for (uint32_t i = 0; i < view_count; i++) {
+			char tmp[32];
+			snprintf(tmp, 32, "xdev.view[%i]", i);
+			oxr_pp_fov_indented_as_object(&slog, &fovs[i], tmp);
+			oxr_pp_pose_indented_as_object(&slog, &poses[i], tmp);
+		}
+		oxr_pp_relation_indented(&slog, &head_relation, "xdev.head_relation");
+		oxr_pp_relation_indented(&slog, &head_relation_in_base_space, "head_relation_in_base_space");
 	}
 
 	for (uint32_t i = 0; i < view_count; i++) {
@@ -406,6 +407,16 @@ oxr_session_locate_views(struct oxr_logger *log,
 
 
 		/*
+		 * Printing.
+		 */
+
+		if (print) {
+			char tmp[16];
+			snprintf(tmp, 16, "view[%i]", i);
+			oxr_pp_pose_indented_as_object(&slog, &result.pose, tmp);
+		}
+
+		/*
 		 * Checking, debug and flag handling.
 		 */
 
@@ -415,20 +426,24 @@ oxr_session_locate_views(struct oxr_logger *log,
 			struct xrt_quat *q = &pose->orientation;
 			struct xrt_quat norm = *q;
 			math_quat_normalize(&norm);
+			oxr_slog_abort(&slog);
 			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 			                 "Quaternion %a %a %a %a (normalized %a %a %a %a) "
 			                 "in xrLocateViews was invalid",
 			                 q->x, q->y, q->z, q->w, norm.x, norm.y, norm.z, norm.w);
 		}
 
-		print_view_fov(sess, i, (struct xrt_fov *)&views[i].fov);
-		print_view_pose(sess, i, (struct xrt_pose *)&views[i].pose);
-
 		if (i == 0) {
 			viewState->viewStateFlags = xrt_to_view_state_flags(result.relation_flags);
 		} else {
 			viewState->viewStateFlags &= xrt_to_view_state_flags(result.relation_flags);
 		}
+	}
+
+	if (print) {
+		oxr_log_slog(log, &slog);
+	} else {
+		oxr_slog_abort(&slog);
 	}
 
 	return oxr_session_success_result(sess);

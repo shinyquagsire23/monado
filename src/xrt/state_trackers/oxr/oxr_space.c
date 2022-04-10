@@ -21,6 +21,7 @@
 #include "oxr_logger.h"
 #include "oxr_handle.h"
 #include "oxr_chain.h"
+#include "oxr_pretty_print.h"
 
 
 const struct xrt_pose origin = XRT_POSE_IDENTITY;
@@ -105,22 +106,6 @@ oxr_space_reference_create(struct oxr_logger *log,
 	*out_space = spc;
 
 	return XR_SUCCESS;
-}
-
-
-static const char *
-get_ref_space_type_short_str(struct oxr_space *spc)
-{
-	switch (spc->space_type) {
-	case OXR_SPACE_TYPE_ACTION: return "action";
-
-	case OXR_SPACE_TYPE_REFERENCE_VIEW: return "view";
-	case OXR_SPACE_TYPE_REFERENCE_LOCAL: return "local";
-	case OXR_SPACE_TYPE_REFERENCE_STAGE: return "stage";
-	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT: return "unbounded";
-	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return "combined_eye";
-	default: return "unknown_space";
-	}
 }
 
 static void
@@ -370,30 +355,6 @@ print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose)
 	U_LOG_D("%s (%f, %f, %f) (%f, %f, %f, %f)", prefix, p->x, p->y, p->z, q->x, q->y, q->z, q->w);
 }
 
-static void
-print_vec3_slog(struct oxr_sink_logger *slog, const char *prefix, struct xrt_vec3 *v)
-{
-	oxr_slog(slog, "%s (%f, %f, %f)", prefix, v->x, v->y, v->z);
-}
-
-static void
-print_pose_slog(struct oxr_sink_logger *slog, const char *prefix, struct xrt_pose *pose)
-{
-	struct xrt_vec3 *p = &pose->position;
-	struct xrt_quat *q = &pose->orientation;
-
-	oxr_slog(slog, "%s (%f, %f, %f) (%f, %f, %f, %f)", prefix, p->x, p->y, p->z, q->x, q->y, q->z, q->w);
-}
-
-static void
-print_space_slog(struct oxr_sink_logger *slog, const char *name, struct oxr_space *spc)
-{
-	const char *type_str = get_ref_space_type_short_str(spc);
-	oxr_slog(slog, "\n\t%s->type: %s\n\t%s->pose: ", name, type_str, name);
-
-	print_pose_slog(slog, "", &spc->pose);
-}
-
 XrSpaceLocationFlags
 xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
 {
@@ -436,8 +397,8 @@ oxr_space_locate(
 	struct oxr_sink_logger slog = {0};
 	bool print = spc->sess->sys->inst->debug_spaces;
 	if (print) {
-		print_space_slog(&slog, "space", spc);
-		print_space_slog(&slog, "baseSpace", baseSpc);
+		oxr_pp_space_indented(&slog, spc, "space");
+		oxr_pp_space_indented(&slog, baseSpc, "baseSpace");
 	}
 
 	// Used in a lot of places.
@@ -510,18 +471,8 @@ oxr_space_locate(
 	 */
 
 	if (print) {
-		print_pose_slog(&slog, "\n\tpure->pose", (struct xrt_pose *)&pure.pose);
-		print_pose_slog(&slog, "\n\trelation->pose", (struct xrt_pose *)&location->pose);
-		if (vel) {
-			if ((vel->velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT) != 0) {
-				print_vec3_slog(&slog, "\n\trelation->linearVelocity",
-				                (struct xrt_vec3 *)&vel->linearVelocity);
-			}
-			if ((vel->velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT) != 0) {
-				print_vec3_slog(&slog, "\n\trelation->angularVelocity",
-				                (struct xrt_vec3 *)&vel->angularVelocity);
-			}
-		}
+		oxr_pp_pose_indented_as_object(&slog, (struct xrt_pose *)&pure.pose, "pure");
+		oxr_pp_relation_indented(&slog, &result, "relation");
 		oxr_log_slog(log, &slog);
 	} else {
 		oxr_slog_abort(&slog);
