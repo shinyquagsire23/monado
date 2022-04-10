@@ -1,4 +1,4 @@
-# Copyright 2019-2020, Collabora, Ltd.
+# Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
@@ -47,6 +47,8 @@ lib_st_oxr = static_library(
 		'oxr_logger.h',
 		'oxr_objects.h',
 		'oxr_path.c',
+		'oxr_pretty_print.c',
+		'oxr_pretty_print.h',
 		'oxr_session.c',
 		'oxr_session_frame_end.c',
 		'oxr_session_gfx_gl.c',

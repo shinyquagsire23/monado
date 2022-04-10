@@ -1,4 +1,4 @@
-# Copyright 2019-2021, Collabora, Ltd.
+# Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
@@ -29,6 +29,8 @@ add_library(
 	oxr_logger.h
 	oxr_objects.h
 	oxr_path.c
+	oxr_pretty_print.c
+	oxr_pretty_print.h
 	oxr_session.c
 	oxr_session_frame_end.c
 	oxr_space.c
