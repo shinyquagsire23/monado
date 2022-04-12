@@ -124,7 +124,10 @@ struct client_gl_compositor
 	 */
 	client_gl_insert_fence_func insert_fence;
 
-	//! @ref app_ctx Can only be current on one thread; block other threads while we know it is bound to a thread.
+	/*!
+	 * @ref client_gl_xlib_compositor::app_context can only be current on one thread; block other threads while we
+	 * know it is bound to a thread.
+	 */
 	struct os_mutex context_mutex;
 };
 
