@@ -213,11 +213,7 @@ if(XRT_BUILD_DRIVER_VF)
 endif()
 
 if(XRT_BUILD_DRIVER_HANDTRACKING)
-	add_library(
-		drv_ht STATIC
-		ht/ht_driver.c
-		ht/ht_interface.h
-		)
+	add_library(drv_ht STATIC ht/ht_driver.c ht/ht_interface.h)
 	target_link_libraries(
 		drv_ht
 		PRIVATE
@@ -233,26 +229,16 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 			hand_async
 		)
 
-		if(XRT_BUILD_DRIVER_DEPTHAI)
-			target_sources(drv_ht PRIVATE ht/ht_prober.c)
-			target_link_libraries(drv_ht PRIVATE drv_depthai)
-		endif()
+	if(XRT_BUILD_DRIVER_DEPTHAI)
+		target_sources(drv_ht PRIVATE ht/ht_prober.c)
+		target_link_libraries(drv_ht PRIVATE drv_depthai)
+	endif()
 
 	target_include_directories(drv_ht PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 	list(APPEND ENABLED_DRIVERS ht)
 
-	add_library(
-		drv_cemu STATIC
-		ht_ctrl_emu/ht_ctrl_emu.cpp
-		ht_ctrl_emu/ht_ctrl_emu_interface.h
-		)
-	target_link_libraries(
-		drv_cemu
-		PRIVATE
-			xrt-interfaces
-			aux_generated_bindings
-			aux_util
-		)
+	add_library(drv_cemu STATIC ht_ctrl_emu/ht_ctrl_emu.cpp ht_ctrl_emu/ht_ctrl_emu_interface.h)
+	target_link_libraries(drv_cemu PRIVATE xrt-interfaces aux_generated_bindings aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS drv_cemu)
 endif()
 
@@ -334,7 +320,15 @@ if(XRT_BUILD_DRIVER_WMR)
 		wmr/wmr_source.c
 		wmr/wmr_source.h
 		)
-	target_link_libraries(drv_wmr PRIVATE xrt-interfaces aux_util aux_math aux_tracking xrt-external-cjson)
+	target_link_libraries(
+		drv_wmr
+		PRIVATE
+			xrt-interfaces
+			aux_util
+			aux_math
+			aux_tracking
+			xrt-external-cjson
+		)
 	list(APPEND ENABLED_HEADSET_DRIVERS wmr)
 
 	# Can only build camera support with libusb
@@ -347,8 +341,12 @@ endif()
 
 if(XRT_BUILD_DRIVER_EUROC)
 	add_library(
-		drv_euroc STATIC euroc/euroc_player.cpp euroc/euroc_driver.h euroc/euroc_device.c
-				 euroc/euroc_interface.h euroc/euroc_runner.c
+		drv_euroc STATIC
+		euroc/euroc_player.cpp
+		euroc/euroc_driver.h
+		euroc/euroc_device.c
+		euroc/euroc_interface.h
+		euroc/euroc_runner.c
 		)
 	target_link_libraries(
 		drv_euroc PRIVATE xrt-interfaces aux_util aux_tracking ${OpenCV_LIBRARIES}

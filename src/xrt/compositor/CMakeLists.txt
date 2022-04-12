@@ -91,7 +91,8 @@ endif()
 if(XRT_HAVE_VULKAN)
 	spirv_shaders(
 		SHADER_HEADERS
-		SPIRV_VERSION 1.0 # Currently targeting Vulkan 1.0
+		SPIRV_VERSION
+		1.0 # Currently targeting Vulkan 1.0
 		SOURCES
 		shaders/clear.comp
 		shaders/distortion.comp

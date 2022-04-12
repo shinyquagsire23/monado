@@ -22,6 +22,14 @@ endif()
 
 set_target_properties(cli PROPERTIES OUTPUT_NAME monado-cli PREFIX "")
 
-target_link_libraries(cli PRIVATE aux_os aux_util aux_math target_instance_no_comp drv_includes)
+target_link_libraries(
+	cli
+	PRIVATE
+		aux_os
+		aux_util
+		aux_math
+		target_instance_no_comp
+		drv_includes
+	)
 
 install(TARGETS cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

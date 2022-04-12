@@ -86,15 +86,9 @@ target_link_libraries(
 	PUBLIC aux_os
 	)
 
-
 if(DEFINED XRT_FEATURE_RENDERDOC)
-	target_link_libraries(
-		st_oxr
-		PRIVATE
-			xrt-external-renderdoc
-		)
+	target_link_libraries(st_oxr PRIVATE xrt-external-renderdoc)
 endif()
-
 
 target_include_directories(
 	st_oxr

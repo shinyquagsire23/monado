@@ -1,7 +1,6 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
 # Old RGB hand tracking library.
 add_library(
 	t_ht_old_rgb STATIC
@@ -16,8 +15,8 @@ add_library(
 target_link_libraries(
 	t_ht_old_rgb
 	PUBLIC aux-includes xrt-external-cjson
-	PRIVATE 
-		aux_math 
+	PRIVATE
+		aux_math
 		aux_tracking
 		aux_os
 		aux_util
@@ -26,6 +25,8 @@ target_link_libraries(
 		${OpenCV_LIBRARIES}
 	)
 if(XRT_HAVE_OPENCV)
-	target_include_directories(t_ht_old_rgb SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+	target_include_directories(
+		t_ht_old_rgb SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR}
+		)
 	target_link_libraries(t_ht_old_rgb PUBLIC ${OpenCV_LIBRARIES})
 endif()

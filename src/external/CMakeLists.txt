@@ -66,7 +66,9 @@ target_include_directories(xrt-external-stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR
 
 # renderdoc
 add_library(xrt-external-renderdoc INTERFACE)
-target_include_directories(xrt-external-renderdoc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/renderdoc_api)
+target_include_directories(
+	xrt-external-renderdoc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/renderdoc_api
+	)
 
 # imgui
 if(XRT_HAVE_OPENGL)
