@@ -85,7 +85,6 @@ directed-acyclic-graph.
   - Where a C API is exposed, it should follow the C API naming schemes.
   - If only a C++ API is exposed, a fairly conventional C++ naming scheme is used:
     - Namespaces: nested to match directory structure, starting with `xrt::`.
-      (Migration to this pattern is still in progress.)
       - There are no C++ interfaces in the `xrt/include/xrt`, by design, so this
         is not ambiguous.
       - Place types that need to be exposed in a header for technical reasons,
@@ -94,6 +93,7 @@ directed-acyclic-graph.
         ecosystem.
     - Types/classes: `CamelCase`
     - Methods/functions: `lowerCamelCase`
+    - Constants/constexpr values: `kCamelCase`
     - If a header is only usable from C++ code, it should be named with the
       extension `.hpp` to signify this.
 
