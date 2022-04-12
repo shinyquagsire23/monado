@@ -675,7 +675,7 @@ const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
 xrt_result_t
 u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
                            const struct u_pc_display_timing_config *config,
-                           struct u_pacing_compositor **out_uft)
+                           struct u_pacing_compositor **out_upc)
 {
 	struct pacing_compositor *pc = U_TYPED_CALLOC(struct pacing_compositor);
 	pc->base.predict = pc_predict;
@@ -699,7 +699,7 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	// Extra margin that is added to compositor time.
 	pc->margin_ns = config->margin_ns;
 
-	*out_uft = &pc->base;
+	*out_upc = &pc->base;
 
 	double estimated_frame_period_ms = ns_to_ms(estimated_frame_period_ns);
 	UPC_LOG_I("Created compositor pacing (%.2fms)", estimated_frame_period_ms);

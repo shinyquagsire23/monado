@@ -37,7 +37,7 @@ struct u_hashset
 extern "C" int
 u_hashset_create(struct u_hashset **out_hashset)
 {
-	auto hs = new u_hashset;
+	auto *hs = new u_hashset;
 	*out_hashset = hs;
 	return 0;
 }
@@ -159,7 +159,7 @@ u_hashset_clear_and_call_for_each(struct u_hashset *hs, u_hashset_callback cb, v
 
 	hs->map.clear();
 
-	for (auto n : tmp) {
+	for (auto *n : tmp) {
 		cb(n, priv);
 	}
 }

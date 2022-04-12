@@ -125,10 +125,7 @@ public:
 		}
 		std::string needle{str};
 		auto it = std::find_if(vec.begin(), vec.end(), [needle](const char *elt) { return needle == elt; });
-		if (it != vec.end()) {
-			return true;
-		}
-		return false;
+		return it != vec.end();
 	}
 
 	/*!

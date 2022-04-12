@@ -1,24 +1,30 @@
 ---
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2020 Collabora, Ltd. and the Monado contributors
-# Ideally we'd turn back on a few of these that are disabled near the end
-Checks:         'clang-diagnostic-*,
-                clang-analyzer-*,
-                performance-*,
-                bugprone-*,
-                cert-*,
-                readability-*,
-                misc-*,
-                -modernize-*,
-                -clang-analyzer-security.insecureAPI.strcpy,
-                -bugprone-macro-parentheses,
-                -readability-braces-around-statements,
-                -misc-unused-parameters,
-                -readability-implicit-bool-conversion,
-                -clang-diagnostic-missing-field-initializers,
-                -clang-diagnostic-missing-braces,
-                -readability-uppercase-literal-suffix,
-                -misc-non-private-member-variables-in-classes'
+# SPDX-FileCopyrightText: 2018-2022, Collabora, Ltd. and the Monado contributors
+# Ideally we'd turn back on some of these that are disabled.
+# Things on the same line are synonyms
+Checks:       |
+    clang-diagnostic-*,
+    clang-analyzer-*,
+    performance-*,
+    bugprone-*,
+    cert-*,
+    readability-*,
+    misc-*,
+    -modernize-*,
+    -misc-static-assert,
+    -bugprone-macro-parentheses,
+    -bugprone-reserved-identifier,-cert-dcl37-c,-cert-dcl51-cpp,
+    -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+    -clang-analyzer-security.insecureAPI.strcpy,
+    -clang-diagnostic-missing-braces,
+    -clang-diagnostic-missing-field-initializers,
+    -misc-non-private-member-variables-in-classes,
+    -misc-unused-parameters,
+    -readability-braces-around-statements,
+    -readability-implicit-bool-conversion,
+    -readability-redundant-access-specifiers,
+    -readability-uppercase-literal-suffix,
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/xrt/.*'
 AnalyzeTemporaryDtors: false

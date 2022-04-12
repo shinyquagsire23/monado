@@ -20,7 +20,7 @@ public:
 	LoadOpticalData(struct ns_3d_eye *eye);
 
 	Vector3
-	GetEyePosition()
+	GetEyePosition() const
 	{
 		return eyePosition;
 	}
@@ -35,20 +35,20 @@ public:
 	SolveDisplayUVToRenderUV(const Vector2 &inputUV, Vector2 const &initialGuess, int iterations);
 
 	Vector2
-	DisplayUVToRenderUVPreviousSeed(Vector2 inputUV);
+	DisplayUVToRenderUVPreviousSeed(const Vector2 &inputUV);
 
 	void
 	RegenerateMesh();
 
 	void
-	UpdateEyePosition(const Vector3 pos)
+	UpdateEyePosition(const Vector3 &pos)
 	{
 		eyePosition.x = pos.x;
 		eyePosition.y = pos.y;
 		eyePosition.z = pos.z;
 	}
 
-	const Vector4
+	Vector4
 	GetCameraProjection()
 	{
 		return cameraProjection;
@@ -62,7 +62,7 @@ public:
 	}
 
 	void
-	UpdateClipToWorld(Matrix4x4 eyeRotationMatrix)
+	UpdateClipToWorld(const Matrix4x4 &eyeRotationMatrix)
 	{
 		Matrix4x4 eyeToWorld = Matrix4x4::Translate(eyePosition) * eyeRotationMatrix;
 		eyeToWorld.m02 *= -1;
@@ -73,8 +73,11 @@ public:
 
 	Vector3 eyePosition;
 
-	inline void
-	ViewportPointToRayDirection(Vector2 UV, Vector3 cameraPosition, Matrix4x4 clipToWorld, Vector3 &out)
+	static inline void
+	ViewportPointToRayDirection(const Vector2 &UV,
+	                            const Vector3 &cameraPosition,
+	                            const Matrix4x4 &clipToWorld,
+	                            Vector3 &out)
 	{
 		Vector3 tmp;
 		tmp.x = UV.x - 0.5f;
@@ -84,7 +87,6 @@ public:
 
 		float mag = dir.Magnitude();
 		out = dir / mag;
-		return;
 	}
 
 private:
@@ -107,14 +109,18 @@ private:
 
 // supporting functions
 inline Vector3
-Project(Vector3 v1, Vector3 v2)
+Project(const Vector3 &v1, const Vector3 &v2)
 {
 	Vector3 v2Norm = (v2 / v2.Magnitude());
 	return v2Norm * Vector3::Dot(v1, v2Norm);
 }
 
 inline float
-intersectLineSphere(Vector3 Origin, Vector3 Direction, Vector3 spherePos, float SphereRadiusSqrd, bool frontSide = true)
+intersectLineSphere(const Vector3 &Origin,
+                    const Vector3 &Direction,
+                    const Vector3 &spherePos,
+                    float SphereRadiusSqrd,
+                    bool frontSide = true)
 {
 	Vector3 L = spherePos - Origin;
 	Vector3 offsetFromSphereCenterToRay = Project(L, Direction) - L;
@@ -125,7 +131,7 @@ intersectLineSphere(Vector3 Origin, Vector3 Direction, Vector3 spherePos, float 
 }
 
 inline float
-intersectPlane(Vector3 n, Vector3 p0, Vector3 l0, Vector3 l)
+intersectPlane(const Vector3 &n, const Vector3 &p0, const Vector3 &l0, const Vector3 &l)
 {
 
 	float denom = Vector3::Dot((Vector3::Zero() - n), l);

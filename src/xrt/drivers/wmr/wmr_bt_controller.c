@@ -72,7 +72,8 @@ read_packets(struct wmr_bt_controller *d)
 	if (size < 0) {
 		WMR_ERROR(d, "WMR Controller (Bluetooth): Error reading from device");
 		return false;
-	} else if (size == 0) {
+	}
+	if (size == 0) {
 		WMR_TRACE(d, "WMR Controller (Bluetooth): No data to read from device");
 		return true; // No more messages, return.
 	}
@@ -163,8 +164,11 @@ wmr_read_fw_block(struct wmr_bt_controller *d, uint8_t blk_id, uint8_t **out_dat
 {
 	struct wmr_controller_fw_cmd_response fw_cmd_response;
 
-	uint8_t *data, *data_pos, *data_end;
-	uint32_t data_size, remain;
+	uint8_t *data;
+	uint8_t *data_pos;
+	uint8_t *data_end;
+	uint32_t data_size;
+	uint32_t remain;
 
 	struct wmr_controller_fw_cmd fw_cmd;
 	memset(&fw_cmd, 0, sizeof(fw_cmd));
@@ -224,7 +228,8 @@ wmr_read_fw_block(struct wmr_bt_controller *d, uint8_t blk_id, uint8_t **out_dat
 static bool
 read_controller_config(struct wmr_bt_controller *d)
 {
-	unsigned char *data = NULL, *config_json_block;
+	unsigned char *data = NULL;
+	unsigned char *config_json_block;
 	size_t data_size;
 	int ret;
 
@@ -234,7 +239,7 @@ read_controller_config(struct wmr_bt_controller *d)
 	// USB PID/VID are visible in them, but it's not clear
 	// what the layout is and we don't use them currently,
 	// so this if 0 code is just exemplary.
-	
+
 	// Read serials
 	ret = wmr_read_fw_block(d, 0x03, &data, &data_size);
 	if (ret < 0 || data == NULL)

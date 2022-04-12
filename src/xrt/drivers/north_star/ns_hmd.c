@@ -107,7 +107,6 @@ good:
 	assert(fabsf(out_fov.angle_right) < M_PI_2);
 	memcpy(left_fov, &out_fov, sizeof(struct xrt_fov));
 	memcpy(right_fov, &out_fov, sizeof(struct xrt_fov));
-	return;
 }
 
 bool
@@ -641,7 +640,8 @@ ns_hmd_create(const char *config_path)
 	// avoid unintended consequences. As soon as you have a specific reason to support it, go ahead and support it.
 	ns->base.hmd->blend_mode_count = idx;
 
-	uint64_t start, end;
+	uint64_t start;
+	uint64_t end;
 
 	start = os_monotonic_get_ns();
 	u_distortion_mesh_fill_in_compute(&ns->base);

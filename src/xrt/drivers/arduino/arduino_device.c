@@ -149,7 +149,8 @@ update_fusion(struct arduino_device *ad,
               timepoint_ns timestamp_ns,
               time_duration_ns delta_ns)
 {
-	struct xrt_vec3 accel, gyro;
+	struct xrt_vec3 accel;
+	struct xrt_vec3 gyro;
 	m_imu_pre_filter_data(&ad->pre_filter, &sample->accel, &sample->gyro, &accel, &gyro);
 
 	ad->device_time += (uint64_t)sample->delta * 1000;
@@ -231,7 +232,8 @@ arduino_run_thread(void *ptr)
 {
 	struct arduino_device *ad = (struct arduino_device *)ptr;
 	uint8_t buffer[20];
-	timepoint_ns then_ns, now_ns;
+	timepoint_ns then_ns;
+	timepoint_ns now_ns;
 	struct arduino_parsed_input input; // = {0};
 
 	// wait for a package to sync up, it's discarded but that's okay.

@@ -274,7 +274,8 @@ oxr_space_get_pure_relation(struct oxr_logger *log,
 		struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(spc->sess->sys, head);
 		*out_xdev = head_xdev;
 		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->space_type, head_xdev, time, out_relation);
-	} else if (spc->space_type == OXR_SPACE_TYPE_ACTION) {
+	}
+	if (spc->space_type == OXR_SPACE_TYPE_ACTION) {
 		struct oxr_action_input *input = NULL;
 		oxr_action_get_pose_input(spc->sess, spc->act_key, &spc->subaction_paths, &input);
 

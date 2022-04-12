@@ -295,7 +295,7 @@ t_hand_node_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_hand_node_destroy(struct xrt_frame_node *node)
 {
-	auto t_ptr = container_of(node, TrackerHand, node);
+	auto *t_ptr = container_of(node, TrackerHand, node);
 	os_thread_helper_destroy(&t_ptr->oth);
 
 	// Tidy variable setup.

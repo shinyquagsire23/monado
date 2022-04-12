@@ -34,7 +34,7 @@ struct u_hashmap_int
 extern "C" int
 u_hashmap_int_create(struct u_hashmap_int **out_hashmap_int)
 {
-	auto hs = new u_hashmap_int;
+	auto *hs = new u_hashmap_int;
 	*out_hashmap_int = hs;
 	return 0;
 }
@@ -91,7 +91,7 @@ u_hashmap_int_clear_and_call_for_each(struct u_hashmap_int *hmi, u_hashmap_int_c
 
 	hmi->map.clear();
 
-	for (auto n : tmp) {
+	for (auto *n : tmp) {
 		cb(n, priv);
 	}
 }

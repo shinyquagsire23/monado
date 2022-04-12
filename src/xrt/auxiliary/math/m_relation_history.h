@@ -54,7 +54,9 @@ m_relation_history_create(struct m_relation_history **rh);
  * @public @memberof m_relation_history
  */
 bool
-m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation const *in_relation, uint64_t ts);
+m_relation_history_push(struct m_relation_history *rh,
+                        struct xrt_space_relation const *in_relation,
+                        uint64_t timestamp);
 
 /*!
  * @brief Interpolates or extrapolates to the desired timestamp.
@@ -65,7 +67,9 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
  * @public @memberof m_relation_history
  */
 enum m_relation_history_result
-m_relation_history_get(struct m_relation_history *rh, uint64_t at_time_ns, struct xrt_space_relation *out_relation);
+m_relation_history_get(struct m_relation_history *rh,
+                       uint64_t at_timestamp_ns,
+                       struct xrt_space_relation *out_relation);
 
 /*!
  * @brief Get the latest report in the buffer, if any.

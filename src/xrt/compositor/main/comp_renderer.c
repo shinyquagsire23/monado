@@ -732,10 +732,8 @@ renderer_resize(struct comp_renderer *r)
 		renderer_close_renderings_and_fences(r);
 		return;
 	}
-
-	renderer_ensure_images_and_renderings(r, true); // Force recreate.
-
-	return;
+	// Force recreate.
+	renderer_ensure_images_and_renderings(r, true);
 }
 
 static void
@@ -1572,8 +1570,9 @@ comp_renderer_destroy(struct comp_renderer **ptr_r)
 }
 
 void
-comp_renderer_add_debug_vars(struct comp_renderer *r)
+comp_renderer_add_debug_vars(struct comp_renderer *self)
 {
+	struct comp_renderer *r = self;
 	r->mirror_to_debug_gui.push_every_frame_out_of_X = 2;
 
 	u_frame_times_widget_init(&r->mirror_to_debug_gui.push_frame_times, 0.f, 0.f);

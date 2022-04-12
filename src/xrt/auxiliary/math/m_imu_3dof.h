@@ -86,7 +86,7 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix);
 
 void
 m_imu_3dof_update(struct m_imu_3dof *f,
-                  uint64_t timepoint_ns,
+                  uint64_t timestamp_ns,
                   const struct xrt_vec3 *accel,
                   const struct xrt_vec3 *gyro);
 

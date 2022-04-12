@@ -46,7 +46,9 @@ find_qwerty_system(struct xrt_device **xdevs, size_t xdev_count)
 static struct qwerty_device *
 default_qwerty_device(struct xrt_device **xdevs, size_t xdev_count, struct qwerty_system *qsys)
 {
-	int head, left, right;
+	int head;
+	int left;
+	int right;
 	head = left = right = XRT_DEVICE_ROLE_UNASSIGNED;
 	u_device_assign_xdev_roles(xdevs, xdev_count, &head, &left, &right);
 
@@ -72,7 +74,9 @@ default_qwerty_device(struct xrt_device **xdevs, size_t xdev_count, struct qwert
 static struct qwerty_controller *
 default_qwerty_controller(struct xrt_device **xdevs, size_t xdev_count, struct qwerty_system *qsys)
 {
-	int head, left, right;
+	int head;
+	int left;
+	int right;
 	head = left = right = XRT_DEVICE_ROLE_UNASSIGNED;
 	u_device_assign_xdev_roles(xdevs, xdev_count, &head, &left, &right);
 

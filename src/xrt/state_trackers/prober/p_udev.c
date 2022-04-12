@@ -148,7 +148,8 @@ static void
 p_udev_enumerate_usb(struct prober *p, struct udev *udev)
 {
 	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
+	struct udev_list_entry *devices;
+	struct udev_list_entry *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
 	udev_enumerate_add_match_subsystem(enumerate, "usb");
@@ -253,7 +254,8 @@ static void
 p_udev_enumerate_v4l2(struct prober *p, struct udev *udev)
 {
 	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
+	struct udev_list_entry *devices;
+	struct udev_list_entry *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
 	udev_enumerate_add_match_subsystem(enumerate, "video4linux");
@@ -371,7 +373,8 @@ static void
 p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 {
 	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
+	struct udev_list_entry *devices;
+	struct udev_list_entry *dev_list_entry;
 
 	enumerate = udev_enumerate_new(udev);
 	udev_enumerate_add_match_subsystem(enumerate, "hidraw");
@@ -383,7 +386,9 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 	{
 		struct prober_device *pdev = NULL;
 		struct udev_device *raw_dev = NULL;
-		uint16_t vendor_id, product_id, interface;
+		uint16_t vendor_id;
+		uint16_t product_id;
+		uint16_t interface;
 		uint8_t dev_class = 0;
 		uint16_t usb_bus = 0;
 		uint16_t usb_addr = 0;
@@ -497,7 +502,8 @@ p_udev_get_usb_hid_address(struct udev_device *raw_dev,
                            uint16_t *out_usb_bus,
                            uint16_t *out_usb_addr)
 {
-	uint16_t dummy_vendor, dummy_product;
+	uint16_t dummy_vendor;
+	uint16_t dummy_product;
 	struct udev_device *usb_dev;
 
 	if (bus_type != HIDRAW_BUS_USB) {
@@ -549,7 +555,8 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 	struct udev_device *hid_dev;
 	char *serial_utf8 = NULL;
 	uint64_t bluetooth_serial = 0;
-	uint16_t vendor_id = 0, product_id = 0;
+	uint16_t vendor_id = 0;
+	uint16_t product_id = 0;
 	char product_name[sizeof(*out_product_name)];
 	uint32_t bus_type;
 	const char *uevent;
@@ -626,7 +633,9 @@ p_udev_try_usb_relation_get_address(struct udev_device *raw_dev,
                                     uint16_t *out_usb_addr,
                                     struct udev_device **out_usb_device)
 {
-	struct udev_device *parent_dev, *usb_interface, *usb_device;
+	struct udev_device *parent_dev;
+	struct udev_device *usb_interface;
+	struct udev_device *usb_device;
 
 	parent_dev = udev_device_get_parent(raw_dev);
 	usb_interface = udev_device_get_parent_with_subsystem_devtype(raw_dev, "usb", "usb_interface");
@@ -664,7 +673,8 @@ p_udev_try_usb_relation_get_address(struct udev_device *raw_dev,
 static int
 p_udev_get_vendor_id_product(struct udev_device *usb_dev, uint16_t *out_vendor_id, uint16_t *out_product_id)
 {
-	uint16_t vendor_id, product_id;
+	uint16_t vendor_id;
+	uint16_t product_id;
 	int ret;
 
 	ret = p_udev_get_sysattr_u16_base16(usb_dev, "idVendor", &vendor_id);
@@ -691,7 +701,9 @@ p_udev_get_usb_device_info(struct udev_device *usb_dev,
                            uint16_t *out_usb_bus,
                            uint16_t *out_usb_addr)
 {
-	uint16_t vendor_id, product_id, dev_class;
+	uint16_t vendor_id;
+	uint16_t product_id;
+	uint16_t dev_class;
 	int ret;
 
 	// First get the vendor and product ids.
@@ -727,7 +739,8 @@ p_udev_get_usb_device_info(struct udev_device *usb_dev,
 static int
 p_udev_get_usb_device_address_path(struct udev_device *usb_dev, uint16_t *out_usb_bus, uint16_t *out_usb_addr)
 {
-	uint16_t bus = 0, addr = 0;
+	uint16_t bus = 0;
+	uint16_t addr = 0;
 
 	const char *dev_path = udev_device_get_devnode(usb_dev);
 	if (dev_path == NULL) {
@@ -748,7 +761,8 @@ p_udev_get_usb_device_address_path(struct udev_device *usb_dev, uint16_t *out_us
 static int
 p_udev_get_usb_device_address_sysfs(struct udev_device *usb_dev, uint16_t *out_usb_bus, uint16_t *out_usb_addr)
 {
-	uint16_t usb_bus = 0, usb_addr = 0;
+	uint16_t usb_bus = 0;
+	uint16_t usb_addr = 0;
 	int ret;
 
 	ret = p_udev_get_sysattr_u16_base16(usb_dev, "busnum", &usb_bus);

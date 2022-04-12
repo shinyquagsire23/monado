@@ -20,7 +20,7 @@
  */
 
 static inline void
-vec3_from_wmr_controller_accel(int32_t sample[3], struct xrt_vec3 *out_vec)
+vec3_from_wmr_controller_accel(const int32_t sample[3], struct xrt_vec3 *out_vec)
 {
 	// Reverb G1 observation: 1g is approximately 490,000.
 
@@ -31,7 +31,7 @@ vec3_from_wmr_controller_accel(int32_t sample[3], struct xrt_vec3 *out_vec)
 
 
 static inline void
-vec3_from_wmr_controller_gyro(int32_t sample[3], struct xrt_vec3 *out_vec)
+vec3_from_wmr_controller_gyro(const int32_t sample[3], struct xrt_vec3 *out_vec)
 {
 	out_vec->x = (float)sample[0] * 0.00001f;
 	out_vec->y = (float)sample[1] * 0.00001f;

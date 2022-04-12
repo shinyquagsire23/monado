@@ -299,7 +299,7 @@ public:
 	}
 
 	bool
-	hasKey(const string &key)
+	hasKey(const string &key) const
 	{
 		return asObject().count(key) == 1;
 	}

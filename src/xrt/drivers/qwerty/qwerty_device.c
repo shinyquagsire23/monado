@@ -177,7 +177,8 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 	qd->yaw_delta = 0;
 	qd->pitch_delta = 0;
 
-	struct xrt_quat x_rotation, y_rotation;
+	struct xrt_quat x_rotation;
+	struct xrt_quat y_rotation;
 	const struct xrt_vec3 x_axis = XRT_VEC3_UNIT_X;
 	const struct xrt_vec3 y_axis = XRT_VEC3_UNIT_Y;
 	math_quat_from_angle_vector(x_look_speed, &x_axis, &x_rotation);
@@ -231,7 +232,8 @@ struct qwerty_hmd *
 qwerty_hmd_create(void)
 {
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE;
-	size_t input_count = 1, output_count = 0;
+	size_t input_count = 1;
+	size_t output_count = 0;
 	struct qwerty_hmd *qh = U_DEVICE_ALLOCATE(struct qwerty_hmd, flags, input_count, output_count);
 	assert(qh);
 

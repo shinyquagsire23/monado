@@ -15,7 +15,7 @@
 
 TEST_CASE("u_template_historybuf")
 {
-	auto buffer = u_id_ringbuffer_create(4);
+	auto *buffer = u_id_ringbuffer_create(4);
 	SECTION("behavior when empty")
 	{
 		CHECK(u_id_ringbuffer_is_empty(buffer));

@@ -29,7 +29,7 @@ public:
 	};
 
 
-public:
+
 	// Exposed to the C api.
 	struct xrt_frame frame = {};
 
@@ -37,7 +37,7 @@ public:
 	cv::Mat matrix = cv::Mat();
 
 
-public:
+
 	/*!
 	 * Only public due to C needed to destroy it.
 	 */
@@ -50,7 +50,7 @@ public:
 	 * its reference count decremented so make sure it's a valid pointer.
 	 */
 	static void
-	wrapR8G8B8(cv::Mat mat, xrt_frame **xf_ptr, const Params params = {});
+	wrapR8G8B8(const cv::Mat &mat, xrt_frame **fm_out, Params params = {});
 
 	/*!
 	 * Wraps the given cv::Mat assuming it's a 8bit format matrix.
@@ -59,7 +59,7 @@ public:
 	 * its reference count decremented so make sure it's a valid pointer.
 	 */
 	static void
-	wrapL8(cv::Mat mat, xrt_frame **xf_ptr, const Params params = {});
+	wrapL8(const cv::Mat &mat, xrt_frame **fm_out, Params params = {});
 
 
 private:

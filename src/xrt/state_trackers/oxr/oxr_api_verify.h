@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 
-#define _OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_thing, THING, name, lookup)                            \
+#define OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_thing, THING, name, lookup)                             \
 	do {                                                                                                           \
 		oxr_log_init(log, name);                                                                               \
 		if (thing == XR_NULL_HANDLE) {                                                                         \
@@ -31,7 +31,7 @@ extern "C" {
 		oxr_log_set_instance(log, lookup);                                                                     \
 	} while (0)
 
-#define _OXR_VERIFY_SET(log, arg, new_arg, oxr_thing, THING)                                                           \
+#define OXR_VERIFY_SET(log, arg, new_arg, oxr_thing, THING)                                                            \
 	do {                                                                                                           \
 		if (arg == XR_NULL_HANDLE) {                                                                           \
 			return oxr_error(log, XR_ERROR_HANDLE_INVALID, "(" #arg " == NULL)");                          \
@@ -50,30 +50,30 @@ extern "C" {
 
 // clang-format off
 #define OXR_VERIFY_INSTANCE_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_instance, INSTANCE, name, new_thing)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_instance, INSTANCE, name, new_thing)
 #define OXR_VERIFY_MESSENGER_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_messenger, MESSENGER, name, new_thing->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_messenger, MESSENGER, name, new_thing->inst)
 #define OXR_VERIFY_SESSION_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_session, SESSION, name, new_thing->sys->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_session, SESSION, name, new_thing->sys->inst)
 #define OXR_VERIFY_SPACE_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_space, SPACE, name, new_thing->sess->sys->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_space, SPACE, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTION_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action, ACTION, name, new_thing->act_set->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action, ACTION, name, new_thing->act_set->inst)
 #define OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_swapchain, SWAPCHAIN, name, new_thing->sess->sys->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_swapchain, SWAPCHAIN, name, new_thing->sess->sys->inst)
 #define OXR_VERIFY_ACTIONSET_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action_set, ACTIONSET, name, new_thing->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_action_set, ACTIONSET, name, new_thing->inst)
 #define OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(log, thing, new_thing, name) \
-	_OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_hand_tracker, HTRACKER, name, new_thing->sess->sys->inst)
+	OXR_VERIFY_AND_SET_AND_INIT(log, thing, new_thing, oxr_hand_tracker, HTRACKER, name, new_thing->sess->sys->inst)
 // clang-format on
 
-#define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_instance, INSTANCE);
-#define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_messenger, MESSENGER);
-#define OXR_VERIFY_SESSION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_session, SESSION);
-#define OXR_VERIFY_SPACE_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_space, SPACE);
-#define OXR_VERIFY_ACTION_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action, ACTION);
-#define OXR_VERIFY_SWAPCHAIN_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_swapchain, SWAPCHAIN);
-#define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) _OXR_VERIFY_SET(log, arg, new_arg, oxr_action_set, ACTIONSET);
+#define OXR_VERIFY_INSTANCE_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_instance, INSTANCE);
+#define OXR_VERIFY_MESSENGER_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_messenger, MESSENGER);
+#define OXR_VERIFY_SESSION_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_session, SESSION);
+#define OXR_VERIFY_SPACE_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_space, SPACE);
+#define OXR_VERIFY_ACTION_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_action, ACTION);
+#define OXR_VERIFY_SWAPCHAIN_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_swapchain, SWAPCHAIN);
+#define OXR_VERIFY_ACTIONSET_NOT_NULL(log, arg, new_arg) OXR_VERIFY_SET(log, arg, new_arg, oxr_action_set, ACTIONSET);
 
 /*!
  * Checks if a required extension is enabled.
@@ -203,13 +203,16 @@ oxr_verify_full_path(struct oxr_logger *log, const char *path, size_t length, co
  * Verify a single path level that sits inside of a fixed sized array.
  */
 XrResult
-oxr_verify_fixed_size_single_level_path(struct oxr_logger *, const char *path, uint32_t array_size, const char *name);
+oxr_verify_fixed_size_single_level_path(struct oxr_logger * /*log*/,
+                                        const char *path,
+                                        uint32_t array_size,
+                                        const char *name);
 
 /*!
  * Verify an arbitrary UTF-8 string that sits inside of a fixed sized array.
  */
 XrResult
-oxr_verify_localized_name(struct oxr_logger *, const char *string, uint32_t array_size, const char *name);
+oxr_verify_localized_name(struct oxr_logger * /*log*/, const char *string, uint32_t array_size, const char *name);
 
 /*!
  * Verify a set of subaction paths for action creation.
@@ -248,16 +251,18 @@ oxr_verify_view_config_type(struct oxr_logger *log,
                             const char *view_conf_name);
 
 XrResult
-oxr_verify_XrSessionCreateInfo(struct oxr_logger *, const struct oxr_instance *, const XrSessionCreateInfo *);
+oxr_verify_XrSessionCreateInfo(struct oxr_logger * /*log*/,
+                               const struct oxr_instance * /*inst*/,
+                               const XrSessionCreateInfo * /*createInfo*/);
 
 #if defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 XrResult
-oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger *, const XrGraphicsBindingOpenGLXlibKHR *);
+oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger * /*log*/, const XrGraphicsBindingOpenGLXlibKHR * /*next*/);
 #endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 #if defined(XR_USE_GRAPHICS_API_VULKAN)
 XrResult
-oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger *, const XrGraphicsBindingVulkanKHR *);
+oxr_verify_XrGraphicsBindingVulkanKHR(struct oxr_logger * /*log*/, const XrGraphicsBindingVulkanKHR * /*next*/);
 #endif // defined(XR_USE_GRAPHICS_API_VULKAN)
 
 #if defined(XR_USE_PLATFORM_EGL) && defined(XR_USE_GRAPHICS_API_OPENGL)

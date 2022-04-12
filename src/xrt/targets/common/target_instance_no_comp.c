@@ -28,7 +28,7 @@ t_instance_create_system_compositor_stub(struct xrt_instance *xinst,
  */
 
 int
-xrt_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
+xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
 	struct xrt_prober *xp = NULL;
 

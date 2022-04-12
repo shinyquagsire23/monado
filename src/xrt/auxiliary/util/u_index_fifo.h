@@ -24,9 +24,8 @@ u_index_fifo_is_empty(struct u_index_fifo *uif)
 {
 	if (uif->start == uif->end) {
 		return 1;
-	} else {
-		return 0;
 	}
+	return 0;
 }
 
 static inline int
@@ -34,9 +33,8 @@ u_index_fifo_is_full(struct u_index_fifo *uif)
 {
 	if (((uif->end + 1) % U_MAX_FIFO_INDICES) == uif->start) {
 		return 1;
-	} else {
-		return 0;
 	}
+	return 0;
 }
 
 static inline int

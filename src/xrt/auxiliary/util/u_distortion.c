@@ -83,10 +83,10 @@ u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *
 
 	// Tan-angle to texture coordinates
 	// clang-format off
-	l_values.texture.size.x = tan(-args->fov.angle_left) + tan(args->fov.angle_right);
-	l_values.texture.size.y = tan(args->fov.angle_up) + tan(-args->fov.angle_down);
-	l_values.texture.offset.x = tan(-args->fov.angle_left);
-	l_values.texture.offset.y = tan(-args->fov.angle_down);
+	l_values.texture.size.x = tanf(-args->fov.angle_left) + tanf(args->fov.angle_right);
+	l_values.texture.size.y = tanf(args->fov.angle_up) + tanf(-args->fov.angle_down);
+	l_values.texture.offset.x = tanf(-args->fov.angle_left);
+	l_values.texture.offset.y = tanf(-args->fov.angle_down);
 	// clang-format on
 
 	// Fix up views not covering the entire screen.
@@ -118,10 +118,10 @@ u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *
 
 	// Tanangle to texture coordinates
 	// clang-format off
-	r_values.texture.size.x = tan(-args->fov.angle_left) + tan(args->fov.angle_right);
-	r_values.texture.size.y = tan(args->fov.angle_up) + tan(-args->fov.angle_down);
-	r_values.texture.offset.x = tan(-args->fov.angle_left);
-	r_values.texture.offset.y = tan(-args->fov.angle_down);
+	r_values.texture.size.x = tanf(-args->fov.angle_left) + tanf(args->fov.angle_right);
+	r_values.texture.size.y = tanf(args->fov.angle_up) + tanf(-args->fov.angle_down);
+	r_values.texture.offset.x = tanf(-args->fov.angle_left);
+	r_values.texture.offset.y = tanf(-args->fov.angle_down);
 	// clang-format on
 
 	// Fix up views not covering the entire screen.

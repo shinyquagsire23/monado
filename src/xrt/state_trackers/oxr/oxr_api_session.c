@@ -33,7 +33,8 @@ oxr_xrCreateSession(XrInstance instance, const XrSessionCreateInfo *createInfo, 
 
 	XrResult ret;
 	struct oxr_instance *inst;
-	struct oxr_session *sess, **link;
+	struct oxr_session *sess;
+	struct oxr_session **link;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrCreateSession");
 
@@ -64,7 +65,8 @@ oxr_xrDestroySession(XrSession session)
 {
 	OXR_TRACE_MARKER();
 
-	struct oxr_session *sess, **link;
+	struct oxr_session *sess;
+	struct oxr_session **link;
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrDestroySession");

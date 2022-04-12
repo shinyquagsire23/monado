@@ -124,8 +124,6 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
 	for (int i = 0; i < 4; i++) {
 		pkt->video_timestamp[i] = read64(&buffer);
 	}
-
-	return;
 }
 
 
@@ -349,7 +347,8 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from Hololens Sensors device. Call to os_hid_read returned %i", size);
 		return false;
-	} else if (size == 0) {
+	}
+	if (size == 0) {
 		WMR_TRACE(wh, "No more data to read");
 		return true; // No more messages, return.
 	} else {
@@ -432,7 +431,8 @@ control_read_packets(struct wmr_hmd *wh)
 		WMR_ERROR(wh, "Error reading from companion (HMD control) device. Call to os_hid_read returned %i",
 		          size);
 		return false;
-	} else if (size == 0) {
+	}
+	if (size == 0) {
 		WMR_TRACE(wh, "No more data to read");
 		return true; // No more messages, return.
 	} else {
@@ -797,7 +797,8 @@ wmr_read_config_raw(struct wmr_hmd *wh, uint8_t **out_data, size_t *out_size)
 
 	unsigned char meta[84];
 	uint8_t *data;
-	int size, data_size;
+	int size;
+	int data_size;
 
 	size = wmr_read_config_part(wh, 0x06, meta, sizeof(meta));
 	WMR_DEBUG(wh, "(0x06, meta) => %d", size);
@@ -837,7 +838,8 @@ wmr_read_config(struct wmr_hmd *wh)
 {
 	DRV_TRACE_MARKER();
 
-	unsigned char *data = NULL, *config_json_block;
+	unsigned char *data = NULL;
+	unsigned char *config_json_block;
 	size_t data_size;
 	int ret;
 
@@ -1117,7 +1119,10 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 
 	assert(view == 0 || view == 1);
 
-	float tanangle_left = 0.0f, tanangle_right = 0.0f, tanangle_up = 0.0f, tanangle_down = 0.0f;
+	float tanangle_left = 0.0f;
+	float tanangle_right = 0.0f;
+	float tanangle_up = 0.0f;
+	float tanangle_down = 0.0f;
 
 	const struct wmr_distortion_eye_config *ec = wh->config.eye_params + view;
 	struct wmr_hmd_distortion_params *distortion_params = wh->distortion_params + view;
@@ -1241,7 +1246,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
-	int ret = 0, i;
+	int ret = 0;
+	int i;
 	int eye;
 
 	struct wmr_hmd *wh = U_DEVICE_ALLOCATE(struct wmr_hmd, flags, 1, 0);

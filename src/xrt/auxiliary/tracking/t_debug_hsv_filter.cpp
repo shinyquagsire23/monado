@@ -99,7 +99,7 @@ t_debug_hsv_filter_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_debug_hsv_filter_destroy(struct xrt_frame_node *node)
 {
-	auto d = container_of(node, DebugHSVFilter, node);
+	auto *d = container_of(node, DebugHSVFilter, node);
 	delete d;
 }
 

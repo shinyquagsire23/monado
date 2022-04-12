@@ -132,7 +132,7 @@ gui_ogl_sink_create(const char *name, struct xrt_frame_context *xfctx, struct xr
  * @ingroup gui
  */
 void
-gui_ogl_sink_update(struct gui_ogl_texture *);
+gui_ogl_sink_update(struct gui_ogl_texture * /*tex*/);
 
 /*!
  * Push the scene to the top of the lists.

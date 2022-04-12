@@ -84,7 +84,7 @@ os_ble_notify_open(const char *dev_uuid, const char *char_uuid, struct os_ble_de
  * @ingroup aux_os
  */
 int
-os_ble_broadcast_write_value(const char *dev_uuid, const char *char_uuid, uint8_t value);
+os_ble_broadcast_write_value(const char *service_uuid, const char *char_uuid, uint8_t value);
 #endif
 
 

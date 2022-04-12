@@ -327,7 +327,7 @@ math_quat_ln(const struct xrt_quat *quat, struct xrt_vec3 *out_axis_angle);
  * @ingroup aux_math
  */
 void
-math_quat_rotate_derivative(const struct xrt_quat *rot, const struct xrt_vec3 *deriv, struct xrt_vec3 *result);
+math_quat_rotate_derivative(const struct xrt_quat *quat, const struct xrt_vec3 *deriv, struct xrt_vec3 *result);
 
 
 /*!

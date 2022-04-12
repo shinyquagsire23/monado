@@ -20,7 +20,7 @@ struct gstreamer_pipeline;
 
 
 void
-gstreamer_sink_send_eos(struct gstreamer_sink *gp);
+gstreamer_sink_send_eos(struct gstreamer_sink *gs);
 
 uint64_t
 gstreamer_sink_get_timestamp_offset(struct gstreamer_sink *gs);

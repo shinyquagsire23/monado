@@ -214,7 +214,8 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		struct xrt_tracking_override *o = &ts->overrides[ts->gui_edit_override_index];
 
 		igBegin("Tracker Device Offset", NULL, 0);
-		int target = -1, tracker = -1;
+		int target = -1;
+		int tracker = -1;
 		if (get_indices(p, ts, o, &target, &tracker)) {
 			igText("Editing %s [%s] <- %s [%s]", p->xdevs[target]->str, o->target_device_serial,
 			       p->xdevs[tracker]->str, o->tracker_device_serial);

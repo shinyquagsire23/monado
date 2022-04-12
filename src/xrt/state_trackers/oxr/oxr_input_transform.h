@@ -191,7 +191,7 @@ oxr_input_transform_process(const struct oxr_input_transform *transforms,
  * @public @memberof oxr_input_transform
  */
 bool
-oxr_input_transform_init_root(struct oxr_input_transform *transform, const enum xrt_input_type input_type);
+oxr_input_transform_init_root(struct oxr_input_transform *transform, enum xrt_input_type input_type);
 
 /*!
  * Allocate a transform to get the X component of a Vec2.

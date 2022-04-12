@@ -209,7 +209,7 @@ OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV, Vector2 const &i
 
 
 Vector2
-OpticalSystem::DisplayUVToRenderUVPreviousSeed(Vector2 inputUV)
+OpticalSystem::DisplayUVToRenderUVPreviousSeed(const Vector2 &inputUV)
 {
 	// if we don't find a point we generate it and add it to our list
 	Vector2 curDisplayUV;

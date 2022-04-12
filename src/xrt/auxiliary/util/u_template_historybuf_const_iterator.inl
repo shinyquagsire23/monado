@@ -42,11 +42,11 @@ namespace detail {
 
 		// copy and move as you wish
 		HistoryBufConstIterator(HistoryBufConstIterator const &) = default;
-		HistoryBufConstIterator(HistoryBufConstIterator &&) = default;
+		HistoryBufConstIterator(HistoryBufConstIterator &&) noexcept = default;
 		HistoryBufConstIterator &
 		operator=(HistoryBufConstIterator const &) = default;
 		HistoryBufConstIterator &
-		operator=(HistoryBufConstIterator &&) = default;
+		operator=(HistoryBufConstIterator &&) noexcept = default;
 
 		//! Implicit conversion from a non-const iterator
 		HistoryBufConstIterator(const HistoryBufIterator<T, MaxSize> &other);
@@ -119,19 +119,19 @@ namespace detail {
 		static Self
 		begin(container_type &container, const RingBufferHelper &helper)
 		{
-			return {&container, std::move(base::begin(helper))};
+			return {&container, base::begin(helper)};
 		}
 
 		//! Construct the "past the end" iterator that can be decremented safely
 		static Self
 		end(container_type &container, const RingBufferHelper &helper)
 		{
-			return {&container, std::move(base::end(helper))};
+			return {&container, base::end(helper)};
 		}
 
 		// for use internally
 		HistoryBufConstIterator(container_type *container, base &&iter_base)
-		    : base(std::move(iter_base)), container_(container)
+		    : base(iter_base), container_(container)
 		{}
 		container_type *container_{nullptr};
 	};

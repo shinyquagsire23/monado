@@ -233,7 +233,8 @@ client_gl_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                              const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	struct xrt_swapchain *l_xscn, *r_xscn;
+	struct xrt_swapchain *l_xscn;
+	struct xrt_swapchain *r_xscn;
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
 
@@ -256,7 +257,10 @@ client_gl_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
                                                    const struct xrt_layer_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
-	struct xrt_swapchain *l_xscn, *r_xscn, *l_d_xscn, *r_d_xscn;
+	struct xrt_swapchain *l_xscn;
+	struct xrt_swapchain *r_xscn;
+	struct xrt_swapchain *l_d_xscn;
+	struct xrt_swapchain *r_d_xscn;
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION_DEPTH);
 

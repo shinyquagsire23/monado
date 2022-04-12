@@ -357,7 +357,10 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 }
 
 void
-wmr_source_push_imu_packet(struct xrt_fs *xfs, uint64_t ts[4], struct xrt_vec3 accels[4], struct xrt_vec3 gyros[4])
+wmr_source_push_imu_packet(struct xrt_fs *xfs,
+                           const uint64_t ts[4],
+                           struct xrt_vec3 accels[4],
+                           struct xrt_vec3 gyros[4])
 {
 	DRV_TRACE_MARKER();
 

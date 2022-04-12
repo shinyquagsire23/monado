@@ -347,7 +347,7 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
  * @ingroup ipc_server
  */
 void
-ipc_server_set_active_client(struct ipc_server *s, int active_client_index);
+ipc_server_set_active_client(struct ipc_server *s, int client_id);
 
 /*!
  * Called by client threads to set a session to active.
@@ -379,7 +379,7 @@ ipc_server_update_state(struct ipc_server *s);
  * @ingroup ipc_server
  */
 void *
-ipc_server_client_thread(void *_cs);
+ipc_server_client_thread(void *_ics);
 
 /*!
  * This destroys the native compositor for this client and any extra objects

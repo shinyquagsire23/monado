@@ -40,7 +40,8 @@ split_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 
 	int one_frame_width = xf->width / 2;
 
-	struct xrt_rect left, right;
+	struct xrt_rect left;
+	struct xrt_rect right;
 
 	left.offset.h = 0;
 	left.offset.w = 0;

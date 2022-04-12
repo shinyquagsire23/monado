@@ -107,9 +107,9 @@ process_frame(DebugHSVViewer &d, struct xrt_frame *xf)
 
 	for (uint32_t yp = 0; yp < SIZE; yp++) {
 		for (int chan = 0; chan < NUM_CHAN; chan++) {
-			auto hsv_cap = bgr.ptr<uint8_t>(yp + SIZE * chan);
-			auto hsv_opt = bgr.ptr<uint8_t>(yp + SIZE * chan) + 256 * 3;
-			auto hsv_diff = bgr.ptr<uint8_t>(yp + SIZE * chan) + 512 * 3;
+			auto *hsv_cap = bgr.ptr<uint8_t>(yp + SIZE * chan);
+			auto *hsv_opt = bgr.ptr<uint8_t>(yp + SIZE * chan) + 256 * 3;
+			auto *hsv_diff = bgr.ptr<uint8_t>(yp + SIZE * chan) + 512 * 3;
 			int mask = 1 << chan;
 
 			for (uint32_t xp = 0; xp < SIZE; xp++) {
@@ -160,7 +160,7 @@ t_debug_hsv_viewer_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_debug_hsv_viewer_destroy(struct xrt_frame_node *node)
 {
-	auto d = container_of(node, DebugHSVViewer, node);
+	auto *d = container_of(node, DebugHSVViewer, node);
 	delete d;
 }
 

@@ -540,7 +540,7 @@ VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
                  bool only_compute,
-                 VkQueueGlobalPriorityEXT global_priorty,
+                 VkQueueGlobalPriorityEXT global_priority,
                  struct u_string_list *required_device_ext_list,
                  struct u_string_list *optional_device_ext_list,
                  const struct vk_device_features *optional_device_features);
@@ -953,7 +953,7 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
  * Does error logging.
  */
 VkResult
-vk_create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd);
+vk_create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_command_buffer);
 
 /*!
  * Destroys a command buffer, takes the cmd_pool_mutex.

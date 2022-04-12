@@ -815,9 +815,9 @@ oxr_swapchain_to_openxr(struct oxr_swapchain *sc)
 }
 
 XrResult
-oxr_create_swapchain(struct oxr_logger *,
+oxr_create_swapchain(struct oxr_logger * /*log*/,
                      struct oxr_session *sess,
-                     const XrSwapchainCreateInfo *,
+                     const XrSwapchainCreateInfo * /*createInfo*/,
                      struct oxr_swapchain **out_swapchain);
 
 
@@ -1007,9 +1007,9 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL) || defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 XrResult
-oxr_swapchain_gl_create(struct oxr_logger *,
+oxr_swapchain_gl_create(struct oxr_logger * /*log*/,
                         struct oxr_session *sess,
-                        const XrSwapchainCreateInfo *,
+                        const XrSwapchainCreateInfo * /*createInfo*/,
                         struct oxr_swapchain **out_swapchain);
 
 #endif // XR_USE_GRAPHICS_API_OPENGL || XR_USE_GRAPHICS_API_OPENGL_ES
@@ -1081,9 +1081,9 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_session *sess);
 
 XrResult
-oxr_swapchain_vk_create(struct oxr_logger *,
+oxr_swapchain_vk_create(struct oxr_logger * /*log*/,
                         struct oxr_session *sess,
-                        const XrSwapchainCreateInfo *,
+                        const XrSwapchainCreateInfo * /*createInfo*/,
                         struct oxr_swapchain **out_swapchain);
 
 #endif

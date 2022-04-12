@@ -7,10 +7,6 @@
  * @ingroup st_prober
  */
 
-#ifdef _MSC_VER
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
 #include <xrt/xrt_device.h>
 #include "xrt/xrt_settings.h"
 #include "xrt/xrt_config.h"
@@ -311,10 +307,10 @@ u_config_json_get_tracking_overrides(struct u_config_json *json,
 		bad |= !get_obj_str(override, "tracker_device_serial", o->tracker_device_serial, XRT_DEVICE_NAME_LEN);
 
 		char override_type[256];
-		bad |= !get_obj_str(override, "type", override_type, 256);
-		if (strncmp(override_type, "direct", 256) == 0) {
+		bad |= !get_obj_str(override, "type", override_type, sizeof(override_type));
+		if (strncmp(override_type, "direct", sizeof(override_type) - 1) == 0) {
 			o->override_type = XRT_TRACKING_OVERRIDE_DIRECT;
-		} else if (strncmp(override_type, "attached", 256) == 0) {
+		} else if (strncmp(override_type, "attached", sizeof(override_type) - 1) == 0) {
 			o->override_type = XRT_TRACKING_OVERRIDE_ATTACHED;
 		}
 

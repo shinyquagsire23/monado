@@ -314,7 +314,7 @@ dist_3d(Eigen::Vector4f a, Eigen::Vector4f b)
 }
 
 static float
-dist_3d_cv(cv::Point3f a, cv::Point3f b)
+dist_3d_cv(const cv::Point3f &a, const cv::Point3f &b)
 {
 	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
 }
@@ -508,7 +508,7 @@ static void
 remove_outliers(std::vector<blob_point_t> *orig_points, std::vector<blob_point_t> *pruned_points, float outlier_thresh)
 {
 
-	if (orig_points->size() == 0) {
+	if (orig_points->empty()) {
 		return;
 	}
 
@@ -523,7 +523,7 @@ remove_outliers(std::vector<blob_point_t> *orig_points, std::vector<blob_point_t
 			temp_points.push_back(orig_points->at(i));
 		}
 	}
-	if (temp_points.size() == 0) {
+	if (temp_points.empty()) {
 		return;
 	}
 
@@ -620,12 +620,12 @@ merge_close_points(std::vector<blob_point_t> *orig_points, std::vector<blob_poin
 static void
 match_triangles(Eigen::Matrix4f *t1_mat,
                 Eigen::Matrix4f *t1_to_t2_mat,
-                Eigen::Vector4f t1_a,
-                Eigen::Vector4f t1_b,
-                Eigen::Vector4f t1_c,
-                Eigen::Vector4f t2_a,
-                Eigen::Vector4f t2_b,
-                Eigen::Vector4f t2_c)
+                const Eigen::Vector4f &t1_a,
+                const Eigen::Vector4f &t1_b,
+                const Eigen::Vector4f &t1_c,
+                const Eigen::Vector4f &t2_a,
+                const Eigen::Vector4f &t2_b,
+                const Eigen::Vector4f &t2_c)
 {
 	// given 3 vertices in 'model space', and a corresponding 3 vertices
 	// in 'world space', compute the transformation matrix to map one
@@ -834,7 +834,7 @@ solve_with_imu(TrackerPSVR &t,
 		proximity_data.push_back(p);
 	}
 
-	if (proximity_data.size() > 0) {
+	if (!proximity_data.empty()) {
 
 		// use the IMU rotation and the measured points in
 		// world space to compute a transform from model to world space.
@@ -899,7 +899,7 @@ disambiguate(TrackerPSVR &t,
 	Eigen::Matrix4f imu_solved_pose =
 	    solve_with_imu(t, measured_points, last_measurement, solved, PSVR_SEARCH_RADIUS);
 
-	if (measured_points->size() < PSVR_OPTICAL_SOLVE_THRESH && last_measurement->size() > 0) {
+	if (measured_points->size() < PSVR_OPTICAL_SOLVE_THRESH && !last_measurement->empty()) {
 		return imu_solved_pose;
 	}
 
@@ -998,7 +998,10 @@ disambiguate(TrackerPSVR &t,
 			float prev_diff = last_diff(t, &meas_solved, &t.last_vertices);
 			float imu_diff = last_diff(t, &meas_solved, solved);
 
-			Eigen::Vector4f tl_pos, tr_pos, bl_pos, br_pos;
+			Eigen::Vector4f tl_pos;
+			Eigen::Vector4f tr_pos;
+			Eigen::Vector4f bl_pos;
+			Eigen::Vector4f br_pos;
 			bool has_bl = false;
 			bool has_br = false;
 			bool has_tl = false;
@@ -1147,7 +1150,6 @@ public:
 	uint32_t indices[PSVR_NUM_LEDS];
 
 
-public:
 	~Helper()
 	{
 		m_permutator_reset(&mp);
@@ -1269,7 +1271,7 @@ typedef struct blob_data
 
 
 static void
-sample_line(cv::Mat &src, cv::Point2i start, cv::Point2i end, int *inside_length)
+sample_line(cv::Mat &src, const cv::Point2i &start, const cv::Point2i &end, int *inside_length)
 {
 	// use bresenhams algorithm to sample the
 	// pixels between two points in an image
@@ -1589,7 +1591,7 @@ process(TrackerPSVR &t, struct xrt_frame *xf)
 	// Convert our 2d point + disparities into 3d points.
 	std::vector<blob_data_t> blob_datas;
 
-	if (t.l_blobs.size() > 0) {
+	if (!t.l_blobs.empty()) {
 		for (uint32_t i = 0; i < t.l_blobs.size(); i++) {
 			float disp = t.r_blobs[i].pt.x - t.l_blobs[i].pt.x;
 			cv::Vec4d xydw(t.l_blobs[i].pt.x, t.l_blobs[i].pt.y, disp, 1.0f);
@@ -1785,7 +1787,7 @@ process(TrackerPSVR &t, struct xrt_frame *xf)
 		t.last_vertices.push_back(solved[i]);
 	}
 
-	if (t.last_vertices.size() > 0) {
+	if (!t.last_vertices.empty()) {
 		filter_update(&t.last_vertices, t.track_filters, dt / 1000.0f);
 	}
 
@@ -1999,7 +2001,7 @@ t_psvr_node_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_psvr_node_destroy(struct xrt_frame_node *node)
 {
-	auto t_ptr = container_of(node, TrackerPSVR, node);
+	auto *t_ptr = container_of(node, TrackerPSVR, node);
 
 	os_thread_helper_destroy(&t_ptr->oth);
 

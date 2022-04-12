@@ -102,12 +102,12 @@ struct m_filter_euro_quat
 };
 
 void
-m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, double fc_min_d);
+m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min_d, double beta);
 void
 m_filter_euro_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y);
 
 void
-m_filter_euro_vec2_init(struct m_filter_euro_vec2 *f, double fc_min, double beta, double fc_min_d);
+m_filter_euro_vec2_init(struct m_filter_euro_vec2 *f, double fc_min, double fc_min_d, double beta);
 void
 m_filter_euro_vec2_run(struct m_filter_euro_vec2 *f, uint64_t ts, const struct xrt_vec2 *in_y, struct xrt_vec2 *out_y);
 void

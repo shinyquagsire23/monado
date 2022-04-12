@@ -125,7 +125,7 @@ filter_one_euro_compute_alpha(const struct m_filter_one_euro_base *f, double dt,
 
 
 void
-m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double beta, double fc_min_d)
+m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min_d, double beta)
 {
 	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
 }

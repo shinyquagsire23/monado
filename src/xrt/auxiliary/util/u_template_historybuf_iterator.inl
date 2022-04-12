@@ -41,11 +41,11 @@ namespace detail {
 
 		// copy and move as you wish
 		HistoryBufIterator(HistoryBufIterator const &) = default;
-		HistoryBufIterator(HistoryBufIterator &&) = default;
+		HistoryBufIterator(HistoryBufIterator &&) noexcept = default;
 		HistoryBufIterator &
 		operator=(HistoryBufIterator const &) = default;
 		HistoryBufIterator &
-		operator=(HistoryBufIterator &&) = default;
+		operator=(HistoryBufIterator &&) noexcept = default;
 
 		//! Is this iterator valid?
 		bool
@@ -115,19 +115,18 @@ namespace detail {
 		static Self
 		begin(container_type &container, const RingBufferHelper &helper)
 		{
-			return {&container, std::move(base::begin(helper))};
+			return {&container, base::begin(helper)};
 		}
 
 		//! Construct the "past the end" iterator that can be decremented safely
 		static Self
 		end(container_type &container, const RingBufferHelper &helper)
 		{
-			return {&container, std::move(base::end(helper))};
+			return {&container, base::end(helper)};
 		}
 
 		// for use internally
-		HistoryBufIterator(container_type *container, base &&iter_base)
-		    : base(std::move(iter_base)), container_(container)
+		HistoryBufIterator(container_type *container, base &&iter_base) : base(iter_base), container_(container)
 		{}
 		container_type *container_{nullptr};
 	};
@@ -136,7 +135,7 @@ namespace detail {
 	inline typename HistoryBufIterator<T, MaxSize>::reference
 	HistoryBufIterator<T, MaxSize>::operator*() const
 	{
-		auto ptr = container_->get_at_index(base::index());
+		auto *ptr = container_->get_at_index(base::index());
 		if (ptr == nullptr) {
 			throw std::out_of_range("Iterator index out of range");
 		}

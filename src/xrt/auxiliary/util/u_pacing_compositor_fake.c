@@ -177,7 +177,7 @@ pc_destroy(struct u_pacing_compositor *upc)
  */
 
 xrt_result_t
-u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_pacing_compositor **out_uft)
+u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_pacing_compositor **out_upc)
 {
 	struct fake_timing *ft = U_TYPED_CALLOC(struct fake_timing);
 	ft->base.predict = pc_predict;
@@ -200,7 +200,7 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	ft->last_display_time_ns = now_ns + U_TIME_1MS_IN_NS * 50.0;
 
 	// Return value.
-	*out_uft = &ft->base;
+	*out_upc = &ft->base;
 
 	U_LOG_I("Created fake timing");
 

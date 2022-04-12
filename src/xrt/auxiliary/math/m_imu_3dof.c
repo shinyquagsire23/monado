@@ -117,8 +117,10 @@ gravity_correction(struct m_imu_3dof *f,
 		return;
 	}
 
-	const float gravity_tolerance = .9f, gyro_tolerance = .1f;
-	const float min_tilt_error = 0.05f, max_tilt_error = 0.01f;
+	const float gravity_tolerance = .9f;
+	const float gyro_tolerance = .1f;
+	const float min_tilt_error = 0.05f;
+	const float max_tilt_error = 0.01f;
 
 	/*
 	 * If the device is within tolerance levels, count this
@@ -196,7 +198,8 @@ gravity_correction(struct m_imu_3dof *f,
 		f->grav.error_angle += correction_radians;
 
 		// Perform the correction.
-		struct xrt_quat corr_quat, old_orient;
+		struct xrt_quat corr_quat;
+		struct xrt_quat old_orient;
 		math_quat_from_angle_vector(correction_radians, &f->grav.error_axis, &corr_quat);
 		old_orient = f->rot;
 		math_quat_rotate(&corr_quat, &old_orient, &f->rot);

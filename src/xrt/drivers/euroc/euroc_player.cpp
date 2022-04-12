@@ -453,7 +453,8 @@ euroc_player_push_next_frame(struct euroc_player *ep)
 {
 	bool stereo = ep->playback.stereo;
 
-	struct xrt_frame *left_xf = NULL, *right_xf = NULL;
+	struct xrt_frame *left_xf = NULL;
+	struct xrt_frame *right_xf = NULL;
 	euroc_player_load_next_frame(ep, true, left_xf);
 	if (stereo) {
 		// TODO: Some SLAM systems expect synced frames, but that's not an
@@ -787,8 +788,6 @@ euroc_player_destroy(struct xrt_frame_node *node)
 	m_ff_vec3_f32_free(&ep->accel_ff);
 
 	free(ep);
-
-	return;
 }
 
 

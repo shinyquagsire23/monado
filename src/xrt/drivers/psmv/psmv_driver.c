@@ -1295,7 +1295,8 @@ psmv_get_calibration_zcm1(struct psmv_device *psmv)
 	struct psmv_calibration_zcm1 data;
 	uint8_t *dst = (uint8_t *)&data;
 	int ret = 0;
-	size_t src_offset, dst_offset;
+	size_t src_offset;
+	size_t dst_offset;
 
 	for (int i = 0; i < 3; i++) {
 		struct psmv_calibration_part part = {0};
@@ -1511,7 +1512,8 @@ psmv_get_calibration_zcm2(struct psmv_device *psmv)
 	struct psmv_calibration_zcm2 data;
 	uint8_t *dst = (uint8_t *)&data;
 	int ret = 0;
-	size_t src_offset, dst_offset;
+	size_t src_offset;
+	size_t dst_offset;
 
 	for (int i = 0; i < 2; i++) {
 		struct psmv_calibration_part part = {0};

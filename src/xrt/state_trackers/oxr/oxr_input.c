@@ -557,15 +557,14 @@ do_io_bindings(struct oxr_binding *binding_point,
 		    matched_path,  //
 		    outputs,       //
 		    output_count); //
-	} else {
-		return do_inputs(  //
-		    binding_point, //
-		    xdev,          //
-		    xbp,           //
-		    matched_path,  //
-		    inputs,        //
-		    input_count);  //
 	}
+	return do_inputs(  //
+	    binding_point, //
+	    xdev,          //
+	    xbp,           //
+	    matched_path,  //
+	    inputs,        //
+	    input_count);  //
 }
 
 static struct xrt_binding_profile *

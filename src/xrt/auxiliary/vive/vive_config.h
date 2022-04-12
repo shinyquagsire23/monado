@@ -209,7 +209,7 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
  * Free any allocated resources on this config.
  */
 void
-vive_config_teardown(struct vive_config *d);
+vive_config_teardown(struct vive_config *config);
 
 struct vive_controller_device;
 

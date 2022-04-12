@@ -99,7 +99,7 @@ struct t_stereo_camera_calibration
 };
 
 /*!
- * Allocates a new stereo calibration data, unreferences the old @p calib.
+ * Allocates a new stereo calibration data, unreferences the old data pointed to by @p out_c.
  *
  * Also initializes t_camera_calibration::distortion_num in t_stereo_camera_calibration::view, only 5 and 14 is
  * accepted.
@@ -107,7 +107,7 @@ struct t_stereo_camera_calibration
  * @public @memberof t_stereo_camera_calibration
  */
 void
-t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **calib, uint32_t distortion_num);
+t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **out_c, uint32_t distortion_num);
 
 /*!
  * Only to be called by @p t_stereo_camera_calibration_reference.
@@ -188,7 +188,7 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_cal
  * @relates t_stereo_camera_calibration
  */
 bool
-t_stereo_camera_calibration_from_json_v2(cJSON *json, struct t_stereo_camera_calibration **out_data);
+t_stereo_camera_calibration_from_json_v2(cJSON *json, struct t_stereo_camera_calibration **out_stereo);
 
 /*!
  * Convert the given stereo calibration data into a json object in v2 format.
@@ -196,7 +196,7 @@ t_stereo_camera_calibration_from_json_v2(cJSON *json, struct t_stereo_camera_cal
  * @relates t_stereo_camera_calibration
  */
 bool
-t_stereo_camera_calibration_to_json_v2(cJSON **out_json, struct t_stereo_camera_calibration *data);
+t_stereo_camera_calibration_to_json_v2(cJSON **out_cjson, struct t_stereo_camera_calibration *data);
 
 
 /*!

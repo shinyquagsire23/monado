@@ -76,7 +76,8 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 {
 	// no fd provided
 	struct sockaddr_un addr;
-	int fd, ret;
+	int fd;
+	int ret;
 
 	fd = socket(PF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0) {
@@ -143,7 +144,8 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 static int
 init_listen_socket(struct ipc_server_mainloop *ml)
 {
-	int fd = -1, ret;
+	int fd = -1;
+	int ret;
 	ml->listen_socket = -1;
 
 	ret = get_systemd_socket(ml, &fd);

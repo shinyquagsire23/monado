@@ -103,9 +103,7 @@ euroc_device(struct xrt_device *xdev)
 
 static void
 euroc_device_update_inputs(struct xrt_device *xdev)
-{
-	return;
-}
+{}
 
 //! Corrections specific for original euroc datasets and Kimera.
 //! If your datasets comes from a different camera you should probably

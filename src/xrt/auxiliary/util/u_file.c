@@ -66,7 +66,7 @@ u_file_get_config_dir(char *out_path, size_t out_path_size)
 }
 
 ssize_t
-u_file_get_path_in_config_dir(const char *filename, char *out_path, size_t out_path_size)
+u_file_get_path_in_config_dir(const char *suffix, char *out_path, size_t out_path_size)
 {
 	char tmp[PATH_MAX];
 	ssize_t i = u_file_get_config_dir(tmp, sizeof(tmp));
@@ -74,7 +74,7 @@ u_file_get_path_in_config_dir(const char *filename, char *out_path, size_t out_p
 		return -1;
 	}
 
-	return snprintf(out_path, out_path_size, "%s/%s", tmp, filename);
+	return snprintf(out_path, out_path_size, "%s/%s", tmp, suffix);
 }
 
 FILE *
@@ -117,7 +117,7 @@ u_file_get_runtime_dir(char *out_path, size_t out_path_size)
 }
 
 ssize_t
-u_file_get_path_in_runtime_dir(const char *filename, char *out_path, size_t out_path_size)
+u_file_get_path_in_runtime_dir(const char *suffix, char *out_path, size_t out_path_size)
 {
 	char tmp[PATH_MAX];
 	ssize_t i = u_file_get_runtime_dir(tmp, sizeof(tmp));
@@ -125,7 +125,7 @@ u_file_get_path_in_runtime_dir(const char *filename, char *out_path, size_t out_
 		return -1;
 	}
 
-	return snprintf(out_path, out_path_size, "%s/%s", tmp, filename);
+	return snprintf(out_path, out_path_size, "%s/%s", tmp, suffix);
 }
 
 #endif

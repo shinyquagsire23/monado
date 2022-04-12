@@ -326,9 +326,8 @@ ipc_receive_handles_graphics_sync(struct ipc_message_channel *imc,
 	//! @todo Temporary hack to send no handles.
 	if (handle_count == 0) {
 		return ipc_receive(imc, out_data, size);
-	} else {
-		return ipc_receive_fds(imc, out_data, size, out_handles, handle_count);
 	}
+	return ipc_receive_fds(imc, out_data, size, out_handles, handle_count);
 }
 
 xrt_result_t
@@ -341,9 +340,8 @@ ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
 	//! @todo Temporary hack to send no handles.
 	if (handle_count == 0) {
 		return ipc_send(imc, data, size);
-	} else {
-		return ipc_send_fds(imc, data, size, handles, handle_count);
 	}
+	return ipc_send_fds(imc, data, size, handles, handle_count);
 }
 
 #else

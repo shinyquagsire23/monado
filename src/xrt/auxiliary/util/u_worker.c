@@ -109,9 +109,9 @@ struct group
  */
 
 static inline struct group *
-group(struct u_worker_group *uwp)
+group(struct u_worker_group *uwg)
 {
-	return (struct group *)uwp;
+	return (struct group *)uwg;
 }
 
 static inline struct pool *
@@ -464,11 +464,11 @@ u_worker_group_create(struct u_worker_thread_pool *uwtp)
 }
 
 void
-u_worker_group_push(struct u_worker_group *uwp, u_worker_group_func_t f, void *data)
+u_worker_group_push(struct u_worker_group *uwg, u_worker_group_func_t f, void *data)
 {
 	XRT_TRACE_MARKER();
 
-	struct group *g = group(uwp);
+	struct group *g = group(uwg);
 	struct pool *p = pool(g->uwtp);
 
 	os_mutex_lock(&p->mutex);
@@ -476,7 +476,7 @@ u_worker_group_push(struct u_worker_group *uwp, u_worker_group_func_t f, void *d
 		os_mutex_unlock(&p->mutex);
 
 		//! @todo Don't wait all, wait one.
-		u_worker_group_wait_all(uwp);
+		u_worker_group_wait_all(uwg);
 
 		os_mutex_lock(&p->mutex);
 	}
@@ -492,11 +492,11 @@ u_worker_group_push(struct u_worker_group *uwp, u_worker_group_func_t f, void *d
 }
 
 void
-u_worker_group_wait_all(struct u_worker_group *uwp)
+u_worker_group_wait_all(struct u_worker_group *uwg)
 {
 	XRT_TRACE_MARKER();
 
-	struct group *g = group(uwp);
+	struct group *g = group(uwg);
 	struct pool *p = pool(g->uwtp);
 
 	os_mutex_lock(&p->mutex);
@@ -517,18 +517,18 @@ u_worker_group_wait_all(struct u_worker_group *uwp)
 }
 
 void
-u_worker_group_destroy(struct u_worker_group *uwp)
+u_worker_group_destroy(struct u_worker_group *uwg)
 {
 	XRT_TRACE_MARKER();
 
-	struct group *g = group(uwp);
+	struct group *g = group(uwg);
 	assert(g->base.reference.count == 0);
 
-	u_worker_group_wait_all(uwp);
+	u_worker_group_wait_all(uwg);
 
 	u_worker_thread_pool_reference(&g->uwtp, NULL);
 
 	os_cond_destroy(&g->waiting.cond);
 
-	free(uwp);
+	free(uwg);
 }

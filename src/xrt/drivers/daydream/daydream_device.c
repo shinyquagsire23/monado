@@ -88,7 +88,8 @@ update_fusion(struct daydream_device *dd,
               time_duration_ns delta_ns)
 {
 
-	struct xrt_vec3 accel, gyro;
+	struct xrt_vec3 accel;
+	struct xrt_vec3 gyro;
 	m_imu_pre_filter_data(&dd->pre_filter, &sample->accel, &sample->gyro, &accel, &gyro);
 
 	DAYDREAM_DEBUG(dd,

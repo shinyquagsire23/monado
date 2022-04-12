@@ -269,7 +269,8 @@ update_imu(struct vive_device *d, const void *buffer)
 	const struct vive_imu_sample *sample = report->sample;
 	uint8_t last_seq = d->imu.sequence;
 	d->imu.ts_received_ns = os_monotonic_get_ns();
-	int i, j;
+	int i;
+	int j;
 
 	/*
 	 * The three samples are updated round-robin. New messages

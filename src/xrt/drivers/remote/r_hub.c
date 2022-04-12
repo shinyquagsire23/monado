@@ -29,7 +29,7 @@
 #define __USE_MISC // SOL_TCP on C11
 #endif
 #ifndef _BSD_SOURCE
-#define _BSD_SOURCE // same, but for musl
+#define _BSD_SOURCE // same, but for musl // NOLINT
 #endif
 
 #include <netinet/tcp.h>
@@ -85,7 +85,8 @@ int
 do_accept(struct r_hub *r)
 {
 	struct sockaddr_in addr = {0};
-	int ret, conn_fd;
+	int ret;
+	int conn_fd;
 
 	socklen_t addr_length = (socklen_t)sizeof(addr);
 	ret = accept(r->accept_fd, (struct sockaddr *)&addr, &addr_length);
@@ -286,7 +287,8 @@ r_remote_connection_read_one(struct r_remote_connection *rc, struct r_remote_dat
 		ssize_t ret = read(rc->fd, ptr, size - current);
 		if (ret < 0) {
 			return ret;
-		} else if (ret > 0) {
+		}
+		if (ret > 0) {
 			current += (size_t)ret;
 		} else {
 			U_LOG_I("Disconnected!");
@@ -309,7 +311,8 @@ r_remote_connection_write_one(struct r_remote_connection *rc, const struct r_rem
 		ssize_t ret = write(rc->fd, ptr, size - current);
 		if (ret < 0) {
 			return ret;
-		} else if (ret > 0) {
+		}
+		if (ret > 0) {
 			current += (size_t)ret;
 		} else {
 			U_LOG_I("Disconnected!");

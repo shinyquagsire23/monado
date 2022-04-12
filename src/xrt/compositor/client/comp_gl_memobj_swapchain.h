@@ -49,7 +49,7 @@ struct xrt_swapchain *
 client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
                                   const struct xrt_swapchain_create_info *info,
                                   struct xrt_swapchain_native *xscn,
-                                  struct client_gl_swapchain **out_sc);
+                                  struct client_gl_swapchain **out_cglsc);
 
 
 #ifdef __cplusplus

@@ -140,9 +140,13 @@ struct wmr_camera
 static bool
 compute_frame_size(struct wmr_camera *cam)
 {
-	int i, cams_found = 0;
-	int width, height;
-	size_t F, n_packets, leftover;
+	int i;
+	int cams_found = 0;
+	int width;
+	int height;
+	size_t F;
+	size_t n_packets;
+	size_t leftover;
 
 	F = 26;
 
@@ -402,7 +406,8 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	DRV_TRACE_MARKER();
 
 	struct wmr_camera *cam = calloc(1, sizeof(struct wmr_camera));
-	int res, i;
+	int res;
+	int i;
 
 	cam->log_level = log_level;
 	cam->debug_gain = DEFAULT_GAIN;
@@ -572,7 +577,8 @@ wmr_camera_stop(struct wmr_camera *cam)
 {
 	DRV_TRACE_MARKER();
 
-	int res, i;
+	int res;
+	int i;
 
 	if (!cam->running) {
 		return true;

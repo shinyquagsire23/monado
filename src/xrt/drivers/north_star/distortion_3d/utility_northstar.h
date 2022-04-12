@@ -84,7 +84,7 @@ public:
 	};
 
 	inline Vector3
-	operator-(Vector3 &rhs) const
+	operator-(const Vector3 &rhs) const
 	{
 		Vector3 ret;
 		ret.x = (x - rhs.x);
@@ -158,7 +158,7 @@ public:
 	}
 
 	inline static float
-	Angle(Vector3 v0, Vector3 v1)
+	Angle(const Vector3 &v0, const Vector3 &v1)
 	{
 		Vector3 dir0 = v0.Normalized();
 		Vector3 dir1 = v1.Normalized();
@@ -196,7 +196,7 @@ public:
 	}
 
 	inline static Vector3
-	Reflect(Vector3 inDirection, Vector3 inNormal)
+	Reflect(const Vector3 &inDirection, const Vector3 &inNormal)
 	{
 		return inNormal * -2.F * Dot(inNormal, inDirection) + inDirection;
 	}
@@ -235,7 +235,7 @@ public:
 
 
 	inline void
-	rotate(Vector3 axis, float radians)
+	rotate(const Vector3 &axis, float radians)
 	{
 		float cos_theta = cosf(radians);
 		float sin_theta = sinf(radians);
@@ -251,7 +251,7 @@ public:
 	}
 
 	inline Vector3
-	Cross(const Vector3 in) const
+	Cross(const Vector3 &in) const
 	{
 		Vector3 ret;
 		ret.x = y * in.z - z * in.y;
@@ -489,7 +489,7 @@ public:
 	}
 
 	inline Matrix4x4 // Until clang-format-11 is on the CI.
-	operator*(const Matrix4x4 &_in)
+	operator*(const Matrix4x4 &_in) const
 	{
 		Matrix4x4 ret;
 		ret.m00 = (m00 * _in.m00) + (m01 * _in.m10) + (m02 * _in.m20) + (m03 * _in.m30);
@@ -536,7 +536,7 @@ public:
 	}
 
 	inline static Matrix4x4
-	Translate(Vector3 vector)
+	Translate(const Vector3 &vector)
 	{
 		Matrix4x4 m;
 		m.m00 = 1.f;
@@ -559,7 +559,7 @@ public:
 	}
 
 	inline Vector3
-	MultiplyVector(Vector3 vector) const
+	MultiplyVector(const Vector3 &vector) const
 	{
 		Vector3 res;
 		res.x = m00 * vector.x + m01 * vector.y + m02 * vector.z;
@@ -569,7 +569,7 @@ public:
 	}
 
 	inline Vector3
-	MultiplyPoint3x4(Vector3 point) const
+	MultiplyPoint3x4(const Vector3 &point) const
 	{
 		Vector3 res;
 		res.x = m00 * point.x + m01 * point.y + m02 * point.z + m03;
@@ -744,7 +744,7 @@ public:
 class Ray
 {
 public:
-	inline Ray(Vector3 origin, Vector3 direction)
+	inline Ray(const Vector3 &origin, Vector3 direction)
 	{
 		m_Origin = origin;
 		direction.Normalize();
@@ -754,7 +754,7 @@ public:
 	}
 
 	inline Vector3
-	GetPoint(float distance)
+	GetPoint(float distance) const
 	{
 		return m_Origin + m_Direction * distance;
 	}
@@ -872,7 +872,10 @@ public:
 		Vector3 euler;
 		const static float PI_OVER_2 = M_PI * 0.5f;
 		const static float EPSILON = 1e-10f;
-		float sqw, sqx, sqy, sqz;
+		float sqw;
+		float sqx;
+		float sqy;
+		float sqz;
 
 		// quick conversion to Euler angles to give tilt to user
 		sqw = in.w * in.w;
@@ -974,7 +977,7 @@ public:
 	}
 
 	inline static Quaternion
-	AxisAngle(Vector3 axis, float angle)
+	AxisAngle(const Vector3 &axis, float angle)
 	{
 		float halfAngle = angle * .5f;
 		float s = (float)sin(halfAngle);
@@ -987,7 +990,7 @@ public:
 	}
 
 	inline static Quaternion
-	LookAt(Vector3 sourcePoint, Vector3 destPoint)
+	LookAt(const Vector3 &sourcePoint, const Vector3 &destPoint)
 	{
 		Vector3 forwardVector = (destPoint - sourcePoint).Normalized();
 
@@ -1007,7 +1010,7 @@ public:
 	}
 
 	inline static Quaternion
-	QuaternionLookRotation(Vector3 forward, Vector3 Up)
+	QuaternionLookRotation(const Vector3 &forward, const Vector3 &Up)
 	{
 
 		Vector3 vector1 = forward.Normalized();
@@ -1066,10 +1069,13 @@ public:
 	}
 
 	inline static Quaternion
-	FromMatrix(const Matrix4x4 m)
+	FromMatrix(const Matrix4x4 &m)
 	{
 		float tr = m.m00 + m.m11 + m.m22;
-		float qx, qy, qz, qw;
+		float qx;
+		float qy;
+		float qz;
+		float qw;
 
 		if (tr > 0) {
 			float S = sqrtf(tr + 1.f) * 2.f;
@@ -1166,7 +1172,7 @@ public:
 	//}
 
 	inline static Quaternion
-	FromToRotation(Vector3 dir0, Vector3 dir1)
+	FromToRotation(const Vector3 &dir0, const Vector3 &dir1)
 	{
 		Vector3 axis = dir0.Cross(dir1).Normalized();
 		float angle = Vector3::Angle(dir0, dir1);

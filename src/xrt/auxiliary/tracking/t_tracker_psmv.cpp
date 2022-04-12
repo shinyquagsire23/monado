@@ -215,7 +215,7 @@ make_lowest_score_finder(FunctionType scoreFunctor)
 
 //! Convert our 2d point + disparities into 3d points.
 static cv::Point3f
-world_point_from_blobs(cv::Point2f left, cv::Point2f right, const cv::Matx44d &disparity_to_depth)
+world_point_from_blobs(const cv::Point2f &left, const cv::Point2f &right, const cv::Matx44d &disparity_to_depth)
 {
 	float disp = left.x - right.x;
 	cv::Vec4d xydw(left.x, left.y, disp, 1.0f);
@@ -278,7 +278,7 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	do_view(t, t.view[1], r_grey, t.debug.rgb[1]);
 
 	cv::Point3f last_point(t.tracked_object_position.x, t.tracked_object_position.y, t.tracked_object_position.z);
-	auto nearest_world = make_lowest_score_finder<cv::Point3f>([&](cv::Point3f world_point) {
+	auto nearest_world = make_lowest_score_finder<cv::Point3f>([&](const cv::Point3f &world_point) {
 		//! @todo don't really need the square root to be done here.
 		return cv::norm(world_point - last_point);
 	});
@@ -289,8 +289,8 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 	for (const cv::KeyPoint &l_keypoint : t.view[0].keypoints) {
 		cv::Point2f l_blob = l_keypoint.pt;
 
-		auto nearest_blob =
-		    make_lowest_score_finder<cv::Point2f>([&](cv::Point2f r_blob) { return l_blob.x - r_blob.x; });
+		auto nearest_blob = make_lowest_score_finder<cv::Point2f>(
+		    [&](const cv::Point2f &r_blob) { return l_blob.x - r_blob.x; });
 
 		for (const cv::KeyPoint &r_keypoint : t.view[1].keypoints) {
 			cv::Point2f r_blob = r_keypoint.pt;
@@ -507,7 +507,7 @@ t_psmv_node_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_psmv_node_destroy(struct xrt_frame_node *node)
 {
-	auto t_ptr = container_of(node, TrackerPSMV, node);
+	auto *t_ptr = container_of(node, TrackerPSMV, node);
 	os_thread_helper_destroy(&t_ptr->oth);
 
 	// Tidy variable setup.

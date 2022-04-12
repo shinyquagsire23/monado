@@ -116,8 +116,6 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 	im->base_frame.height = extent.height;
 	im->base_frame.size = stride * extent.height;
 	im->base_frame.format = pool->desired_format;
-
-	return;
 }
 
 /*

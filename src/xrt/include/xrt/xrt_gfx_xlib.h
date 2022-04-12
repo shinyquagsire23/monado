@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 
-typedef struct _XDisplay Display;
+typedef struct _XDisplay Display; // NOLINT
 typedef void *GLXFBConfig;
 typedef void *GLXDrawable;
 typedef void *GLXContext;

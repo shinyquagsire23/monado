@@ -359,7 +359,7 @@ public:
 		}
 	}
 
-	struct profile_template *
+	static struct profile_template *
 	get_profile_template(enum xrt_device_name device_name)
 	{
 		for (int i = 0; i < NUM_PROFILE_TEMPLATES; i++) {
@@ -1155,7 +1155,9 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 
 	ret = xrt_instance_select(m_xinst, xdevs, NUM_XDEVS);
 
-	int head, left, right;
+	int head;
+	int left;
+	int right;
 
 	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &head, &left, &right);
 
@@ -1212,8 +1214,6 @@ CServerDriver_Monado::Cleanup()
 	if (m_xinst) {
 		xrt_instance_destroy(&m_xinst);
 	}
-
-	return;
 }
 
 void
@@ -1247,7 +1247,7 @@ CServerDriver_Monado::HandleHapticEvent(vr::VREvent_t *event)
 	}
 	out.vibration.frequency = freq;
 
-	if (controller->m_output_controls.size() < 1) {
+	if (controller->m_output_controls.empty()) {
 		ovrd_log("Controller %s has no outputs\n", controller->m_xdev->str);
 		return;
 	}

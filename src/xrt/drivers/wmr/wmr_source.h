@@ -32,7 +32,10 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 //! @todo IMU data should be generated from within the data source, but right
 //! now we need this function because it is being generated from wmr_hmd
 void
-wmr_source_push_imu_packet(struct xrt_fs *xfs, uint64_t ts[4], struct xrt_vec3 accels[4], struct xrt_vec3 gyros[4]);
+wmr_source_push_imu_packet(struct xrt_fs *xfs,
+                           const uint64_t ts[4],
+                           struct xrt_vec3 accels[4],
+                           struct xrt_vec3 gyros[4]);
 
 /*!
  * @}

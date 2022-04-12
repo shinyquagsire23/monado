@@ -29,18 +29,16 @@ vk_get_semaphore_handle_type(struct vk_bundle *vk)
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	if (vk->external.binary_semaphore_opaque_fd) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
-	} else {
-		return 0;
 	}
+
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	if (vk->external.binary_semaphore_win32_handle) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-	} else {
-		return 0;
 	}
 #else
 #error "Need to port semaphore type code."
 #endif
+	return 0;
 }
 
 #ifdef VK_KHR_timeline_semaphore
@@ -50,18 +48,15 @@ vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	if (vk->external.timeline_semaphore_opaque_fd) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
-	} else {
-		return 0;
 	}
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	if (vk->external.timeline_semaphore_win32_handle) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-	} else {
-		return 0;
 	}
 #else
 #error "Need to port semaphore type code."
 #endif
+	return 0;
 }
 #endif
 

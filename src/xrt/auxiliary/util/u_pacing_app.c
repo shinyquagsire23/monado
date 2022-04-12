@@ -442,7 +442,7 @@ pa_destroy(struct u_pacing_app *upa)
  */
 
 xrt_result_t
-u_pa_create(struct u_pacing_app **out_urt)
+u_pa_create(struct u_pacing_app **out_upa)
 {
 	struct pacing_app *pa = U_TYPED_CALLOC(struct pacing_app);
 	pa->base.predict = pa_predict;
@@ -461,7 +461,7 @@ u_pa_create(struct u_pacing_app **out_urt)
 		pa->frames[i].frame_id = -1;
 	}
 
-	*out_urt = &pa->base;
+	*out_upa = &pa->base;
 
 	return XRT_SUCCESS;
 }

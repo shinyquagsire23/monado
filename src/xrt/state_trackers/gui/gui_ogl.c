@@ -124,7 +124,9 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 		return;
 	}
 
-	GLint w, h, stride;
+	GLint w;
+	GLint h;
+	GLint stride;
 	uint8_t *data;
 
 	w = frame->width;

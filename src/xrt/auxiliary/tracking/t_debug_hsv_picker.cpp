@@ -79,7 +79,7 @@ process_frame_yuv(class DebugHSVPicker &d, struct xrt_frame *xf)
 {
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
-		auto hsv = d.debug.hsv.ptr<uint8_t>(y);
+		auto *hsv = d.debug.hsv.ptr<uint8_t>(y);
 		for (uint32_t x = 0; x < xf->width; x++) {
 			uint8_t y = src[0];
 			uint8_t cb = src[1];
@@ -106,7 +106,7 @@ process_frame_yuyv(class DebugHSVPicker &d, struct xrt_frame *xf)
 {
 	for (uint32_t y = 0; y < xf->height; y++) {
 		uint8_t *src = (uint8_t *)xf->data + y * xf->stride;
-		auto hsv = d.debug.hsv.ptr<uint8_t>(y);
+		auto *hsv = d.debug.hsv.ptr<uint8_t>(y);
 		for (uint32_t x = 0; x < xf->width; x += 2) {
 			uint8_t y1 = src[0];
 			uint8_t cb = src[1];
@@ -211,7 +211,7 @@ t_debug_hsv_picker_break_apart(struct xrt_frame_node *node)
 extern "C" void
 t_debug_hsv_picker_destroy(struct xrt_frame_node *node)
 {
-	auto d = container_of(node, DebugHSVPicker, node);
+	auto *d = container_of(node, DebugHSVPicker, node);
 	delete d;
 }
 

@@ -60,7 +60,8 @@ _get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye
 static void
 _get_pose_from_pos_x_z(const cJSON *obj, struct xrt_pose *pose)
 {
-	struct xrt_vec3 plus_x, plus_z;
+	struct xrt_vec3 plus_x;
+	struct xrt_vec3 plus_z;
 	JSON_VEC3(obj, "plus_x", &plus_x);
 	JSON_VEC3(obj, "plus_z", &plus_z);
 	JSON_VEC3(obj, "position", &pose->position);
@@ -248,7 +249,8 @@ _get_cameras(struct vive_config *d, const cJSON *cameras_json)
 	if (!found_camera_json) {
 		U_LOG_W("HMD is Index, but no cameras in json file!");
 		return false;
-	} else if (!succeeded_parsing_json) {
+	}
+	if (!succeeded_parsing_json) {
 		U_LOG_E("Failed to parse Index camera calibration!");
 		return false;
 	}
@@ -264,7 +266,8 @@ _get_cameras(struct vive_config *d, const cJSON *cameras_json)
 	d->cameras.view[1].headref = camera_to_head;
 
 	// Calculate where in the right camera space the left camera is.
-	struct xrt_pose invert, left_in_right;
+	struct xrt_pose invert;
+	struct xrt_pose left_in_right;
 	math_pose_invert(&d->cameras.view[1].headref, &invert);
 	math_pose_transform(&d->cameras.view[0].headref, &invert, &left_in_right);
 	d->cameras.left_in_right = left_in_right;
@@ -321,7 +324,9 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	}
 
 	struct xrt_vec3 pos = d->cameras.opencv.position;
-	struct xrt_vec3 x = {1, 0, 0}, y = {0, 1, 0}, z = {0, 0, 1};
+	struct xrt_vec3 x = XRT_VEC3_UNIT_X;
+	struct xrt_vec3 y = XRT_VEC3_UNIT_Y;
+	struct xrt_vec3 z = XRT_VEC3_UNIT_Z;
 	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &x, &x);
 	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &y, &y);
 	math_quat_rotate_vec3(&d->cameras.opencv.orientation, &z, &z);

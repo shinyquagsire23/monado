@@ -34,7 +34,7 @@ typedef void *EGLDisplay;
 typedef void *EGLContext;
 typedef void *EGLConfig;
 typedef unsigned int EGLenum;
-typedef void (*__eglMustCastToProperFunctionPointerType)(void);
+typedef void (*__eglMustCastToProperFunctionPointerType)(void); // NOLINT
 typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(const char *procname);
 #endif
 

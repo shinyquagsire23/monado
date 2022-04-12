@@ -45,9 +45,7 @@ struct IdRingbufferIterator : public RandomAccessIteratorBase<const RingBufferHe
 
 	container_type *container_{nullptr};
 
-	IdRingbufferIterator(container_type *container, base &&iter_base)
-	    : base(std::move(iter_base)), container_(container)
-	{}
+	IdRingbufferIterator(container_type *container, base &&iter_base) : base(iter_base), container_(container) {}
 
 	static Self
 	begin(container_type &container)

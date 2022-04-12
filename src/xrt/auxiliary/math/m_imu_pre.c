@@ -64,8 +64,10 @@ m_imu_pre_filter_data(struct m_imu_pre_filter *imu,
                       struct xrt_vec3 *out_accel,
                       struct xrt_vec3 *out_gyro)
 {
-	struct m_imu_pre_filter_part fa, fg;
-	struct xrt_vec3 a, g;
+	struct m_imu_pre_filter_part fa;
+	struct m_imu_pre_filter_part fg;
+	struct xrt_vec3 a;
+	struct xrt_vec3 g;
 	struct xrt_matrix_3x3 m;
 
 	fa = imu->accel;

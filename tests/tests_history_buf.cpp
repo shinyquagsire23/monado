@@ -213,7 +213,7 @@ TEST_CASE("u_template_historybuf")
 	SECTION("behavior when empty")
 	{
 		CHECK(buffer.empty());
-		CHECK(0 == buffer.size());
+		CHECK(0 == buffer.size()); // NOLINT
 		CHECK_FALSE(buffer.begin().valid());
 		CHECK_FALSE(buffer.end().valid());
 		CHECK(buffer.begin() == buffer.end());

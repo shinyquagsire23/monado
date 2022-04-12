@@ -113,9 +113,8 @@ m_relation_chain_reserve(struct xrt_relation_chain *xrc)
 {
 	if (xrc->step_count < XRT_RELATION_CHAIN_CAPACITY) {
 		return &xrc->steps[xrc->step_count++];
-	} else {
-		return NULL;
 	}
+	return NULL;
 }
 
 /*!

@@ -301,10 +301,10 @@ u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, f
 
 	struct xrt_fov fov = values->fov[view];
 
-	float left_ray_bound = tan(fov.angle_left);
-	float right_ray_bound = tan(fov.angle_right);
-	float up_ray_bound = tan(fov.angle_up);
-	float down_ray_bound = tan(fov.angle_down);
+	float left_ray_bound = tanf(fov.angle_left);
+	float right_ray_bound = tanf(fov.angle_right);
+	float up_ray_bound = tanf(fov.angle_up);
+	float down_ray_bound = tanf(fov.angle_down);
 
 	float u_eye = math_map_ranges(x_ray, left_ray_bound, right_ray_bound, 0, 1);
 
@@ -363,10 +363,10 @@ u_compute_distortion_ns_vipd(struct u_ns_vipd_values *values, int view, float u,
 
 	struct xrt_fov fov = values->fov[view];
 
-	float left_ray_bound = tan(fov.angle_left);
-	float right_ray_bound = tan(fov.angle_right);
-	float up_ray_bound = tan(fov.angle_up);
-	float down_ray_bound = tan(fov.angle_down);
+	float left_ray_bound = tanf(fov.angle_left);
+	float right_ray_bound = tanf(fov.angle_right);
+	float up_ray_bound = tanf(fov.angle_up);
+	float down_ray_bound = tanf(fov.angle_down);
 	// printf("%f %f", fov.angle_down, fov.angle_up);
 
 	float u_eye = math_map_ranges(x_ray, left_ray_bound, right_ray_bound, 0, 1);

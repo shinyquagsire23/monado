@@ -1390,7 +1390,7 @@ t_calibration_stereo_create(struct xrt_frame_context *xfctx,
 
 //! Helper for NormalizedCoordsCache constructors
 static inline std::vector<cv::Vec2f>
-generateInputCoordsAndReserveOutputCoords(cv::Size size, std::vector<cv::Vec2f> &outputCoords)
+generateInputCoordsAndReserveOutputCoords(const cv::Size &size, std::vector<cv::Vec2f> &outputCoords)
 {
 	std::vector<cv::Vec2f> inputCoords;
 
@@ -1408,7 +1408,7 @@ generateInputCoordsAndReserveOutputCoords(cv::Size size, std::vector<cv::Vec2f> 
 
 //! Helper for NormalizedCoordsCache constructors
 static inline void
-populateCacheMats(cv::Size size,
+populateCacheMats(const cv::Size &size,
                   const std::vector<cv::Vec2f> &inputCoords,
                   const std::vector<cv::Vec2f> &outputCoords,
                   cv::Mat_<float> &cacheX,

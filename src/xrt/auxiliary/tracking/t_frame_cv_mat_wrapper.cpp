@@ -79,7 +79,7 @@ FrameMat::FrameMat()
  */
 
 void
-FrameMat::wrapR8G8B8(cv::Mat mat, xrt_frame **fm_out, const Params /*&&?*/ params)
+FrameMat::wrapR8G8B8(const cv::Mat &mat, xrt_frame **fm_out, const Params /*&&?*/ params)
 {
 	assert(mat.channels() == 3);
 	assert(mat.type() == CV_8UC3);
@@ -96,7 +96,7 @@ FrameMat::wrapR8G8B8(cv::Mat mat, xrt_frame **fm_out, const Params /*&&?*/ param
 }
 
 void
-FrameMat::wrapL8(cv::Mat mat, xrt_frame **fm_out, const Params /*&&?*/ params)
+FrameMat::wrapL8(const cv::Mat &mat, xrt_frame **fm_out, const Params /*&&?*/ params)
 {
 	assert(mat.channels() == 1);
 	assert(mat.type() == CV_8UC1);

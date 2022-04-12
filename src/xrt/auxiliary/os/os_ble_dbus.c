@@ -72,7 +72,8 @@ add_single_byte_array(DBusMessage *msg, uint8_t value)
 {
 	// Create an array of bytes.
 	const char *container_signature = "y"; // dbus type signature string
-	DBusMessageIter iter, array;
+	DBusMessageIter iter;
+	DBusMessageIter array;
 
 	// attach it to our dbus message
 	dbus_message_iter_init_append(msg, &iter);
@@ -86,7 +87,8 @@ add_empty_dict_sv(DBusMessage *msg)
 {
 	// Create an empty array of string variant dicts.
 	const char *container_signature = "{sv}"; // dbus type signature string
-	DBusMessageIter iter, options;
+	DBusMessageIter iter;
+	DBusMessageIter options;
 
 	// attach it to our dbus message
 	dbus_message_iter_init_append(msg, &iter);
@@ -521,7 +523,8 @@ dbus_has_name(DBusConnection *conn, const char *name)
 static int
 device_has_uuid(const DBusMessageIter *dict, const char *uuid, const char **out_path_str)
 {
-	DBusMessageIter iface_elm, first_elm;
+	DBusMessageIter iface_elm;
+	DBusMessageIter first_elm;
 	const char *iface_str;
 	const char *path_str;
 
@@ -616,7 +619,8 @@ gatt_iface_get_uuid(const DBusMessageIter *iface_elm, const char **out_str)
 static int
 gatt_char_has_uuid_and_notify(const DBusMessageIter *dict, const char *uuid, const char **out_path_str)
 {
-	DBusMessageIter first_elm, iface_elm;
+	DBusMessageIter first_elm;
+	DBusMessageIter iface_elm;
 	const char *iface_str;
 	const char *path_str;
 	const char *uuid_str;
@@ -753,7 +757,8 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 	DBusMessage *msg = NULL;
 	DBusMessageIter args;
 	char *response = NULL;
-	int ret, type;
+	int ret;
+	int type;
 
 	I(bch, "Connecting '%s'", dbus_address);
 
@@ -794,7 +799,8 @@ ble_connect(struct ble_conn_helper *bch, const char *dbus_address)
 static int
 ble_connect_all_devices_with_service_uuid(struct ble_conn_helper *bch, const char *service_uuid)
 {
-	DBusMessageIter args, first_elm;
+	DBusMessageIter args;
+	DBusMessageIter first_elm;
 	DBusMessage *msg = NULL;
 
 	int ret = ble_get_managed_objects(bch, &msg);
@@ -833,7 +839,8 @@ ble_write_value(struct ble_conn_helper *bch, const char *dbus_address, uint8_t v
 	DBusMessage *msg = NULL;
 	DBusMessageIter args;
 	char *response = NULL;
-	int ret, type;
+	int ret;
+	int type;
 
 	msg = dbus_message_new_method_call("org.bluez",                     // target for the method call
 	                                   dbus_address,                    // object to call on
@@ -877,7 +884,8 @@ static ssize_t
 get_path_to_notify_char(
     struct ble_conn_helper *bch, const char *dev_uuid, const char *char_uuid, char *output, size_t output_len)
 {
-	DBusMessageIter args, first_elm;
+	DBusMessageIter args;
+	DBusMessageIter first_elm;
 	DBusMessage *msg;
 
 	int ret = ble_get_managed_objects(bch, &msg);
@@ -1078,7 +1086,8 @@ int
 os_ble_broadcast_write_value(const char *service_uuid, const char *char_uuid, uint8_t value)
 {
 	struct ble_conn_helper bch = {0};
-	DBusMessageIter args, first_elm;
+	DBusMessageIter args;
+	DBusMessageIter first_elm;
 	DBusMessage *msg = NULL;
 	int ret = 0;
 
