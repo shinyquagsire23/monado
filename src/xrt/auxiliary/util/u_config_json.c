@@ -7,6 +7,10 @@
  * @ingroup st_prober
  */
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <xrt/xrt_device.h>
 #include "xrt/xrt_settings.h"
 #include "xrt/xrt_config.h"
@@ -359,7 +363,7 @@ u_config_json_get_tracking_settings(struct u_config_json *json, struct xrt_setti
 	bad |= !get_obj_int(t, "version", &ver);
 	if (bad || ver >= 1) {
 		U_LOG_E("Missing or unknown version tag '%i' in tracking config", ver);
-		return NULL;
+		return false;
 	}
 
 

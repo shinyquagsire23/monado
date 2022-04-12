@@ -49,7 +49,7 @@ public:
 	}
 
 	/*!
-	 * @copydoc u_worker_thread_pool_create.
+	 * @copydoc u_worker_thread_pool_create
 	 */
 	SharedThreadPool(uint32_t starting_worker_count, uint32_t thread_count)
 	{

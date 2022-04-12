@@ -19,12 +19,12 @@ extern "C" {
  * @defgroup aux_pretty Pretty printing functions.
  *
  * Multiple modules implement additional pretty printing functions like
- * @ref st_oxr.
+ * @ref oxr_api.
  *
  * Some functions have a `_indented` suffix added to them, this means that what
  * they print starts indented, but also they start with a newline. This is so
  * they can easily be chained together to form a debug message printing out
- * various information. Most the final logging functions in Monado inserts a
+ * various information. Most of the final logging functions in Monado inserts a
  * newline at the end of the message and we don't want two to be inserted.
  */
 

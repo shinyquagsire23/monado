@@ -17,6 +17,7 @@
 #include <iterator>
 #include <type_traits>
 
+
 using xrt::auxiliary::util::RandomAccessIteratorBase;
 using xrt::auxiliary::util::detail::RingBufferHelper;
 using id_value_type = uint64_t;
@@ -111,16 +112,16 @@ static_assert(std::is_same<typename std::iterator_traits<IdRingbufferIterator>::
               "Iterator should be random access");
 } // namespace
 
-#define DEFAULT_CATCH(RETURNVAL)                                                                                       \
+#define DEFAULT_CATCH(...)                                                                                             \
 	catch (std::exception const &e)                                                                                \
 	{                                                                                                              \
 		U_LOG_E("Caught exception: %s", e.what());                                                             \
-		return RETURNVAL;                                                                                      \
+		return __VA_ARGS__;                                                                                    \
 	}                                                                                                              \
 	catch (...)                                                                                                    \
 	{                                                                                                              \
 		U_LOG_E("Caught exception");                                                                           \
-		return RETURNVAL;                                                                                      \
+		return __VA_ARGS__;                                                                                    \
 	}
 
 struct u_id_ringbuffer *
@@ -277,7 +278,7 @@ handleAlgorithmResult(IdRingbufferIterator it, uint64_t *out_id, uint32_t *out_i
 		*out_id = *it;
 	}
 	if (out_index != nullptr) {
-		*out_index = it.index();
+		*out_index = static_cast<uint32_t>(it.index());
 	}
 	return it.inner_index();
 }
