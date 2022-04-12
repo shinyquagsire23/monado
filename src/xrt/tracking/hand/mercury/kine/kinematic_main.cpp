@@ -177,7 +177,7 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 	// std::cout << bone->bone_relation.linear() * Eigen::Vector3f::UnitX() << "\n";
 
 	if (clamp_angle) {
-		//!@optimize: get rid of 1 and 2, we only need 0.
+		//! @todo optimize: get rid of 1 and 2, we only need 0.
 
 		// signed angle: asin(Cross product of -z and rot*-z X axis.
 		// U_LOG_E("before X clamp");
@@ -197,7 +197,7 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 
 
 
-		//!@optimize Move the asin into constexpr land
+		//! @todo optimize: Move the asin into constexpr land
 		// No, the sine of the joint limit
 		float rotation_value = asin(cross(0));
 

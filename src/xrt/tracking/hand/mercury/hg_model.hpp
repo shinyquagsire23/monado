@@ -141,8 +141,8 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 
 	data_out *= 0.25 / stddev.at<double>(0, 0);
 
-	// Calculate it again; mean has changed. Yes we odn't need to but it's easy
-	//!@optimize
+	// Calculate it again; mean has changed. Yes we don't need to but it's easy
+	//! @todo optimize
 	cv::meanStdDev(data_out, mean, stddev);
 	data_out += (0.5 - mean.at<double>(0, 0));
 }

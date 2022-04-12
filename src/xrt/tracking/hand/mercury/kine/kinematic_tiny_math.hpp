@@ -28,7 +28,7 @@ wct_to_quat(wct_t wct, struct xrt_quat *out)
 	xrt_quat just_twist;
 	math_quat_from_angle_vector(wct.twist, &twist_axis, &just_twist);
 
-	//!@optimize This should be a matrix multiplication...
+	//! @todo: optimize This should be a matrix multiplication...
 	*out = just_waggle;
 	math_quat_rotate(out, &just_curl, out);
 	math_quat_rotate(out, &just_twist, out);
