@@ -146,7 +146,8 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 {
 	struct qwerty_device *qd = qwerty_device(xd);
 
-	if (name != XRT_INPUT_GENERIC_HEAD_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE) {
+	if (name != XRT_INPUT_GENERIC_HEAD_POSE && name != XRT_INPUT_SIMPLE_GRIP_POSE &&
+	    name != XRT_INPUT_SIMPLE_AIM_POSE) {
 		QWERTY_ERROR(qd, "Unexpected input name = 0x%04X", name >> 8);
 		return;
 	}
@@ -310,7 +311,7 @@ qwerty_controller_create(bool is_left, struct qwerty_hmd *qhmd)
 	xd->inputs[QWERTY_SELECT].name = XRT_INPUT_SIMPLE_SELECT_CLICK;
 	xd->inputs[QWERTY_MENU].name = XRT_INPUT_SIMPLE_MENU_CLICK;
 	xd->inputs[QWERTY_GRIP].name = XRT_INPUT_SIMPLE_GRIP_POSE;
-	xd->inputs[QWERTY_AIM].name = XRT_INPUT_SIMPLE_AIM_POSE; // @todo: aim input not implemented
+	xd->inputs[QWERTY_AIM].name = XRT_INPUT_SIMPLE_AIM_POSE; //!< @todo: aim input not implemented
 	xd->outputs[QWERTY_VIBRATION].name = XRT_OUTPUT_NAME_SIMPLE_VIBRATION;
 
 	xd->update_inputs = qwerty_update_inputs;
