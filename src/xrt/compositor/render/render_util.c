@@ -37,8 +37,8 @@ calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
 	const double a31 = (tan_right + tan_left) / tan_width;
 	const double a32 = (tan_up + tan_down) / tan_height;
 
-	const float a33 = -far_plane / (far_plane - near_plane);
-	const float a43 = -(far_plane * near_plane) / (far_plane - near_plane);
+	const float a33 = (float)(-far_plane / (far_plane - near_plane));
+	const float a43 = (float)(-(far_plane * near_plane) / (far_plane - near_plane));
 
 
 #if 1
@@ -102,6 +102,6 @@ render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
 
 	// Convert from f64 to f32.
 	for (int i = 0; i < 16; i++) {
-		matrix->v[i] = result.v[i];
+		matrix->v[i] = (float)result.v[i];
 	}
 }
