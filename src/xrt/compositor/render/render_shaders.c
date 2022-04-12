@@ -15,10 +15,11 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wnewline-eof"
-
+#endif
 
 #include "shaders/clear.comp.h"
 #include "shaders/distortion.comp.h"
@@ -32,8 +33,9 @@
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
-
+#endif
 
 
 /*
