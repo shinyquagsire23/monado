@@ -494,11 +494,6 @@ compositor_check_and_prepare_xdev(struct comp_compositor *c, struct xrt_device *
  *
  */
 
-// NOLINTNEXTLINE // don't remove the forward decl.
-VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-vkGetInstanceProcAddr(VkInstance instance, const char *pName);
-
-
 // If any of these lists are updated, please also update the appropriate column
 // in `vulkan-extensions.md`
 

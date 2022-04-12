@@ -1286,9 +1286,8 @@ mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
 		r->mirror_to_debug_gui.push_every_frame_out_of_X = 1;
 	}
 
-	r->mirror_to_debug_gui.target_frame_time_ms = (double)r->mirror_to_debug_gui.push_every_frame_out_of_X *
-	                                              (double)r->c->settings.nominal_frame_interval_ns /
-	                                              (double)U_TIME_1MS_IN_NS;
+	r->mirror_to_debug_gui.target_frame_time_ms = (float)r->mirror_to_debug_gui.push_every_frame_out_of_X *
+	                                              (float)time_ns_to_ms_f(r->c->settings.nominal_frame_interval_ns);
 
 	r->mirror_to_debug_gui.push_frame_times.debug_var->reference_timing =
 	    r->mirror_to_debug_gui.target_frame_time_ms;
