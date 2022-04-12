@@ -16,6 +16,11 @@
 
 #include <stdio.h>
 
+#if defined(__GNUC__) && defined(__cplusplus)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wc99-designator"
+#endif
+
 #ifdef XRT_FEATURE_TRACING
 #include <percetto.h>
 #endif
@@ -175,4 +180,8 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 
 #ifdef __cplusplus
 }
+#endif
+
+#if defined(__GNUC__) && defined(__cplusplus)
+#pragma GCC diagnostic pop
 #endif
