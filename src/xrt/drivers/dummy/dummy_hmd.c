@@ -122,9 +122,9 @@ dummy_hmd_get_tracked_pose(struct xrt_device *xdev,
 		// Wobble time.
 		dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
 		dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
-		dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0;
-		dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0;
-		dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0;
+		dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
+		dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
+		dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
 		dh->pose.orientation.w = 1;
 		math_quat_normalize(&dh->pose.orientation);
 		break;
@@ -170,7 +170,7 @@ dummy_hmd_create(void)
 	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
 	dh->created_ns = os_monotonic_get_ns();
-	dh->diameter_m = 0.05;
+	dh->diameter_m = 0.05f;
 	dh->log_level = debug_get_log_option_dummy_log();
 
 	// Print name.
@@ -188,8 +188,8 @@ dummy_hmd_create(void)
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
 	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.fov[0] = 85.0f * (M_PI / 180.0f);
-	info.fov[1] = 85.0f * (M_PI / 180.0f);
+	info.fov[0] = 85.0f * ((float)(M_PI) / 180.0f);
+	info.fov[1] = 85.0f * ((float)(M_PI) / 180.0f);
 
 	if (!u_device_setup_split_side_by_side(&dh->base, &info)) {
 		DH_ERROR(dh, "Failed to setup basic device info");
