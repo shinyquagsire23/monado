@@ -961,7 +961,7 @@ p_open_hid_interface(struct xrt_prober *xp,
 	XRT_TRACE_MARKER();
 
 	struct prober_device *pdev = (struct prober_device *)xpdev;
-	int ret;
+	XRT_MAYBE_UNUSED int ret;
 
 #ifdef XRT_OS_LINUX
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
