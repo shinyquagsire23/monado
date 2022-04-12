@@ -17,7 +17,7 @@
 #define P(...) fprintf(stderr, __VA_ARGS__)
 #define I(...) U_LOG(U_LOGGING_INFO, __VA_ARGS__)
 
-#if defined(XRT_BUILD_DRIVER_EUROC)
+#if defined(XRT_HAVE_SLAM) && defined(XRT_BUILD_DRIVER_EUROC)
 
 static bool should_exit = false;
 
