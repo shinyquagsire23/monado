@@ -158,7 +158,7 @@ add_key_to_matching_bindings(struct oxr_binding *bindings, size_t binding_count,
 
 		bool found = false;
 		uint32_t preferred_path_index;
-		for (size_t y = 0; y < b->path_count; y++) {
+		for (uint32_t y = 0; y < b->path_count; y++) {
 			if (b->paths[y] == path) {
 				found = true;
 				preferred_path_index = y;

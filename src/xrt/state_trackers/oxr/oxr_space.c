@@ -57,7 +57,7 @@ oxr_space_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 XrResult
 oxr_space_action_create(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t key,
                         const XrActionSpaceCreateInfo *createInfo,
                         struct oxr_space **out_space)
 {

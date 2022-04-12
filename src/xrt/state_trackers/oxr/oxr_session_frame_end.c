@@ -149,10 +149,10 @@ fill_in_sub_image(const struct oxr_swapchain *sc, const XrSwapchainSubImage *oxr
 	xsub->image_index = sc->released.index;
 	xsub->array_index = oxr_sub->imageArrayIndex;
 	xsub->rect = *rect;
-	xsub->norm_rect.w = rect->extent.w / (double)sc->width;
-	xsub->norm_rect.h = rect->extent.h / (double)sc->height;
-	xsub->norm_rect.x = rect->offset.w / (double)sc->width;
-	xsub->norm_rect.y = rect->offset.h / (double)sc->height;
+	xsub->norm_rect.w = (float)(rect->extent.w / (double)sc->width);
+	xsub->norm_rect.h = (float)(rect->extent.h / (double)sc->height);
+	xsub->norm_rect.x = (float)(rect->offset.w / (double)sc->width);
+	xsub->norm_rect.y = (float)(rect->offset.h / (double)sc->height);
 }
 
 

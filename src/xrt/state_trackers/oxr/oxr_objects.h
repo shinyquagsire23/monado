@@ -717,7 +717,7 @@ oxr_space_to_openxr(struct oxr_space *spc)
 XrResult
 oxr_space_action_create(struct oxr_logger *log,
                         struct oxr_session *sess,
-                        uint64_t key,
+                        uint32_t key,
                         const XrActionSpaceCreateInfo *createInfo,
                         struct oxr_space **out_space);
 
@@ -1500,14 +1500,14 @@ struct oxr_interaction_profile
 struct oxr_binding
 {
 	XrPath *paths;
-	size_t path_count;
+	uint32_t path_count;
 
 	//! Name presented to the user.
 	const char *localized_name;
 
 	enum oxr_subaction_path subaction_path;
 
-	size_t key_count;
+	uint32_t key_count;
 	uint32_t *keys;
 	//! store which entry in paths was suggested, for each action key
 	uint32_t *preferred_binding_path_index;
