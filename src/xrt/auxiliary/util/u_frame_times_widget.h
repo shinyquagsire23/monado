@@ -52,7 +52,7 @@ u_frame_times_widget_push_sample(struct u_frame_times_widget *widget, uint64_t n
 
 		for (int i = 0; i < NUM_FRAME_TIMINGS; i++) {
 			uint64_t frametime_ns = widget->times_ns[i + 1] - widget->times_ns[i];
-			float frametime_s = frametime_ns * 1.f / 1000.f * 1.f / 1000.f * 1.f / 1000.f;
+			float frametime_s = (float)time_ns_to_s(frametime_ns);
 			total_s += frametime_s;
 		}
 		float avg_frametime_s = total_s / ((float)NUM_FRAME_TIMINGS);
@@ -62,7 +62,7 @@ u_frame_times_widget_push_sample(struct u_frame_times_widget *widget, uint64_t n
 	widget->times_ns[widget->index] = new_frame_time;
 
 	uint64_t diff = widget->times_ns[widget->index] - widget->times_ns[last_index];
-	widget->timings_ms[widget->index] = (float)diff * 1.f / 1000.f * 1.f / 1000.f;
+	widget->timings_ms[widget->index] = (float)time_ns_to_ms_f(diff);
 }
 
 static inline void

@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 //! Helper define to make code more readable.
-#define U_1_000_000_000 (1000000000)
+#define U_1_000_000_000 (1000 * 1000 * 1000)
 
 /*!
  * The number of nanoseconds in a second.
@@ -36,18 +36,18 @@ extern "C" {
 #define U_TIME_1S_IN_NS U_1_000_000_000
 
 /*!
- * The number of nanoseconds in a milliseconds.
+ * The number of nanoseconds in a millisecond.
  *
  * @see timepoint_ns
  */
-#define U_TIME_1MS_IN_NS (U_TIME_1S_IN_NS / 1000)
+#define U_TIME_1MS_IN_NS (1000 * 1000)
 
 /*!
- * The number of nanoseconds in half a milliseconds.
+ * The number of nanoseconds in half a millisecond.
  *
  * @see timepoint_ns
  */
-#define U_TIME_HALF_MS_IN_NS (U_TIME_1MS_IN_NS / 2)
+#define U_TIME_HALF_MS_IN_NS (U_TIME_1MS_IN_NS / 2.0)
 
 /*!
  * Integer timestamp type.
@@ -78,7 +78,7 @@ typedef int64_t time_duration_ns;
 static inline double
 time_ns_to_s(time_duration_ns ns)
 {
-	return (double)(ns) / (double)U_TIME_1S_IN_NS;
+	return (double)(ns) / (double)(U_TIME_1S_IN_NS);
 }
 
 /*!
@@ -102,7 +102,7 @@ time_s_to_ns(double duration)
 static inline double
 time_ns_to_ms_f(time_duration_ns ns)
 {
-	return (double)(ns) / (double)U_TIME_1MS_IN_NS;
+	return (double)(ns) / (double)(U_TIME_1MS_IN_NS);
 }
 
 /*!
