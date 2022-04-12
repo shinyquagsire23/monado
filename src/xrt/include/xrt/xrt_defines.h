@@ -373,6 +373,20 @@ struct xrt_fov
 };
 
 /*!
+ * The number of values in @ref xrt_matrix_2x2
+ *
+ * @ingroup xrt_iface math
+ */
+#define XRT_MATRIX_2X2_ELEMENTS 4
+
+/*!
+ * The number of 2d vectors in @ref xrt_matrix_2x2
+ *
+ * @ingroup xrt_iface math
+ */
+#define XRT_MATRIX_2X2_VECS 2
+
+/*!
  * A tightly packed 2x2 matrix of floats.
  *
  * @ingroup xrt_iface math
@@ -380,10 +394,17 @@ struct xrt_fov
 struct xrt_matrix_2x2
 {
 	union {
-		float v[4];
-		struct xrt_vec2 vecs[2];
+		float v[XRT_MATRIX_2X2_ELEMENTS];
+		struct xrt_vec2 vecs[XRT_MATRIX_2X2_VECS];
 	};
 };
+
+/*!
+ * The number of values in @ref xrt_matrix_3x3
+ *
+ * @ingroup xrt_iface math
+ */
+#define XRT_MATRIX_3X3_ELEMENTS 9
 
 /*!
  * A tightly packed 3x3 matrix of floats.
@@ -392,8 +413,15 @@ struct xrt_matrix_2x2
  */
 struct xrt_matrix_3x3
 {
-	float v[9];
+	float v[XRT_MATRIX_3X3_ELEMENTS];
 };
+
+/*!
+ * The number of values in a 4x4 matrix like @ref xrt_matrix_4x4 and @ref xrt_matrix_4x4_f64
+ *
+ * @ingroup xrt_iface math
+ */
+#define XRT_MATRIX_4X4_ELEMENTS 16
 
 /*!
  * A tightly packed 4x4 matrix of floats.
@@ -402,7 +430,7 @@ struct xrt_matrix_3x3
  */
 struct xrt_matrix_4x4
 {
-	float v[16];
+	float v[XRT_MATRIX_4X4_ELEMENTS];
 };
 
 /*!
@@ -412,7 +440,7 @@ struct xrt_matrix_4x4
  */
 struct xrt_matrix_4x4_f64
 {
-	double v[16];
+	double v[XRT_MATRIX_4X4_ELEMENTS];
 };
 
 /*!
