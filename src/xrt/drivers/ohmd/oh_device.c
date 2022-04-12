@@ -921,9 +921,9 @@ create_hmd(ohmd_context *ctx, int device_idx, int device_flags)
 		ohd->base.hmd->views[0].rot = u_device_rotation_right;
 
 		ohd->base.hmd->views[1].viewport.x_pixels = 0;
-		ohd->base.hmd->views[1].viewport.y_pixels = h0;
-		ohd->base.hmd->views[1].viewport.w_pixels = w1;
-		ohd->base.hmd->views[1].viewport.h_pixels = h1;
+		ohd->base.hmd->views[1].viewport.y_pixels = w0;
+		ohd->base.hmd->views[1].viewport.w_pixels = h1;
+		ohd->base.hmd->views[1].viewport.h_pixels = w1;
 		ohd->base.hmd->views[1].rot = u_device_rotation_right;
 	}
 
