@@ -41,8 +41,8 @@ extern "C" {
 
 // Messages types specific to WMR Hololens Sensors' companion devices
 #define WMR_CONTROL_MSG_IPD_VALUE 0x01
-#define WMR_CONTROL_MSG_UNKNOWN_02 0x02 // Seen in relation to proximity events on Reverb G1
-#define WMR_CONTROL_MSG_UNKNOWN_05 0x05
+#define WMR_CONTROL_MSG_UNKNOWN_02 0x02    // Seen in relation to proximity events on Reverb G1
+#define WMR_CONTROL_MSG_DEVICE_STATUS 0x05 // Seen in relation screen state changes on Reverb G1
 
 // Message sub-types for WMR_MS_HOLOLENS_MSG_BT_IFACE WMR Hololens Sensors message
 #define WMR_BT_IFACE_MSG_DEBUG 0x19

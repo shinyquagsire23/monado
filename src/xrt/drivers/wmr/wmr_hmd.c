@@ -455,8 +455,27 @@ control_read_packets(struct wmr_hmd *wh)
 			          buffer[2], buffer[3]);
 		}
 		break;
-	case WMR_CONTROL_MSG_UNKNOWN_05: //
-		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
+	case WMR_CONTROL_MSG_DEVICE_STATUS: //
+		WMR_DEBUG(wh, "Device status message type: %02x (size %i)", buffer[0], size);
+		if (size != 11) {
+			WMR_DEBUG(wh, "---> Unexpected message size. Expected 11 bytes incl. message type.");
+			break;
+		}
+
+		// Todo: HMD state info to be decoded further.
+		// On Reverb G1 this message is received twice after having sent an 'enable screen' command to the HMD
+		// companion device. The first one is received promptly. The second one is received a few seconds later
+		// once the HMD screen backlight visibly powers on.
+		// 1st message: '05 00 01 01 00 00 00 00 00 00 00'
+		// 2nd message: '05 01 01 01 01 00 00 00 00 00 00'
+		WMR_DEBUG(wh, "---> Type and content bytes: %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
+		          buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7],
+		          buffer[8], buffer[9], buffer[10]);
+		WMR_DEBUG(wh,
+		          "---> Flags decoded so far: [type: %02x] [display_ready: %02x] [?] [?] [display_ready: %02x] "
+		          "[?] [?] [?] [?] [?] [?]",
+		          buffer[0], buffer[1], buffer[4]);
+
 		break;
 	default: //
 		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
