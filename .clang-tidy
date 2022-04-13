@@ -12,7 +12,7 @@ Checks:       |
     readability-*,
     misc-*,
     -modernize-*,
-    -misc-static-assert,
+    -misc-static-assert,-cert-dcl03-c,
     -bugprone-macro-parentheses,
     -bugprone-reserved-identifier,-cert-dcl37-c,-cert-dcl51-cpp,
     -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
