@@ -117,12 +117,12 @@ m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
                                  struct xrt_vec2 *out_y);
 
 void
-m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double beta, double fc_min_d);
+m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double fc_min_d, double beta);
 void
 m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct xrt_vec3 *in_y, struct xrt_vec3 *out_y);
 
 void
-m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double beta, double fc_min_d);
+m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double fc_min_d, double beta);
 void
 m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct xrt_quat *in_y, struct xrt_quat *out_y);
 

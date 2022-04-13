@@ -62,7 +62,7 @@ exp_smooth_quat(double alpha, struct xrt_quat y, struct xrt_quat prev_y)
 }
 
 static void
-filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double beta, double fc_min_d)
+filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double fc_min_d, double beta)
 {
 	f->fc_min = fc_min;
 	f->beta = beta;
@@ -127,7 +127,7 @@ filter_one_euro_compute_alpha(const struct m_filter_one_euro_base *f, double dt,
 void
 m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min_d, double beta)
 {
-	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+	filter_one_euro_init(&f->base, fc_min, fc_min_d, beta);
 }
 
 void
@@ -160,7 +160,7 @@ m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, fl
 void
 m_filter_euro_vec2_init(struct m_filter_euro_vec2 *f, double fc_min, double fc_min_d, double beta)
 {
-	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+	filter_one_euro_init(&f->base, fc_min, fc_min_d, beta);
 }
 
 void
@@ -217,9 +217,9 @@ m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
 
 
 void
-m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double beta, double fc_min_d)
+m_filter_euro_vec3_init(struct m_filter_euro_vec3 *f, double fc_min, double fc_min_d, double beta)
 {
-	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+	filter_one_euro_init(&f->base, fc_min, fc_min_d, beta);
 }
 
 void
@@ -248,10 +248,11 @@ m_filter_euro_vec3_run(struct m_filter_euro_vec3 *f, uint64_t ts, const struct x
 	*out_y = f->prev_y;
 }
 
+//! @todo fix order of args
 void
-m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double beta, double fc_min_d)
+m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double fc_min_d, double beta)
 {
-	filter_one_euro_init(&f->base, fc_min, beta, fc_min_d);
+	filter_one_euro_init(&f->base, fc_min, fc_min_d, beta);
 }
 
 void

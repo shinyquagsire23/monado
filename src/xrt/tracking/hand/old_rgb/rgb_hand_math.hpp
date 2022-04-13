@@ -280,7 +280,7 @@ void
 handEuroFiltersInit(HandHistory3D *history, double fc_min, double fc_min_d, double beta)
 {
 	for (int i = 0; i < 21; i++) {
-		m_filter_euro_vec3_init(&history->filters[i], fc_min, beta, fc_min_d);
+		m_filter_euro_vec3_init(&history->filters[i], fc_min, fc_min_d, beta);
 	}
 }
 

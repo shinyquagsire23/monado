@@ -1043,8 +1043,8 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	t.pred_type = config->prediction;
 
-	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
-	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.beta, t.filter.min_dcutoff);
+	m_filter_euro_vec3_init(&t.filter.pos_oe, t.filter.min_cutoff, t.filter.min_dcutoff, t.filter.beta);
+	m_filter_euro_quat_init(&t.filter.rot_oe, t.filter.min_cutoff, t.filter.min_dcutoff, t.filter.beta);
 
 	t.gt.trajectory = new Trajectory{};
 
