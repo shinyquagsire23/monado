@@ -15,6 +15,7 @@ Checks:       |
     -misc-static-assert,-cert-dcl03-c,
     -bugprone-macro-parentheses,
     -bugprone-reserved-identifier,-cert-dcl37-c,-cert-dcl51-cpp,
+    -cert-dcl21-cpp,
     -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
     -clang-analyzer-security.insecureAPI.strcpy,
     -clang-diagnostic-missing-braces,
@@ -26,6 +27,9 @@ Checks:       |
     -readability-redundant-access-specifiers,
     -readability-uppercase-literal-suffix,
     -readability-identifier-length,
+# Notes:
+# misc-static-assert turns our assert(false) in failure/bad cases into static_asserts. We should revise them, but not like that.
+# cert-dcl21-cpp is an overkill "recommendation" to return a special type from iterator post-increment
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/xrt/.*'
 AnalyzeTemporaryDtors: false

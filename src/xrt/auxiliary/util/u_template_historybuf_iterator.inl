@@ -80,16 +80,28 @@ namespace detail {
 		operator++();
 
 		//! Post-increment: return a copy of initial state after incrementing self
+		// NOLINTNEXTLINE(cert-dcl21-cpp)
 		Self
-		operator++(int);
+		operator++(int)
+		{
+			Self tmp = *this;
+			this->increment_n(1);
+			return tmp;
+		}
 
 		//! Pre-decrement: Subtract, then return self.
 		Self &
 		operator--();
 
 		//! Post-decrement: return a copy of initial state after decrementing self
+		// NOLINTNEXTLINE(cert-dcl21-cpp)
 		Self
-		operator--(int);
+		operator--(int)
+		{
+			Self tmp = *this;
+			this->decrement_n(1);
+			return tmp;
+		}
 
 		// Use the base class implementation of subtracting one iterator from another
 		using base::operator-;
@@ -158,29 +170,11 @@ namespace detail {
 	}
 
 	template <typename T, size_t MaxSize>
-	inline HistoryBufIterator<T, MaxSize>
-	HistoryBufIterator<T, MaxSize>::operator++(int)
-	{
-		HistoryBufIterator tmp = *this;
-		this->increment_n(1);
-		return tmp;
-	}
-
-	template <typename T, size_t MaxSize>
 	inline HistoryBufIterator<T, MaxSize> &
 	HistoryBufIterator<T, MaxSize>::operator--()
 	{
 		this->decrement_n(1);
 		return *this;
-	}
-
-	template <typename T, size_t MaxSize>
-	inline HistoryBufIterator<T, MaxSize>
-	HistoryBufIterator<T, MaxSize>::operator--(int)
-	{
-		Self tmp = *this;
-		this->decrement_n(1);
-		return tmp;
 	}
 
 	template <typename T, size_t MaxSize>
