@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_pretty
  */
+#pragma once
 
 #include "xrt/xrt_defines.h"
 
