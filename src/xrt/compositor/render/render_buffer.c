@@ -26,6 +26,7 @@ create_buffer(struct vk_bundle *vk,
               VkBufferUsageFlags usage_flags,
               VkMemoryPropertyFlags memory_property_flags,
               VkDeviceSize size,
+              const void *pNext_for_create,
               const void *pNext_for_allocate,
               VkBuffer *out_buffer,
               VkDeviceMemory *out_memory,
@@ -37,6 +38,7 @@ create_buffer(struct vk_bundle *vk,
 	// Create the buffer handle.
 	VkBufferCreateInfo buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+	    .pNext = pNext_for_create,
 	    .size = size,
 	    .usage = usage_flags,
 	};
@@ -133,6 +135,7 @@ render_buffer_init(struct vk_bundle *vk,
 	                    usage_flags,               // usage_flags
 	                    memory_property_flags,     // memory_property_flags
 	                    size,                      // size
+	                    NULL,                      // pNext for create
 	                    NULL,                      // pNext_for_allocate
 	                    &buffer->buffer,           // out_buffer
 	                    &buffer->memory,           // out_memory
@@ -154,6 +157,11 @@ render_buffer_init_exportable(struct vk_bundle *vk,
 {
 	VkResult ret;
 
+	VkExternalMemoryBufferCreateInfo export_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+	    .handleTypes = vk_csci_get_image_external_handle_type(vk),
+	};
+
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = NULL,
@@ -164,6 +172,7 @@ render_buffer_init_exportable(struct vk_bundle *vk,
 	                    usage_flags,               // usage_flags
 	                    memory_property_flags,     // memory_property_flags
 	                    size,                      // size
+	                    &export_create_info,       // pNext_for_create
 	                    &export_alloc_info,        // pNext_for_allocate
 	                    &buffer->buffer,           // out_buffer
 	                    &buffer->memory,           // out_memory
