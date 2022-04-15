@@ -1,7 +1,7 @@
 # Tracing support {#tracing}
 
 <!--
-Copyright 2021, Collabora, Ltd. and the Monado contributors
+Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
@@ -61,15 +61,33 @@ Then run the following commands before launching Monado.
 ./perfetto/out/linux_clang_release/perfetto --txt -c data_events.cfg -o /tmp/trace.protobuf
 ```
 
-[Perfetto]: https://perfetto.dev
-[Percetto]: https://github.com/olvaffe/percetto
+Finally run the App and Monado with `XRT_TRACING=true` exported.
+
+```bash
+XRT_TRACING=true monado-serivce
+```
 
 ## Gotchas
 
-Here's where we write down silly things we ran into while using Perfetto/Percetto.
+Here's where we write down bugs or other sharp corners that we found while
+running Monado with [Perfetto][]/[Percetto][] and tracing enabled.
+
+### OpenXR CTS
+
+Running multiple CTS tests in one run causes Perfetto to crash, this is because
+the CTS loads and unloads the OpenXR runtime multiple times, and there seems to
+be a race on destruction.
 
 ### "Value doesn't exist" in web viewer
 
-This is probably because you don't have read permissions on your tracefile, probably because you ran traced/tracebox as root. Don't do that, instead do `sudo chown -R $USER /sys/kernel/tracing` and run traced/tracebox as your normal user.
+This is probably because you don't have read permissions on your tracefile,
+probably because you ran traced/tracebox as root. Don't do that, instead do
+`sudo chown -R $USER /sys/kernel/tracing` and run traced/tracebox as your normal
+user.
 
-(If you really have to run it as root, then before you open the tracefile do `sudo chown $USER <tracefile>`).
+(If you really have to run it as root, then before you open the tracefile do
+`sudo chown $USER <tracefile>`).
+
+
+[Perfetto]: https://perfetto.dev
+[Percetto]: https://github.com/olvaffe/percetto
