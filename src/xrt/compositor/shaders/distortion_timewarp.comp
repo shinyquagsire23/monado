@@ -36,6 +36,15 @@ vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 	// Emulate a triangle sample position by offset half target pixel size.
 	dist_uv = dist_uv + extent_pixel_size / 2.0;
 
+
+	// In order to correctly sample we need to put position (0, 0) in the
+	// middle of the (0, 0) texel in the distortion texures. That's why we
+	// offset with half the texel size, pushing all samples into the middle
+	// of each texels, a kin to a vertex buffer. We need to put uv coord
+	// (1, 1) in the middle of the last texel, that pixel is (size - 1)
+	// texels away from the first texel. So we need to scale [0 .. 1] to
+	// [0 .. size - 1].
+
 #define DIM (128.0)
 #define STRETCH ((DIM - 1.0) / DIM)
 #define OFFSET (1.0 / (DIM * 2.0))
