@@ -449,11 +449,11 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
 
 	for (int row = 0; row < COMP_DISTORTION_IMAGE_DIMENSIONS; row++) {
 		// This goes from 0 to 1.0 inclusive.
-		float v = (double)row / (double)COMP_DISTORTION_IMAGE_DIMENSIONS;
+		float v = (double)row / (double)(COMP_DISTORTION_IMAGE_DIMENSIONS - 1);
 
 		for (int col = 0; col < COMP_DISTORTION_IMAGE_DIMENSIONS; col++) {
 			// This goes from 0 to 1.0 inclusive.
-			float u = (double)col / (double)COMP_DISTORTION_IMAGE_DIMENSIONS;
+			float u = (double)col / (double)(COMP_DISTORTION_IMAGE_DIMENSIONS - 1);
 
 			struct xrt_uv_triplet result;
 			xrt_device_compute_distortion(xdev, view, u, v, &result);
