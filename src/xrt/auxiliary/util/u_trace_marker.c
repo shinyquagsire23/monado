@@ -13,12 +13,15 @@
 
 #include "os/os_time.h"
 
+#include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 
 #include <inttypes.h>
 
 
 #ifdef XRT_FEATURE_TRACING
+
+DEBUG_GET_ONCE_BOOL_OPTION(tracing, "XRT_TRACING", false)
 
 PERCETTO_CATEGORY_DEFINE(U_TRACE_CATEGORIES)
 
@@ -58,6 +61,10 @@ u_trace_marker_setup(enum u_trace_which which)
 void
 u_trace_marker_init(void)
 {
+	if (!debug_get_bool_option_tracing()) {
+		return;
+	}
+
 	if (static_inited) {
 		return;
 	}
