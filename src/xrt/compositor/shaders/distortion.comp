@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora Ltd.
+// Copyright 2021-2022, Collabora Ltd.
 // Author: Jakob Bornecrantz <jakob@collabora.com>
 // SPDX-License-Identifier: BSL-1.0
 
@@ -24,10 +24,17 @@ layout(set = 0, binding = 3, std140) uniform restrict Config
 
 vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 {
-	float x = float(ix) / float(extent.x);
-	float y = float(iy) / float(extent.y);
+	// Turn the index into floating point.
+	vec2 xy = vec2(float(ix), float(iy));
 
-	vec2 dist_uv = vec2(x, y);
+	// The inverse of the extent of the target image is the pixel size in [0 .. 1] space.
+	vec2 extent_pixel_size = vec2(1.0 / float(extent.x), 1.0 / float(extent.y));
+
+	// Per-target pixel we move the size of the pixels.
+	vec2 dist_uv = xy * extent_pixel_size;
+
+	// Emulate a triangle sample position by offset half target pixel size.
+	dist_uv = dist_uv + extent_pixel_size / 2.0;
 
 #define DIM (128.0)
 #define STRETCH ((DIM - 1.0) / DIM)
