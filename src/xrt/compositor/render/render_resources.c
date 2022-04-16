@@ -399,6 +399,7 @@ static void
 calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalized_rect *out_rect)
 {
 	const struct xrt_fov fov = xdev->hmd->distortion.fov[view];
+
 	const double tan_left = tan(fov.angle_left);
 	const double tan_right = tan(fov.angle_right);
 
@@ -408,8 +409,16 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 	const double tan_width = tan_right - tan_left;
 	const double tan_height = tan_up - tan_down;
 
-	const double tan_offset_x = (tan_right + tan_left) - tan_width / 2;
-	const double tan_offset_y = (tan_up + tan_down) - tan_height / 2;
+	/*
+	 * I do not know why we have to calculate the offsets like this, but
+	 * this one is the one that seems to work with what is currently in the
+	 * calc timewarp matrix function and the distortion shader. It works
+	 * with Index (unbalanced left and right angles) and WMR (unbalanced up
+	 * and down angles) so here it is. In so far it matches what the gfx
+	 * and non-timewarp compute pipeline produces.
+	 */
+	const double tan_offset_x = ((tan_right + tan_left) - tan_width) / 2;
+	const double tan_offset_y = (-(tan_up + tan_down) - tan_height) / 2;
 
 	struct xrt_normalized_rect transform = {
 	    .x = tan_offset_x,
