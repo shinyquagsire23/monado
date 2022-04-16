@@ -8,6 +8,9 @@
 #include "srgb.inc.glsl"
 
 
+// The size of the distortion texture dimensions in texels.
+layout(constant_id = 0) const int distortion_texel_count = 128;
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform sampler2D source[2];
@@ -45,7 +48,7 @@ vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 	// texels away from the first texel. So we need to scale [0 .. 1] to
 	// [0 .. size - 1].
 
-#define DIM (128.0)
+#define DIM (float(distortion_texel_count))
 #define STRETCH ((DIM - 1.0) / DIM)
 #define OFFSET (1.0 / (DIM * 2.0))
 
