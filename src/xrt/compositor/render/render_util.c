@@ -25,8 +25,12 @@ calc_projection(const struct xrt_fov *fov, struct xrt_matrix_4x4_f64 *result)
 	const double tan_down = tan(fov->angle_down);
 	const double tan_up = tan(fov->angle_up);
 
+	const bool vulkan_projection_space_y = true;
+
 	const double tan_width = tan_right - tan_left;
-	const double tan_height = tan_up - tan_down;
+	const double tan_height = vulkan_projection_space_y  // Projection space y direction:
+	                              ? (tan_down - tan_up)  // Vulkan Y down
+	                              : (tan_up - tan_down); // OpenGL Y up
 
 	const double near_plane = 0.5;
 	const double far_plane = 1.5;

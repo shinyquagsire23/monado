@@ -71,7 +71,6 @@ vec2 transform_uv(vec2 uv, uint iz)
 
 	// From [-1, 1] to [0, 1]
 	values.xy = values.xy * 0.5 + 0.5;
-	values.y = 1 - values.y; // Flip to UV coordinate system.
 
 	// To deal with OpenGL flip and sub image view.
 	values.xy = values.xy * ubo.post_transform[iz].zw + ubo.post_transform[iz].xy;
