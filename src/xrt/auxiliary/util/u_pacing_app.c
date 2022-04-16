@@ -163,7 +163,7 @@ last_return_predicted_display(const struct pacing_app *pa)
 static uint64_t
 total_app_time_ns(const struct pacing_app *pa)
 {
-	return pa->app.cpu_time_ns + pa->app.draw_time_ns;
+	return pa->app.cpu_time_ns + pa->app.draw_time_ns + pa->app.wait_time_ns;
 }
 
 static uint64_t
