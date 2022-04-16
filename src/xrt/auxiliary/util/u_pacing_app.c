@@ -56,8 +56,8 @@ struct u_pa_frame
 	//! The selected display period.
 	uint64_t predicted_display_period_ns;
 
-	//! When the client should have delivered the frame.
-	uint64_t predicted_delivery_time_ns;
+	//! When the client's GPU work should have completed.
+	uint64_t predicted_gpu_done_time_ns;
 
 	/*!
 	 * When the app told us to display this frame, can be different
@@ -256,8 +256,8 @@ pa_predict(struct u_pacing_app *upa,
 	uint64_t predict_ns = predict_display_time(pa, now_ns, period_ns);
 	// When should the client wake up.
 	uint64_t wake_up_time_ns = predict_ns - total_app_and_compositor_time_ns(pa);
-	// When the client should deliver the frame to us.
-	uint64_t delivery_time_ns = predict_ns - total_compositor_time_ns(pa);
+	// When the client's GPU work should have completed.
+	uint64_t gpu_done_time_ns = predict_ns - total_compositor_time_ns(pa);
 
 	pa->last_returned_ns = predict_ns;
 
@@ -271,7 +271,7 @@ pa_predict(struct u_pacing_app *upa,
 
 	pa->frames[index].state = U_RT_PREDICTED;
 	pa->frames[index].frame_id = frame_id;
-	pa->frames[index].predicted_delivery_time_ns = delivery_time_ns;
+	pa->frames[index].predicted_gpu_done_time_ns = gpu_done_time_ns;
 	pa->frames[index].predicted_display_period_ns = period_ns;
 	pa->frames[index].when.predicted_ns = now_ns;
 }
@@ -357,7 +357,7 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	 * Process data.
 	 */
 
-	int64_t diff_ns = f->predicted_delivery_time_ns - when_ns;
+	int64_t diff_ns = f->predicted_gpu_done_time_ns - when_ns;
 	bool late = false;
 	if (diff_ns < 0) {
 		diff_ns = -diff_ns;
