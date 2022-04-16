@@ -295,6 +295,7 @@ option_with_deps(XRT_BUILD_DRIVER_PSVR "Enable PSVR HMD driver" DEPENDS XRT_HAVE
 option_with_deps(XRT_BUILD_DRIVER_QWERTY "Enable Qwerty driver" DEPENDS XRT_HAVE_SDL2)
 option_with_deps(XRT_BUILD_DRIVER_REALSENSE "Enable RealSense device driver" DEPENDS XRT_HAVE_REALSENSE)
 option_with_deps(XRT_BUILD_DRIVER_REMOTE "Enable remote debugging driver" DEPENDS "XRT_HAVE_LINUX OR ANDROID")
+option_with_deps(XRT_BUILD_DRIVER_RIFT_S "Enable Oculus Rift S device driver" DEPENDS XRT_HAVE_HIDAPI XRT_HAVE_V4L2)
 option_with_deps(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" DEPENDS SURVIVE_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS LeapV2_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
@@ -347,6 +348,7 @@ list(
 	"PSVR"
 	"REALSENSE"
 	"REMOTE"
+	"RIFT_S"
 	"SURVIVE"
 	"V4L2"
 	"ULV2"
@@ -518,6 +520,7 @@ message(STATUS "#    DRIVER_PSVR:         ${XRT_BUILD_DRIVER_PSVR}")
 message(STATUS "#    DRIVER_QWERTY:       ${XRT_BUILD_DRIVER_QWERTY}")
 message(STATUS "#    DRIVER_REALSENSE:    ${XRT_BUILD_DRIVER_REALSENSE}")
 message(STATUS "#    DRIVER_REMOTE:       ${XRT_BUILD_DRIVER_REMOTE}")
+message(STATUS "#    DRIVER_RIFT_S:       ${XRT_BUILD_DRIVER_RIFT_S}")
 message(STATUS "#    DRIVER_SIMULATED:    ${XRT_BUILD_DRIVER_SIMULATED}")
 message(STATUS "#    DRIVER_SIMULAVR:     ${XRT_BUILD_DRIVER_SIMULAVR}")
 message(STATUS "#    DRIVER_TWRAP:        ${XRT_BUILD_DRIVER_TWRAP}")

@@ -199,6 +199,35 @@ if(XRT_BUILD_DRIVER_REMOTE)
 	list(APPEND ENABLED_HEADSET_DRIVERS remote)
 endif()
 
+if(XRT_BUILD_DRIVER_RIFT_S)
+	add_library(
+		drv_rift_s STATIC
+		rift_s/rift_s_builder.c
+		rift_s/rift_s_interface.h
+		rift_s/rift_s_controller.c
+		rift_s/rift_s_controller.h
+		rift_s/rift_s_firmware.c
+		rift_s/rift_s_firmware.h
+		rift_s/rift_s_hmd.c
+		rift_s/rift_s_hmd.h
+		rift_s/rift_s_protocol.c
+		rift_s/rift_s_protocol.h
+		rift_s/rift_s_radio.c
+		rift_s/rift_s_radio.h
+		rift_s/rift_s.c
+		rift_s/rift_s.h
+		)
+	target_link_libraries(
+		drv_rift_s
+		PRIVATE
+			xrt-interfaces
+			aux_util
+			aux_math
+			xrt-external-cjson
+	)
+	list(APPEND ENABLED_HEADSET_DRIVERS rift-s)
+endif()
+
 set(VIVE_CONFIG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/vive")
 if(XRT_BUILD_DRIVER_VIVE)
 	add_library(

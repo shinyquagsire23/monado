@@ -36,6 +36,10 @@
 #include "psvr/psvr_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_RIFT_S
+#include "rift_s/rift_s_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_HYDRA
 #include "hydra/hydra_interface.h"
 #endif
@@ -88,6 +92,10 @@
  * Builders
  */
 xrt_builder_create_func_t target_builder_list[] = {
+#ifdef XRT_BUILD_DRIVER_RIFT_S
+    rift_s_builder_create,
+#endif
+
 #ifdef T_BUILDER_RGB_TRACKING
     t_builder_rgb_tracking_create,
 #endif // T_BUILDER_RGB_TRACKING
