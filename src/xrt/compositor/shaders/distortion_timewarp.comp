@@ -98,16 +98,19 @@ void main()
 	vec2 g_uv = texture(distortion[iz + 2], dist_uv).xy;
 	vec2 b_uv = texture(distortion[iz + 4], dist_uv).xy;
 
+	// Do any transformation needed.
 	r_uv = transform_uv(r_uv, iz);
 	g_uv = transform_uv(g_uv, iz);
 	b_uv = transform_uv(b_uv, iz);
 
+	// Sample the source with distorted and chromatic abberation corrected samples.
 	vec4 colour = vec4(
 		texture(source[iz], r_uv).r,
 		texture(source[iz], g_uv).g,
 		texture(source[iz], b_uv).b,
 		1);
 
+	// Do colour correction here since there are no automatic conversion in hardware available.
 	colour = vec4(from_linear_to_srgb(colour.rgb), 1);
 
 	imageStore(target, ivec2(offset.x + ix, offset.y + iy), colour);
