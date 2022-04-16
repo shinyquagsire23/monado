@@ -400,9 +400,23 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 		TE_END(pa_cpu, f->when.begin_ns);
 
 		TE_BEG(pa_draw, f->when.begin_ns, "draw");
+		if (f->when.begin_ns > f->predicted_gpu_done_time_ns) {
+			TE_BEG(pa_draw, f->when.begin_ns, "late");
+			TE_END(pa_draw, f->when.delivered_ns);
+		} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+			TE_BEG(pa_draw, f->predicted_gpu_done_time_ns, "late");
+			TE_END(pa_draw, f->when.delivered_ns);
+		}
 		TE_END(pa_draw, f->when.delivered_ns);
 
 		TE_BEG(pa_wait, f->when.delivered_ns, "wait");
+		if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+			TE_BEG(pa_wait, f->when.delivered_ns, "late");
+			TE_END(pa_wait, f->when.gpu_done_ns);
+		} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+			TE_BEG(pa_wait, f->predicted_gpu_done_time_ns, "late");
+			TE_END(pa_wait, f->when.gpu_done_ns);
+		}
 		TE_END(pa_wait, f->when.gpu_done_ns);
 	}
 
