@@ -76,7 +76,6 @@ struct render_shaders
 {
 	VkShaderModule clear_comp;
 	VkShaderModule distortion_comp;
-	VkShaderModule distortion_timewarp_comp;
 
 	VkShaderModule mesh_vert;
 	VkShaderModule mesh_frag;

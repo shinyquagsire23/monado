@@ -23,7 +23,6 @@
 
 #include "shaders/clear.comp.h"
 #include "shaders/distortion.comp.h"
-#include "shaders/distortion_timewarp.comp.h"
 #include "shaders/layer.frag.h"
 #include "shaders/layer.vert.h"
 #include "shaders/equirect1.frag.h"
@@ -92,11 +91,6 @@ render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 	              sizeof(shaders_distortion_comp), // size
 	              &s->distortion_comp));           // out
 
-	C(shader_load(vk,                                       // vk_bundle
-	              shaders_distortion_timewarp_comp,         // data
-	              sizeof(shaders_distortion_timewarp_comp), // size
-	              &s->distortion_timewarp_comp));           // out
-
 	C(shader_load(vk,                        // vk_bundle
 	              shaders_mesh_vert,         // data
 	              sizeof(shaders_mesh_vert), // size
@@ -149,7 +143,6 @@ render_shaders_close(struct render_shaders *s, struct vk_bundle *vk)
 {
 	D(clear_comp);
 	D(distortion_comp);
-	D(distortion_timewarp_comp);
 	D(mesh_vert);
 	D(mesh_frag);
 	D(equirect1_vert);
