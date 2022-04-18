@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Simple script to update oxr_extension_support.h."""
 
@@ -17,8 +17,8 @@ EXTENSIONS = (
     ['XR_KHR_composition_layer_equirect', 'XRT_FEATURE_OPENXR_LAYER_EQUIRECT1'],
     ['XR_KHR_composition_layer_equirect2', 'XRT_FEATURE_OPENXR_LAYER_EQUIRECT2'],
     ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
-    ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
     ['XR_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
+    ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_KHR_opengl_es_enable', 'XR_USE_GRAPHICS_API_OPENGL_ES'],
     ['XR_KHR_swapchain_usage_input_attachment_bit'],

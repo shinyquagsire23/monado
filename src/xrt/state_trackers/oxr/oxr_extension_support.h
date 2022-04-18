@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -101,17 +101,6 @@
 
 
 /*
- * XR_KHR_loader_init_android
- */
-#if defined(XR_KHR_loader_init_android) && defined(OXR_HAVE_KHR_loader_init) && defined(XR_USE_PLATFORM_ANDROID)
-#define OXR_HAVE_KHR_loader_init_android
-#define OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) _(KHR_loader_init_android, KHR_LOADER_INIT_ANDROID)
-#else
-#define OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_)
-#endif
-
-
-/*
  * XR_KHR_loader_init
  */
 #if defined(XR_KHR_loader_init) && defined(XR_USE_PLATFORM_ANDROID)
@@ -119,6 +108,17 @@
 #define OXR_EXTENSION_SUPPORT_KHR_loader_init(_) _(KHR_loader_init, KHR_LOADER_INIT)
 #else
 #define OXR_EXTENSION_SUPPORT_KHR_loader_init(_)
+#endif
+
+
+/*
+ * XR_KHR_loader_init_android
+ */
+#if defined(XR_KHR_loader_init_android) && defined(OXR_HAVE_KHR_loader_init) && defined(XR_USE_PLATFORM_ANDROID)
+#define OXR_HAVE_KHR_loader_init_android
+#define OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) _(KHR_loader_init_android, KHR_LOADER_INIT_ANDROID)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_)
 #endif
 
 
@@ -298,8 +298,8 @@
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect(_) \
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
-    OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) \
     OXR_EXTENSION_SUPPORT_KHR_loader_init(_) \
+    OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_es_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_swapchain_usage_input_attachment_bit(_) \
