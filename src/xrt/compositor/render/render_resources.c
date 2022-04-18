@@ -239,6 +239,43 @@ create_compute_descriptor_set_layout(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
+struct compute_distortion_params
+{
+	uint32_t distortion_texel_count;
+};
+
+static VkResult
+create_compute_distortion_pipeline(struct vk_bundle *vk,
+                                   VkPipelineCache pipeline_cache,
+                                   VkShaderModule shader,
+                                   VkPipelineLayout pipeline_layout,
+                                   const struct compute_distortion_params *params,
+                                   VkPipeline *out_compute_pipeline)
+{
+	VkSpecializationMapEntry entries[1] = {
+	    {
+	        .constantID = 0,
+	        .offset = offsetof(struct compute_distortion_params, distortion_texel_count),
+	        .size = sizeof(params->distortion_texel_count),
+	    },
+	};
+
+	VkSpecializationInfo specialization_info = {
+	    .mapEntryCount = ARRAY_SIZE(entries),
+	    .pMapEntries = entries,
+	    .dataSize = sizeof(*params),
+	    .pData = params,
+	};
+
+	return vk_create_compute_pipeline( //
+	    vk,                            // vk_bundle
+	    pipeline_cache,                // pipeline_cache
+	    shader,                        // shader
+	    pipeline_layout,               // pipeline_layout
+	    &specialization_info,          // specialization_info
+	    out_compute_pipeline);         // out_compute_pipeline
+}
+
 static VkResult
 create_distortion_image_and_view(struct vk_bundle *vk,
                                  VkExtent2D extent,
@@ -654,20 +691,28 @@ render_resources_init(struct render_resources *r,
 	    NULL,                         // specialization_info
 	    &r->compute.clear_pipeline)); // out_compute_pipeline
 
-	C(vk_create_compute_pipeline(          //
+	struct compute_distortion_params distortion_params = {
+	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
+	};
+
+	C(create_compute_distortion_pipeline(  //
 	    vk,                                // vk_bundle
 	    r->pipeline_cache,                 // pipeline_cache
 	    r->shaders->distortion_comp,       // shader
 	    r->compute.pipeline_layout,        // pipeline_layout
-	    NULL,                              // specialization_info
+	    &distortion_params,                // params
 	    &r->compute.distortion_pipeline)); // out_compute_pipeline
 
-	C(vk_create_compute_pipeline(                   //
+	struct compute_distortion_params distortion_timewarp_params = {
+	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
+	};
+
+	C(create_compute_distortion_pipeline(           //
 	    vk,                                         // vk_bundle
 	    r->pipeline_cache,                          // pipeline_cache
 	    r->shaders->distortion_timewarp_comp,       // shader
 	    r->compute.pipeline_layout,                 // pipeline_layout
-	    NULL,                                       // specialization_info
+	    &distortion_timewarp_params,                // params
 	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
 
 
