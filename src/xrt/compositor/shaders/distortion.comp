@@ -11,6 +11,9 @@
 // The size of the distortion texture dimensions in texels.
 layout(constant_id = 0) const int distortion_texel_count = 2;
 
+// Should we do timewarp.
+layout(constant_id = 1) const bool do_timewarp = false;
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform sampler2D source[2];
@@ -57,7 +60,7 @@ vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 	return dist_uv;
 }
 
-vec2 transform_uv(vec2 uv, uint iz)
+vec2 transform_uv_subimage(vec2 uv, uint iz)
 {
 	vec2 values = uv;
 
@@ -66,6 +69,37 @@ vec2 transform_uv(vec2 uv, uint iz)
 
 	// Ready to be used.
 	return values.xy;
+}
+
+vec2 transform_uv_timewarp(vec2 uv, uint iz)
+{
+	vec4 values = vec4(uv, -1, 1);
+
+	// From uv to tan angle (tanget space).
+	values.xy = values.xy * ubo.pre_transform[iz].zw + ubo.pre_transform[iz].xy;
+	values.y = -values.y; // Flip to OpenXR coordinate system.
+
+	// Timewarp.
+	values = ubo.transform[iz] * values;
+	values.xy = values.xy * (1.0 / max(values.w, 0.00001));
+
+	// From [-1, 1] to [0, 1]
+	values.xy = values.xy * 0.5 + 0.5;
+
+	// To deal with OpenGL flip and sub image view.
+	values.xy = values.xy * ubo.post_transform[iz].zw + ubo.post_transform[iz].xy;
+
+	// Done.
+	return values.xy;
+}
+
+vec2 transform_uv(vec2 uv, uint iz)
+{
+	if (do_timewarp) {
+		return transform_uv_timewarp(uv, iz);
+	} else {
+		return transform_uv_subimage(uv, iz);
+	}
 }
 
 void main()

@@ -242,6 +242,7 @@ create_compute_descriptor_set_layout(struct vk_bundle *vk,
 struct compute_distortion_params
 {
 	uint32_t distortion_texel_count;
+	VkBool32 do_timewarp;
 };
 
 static VkResult
@@ -252,13 +253,18 @@ create_compute_distortion_pipeline(struct vk_bundle *vk,
                                    const struct compute_distortion_params *params,
                                    VkPipeline *out_compute_pipeline)
 {
-	VkSpecializationMapEntry entries[1] = {
-	    {
-	        .constantID = 0,
-	        .offset = offsetof(struct compute_distortion_params, distortion_texel_count),
-	        .size = sizeof(params->distortion_texel_count),
-	    },
+#define ENTRY(ID, FIELD)                                                                                               \
+	{                                                                                                              \
+	    .constantID = ID,                                                                                          \
+	    .offset = offsetof(struct compute_distortion_params, FIELD),                                               \
+	    sizeof(params->FIELD),                                                                                     \
+	}
+
+	VkSpecializationMapEntry entries[2] = {
+	    ENTRY(0, distortion_texel_count),
+	    ENTRY(1, do_timewarp),
 	};
+#undef ENTRY
 
 	VkSpecializationInfo specialization_info = {
 	    .mapEntryCount = ARRAY_SIZE(entries),
@@ -693,6 +699,7 @@ render_resources_init(struct render_resources *r,
 
 	struct compute_distortion_params distortion_params = {
 	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
+	    .do_timewarp = false,
 	};
 
 	C(create_compute_distortion_pipeline(  //
@@ -705,12 +712,13 @@ render_resources_init(struct render_resources *r,
 
 	struct compute_distortion_params distortion_timewarp_params = {
 	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
+	    .do_timewarp = true,
 	};
 
 	C(create_compute_distortion_pipeline(           //
 	    vk,                                         // vk_bundle
 	    r->pipeline_cache,                          // pipeline_cache
-	    r->shaders->distortion_timewarp_comp,       // shader
+	    r->shaders->distortion_comp,                // shader
 	    r->compute.pipeline_layout,                 // pipeline_layout
 	    &distortion_timewarp_params,                // params
 	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
