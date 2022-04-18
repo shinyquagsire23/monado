@@ -651,6 +651,7 @@ render_resources_init(struct render_resources *r,
 	    r->pipeline_cache,            // pipeline_cache
 	    r->shaders->clear_comp,       // shader
 	    r->compute.pipeline_layout,   // pipeline_layout
+	    NULL,                         // specialization_info
 	    &r->compute.clear_pipeline)); // out_compute_pipeline
 
 	C(vk_create_compute_pipeline(          //
@@ -658,6 +659,7 @@ render_resources_init(struct render_resources *r,
 	    r->pipeline_cache,                 // pipeline_cache
 	    r->shaders->distortion_comp,       // shader
 	    r->compute.pipeline_layout,        // pipeline_layout
+	    NULL,                              // specialization_info
 	    &r->compute.distortion_pipeline)); // out_compute_pipeline
 
 	C(vk_create_compute_pipeline(                   //
@@ -665,6 +667,7 @@ render_resources_init(struct render_resources *r,
 	    r->pipeline_cache,                          // pipeline_cache
 	    r->shaders->distortion_timewarp_comp,       // shader
 	    r->compute.pipeline_layout,                 // pipeline_layout
+	    NULL,                                       // specialization_info
 	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
 
 

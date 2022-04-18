@@ -173,6 +173,7 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
                            VkPipelineCache pipeline_cache,
                            VkShaderModule shader,
                            VkPipelineLayout pipeline_layout,
+                           const VkSpecializationInfo *specialization_info,
                            VkPipeline *out_compute_pipeline)
 {
 	VkResult ret;
@@ -183,6 +184,7 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
 	    .stage = VK_SHADER_STAGE_COMPUTE_BIT,
 	    .module = shader,
 	    .pName = "main",
+	    .pSpecializationInfo = specialization_info,
 	};
 
 	VkComputePipelineCreateInfo pipeline_info = {

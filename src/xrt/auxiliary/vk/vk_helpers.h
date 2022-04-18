@@ -938,6 +938,7 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
                            VkPipelineCache pipeline_cache,
                            VkShaderModule shader,
                            VkPipelineLayout pipeline_layout,
+                           const VkSpecializationInfo *specialization_info,
                            VkPipeline *out_compute_pipeline);
 
 
