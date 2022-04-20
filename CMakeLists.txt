@@ -14,6 +14,11 @@ option(
 	"Use the absolute path to the runtime in the installed manifest, rather than a bare filename."
 	ON
 	)
+option(
+	XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH
+	"If XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH is off, use a relative path from the manifest to the runtime."
+	ON
+	)
 option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install" ON)
 
 # We use C++17
