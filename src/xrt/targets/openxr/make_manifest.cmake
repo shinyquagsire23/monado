@@ -32,6 +32,10 @@ else()
 	set(RUNTIME_PATH ${RUNTIME_FILENAME})
 endif()
 
+if(WIN32)
+	string(REPLACE "/" [[\\]] RUNTIME_PATH ${RUNTIME_PATH})
+endif()
+
 set(runtime_path ${RUNTIME_PATH})
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
