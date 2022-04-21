@@ -110,7 +110,7 @@ openxr = library(
 	link_depends: mapfile
 )
 
-manifest_in = files('openxr_monado.in.json')
+manifest_in = files('../../../../cmake/openxr_monado.in.json')
 
 manifest_conf = configuration_data()
 # https://github.com/mesonbuild/meson/issues/5941

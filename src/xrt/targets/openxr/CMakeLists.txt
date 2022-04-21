@@ -55,23 +55,9 @@ endif()
 
 ###
 # Generate runtime manifest with absolute path to runtime intended for development without installing
-set(MANIFEST_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/openxr_monado.in.json)
-set(runtime_path $<SHELL_PATH:$<TARGET_FILE:${RUNTIME_TARGET}>>)
 
-# Need this step because file(GENERATE) only evaluates generator expressions, and not what configure_file does.
-configure_file(${MANIFEST_INPUT} ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest.json)
-
-if(CMAKE_VERSION VERSION_LESS 3.9)
-	# best guess
-	if(CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-		set(IS_MULTI_CONFIG FALSE)
-	else()
-		set(IS_MULTI_CONFIG TRUE)
-	endif()
-else()
-	# 3.9+ have a global property with the truth
-	get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-endif()
+# 3.9+ have a global property with the truth
+get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(IS_MULTI_CONFIG)
 	set(DEV_MANIFEST_OUTPUT "${CMAKE_BINARY_DIR}/$<CONFIG>/${RUNTIME_TARGET}-dev.json")
@@ -79,16 +65,32 @@ else()
 	set(DEV_MANIFEST_OUTPUT "${CMAKE_BINARY_DIR}/${RUNTIME_TARGET}-dev.json")
 endif()
 
-file(
-	GENERATE
-	OUTPUT "${DEV_MANIFEST_OUTPUT}"
-	INPUT ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest.json
+include(GenerateOpenXRRuntimeManifest)
+generate_openxr_runtime_manifest_buildtree(
+	RUNTIME_TARGET ${RUNTIME_TARGET} #
+	OUT_FILE ${DEV_MANIFEST_OUTPUT}
 	)
 
 ###
 # Prepare the installable manifest: will be generated completely at install time,
 # by a script we generate now.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	# Windows: install manifest to top level
+	set(_extra_args)
+	if(XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH)
+		set(_extra_args ABSOLUTE_RUNTIME_PATH)
+	elseif(XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH)
+		set(_extra_args RUNTIME_DIR_RELATIVE_TO_MANIFEST ${CMAKE_INSTALL_BINDIR})
+	endif()
+	generate_openxr_runtime_manifest_at_install(
+		${_extra_args}
+		RUNTIME_TARGET ${RUNTIME_TARGET}
+		DESTINATION .
+		RELATIVE_RUNTIME_DIR ${CMAKE_INSTALL_BINDIR}
+		)
+	set(RUNTIME_RELATIVE_DIR ${CMAKE_INSTALL_BINDIR})
+elseif(NOT ANDROID)
+	# Linux, BSD, etc.
 	set(MANIFEST_RELATIVE_DIR share/openxr/${XR_API_MAJOR}/)
 	if(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME)
 		configure_file(
@@ -96,21 +98,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			)
 		install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/active_runtime.cmake)
 	endif()
+
+	set(_extra_args)
+	if(XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH)
+		set(_extra_args ABSOLUTE_RUNTIME_PATH)
+	elseif(XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH)
+		set(_extra_args RUNTIME_DIR_RELATIVE_TO_MANIFEST ../../../${CMAKE_INSTALL_LIBDIR})
+	endif()
+	generate_openxr_runtime_manifest_at_install(
+		${_extra_args}
+		RUNTIME_TARGET ${RUNTIME_TARGET}
+		DESTINATION share/openxr/${XR_API_MAJOR}
+		RELATIVE_RUNTIME_DIR ${CMAKE_INSTALL_LIBDIR}
+		)
 	set(RUNTIME_RELATIVE_DIR ${CMAKE_INSTALL_LIBDIR})
-	if(XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH
-	   AND NOT XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH
-		)
-		set(RUNTIME_DIR_RELATIVE_TO_MANIFEST ../../../${RUNTIME_RELATIVE_DIR})
-	endif()
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	# Windows: install manifest to top level
-	set(MANIFEST_RELATIVE_DIR .)
-	set(RUNTIME_RELATIVE_DIR ${CMAKE_INSTALL_BINDIR})
-	if(XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH
-	   AND NOT XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH
-		)
-		set(RUNTIME_DIR_RELATIVE_TO_MANIFEST ./${RUNTIME_RELATIVE_DIR})
-	endif()
 endif()
 
 # Install the runtime itself
@@ -120,16 +121,6 @@ install(
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} #
 	RUNTIME DESTINATION ${RUNTIME_RELATIVE_DIR}
 	)
-
-# If we know where to install the manifest, we can set it up to be installed.
-if(MANIFEST_RELATIVE_DIR)
-	set(RUNTIME_FILENAME
-	    ${CMAKE_SHARED_MODULE_PREFIX}${RUNTIME_TARGET}${CMAKE_SHARED_MODULE_SUFFIX}
-		)
-	configure_file(make_manifest.cmake ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake @ONLY)
-	install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/make_manifest.cmake)
-endif()
-
 ###
 # Inelegant but effective SDL2-based debug GUI
 add_library(oxr_sdl2 STATIC oxr_sdl2_hack.c)
