@@ -53,14 +53,6 @@ if(NOT MSVC)
 		)
 endif()
 
-# Install the runtime itself
-install(
-	TARGETS ${RUNTIME_TARGET} #
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} #
-	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} #
-	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-	)
-
 ###
 # Generate runtime manifest with absolute path to runtime intended for development without installing
 set(MANIFEST_INPUT ${CMAKE_CURRENT_SOURCE_DIR}/openxr_monado.in.json)
@@ -120,6 +112,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		set(RUNTIME_DIR_RELATIVE_TO_MANIFEST ./${RUNTIME_RELATIVE_DIR})
 	endif()
 endif()
+
+# Install the runtime itself
+install(
+	TARGETS ${RUNTIME_TARGET} #
+	LIBRARY DESTINATION ${RUNTIME_RELATIVE_DIR} #
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} #
+	RUNTIME DESTINATION ${RUNTIME_RELATIVE_DIR}
+	)
 
 # If we know where to install the manifest, we can set it up to be installed.
 if(MANIFEST_RELATIVE_DIR)
