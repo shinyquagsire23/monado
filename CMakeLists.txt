@@ -1,4 +1,4 @@
-# Copyright 2018-2021, Collabora, Ltd.
+# Copyright 2018-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.10.2)
@@ -9,17 +9,26 @@ if(POLICY CMP0072)
 	cmake_policy(SET CMP0072 NEW)
 endif()
 
+set(_default_absolute ON)
+if(WIN32)
+	set(_default_absolute OFF)
+endif()
 option(
 	XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH
 	"Use the absolute path to the runtime in the installed manifest, rather than a bare filename."
-	ON
+	OFF
 	)
 option(
 	XRT_OPENXR_INSTALL_MANIFEST_RELATIVE_RUNTIME_PATH
 	"If XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH is off, use a relative path from the manifest to the runtime."
 	ON
 	)
-option(XRT_OPENXR_INSTALL_ACTIVE_RUNTIME "Make Monado the default OpenXR runtime on install" ON)
+if(NOT WIN32)
+	option(
+		XRT_OPENXR_INSTALL_ACTIVE_RUNTIME
+		"Make Monado the default OpenXR runtime on install" ON
+		)
+endif()
 
 # We use C++17
 set(CMAKE_CXX_STANDARD 17)
