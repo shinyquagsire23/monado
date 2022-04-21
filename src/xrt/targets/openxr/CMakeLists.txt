@@ -93,6 +93,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 		)
+	if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL 3.21)
+		# This generator expression is easier to control than install(RUNTIME_DEPENDENCY_SETS),
+		# which is prone to trying to distribute system DLLs.
+		install(
+			FILES $<TARGET_RUNTIME_DLLS:${RUNTIME_TARGET}>
+			DESTINATION ${CMAKE_INSTALL_BINDIR}
+			COMPONENT Runtime
+			)
+	endif()
 elseif(NOT ANDROID)
 	# Linux, BSD, etc.
 	set(MANIFEST_RELATIVE_DIR share/openxr/${XR_API_MAJOR}/)
