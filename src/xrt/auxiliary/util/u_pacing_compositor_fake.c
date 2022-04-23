@@ -38,9 +38,9 @@ struct fake_timing
 	uint64_t frame_period_ns;
 
 	/*!
-	 * When the last frame was made.
+	 * When the last frame was presented, not displayed.
 	 */
-	uint64_t last_display_time_ns;
+	uint64_t last_present_time_ns;
 
 	/*!
 	 * Very often the present time that we get from the system is only when
@@ -69,16 +69,16 @@ fake_timing(struct u_pacing_compositor *upc)
 }
 
 static uint64_t
-predict_next_frame(struct fake_timing *ft, uint64_t now_ns)
+predict_next_frame_present_time(struct fake_timing *ft, uint64_t now_ns)
 {
-	uint64_t time_needed_ns = ft->present_to_display_offset_ns + ft->comp_time_ns;
-	uint64_t predicted_display_time_ns = ft->last_display_time_ns + ft->frame_period_ns;
+	uint64_t time_needed_ns = ft->comp_time_ns;
+	uint64_t predicted_present_time_ns = ft->last_present_time_ns + ft->frame_period_ns;
 
-	while (now_ns + time_needed_ns > predicted_display_time_ns) {
-		predicted_display_time_ns += ft->frame_period_ns;
+	while (now_ns + time_needed_ns > predicted_present_time_ns) {
+		predicted_present_time_ns += ft->frame_period_ns;
 	}
 
-	return predicted_display_time_ns;
+	return predicted_present_time_ns;
 }
 
 static uint64_t
@@ -109,8 +109,8 @@ pc_predict(struct u_pacing_compositor *upc,
 	struct fake_timing *ft = fake_timing(upc);
 
 	int64_t frame_id = ft->frame_id_generator++;
-	uint64_t predicted_display_time_ns = predict_next_frame(ft, now_ns);
-	uint64_t desired_present_time_ns = predicted_display_time_ns - ft->present_to_display_offset_ns;
+	uint64_t desired_present_time_ns = predict_next_frame_present_time(ft, now_ns);
+	uint64_t predicted_display_time_ns = desired_present_time_ns + ft->present_to_display_offset_ns;
 	uint64_t wake_up_time_ns = desired_present_time_ns - ft->comp_time_ns;
 	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_period_ns = ft->frame_period_ns;
@@ -198,8 +198,8 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	// 20% of the frame time.
 	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
 
-	// Make the next display time be in the future.
-	ft->last_display_time_ns = now_ns + U_TIME_1MS_IN_NS * 50;
+	// Make the next present time be in the future.
+	ft->last_present_time_ns = now_ns + U_TIME_1MS_IN_NS * 50;
 
 	// Return value.
 	*out_upc = &ft->base;
