@@ -33,6 +33,15 @@ vk_print_device_info(struct vk_bundle *vk,
 }
 
 void
+vk_print_features_info(struct vk_bundle *vk, enum u_logging_level log_level)
+{
+	U_LOG_IFL(log_level, vk->log_level,                            //
+	          "Features:"                                          //
+	          "\n\ttimeline_semaphore: %s",                        //
+	          vk->features.timeline_semaphore ? "true" : "false"); //
+}
+
+void
 vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_level)
 {
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
@@ -44,17 +53,16 @@ vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_le
 	          "VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT",    //
 	          vk->external.fence_opaque_fd ? "true" : "false"); //
 
-	U_LOG_IFL(log_level, vk->log_level,                                                          //
-	          "Supported semaphores:\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s",         //
-	          "features.timeline_semaphore", vk->features.timeline_semaphore ? "true" : "false", //
-	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(binary)",                           //
-	          vk->external.binary_semaphore_sync_fd ? "true" : "false",                          //
-	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(binary)",                         //
-	          vk->external.binary_semaphore_opaque_fd ? "true" : "false",                        //
-	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(timeline)",                         //
-	          vk->external.timeline_semaphore_sync_fd ? "true" : "false",                        //
-	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(timeline)",                       //
-	          vk->external.timeline_semaphore_opaque_fd ? "true" : "false");                     //
+	U_LOG_IFL(log_level, vk->log_level,                                        //
+	          "Supported semaphores:\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s", //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(binary)",         //
+	          vk->external.binary_semaphore_sync_fd ? "true" : "false",        //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(binary)",       //
+	          vk->external.binary_semaphore_opaque_fd ? "true" : "false",      //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT(timeline)",       //
+	          vk->external.timeline_semaphore_sync_fd ? "true" : "false",      //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(timeline)",     //
+	          vk->external.timeline_semaphore_opaque_fd ? "true" : "false");   //
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 
