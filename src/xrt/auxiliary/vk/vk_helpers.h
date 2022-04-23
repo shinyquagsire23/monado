@@ -221,11 +221,20 @@ struct vk_bundle
 	PFN_vkCreateShaderModule vkCreateShaderModule;
 	PFN_vkDestroyShaderModule vkDestroyShaderModule;
 
+	PFN_vkCreateQueryPool vkCreateQueryPool;
+	PFN_vkDestroyQueryPool vkDestroyQueryPool;
+	PFN_vkGetQueryPoolResults vkGetQueryPoolResults;
+
 	PFN_vkCreateCommandPool vkCreateCommandPool;
 	PFN_vkDestroyCommandPool vkDestroyCommandPool;
 
 	PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers;
 	PFN_vkBeginCommandBuffer vkBeginCommandBuffer;
+	PFN_vkCmdBeginQuery vkCmdBeginQuery;
+	PFN_vkCmdCopyQueryPoolResults vkCmdCopyQueryPoolResults;
+	PFN_vkCmdEndQuery vkCmdEndQuery;
+	PFN_vkCmdResetQueryPool vkCmdResetQueryPool;
+	PFN_vkCmdWriteTimestamp vkCmdWriteTimestamp;
 	PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier;
 	PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass;
 	PFN_vkCmdSetScissor vkCmdSetScissor;

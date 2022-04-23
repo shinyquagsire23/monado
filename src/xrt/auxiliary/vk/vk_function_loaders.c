@@ -172,11 +172,20 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCreateShaderModule                        = GET_DEV_PROC(vk, vkCreateShaderModule);
 	vk->vkDestroyShaderModule                       = GET_DEV_PROC(vk, vkDestroyShaderModule);
 
+	vk->vkCreateQueryPool                           = GET_DEV_PROC(vk, vkCreateQueryPool);
+	vk->vkDestroyQueryPool                          = GET_DEV_PROC(vk, vkDestroyQueryPool);
+	vk->vkGetQueryPoolResults                       = GET_DEV_PROC(vk, vkGetQueryPoolResults);
+
 	vk->vkCreateCommandPool                         = GET_DEV_PROC(vk, vkCreateCommandPool);
 	vk->vkDestroyCommandPool                        = GET_DEV_PROC(vk, vkDestroyCommandPool);
 
 	vk->vkAllocateCommandBuffers                    = GET_DEV_PROC(vk, vkAllocateCommandBuffers);
 	vk->vkBeginCommandBuffer                        = GET_DEV_PROC(vk, vkBeginCommandBuffer);
+	vk->vkCmdBeginQuery                             = GET_DEV_PROC(vk, vkCmdBeginQuery);
+	vk->vkCmdCopyQueryPoolResults                   = GET_DEV_PROC(vk, vkCmdCopyQueryPoolResults);
+	vk->vkCmdEndQuery                               = GET_DEV_PROC(vk, vkCmdEndQuery);
+	vk->vkCmdResetQueryPool                         = GET_DEV_PROC(vk, vkCmdResetQueryPool);
+	vk->vkCmdWriteTimestamp                         = GET_DEV_PROC(vk, vkCmdWriteTimestamp);
 	vk->vkCmdPipelineBarrier                        = GET_DEV_PROC(vk, vkCmdPipelineBarrier);
 	vk->vkCmdBeginRenderPass                        = GET_DEV_PROC(vk, vkCmdBeginRenderPass);
 	vk->vkCmdSetScissor                             = GET_DEV_PROC(vk, vkCmdSetScissor);
