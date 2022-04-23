@@ -535,6 +535,18 @@ render_gfx_begin(struct render_gfx *rr)
 		return false;
 	}
 
+	vk->vkCmdResetQueryPool( //
+	    rr->cmd,             // commandBuffer
+	    rr->r->query_pool,   // queryPool
+	    0,                   // firstQuery
+	    2);                  // queryCount
+
+	vk->vkCmdWriteTimestamp(               //
+	    rr->cmd,                           // commandBuffer
+	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // pipelineStage
+	    rr->r->query_pool,                 // queryPool
+	    0);                                // query
+
 	// Yes we leave the mutex locked.
 	return true;
 }
@@ -543,6 +555,12 @@ bool
 render_gfx_end(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
+
+	vk->vkCmdWriteTimestamp(                  //
+	    rr->cmd,                              // commandBuffer
+	    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // pipelineStage
+	    rr->r->query_pool,                    // queryPool
+	    1);                                   // query
 
 	VkResult ret = vk_end_command_buffer(vk, rr->cmd);
 	os_mutex_unlock(&vk->cmd_pool_mutex);

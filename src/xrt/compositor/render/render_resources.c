@@ -776,6 +776,26 @@ render_resources_init(struct render_resources *r,
 
 
 	/*
+	 * Timestamp pool.
+	 */
+
+	VkQueryPoolCreateInfo poolInfo = {
+	    .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+	    .pNext = NULL,
+	    .flags = 0, // Reserved.
+	    .queryType = VK_QUERY_TYPE_TIMESTAMP,
+	    .queryCount = 2,         // Start & end
+	    .pipelineStatistics = 0, // Not used.
+	};
+
+	vk->vkCreateQueryPool( //
+	    vk->device,        // device
+	    &poolInfo,         // pCreateInfo
+	    NULL,              // pAllocator
+	    &r->query_pool);   // pQueryPool
+
+
+	/*
 	 * Done
 	 */
 
@@ -801,6 +821,7 @@ render_resources_close(struct render_resources *r)
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
 	D(DescriptorPool, r->mesh.descriptor_pool);
+	D(QueryPool, r->query_pool);
 	render_buffer_close(vk, &r->mesh.vbo);
 	render_buffer_close(vk, &r->mesh.ibo);
 	render_buffer_close(vk, &r->mesh.ubos[0]);
@@ -826,4 +847,57 @@ render_resources_close(struct render_resources *r)
 
 	// Finally forget about the vk bundle. We do not own it!
 	r->vk = NULL;
+}
+
+bool
+render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_start_ns, uint64_t *out_gpu_end_ns)
+{
+	struct vk_bundle *vk = r->vk;
+	VkResult ret = VK_SUCCESS;
+
+	// Simple pre-check, needed by vk_convert_timestamps_to_host_ns.
+	if (!vk->has_EXT_calibrated_timestamps) {
+		return false;
+	}
+
+
+	/*
+	 * Query how long things took.
+	 */
+
+	VkQueryResultFlags flags = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT;
+	uint64_t timestamps[2] = {0};
+
+	vk->vkGetQueryPoolResults( //
+	    vk->device,            // device
+	    r->query_pool,         // queryPool
+	    0,                     // firstQuery
+	    2,                     // queryCount
+	    sizeof(uint64_t) * 2,  // dataSize
+	    timestamps,            // pData
+	    sizeof(uint64_t),      // stride
+	    flags);                // flags
+
+
+	/*
+	 * Convert from GPU context to CPU context, has to be
+	 * done fairly quickly after timestamps has been made.
+	 */
+	ret = vk_convert_timestamps_to_host_ns(vk, 2, timestamps);
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
+	uint64_t gpu_start_ns = timestamps[0];
+	uint64_t gpu_end_ns = timestamps[1];
+
+
+	/*
+	 * Done
+	 */
+
+	*out_gpu_start_ns = gpu_start_ns;
+	*out_gpu_end_ns = gpu_end_ns;
+
+	return true;
 }

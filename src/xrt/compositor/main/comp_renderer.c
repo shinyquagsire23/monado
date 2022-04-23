@@ -1490,6 +1490,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
 	                                 c->frame.rendering.present_slop_ns);
 
+	// Save for timestamps below.
+	uint64_t frame_id = c->frame.rendering.id;
 
 	// Clear the frame.
 	c->frame.rendering.id = -1;
@@ -1509,12 +1511,36 @@ comp_renderer_draw(struct comp_renderer *r)
 	renderer_wait_gpu_idle(r);
 
 
+	/*
+	 * Get timestamps of GPU work (if available).
+	 */
+
+	uint64_t gpu_start_ns, gpu_end_ns;
+	if (render_resources_get_timestamps(&c->nr, &gpu_start_ns, &gpu_end_ns)) {
+		//! @todo submit data to target (pacer).
+		(void)frame_id;
+
+#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(frame_id))
+#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
+
+		TE_BEG(pc_gpu, gpu_start_ns, "gpu");
+		TE_END(pc_gpu, gpu_end_ns);
+
+#undef TE_BEG
+#undef TE_END
+	}
+
+
+	/*
+	 * Free resources.
+	 */
 
 	if (use_compute) {
 		render_compute_close(&crc);
 	} else {
 		render_gfx_close(&rr);
 	}
+
 
 	/*
 	 * For direct mode this makes us wait until the last frame has been

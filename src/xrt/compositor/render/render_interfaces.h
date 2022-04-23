@@ -212,6 +212,8 @@ struct render_resources
 	//! Shared for all rendering.
 	VkPipelineCache pipeline_cache;
 
+	VkQueryPool query_pool;
+
 
 	/*
 	 * Static
@@ -328,6 +330,20 @@ render_resources_init(struct render_resources *r,
  */
 void
 render_resources_close(struct render_resources *r);
+
+/*!
+ * Returns the timestamps for when the latest GPU work started and stopped that
+ * was submitted using @ref render_gfx or @ref render_compute cmd buf builders.
+ * Returned in the same time domain as returned by @ref os_monotonic_get_ns.
+ * Behaviour for this function is undefined if the GPU has not completed before
+ * calling this function, so make sure to call vkQueueWaitIdle or wait on the
+ * fence that the work was submitted with have fully completed. See other
+ * limitation mentioned for @ref vk_convert_timestamps_to_host_ns.
+ *
+ * @see vk_convert_timestamps_to_host_ns
+ */
+bool
+render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_start_ns, uint64_t *out_gpu_end_ns);
 
 
 /*
