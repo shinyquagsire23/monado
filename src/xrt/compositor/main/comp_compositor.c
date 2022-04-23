@@ -852,6 +852,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	struct vk_bundle temp_vk_storage = {0};
 	struct vk_bundle *temp_vk = &temp_vk_storage;
+	temp_vk->log_level = U_LOGGING_WARN;
 
 	ret = vk_get_loader_functions(temp_vk, vkGetInstanceProcAddr);
 	if (ret != VK_SUCCESS) {
