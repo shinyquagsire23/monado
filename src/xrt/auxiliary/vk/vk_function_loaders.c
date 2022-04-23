@@ -84,6 +84,11 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkEnumerateDeviceExtensionProperties              = GET_INS_PROC(vk, vkEnumerateDeviceExtensionProperties);
 	vk->vkEnumerateDeviceLayerProperties                  = GET_INS_PROC(vk, vkEnumerateDeviceLayerProperties);
 
+#if defined(VK_EXT_calibrated_timestamps)
+	vk->vkGetPhysicalDeviceCalibrateableTimeDomainsEXT    = GET_INS_PROC(vk, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT);
+
+#endif // defined(VK_EXT_calibrated_timestamps)
+
 #if defined(VK_USE_PLATFORM_DISPLAY_KHR)
 	vk->vkCreateDisplayPlaneSurfaceKHR                    = GET_INS_PROC(vk, vkCreateDisplayPlaneSurfaceKHR);
 	vk->vkGetDisplayPlaneCapabilitiesKHR                  = GET_INS_PROC(vk, vkGetDisplayPlaneCapabilitiesKHR);
@@ -282,6 +287,11 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetAndroidHardwareBufferPropertiesANDROID = GET_DEV_PROC(vk, vkGetAndroidHardwareBufferPropertiesANDROID);
 
 #endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
+
+#if defined(VK_EXT_calibrated_timestamps)
+	vk->vkGetCalibratedTimestampsEXT                = GET_DEV_PROC(vk, vkGetCalibratedTimestampsEXT);
+
+#endif // defined(VK_EXT_calibrated_timestamps)
 
 	vk->vkGetPastPresentationTimingGOOGLE           = GET_DEV_PROC(vk, vkGetPastPresentationTimingGOOGLE);
 

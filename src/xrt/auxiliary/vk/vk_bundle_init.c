@@ -487,6 +487,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	// beginning of GENERATED device extension code - do not modify - used by scripts
 	// Reset before filling out.
 	vk->has_KHR_timeline_semaphore = false;
+	vk->has_EXT_calibrated_timestamps = false;
 	vk->has_EXT_global_priority = false;
 	vk->has_EXT_robustness2 = false;
 	vk->has_GOOGLE_display_timing = false;
@@ -504,6 +505,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_KHR_timeline_semaphore)
+
+#if defined(VK_EXT_calibrated_timestamps)
+		if (strcmp(ext, VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) == 0) {
+			vk->has_EXT_calibrated_timestamps = true;
+			continue;
+		}
+#endif // defined(VK_EXT_calibrated_timestamps)
 
 #if defined(VK_EXT_global_priority)
 		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {

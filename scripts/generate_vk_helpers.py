@@ -159,6 +159,8 @@ def get_device_cmds():
             requires=("VK_USE_PLATFORM_ANDROID_KHR",),
         ),
         None,
+        Cmd("vkGetCalibratedTimestampsEXT", requires=("VK_EXT_calibrated_timestamps",)),
+        None,
         Cmd("vkGetPastPresentationTimingGOOGLE"),
         None,
         Cmd("vkGetSwapchainCounterEXT", requires=("VK_EXT_display_control",)),
@@ -194,6 +196,11 @@ def get_instance_cmds():
         Cmd("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR"),
         Cmd("vkEnumerateDeviceExtensionProperties"),
         Cmd("vkEnumerateDeviceLayerProperties"),
+        None,
+        Cmd(
+            "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT",
+            requires=("VK_EXT_calibrated_timestamps",),
+        ),
         None,
         Cmd(
             "vkCreateDisplayPlaneSurfaceKHR", requires=("VK_USE_PLATFORM_DISPLAY_KHR",)
@@ -244,6 +251,7 @@ INSTANCE_EXTENSIONS_TO_CHECK = [
 ]
 DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_timeline_semaphore",
+    "VK_EXT_calibrated_timestamps",
     "VK_EXT_global_priority",
     "VK_EXT_robustness2",
     "VK_GOOGLE_display_timing",

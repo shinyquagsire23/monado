@@ -86,6 +86,7 @@ struct vk_bundle
 
 	// beginning of GENERATED device extension code - do not modify - used by scripts
 	bool has_KHR_timeline_semaphore;
+	bool has_EXT_calibrated_timestamps;
 	bool has_EXT_global_priority;
 	bool has_EXT_robustness2;
 	bool has_GOOGLE_display_timing;
@@ -141,6 +142,11 @@ struct vk_bundle
 	PFN_vkGetPhysicalDeviceExternalSemaphorePropertiesKHR vkGetPhysicalDeviceExternalSemaphorePropertiesKHR;
 	PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties;
 	PFN_vkEnumerateDeviceLayerProperties vkEnumerateDeviceLayerProperties;
+
+#if defined(VK_EXT_calibrated_timestamps)
+	PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT vkGetPhysicalDeviceCalibrateableTimeDomainsEXT;
+
+#endif // defined(VK_EXT_calibrated_timestamps)
 
 #if defined(VK_USE_PLATFORM_DISPLAY_KHR)
 	PFN_vkCreateDisplayPlaneSurfaceKHR vkCreateDisplayPlaneSurfaceKHR;
@@ -331,6 +337,11 @@ struct vk_bundle
 	PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID;
 
 #endif // defined(VK_USE_PLATFORM_ANDROID_KHR)
+
+#if defined(VK_EXT_calibrated_timestamps)
+	PFN_vkGetCalibratedTimestampsEXT vkGetCalibratedTimestampsEXT;
+
+#endif // defined(VK_EXT_calibrated_timestamps)
 
 	PFN_vkGetPastPresentationTimingGOOGLE vkGetPastPresentationTimingGOOGLE;
 
