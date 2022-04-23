@@ -604,6 +604,9 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_KHR_timeline_semaphore
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_calibrated_timestamps
+    VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
+#endif
 #ifdef VK_EXT_robustness2
     VK_EXT_ROBUSTNESS_2_EXTENSION_NAME,
 #endif
