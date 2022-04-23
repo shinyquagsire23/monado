@@ -139,13 +139,15 @@ struct u_pacing_compositor
 	 *
 	 * This is usually used only for more complicated display systems.
 	 *
-	 * @param[in] upc                The compositor pacing helper.
-	 * @param[in] frame_id           The frame ID to record for.
-	 * @param[in] present_offset_ns  The improved estimate of the time between "present" and photons.
+	 * @param[in] upc                           The compositor pacing helper.
+	 * @param[in] frame_id                      The frame ID to record for.
+	 * @param[in] present_to_display_offset_ns  The improved estimate of the time between "present" and photons.
 	 *
 	 * @see @ref frame-pacing.
 	 */
-	void (*update_present_offset)(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns);
+	void (*update_present_offset)(struct u_pacing_compositor *upc,
+	                              int64_t frame_id,
+	                              uint64_t present_to_display_offset_ns);
 
 	/*!
 	 * Destroy this u_pacing_compositor.
@@ -227,9 +229,9 @@ u_pc_info(struct u_pacing_compositor *upc,
  * @ingroup aux_pacing
  */
 static inline void
-u_pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+u_pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_to_display_offset_ns)
 {
-	upc->update_present_offset(upc, frame_id, present_offset_ns);
+	upc->update_present_offset(upc, frame_id, present_to_display_offset_ns);
 }
 
 /*!
@@ -491,7 +493,7 @@ u_pa_destroy(struct u_pacing_app **upa_ptr)
 struct u_pc_display_timing_config
 {
 	//! How long after "present" is the image actually displayed
-	uint64_t present_offset_ns;
+	uint64_t present_to_display_offset_ns;
 	//! Extra margin that is added to compositor time, between end of draw and present
 	uint64_t margin_ns;
 	/*!

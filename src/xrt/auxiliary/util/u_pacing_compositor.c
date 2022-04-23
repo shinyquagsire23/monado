@@ -94,7 +94,7 @@ struct pacing_compositor
 	 * the display engine starts scanning out from the buffers we provided,
 	 * and not when the pixels turned into photons that the user sees.
 	 */
-	uint64_t present_offset_ns;
+	uint64_t present_to_display_offset_ns;
 
 	/*!
 	 * Frame period of the device.
@@ -173,7 +173,7 @@ calc_total_comp_time(struct pacing_compositor *pc)
 static uint64_t
 calc_display_time_from_present_time(struct pacing_compositor *pc, uint64_t desired_present_time_ns)
 {
-	return desired_present_time_ns + pc->present_offset_ns;
+	return desired_present_time_ns + pc->present_to_display_offset_ns;
 }
 
 static inline bool
@@ -643,13 +643,14 @@ pc_info(struct u_pacing_compositor *upc,
 
 
 static void
-pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_to_display_offset_ns)
 {
 	struct pacing_compositor *pc = pacing_compositor(upc);
-	(void)pc;
+
 	// not associating with frame IDs right now.
 	(void)frame_id;
-	pc->present_offset_ns = present_offset_ns;
+
+	pc->present_to_display_offset_ns = present_to_display_offset_ns;
 }
 
 static void
@@ -662,7 +663,7 @@ pc_destroy(struct u_pacing_compositor *upc)
 
 const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
     // Just a wild guess.
-    .present_offset_ns = U_TIME_1MS_IN_NS * 4,
+    .present_to_display_offset_ns = U_TIME_1MS_IN_NS * 4,
     .margin_ns = U_TIME_1MS_IN_NS,
     // Start by assuming the compositor takes 10% of the frame.
     .comp_time_fraction = 10,
@@ -686,7 +687,7 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	pc->frame_period_ns = estimated_frame_period_ns;
 
 	// Estimate of how long after "present" the photons hit the eyes
-	pc->present_offset_ns = config->present_offset_ns;
+	pc->present_to_display_offset_ns = config->present_to_display_offset_ns;
 
 	// Start at this of frame time.
 	pc->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_fraction);

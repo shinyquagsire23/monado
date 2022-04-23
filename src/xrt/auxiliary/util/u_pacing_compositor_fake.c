@@ -47,7 +47,7 @@ struct fake_timing
 	 * the display engine starts scanning out from the buffers we provided,
 	 * and not when the pixels turned into photons that the user sees.
 	 */
-	uint64_t present_offset_ns;
+	uint64_t present_to_display_offset_ns;
 
 	// The amount of time that the application needs to render frame.
 	uint64_t comp_time_ns;
@@ -71,7 +71,7 @@ fake_timing(struct u_pacing_compositor *upc)
 static uint64_t
 predict_next_frame(struct fake_timing *ft, uint64_t now_ns)
 {
-	uint64_t time_needed_ns = ft->present_offset_ns + ft->comp_time_ns;
+	uint64_t time_needed_ns = ft->present_to_display_offset_ns + ft->comp_time_ns;
 	uint64_t predicted_display_time_ns = ft->last_display_time_ns + ft->frame_period_ns;
 
 	while (now_ns + time_needed_ns > predicted_display_time_ns) {
@@ -110,7 +110,7 @@ pc_predict(struct u_pacing_compositor *upc,
 
 	int64_t frame_id = ft->frame_id_generator++;
 	uint64_t predicted_display_time_ns = predict_next_frame(ft, now_ns);
-	uint64_t desired_present_time_ns = predicted_display_time_ns - ft->present_offset_ns;
+	uint64_t desired_present_time_ns = predicted_display_time_ns - ft->present_to_display_offset_ns;
 	uint64_t wake_up_time_ns = desired_present_time_ns - ft->comp_time_ns;
 	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_period_ns = ft->frame_period_ns;
@@ -153,13 +153,14 @@ pc_info(struct u_pacing_compositor *upc,
 }
 
 static void
-pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_offset_ns)
+pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_to_display_offset_ns)
 {
 	struct fake_timing *ft = fake_timing(upc);
-	(void)ft;
+
 	// not associating with frame IDs right now.
 	(void)frame_id;
-	ft->present_offset_ns = present_offset_ns;
+
+	ft->present_to_display_offset_ns = present_to_display_offset_ns;
 }
 
 static void
@@ -187,11 +188,12 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	ft->base.destroy = pc_destroy;
 	ft->frame_period_ns = estimated_frame_period_ns;
 
+
 	// To make sure the code can start from a non-zero frame id.
 	ft->frame_id_generator = 5;
 
 	// Just a wild guess.
-	ft->present_offset_ns = U_TIME_1MS_IN_NS * 4;
+	ft->present_to_display_offset_ns = U_TIME_1MS_IN_NS * 4;
 
 	// 20% of the frame time.
 	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
