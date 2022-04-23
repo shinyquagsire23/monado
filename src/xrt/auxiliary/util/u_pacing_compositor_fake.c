@@ -198,6 +198,11 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	// 20% of the frame time.
 	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
 
+	// Or at least 2ms.
+	if (ft->comp_time_ns < U_TIME_1MS_IN_NS * 2) {
+		ft->comp_time_ns = U_TIME_1MS_IN_NS * 2;
+	}
+
 	// Make the next present time be in the future.
 	ft->last_present_time_ns = now_ns + U_TIME_1MS_IN_NS * 50;
 
