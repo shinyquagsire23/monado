@@ -151,6 +151,16 @@ vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *e
  *
  */
 
+static void
+fill_in_device_features(struct vk_bundle *vk)
+{
+	VkPhysicalDeviceProperties pdp;
+	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &pdp);
+
+	vk->features.timestamp_compute_and_graphics = pdp.limits.timestampComputeAndGraphics;
+	vk->features.timestamp_period = pdp.limits.timestampPeriod;
+}
+
 static bool
 is_fence_bit_supported(struct vk_bundle *vk, VkExternalFenceHandleTypeFlagBits handle_type)
 {
@@ -871,6 +881,9 @@ vk_create_device(struct vk_bundle *vk,
 		return ret;
 	}
 
+	// Fill in the device features we are interested in.
+	fill_in_device_features(vk);
+
 	// We fill in these here as we want to be sure we have selected the physical device fully.
 	fill_in_external_object_properties(vk);
 
@@ -984,6 +997,9 @@ vk_init_from_given(struct vk_bundle *vk,
 		vk->features.timeline_semaphore = true;
 	}
 #endif
+
+	// Fill in the device features we are interested in.
+	fill_in_device_features(vk);
 
 	// Fill in external object properties.
 	fill_in_external_object_properties(vk);

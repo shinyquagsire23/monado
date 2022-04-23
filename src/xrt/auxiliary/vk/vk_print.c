@@ -35,10 +35,14 @@ vk_print_device_info(struct vk_bundle *vk,
 void
 vk_print_features_info(struct vk_bundle *vk, enum u_logging_level log_level)
 {
-	U_LOG_IFL(log_level, vk->log_level,                            //
-	          "Features:"                                          //
-	          "\n\ttimeline_semaphore: %s",                        //
-	          vk->features.timeline_semaphore ? "true" : "false"); //
+	U_LOG_IFL(log_level, vk->log_level,                                       //
+	          "Features:"                                                     //
+	          "\n\ttimestamp_compute_and_graphics: %s"                        //
+	          "\n\ttimestamp_period: %f"                                      //
+	          "\n\ttimeline_semaphore: %s",                                   //
+	          vk->features.timestamp_compute_and_graphics ? "true" : "false", //
+	          vk->features.timestamp_period,                                  //
+	          vk->features.timeline_semaphore ? "true" : "false");            //
 }
 
 void

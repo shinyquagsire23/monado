@@ -95,6 +95,12 @@ struct vk_bundle
 
 	struct
 	{
+		//! Are timestamps available for compute and graphics queues?
+		bool timestamp_compute_and_graphics;
+
+		//! Nanoseconds per gpu tick.
+		float timestamp_period;
+
 		//! Were timeline semaphore requested, available, and enabled?
 		bool timeline_semaphore;
 	} features;
