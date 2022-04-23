@@ -641,6 +641,14 @@ pc_info(struct u_pacing_compositor *upc,
 #undef TE_END
 }
 
+static void
+pc_update_vblank_from_display_control(struct u_pacing_compositor *upc, uint64_t last_vblank_ns)
+{
+	/*
+	 * This is a no-op, here just in case display control is used at the
+	 * same time as the google extension. We ignore this call.
+	 */
+}
 
 static void
 pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint64_t present_to_display_offset_ns)
@@ -682,6 +690,7 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	pc->base.predict = pc_predict;
 	pc->base.mark_point = pc_mark_point;
 	pc->base.info = pc_info;
+	pc->base.update_vblank_from_display_control = pc_update_vblank_from_display_control;
 	pc->base.update_present_offset = pc_update_present_offset;
 	pc->base.destroy = pc_destroy;
 	pc->frame_period_ns = estimated_frame_period_ns;

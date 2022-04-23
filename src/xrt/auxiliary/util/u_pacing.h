@@ -135,6 +135,19 @@ struct u_pacing_compositor
 	             uint64_t when_ns);
 
 	/*!
+	 * Provide a vblank timing information, derived from the
+	 * VK_EXT_display_control extension. Since the extension only says when
+	 * a vblank happened (somewhat inaccurate as well) but not if a specific
+	 * present happened at that time no frame_id is given.
+	 *
+	 * @param[in] upc            The compositor pacing helper.
+	 * @param[in] last_vblank_ns The last time that the GPU started scanning out.
+	 *
+	 * @see @ref frame-pacing.
+	 */
+	void (*update_vblank_from_display_control)(struct u_pacing_compositor *upc, uint64_t last_vblank_ns);
+
+	/*!
 	 * Provide an updated estimate of the present offset.
 	 *
 	 * This is usually used only for more complicated display systems.
@@ -218,6 +231,20 @@ u_pc_info(struct u_pacing_compositor *upc,
 {
 	upc->info(upc, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
 	          present_margin_ns, when_ns);
+}
+
+/*!
+ * @copydoc u_pacing_compositor::info_display_control
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pc_update_vblank_from_display_control(struct u_pacing_compositor *upc, uint64_t last_vblank_ns)
+{
+	upc->update_vblank_from_display_control(upc, last_vblank_ns);
 }
 
 /*!
