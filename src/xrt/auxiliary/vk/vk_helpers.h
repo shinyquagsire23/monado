@@ -101,6 +101,9 @@ struct vk_bundle
 		//! Nanoseconds per gpu tick.
 		float timestamp_period;
 
+		//! Valid bits in the queue selected.
+		uint32_t timestamp_valid_bits;
+
 		//! Were timeline semaphore requested, available, and enabled?
 		bool timeline_semaphore;
 	} features;

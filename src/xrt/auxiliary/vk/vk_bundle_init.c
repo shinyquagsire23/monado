@@ -154,11 +154,31 @@ vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *e
 static void
 fill_in_device_features(struct vk_bundle *vk)
 {
+	/*
+	 * Device properties.
+	 */
+
 	VkPhysicalDeviceProperties pdp;
 	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &pdp);
 
 	vk->features.timestamp_compute_and_graphics = pdp.limits.timestampComputeAndGraphics;
 	vk->features.timestamp_period = pdp.limits.timestampPeriod;
+
+
+	/*
+	 * Queue properties.
+	 */
+
+	uint32_t count = 0;
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &count, NULL);
+	assert(count != 0);
+	assert(count > vk->queue_family_index);
+
+	VkQueueFamilyProperties *props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, count);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &count, props);
+
+	vk->features.timestamp_valid_bits = props[vk->queue_family_index].timestampValidBits;
+	free(props);
 }
 
 static bool
