@@ -271,6 +271,7 @@ if(XRT_HAVE_VULKAN)
 		vk/vk_print.c
 		vk/vk_state_creators.c
 		vk/vk_sync_objects.c
+		vk/vk_time.c
 		)
 	target_link_libraries(aux_vk PUBLIC aux_os aux_util)
 	target_link_libraries(aux_vk PUBLIC Vulkan::Vulkan)

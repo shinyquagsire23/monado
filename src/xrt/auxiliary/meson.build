@@ -315,6 +315,7 @@ lib_aux_vk = static_library(
 		'vk/vk_print.c',
 		'vk/vk_state_creators.c',
 		'vk/vk_sync_objects.c',
+		'vk/vk_time.c',
 	),
 	include_directories: [
 		xrt_include,

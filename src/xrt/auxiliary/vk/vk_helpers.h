@@ -1234,6 +1234,37 @@ vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync
 #endif
 
 
+/*
+ *
+ * Time function(s), in the vk_time.c file.
+ *
+ */
+
+#ifdef VK_EXT_calibrated_timestamps
+/*!
+ * Convert timestamps in GPU ticks (as return by VkQueryPool timestamp queries)
+ * into host CPU nanoseconds, same time domain as @ref os_monotonic_get_ns.
+ *
+ * Note the timestamp needs to be in the past and not to old, this is because
+ * not all GPU has full 64 bit timer resolution. For instance a Intel GPU "only"
+ * have 36 bits of valid timestamp and a tick period 83.3333 nanosecond,
+ * equating to an epoch of 5726 seconds before overflowing. The functio can
+ * handle overflows happening between the given timestamps and when it is called
+ * but only for one such epoch overflow, any more will only be treated as one
+ * such overflow. So timestamps needs to be converted resonably soon after they
+ * have been captured.
+ *
+ * @param vk                The Vulkan bundle.
+ * @param count             Number of timestamps to be converted.
+ * @parma in_out_timestamps Array of timestamps to be converted, done in place.
+ *
+ * @ingroup aux_vk
+ */
+XRT_CHECK_RESULT VkResult
+vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t *in_out_timestamps);
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif
