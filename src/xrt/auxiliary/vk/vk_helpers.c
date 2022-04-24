@@ -241,10 +241,10 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 
 	uint32_t memory_type_index = UINT32_MAX;
 	bool bret = vk_get_memory_type(          //
-	    vk,                                  //
-	    memory_requirements.memoryTypeBits,  //
-	    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //
-	    &memory_type_index);                 //
+	    vk,                                  // vk_bundle
+	    memory_requirements.memoryTypeBits,  // type_bits
+	    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, // memory_props
+	    &memory_type_index);                 // out_type_id
 	if (!bret) {
 		VK_ERROR(vk, "(%s) vk_get_memory_type: false\n\tFailed to find a matching memory type.", caller_name);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
@@ -377,20 +377,24 @@ vk_create_image_advanced(struct vk_bundle *vk,
 	    image,                        // image
 	    &memory_requirements);        // pMemoryRequirements
 
-	VkMemoryAllocateInfo memory_allocate_info = {
-	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-	    .allocationSize = memory_requirements.size,
-	};
-
-	if (!vk_get_memory_type(                          //
-	        vk,                                       //
-	        memory_requirements.memoryTypeBits,       //
-	        memory_property_flags,                    //
-	        &memory_allocate_info.memoryTypeIndex)) { //
-		VK_ERROR(vk, "vk_get_memory_type failed: 'false'\n\tFailed to find a matching memory type.");
+	uint32_t memory_type_index = UINT32_MAX;
+	bool bret = vk_get_memory_type(         //
+	    vk,                                 // vk_bundle
+	    memory_requirements.memoryTypeBits, // type_bits
+	    memory_property_flags,              // memory_props
+	    &memory_type_index);                // out_type_id
+	if (!bret) {
+		VK_ERROR(vk, "vk_get_memory_type: false\n\tFailed to find a matching memory type.");
 		ret = VK_ERROR_OUT_OF_DEVICE_MEMORY;
 		goto err_image;
 	}
+
+	// vkAllocateMemory argument
+	VkMemoryAllocateInfo memory_allocate_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+	    .allocationSize = memory_requirements.size,
+	    .memoryTypeIndex = memory_type_index,
+	};
 
 	ret = vk->vkAllocateMemory( //
 	    vk->device,             // device
@@ -809,15 +813,23 @@ vk_buffer_init(struct vk_bundle *vk,
 	VkMemoryRequirements requirements;
 	vk->vkGetBufferMemoryRequirements(vk->device, *out_buffer, &requirements);
 
+	uint32_t memory_type_index = UINT32_MAX;
+	bool bret = vk_get_memory_type(  //
+	    vk,                          // vk_bundle
+	    requirements.memoryTypeBits, // type_bits
+	    properties,                  // memory_props
+	    &memory_type_index);         // out_type_id
+	if (!bret) {
+		VK_ERROR(vk, "vk_get_memory_type: false\n\tFailed to find a matching memory type.");
+		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+	}
+
+	// vkAllocateMemory argument
 	VkMemoryAllocateInfo alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 	    .allocationSize = requirements.size,
+	    .memoryTypeIndex = memory_type_index,
 	};
-
-	if (!vk_get_memory_type(vk, requirements.memoryTypeBits, properties, &alloc_info.memoryTypeIndex)) {
-		VK_ERROR(vk, "Failed to find matching memoryTypeIndex for buffer");
-		return false;
-	}
 
 	res = vk->vkAllocateMemory(vk->device, &alloc_info, NULL, out_mem);
 	vk_check_error("vkAllocateMemory", res, false);
