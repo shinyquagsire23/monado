@@ -209,9 +209,15 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	    .handleTypes = memory_handle_type,
 	};
 
-	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, &export_alloc_info, &device_memory, &size);
+	ret = vk_alloc_and_bind_image_memory(   //
+	    vk,                                 // vk_bundle
+	    image,                              // image
+	    SIZE_MAX,                           // max_size
+	    &export_alloc_info,                 // pNext_for_allocate
+	    "vk_image_allocator::create_image", // caller_name
+	    &device_memory,                     // out_mem
+	    &size);                             // out_size
 	if (ret != VK_SUCCESS) {
-		U_LOG_E("vkAllocateMemory: %s", vk_result_string(ret));
 		vk->vkDestroyImage(vk->device, image, NULL);
 		return ret;
 	}

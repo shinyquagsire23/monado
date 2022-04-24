@@ -223,6 +223,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkImage image,
                                size_t max_size,
                                const void *pNext_for_allocate,
+                               const char *caller_name,
                                VkDeviceMemory *out_mem,
                                VkDeviceSize *out_size)
 {
@@ -230,8 +231,8 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	vk->vkGetImageMemoryRequirements(vk->device, image, &memory_requirements);
 
 	if (max_size > 0 && memory_requirements.size > max_size) {
-		VK_ERROR(vk, "client_vk_swapchain - Got too little memory %u vs %u\n",
-		         (uint32_t)memory_requirements.size, (uint32_t)max_size);
+		VK_ERROR(vk, "(%s) vkGetImageMemoryRequirements: Requested more memory (%u) then given (%u)\n",
+		         caller_name, (uint32_t)memory_requirements.size, (uint32_t)max_size);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 	if (out_size != NULL) {
@@ -239,9 +240,13 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	}
 
 	uint32_t memory_type_index = UINT32_MAX;
-	if (!vk_get_memory_type(vk, memory_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-	                        &memory_type_index)) {
-		VK_ERROR(vk, "vk_get_memory_type failed!");
+	bool bret = vk_get_memory_type(          //
+	    vk,                                  //
+	    memory_requirements.memoryTypeBits,  //
+	    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, //
+	    &memory_type_index);                 //
+	if (!bret) {
+		VK_ERROR(vk, "(%s) vk_get_memory_type: false\n\tFailed to find a matching memory type.", caller_name);
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
 	}
 
@@ -255,7 +260,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkResult ret = vk->vkAllocateMemory(vk->device, &alloc_info, NULL, &device_memory);
 	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateMemory: %s", vk_result_string(ret));
+		VK_ERROR(vk, "(%s) vkAllocateMemory: %s", caller_name, vk_result_string(ret));
 		return ret;
 	}
 
@@ -264,7 +269,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	if (ret != VK_SUCCESS) {
 		// Clean up memory
 		vk->vkFreeMemory(vk->device, device_memory, NULL);
-		VK_ERROR(vk, "vkBindImageMemory: %s", vk_result_string(ret));
+		VK_ERROR(vk, "(%s) vkBindImageMemory: %s", caller_name, vk_result_string(ret));
 		return ret;
 	}
 
@@ -309,7 +314,14 @@ vk_create_image_simple(struct vk_bundle *vk,
 		return ret;
 	}
 
-	ret = vk_alloc_and_bind_image_memory(vk, image, SIZE_MAX, NULL, out_mem, NULL);
+	ret = vk_alloc_and_bind_image_memory( //
+	    vk,                               // vk_bundle
+	    image,                            // image
+	    SIZE_MAX,                         // max_size
+	    NULL,                             // pNext_for_allocate
+	    __func__,                         // caller_name
+	    out_mem,                          // out_mem
+	    NULL);                            // out_size
 	if (ret != VK_SUCCESS) {
 		// Clean up image
 		vk->vkDestroyImage(vk->device, image, NULL);
@@ -317,6 +329,7 @@ vk_create_image_simple(struct vk_bundle *vk,
 	}
 
 	*out_image = image;
+
 	return ret;
 }
 
@@ -537,7 +550,15 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .image = image,
 	    .buffer = VK_NULL_HANDLE,
 	};
-	ret = vk_alloc_and_bind_image_memory(vk, image, image_native->size, &dedicated_memory_info, out_mem, NULL);
+
+	ret = vk_alloc_and_bind_image_memory( //
+	    vk,                               // vk_bundle
+	    image,                            // image
+	    image_native->size,               // max_size
+	    &dedicated_memory_info,           // pNext_for_allocate
+	    __func__,                         // caller_name
+	    out_mem,                          // out_mem
+	    NULL);                            // out_size
 
 	// We have consumed this fd now, make sure it's not freed again.
 	image_native->handle = XRT_GRAPHICS_BUFFER_HANDLE_INVALID;

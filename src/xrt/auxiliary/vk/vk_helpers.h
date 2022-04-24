@@ -659,6 +659,10 @@ vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFla
  *        that works.
  * @param pNext_for_allocate (Optional) a pointer to use in the pNext chain of
  *        VkMemoryAllocateInfo.
+ * @param caller_name Used for error printing, this function is called from
+ *        various sources and takes next chains that could influence the result
+ *        of various calls inside of it. Since it's up to this function to print
+ *        any errors it will add the caller name to error messages.
  * @param out_mem Output parameter: will be set to the allocated memory if
  *        everything succeeds. Not modified if there is an error.
  * @param out_size (Optional) pointer to receive the value of
@@ -674,6 +678,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkImage image,
                                size_t max_size,
                                const void *pNext_for_allocate,
+                               const char *caller_name,
                                VkDeviceMemory *out_mem,
                                VkDeviceSize *out_size);
 
