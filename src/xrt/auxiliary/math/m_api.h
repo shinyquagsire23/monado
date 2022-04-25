@@ -5,6 +5,7 @@
  * @brief  C interface to math library.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  *
  * @see xrt_vec3
  * @see xrt_quat
@@ -128,6 +129,14 @@ math_vec3_scalar_mul(float scalar, struct xrt_vec3 *inAndOut);
 void
 math_vec3_cross(const struct xrt_vec3 *l, const struct xrt_vec3 *r, struct xrt_vec3 *result);
 
+/*!
+ * Cross product of a vector.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_f64_cross(const struct xrt_vec3_f64 *l, const struct xrt_vec3_f64 *r, struct xrt_vec3_f64 *result);
 
 /*!
  * Normalize a vec3 in place.
@@ -137,6 +146,15 @@ math_vec3_cross(const struct xrt_vec3 *l, const struct xrt_vec3 *r, struct xrt_v
  */
 void
 math_vec3_normalize(struct xrt_vec3 *in);
+
+/*!
+ * Normalize a vec3_f64 in place.
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_f64_normalize(struct xrt_vec3_f64 *in);
 
 /*
  *
@@ -365,10 +383,36 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 void
 math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat);
 
+/*!
+ * Initialize a double 3x3 matrix to the identity matrix
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat);
+
+/*!
+ * Transform a vec3 by a 3x3 matrix
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
 void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
                                struct xrt_vec3 *result_out);
+
+/*!
+ * Transform a double vec3 by a 3x3 double matrix
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_f64_transform_vec3_f64(const struct xrt_matrix_3x3_f64 *left,
+                                       const struct xrt_vec3_f64 *right,
+                                       struct xrt_vec3_f64 *result_out);
 
 /*!
  * Multiply Matrix3x3.
@@ -389,6 +433,21 @@ math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
  */
 void
 math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result);
+
+/*!
+ * Create a rotation from two vectors plus x and z, by
+ * creating a rotation matrix by crossing z and x to
+ * get the y axis.
+ *
+ * Input vectors should be normalized.
+ *
+ * @relates xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_f64_from_plus_x_z(const struct xrt_vec3_f64 *plus_x,
+                                  const struct xrt_vec3_f64 *plus_z,
+                                  struct xrt_matrix_3x3_f64 *result);
 
 /*!
  * Initialize Matrix4x4 with identity.

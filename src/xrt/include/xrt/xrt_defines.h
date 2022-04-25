@@ -5,6 +5,7 @@
  * @brief  Common defines and enums for XRT.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @ingroup xrt_iface
  */
 
@@ -414,6 +415,16 @@ struct xrt_matrix_2x2
 struct xrt_matrix_3x3
 {
 	float v[XRT_MATRIX_3X3_ELEMENTS];
+};
+
+/*!
+ * A tightly packed 3x3 matrix of doubles.
+ *
+ * @ingroup xrt_iface math
+ */
+struct xrt_matrix_3x3_f64
+{
+	double v[XRT_MATRIX_3X3_ELEMENTS];
 };
 
 /*!

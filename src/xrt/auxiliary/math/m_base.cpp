@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @ingroup aux_math
  */
 
@@ -63,6 +64,19 @@ copy(const struct xrt_vec3 &v)
 
 static inline Eigen::Vector3f
 copy(const struct xrt_vec3 *v)
+{
+	return copy(*v);
+}
+
+
+static inline Eigen::Vector3d
+copy(const struct xrt_vec3_f64 &v)
+{
+	return Eigen::Vector3d(v.x, v.y, v.z);
+}
+
+static inline Eigen::Vector3d
+copy(const struct xrt_vec3_f64 *v)
 {
 	return copy(*v);
 }
@@ -155,6 +169,12 @@ extern "C" void
 math_vec3_normalize(struct xrt_vec3 *in)
 {
 	map_vec3(*in) = map_vec3(*in).normalized();
+}
+
+extern "C" void
+math_vec3_f64_normalize(struct xrt_vec3_f64 *in)
+{
+	map_vec3_f64(*in) = map_vec3_f64(*in).normalized();
 }
 
 /*
@@ -393,6 +413,44 @@ math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat)
 }
 
 extern "C" void
+math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat)
+{
+	mat->v[0] = mat->v[4] = mat->v[8] = 1.0;
+}
+
+extern "C" void
+math_matrix_3x3_f64_transform_vec3_f64(const struct xrt_matrix_3x3_f64 *left,
+                                       const struct xrt_vec3_f64 *right,
+                                       struct xrt_vec3_f64 *result_out)
+{
+	Eigen::Matrix3d m;
+	m << left->v[0], left->v[1], left->v[2], // 1
+	    left->v[3], left->v[4], left->v[5],  // 2
+	    left->v[6], left->v[7], left->v[8];  // 3
+
+	map_vec3_f64(*result_out) = m * copy(right);
+}
+
+extern "C" void
+math_matrix_3x3_f64_from_plus_x_z(const struct xrt_vec3_f64 *plus_x,
+                                  const struct xrt_vec3_f64 *plus_z,
+                                  struct xrt_matrix_3x3_f64 *result)
+{
+	xrt_vec3_f64 plus_y;
+	math_vec3_f64_cross(plus_z, plus_x, &plus_y);
+
+	result->v[0] = plus_x->x;
+	result->v[1] = plus_y.x;
+	result->v[2] = plus_z->x;
+	result->v[3] = plus_x->y;
+	result->v[4] = plus_y.y;
+	result->v[5] = plus_z->y;
+	result->v[6] = plus_x->z;
+	result->v[7] = plus_y.z;
+	result->v[8] = plus_z->z;
+}
+
+extern "C" void
 math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                const struct xrt_vec3 *right,
                                struct xrt_vec3 *result_out)
@@ -516,6 +574,12 @@ m_mat4_f64_multiply(const struct xrt_matrix_4x4_f64 *left,
 	Eigen::Matrix4d r = map_matrix_4x4_f64(*right);
 
 	map_matrix_4x4_f64(*result) = l * r;
+}
+
+extern "C" void
+math_vec3_f64_cross(const struct xrt_vec3_f64 *l, const struct xrt_vec3_f64 *r, struct xrt_vec3_f64 *result)
+{
+	map_vec3_f64(*result) = map_vec3_f64(*l).cross(map_vec3_f64(*r));
 }
 
 extern "C" void

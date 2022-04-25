@@ -4,6 +4,7 @@
  * @file
  * @brief  Interoperability helpers connecting internal math types and Eigen.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @ingroup aux_math
  */
 
@@ -72,6 +73,32 @@ map_vec3(struct xrt_vec3 &v)
 }
 
 /*!
+ * @brief Wrap an internal 3D vector struct in an Eigen type, non-const
+ * overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_vec3&` by Eigen routines as
+ * if it were a `const Eigen::Vector3_f64&`.
+ */
+static inline Eigen::Map<const Eigen::Vector3d>
+map_vec3_f64(const struct xrt_vec3_f64 &v)
+{
+	return Eigen::Map<const Eigen::Vector3d>{&v.x};
+}
+
+/*!
+ * @brief Wrap an internal 3D vector struct in an Eigen type, non-const
+ * overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_vec3&` by Eigen routines as
+ * if it were a `Eigen::Vector3_f64&`.
+ */
+static inline Eigen::Map<Eigen::Vector3d>
+map_vec3_f64(struct xrt_vec3_f64 &v)
+{
+	return Eigen::Map<Eigen::Vector3d>{&v.x};
+}
+
+/*!
  * @brief Wrap an internal 3x3 matrix struct in an Eigen type, non-const
  * overload.
  *
@@ -82,6 +109,19 @@ static inline Eigen::Map<Eigen::Matrix3f>
 map_matrix_3x3(struct xrt_matrix_3x3 &m)
 {
 	return Eigen::Map<Eigen::Matrix3f>(m.v);
+}
+
+/*!
+ * @brief Wrap an internal 3x3 matrix struct in an Eigen type, non-const
+ * overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_matrix_3x3&` by Eigen routines as
+ * if it were a `Eigen::Matrix3_f64&`.
+ */
+static inline Eigen::Map<Eigen::Matrix3d>
+map_matrix_3x3_f64(struct xrt_matrix_3x3_f64 &m)
+{
+	return Eigen::Map<Eigen::Matrix3d>(m.v);
 }
 
 /*!
