@@ -165,6 +165,15 @@ u_id_ringbuffer_pop_front(struct u_id_ringbuffer *uirb)
 	DEFAULT_CATCH()
 }
 
+void
+u_id_ringbuffer_pop_back(struct u_id_ringbuffer *uirb)
+{
+	try {
+		uirb->helper.pop_back();
+	}
+	DEFAULT_CATCH()
+}
+
 
 int32_t
 u_id_ringbuffer_get_back(struct u_id_ringbuffer *uirb, uint64_t *out_id)

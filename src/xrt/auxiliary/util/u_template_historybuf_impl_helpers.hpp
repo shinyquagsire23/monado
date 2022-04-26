@@ -96,6 +96,15 @@ public:
 	void
 	pop_front() noexcept;
 
+	/*!
+	 * @brief Record the logical removal of the back element, if any.
+	 *
+	 * Returns false if the buffer is empty. Does not actually modify the
+	 * value stored in the backing array.
+	 */
+	bool
+	pop_back() noexcept;
+
 	//! Get the inner index of the front (oldest) value, or capacity_ if empty.
 	size_t
 	front_inner_index() const noexcept;
@@ -192,7 +201,17 @@ RingBufferHelper::pop_front() noexcept
 		length_--;
 	}
 }
-
+inline bool
+RingBufferHelper::pop_back() noexcept
+{
+	if (empty()) {
+		return false;
+	}
+	// adding capacity before -1 to avoid overflow
+	latest_inner_idx_ = (latest_inner_idx_ + capacity_ - 1) % capacity_;
+	length_--;
+	return true;
+}
 inline size_t
 RingBufferHelper::front_inner_index() const noexcept
 {

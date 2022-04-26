@@ -66,6 +66,16 @@ void
 u_id_ringbuffer_pop_front(struct u_id_ringbuffer *uirb);
 
 /**
+ * Pop an element from the back, if any
+ *
+ * @param uirb self pointer.
+ *
+ * @public @memberof u_id_ringbuffer
+ */
+void
+u_id_ringbuffer_pop_back(struct u_id_ringbuffer *uirb);
+
+/**
  * Get the back (most recent) of the buffer
  *
  * @param uirb self pointer

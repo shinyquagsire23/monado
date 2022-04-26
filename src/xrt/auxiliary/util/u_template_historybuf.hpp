@@ -53,6 +53,20 @@ public:
 	push_back(const T &element);
 
 	/*!
+	 * @brief Logically remove the newest element from the buffer.
+	 *
+	 * This is permitted to invalidate iterators. They won't be poisoned,
+	 * but they will return something you don't expect.
+	 *
+	 * @return true if there was something to pop.
+	 */
+	bool
+	pop_back() noexcept
+	{
+		return helper_.pop_back();
+	}
+
+	/*!
 	 * @brief Logically remove the oldest element from the buffer.
 	 *
 	 * The value still remains in the backing container until overwritten, it just isn't accessible anymore.

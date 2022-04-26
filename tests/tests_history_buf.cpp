@@ -217,6 +217,11 @@ TEST_CASE("u_template_historybuf")
 		CHECK_FALSE(buffer.begin().valid());
 		CHECK_FALSE(buffer.end().valid());
 		CHECK(buffer.begin() == buffer.end());
+		{
+			INFO("Check after pop_back");
+			REQUIRE_FALSE(buffer.pop_back());
+			CHECK(buffer.empty());
+		}
 	}
 	SECTION("behavior with one")
 	{
@@ -277,6 +282,14 @@ TEST_CASE("u_template_historybuf")
 		CHECK(buffer.back() == 0);
 
 		CHECK(*buffer.begin() == buffer.front());
+
+		{
+			INFO("Check after pop_back");
+			REQUIRE(buffer.pop_back());
+			CHECK(buffer.size() == 0);
+
+			REQUIRE_FALSE(buffer.pop_back());
+		}
 	}
 
 	SECTION("behavior with two")
@@ -351,6 +364,15 @@ TEST_CASE("u_template_historybuf")
 
 			CHECK(*buffer.begin() == buffer.front());
 			CHECK(buffer.back() == *(--buffer.end()));
+		}
+		SECTION("Check after pop_back")
+		{
+			REQUIRE(buffer.pop_back());
+			CHECK(buffer.size() == 1);
+			CHECK(buffer.front() == 0);
+
+			REQUIRE(buffer.pop_back());
+			CHECK(buffer.size() == 0);
 		}
 	}
 

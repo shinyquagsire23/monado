@@ -23,6 +23,12 @@ TEST_CASE("u_template_historybuf")
 		uint64_t out_id = 0;
 		CHECK(u_id_ringbuffer_get_front(buffer, &out_id) < 0);
 		CHECK(u_id_ringbuffer_get_back(buffer, &out_id) < 0);
+
+		{
+			INFO("Check after pop_back");
+			u_id_ringbuffer_pop_back(buffer);
+			CHECK(u_id_ringbuffer_is_empty(buffer));
+		}
 	}
 	SECTION("behavior with one")
 	{
@@ -73,6 +79,16 @@ TEST_CASE("u_template_historybuf")
 			uint64_t out_id = 55;
 			CHECK(u_id_ringbuffer_get_at_clamped_age(buffer, 2, &out_id) == zero_inner_index);
 			CHECK(out_id == 0);
+		}
+
+		{
+			INFO("Check after pop_back");
+			u_id_ringbuffer_pop_back(buffer);
+
+			CHECK(u_id_ringbuffer_is_empty(buffer));
+
+			u_id_ringbuffer_pop_back(buffer);
+			CHECK(u_id_ringbuffer_is_empty(buffer));
 		}
 	}
 
@@ -153,6 +169,19 @@ TEST_CASE("u_template_historybuf")
 				CHECK(u_id_ringbuffer_get_at_clamped_age(buffer, 3, &out_id) == zero_inner_index);
 				CHECK(out_id == 0);
 			}
+		}
+		SECTION("Check after pop_back")
+		{
+			u_id_ringbuffer_pop_back(buffer);
+			CHECK(1 == u_id_ringbuffer_get_size(buffer));
+			uint64_t out_id_front = 55;
+			CHECK(u_id_ringbuffer_get_front(buffer, &out_id_front) == zero_inner_index);
+			CHECK(out_id_front == 0);
+
+			u_id_ringbuffer_pop_back(buffer);
+			CHECK(0 == u_id_ringbuffer_get_size(buffer));
+			uint64_t out_id = 0;
+			CHECK(u_id_ringbuffer_get_front(buffer, &out_id) < 0);
 		}
 	}
 
