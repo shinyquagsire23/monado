@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -20,7 +20,7 @@ extern "C" {
 
 struct xrt_prober;
 struct xrt_device;
-struct xrt_compositor_native;
+struct xrt_system_devices;
 struct xrt_system_compositor;
 
 
@@ -66,6 +66,25 @@ struct xrt_instance
 	 * methods. To use this interface, see the helper functions.
 	 * @{
 	 */
+
+	/*!
+	 * Creates all of the system resources like the devices and system
+	 * compositor. The system compositor is optional.
+	 *
+	 * Should only be called once.
+	 *
+	 * @note Code consuming this interface should use xrt_instance_create_system()
+	 *
+	 * @param      xinst     Pointer to self
+	 * @param[out] out_xsysd Return of devices, required.
+	 * @param[out] out_xsysc Return of system compositor, optional.
+	 *
+	 * @see xrt_prober::probe, xrt_prober::select, xrt_gfx_provider_create_native
+	 */
+	xrt_result_t (*create_system)(struct xrt_instance *xinst,
+	                              struct xrt_system_devices **out_xsysd,
+	                              struct xrt_system_compositor **out_xsysc);
+
 	/*!
 	 * Returns the devices of the system represented as @ref xrt_device.
 	 *
@@ -169,6 +188,21 @@ xrt_instance_create_system_compositor(struct xrt_instance *xinst,
                                       struct xrt_system_compositor **out_xsc)
 {
 	return xinst->create_system_compositor(xinst, xdev, out_xsc);
+}
+
+/*!
+ * @copydoc xrt_instance::create_system
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_instance
+ */
+static inline xrt_result_t
+xrt_instance_create_system(struct xrt_instance *xinst,
+                           struct xrt_system_devices **out_xsysd,
+                           struct xrt_system_compositor **out_xsc)
+{
+	return xinst->create_system(xinst, out_xsysd, out_xsc);
 }
 
 /*!
