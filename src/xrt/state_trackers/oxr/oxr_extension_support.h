@@ -202,6 +202,18 @@
 
 
 /*
+ * XR_KHR_win32_convert_performance_counter_time
+ */
+#if defined(XR_KHR_win32_convert_performance_counter_time) && defined(XR_USE_PLATFORM_WIN32)
+#define OXR_HAVE_KHR_win32_convert_performance_counter_time
+#define OXR_EXTENSION_SUPPORT_KHR_win32_convert_performance_counter_time(_)                                            \
+	_(KHR_win32_convert_performance_counter_time, KHR_WIN32_CONVERT_PERFORMANCE_COUNTER_TIME)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_win32_convert_performance_counter_time(_)
+#endif
+
+
+/*
  * XR_EXT_debug_utils
  */
 #if defined(XR_EXT_debug_utils) && defined(XRT_FEATURE_OPENXR_DEBUG_UTILS)
@@ -341,6 +353,7 @@
     OXR_EXTENSION_SUPPORT_KHR_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_vulkan_enable2(_) \
+    OXR_EXTENSION_SUPPORT_KHR_win32_convert_performance_counter_time(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \

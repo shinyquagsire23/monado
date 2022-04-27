@@ -104,6 +104,18 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *t
 XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec *timespecTime);
 
+#ifdef XR_USE_PLATFORM_WIN32
+//! OpenXR API function @ep{xrConvertWin32PerformanceCounterToTimeKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
+                                              const LARGE_INTEGER *performanceCounter,
+                                              XrTime *time);
+
+//! OpenXR API function @ep{xrConvertTimeToWin32PerformanceCounterKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER *performanceCounter);
+#endif // XR_USE_PLATFORM_WIN32
+
 /*
  *
  * oxr_api_system.c

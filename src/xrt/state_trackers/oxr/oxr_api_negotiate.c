@@ -213,6 +213,11 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrConvertTimeToTimespecTimeKHR, KHR_convert_timespec_time);
 #endif // OXR_HAVE_KHR_convert_timespec_time
 
+#ifdef OXR_HAVE_KHR_win32_convert_performance_counter_time
+	ENTRY_IF_EXT(xrConvertWin32PerformanceCounterToTimeKHR, KHR_win32_convert_performance_counter_time);
+	ENTRY_IF_EXT(xrConvertTimeToWin32PerformanceCounterKHR, KHR_win32_convert_performance_counter_time);
+#endif // OXR_HAVE_KHR_win32_convert_performance_counter_time
+
 #ifdef OXR_HAVE_EXT_performance_settings
 	ENTRY_IF_EXT(xrPerfSettingsSetPerformanceLevelEXT, EXT_performance_settings);
 #endif // OXR_HAVE_EXT_performance_settings

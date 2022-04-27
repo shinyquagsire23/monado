@@ -86,6 +86,10 @@ if(ANDROID)
 	target_link_libraries(st_oxr PRIVATE aux_android)
 endif()
 
+if(WIN32)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_WIN32)
+endif()
+
 target_link_libraries(
 	st_oxr
 	PRIVATE

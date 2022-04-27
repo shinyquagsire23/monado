@@ -391,3 +391,43 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct time
 }
 
 #endif // XR_USE_TIMESPEC
+
+// ---- XR_KHR_win32_convert_performance_counter_time extension
+#ifdef XR_USE_PLATFORM_WIN32
+XrResult
+oxr_xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
+                                              const LARGE_INTEGER *performanceCounter,
+                                              XrTime *time)
+{
+	OXR_TRACE_MARKER();
+
+	//! @todo do we need to check and see if this extension was
+	//! enabled first?
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrConvertWin32PerformanceCounterToTimeKHR");
+	OXR_VERIFY_EXTENSION(&log, inst, KHR_win32_convert_performance_counter_time);
+	OXR_VERIFY_ARG_NOT_NULL(&log, performanceCounter);
+	OXR_VERIFY_ARG_NOT_NULL(&log, time);
+	return oxr_instance_convert_win32perfcounter_to_time(&log, inst, performanceCounter, time);
+}
+
+XrResult
+oxr_xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER *performanceCounter)
+{
+	OXR_TRACE_MARKER();
+
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrConvertTimeToWin32PerformanceCounterKHR");
+	OXR_VERIFY_EXTENSION(&log, inst, KHR_win32_convert_performance_counter_time);
+	OXR_VERIFY_ARG_NOT_NULL(&log, performanceCounter);
+
+	if (time <= (XrTime)0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
+	}
+
+	return oxr_instance_convert_time_to_win32perfcounter(&log, inst, time, performanceCounter);
+}
+
+#endif // XR_USE_PLATFORM_WIN32

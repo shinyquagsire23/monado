@@ -416,3 +416,27 @@ oxr_instance_convert_timespec_to_time(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 #endif // XR_USE_TIMESPEC
+
+#ifdef XR_USE_PLATFORM_WIN32
+
+XrResult
+oxr_instance_convert_time_to_win32perfcounter(struct oxr_logger *log,
+                                              struct oxr_instance *inst,
+                                              XrTime time,
+                                              LARGE_INTEGER *win32perfcounterTime)
+{
+	time_state_to_win32perfcounter(inst->timekeeping, time, win32perfcounterTime);
+	return XR_SUCCESS;
+}
+
+XrResult
+oxr_instance_convert_win32perfcounter_to_time(struct oxr_logger *log,
+                                              struct oxr_instance *inst,
+                                              const LARGE_INTEGER *win32perfcounterTime,
+                                              XrTime *time)
+{
+	*time = time_state_from_win32perfcounter(inst->timekeeping, win32perfcounterTime);
+	return XR_SUCCESS;
+}
+
+#endif // XR_USE_PLATFORM_WIN32
