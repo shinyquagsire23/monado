@@ -155,6 +155,16 @@ static inline uint64_t
 os_realtime_get_ns(void);
 #endif
 
+#if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
+/*!
+ * @brief Return a qpc freq in nanoseconds.
+ * @ingroup aux_os_time
+ */
+static inline int64_t
+os_ns_per_qpc_tick_get();
+#endif
+
+
 /*
  *
  * implementations follow
@@ -254,6 +264,20 @@ os_timeval_to_ns(struct timeval *val)
 }
 #endif // defined(XRT_HAVE_TIMEVAL) && defined(XRT_OS_LINUX)
 
+#if defined(XRT_OS_WINDOWS)
+static inline int64_t
+os_ns_per_qpc_tick_get()
+{
+	static int64_t ns_per_qpc_tick = 0;
+	if (ns_per_qpc_tick == 0) {
+		// Fixed at startup, so we can cache this.
+		LARGE_INTEGER freq;
+		QueryPerformanceFrequency(&freq);
+		ns_per_qpc_tick = U_1_000_000_000 / freq.QuadPart;
+	}
+	return ns_per_qpc_tick;
+}
+#endif // defined(XRT_OS_WINDOWS)
 
 static inline uint64_t
 os_monotonic_get_ns(void)
@@ -267,16 +291,9 @@ os_monotonic_get_ns(void)
 
 	return os_timespec_to_ns(&ts);
 #elif defined(XRT_OS_WINDOWS)
-	static int64_t ns_per_qpc_tick = 0;
-	if (ns_per_qpc_tick == 0) {
-		// Fixed at startup, so we can cache this.
-		LARGE_INTEGER freq;
-		QueryPerformanceFrequency(&freq);
-		ns_per_qpc_tick = U_1_000_000_000 / freq.QuadPart;
-	}
 	LARGE_INTEGER qpc;
 	QueryPerformanceCounter(&qpc);
-	return qpc.QuadPart * ns_per_qpc_tick;
+	return qpc.QuadPart * os_ns_per_qpc_tick_get();
 #else
 #error "need port"
 #endif
