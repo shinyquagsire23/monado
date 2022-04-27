@@ -65,9 +65,9 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 	}
 
 #if defined(XRT_OS_LINUX)
-	static const VkTimeDomainEXT cpu_time_domain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT;
+#define CPU_TIME_DOMAIN VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT
 #elif defined(XRT_OS_WINDOWS)
-	static const VkTimeDomainEXT cpu_time_domain = VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT;
+#define CPU_TIME_DOMAIN VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT
 #else
 #error "Vulkan timestamp domain needs porting"
 #endif
@@ -82,7 +82,7 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 	    {
 	        .sType = VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT,
 	        .pNext = NULL,
-	        .timeDomain = cpu_time_domain,
+	        .timeDomain = CPU_TIME_DOMAIN,
 	    },
 	};
 
