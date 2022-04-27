@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
+
 #include <stdint.h>
 #include <time.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -284,6 +287,30 @@ time_state_monotonic_to_ts_ns(struct time_state const *state, uint64_t monotonic
  */
 uint64_t
 time_state_ts_to_monotonic_ns(struct time_state const *state, timepoint_ns timestamp);
+
+#if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
+/*!
+ * Converts a timestamp to Win32 "QPC" ticks.
+ *
+ * Should not be called simultaneously with time_state_get_now_and_update.
+ *
+ * @public @memberof time_state
+ * @ingroup aux_util
+ */
+void
+time_state_to_win32perfcounter(struct time_state const *state, timepoint_ns timestamp, LARGE_INTEGER *out_qpc_ticks);
+
+/*!
+ * Converts from Win32 "QPC" ticks to timestamp.
+ *
+ * Should not be called simultaneously with time_state_get_now_and_update.
+ *
+ * @public @memberof time_state
+ * @ingroup aux_util
+ */
+timepoint_ns
+time_state_from_win32perfcounter(struct time_state const *state, const LARGE_INTEGER *qpc_ticks);
+#endif // defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
 
 
 #ifdef __cplusplus

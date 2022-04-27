@@ -115,3 +115,27 @@ time_state_ts_to_monotonic_ns(struct time_state const *state, timepoint_ns times
 
 	return timestamp + state->offset;
 }
+
+#ifdef XRT_OS_WINDOWS
+extern "C" void
+time_state_to_win32perfcounter(struct time_state const *state, timepoint_ns timestamp, LARGE_INTEGER *out_qpc_ticks)
+{
+	assert(state != NULL);
+	assert(out_qpc_ticks != NULL);
+
+	uint64_t ns = time_state_ts_to_monotonic_ns(state, timestamp);
+
+	out_qpc_ticks->QuadPart = ns / os_ns_per_qpc_tick_get();
+}
+
+extern "C" timepoint_ns
+time_state_from_win32perfcounter(struct time_state const *state, const LARGE_INTEGER *qpc_ticks)
+{
+	assert(state != NULL);
+	assert(qpc_ticks != NULL);
+
+	uint64_t ns = qpc_ticks->QuadPart * os_ns_per_qpc_tick_get();
+
+	return time_state_monotonic_to_ts_ns(state, ns);
+}
+#endif // XRT_OS_WINDOWS
