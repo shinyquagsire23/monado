@@ -1149,6 +1149,15 @@ vk_csci_get_image_external_handle_type(struct vk_bundle *vk);
  */
 
 /*!
+ * Is there a good likelihood that the import/export of a timeline semaphore
+ * will succeed, in other words will the below functions work.
+ *
+ * @ingroup aux_vk
+ */
+XRT_CHECK_RESULT bool
+vk_can_import_and_export_timeline_semaphore(struct vk_bundle *vk);
+
+/*!
  * @brief Creates a Vulkan fence, submits it to the default VkQueue and return
  * its native graphics sync handle.
  *

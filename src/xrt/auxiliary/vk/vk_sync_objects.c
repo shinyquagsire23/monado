@@ -63,6 +63,34 @@ vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
 
 /*
  *
+ * Check functions.
+ *
+ */
+
+bool
+vk_can_import_and_export_timeline_semaphore(struct vk_bundle *vk)
+{
+#ifdef VK_KHR_timeline_semaphore
+	// Timeline semaphore extension and feature been enabled?
+	if (!vk->features.timeline_semaphore) {
+		return false;
+	}
+
+	// Supported handle type for import/export?
+	if (vk_get_timeline_semaphore_handle_type(vk) == 0) {
+		return false;
+	}
+
+	// Everything points to yes!
+	return true;
+#else
+	return false;
+#endif
+}
+
+
+/*
+ *
  * Export.
  *
  */
