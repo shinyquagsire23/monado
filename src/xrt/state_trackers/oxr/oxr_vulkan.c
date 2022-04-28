@@ -10,10 +10,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_string_list.h"
+
+#include "vk/vk_helpers.h"
 
 #include "xrt/xrt_gfx_vk.h"
 
@@ -148,6 +151,22 @@ oxr_vk_create_vulkan_instance(struct oxr_logger *log,
 	modified_info.enabledExtensionCount = u_string_list_get_size(instance_ext_list);
 
 	*vulkanResult = CreateInstance(&modified_info, createInfo->vulkanAllocator, vulkanInstance);
+
+
+	// Logging
+	{
+		struct oxr_sink_logger slog = {0};
+
+		oxr_slog(&slog, "Creation of VkInstance:");
+		oxr_slog(&slog, "\n\tresult: %s", vk_result_string(*vulkanResult));
+		oxr_slog(&slog, "\n\tvulkanInstance: 0x%" PRIx64, (uint64_t)(intptr_t)*vulkanInstance);
+		oxr_slog(&slog, "\n\textensions:");
+		for (uint32_t i = 0; i < modified_info.enabledExtensionCount; i++) {
+			oxr_slog(&slog, "\n\t\t%s", modified_info.ppEnabledExtensionNames[i]);
+		}
+
+		oxr_log_slog(log, &slog);
+	}
 
 	u_string_list_destroy(&instance_ext_list);
 
@@ -322,6 +341,27 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 #endif
 
 	*vulkanResult = CreateDevice(physical_device, &modified_info, createInfo->vulkanAllocator, vulkanDevice);
+
+
+	// Logging
+	{
+		struct oxr_sink_logger slog = {0};
+
+		oxr_slog(&slog, "Creation of VkDevice:");
+		oxr_slog(&slog, "\n\tresult: %s", vk_result_string(*vulkanResult));
+		oxr_slog(&slog, "\n\tvulkanDevice: 0x%" PRIx64, (uint64_t)(intptr_t)*vulkanDevice);
+		oxr_slog(&slog, "\n\tvulkanInstance: 0x%" PRIx64, (uint64_t)(intptr_t)sys->vulkan_enable2_instance);
+#ifdef VK_KHR_timeline_semaphore
+		oxr_slog(&slog, "\n\ttimelineSemaphore: %s",
+		         timeline_semaphore_info.timelineSemaphore ? "true" : "false");
+#endif
+		oxr_slog(&slog, "\n\textensions:");
+		for (uint32_t i = 0; i < modified_info.enabledExtensionCount; i++) {
+			oxr_slog(&slog, "\n\t\t%s", modified_info.ppEnabledExtensionNames[i]);
+		}
+
+		oxr_log_slog(log, &slog);
+	}
 
 #ifdef VK_KHR_timeline_semaphore
 	// Have timeline semaphores added and as such enabled.
