@@ -441,17 +441,14 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (log_level <= U_LOGGING_DEBUG) {
-				oxr_log(log,
-				        "Using GPU %d with uuid %s suggested "
-				        "by runtime",
-				        gpu_index, uuid_str);
+				oxr_log(log, "Using GPU %d with uuid %s suggested by runtime", gpu_index, uuid_str);
 			}
 			break;
 		}
 	}
 
 	if (gpu_index == -1) {
-		oxr_warn(log, "Did not find runtime suggested GPU, fall back to GPU 0");
+		oxr_warn(log, "Did not find runtime suggested GPU, fall back to GPU 0\n\tuuid: %s", suggested_uuid_str);
 		gpu_index = 0;
 	}
 
