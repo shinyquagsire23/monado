@@ -819,7 +819,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	}
 
 #ifdef VK_KHR_timeline_semaphore
-	if (c->vk.features.timeline_semaphore) {
+	if (vk_can_import_and_export_timeline_semaphore(&c->vk)) {
 		xret = setup_semaphore(c);
 		if (xret != XRT_SUCCESS) {
 			goto err_mutex;
