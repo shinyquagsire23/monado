@@ -980,10 +980,7 @@ p_open_hid_interface(struct xrt_prober *xp,
 		return 0;
 	}
 
-	U_LOG_E(
-	    "Could not find the requested "
-	    "hid interface (%i) on the device!",
-	    interface);
+	U_LOG_E("Could not find the requested hid interface (%i) on the device!", interface);
 	return -1;
 
 #elif defined(XRT_OS_WINDOWS)
