@@ -961,9 +961,9 @@ p_open_hid_interface(struct xrt_prober *xp,
 	XRT_TRACE_MARKER();
 
 	struct prober_device *pdev = (struct prober_device *)xpdev;
-	XRT_MAYBE_UNUSED int ret;
+	int ret;
 
-#ifdef XRT_OS_LINUX
+#if defined(XRT_OS_LINUX)
 	for (size_t j = 0; j < pdev->num_hidraws; j++) {
 		struct prober_hidraw *hidraw = &pdev->hidraws[j];
 
@@ -979,13 +979,20 @@ p_open_hid_interface(struct xrt_prober *xp,
 
 		return 0;
 	}
-#endif // XRT_OS_LINUX
 
 	U_LOG_E(
 	    "Could not find the requested "
 	    "hid interface (%i) on the device!",
 	    interface);
 	return -1;
+
+#elif defined(XRT_OS_WINDOWS)
+	(void)ret;
+	U_LOG_E("HID devices not supported on Windows, can not open interface (%i)", interface);
+	return -1;
+#else
+#error "no port of hid code"
+#endif
 }
 
 static int
@@ -1118,7 +1125,8 @@ p_get_string_descriptor(struct xrt_prober *xp,
 
 #ifdef XRT_HAVE_LIBUSB
 	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
-		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, max_length);
+		assert(max_length < INT_MAX);
+		ret = p_libusb_get_string_descriptor(p, pdev, which_string, buffer, (int)max_length);
 		if (ret >= 0) {
 			return ret;
 		}
