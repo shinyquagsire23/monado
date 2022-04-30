@@ -26,6 +26,16 @@
 
 #define VK_ERROR_RET(VK, FUNC, MSG, RET) VK_ERROR(VK, FUNC ": %s\n\t" MSG, vk_result_string(RET))
 
+#define UUID_STR_SIZE (XRT_GPU_UUID_SIZE * 3 + 1)
+
+static void
+snprint_uuid(char *str, size_t size, uint8_t uuid[XRT_GPU_UUID_SIZE])
+{
+	for (size_t i = 0, offset = 0; i < XRT_GPU_UUID_SIZE && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", uuid[i]);
+	}
+}
+
 static bool
 get_device_uuid(struct vk_bundle *vk, int gpu_index, uint8_t *uuid)
 {
@@ -66,10 +76,8 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	// Store physical device UUID for compositor in settings
 	if (vk_res->selected_gpu_index >= 0) {
 		if (get_device_uuid(vk, vk_res->selected_gpu_index, vk_res->selected_gpu_deviceUUID)) {
-			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ", vk_res->selected_gpu_deviceUUID[i]);
-			}
+			char uuid_str[UUID_STR_SIZE] = {0};
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), vk_res->selected_gpu_deviceUUID);
 			VK_DEBUG(vk, "Selected %d with uuid: %s", vk_res->selected_gpu_index, uuid_str);
 		} else {
 			VK_ERROR(vk, "Failed to get device %d uuid", vk_res->selected_gpu_index);
@@ -84,10 +92,8 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	// Store physical device UUID suggested to clients in settings
 	if (vk_res->client_gpu_index >= 0) {
 		if (get_device_uuid(vk, vk_res->client_gpu_index, vk_res->client_gpu_deviceUUID)) {
-			char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ", vk_res->client_gpu_deviceUUID[i]);
-			}
+			char uuid_str[UUID_STR_SIZE] = {0};
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), vk_res->client_gpu_deviceUUID);
 			// Trailing space above, means 'to' should be right next to '%s'.
 			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, uuid_str);
 		} else {
