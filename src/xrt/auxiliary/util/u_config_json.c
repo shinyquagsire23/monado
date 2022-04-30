@@ -490,12 +490,12 @@ u_config_json_save_overrides(struct u_config_json *json, struct xrt_tracking_ove
 		cJSON_AddStringToObject(entry, "target_device_serial", overrides[i].target_device_serial);
 		cJSON_AddStringToObject(entry, "tracker_device_serial", overrides[i].tracker_device_serial);
 
-		char override_type[256];
+		char buffer[256];
 		switch (overrides[i].override_type) {
-		case XRT_TRACKING_OVERRIDE_DIRECT: strncpy(override_type, "direct", 256); break;
-		case XRT_TRACKING_OVERRIDE_ATTACHED: strncpy(override_type, "attached", 256); break;
+		case XRT_TRACKING_OVERRIDE_DIRECT: snprintf(buffer, ARRAY_SIZE(buffer), "direct"); break;
+		case XRT_TRACKING_OVERRIDE_ATTACHED: snprintf(buffer, ARRAY_SIZE(buffer), "attached"); break;
 		}
-		cJSON_AddStringToObject(entry, "type", override_type);
+		cJSON_AddStringToObject(entry, "type", buffer);
 
 		cJSON_AddItemToObject(entry, "offset", make_pose(&overrides[i].offset));
 
