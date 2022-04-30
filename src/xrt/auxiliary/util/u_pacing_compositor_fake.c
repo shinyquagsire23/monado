@@ -197,7 +197,7 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
 
 	// Make the next display time be in the future.
-	ft->last_display_time_ns = now_ns + U_TIME_1MS_IN_NS * 50.0;
+	ft->last_display_time_ns = now_ns + U_TIME_1MS_IN_NS * 50;
 
 	// Return value.
 	*out_upc = &ft->base;
