@@ -316,7 +316,7 @@ m_relation_chain_resolve(const struct xrt_relation_chain *xrc, struct xrt_space_
 	fprintf(stderr, "\tRR: ");
 	dump_relation(&r);
 #else
-	(void)dump_chain;
+	(void)&dump_chain;
 #endif
 
 	// Ensure no errors have crept in.
