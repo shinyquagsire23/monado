@@ -420,8 +420,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	}
 	if (count == 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Call to vkEnumeratePhysicalDevices returned zero "
-		                 "VkPhysicalDevices");
+		                 "Call to vkEnumeratePhysicalDevices returned zero VkPhysicalDevices");
 	}
 
 	VkPhysicalDevice *phys = U_TYPED_ARRAY_CALLOC(VkPhysicalDevice, count);
@@ -434,8 +433,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	if (count == 0) {
 		free(phys);
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Call to vkEnumeratePhysicalDevices returned zero "
-		                 "VkPhysicalDevices");
+		                 "Call to vkEnumeratePhysicalDevices returned zero VkPhysicalDevices");
 	}
 
 	char suggested_uuid_str[UUID_STR_SIZE] = {0};
@@ -444,10 +442,14 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
 	for (uint32_t i = 0; i < count; i++) {
-		VkPhysicalDeviceIDProperties pdidp = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+		VkPhysicalDeviceIDProperties pdidp = {
+		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
+		};
 
-		VkPhysicalDeviceProperties2 pdp2 = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-		                                    .pNext = &pdidp};
+		VkPhysicalDeviceProperties2 pdp2 = {
+		    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+		    .pNext = &pdidp,
+		};
 
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
