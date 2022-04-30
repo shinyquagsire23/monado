@@ -1121,7 +1121,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->last_frame_time_ns = os_monotonic_get_ns();
 
-	float scale = c->settings.viewport_scale;
+	double scale = c->settings.viewport_scale;
 
 	if (scale > 2.0) {
 		scale = 2.0;
@@ -1225,7 +1225,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	u_var_add_root(c, "Compositor", true);
 
-	float target_frame_time_ms = ns_to_ms(c->settings.nominal_frame_interval_ns);
+	float target_frame_time_ms = (float)ns_to_ms(c->settings.nominal_frame_interval_ns);
 	u_frame_times_widget_init(&c->compositor_frame_times, target_frame_time_ms, 10.f);
 
 	u_var_add_ro_f32(c, &c->compositor_frame_times.fps, "FPS (Compositor)");
@@ -1233,10 +1233,9 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	u_var_add_f32_timing(c, c->compositor_frame_times.debug_var, "Frame Times (Compositor)");
 
 
-
 	//! @todo: Query all supported refresh rates of the current mode
 	sys_info->num_refresh_rates = 1;
-	sys_info->refresh_rates[0] = 1. / time_ns_to_s(c->settings.nominal_frame_interval_ns);
+	sys_info->refresh_rates[0] = (float)(1. / time_ns_to_s(c->settings.nominal_frame_interval_ns));
 
 
 

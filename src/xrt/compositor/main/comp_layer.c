@@ -414,41 +414,41 @@ _calculate_unit_cylinder_segment_vertices(float central_angle)
 		double rz = -radius * sin(next_theta);
 
 		// cylinder face: quad of 2 triangles
-		cylinder_vertices[vertex++] = l;
-		cylinder_vertices[vertex++] = b;
-		cylinder_vertices[vertex++] = lz;
-		cylinder_vertices[vertex++] = uv_l;
-		cylinder_vertices[vertex++] = uv_t;
+		cylinder_vertices[vertex++] = (float)l;
+		cylinder_vertices[vertex++] = (float)b;
+		cylinder_vertices[vertex++] = (float)lz;
+		cylinder_vertices[vertex++] = (float)uv_l;
+		cylinder_vertices[vertex++] = (float)uv_t;
 
-		cylinder_vertices[vertex++] = r;
-		cylinder_vertices[vertex++] = b;
-		cylinder_vertices[vertex++] = rz;
-		cylinder_vertices[vertex++] = uv_r;
-		cylinder_vertices[vertex++] = uv_t;
+		cylinder_vertices[vertex++] = (float)r;
+		cylinder_vertices[vertex++] = (float)b;
+		cylinder_vertices[vertex++] = (float)rz;
+		cylinder_vertices[vertex++] = (float)uv_r;
+		cylinder_vertices[vertex++] = (float)uv_t;
 
-		cylinder_vertices[vertex++] = r;
-		cylinder_vertices[vertex++] = t;
-		cylinder_vertices[vertex++] = rz;
-		cylinder_vertices[vertex++] = uv_r;
-		cylinder_vertices[vertex++] = uv_b;
+		cylinder_vertices[vertex++] = (float)r;
+		cylinder_vertices[vertex++] = (float)t;
+		cylinder_vertices[vertex++] = (float)rz;
+		cylinder_vertices[vertex++] = (float)uv_r;
+		cylinder_vertices[vertex++] = (float)uv_b;
 
-		cylinder_vertices[vertex++] = r;
-		cylinder_vertices[vertex++] = t;
-		cylinder_vertices[vertex++] = rz;
-		cylinder_vertices[vertex++] = uv_r;
-		cylinder_vertices[vertex++] = uv_b;
+		cylinder_vertices[vertex++] = (float)r;
+		cylinder_vertices[vertex++] = (float)t;
+		cylinder_vertices[vertex++] = (float)rz;
+		cylinder_vertices[vertex++] = (float)uv_r;
+		cylinder_vertices[vertex++] = (float)uv_b;
 
-		cylinder_vertices[vertex++] = l;
-		cylinder_vertices[vertex++] = t;
-		cylinder_vertices[vertex++] = lz;
-		cylinder_vertices[vertex++] = uv_l;
-		cylinder_vertices[vertex++] = uv_b;
+		cylinder_vertices[vertex++] = (float)l;
+		cylinder_vertices[vertex++] = (float)t;
+		cylinder_vertices[vertex++] = (float)lz;
+		cylinder_vertices[vertex++] = (float)uv_l;
+		cylinder_vertices[vertex++] = (float)uv_b;
 
-		cylinder_vertices[vertex++] = l;
-		cylinder_vertices[vertex++] = b;
-		cylinder_vertices[vertex++] = lz;
-		cylinder_vertices[vertex++] = uv_l;
-		cylinder_vertices[vertex++] = uv_t;
+		cylinder_vertices[vertex++] = (float)l;
+		cylinder_vertices[vertex++] = (float)b;
+		cylinder_vertices[vertex++] = (float)lz;
+		cylinder_vertices[vertex++] = (float)uv_l;
+		cylinder_vertices[vertex++] = (float)uv_t;
 	}
 }
 

@@ -180,11 +180,11 @@ calc_viewport_data(struct comp_renderer *r,
 		pre_rotate = true;
 	}
 
-	float w = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels : r->c->xdev->hmd->screens[0].w_pixels;
-	float h = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels : r->c->xdev->hmd->screens[0].h_pixels;
+	int w_i32 = pre_rotate ? r->c->xdev->hmd->screens[0].h_pixels : r->c->xdev->hmd->screens[0].w_pixels;
+	int h_i32 = pre_rotate ? r->c->xdev->hmd->screens[0].w_pixels : r->c->xdev->hmd->screens[0].h_pixels;
 
-	float scale_x = (float)r->c->target->width / w;
-	float scale_y = (float)r->c->target->height / h;
+	float scale_x = (float)r->c->target->width / (float)w_i32;
+	float scale_y = (float)r->c->target->height / (float)h_i32;
 
 	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
 	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
@@ -571,8 +571,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	double mul = 1080.0 / orig_height;
 
-	r->mirror_to_debug_gui.image_extent.width = orig_width * mul;
-	r->mirror_to_debug_gui.image_extent.height = orig_height * mul;
+	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(orig_width * mul);
+	r->mirror_to_debug_gui.image_extent.height = (uint32_t)(orig_height * mul);
 
 	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
 	                                    XRT_FORMAT_R8G8B8X8);
