@@ -47,7 +47,7 @@ extern "C" {
  *
  * @see timepoint_ns
  */
-#define U_TIME_HALF_MS_IN_NS (U_TIME_1MS_IN_NS / 2.0)
+#define U_TIME_HALF_MS_IN_NS (U_TIME_1MS_IN_NS / 2)
 
 /*!
  * Integer timestamp type.
