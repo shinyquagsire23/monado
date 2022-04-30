@@ -81,7 +81,7 @@ m_imu_3dof_add_vars(struct m_imu_3dof *f, void *root, const char *prefix)
 	snprintf(tmp, sizeof(tmp), "%slast.accel_length", prefix);
 	u_var_add_ro_f32(root, &f->last.accel_length, tmp);
 	snprintf(tmp, sizeof(tmp), "%slast.delta_ms", prefix);
-	u_var_add_ro_f32(root, &f->last.delta_ms, tmp);
+	u_var_add_ro_f64(root, &f->last.delta_ms, tmp);
 
 	snprintf(tmp, sizeof(tmp), "%sgrav.level_timestamp_ns", prefix);
 	u_var_add_ro_u64(root, &f->grav.level_timestamp_ns, tmp);

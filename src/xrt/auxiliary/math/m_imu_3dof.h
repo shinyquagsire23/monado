@@ -40,7 +40,7 @@ struct m_imu_3dof
 		uint64_t timestamp_ns;
 		struct xrt_vec3 gyro;  //!< Angular velocity
 		struct xrt_vec3 accel; //!< Acceleration
-		float delta_ms;
+		double delta_ms;
 		float accel_length;
 		float gyro_length;
 		float gyro_biased_length;
