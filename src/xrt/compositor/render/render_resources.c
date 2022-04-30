@@ -464,10 +464,10 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 	const double tan_offset_y = (-(tan_up + tan_down) - tan_height) / 2;
 
 	struct xrt_normalized_rect transform = {
-	    .x = tan_offset_x,
-	    .y = tan_offset_y,
-	    .w = tan_width,
-	    .h = tan_height,
+	    .x = (float)tan_offset_x,
+	    .y = (float)tan_offset_y,
+	    .w = (float)tan_width,
+	    .h = (float)tan_height,
 	};
 
 	*out_rect = transform;
@@ -499,13 +499,15 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
 	struct texture *g = g_buffer->mapped;
 	struct texture *b = b_buffer->mapped;
 
+	const double dim_minus_one_f64 = COMP_DISTORTION_IMAGE_DIMENSIONS - 1;
+
 	for (int row = 0; row < COMP_DISTORTION_IMAGE_DIMENSIONS; row++) {
 		// This goes from 0 to 1.0 inclusive.
-		float v = (double)row / (double)(COMP_DISTORTION_IMAGE_DIMENSIONS - 1);
+		float v = (float)(row / dim_minus_one_f64);
 
 		for (int col = 0; col < COMP_DISTORTION_IMAGE_DIMENSIONS; col++) {
 			// This goes from 0 to 1.0 inclusive.
-			float u = (double)col / (double)(COMP_DISTORTION_IMAGE_DIMENSIONS - 1);
+			float u = (float)(col / dim_minus_one_f64);
 
 			struct xrt_uv_triplet result;
 			xrt_device_compute_distortion(xdev, view, u, v, &result);

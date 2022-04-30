@@ -629,10 +629,10 @@ render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewpo
 	 */
 
 	VkViewport viewport = {
-	    .x = viewport_data->x,
-	    .y = viewport_data->y,
-	    .width = viewport_data->w,
-	    .height = viewport_data->h,
+	    .x = (float)viewport_data->x,
+	    .y = (float)viewport_data->y,
+	    .width = (float)viewport_data->w,
+	    .height = (float)viewport_data->h,
 	    .minDepth = 0.0f,
 	    .maxDepth = 1.0f,
 	};
