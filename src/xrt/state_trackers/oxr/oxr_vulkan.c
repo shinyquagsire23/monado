@@ -25,7 +25,30 @@
 #include "oxr_two_call.h"
 
 
+/*
+ *
+ * Helpers
+ *
+ */
+
 #define GET_PROC(name) PFN_##name name = (PFN_##name)getProc(vkInstance, #name)
+
+#define UUID_STR_SIZE (XRT_GPU_UUID_SIZE * 3 + 1)
+
+static void
+snprint_uuid(char *str, size_t size, uint8_t uuid[XRT_GPU_UUID_SIZE])
+{
+	for (size_t i = 0, offset = 0; i < XRT_GPU_UUID_SIZE && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", uuid[i]);
+	}
+}
+
+
+/*
+ *
+ * Misc functions (to be organized).
+ *
+ */
 
 XrResult
 oxr_vk_get_instance_exts(struct oxr_logger *log,
@@ -415,10 +438,8 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		                 "VkPhysicalDevices");
 	}
 
-	char suggested_uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
-	for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-		sprintf(suggested_uuid_str + i * 3, "%02x ", sys->xsysc->info.client_vk_deviceUUID[i]);
-	}
+	char suggested_uuid_str[UUID_STR_SIZE] = {0};
+	snprint_uuid(suggested_uuid_str, ARRAY_SIZE(suggested_uuid_str), sys->xsysc->info.client_vk_deviceUUID);
 
 	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
@@ -430,18 +451,16 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
-		char uuid_str[XRT_GPU_UUID_SIZE * 3 + 1] = {0};
+		char uuid_str[UUID_STR_SIZE] = {0};
 		if (log_level <= U_LOGGING_DEBUG) {
-			for (int i = 0; i < XRT_GPU_UUID_SIZE; i++) {
-				sprintf(uuid_str + i * 3, "%02x ", pdidp.deviceUUID[i]);
-			}
-			oxr_log(log, "GPU %d: uuid %s", i, uuid_str);
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), pdidp.deviceUUID);
+			oxr_log(log, "GPU: #%d, uuid: %s", i, uuid_str);
 		}
 
 		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (log_level <= U_LOGGING_DEBUG) {
-				oxr_log(log, "Using GPU %d with uuid %s suggested by runtime", gpu_index, uuid_str);
+				oxr_log(log, "Using GPU #%d with uuid %s suggested by runtime", gpu_index, uuid_str);
 			}
 			break;
 		}
