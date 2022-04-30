@@ -106,7 +106,7 @@ u_distortion_cardboard_calculate(const struct u_cardboard_distortion_arguments *
 	r_values.distortion_k[4] = args->distortion_k[4];
 	r_values.screen.size.x = args->screen.w_meters;
 	r_values.screen.size.y = args->screen.h_meters;
-	r_values.screen.offset.x = (args->screen.w_meters + args->inter_lens_distance_meters) / 2.0;
+	r_values.screen.offset.x = (args->screen.w_meters + args->inter_lens_distance_meters) / 2.0f;
 	r_values.screen.offset.y = args->lens_y_center_on_screen_meters;
 	// clang-format on
 
