@@ -404,10 +404,10 @@ from_BAYER_GR8_to_R8G8B8(struct xrt_frame *dst_frame, uint32_t w, uint32_t h, si
 	SINK_TRACE_MARKER();
 
 	const uint8_t *src_data = data;
-	uint32_t src_stride = stride;
+	size_t src_stride = stride;
 
 	uint8_t *dst_data = dst_frame->data;
-	uint32_t dst_stride = dst_frame->stride;
+	size_t dst_stride = dst_frame->stride;
 
 	for (uint32_t y = 0; y < h; y++) {
 		const uint8_t *src0 = src_data + (y * 2) * src_stride;
