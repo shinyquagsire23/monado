@@ -191,8 +191,8 @@ oxr_input_transform_process(const struct oxr_input_transform *transform,
 static bool
 ends_with(const char *str, const char *suffix)
 {
-	int len = strlen(str);
-	int suffix_len = strlen(suffix);
+	size_t len = strlen(str);
+	size_t suffix_len = strlen(suffix);
 
 	return (len >= suffix_len) && (0 == strcmp(str + (len - suffix_len), suffix));
 }

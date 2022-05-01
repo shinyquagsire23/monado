@@ -26,8 +26,9 @@ setup_paths(struct oxr_logger *log,
             struct binding_template *templ,
             struct oxr_binding *binding)
 {
-	size_t count = 0;
+	uint32_t count = 0;
 	while (templ->paths[count] != NULL) {
+		assert(count != UINT32_MAX);
 		count++;
 	}
 
