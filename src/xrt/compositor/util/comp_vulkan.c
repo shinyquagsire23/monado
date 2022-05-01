@@ -26,18 +26,18 @@
 
 #define VK_ERROR_RET(VK, FUNC, MSG, RET) VK_ERROR(VK, FUNC ": %s\n\t" MSG, vk_result_string(RET))
 
-#define UUID_STR_SIZE (XRT_GPU_UUID_SIZE * 3 + 1)
+#define UUID_STR_SIZE (XRT_UUID_SIZE * 3 + 1)
 
 static void
-snprint_uuid(char *str, size_t size, uint8_t uuid[XRT_GPU_UUID_SIZE])
+snprint_uuid(char *str, size_t size, xrt_uuid_t *uuid)
 {
-	for (size_t i = 0, offset = 0; i < XRT_GPU_UUID_SIZE && offset < size; i++, offset += 3) {
-		snprintf(str + offset, size - offset, "%02x ", uuid[i]);
+	for (size_t i = 0, offset = 0; i < ARRAY_SIZE(uuid->data) && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", uuid->data[i]);
 	}
 }
 
 static bool
-get_device_uuid(struct vk_bundle *vk, int gpu_index, uint8_t *uuid)
+get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 {
 	VkPhysicalDeviceIDProperties pdidp = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
@@ -59,7 +59,7 @@ get_device_uuid(struct vk_bundle *vk, int gpu_index, uint8_t *uuid)
 	}
 
 	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
-	memcpy(uuid, pdidp.deviceUUID, XRT_GPU_UUID_SIZE);
+	memcpy(uuid->data, pdidp.deviceUUID, ARRAY_SIZE(uuid->data));
 
 	return true;
 }
@@ -75,9 +75,10 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 
 	// Store physical device UUID for compositor in settings
 	if (vk_res->selected_gpu_index >= 0) {
-		if (get_device_uuid(vk, vk_res->selected_gpu_index, vk_res->selected_gpu_deviceUUID)) {
+		if (get_device_uuid(vk, vk_res->selected_gpu_index, &vk_res->selected_gpu_deviceUUID)) {
 			char uuid_str[UUID_STR_SIZE] = {0};
-			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), vk_res->selected_gpu_deviceUUID);
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), &vk_res->selected_gpu_deviceUUID);
+
 			VK_DEBUG(vk, "Selected %d with uuid: %s", vk_res->selected_gpu_index, uuid_str);
 		} else {
 			VK_ERROR(vk, "Failed to get device %d uuid", vk_res->selected_gpu_index);
@@ -91,9 +92,10 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 
 	// Store physical device UUID suggested to clients in settings
 	if (vk_res->client_gpu_index >= 0) {
-		if (get_device_uuid(vk, vk_res->client_gpu_index, vk_res->client_gpu_deviceUUID)) {
+		if (get_device_uuid(vk, vk_res->client_gpu_index, &vk_res->client_gpu_deviceUUID)) {
 			char uuid_str[UUID_STR_SIZE] = {0};
-			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), vk_res->client_gpu_deviceUUID);
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), &vk_res->client_gpu_deviceUUID);
+
 			// Trailing space above, means 'to' should be right next to '%s'.
 			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, uuid_str);
 		} else {

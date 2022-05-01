@@ -71,10 +71,10 @@ struct comp_vulkan_results
 	int client_gpu_index;
 
 	//! Selected Vulkan device UUID.
-	uint8_t selected_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
+	xrt_uuid_t selected_gpu_deviceUUID;
 
 	//! Selected Vulkan device UUID to suggest to clients.
-	uint8_t client_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
+	xrt_uuid_t client_gpu_deviceUUID;
 };
 
 /*!

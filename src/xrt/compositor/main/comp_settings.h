@@ -112,12 +112,11 @@ struct comp_settings
 	int client_gpu_index;
 
 
-	//! Vulkan device UUID selected by comp_settings_check_vulkan_caps,
-	//! valid across Vulkan instances
-	uint8_t selected_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
+	//! Vulkan device UUID selected by comp_settings_check_vulkan_caps, valid across Vulkan instances
+	xrt_uuid_t selected_gpu_deviceUUID;
 
 	//! Vulkan device UUID to suggest to clients
-	uint8_t client_gpu_deviceUUID[XRT_GPU_UUID_SIZE];
+	xrt_uuid_t client_gpu_deviceUUID;
 
 	//! Try to choose the mode with this index for direct mode
 	int desired_mode;

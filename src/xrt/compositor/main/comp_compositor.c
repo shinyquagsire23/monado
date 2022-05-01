@@ -721,15 +721,14 @@ compositor_init_vulkan(struct comp_compositor *c)
 	}
 
 	// clang-format off
-	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID) == XRT_GPU_UUID_SIZE, "array size mismatch");
-	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID) == XRT_GPU_UUID_SIZE, "array size mismatch");
-	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID) == ARRAY_SIZE(c->settings.client_gpu_deviceUUID), "array size mismatch");
-	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID) == ARRAY_SIZE(c->settings.selected_gpu_deviceUUID), "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID.data) == XRT_UUID_SIZE, "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID.data) == XRT_UUID_SIZE, "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID.data) == ARRAY_SIZE(c->settings.client_gpu_deviceUUID.data), "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID.data) == ARRAY_SIZE(c->settings.selected_gpu_deviceUUID.data), "array size mismatch");
 	// clang-format on
 
-	memcpy(c->settings.client_gpu_deviceUUID, vk_res.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-	memcpy(c->settings.selected_gpu_deviceUUID, vk_res.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-
+	c->settings.client_gpu_deviceUUID = vk_res.client_gpu_deviceUUID;
+	c->settings.selected_gpu_deviceUUID = vk_res.selected_gpu_deviceUUID;
 	c->settings.client_gpu_index = vk_res.client_gpu_index;
 	c->settings.selected_gpu_index = vk_res.selected_gpu_index;
 
@@ -1194,11 +1193,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	// Required by OpenXR spec.
 	sys_info->max_layers = 16;
-
-	memcpy(sys_info->compositor_vk_deviceUUID, c->settings.selected_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-	memcpy(sys_info->client_vk_deviceUUID, c->settings.client_gpu_deviceUUID, XRT_GPU_UUID_SIZE);
-
-
+	sys_info->compositor_vk_deviceUUID = c->settings.selected_gpu_deviceUUID;
+	sys_info->client_vk_deviceUUID = c->settings.client_gpu_deviceUUID;
 
 	// clang-format off
 	sys_info->views[0].recommended.width_pixels  = w0;

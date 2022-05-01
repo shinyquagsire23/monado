@@ -33,13 +33,13 @@
 
 #define GET_PROC(name) PFN_##name name = (PFN_##name)getProc(vkInstance, #name)
 
-#define UUID_STR_SIZE (XRT_GPU_UUID_SIZE * 3 + 1)
+#define UUID_STR_SIZE (XRT_UUID_SIZE * 3 + 1)
 
 static void
-snprint_uuid(char *str, size_t size, uint8_t uuid[XRT_GPU_UUID_SIZE])
+snprint_uuid(char *str, size_t size, const xrt_uuid_t *uuid)
 {
-	for (size_t i = 0, offset = 0; i < XRT_GPU_UUID_SIZE && offset < size; i++, offset += 3) {
-		snprintf(str + offset, size - offset, "%02x ", uuid[i]);
+	for (size_t i = 0, offset = 0; i < ARRAY_SIZE(uuid->data) && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", uuid->data[i]);
 	}
 }
 
@@ -439,7 +439,7 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	}
 
 	char suggested_uuid_str[UUID_STR_SIZE] = {0};
-	snprint_uuid(suggested_uuid_str, ARRAY_SIZE(suggested_uuid_str), sys->xsysc->info.client_vk_deviceUUID);
+	snprint_uuid(suggested_uuid_str, ARRAY_SIZE(suggested_uuid_str), &sys->xsysc->info.client_vk_deviceUUID);
 
 	enum u_logging_level log_level = debug_get_log_option_compositor_log();
 	int gpu_index = -1;
@@ -451,13 +451,17 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 
 		vkGetPhysicalDeviceProperties2(phys[i], &pdp2);
 
+		// These should always be true
+		static_assert(VK_UUID_SIZE == XRT_UUID_SIZE, "uuid sizes mismatch");
+		static_assert(ARRAY_SIZE(pdidp.deviceUUID) == XRT_UUID_SIZE, "array size mismatch");
+
 		char uuid_str[UUID_STR_SIZE] = {0};
 		if (log_level <= U_LOGGING_DEBUG) {
-			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), pdidp.deviceUUID);
+			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), (xrt_uuid_t *)pdidp.deviceUUID);
 			oxr_log(log, "GPU: #%d, uuid: %s", i, uuid_str);
 		}
 
-		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID, XRT_GPU_UUID_SIZE) == 0) {
+		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID.data, XRT_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (log_level <= U_LOGGING_DEBUG) {
 				oxr_log(log, "Using GPU #%d with uuid %s suggested by runtime", gpu_index, uuid_str);

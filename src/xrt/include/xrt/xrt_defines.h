@@ -20,8 +20,29 @@
 extern "C" {
 #endif
 
-//! internal define for VK_UUID_SIZE
-#define XRT_GPU_UUID_SIZE 16
+/*!
+ * Internal define for VK_UUID_SIZE and XR_UUID_SIZE_EXT.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_UUID_SIZE 16
+
+/*!
+ * To transport UUIDs between different APIs.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_uuid
+{
+	uint8_t data[XRT_UUID_SIZE];
+};
+
+/*!
+ * Typedef for @ref xrt_uuid.
+ *
+ * @ingroup xrt_iface
+ */
+typedef struct xrt_uuid xrt_uuid_t;
 
 /*!
  * A base class for reference counted objects.

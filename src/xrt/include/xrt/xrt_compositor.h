@@ -1718,10 +1718,10 @@ struct xrt_system_compositor_info
 	float refresh_rates[1];
 
 	//! The vk device as used by the compositor, never changes.
-	uint8_t compositor_vk_deviceUUID[XRT_GPU_UUID_SIZE];
+	xrt_uuid_t compositor_vk_deviceUUID;
 
 	//! The vk device suggested for Vulkan clients, never changes.
-	uint8_t client_vk_deviceUUID[XRT_GPU_UUID_SIZE];
+	xrt_uuid_t client_vk_deviceUUID;
 };
 
 struct xrt_system_compositor;
