@@ -32,7 +32,15 @@ static inline fs::path
 get_config_path()
 {
 #ifdef XRT_OS_WINDOWS
-	auto local_app_data = fs::path{getenv("LOCALAPPDATA")};
+	char *buffer = nullptr;
+	errno_t ret = _dupenv_s(&buffer, nullptr, "LOCALAPPDATA");
+	if (ret != 0) {
+		return {};
+	}
+
+	auto local_app_data = fs::path{buffer};
+	free(buffer);
+
 	return local_app_data / "monado";
 #else
 
