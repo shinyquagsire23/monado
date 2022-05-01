@@ -22,10 +22,10 @@ TEST_CASE("m_quatexpmap")
 	SECTION("Test integrate velocity and finite difference mappings")
 	{
 		vector<xrt_vec3> q1_axes{{axis1, axis2}};
-		float q1_angle = GENERATE(M_PI, -M_PI / 6);
+		float q1_angle = (float)GENERATE(M_PI, -M_PI / 6);
 		vector<xrt_vec3> vel_axes{{axis3, axis4}};
-		float vel_angle = GENERATE(-M_PI, M_PI / 5);
-		float dt = GENERATE(0.01, 0.1, 1);
+		float vel_angle = (float)GENERATE(-M_PI, M_PI / 5);
+		float dt = (float)GENERATE(0.01, 0.1, 1);
 
 		for (xrt_vec3 q1_axis : q1_axes) {
 			for (xrt_vec3 vel_axis : vel_axes) {
@@ -58,7 +58,12 @@ TEST_CASE("m_quatexpmap")
 	SECTION("Test quat_exp and quat_ln are inverses")
 	{
 		// We use rotations with less than PI radians as quat_ln will return the negative rotation otherwise
-		vector<xrt_vec3> aas = {{0, 0, 0}, axis1 * M_PI * 0.01, axis2 * M_PI * 0.5, axis3 * 0.99 * M_PI};
+		vector<xrt_vec3> aas = {
+		    {0, 0, 0},
+		    axis1 * (float)M_PI * 0.01f,
+		    axis2 * (float)M_PI * 0.5f,
+		    axis3 * (float)M_PI * 0.99f,
+		};
 
 		for (xrt_vec3 aa : aas) {
 			xrt_quat quat{};
