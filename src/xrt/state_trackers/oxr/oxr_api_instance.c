@@ -288,7 +288,7 @@ oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buf
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrStructureTypeToString");
 
 #define MAKE_TYPE_CASE(VAL, _)                                                                                         \
-	case VAL: strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE); break;
+	case VAL: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, #VAL); break;
 	switch (value) {
 		XR_LIST_ENUM_XrStructureType(MAKE_TYPE_CASE);
 	default: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_STRUCTURE_TYPE_%d", value);

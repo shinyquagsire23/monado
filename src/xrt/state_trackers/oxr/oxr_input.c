@@ -267,7 +267,7 @@ oxr_action_set_create(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create loc_store hashset");
 	}
 
-	strncpy(act_set_ref->name, createInfo->actionSetName, sizeof(act_set_ref->name));
+	snprintf(act_set_ref->name, sizeof(act_set_ref->name), "%s", createInfo->actionSetName);
 
 	u_hashset_create_and_insert_str_c(inst->action_sets.name_store, createInfo->actionSetName, &act_set->name_item);
 	u_hashset_create_and_insert_str_c(inst->action_sets.loc_store, createInfo->localizedActionSetName,
@@ -351,7 +351,7 @@ oxr_action_create(struct oxr_logger *log,
 	act_ref->subaction_paths = subaction_paths;
 	act_ref->action_type = createInfo->actionType;
 
-	strncpy(act_ref->name, createInfo->actionName, sizeof(act_ref->name));
+	snprintf(act_ref->name, sizeof(act_ref->name), "%s", createInfo->actionName);
 
 	u_hashset_create_and_insert_str_c(act_set->data->actions.name_store, createInfo->actionName, &act->name_item);
 	u_hashset_create_and_insert_str_c(act_set->data->actions.loc_store, createInfo->localizedActionName,
