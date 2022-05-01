@@ -25,16 +25,16 @@ struct m_lowpass_integer
 	IntegerLowPassIIRFilter<int64_t> filter;
 };
 
-#define DEFAULT_CATCH(RETURNVAL)                                                                                       \
+#define DEFAULT_CATCH(...)                                                                                             \
 	catch (std::exception const &e)                                                                                \
 	{                                                                                                              \
 		U_LOG_E("Caught exception: %s", e.what());                                                             \
-		return RETURNVAL;                                                                                      \
+		return __VA_ARGS__;                                                                                    \
 	}                                                                                                              \
 	catch (...)                                                                                                    \
 	{                                                                                                              \
 		U_LOG_E("Caught exception");                                                                           \
-		return RETURNVAL;                                                                                      \
+		return __VA_ARGS__;                                                                                    \
 	}
 
 struct m_lowpass_integer *
