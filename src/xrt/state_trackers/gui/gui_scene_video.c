@@ -184,12 +184,12 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		mode_selected_so_continue(scene, p);
 	} else {
 		// We have selected a stream device and it has multiple modes - let user decide which to use
-		for (size_t i = 0; i < vs->num_modes; i++) {
+		for (uint32_t i = 0; i < vs->num_modes; i++) {
 			if (!render_mode(&vs->modes[i])) {
 				continue;
 			}
 
-			vs->settings->camera_mode = i;
+			vs->settings->camera_mode = (int)i;
 			mode_selected_so_continue(scene, p);
 		}
 	}

@@ -10,11 +10,14 @@
 
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
+#include "util/u_logging.h"
+
 #include "ogl/ogl_api.h"
 
 #include "gui_common.h"
 
 #include <pthread.h>
+#include <limits.h>
 
 
 /*!
@@ -124,14 +127,17 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 		return;
 	}
 
-	GLint w;
-	GLint h;
-	GLint stride;
-	uint8_t *data;
+	// To large stride for GLint.
+	if (frame->stride > INT_MAX) {
+		U_LOG_E("Stride unreasonable large!");
+		return;
+	}
 
-	w = frame->width;
-	h = frame->height;
-	stride = frame->stride;
+
+	GLint w = frame->width;
+	GLint h = frame->height;
+	GLint stride = (GLint)frame->stride;
+	uint8_t *data = frame->data;
 
 	if (tex->w != (uint32_t)w || tex->h != (uint32_t)h) {
 		tex->w = w;
@@ -144,7 +150,6 @@ gui_ogl_sink_update(struct gui_ogl_texture *tex)
 	}
 
 	tex->seq = frame->source_sequence;
-	data = frame->data;
 
 	switch (frame->format) {
 	case XRT_FORMAT_R8G8B8: update_r8g8b8(s, w, h, stride, data); break;
