@@ -542,7 +542,11 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->xcn = xcn;
 
 	// Passthrough our formats from the native compositor to the client.
-	size_t count = 0;
+	uint32_t count = 0;
+
+	// Make sure that we can fit all formats in the destination.
+	static_assert(ARRAY_SIZE(xcn->base.info.formats) == ARRAY_SIZE(c->base.base.info.formats), "mismatch");
+
 	for (uint32_t i = 0; i < xcn->base.info.format_count; i++) {
 		int64_t f = vk_format_to_gl(xcn->base.info.formats[i]);
 		if (f == 0) {
