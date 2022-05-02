@@ -16,9 +16,13 @@
 
 #include <stdio.h>
 
-#if defined(__GNUC__) && defined(__cplusplus)
+#if defined(__cplusplus) && (defined(__clang__) || defined(__GNUC__))
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wc99-designator"
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wpedantic"
+#elif defined(__clang__)
+#pragma GCC diagnostic ignored "-Wc++20-designator"
+#endif
 #endif
 
 #ifdef XRT_FEATURE_TRACING
@@ -182,6 +186,6 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 }
 #endif
 
-#if defined(__GNUC__) && defined(__cplusplus)
+#if defined(__cplusplus) && (defined(__clang__) || defined(__GNUC__))
 #pragma GCC diagnostic pop
 #endif
