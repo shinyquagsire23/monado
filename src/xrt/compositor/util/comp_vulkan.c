@@ -64,6 +64,37 @@ get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 	return true;
 }
 
+static bool
+get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+{
+	VkPhysicalDeviceIDProperties pdidp = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
+	};
+
+	VkPhysicalDeviceProperties2 pdp2 = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+	    .pNext = &pdidp,
+	};
+
+	VkPhysicalDevice phys[16];
+	uint32_t gpu_count = ARRAY_SIZE(phys);
+	VkResult ret;
+
+	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR_RET(vk, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
+		return false;
+	}
+
+	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	if (pdidp.deviceLUIDValid != VK_TRUE) {
+		return false;
+	}
+	memcpy(uuid->data, pdidp.deviceLUID, ARRAY_SIZE(uuid->data));
+
+	return true;
+}
+
 VkResult
 fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args, struct comp_vulkan_results *vk_res)
 {
@@ -98,6 +129,12 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 
 			// Trailing space above, means 'to' should be right next to '%s'.
 			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, uuid_str);
+
+			if (get_device_luid(vk, vk_res->client_gpu_index, &vk_res->client_gpu_deviceLUID)) {
+				vk_res->client_gpu_deviceLUID_valid = true;
+				snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), &vk_res->client_gpu_deviceLUID);
+				VK_DEBUG(vk, "  Device LUID: %s", uuid_str);
+			}
 		} else {
 			VK_ERROR(vk, "Failed to get device %d uuid", vk_res->client_gpu_index);
 		}

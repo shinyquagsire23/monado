@@ -75,6 +75,12 @@ struct comp_vulkan_results
 
 	//! Selected Vulkan device UUID to suggest to clients.
 	xrt_uuid_t client_gpu_deviceUUID;
+
+	//! The (Windows) LUID for the GPU device suggested for clients.
+	xrt_uuid_t client_gpu_deviceLUID;
+
+	//! Whether @ref client_gpu_deviceLUID is valid (probably only on Windows)
+	bool client_gpu_deviceLUID_valid;
 };
 
 /*!
