@@ -54,12 +54,13 @@ if(XRT_HAVE_OPENGLES)
 endif()
 
 if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
-	target_sources(st_oxr PRIVATE oxr_session_gfx_gl.c oxr_swapchain_gl.c)
+	target_sources(st_oxr PRIVATE oxr_swapchain_gl.c)
 	target_link_libraries(st_oxr PUBLIC aux_ogl)
 endif()
 
 if(XRT_HAVE_XLIB)
 	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_XLIB)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_gl_xlib.c)
 endif()
 
 if(XRT_HAVE_EGL)

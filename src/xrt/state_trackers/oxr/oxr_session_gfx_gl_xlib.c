@@ -1,4 +1,4 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -48,7 +48,5 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
 }
 
 #endif // XR_USE_PLATFORM_XLIB
-
-//! @todo add the other OpenGL graphics binding structs here
 
 #endif // XR_USE_GRAPHICS_API_OPENGL
