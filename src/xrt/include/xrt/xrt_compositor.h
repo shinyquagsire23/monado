@@ -1722,6 +1722,12 @@ struct xrt_system_compositor_info
 
 	//! The vk device suggested for Vulkan clients, never changes.
 	xrt_uuid_t client_vk_deviceUUID;
+
+	//! The (Windows) LUID for the GPU device suggested for D3D clients, never changes.
+	xrt_uuid_t client_d3d_deviceLUID;
+
+	//! Whether @ref client_d3d_deviceLUID is valid
+	bool client_d3d_deviceLUID_valid;
 };
 
 struct xrt_system_compositor;
