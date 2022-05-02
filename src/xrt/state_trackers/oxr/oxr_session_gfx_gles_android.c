@@ -1,4 +1,4 @@
-// Copyright 2018-2021, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,10 @@
  * @ingroup oxr_main
  * @ingroup comp_client
  */
+
+#ifndef XR_USE_GRAPHICS_API_OPENGL_ES
+#error "Must build this file with OpenGL ES enabled!"
+#endif
 
 #include <stdlib.h>
 
@@ -21,7 +25,6 @@
 
 #include "xrt/xrt_instance.h"
 
-#ifdef XR_USE_GRAPHICS_API_OPENGL_ES
 
 #include "ogl/ogl_api.h"
 #include "ogl/egl_api.h"
@@ -29,6 +32,7 @@
 #include "xrt/xrt_gfx_egl.h"
 
 #include <dlfcn.h>
+
 
 XrResult
 oxr_session_populate_gles_android(struct oxr_logger *log,
@@ -91,5 +95,3 @@ oxr_session_populate_gles_android(struct oxr_logger *log,
 
 	return XR_SUCCESS;
 }
-
-#endif

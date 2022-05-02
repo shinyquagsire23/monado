@@ -8,6 +8,10 @@
  * @ingroup comp_client
  */
 
+#ifndef XR_USE_GRAPHICS_API_VULKAN
+#error "Must build this file with Vulkan enabled!"
+#endif
+
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_gfx_vk.h"
 
