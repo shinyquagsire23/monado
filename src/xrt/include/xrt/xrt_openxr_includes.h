@@ -1,4 +1,4 @@
-// Copyright 2018-2019, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,14 +9,8 @@
 
 #pragma once
 
-#include <xrt/xrt_config_have.h>
-
 //! @todo Move these to the build system instead.
 #define XR_USE_TIMESPEC 1
-
-#ifdef XRT_HAVE_VULKAN
-#define XR_USE_GRAPHICS_API_VULKAN
-#endif
 
 #ifdef XR_USE_PLATFORM_ANDROID
 #include <jni.h>

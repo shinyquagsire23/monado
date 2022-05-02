@@ -42,6 +42,7 @@ add_library(
 	)
 
 if(XRT_HAVE_VULKAN)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_GRAPHICS_API_VULKAN)
 	target_sources(st_oxr PRIVATE oxr_session_gfx_vk.c oxr_swapchain_vk.c oxr_vulkan.c)
 	target_link_libraries(st_oxr PUBLIC Vulkan::Vulkan)
 endif()
