@@ -204,6 +204,8 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 		drv_rift_s STATIC
 		rift_s/rift_s_builder.c
 		rift_s/rift_s_interface.h
+		rift_s/rift_s_camera.c
+		rift_s/rift_s_camera.h
 		rift_s/rift_s_controller.c
 		rift_s/rift_s_controller.h
 		rift_s/rift_s_firmware.c
@@ -214,9 +216,14 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 		rift_s/rift_s_protocol.h
 		rift_s/rift_s_radio.c
 		rift_s/rift_s_radio.h
+		rift_s/rift_s_tracker.c
+		rift_s/rift_s_tracker.h
+		rift_s/rift_s_util.cpp
+		rift_s/rift_s_util.h
 		rift_s/rift_s.c
 		rift_s/rift_s.h
 		)
+	target_include_directories(drv_rift_s SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 	target_link_libraries(
 		drv_rift_s
 		PRIVATE
@@ -224,7 +231,8 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 			aux_util
 			aux_math
 			xrt-external-cjson
-	)
+			xrt-external-tinyceres
+		)
 	list(APPEND ENABLED_HEADSET_DRIVERS rift-s)
 endif()
 

@@ -317,76 +317,44 @@ rift_s_send_keepalive(struct os_hid_device *hid)
 	os_hid_set_feature(hid, buf, 6);
 }
 
-int
-rift_s_send_camera_report(struct os_hid_device *hid, bool enable, bool radio_sync_bit)
+void
+rift_s_protocol_camera_report_init(rift_s_camera_report_t *camera_report)
 {
-	/*
-	 *	 05 O1 O2 P1 P1 P2 P2 P3 P3 P4 P4 P5 P5 E1 E1 E3
-	 *	 E4 E5 U1 U2 U3 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3
-	 *	 A3 A4 A4 A4 A4 A5 A5 A5 A5
-	 *
-	 *	 O1 = Camera stream on (0x00 = off, 0x1 = on)
-	 *	 O2 = Radio Sync maybe?
-	 *	 Px = Vertical offset / position of camera x passthrough view
-	 *	 Ex = Exposure of camera x passthrough view
-	 *	 Ax = ? of camera x. 4 byte LE, Always seems to take values 0x3f0-0x4ff
-	 *        but I can't see the effect on the image
-	 *	 U1U2U3 = 26 00 40 always?
-	 */
-	unsigned char buf[41] = {
-#if 0
-		0x05, 0x01, 0x01, 0xb3, 0x36, 0xb3, 0x36, 0xb3, 0x36, 0xb3, 0x36, 0xb3, 0x36, 0xf0, 0xf0, 0xf0,
-		0xf0, 0xf0, 0x26, 0x00, 0x40, 0x7a, 0x04, 0x00, 0x00, 0xa7, 0x04, 0x00, 0x00, 0xa7, 0x04, 0x00,
-		0x00, 0xa5, 0x04, 0x00, 0x00, 0xa8, 0x04, 0x00, 0x00
-#else
-		0x05,
-		0x01,
-		0x01,
-		0xb3,
-		0x36,
-		0xb3,
-		0x36,
-		0xb3,
-		0x36,
-		0xb3,
-		0x36,
-		0xb3,
-		0x36,
-		0xf0,
-		0xf0,
-		0xf0,
-		0xf0,
-		0xf0,
-		0x26,
-		0x00,
-		0x40,
-		0x7a,
-		0x04,
-		0x00,
-		0x00,
-		0xa7,
-		0x04,
-		0x00,
-		0x00,
-		0xa7,
-		0x04,
-		0x00,
-		0x00,
-		0xa5,
-		0x04,
-		0x00,
-		0x00,
-		0xa8,
-		0x04,
-		0x00,
-		0x00
-#endif
-	};
+	int i;
 
-	buf[1] = enable ? 0x1 : 0x0;
-	buf[2] = radio_sync_bit ? 0x1 : 0x0;
+	/* One slot per camera: */
+	camera_report->id = 0x05;
+	camera_report->uvc_enable = 0x0;
+	camera_report->radio_sync_flag = 0x0;
 
-	return os_hid_set_feature(hid, buf, 41);
+	camera_report->marker[0] = 0x26;
+	camera_report->marker[1] = 0x0;
+	camera_report->marker[2] = 0x40;
+
+	for (i = 0; i < 5; i++) {
+		camera_report->slam_frame_exposures[i] = 0x36b3;
+		camera_report->slam_frame_gains[i] = 0xf0;
+		camera_report->unknown32[i] = 0x04bc;
+	}
+}
+
+int
+rift_s_protocol_send_camera_report(struct os_hid_device *hid, rift_s_camera_report_t *camera_report)
+{
+	return os_hid_set_feature(hid, (uint8_t *)camera_report, sizeof(*camera_report));
+}
+
+static int
+rift_s_enable_camera(struct os_hid_device *hid, bool enable, bool radio_sync_bit)
+{
+	rift_s_camera_report_t camera_report;
+
+	rift_s_protocol_camera_report_init(&camera_report);
+
+	camera_report.uvc_enable = enable ? 0x1 : 0x0;
+	camera_report.radio_sync_flag = radio_sync_bit ? 0x1 : 0x0;
+
+	return rift_s_protocol_send_camera_report(hid, &camera_report);
 }
 
 int
@@ -433,7 +401,7 @@ rift_s_read_firmware_version(struct os_hid_device *hid)
 }
 
 int
-rift_s_read_imu_config(struct os_hid_device *hid, rift_s_imu_config_t *imu_config)
+rift_s_read_imu_config_info(struct os_hid_device *hid, struct rift_s_imu_config_info_t *imu_config)
 {
 	uint8_t buf[FEATURE_BUFFER_SIZE];
 	int res;
@@ -442,7 +410,7 @@ rift_s_read_imu_config(struct os_hid_device *hid, rift_s_imu_config_t *imu_confi
 	if (res < 21)
 		return -1;
 
-	*imu_config = *(rift_s_imu_config_t *)buf;
+	*imu_config = *(struct rift_s_imu_config_info_t *)buf;
 
 	return 0;
 }
@@ -494,7 +462,7 @@ rift_s_hmd_enable(struct os_hid_device *hid, bool enable)
 	/* Send camera report with enable=true enables the streaming. The
 	 * 2nd byte seems something to do with sync, but doesn't always work,
 	 * not sure why yet. */
-	return rift_s_send_camera_report(hid, enable, false);
+	return rift_s_enable_camera(hid, enable, false);
 }
 
 /* Read the list of devices on the radio link */

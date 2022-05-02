@@ -21,8 +21,6 @@
 #include "xrt/xrt_device.h"
 
 #include "rift_s.h"
-#include "rift_s_protocol.h"
-#include "rift_s_firmware.h"
 
 /* Oculus Rift S HMD Internal Interface */
 #ifndef RIFT_S_HMD_H
@@ -33,33 +31,26 @@ struct rift_s_hmd
 	struct xrt_device base;
 
 	struct rift_s_system *sys;
+	/* HMD config info (belongs to the system, which we have a ref to */
+	struct rift_s_hmd_config *config;
 
-	/* 3DOF fusion */
-	struct os_mutex mutex;
+	/* Pose tracker provided by the system */
+	struct rift_s_tracker *tracker;
+
+	/* Tracking to extend 32-bit HMD time to 64-bit nanoseconds */
 	uint32_t last_imu_timestamp32; /* 32-bit µS device timestamp */
 	timepoint_ns last_imu_timestamp_ns;
-	timepoint_ns last_imu_local_timestamp_ns;
-	struct m_imu_3dof fusion;
-	struct xrt_pose pose;
-	struct xrt_vec3 raw_mag, raw_accel, raw_gyro;
 
 	/* Auxiliary state */
 	float temperature;
 	bool display_on;
-
-	/* Configuration / calibration info */
-	rift_s_panel_info_t panel_info;
-	rift_s_imu_config_t imu_config;
-	struct rift_s_imu_calibration imu_calibration;
-	int proximity_threshold;
-	struct rift_s_camera_calibration_block camera_calibration;
 
 	/* Temporary distortion values for mesh calc */
 	struct u_panotools_values distortion_vals[2];
 };
 
 struct rift_s_hmd *
-rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no);
+rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no, struct rift_s_hmd_config *config);
 void
 rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_hmd_report_t *report);
 void

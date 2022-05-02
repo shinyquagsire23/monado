@@ -62,14 +62,7 @@ rift_s_get_tracked_pose(struct xrt_device *xdev,
 
 	U_ZERO(out_relation);
 
-	// Estimate pose at timestamp at_timestamp_ns!
-	os_mutex_lock(&hmd->mutex);
-	math_quat_normalize(&hmd->pose.orientation);
-	out_relation->pose = hmd->pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                                               XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-	os_mutex_unlock(&hmd->mutex);
+	rift_s_tracker_get_tracked_pose(hmd->tracker, RIFT_S_TRACKER_POSE_DEVICE, at_timestamp_ns, out_relation);
 }
 
 static void
@@ -88,24 +81,28 @@ rift_s_get_view_poses(struct xrt_device *xdev,
 void
 rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_hmd_report_t *report)
 {
-	const uint32_t TICK_LEN_US = 1000000 / hmd->imu_config.imu_hz;
+	struct rift_s_imu_config_info_t *imu_config = &hmd->config->imu_config_info;
+	struct rift_s_imu_calibration *imu_calibration = &hmd->config->imu_calibration;
+
+	const uint32_t TICK_LEN_US = 1000000 / imu_config->imu_hz;
 	uint32_t dt = TICK_LEN_US;
 
-	os_mutex_lock(&hmd->mutex);
+	/* Check that there's at least 1 valid sample */
+	if (report->samples[0].marker & 0x80)
+		return;
 
 	if (hmd->last_imu_timestamp_ns != 0) {
 		/* Avoid wrap-around on 32-bit device times */
 		dt = report->timestamp - hmd->last_imu_timestamp32;
 	} else {
-		hmd->last_imu_timestamp_ns = report->timestamp;
+		hmd->last_imu_timestamp_ns = (timepoint_ns)(report->timestamp) * OS_NS_PER_USEC;
+		hmd->last_imu_timestamp32 = report->timestamp;
 	}
-	hmd->last_imu_timestamp32 = report->timestamp;
-	hmd->last_imu_local_timestamp_ns = local_ts;
 
-	const float gyro_scale = 1.0 / hmd->imu_config.gyro_scale;
-	const float accel_scale = MATH_GRAVITY_M_S2 / hmd->imu_config.accel_scale;
-	const float temperature_scale = 1.0 / hmd->imu_config.temperature_scale;
-	const float temperature_offset = hmd->imu_config.temperature_offset;
+	const float gyro_scale = 1.0 / imu_config->gyro_scale;
+	const float accel_scale = MATH_GRAVITY_M_S2 / imu_config->accel_scale;
+	const float temperature_scale = 1.0 / imu_config->temperature_scale;
+	const float temperature_offset = imu_config->temperature_offset;
 
 	for (int i = 0; i < 3; i++) {
 		rift_s_hmd_imu_sample_t *s = report->samples + i;
@@ -113,41 +110,43 @@ rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_h
 		if (s->marker & 0x80)
 			break; /* Sample (and remaining ones) are invalid */
 
-		struct xrt_vec3 gyro, accel;
+		struct xrt_vec3 raw_accel, raw_gyro;
+		struct xrt_vec3 accel, gyro;
 
-		gyro.x = DEG_TO_RAD(gyro_scale * s->gyro[0]);
-		gyro.y = DEG_TO_RAD(gyro_scale * s->gyro[1]);
-		gyro.z = DEG_TO_RAD(gyro_scale * s->gyro[2]);
+		raw_gyro.x = DEG_TO_RAD(gyro_scale * s->gyro[0]);
+		raw_gyro.y = DEG_TO_RAD(gyro_scale * s->gyro[1]);
+		raw_gyro.z = DEG_TO_RAD(gyro_scale * s->gyro[2]);
 
-		accel.x = accel_scale * s->accel[0];
-		accel.y = accel_scale * s->accel[1];
-		accel.z = accel_scale * s->accel[2];
+		raw_accel.x = accel_scale * s->accel[0];
+		raw_accel.y = accel_scale * s->accel[1];
+		raw_accel.z = accel_scale * s->accel[2];
 
 		/* Apply correction offsets first, then rectify */
-		accel = m_vec3_sub(accel, hmd->imu_calibration.accel.offset_at_0C);
-		gyro = m_vec3_sub(gyro, hmd->imu_calibration.gyro.offset);
+		accel = m_vec3_sub(raw_accel, imu_calibration->accel.offset_at_0C);
+		gyro = m_vec3_sub(raw_gyro, imu_calibration->gyro.offset);
 
-		math_matrix_3x3_transform_vec3(&hmd->imu_calibration.accel.rectification, &accel, &hmd->raw_accel);
-		math_matrix_3x3_transform_vec3(&hmd->imu_calibration.gyro.rectification, &gyro, &hmd->raw_gyro);
+		math_matrix_3x3_transform_vec3(&imu_calibration->accel.rectification, &raw_accel, &accel);
+		math_matrix_3x3_transform_vec3(&imu_calibration->gyro.rectification, &raw_gyro, &gyro);
 
 		/* FIXME: This doesn't seem to produce the right numbers, but it's OK - we don't use it anyway */
 		hmd->temperature = temperature_scale * (s->temperature - temperature_offset) + 25;
 
 #if 0
-		printf ("Sample %d dt %f accel %f %f %f gyro %f %f %f\n",
-			i, dt_sec, hmd->raw_accel.x, hmd->raw_accel.y, hmd->raw_accel.z,
-			hmd->raw_gyro.x, hmd->raw_gyro.y, hmd->raw_gyro.z);
+		RIFT_S_DEBUG("Sample %d dt %f ts %" PRIu64 " report ts %u "
+			"accel %f %f %f (len %f) gyro %f %f %f",
+			i, (double)(dt) / (1000000), hmd->last_imu_timestamp_ns,
+			report->timestamp,
+			accel.x, accel.y, accel.z, m_vec3_len(raw_accel),
+			gyro.x, gyro.y, gyro.z);
 #endif
 
-		// Do 3DOF fusion
-		m_imu_3dof_update(&hmd->fusion, hmd->last_imu_timestamp_ns, &hmd->raw_accel, &hmd->raw_gyro);
+		// Send the sample to the pose tracker
+		rift_s_tracker_imu_update(hmd->tracker, hmd->last_imu_timestamp_ns, local_ts, &accel, &gyro);
 
 		hmd->last_imu_timestamp_ns += (uint64_t)dt * OS_NS_PER_USEC;
+		hmd->last_imu_timestamp32 += dt;
 		dt = TICK_LEN_US;
 	}
-
-	hmd->pose.orientation = hmd->fusion.rot;
-	os_mutex_unlock(&hmd->mutex);
 }
 
 static bool
@@ -173,48 +172,6 @@ dump_fw_block(struct os_hid_device *handle, uint8_t block_id) {
 }
 #endif
 
-static int
-read_hmd_calibration(struct rift_s_hmd *hmd, struct os_hid_device *hid_hmd)
-{
-	char *json = NULL;
-	int json_len = 0;
-
-	int ret = rift_s_read_firmware_block(hid_hmd, RIFT_S_FIRMWARE_BLOCK_IMU_CALIB, &json, &json_len);
-	if (ret < 0)
-		return ret;
-
-	ret = rift_s_parse_imu_calibration(json, &hmd->imu_calibration);
-	free(json);
-
-	if (ret < 0)
-		return ret;
-
-	ret = rift_s_read_firmware_block(hid_hmd, RIFT_S_FIRMWARE_BLOCK_CAMERA_CALIB, &json, &json_len);
-	if (ret < 0)
-		return ret;
-
-	ret = rift_s_parse_camera_calibration_block(json, &hmd->camera_calibration);
-	free(json);
-
-	return ret;
-}
-
-static int
-rift_s_hmd_read_proximity_threshold(struct rift_s_hmd *hmd, struct os_hid_device *hid_hmd)
-{
-	char *json = NULL;
-	int json_len = 0;
-
-	int ret = rift_s_read_firmware_block(hid_hmd, RIFT_S_FIRMWARE_BLOCK_THRESHOLD, &json, &json_len);
-	if (ret < 0)
-		return ret;
-
-	ret = rift_s_parse_proximity_threshold(json, &hmd->proximity_threshold);
-	free(json);
-
-	return ret;
-}
-
 static void
 rift_s_hmd_destroy(struct xrt_device *xdev)
 {
@@ -230,18 +187,12 @@ rift_s_hmd_destroy(struct xrt_device *xdev)
 
 	u_var_remove_root(hmd);
 
-	m_imu_3dof_close(&hmd->fusion);
-
-	os_mutex_destroy(&hmd->mutex);
-
 	u_device_free(&hmd->base);
 }
 
 struct rift_s_hmd *
-rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no)
+rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no, struct rift_s_hmd_config *config)
 {
-	int ret;
-
 	DRV_TRACE_MARKER();
 
 	enum u_device_alloc_flags flags =
@@ -255,6 +206,8 @@ rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no)
 	/* Take a reference to the rift_s_system */
 	rift_s_system_reference(&hmd->sys, sys);
 
+	hmd->config = config;
+
 	hmd->base.tracking_origin = &sys->base;
 
 	hmd->base.update_inputs = rift_s_update_inputs;
@@ -263,16 +216,8 @@ rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no)
 	hmd->base.destroy = rift_s_hmd_destroy;
 	hmd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hmd->base.device_type = XRT_DEVICE_TYPE_HMD;
-	hmd->pose.orientation.w = 1.0f; // All other values set to zero by U_DEVICE_ALLOCATE (which calls U_CALLOC)
 
-	m_imu_3dof_init(&hmd->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
-
-	// Pose / state lock
-	ret = os_mutex_init(&hmd->mutex);
-	if (ret != 0) {
-		RIFT_S_ERROR("Failed to init mutex!");
-		goto cleanup;
-	}
+	hmd->tracker = rift_s_system_get_tracker(sys);
 
 	// Print name.
 	snprintf(hmd->base.str, XRT_DEVICE_NAME_LEN, "Oculus Rift S");
@@ -285,31 +230,9 @@ rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no)
 
 	struct os_hid_device *hid_hmd = rift_s_system_hid_handle(hmd->sys);
 
-	if (rift_s_read_panel_info(hid_hmd, &hmd->panel_info) < 0) {
-		RIFT_S_ERROR("Failed to read Rift S device info");
-		goto cleanup;
-	}
+	RIFT_S_DEBUG("Configuring firmware provided proximity sensor threshold %u", config->proximity_threshold);
 
-	if (rift_s_read_firmware_version(hid_hmd) < 0) {
-		RIFT_S_ERROR("Failed to read Rift S firmware version");
-		goto cleanup;
-	}
-
-	if (rift_s_read_imu_config(hid_hmd, &hmd->imu_config) < 0) {
-		RIFT_S_ERROR("Failed to read IMU configuration block");
-		goto cleanup;
-	}
-
-	if (read_hmd_calibration(hmd, hid_hmd) < 0)
-		goto cleanup;
-
-	/* Configure the proximity sensor threshold */
-	if (rift_s_hmd_read_proximity_threshold(hmd, hid_hmd) < 0)
-		goto cleanup;
-
-	RIFT_S_DEBUG("Configuring firmware provided proximity sensor threshold %u", hmd->proximity_threshold);
-
-	if (rift_s_protocol_set_proximity_threshold(hid_hmd, (uint16_t)hmd->proximity_threshold) < 0)
+	if (rift_s_protocol_set_proximity_threshold(hid_hmd, (uint16_t)config->proximity_threshold) < 0)
 		goto cleanup;
 
 #if 0
@@ -402,11 +325,8 @@ rift_s_hmd_create(struct rift_s_system *sys, const unsigned char *hmd_serial_no)
 	// Setup variable tracker: Optional but useful for debugging
 	u_var_add_root(hmd, "Oculus Rift S", true);
 
-	u_var_add_gui_header(hmd, NULL, "Tracking");
-	u_var_add_pose(hmd, &hmd->pose, "pose");
-
-	u_var_add_gui_header(hmd, NULL, "3DoF Tracking");
-	m_imu_3dof_add_vars(&hmd->fusion, hmd, "");
+	/* Add tracker variables to the HMD debug */
+	rift_s_tracker_add_debug_ui(hmd->tracker, hmd);
 
 	u_var_add_gui_header(hmd, NULL, "Misc");
 	u_var_add_log_level(hmd, &rift_s_log_level, "log_level");

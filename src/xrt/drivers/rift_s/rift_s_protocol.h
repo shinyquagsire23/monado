@@ -179,6 +179,35 @@ typedef struct
 	int16_t unknown_zero2;
 } rift_s_hmd_report_t;
 
+/* Read/Write using report 5 */
+/*
+ *    05 O1 O2 P1 P1 P2 P2 P3 P3 P4 P4 P5 P5 E1 E1 E3
+ *    E4 E5 U1 U2 U3 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3
+ *    A3 A4 A4 A4 A4 A5 A5 A5 A5
+ *
+ *    O1 = Camera stream on (0x00 = off, 0x1 = on)
+ *    O2 = Radio Sync? (Usage not clear, but seems to sometimes affect sync)
+ *    Px = Exposure *and* Vertical offset / position of camera x passthrough view
+ *         Seems to take values from 0x1db7-0x36b3. Values above 0x36c6 are ignored.
+ *    Ex = Gain of camera x passthrough view
+ *    U1U2U3 = 26 00 40 always?
+ *    Ax = ? of camera x. 4 byte LE, Always seems to take values 0x3b0-0x4ff
+ *         but I can't see the effect on the images, either controller or passthrough
+ */
+typedef struct
+{
+	uint8_t id;
+	uint8_t uvc_enable;
+	uint8_t radio_sync_flag;
+	/* One slot per camera: */
+	uint16_t slam_frame_exposures[5];
+	uint8_t slam_frame_gains[5];
+
+	uint8_t marker[3]; // 0x26 0x00 0x40
+
+	uint32_t unknown32[5];
+} rift_s_camera_report_t;
+
 /* Read using report 6 */
 typedef struct
 {
@@ -191,7 +220,7 @@ typedef struct
 } rift_s_panel_info_t;
 
 /* Read using report 9 */
-typedef struct
+struct rift_s_imu_config_info_t
 {
 	uint8_t cmd;
 	uint32_t imu_hz;
@@ -199,7 +228,7 @@ typedef struct
 	float accel_scale;       /* Accel = reading * g / accel_scale */
 	float temperature_scale; /* Temperature = reading / scale + offset */
 	float temperature_offset;
-} rift_s_imu_config_t;
+};
 
 /* Packet read from endpoint 11 (0x0b) */
 typedef struct
@@ -241,7 +270,7 @@ rift_s_read_firmware_version(struct os_hid_device *hid);
 int
 rift_s_read_panel_info(struct os_hid_device *hid, rift_s_panel_info_t *panel_info);
 int
-rift_s_read_imu_config(struct os_hid_device *hid, rift_s_imu_config_t *imu_config);
+rift_s_read_imu_config_info(struct os_hid_device *hid, struct rift_s_imu_config_info_t *imu_config);
 int
 rift_s_read_fw_proximity_threshold(struct os_hid_device *hid, int *proximity_threshold);
 int
@@ -253,6 +282,12 @@ rift_s_set_screen_enable(struct os_hid_device *hid, bool enable);
 
 void
 rift_s_send_keepalive(struct os_hid_device *hid);
+
+void
+rift_s_protocol_camera_report_init(rift_s_camera_report_t *camera_report);
+int
+rift_s_protocol_send_camera_report(struct os_hid_device *hid, rift_s_camera_report_t *camera_report);
+
 bool
 rift_s_parse_hmd_report(rift_s_hmd_report_t *report, const unsigned char *buf, int size);
 bool

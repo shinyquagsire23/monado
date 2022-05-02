@@ -20,8 +20,6 @@
 #include "math/m_mathinclude.h"
 #include "math/m_api.h"
 
-#include "rift_s.h"
-
 enum rift_s_firmware_block
 {
 	RIFT_S_FIRMWARE_BLOCK_SERIAL_NUM = 0x0B,
@@ -32,7 +30,7 @@ enum rift_s_firmware_block
 	RIFT_S_FIRMWARE_BLOCK_LENS_CALIB = 0x12
 };
 
-enum rift_s_camera_ids
+enum rift_s_camera_id
 {
 	RIFT_S_CAMERA_TOP = 0x0,
 	RIFT_S_CAMERA_SIDE_LEFT = 0x1,

@@ -26,8 +26,6 @@
 #include "rift_s_radio.h"
 #include "rift_s_protocol.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 /* Struct that forms a double linked queue of pending commands,
  * with the head being the currently active command */
 struct rift_s_radio_command

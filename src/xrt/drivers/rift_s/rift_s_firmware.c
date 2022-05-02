@@ -22,6 +22,7 @@
 #include "util/u_json.h"
 #include "util/u_misc.h"
 
+#include "rift_s.h"
 #include "rift_s_firmware.h"
 
 #define JSON_INT(a, b, c) u_json_get_int(u_json_get(a, b), c)

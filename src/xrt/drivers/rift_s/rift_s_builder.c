@@ -14,6 +14,7 @@
 
 #include "os/os_hid.h"
 
+#include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_prober.h"
 
 #include "util/u_builders.h"
@@ -22,6 +23,10 @@
 #include "util/u_logging.h"
 #include "util/u_system_helpers.h"
 #include "util/u_trace_marker.h"
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#include "ht_ctrl_emu/ht_ctrl_emu_interface.h"
+#endif
 
 #include "rift_s_interface.h"
 #include "rift_s.h"
@@ -136,23 +141,40 @@ rift_s_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 		goto fail;
 	}
 
-	struct rift_s_system *sys = rift_s_system_create(hmd_serial_no, hid_hmd, hid_status, hid_controllers);
+	struct rift_s_system *sys = rift_s_system_create(xp, hmd_serial_no, hid_hmd, hid_status, hid_controllers);
 	if (sys == NULL) {
 		RIFT_S_ERROR("Failed to initialise Oculus Rift S driver");
 		goto fail;
 	}
 
-	struct xrt_device *xdev = rift_s_system_get_hmd(sys);
-	usysd->base.xdevs[usysd->base.xdev_count++] = xdev;
-	usysd->base.roles.head = xdev;
+	struct xrt_device *hmd_xdev = rift_s_system_get_hmd(sys);
+	usysd->base.xdevs[usysd->base.xdev_count++] = hmd_xdev;
+	usysd->base.roles.head = hmd_xdev;
 
-	xdev = rift_s_system_get_controller(sys, 0);
+	struct xrt_device *xdev = rift_s_system_get_controller(sys, 0);
 	usysd->base.xdevs[usysd->base.xdev_count++] = xdev;
 	usysd->base.roles.left = xdev;
 
 	xdev = rift_s_system_get_controller(sys, 1);
 	usysd->base.xdevs[usysd->base.xdev_count++] = xdev;
 	usysd->base.roles.right = xdev;
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	struct xrt_device *ht_xdev = rift_s_system_get_hand_tracking_device(sys);
+	if (ht_xdev != NULL) {
+		// Create hand-tracked controllers
+		RIFT_S_DEBUG("Creating emulated hand tracking controllers");
+
+		struct xrt_device *two_hands[2];
+		cemu_devices_create(hmd_xdev, ht_xdev, two_hands);
+
+		usysd->base.roles.hand_tracking.left = two_hands[0];
+		usysd->base.roles.hand_tracking.right = two_hands[1];
+
+		usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[0];
+		usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[1];
+	}
+#endif
 
 	*out_xsysd = &usysd->base;
 
