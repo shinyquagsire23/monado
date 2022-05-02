@@ -58,7 +58,7 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 	target_link_libraries(st_oxr PUBLIC aux_ogl)
 endif()
 
-if(XRT_HAVE_XLIB)
+if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
 	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_XLIB)
 	target_sources(st_oxr PRIVATE oxr_session_gfx_gl_xlib.c)
 endif()
