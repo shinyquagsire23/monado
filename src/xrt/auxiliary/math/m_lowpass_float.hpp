@@ -49,7 +49,7 @@ namespace detail {
 		 * before initializing the filter with the first sample.
 		 */
 		explicit LowPassIIR(Scalar cutoff_hz, Value const &val) noexcept
-		    : state(val), time_constant(1.f / (2.f * M_PI * cutoff_hz))
+		    : state(val), time_constant(static_cast<Scalar>(1.f / (2.f * M_PI * cutoff_hz)))
 		{}
 
 		/*!
@@ -82,7 +82,7 @@ namespace detail {
 				return;
 			}
 			// get dt in seconds
-			Scalar dt = time_ns_to_s(timestamp_ns - filter_timestamp_ns);
+			Scalar dt = static_cast<Scalar>(time_ns_to_s(timestamp_ns - filter_timestamp_ns));
 			//! @todo limit max dt?
 			Scalar weighted = dt * weight;
 			Scalar alpha = weighted / (time_constant + weighted);
