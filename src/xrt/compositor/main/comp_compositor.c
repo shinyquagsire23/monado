@@ -725,12 +725,16 @@ compositor_init_vulkan(struct comp_compositor *c)
 	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID.data) == XRT_UUID_SIZE, "array size mismatch");
 	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceUUID.data) == ARRAY_SIZE(c->settings.client_gpu_deviceUUID.data), "array size mismatch");
 	static_assert(ARRAY_SIZE(vk_res.selected_gpu_deviceUUID.data) == ARRAY_SIZE(c->settings.selected_gpu_deviceUUID.data), "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceLUID.data) == XRT_UUID_SIZE, "array size mismatch");
+	static_assert(ARRAY_SIZE(vk_res.client_gpu_deviceLUID.data) == ARRAY_SIZE(c->settings.client_gpu_deviceLUID.data), "array size mismatch");
 	// clang-format on
 
 	c->settings.client_gpu_deviceUUID = vk_res.client_gpu_deviceUUID;
 	c->settings.selected_gpu_deviceUUID = vk_res.selected_gpu_deviceUUID;
 	c->settings.client_gpu_index = vk_res.client_gpu_index;
 	c->settings.selected_gpu_index = vk_res.selected_gpu_index;
+	c->settings.client_gpu_deviceLUID = vk_res.client_gpu_deviceLUID;
+	c->settings.client_gpu_deviceLUID_valid = vk_res.client_gpu_deviceLUID_valid;
 
 	return true;
 }
