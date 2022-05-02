@@ -461,6 +461,10 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		if (log_level <= U_LOGGING_DEBUG) {
 			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), (xrt_uuid_t *)pdidp.deviceUUID);
 			oxr_log(log, "GPU: #%d, uuid: %s", i, uuid_str);
+			if (pdidp.deviceLUIDValid == VK_TRUE) {
+				snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), (xrt_uuid_t *)pdidp.deviceLUID);
+				oxr_log(log, "  LUID: %s", uuid_str);
+			}
 		}
 
 		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID.data, XRT_UUID_SIZE) == 0) {
