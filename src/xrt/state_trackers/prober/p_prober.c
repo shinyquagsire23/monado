@@ -985,7 +985,7 @@ p_open_hid_interface(struct xrt_prober *xp,
 
 #elif defined(XRT_OS_WINDOWS)
 	(void)ret;
-	U_LOG_E("HID devices not supported on Windows, can not open interface (%i)", interface);
+	U_LOG_E("HID devices not yet supported on Windows, can not open interface (%i)", interface);
 	return -1;
 #else
 #error "no port of hid code"
