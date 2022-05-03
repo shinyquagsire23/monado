@@ -362,27 +362,37 @@ swapchain_allocator_create(struct ipc_client_compositor *icc,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
 {
-	struct xrt_image_native images[3];
-	uint32_t image_count = (uint32_t)ARRAY_SIZE(images);
+	struct xrt_swapchain_create_properties xsccp = {0};
+	struct xrt_image_native *images = NULL;
 	xrt_result_t xret;
 
-	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
-		image_count = 1;
+	// Get any needed properties.
+	xret = ipc_compositor_get_swapchain_create_properties(&icc->base.base, info, &xsccp);
+	if (xret != XRT_SUCCESS) {
+		// IPC error already reported.
+		return xret;
 	}
 
-	xret = xrt_images_allocate(xina, info, image_count, images);
+	// Alloc the array of structs for the images.
+	images = U_TYPED_ARRAY_CALLOC(struct xrt_image_native, xsccp.image_count);
+
+	// Now allocate the images themselves
+	xret = xrt_images_allocate(xina, info, xsccp.image_count, images);
 	if (xret != XRT_SUCCESS) {
-		return xret;
+		goto out_free;
 	}
 
 	/*
 	 * The import function takes ownership of the handles,
 	 * we do not need free them if the call succeeds.
 	 */
-	xret = swapchain_server_import(icc, info, images, image_count, out_xsc);
+	xret = swapchain_server_import(icc, info, images, xsccp.image_count, out_xsc);
 	if (xret != XRT_SUCCESS) {
-		xrt_images_free(xina, image_count, images);
+		xrt_images_free(xina, xsccp.image_count, images);
 	}
+
+out_free:
+	free(images);
 
 	return xret;
 }
