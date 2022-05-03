@@ -731,6 +731,20 @@ ipc_handle_system_toggle_io_device(volatile struct ipc_client_state *ics, uint32
 }
 
 xrt_result_t
+ipc_handle_swapchain_get_properties(volatile struct ipc_client_state *ics,
+                                    const struct xrt_swapchain_create_info *info,
+                                    struct xrt_swapchain_create_properties *xsccp)
+{
+	IPC_TRACE_MARKER();
+
+	if (ics->xc == NULL) {
+		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
+	}
+
+	return xrt_comp_get_swapchain_create_properties(ics->xc, info, xsccp);
+}
+
+xrt_result_t
 ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
                             const struct xrt_swapchain_create_info *info,
                             uint32_t *out_id,

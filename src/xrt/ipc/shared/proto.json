@@ -130,6 +130,15 @@
 		]
 	},
 
+	"swapchain_get_properties": {
+		"in": [
+			{"name": "info", "type": "const struct xrt_swapchain_create_info"}
+		],
+		"out": [
+			{"name": "xsccp", "type": "struct xrt_swapchain_create_properties"}
+		]
+	},
+
 	"swapchain_create": {
 		"in": [
 			{"name": "info", "type": "const struct xrt_swapchain_create_info"}

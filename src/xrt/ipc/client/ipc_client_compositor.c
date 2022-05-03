@@ -251,6 +251,17 @@ ipc_client_compositor_semaphore_destroy(struct xrt_compositor_semaphore *xcsem)
  *
  */
 
+static xrt_result_t
+ipc_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                               const struct xrt_swapchain_create_info *info,
+                                               struct xrt_swapchain_create_properties *xsccp)
+{
+	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
+
+	IPC_CALL_CHK(ipc_call_swapchain_get_properties(icc->ipc_c, info, xsccp));
+
+	return res;
+}
 
 static xrt_result_t
 swapchain_server_create(struct ipc_client_compositor *icc,
@@ -781,6 +792,7 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 static void
 ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_native **out_xcn)
 {
+	icc->base.base.get_swapchain_create_properties = ipc_compositor_get_swapchain_create_properties;
 	icc->base.base.create_swapchain = ipc_compositor_swapchain_create;
 	icc->base.base.import_swapchain = ipc_compositor_swapchain_import;
 	icc->base.base.create_semaphore = ipc_compositor_semaphore_create;
