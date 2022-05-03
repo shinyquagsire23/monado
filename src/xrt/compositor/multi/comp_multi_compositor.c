@@ -353,6 +353,18 @@ push_semaphore_to_wait_thread(struct multi_compositor *mc,
  */
 
 static xrt_result_t
+multi_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                                 const struct xrt_swapchain_create_info *info,
+                                                 struct xrt_swapchain_create_properties *xsccp)
+{
+	COMP_TRACE_MARKER();
+
+	struct multi_compositor *mc = multi_compositor(xc);
+
+	return xrt_comp_get_swapchain_create_properties(&mc->msc->xcn->base, info, xsccp);
+}
+
+static xrt_result_t
 multi_compositor_create_swapchain(struct xrt_compositor *xc,
                                   const struct xrt_swapchain_create_info *info,
                                   struct xrt_swapchain **out_xsc)
@@ -838,6 +850,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 
 	struct multi_compositor *mc = U_TYPED_CALLOC(struct multi_compositor);
 
+	mc->base.base.get_swapchain_create_properties = multi_compositor_get_swapchain_create_properties;
 	mc->base.base.create_swapchain = multi_compositor_create_swapchain;
 	mc->base.base.import_swapchain = multi_compositor_import_swapchain;
 	mc->base.base.import_fence = multi_compositor_import_fence;
