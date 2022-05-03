@@ -684,6 +684,17 @@ struct xrt_swapchain_create_info
 };
 
 /*!
+ * Struct used to negotiate properties of a swapchain that is created outside
+ * of the compositor. Often used by a client compositor or IPC layer to allocate
+ * the swapchain images and then pass them into the native compositor.
+ */
+struct xrt_swapchain_create_properties
+{
+	//! How many images the compositor want in the swapchain.
+	uint32_t image_count;
+};
+
+/*!
  * Session information, mostly overlay extension data.
  */
 struct xrt_session_info
@@ -721,6 +732,14 @@ struct xrt_compositor
 	 * Capabilities and recommended values information.
 	 */
 	struct xrt_compositor_info info;
+
+	/*!
+	 * For a given @ref xrt_swapchain_create_info struct returns a filled
+	 * out @ref xrt_swapchain_create_properties.
+	 */
+	xrt_result_t (*get_swapchain_create_properties)(struct xrt_compositor *xc,
+	                                                const struct xrt_swapchain_create_info *info,
+	                                                struct xrt_swapchain_create_properties *xsccp);
 
 	/*!
 	 * Create a swapchain with a set of images.
@@ -1052,6 +1071,21 @@ struct xrt_compositor
 	 */
 	void (*destroy)(struct xrt_compositor *xc);
 };
+
+/*!
+ * @copydoc xrt_compositor::get_swapchain_create_properties
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_compositor
+ */
+static inline xrt_result_t
+xrt_comp_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                         const struct xrt_swapchain_create_info *info,
+                                         struct xrt_swapchain_create_properties *xsccp)
+{
+	return xc->get_swapchain_create_properties(xc, info, xsccp);
+}
 
 /*!
  * @copydoc xrt_compositor::create_swapchain
