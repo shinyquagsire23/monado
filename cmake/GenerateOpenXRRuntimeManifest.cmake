@@ -65,19 +65,24 @@ function(generate_openxr_runtime_manifest_buildtree)
     endif()
 
     # Set template values
-    # SHELL_PATH isn't perfect here, we actually always want backslashes on Windows,
-    # but it's the closest we have in generator expressions.
-    set(runtime_path $<SHELL_PATH:$<TARGET_FILE:${_genmanifest_RUNTIME_TARGET}>>)
-
-    # Need this step because file(GENERATE) only evaluates generator expressions, and not what configure_file does.
-    set(_intermediate
+    set(_genmanifest_INTERMEDIATE_MANIFEST
         ${CMAKE_CURRENT_BINARY_DIR}/intermediate_manifest_buildtree_${_genmanifest_RUNTIME_TARGET}.json
     )
-    configure_file("${_genmanifest_MANIFEST_TEMPLATE}" "${_intermediate}" @ONLY)
-    file(
-        GENERATE
-        OUTPUT "${_genmanifest_OUT_FILE}"
-        INPUT "${_intermediate}")
+    set(_genmanifest_IS_INSTALL OFF)
+
+    set(_script
+        ${CMAKE_CURRENT_BINARY_DIR}/make_build_manifest_${_genmanifest_RUNTIME_TARGET}.cmake
+    )
+    configure_file("${_OXR_MANIFEST_SCRIPT}" "${_script}" @ONLY)
+    add_custom_command(
+        TARGET ${_genmanifest_RUNTIME_TARGET}
+        POST_BUILD
+        BYPRODUCTS "${_genmanifest_OUT_FILE}"
+        # "${_genmanifest_INTERMEDIATE_MANIFEST}"
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DRUNTIME_PATH=$<TARGET_FILE:${_genmanifest_RUNTIME_TARGET}>" -P
+            "${_script}" DEPENDS "${_script}")
 endfunction()
 
 function(generate_openxr_runtime_manifest_at_install)
@@ -106,7 +111,7 @@ function(generate_openxr_runtime_manifest_at_install)
     endif()
     set(_genmanifest_INTERMEDIATE_MANIFEST
         "${CMAKE_CURRENT_BINARY_DIR}/${_genmanifest_OUT_FILENAME}")
-
+    set(_genmanifest_IS_INSTALL ON)
     # Template value
     set(RUNTIME_FILENAME
         ${CMAKE_SHARED_MODULE_PREFIX}${_genmanifest_RUNTIME_TARGET}${CMAKE_SHARED_MODULE_SUFFIX}
