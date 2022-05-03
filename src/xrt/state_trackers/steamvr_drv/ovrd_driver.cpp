@@ -32,8 +32,10 @@ extern "C" {
 #include "bindings/b_generated_bindings.h"
 }
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
 
 //! When set, all controllers pretend to be Index controllers. Provides best
 //! compatibility with legacy games due to steamvr's legacy binding for Index
@@ -1420,4 +1422,6 @@ ovrd_hmd_driver_impl(const char *pInterfaceName, int *pReturnCode)
 	return NULL;
 }
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
