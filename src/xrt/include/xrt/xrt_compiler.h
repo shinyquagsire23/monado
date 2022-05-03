@@ -18,16 +18,9 @@
 #include <stdbool.h>
 
 #ifdef _MSC_VER
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif // !WIN32_LEAN_AND_MEAN
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif // !NOMINMAX
-
 #include <intrin.h>
 // for atomic intrinsics
-#include <windows.h>
+#include "xrt_windows.h"
 #endif // _MSC_VER
 
 /*!
