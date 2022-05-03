@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,8 +9,9 @@
  */
 
 #include "ovrd_interface.h"
+#include "xrt/xrt_config_os.h"
 
-#if defined(_WIN32)
+#if defined(XRT_OS_WINDOWS)
 #define HMD_DLL_EXPORT __declspec(dllexport)
 #define HMD_DLL_IMPORT __declspec(dllimport)
 #elif defined(__GNUC__) || defined(COMPILER_GCC) || defined(__APPLE__)
