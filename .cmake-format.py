@@ -20,6 +20,10 @@ with section("parse"):
             "kwargs": {"MANIFEST_TEMPLATE": 1, "OUT_FILE": 1, "RUNTIME_TARGET": 1},
             "pargs": {"flags": [], "nargs": "*"},
         },
+        "option_with_deps": {
+            "kwargs": {"DEFAULT": 1, "DEPENDS": "+"},
+            "pargs": {"flags": [], "nargs": "2+"},
+        },
     }
 
 with section("format"):

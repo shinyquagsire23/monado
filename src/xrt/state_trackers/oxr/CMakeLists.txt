@@ -88,8 +88,11 @@ target_link_libraries(
 	PUBLIC aux_os
 	)
 
-if(DEFINED XRT_FEATURE_RENDERDOC)
-	target_link_libraries(st_oxr PRIVATE xrt-external-renderdoc)
+if(XRT_FEATURE_RENDERDOC)
+	target_link_libraries(st_oxr PUBLIC xrt-external-renderdoc)
+	if(XRT_HAVE_LINUX)
+		target_link_libraries(st_oxr PRIVATE ${CMAKE_DL_LIBS})
+	endif()
 endif()
 
 target_include_directories(

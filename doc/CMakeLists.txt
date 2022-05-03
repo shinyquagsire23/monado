@@ -1,16 +1,21 @@
-# Copyright 2018-2020, Collabora, Ltd.
+# Copyright 2018-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 # check if Doxygen is installed
 find_package(Doxygen)
 
-# cmake-format: off
-
-cmake_dependent_option(BUILD_DOC "Build documentation" ON "DOXYGEN_FOUND" OFF)
-cmake_dependent_option(BUILD_DOC_WARN_UNDOCUMENTED "Warn on undocumented entities when building documentation" OFF "DOXYGEN_FOUND" OFF)
-cmake_dependent_option(BUILD_DOC_EXTRACT_ALL "Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)" ON "DOXYGEN_FOUND AND NOT BUILD_DOC_WARN_UNDOCUMENTED" OFF)
-
-# cmake-format: on
+option_with_deps(BUILD_DOC "Build documentation" DEPENDS DOXYGEN_FOUND)
+option_with_deps(
+	BUILD_DOC_WARN_UNDOCUMENTED "Warn on undocumented entities when building documentation"
+	DEFAULT OFF
+	DEPENDS DOXYGEN_FOUND
+	)
+option_with_deps(
+	BUILD_DOC_EXTRACT_ALL
+	"Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)"
+	DEFAULT OFF
+	DEPENDS DOXYGEN_FOUND "NOT BUILD_DOC_WARN_UNDOCUMENTED"
+	)
 
 if(BUILD_DOC)
 	if(BUILD_DOC_WARN_UNDOCUMENTED)
