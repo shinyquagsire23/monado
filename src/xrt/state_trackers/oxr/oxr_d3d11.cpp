@@ -51,6 +51,10 @@ oxr_d3d11_get_requirements(struct oxr_logger *log,
 		if (sys->xsysc->info.client_d3d_deviceLUID_valid) {
 			sys->suggested_d3d_luid =
 			    reinterpret_cast<const LUID &>(sys->xsysc->info.client_d3d_deviceLUID);
+			if (nullptr == getAdapterByLUID(sys->xsysc->info.client_d3d_deviceLUID, U_LOGGING_INFO)) {
+				return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+				                 " failure enumerating adapter for LUID specified for use.");
+			}
 		} else {
 			auto adapter = getAdapterByIndex(0, U_LOGGING_INFO);
 			if (adapter == nullptr) {
