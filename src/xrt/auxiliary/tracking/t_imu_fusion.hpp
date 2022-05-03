@@ -214,7 +214,7 @@ SimpleIMUFusion::getPredictedQuat(timepoint_ns timestamp) const
 		return Eigen::Quaterniond::Identity();
 	}
 	time_duration_ns delta_ns = timestamp - state_time;
-	float dt = time_ns_to_s(delta_ns);
+	double dt = time_ns_to_s(delta_ns);
 	return quat_ * flexkalman::util::quat_exp(angVel_ * dt * 0.5);
 }
 inline bool
@@ -227,13 +227,14 @@ SimpleIMUFusion::handleGyro(Eigen::Vector3d const &gyro, timepoint_ns timestamp)
 		    "report");
 		return false;
 	}
-	time_duration_ns delta_ns = (last_gyro_timestamp_ == 0) ? 1e6 : timestamp - last_gyro_timestamp_;
+	time_duration_ns delta_ns =
+	    (last_gyro_timestamp_ == 0) ? (time_duration_ns)1e6 : timestamp - last_gyro_timestamp_;
 	if (delta_ns > 1e10) {
 
 		SIMPLE_IMU_DEBUG("Clamping integration period");
 		// Limit integration to 1/10th of a second
 		// Does not affect updating the last gyro timestamp.
-		delta_ns = 1e10;
+		delta_ns = (time_duration_ns)1e10;
 	}
 	float dt = time_ns_to_s(delta_ns);
 	last_gyro_timestamp_ = timestamp;
