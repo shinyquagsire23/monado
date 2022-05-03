@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_config_os.h"
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"
@@ -33,7 +34,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(negotiate, "OXR_DEBUG_NEGOTIATE", false)
 	} while (false)
 
 
-#ifdef _WIN32
+#ifdef XRT_OS_WINDOWS
 __declspec(dllexport) XRAPI_ATTR XrResult XRAPI_CALL
     xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
                                       XrNegotiateRuntimeRequest *runtimeRequest);
