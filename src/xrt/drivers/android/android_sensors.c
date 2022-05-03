@@ -85,7 +85,7 @@ android_sensor_callback(int fd, int events, void *data)
 static inline int32_t
 android_get_sensor_poll_rate(const struct android_device *d)
 {
-	const float freq_multiplier = 3.0f;
+	const float freq_multiplier = 1.0f / 3.0f;
 	return (d == NULL) ? POLL_RATE_USEC
 	                   : (int32_t)(d->base.hmd->screens[0].nominal_frame_interval_ns * freq_multiplier * 0.001f);
 }
@@ -227,14 +227,6 @@ android_device_create()
 
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
-	// Everything done, finally start the thread.
-	int ret = os_thread_helper_start(&d->oth, android_run_thread, d);
-	if (ret != 0) {
-		ANDROID_ERROR(d, "Failed to start thread!");
-		android_device_destroy(&d->base);
-		return NULL;
-	}
-
 	struct xrt_android_display_metrics metrics;
 	if (!android_custom_surface_get_display_metrics(android_globals_get_vm(), android_globals_get_activity(),
 	                                                &metrics)) {
@@ -247,6 +239,14 @@ android_device_create()
 	}
 
 	d->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / metrics.refresh_rate);
+
+	// Everything done, finally start the thread.
+	int ret = os_thread_helper_start(&d->oth, android_run_thread, d);
+	if (ret != 0) {
+		ANDROID_ERROR(d, "Failed to start thread!");
+		android_device_destroy(&d->base);
+		return NULL;
+	}
 
 	const uint32_t w_pixels = metrics.width_pixels;
 	const uint32_t h_pixels = metrics.height_pixels;
