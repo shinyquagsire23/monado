@@ -48,13 +48,28 @@ do_single_layer(struct xrt_compositor *xc,
  */
 
 static xrt_result_t
+base_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                     const struct xrt_swapchain_create_info *info,
+                                     struct xrt_swapchain_create_properties *xsccp)
+{
+	return comp_swapchain_get_create_properties(info, xsccp);
+}
+
+static xrt_result_t
 base_create_swapchain(struct xrt_compositor *xc,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_swapchain **out_xsc)
 {
 	struct comp_base *cb = comp_base(xc);
 
-	return comp_swapchain_create(&cb->vk, &cb->cscgc, info, out_xsc);
+	/*
+	 * In case the default get properties function have been overridden
+	 * make sure to correctly dispatch the call to get the properties.
+	 */
+	struct xrt_swapchain_create_properties xsccp = {0};
+	xrt_comp_get_swapchain_create_properties(xc, info, &xsccp);
+
+	return comp_swapchain_create(&cb->vk, &cb->cscgc, info, &xsccp, out_xsc);
 }
 
 static xrt_result_t
@@ -243,6 +258,7 @@ base_wait_frame(struct xrt_compositor *xc,
 void
 comp_base_init(struct comp_base *cb)
 {
+	cb->base.base.get_swapchain_create_properties = base_get_swapchain_create_properties;
 	cb->base.base.create_swapchain = base_create_swapchain;
 	cb->base.base.import_swapchain = base_import_swapchain;
 	cb->base.base.create_semaphore = base_create_semaphore;

@@ -124,9 +124,19 @@ comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc);
  * @ingroup comp_util
  */
 xrt_result_t
+comp_swapchain_get_create_properties(const struct xrt_swapchain_create_info *info,
+                                     struct xrt_swapchain_create_properties *xsccp);
+
+/*!
+ * A compositor function that is implemented in the swapchain code.
+ *
+ * @ingroup comp_util
+ */
+xrt_result_t
 comp_swapchain_create(struct vk_bundle *vk,
                       struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
+                      const struct xrt_swapchain_create_properties *xsccp,
                       struct xrt_swapchain **out_xsc);
 
 /*!

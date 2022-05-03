@@ -256,12 +256,28 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
  */
 
 xrt_result_t
+comp_swapchain_get_create_properties(const struct xrt_swapchain_create_info *info,
+                                     struct xrt_swapchain_create_properties *xsccp)
+{
+	uint32_t image_count = 3;
+
+	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
+		image_count = 1;
+	}
+
+	U_ZERO(xsccp);
+	xsccp->image_count = image_count;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
 comp_swapchain_create(struct vk_bundle *vk,
                       struct comp_swapchain_gc *cscgc,
                       const struct xrt_swapchain_create_info *info,
+                      const struct xrt_swapchain_create_properties *xsccp,
                       struct xrt_swapchain **out_xsc)
 {
-	uint32_t image_count = 3;
 	VkResult ret;
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
@@ -271,18 +287,14 @@ comp_swapchain_create(struct vk_bundle *vk,
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 	}
 
-	if ((info->create & XRT_SWAPCHAIN_CREATE_STATIC_IMAGE) != 0) {
-		image_count = 1;
-	}
-
-	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, image_count);
+	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, xsccp->image_count);
 
 	VK_DEBUG(vk, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
 	         info->width, info->height,                  //
 	         vk_format_string(info->format), info->format);
 
 	// Use the image helper to allocate the images.
-	ret = vk_ic_allocate(vk, info, image_count, &sc->vkic);
+	ret = vk_ic_allocate(vk, info, xsccp->image_count, &sc->vkic);
 	if (ret == VK_ERROR_FEATURE_NOT_PRESENT) {
 		free(sc);
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
