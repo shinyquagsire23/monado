@@ -14,7 +14,9 @@ add_library(xrt-external-cjson INTERFACE)
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(xrt-external-cjson INTERFACE cJSON::cJSON)
 else()
-	target_include_directories(xrt-external-cjson INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cjson)
+	target_include_directories(
+		xrt-external-cjson SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cjson
+		)
 	target_compile_definitions(xrt-external-cjson INTERFACE CJSON_HIDE_SYMBOLS)
 endif()
 
@@ -56,18 +58,18 @@ if(XRT_FEATURE_SLAM)
 	target_include_directories(
 		xrt-external-slam INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/slam_tracker
 		)
-	target_include_directories(xrt-external-slam INTERFACE ${SLAM_INCLUDE_DIRS})
+	target_include_directories(xrt-external-slam SYSTEM INTERFACE ${SLAM_INCLUDE_DIRS})
 	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LIBRARIES})
 endif()
 
 # STB
 add_library(xrt-external-stb INTERFACE)
-target_include_directories(xrt-external-stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
+target_include_directories(xrt-external-stb SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
 
 # renderdoc
 add_library(xrt-external-renderdoc INTERFACE)
 target_include_directories(
-	xrt-external-renderdoc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/renderdoc_api
+	xrt-external-renderdoc SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/renderdoc_api
 	)
 
 # imgui
