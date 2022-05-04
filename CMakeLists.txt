@@ -217,13 +217,14 @@ option_with_deps(XRT_HAVE_PERCETTO "Enable percetto support" DEPENDS PERCETTO_FO
 option_with_deps(XRT_HAVE_SYSTEMD "Enable systemd support" DEPENDS Systemd_FOUND)
 option_with_deps(XRT_HAVE_SYSTEM_CJSON "Enable cJSON from system, instead of bundled source" DEPENDS CJSON_FOUND)
 
-# SLAM backends (sorted)
+# SLAM backends and deps (sorted)
+option_with_deps(XRT_HAVE_OPENCV "Enable OpenCV backend" DEPENDS OpenCV_FOUND)
 option_with_deps(XRT_HAVE_BASALT_SLAM "Enable Basalt support" DEPENDS basalt_FOUND)
 option_with_deps(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" DEPENDS kimera_vio_FOUND)
 
-if(XRT_HAVE_BASALT_SLAM OR XRT_HAVE_KIMERA_SLAM)
-	set(SLAM_FOUND ON)
-endif()
+# if(XRT_HAVE_BASALT_SLAM OR XRT_HAVE_KIMERA_SLAM)
+# 	set(SLAM_FOUND ON)
+# endif()
 
 # Feature configuration (sorted)
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
@@ -233,7 +234,7 @@ option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS XRT_FE
 option_with_deps(XRT_FEATURE_RENDERDOC "Enable RenderDoc API" DEPENDS "RT_LIBRARY OR WIN32")
 option_with_deps(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" DEPENDS XRT_FEATURE_IPC XRT_FEATURE_OPENXR)
 option_with_deps(XRT_FEATURE_SERVICE_SYSTEMD "Enable systemd socket activation of the service" DEPENDS XRT_HAVE_SYSTEMD XRT_FEATURE_SERVICE)
-option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAVE_OPENCV SLAM_FOUND)
+option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAVE_OPENCV "XRT_HAVE_BASALT_SLAM OR XRT_HAVE_KIMERA_SLAM")
 option_with_deps(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" DEPENDS "NOT ANDROID")
 option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS XRT_HAVE_PERCETTO)
 
@@ -249,7 +250,6 @@ option_with_deps(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" 
 option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS LIBUSB1_FOUND)
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" DEPENDS ONNXRUNTIME_FOUND)
-option_with_deps(XRT_HAVE_OPENCV "Enable OpenCV backend" DEPENDS OpenCV_FOUND)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
 
 # Drivers to build (sorted)
