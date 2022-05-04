@@ -56,7 +56,7 @@ namespace auxiliary {
 	 * @brief C++-only functionality from the miscellaneous "util" helper library
 	 */
 	namespace util {
-
+		// Empty
 	} // namespace util
 
 } // namespace auxiliary

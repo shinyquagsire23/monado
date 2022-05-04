@@ -13,6 +13,6 @@
 namespace xrt::auxiliary {
 //! C++-only functionality in the Math helper library
 namespace math {
-
+	// Empty
 } // namespace math
 } // namespace xrt::auxiliary

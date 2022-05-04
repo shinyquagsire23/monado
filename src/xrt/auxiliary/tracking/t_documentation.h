@@ -59,7 +59,7 @@ namespace xrt::auxiliary {
 	 * @brief Namespace used by C++ interfaces in the auxiliary tracking library code.
 	 */
 	namespace tracking {
-
+		// Empty
 	} // namespace tracking
 } // namespace xrt::auxiliary
 #endif
