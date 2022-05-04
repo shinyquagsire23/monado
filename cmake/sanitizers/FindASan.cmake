@@ -33,6 +33,8 @@ set(FLAG_CANDIDATES
 
     # Older deprecated flag for ASan
     "-g -faddress-sanitizer"
+
+    "/fsanitize=address"
 )
 
 
