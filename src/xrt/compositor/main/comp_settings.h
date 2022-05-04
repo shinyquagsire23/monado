@@ -119,7 +119,7 @@ struct comp_settings
 	xrt_uuid_t client_gpu_deviceUUID;
 
 	//! The Windows LUID for the GPU device suggested for D3D clients, never changes.
-	xrt_uuid_t client_gpu_deviceLUID;
+	xrt_luid_t client_gpu_deviceLUID;
 
 	//! Whether @ref client_d3d_deviceLUID is valid
 	bool client_gpu_deviceLUID_valid;

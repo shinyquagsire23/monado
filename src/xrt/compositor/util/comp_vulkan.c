@@ -29,6 +29,14 @@
 #define UUID_STR_SIZE (XRT_UUID_SIZE * 3 + 1)
 
 static void
+snprint_luid(char *str, size_t size, xrt_luid_t *luid)
+{
+	for (size_t i = 0, offset = 0; i < ARRAY_SIZE(luid->data) && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", luid->data[i]);
+	}
+}
+
+static void
 snprint_uuid(char *str, size_t size, xrt_uuid_t *uuid)
 {
 	for (size_t i = 0, offset = 0; i < ARRAY_SIZE(uuid->data) && offset < size; i++, offset += 3) {
@@ -65,7 +73,7 @@ get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 }
 
 static bool
-get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_luid_t *luid)
 {
 	VkPhysicalDeviceIDProperties pdidp = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
@@ -90,7 +98,7 @@ get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 	if (pdidp.deviceLUIDValid != VK_TRUE) {
 		return false;
 	}
-	memcpy(uuid->data, pdidp.deviceLUID, ARRAY_SIZE(uuid->data));
+	memcpy(luid->data, pdidp.deviceLUID, ARRAY_SIZE(luid->data));
 
 	return true;
 }
@@ -124,16 +132,16 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 	// Store physical device UUID suggested to clients in settings
 	if (vk_res->client_gpu_index >= 0) {
 		if (get_device_uuid(vk, vk_res->client_gpu_index, &vk_res->client_gpu_deviceUUID)) {
-			char uuid_str[UUID_STR_SIZE] = {0};
-			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), &vk_res->client_gpu_deviceUUID);
+			char buffer[UUID_STR_SIZE] = {0};
+			snprint_uuid(buffer, ARRAY_SIZE(buffer), &vk_res->client_gpu_deviceUUID);
 
 			// Trailing space above, means 'to' should be right next to '%s'.
-			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, uuid_str);
+			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, buffer);
 
 			if (get_device_luid(vk, vk_res->client_gpu_index, &vk_res->client_gpu_deviceLUID)) {
 				vk_res->client_gpu_deviceLUID_valid = true;
-				snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), &vk_res->client_gpu_deviceLUID);
-				VK_DEBUG(vk, "  Device LUID: %s", uuid_str);
+				snprint_luid(buffer, ARRAY_SIZE(buffer), &vk_res->client_gpu_deviceLUID);
+				VK_DEBUG(vk, "\tDevice LUID: %s", buffer);
 			}
 		} else {
 			VK_ERROR(vk, "Failed to get device %d uuid", vk_res->client_gpu_index);
