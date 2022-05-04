@@ -43,6 +43,14 @@ snprint_uuid(char *str, size_t size, const xrt_uuid_t *uuid)
 	}
 }
 
+static void
+snprint_luid(char *str, size_t size, xrt_luid_t *luid)
+{
+	for (size_t i = 0, offset = 0; i < ARRAY_SIZE(luid->data) && offset < size; i++, offset += 3) {
+		snprintf(str + offset, size - offset, "%02x ", luid->data[i]);
+	}
+}
+
 
 /*
  *
@@ -457,20 +465,20 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 		static_assert(VK_UUID_SIZE == XRT_UUID_SIZE, "uuid sizes mismatch");
 		static_assert(ARRAY_SIZE(pdidp.deviceUUID) == XRT_UUID_SIZE, "array size mismatch");
 
-		char uuid_str[UUID_STR_SIZE] = {0};
+		char buffer[UUID_STR_SIZE] = {0};
 		if (log_level <= U_LOGGING_DEBUG) {
-			snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), (xrt_uuid_t *)pdidp.deviceUUID);
-			oxr_log(log, "GPU: #%d, uuid: %s", i, uuid_str);
+			snprint_uuid(buffer, ARRAY_SIZE(buffer), (xrt_uuid_t *)pdidp.deviceUUID);
+			oxr_log(log, "GPU: #%d, uuid: %s", i, buffer);
 			if (pdidp.deviceLUIDValid == VK_TRUE) {
-				snprint_uuid(uuid_str, ARRAY_SIZE(uuid_str), (xrt_uuid_t *)pdidp.deviceLUID);
-				oxr_log(log, "  LUID: %s", uuid_str);
+				snprint_luid(buffer, ARRAY_SIZE(buffer), (xrt_luid_t *)pdidp.deviceLUID);
+				oxr_log(log, "  LUID: %s", buffer);
 			}
 		}
 
 		if (memcmp(pdidp.deviceUUID, sys->xsysc->info.client_vk_deviceUUID.data, XRT_UUID_SIZE) == 0) {
 			gpu_index = i;
 			if (log_level <= U_LOGGING_DEBUG) {
-				oxr_log(log, "Using GPU #%d with uuid %s suggested by runtime", gpu_index, uuid_str);
+				oxr_log(log, "Using GPU #%d with uuid %s suggested by runtime", gpu_index, buffer);
 			}
 			break;
 		}
