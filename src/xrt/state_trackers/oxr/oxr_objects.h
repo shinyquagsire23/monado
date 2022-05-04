@@ -14,6 +14,7 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_openxr_includes.h"
+#include "xrt/xrt_config_os.h"
 
 #include "os/os_threading.h"
 
@@ -27,8 +28,10 @@
 
 #ifdef XRT_FEATURE_RENDERDOC
 #include "renderdoc_app.h"
+#ifndef XRT_OS_WINDOWS
 #include <dlfcn.h>
-#endif
+#endif // !XRT_OS_WINDOWS
+#endif // XRT_FEATURE_RENDERDOC
 
 #ifdef __cplusplus
 extern "C" {

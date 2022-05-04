@@ -391,7 +391,7 @@ oxr_instance_create(struct oxr_logger *log,
 	HMODULE mod = GetModuleHandleA("renderdoc.dll");
 	if (mod) {
 		pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
-		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void **)&rdoc_api);
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void **)&inst->rdoc_api);
 		assert(ret == 1);
 	}
 #endif
