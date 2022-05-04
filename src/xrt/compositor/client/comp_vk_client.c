@@ -591,6 +591,16 @@ client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 }
 
 static xrt_result_t
+client_vk_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                                     const struct xrt_swapchain_create_info *info,
+                                                     struct xrt_swapchain_create_properties *xsccp)
+{
+	struct client_vk_compositor *c = client_vk_compositor(xc);
+
+	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
+}
+
+static xrt_result_t
 client_vk_swapchain_create(struct xrt_compositor *xc,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
@@ -770,6 +780,7 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	VkResult ret;
 	struct client_vk_compositor *c = U_TYPED_CALLOC(struct client_vk_compositor);
 
+	c->base.base.get_swapchain_create_properties = client_vk_compositor_get_swapchain_create_properties;
 	c->base.base.create_swapchain = client_vk_swapchain_create;
 	c->base.base.begin_session = client_vk_compositor_begin_session;
 	c->base.base.end_session = client_vk_compositor_end_session;

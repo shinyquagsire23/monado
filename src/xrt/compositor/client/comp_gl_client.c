@@ -394,6 +394,16 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 }
 
 static xrt_result_t
+client_gl_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
+                                                     const struct xrt_swapchain_create_info *info,
+                                                     struct xrt_swapchain_create_properties *xsccp)
+{
+	struct client_gl_compositor *c = client_gl_compositor(xc);
+
+	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
+}
+
+static xrt_result_t
 client_gl_swapchain_create(struct xrt_compositor *xc,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_swapchain **out_xsc)
@@ -518,6 +528,7 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	assert(context_begin != NULL);
 	assert(context_end != NULL);
 
+	c->base.base.get_swapchain_create_properties = client_gl_compositor_get_swapchain_create_properties;
 	c->base.base.create_swapchain = client_gl_swapchain_create;
 	c->base.base.begin_session = client_gl_compositor_begin_session;
 	c->base.base.end_session = client_gl_compositor_end_session;
