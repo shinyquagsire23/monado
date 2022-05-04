@@ -88,7 +88,7 @@ create_listen_socket(struct ipc_server_mainloop *ml, int *out_fd)
 
 	char sock_file[PATH_MAX];
 
-	int size = u_file_get_path_in_runtime_dir(IPC_MSG_SOCK_FILE, sock_file, PATH_MAX);
+	int size = u_file_get_path_in_runtime_dir(XRT_IPC_MSG_SOCK_FILENAME, sock_file, PATH_MAX);
 	if (size == -1) {
 		U_LOG_E("Could not get socket file name");
 		return -1;

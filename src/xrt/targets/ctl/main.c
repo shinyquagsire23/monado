@@ -225,7 +225,7 @@ do_connect(struct ipc_connection *ipc_c)
 
 	char sock_file[PATH_MAX];
 
-	int rt_size = u_file_get_path_in_runtime_dir(IPC_MSG_SOCK_FILE, sock_file, PATH_MAX);
+	int rt_size = u_file_get_path_in_runtime_dir(XRT_IPC_MSG_SOCK_FILENAME, sock_file, PATH_MAX);
 	if (rt_size == -1) {
 		PE("Could not get socket file name");
 		return -1;
