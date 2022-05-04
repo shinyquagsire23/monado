@@ -39,6 +39,7 @@ depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx);
 
 /*!
  * Create a DepthAI frameserver using two gray cameras.
+ * Either OAK-D or OAK-D Lite. Custom FFC setups may or may not work.
  *
  * @ingroup drv_depthai
  */

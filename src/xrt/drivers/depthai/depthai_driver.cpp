@@ -136,6 +136,7 @@ struct depthai_fs
 	dai::CameraImageOrientation image_orientation;
 	uint32_t fps;
 	bool interleaved;
+	bool oak_d_lite;
 };
 
 
@@ -248,15 +249,49 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 }
 
 static void
-depthai_print_connected_cameras(struct depthai_fs *depthai)
+depthai_guess_camera_type(struct depthai_fs *depthai)
 {
+	// We could be a lot more pedantic here, but let's just not.
+	// For now, ov7251 == oak-d lite, and ov9282 == oak-d/oak-d S2/oak-d pro
 	std::ostringstream oss = {};
-	for (const auto &cam : depthai->device->getConnectedCameras()) {
-		oss << "'" << static_cast<int>(cam) << "' ";
+	std::vector<dai::CameraBoardSocket> sockets = depthai->device->getConnectedCameras();
+	std::unordered_map<dai::CameraBoardSocket, std::string> sensornames = depthai->device->getCameraSensorNames();
+
+	bool ov9282 = false;
+
+	bool ov7251 = false;
+
+
+
+	for (size_t i = 0; i < sockets.size(); i++) {
+		dai::CameraBoardSocket sock = sockets[i];
+		std::string sensorname = sensornames.at(sock);
+		if (sensorname == "OV9282" || sensorname == "OV9*82") {
+			ov9282 = true;
+		} else if (sensorname == "OV7251") {
+			ov7251 = true;
+		}
+		oss << "'" << static_cast<int>(sock) << "': " << sensorname << ", ";
 	}
+
+
 	std::string str = oss.str();
 
 	DEPTHAI_DEBUG(depthai, "DepthAI: Connected cameras: %s", str.c_str());
+
+	if (ov9282 && !ov7251) {
+		// OAK-D
+		DEPTHAI_DEBUG(depthai, "DepthAI: Found an OAK-D!");
+		depthai->oak_d_lite = false;
+	} else if (ov7251 && !ov9282) {
+		// OAK-D Lite
+		DEPTHAI_DEBUG(depthai, "DepthAI: Found and OAK-D Lite!");
+		depthai->oak_d_lite = true;
+	} else {
+		DEPTHAI_WARN(depthai,
+		             "DepthAI: Not sure what kind of device this is - going to pretend this is an OAK-D.");
+		depthai->oak_d_lite = false;
+	}
 }
 
 static void
@@ -473,8 +508,13 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 static void
 depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 {
+
+	// Get the camera calibration
+	struct t_stereo_camera_calibration *calib = NULL;
+	depthai_get_gray_cameras_calibration(depthai, &calib);
+
 	// Hardcoded to OV_9282 L/R
-	if (true) {
+	if (!depthai->oak_d_lite) {
 		// OV_9282 L/R
 		depthai->width = 1280;
 		depthai->height = 800;
@@ -737,7 +777,7 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->device = d;
 
 	// Some debug printing.
-	depthai_print_connected_cameras(depthai);
+	depthai_guess_camera_type(depthai);
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
