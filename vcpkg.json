@@ -1,13 +1,40 @@
 {
     "name": "monado",
+    "homepage": "https://monado.freedesktop.org",
     "version-string": "21.0",
     "dependencies": [
+        {
+            "name": "wil",
+            "platform": "windows"
+        },
+        {
+            "name": "pthreads",
+            "platform": "windows"
+        },
         "eigen3",
-        "pthreads",
-        "libusb",
-        "hidapi",
-        "zlib",
-        "vulkan",
-        "glslang"
-    ]
+        "glslang",
+        "vulkan"
+    ],
+    "default-features": [
+        "usb"
+    ],
+    "features": {
+        "usb": {
+            "description": "Support USB device drivers",
+            "dependencies": [
+                "libusb",
+                "hidapi",
+                {
+                    "name": "zlib",
+                    "platform": "linux"
+                }
+            ]
+        },
+        "gui": {
+            "description": "Debug GUI support",
+            "dependencies": [
+                "sdl2"
+            ]
+        }
+    }
 }
