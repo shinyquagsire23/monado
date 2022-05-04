@@ -12,6 +12,7 @@
  */
 
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_device.h"
 
@@ -1218,7 +1219,7 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 
 	struct xrt_slam_sinks *sinks = NULL;
 
-#ifdef XRT_HAVE_SLAM
+#ifdef XRT_FEATURE_SLAM
 	int create_status = t_slam_create(&wh->slam.xfctx, NULL, &wh->slam.tracker, &sinks);
 	if (create_status != 0) {
 		return NULL;
@@ -1266,7 +1267,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	// Decide whether to initialize the SLAM tracker
 	bool slam_wanted = debug_get_bool_option_wmr_slam();
-#ifdef XRT_HAVE_SLAM
+#ifdef XRT_FEATURE_SLAM
 	bool slam_supported = true;
 #else
 	bool slam_supported = false;

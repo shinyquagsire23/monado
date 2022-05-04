@@ -9,6 +9,7 @@
 #include "euroc/euroc_interface.h"
 #include "os/os_threading.h"
 #include "util/u_logging.h"
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_drivers.h"
 
@@ -17,7 +18,7 @@
 #define P(...) fprintf(stderr, __VA_ARGS__)
 #define I(...) U_LOG(U_LOGGING_INFO, __VA_ARGS__)
 
-#if defined(XRT_HAVE_SLAM) && defined(XRT_BUILD_DRIVER_EUROC)
+#if defined(XRT_FEATURE_SLAM) && defined(XRT_BUILD_DRIVER_EUROC)
 
 static bool should_exit = false;
 
@@ -34,7 +35,7 @@ int
 cli_cmd_slambatch(int argc, const char **argv)
 {
 
-#if !defined(XRT_HAVE_SLAM)
+#if !defined(XRT_FEATURE_SLAM)
 	P("No SLAM system built.\n");
 	return EXIT_FAILURE;
 #elif !defined(XRT_BUILD_DRIVER_EUROC)

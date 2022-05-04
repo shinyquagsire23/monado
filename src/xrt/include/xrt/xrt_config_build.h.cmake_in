@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,26 +9,18 @@
 
 #pragma once
 
-#cmakedefine XRT_FEATURE_IPC
-
-#cmakedefine XRT_FEATURE_COMPOSITOR_MAIN
-
-#cmakedefine XRT_FEATURE_SERVICE
-
-#cmakedefine XRT_FEATURE_OPENXR
-
-#cmakedefine XRT_FEATURE_OPENXR_LAYER_CUBE
-
-#cmakedefine XRT_FEATURE_OPENXR_LAYER_CYLINDER
-
-#cmakedefine XRT_FEATURE_OPENXR_LAYER_DEPTH
-
-#cmakedefine XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
-
-#cmakedefine XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
+/* keep sorted */
 
 #cmakedefine XRT_FEATURE_COLOR_LOG
-
-#cmakedefine XRT_FEATURE_TRACING
-
+#cmakedefine XRT_FEATURE_COMPOSITOR_MAIN
+#cmakedefine XRT_FEATURE_IPC
+#cmakedefine XRT_FEATURE_OPENXR
+#cmakedefine XRT_FEATURE_OPENXR_LAYER_CUBE
+#cmakedefine XRT_FEATURE_OPENXR_LAYER_CYLINDER
+#cmakedefine XRT_FEATURE_OPENXR_LAYER_DEPTH
+#cmakedefine XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
+#cmakedefine XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 #cmakedefine XRT_FEATURE_RENDERDOC
+#cmakedefine XRT_FEATURE_SERVICE
+#cmakedefine XRT_FEATURE_SLAM
+#cmakedefine XRT_FEATURE_TRACING

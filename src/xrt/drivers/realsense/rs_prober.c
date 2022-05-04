@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_prober.h"
 
@@ -164,7 +165,7 @@ create_tracked_rs_device(struct xrt_prober *xp)
 	rs2_error *e = NULL;
 	struct rs_container rsc = {0};
 	int expected_tracking = debug_get_num_option_rs_tracking();
-#ifdef XRT_HAVE_SLAM
+#ifdef XRT_FEATURE_SLAM
 	bool external_slam_supported = true;
 #else
 	bool external_slam_supported = false;

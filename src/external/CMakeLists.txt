@@ -50,7 +50,7 @@ target_include_directories(
 	)
 
 # External SLAM tracking
-if(SLAM)
+if(XRT_FEATURE_SLAM)
 	add_library(xrt-external-slam STATIC slam_tracker/slam_tracker.hpp)
 	set_target_properties(xrt-external-slam PROPERTIES LINKER_LANGUAGE CXX)
 	target_include_directories(

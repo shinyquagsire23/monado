@@ -13,13 +13,15 @@
 #include "tracking/t_tracking.h"
 #include "util/u_logging.h"
 #include "util/u_misc.h"
+
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_build.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_tracking.h"
 
-#if !defined(XRT_HAVE_SLAM)
+#if !defined(XRT_FEATURE_SLAM)
 
 void
 euroc_run_dataset(const char *euroc_path,
