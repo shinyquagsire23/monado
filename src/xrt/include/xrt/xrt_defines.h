@@ -45,6 +45,30 @@ struct xrt_uuid
 typedef struct xrt_uuid xrt_uuid_t;
 
 /*!
+ * Internal define for VK_LUID_SIZE.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_LUID_SIZE 8
+
+/*!
+ * To transport LUIDs between different APIs.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_luid
+{
+	uint8_t data[XRT_LUID_SIZE];
+};
+
+/*!
+ * Typedef for @ref xrt_luid.
+ *
+ * @ingroup xrt_iface
+ */
+typedef struct xrt_luid xrt_luid_t;
+
+/*!
  * A base class for reference counted objects.
  *
  * @ingroup xrt_iface
