@@ -164,6 +164,11 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 XrResult
 oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 {
+	// there is a bug in Unreal 4 where calling this function will result in a crash, so skip it.
+	if (sess->sys->inst->quirks.skip_end_session) {
+		return XR_SUCCESS;
+	}
+
 	struct xrt_compositor *xc = sess->compositor;
 
 	if (!is_running(sess)) {

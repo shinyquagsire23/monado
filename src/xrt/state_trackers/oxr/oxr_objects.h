@@ -1509,6 +1509,8 @@ struct oxr_instance
 	{
 		//! Unreal has a bug in the VulkanRHI backend.
 		bool disable_vulkan_format_depth_stencil;
+		//! Unreal 4 has a bug calling xrEndSession; the function should just exit
+		bool skip_end_session;
 	} quirks;
 
 	//! Debug messengers
