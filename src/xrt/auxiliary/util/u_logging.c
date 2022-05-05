@@ -132,6 +132,8 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
 	*(buf + printed) = '\n';
+	printed++;
+	*(buf + printed) = '\0';
 	OutputDebugStringA(buf);
 }
 
