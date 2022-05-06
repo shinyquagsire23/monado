@@ -54,6 +54,9 @@ struct ht_device
 {
 	struct xrt_device base;
 
+	//! Whether to use our `xfctx` or an externally managed one.
+	//! @note This variable exists because we still need to settle on the ht usage interface.
+	bool own_xfctx;
 	struct xrt_frame_context xfctx;
 
 	struct t_hand_tracking_sync *sync;
@@ -171,8 +174,10 @@ ht_device_destroy(struct xrt_device *xdev)
 	struct ht_device *htd = ht_device(xdev);
 	HT_DEBUG(htd, "called!");
 
+	if (htd->own_xfctx) {
+		xrt_frame_context_destroy_nodes(&htd->xfctx);
+	}
 
-	xrt_frame_context_destroy_nodes(&htd->xfctx);
 	// Remove the variable tracking.
 	u_var_remove_root(htd);
 
@@ -181,6 +186,7 @@ ht_device_destroy(struct xrt_device *xdev)
 
 static struct ht_device *
 ht_device_create_common(struct t_stereo_camera_calibration *calib,
+                        bool own_xfctx,
                         struct xrt_frame_context *xfctx,
                         struct t_hand_tracking_sync *sync)
 {
@@ -197,7 +203,10 @@ ht_device_create_common(struct t_stereo_camera_calibration *calib,
 	// Setup logging first
 	htd->log_level = debug_get_log_option_ht_log();
 
-	htd->xfctx.nodes = xfctx->nodes;
+	htd->own_xfctx = own_xfctx;
+	if (own_xfctx) { // Transfer ownership of xfctx to htd
+		htd->xfctx.nodes = xfctx->nodes;
+	}
 
 	htd->base.tracking_origin->type = XRT_TRACKING_TYPE_RGB;
 	htd->base.tracking_origin->offset.position.x = 0.0f;
@@ -224,7 +233,7 @@ ht_device_create_common(struct t_stereo_camera_calibration *calib,
 
 	htd->sync = sync;
 
-	htd->async = t_hand_tracking_async_default_create(&htd->xfctx, sync);
+	htd->async = t_hand_tracking_async_default_create(xfctx, sync);
 	return htd;
 }
 
@@ -280,7 +289,7 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 		sync = t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_LEFT_CAMERA);
 	}
 
-	struct ht_device *htd = ht_device_create_common(calib, &finder.xfctx, sync);
+	struct ht_device *htd = ht_device_create_common(calib, true, &finder.xfctx, sync);
 
 	struct xrt_frame_sink *tmp = NULL;
 
@@ -350,7 +359,7 @@ ht_device_create_depthai_ov9282()
 
 	sync = t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_LEFT_CAMERA);
 
-	struct ht_device *htd = ht_device_create_common(calib, &xfctx, sync);
+	struct ht_device *htd = ht_device_create_common(calib, true, &xfctx, sync);
 
 	struct xrt_slam_sinks tmp;
 

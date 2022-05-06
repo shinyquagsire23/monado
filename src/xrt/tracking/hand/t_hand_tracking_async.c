@@ -171,6 +171,8 @@ t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_h
 	struct ht_async_impl *hta = U_TYPED_CALLOC(struct ht_async_impl);
 	hta->base.left.push_frame = ht_async_receive_left;
 	hta->base.right.push_frame = ht_async_receive_right;
+	hta->base.sinks.left = &hta->base.left;
+	hta->base.sinks.right = &hta->base.right;
 	hta->base.node.break_apart = ht_async_break_apart;
 	hta->base.node.destroy = ht_async_destroy;
 	hta->base.get_hand = ht_async_get_hand;
