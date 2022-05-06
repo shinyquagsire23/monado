@@ -9,7 +9,6 @@ set(OUT_FILENAME @_genmanifest_OUT_FILENAME@)
 set(CONFIGURE_OUTPUT_FILE @_genmanifest_INTERMEDIATE_MANIFEST@)
 set(IS_INSTALL @_genmanifest_IS_INSTALL@)
 set(RUNTIME_TARGET @_genmanifest_RUNTIME_TARGET@)
-set(OUT_FILE @_genmanifest_OUT_FILE@)
 # Runtime install dir relative to install prefix
 set(RELATIVE_RUNTIME_DIR @_genmanifest_RELATIVE_RUNTIME_DIR@)
 # Runtime so/dll filename

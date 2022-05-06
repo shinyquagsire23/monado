@@ -81,6 +81,7 @@ function(generate_openxr_runtime_manifest_buildtree)
         # "${_genmanifest_INTERMEDIATE_MANIFEST}"
         COMMAND
             "${CMAKE_COMMAND}"
+            "-DOUT_FILE=${_genmanifest_OUT_FILE}"
             "-DRUNTIME_PATH=$<TARGET_FILE:${_genmanifest_RUNTIME_TARGET}>" -P
             "${_script}" DEPENDS "${_script}")
 endfunction()
