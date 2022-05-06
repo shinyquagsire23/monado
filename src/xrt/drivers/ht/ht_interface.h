@@ -20,11 +20,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
+
+/*!
  * @defgroup drv_ht Camera based hand tracking
  * @ingroup drv
  *
- * @brief
+ * @brief Camera based hand tracking
  */
 
 /*!

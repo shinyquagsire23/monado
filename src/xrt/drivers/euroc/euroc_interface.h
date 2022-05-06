@@ -50,7 +50,7 @@ struct euroc_player_playback_config
 };
 
 /*!
- * Describes information about a particular EuRoC dataset residing in @ref path.
+ * Describes information about a particular EuRoC dataset residing in `path`.
  *
  * @ingroup drv_euroc
  */

@@ -69,7 +69,7 @@ class JSONBuilder;
  * `isType()` and `asType()` methods.
  *
  * The main ways a user can build a JSONNode is from a json string, from a
- * json file with the @ref loadFromFile or with the @ref JSONBuilder.
+ * json file with `loadFromFile` or with the @ref JSONBuilder.
  */
 class JSONNode
 {
