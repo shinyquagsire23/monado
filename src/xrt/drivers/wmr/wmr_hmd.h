@@ -140,23 +140,24 @@ struct wmr_hmd
 		uint64_t last_imu_timestamp_ns;
 	} fusion;
 
+	//! Fields related to camera-based tracking (SLAM and hand tracking)
 	struct
 	{
-		//! Source of video/IMU data for SLAM
+		//! Source of video/IMU data for tracking
 		struct xrt_fs *source;
 
 		//! Context for @ref source
 		struct xrt_frame_context xfctx;
 
-		//! SLAM tracker
-		struct xrt_tracked_slam *tracker;
+		//! SLAM tracker.
+		struct xrt_tracked_slam *slam;
 
-		//! Set at start. Whether the tracker was initialized.
-		bool enabled;
-	} slam;
+		//! Set at start. Whether the SLAM tracker was initialized.
+		bool slam_enabled;
+	} tracking;
 
-	//! Whether to use the @ref slam tracker or fallback to the @ref fusion 3dof tracker
-	bool use_slam_tracker;
+	//! Whether to track the HMD with 6dof SLAM or fallback to the `fusion` 3dof tracker
+	bool slam_over_3dof;
 
 	//! Last tracked pose
 	struct xrt_pose pose;
@@ -168,6 +169,7 @@ struct wmr_hmd
 	{
 		struct u_var_button hmd_screen_enable_btn;
 		struct u_var_button switch_tracker_btn;
+		char slam_status[128];
 	} gui;
 };
 

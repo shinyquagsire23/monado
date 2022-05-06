@@ -330,7 +330,7 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 	//! @todo For now we are using raw_samples here because the centerline fix
 	//! in the calibrated samples breaks SLAM systems. Handling of coordinate
 	//! systems needs to be revisited.
-	wmr_source_push_imu_packet(wh->slam.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
+	wmr_source_push_imu_packet(wh->tracking.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
 }
 
 static bool
@@ -966,7 +966,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 	DRV_TRACE_MARKER();
 
 	struct wmr_hmd *wh = wmr_hmd(xdev);
-	xrt_tracked_slam_get_tracked_pose(wh->slam.tracker, at_timestamp_ns, out_relation);
+	xrt_tracked_slam_get_tracked_pose(wh->tracking.slam, at_timestamp_ns, out_relation);
 
 	int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
@@ -994,7 +994,7 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	DRV_TRACE_MARKER();
 
 	struct wmr_hmd *wh = wmr_hmd(xdev);
-	if (wh->slam.enabled && wh->use_slam_tracker) {
+	if (wh->tracking.slam_enabled && wh->slam_over_3dof) {
 		wmr_hmd_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
 	} else {
 		wmr_hmd_get_3dof_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
@@ -1040,7 +1040,7 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	}
 
 	// Destroy SLAM source and tracker
-	xrt_frame_context_destroy_nodes(&wh->slam.xfctx);
+	xrt_frame_context_destroy_nodes(&wh->tracking.xfctx);
 
 	// Destroy the fusion.
 	m_imu_3dof_close(&wh->fusion.i3dof);
@@ -1193,15 +1193,15 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 }
 
 static void
-wmr_hmd_switch_tracker(void *wh_ptr)
+wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 {
 	DRV_TRACE_MARKER();
 
 	struct wmr_hmd *wh = (struct wmr_hmd *)wh_ptr;
-	wh->use_slam_tracker = !wh->use_slam_tracker;
+	wh->slam_over_3dof = !wh->slam_over_3dof;
 	struct u_var_button *btn = &wh->gui.switch_tracker_btn;
 
-	if (wh->use_slam_tracker) { // Use SLAM
+	if (wh->slam_over_3dof) { // Use SLAM
 		snprintf(btn->label, sizeof(btn->label), "Switch to 3DoF Tracking");
 	} else { // Use 3DoF
 		snprintf(btn->label, sizeof(btn->label), "Switch to SLAM Tracking");
@@ -1220,12 +1220,12 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 	struct xrt_slam_sinks *sinks = NULL;
 
 #ifdef XRT_FEATURE_SLAM
-	int create_status = t_slam_create(&wh->slam.xfctx, NULL, &wh->slam.tracker, &sinks);
+	int create_status = t_slam_create(&wh->tracking.xfctx, NULL, &wh->tracking.slam, &sinks);
 	if (create_status != 0) {
 		return NULL;
 	}
 
-	int start_status = t_slam_start(wh->slam.tracker);
+	int start_status = t_slam_start(wh->tracking.slam);
 	if (start_status != 0) {
 		return NULL;
 	}
@@ -1234,6 +1234,102 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 #endif
 
 	return sinks;
+}
+
+static void
+wmr_hmd_setup_ui(struct wmr_hmd *wh)
+{
+	u_var_add_root(wh, "WMR HMD", true);
+
+	u_var_add_gui_header(wh, NULL, "Tracking");
+	if (wh->tracking.slam_enabled) {
+		wh->gui.switch_tracker_btn.cb = wmr_hmd_switch_hmd_tracker;
+		wh->gui.switch_tracker_btn.ptr = wh;
+		u_var_add_button(wh, &wh->gui.switch_tracker_btn, "Switch to 3DoF Tracking");
+	}
+	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
+	u_var_add_pose(wh, &wh->offset, "Pose Offset");
+
+	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
+	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
+
+	u_var_add_gui_header(wh, NULL, "SLAM Tracking");
+	u_var_add_ro_text(wh, wh->gui.slam_status, "Tracker status");
+
+	u_var_add_gui_header(wh, NULL, "Hololens Sensors' Companion device");
+	u_var_add_u8(wh, &wh->proximity_sensor, "HMD Proximity");
+	u_var_add_u16(wh, &wh->raw_ipd, "HMD IPD");
+
+	if (wh->hmd_desc->screen_enable_func) {
+		// Enabling/disabling the HMD screen at runtime is supported. Add button to debug GUI.
+		wh->gui.hmd_screen_enable_btn.cb = wmr_hmd_screen_enable_toggle;
+		wh->gui.hmd_screen_enable_btn.ptr = wh;
+		u_var_add_button(wh, &wh->gui.hmd_screen_enable_btn, "HMD Screen [On/Off]");
+	}
+
+	u_var_add_gui_header(wh, NULL, "Misc");
+	u_var_add_log_level(wh, &wh->log_level, "log_level");
+}
+
+/*!
+ * Determines which trackers to initialize and starts them.
+ * Fills @p out_sinks to stream raw data to for tracking.
+ *
+ * @param wh the wmr headset device
+ * @param out_sinks sinks to stream video/IMU data to for tracking
+ * @return true on success, false when an unexpected state is reached.
+ */
+static bool
+wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks)
+{
+	// We always have at least 3dof HMD tracking
+	bool dof3_enabled = true;
+
+	// Decide whether to initialize the SLAM tracker
+	bool slam_wanted = debug_get_bool_option_wmr_slam();
+#ifdef XRT_FEATURE_SLAM
+	bool slam_supported = true;
+#else
+	bool slam_supported = false;
+#endif
+	bool slam_enabled = slam_supported && slam_wanted;
+
+	wh->base.orientation_tracking_supported = dof3_enabled;
+	wh->base.position_tracking_supported = slam_enabled;
+
+	wh->tracking.slam_enabled = slam_enabled;
+
+	wh->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
+
+	const char *slam_status = wh->tracking.slam_enabled ? "Enabled"
+	                          : !slam_wanted            ? "Disabled by the user (envvar set to false)"
+	                          : !slam_supported         ? "Unavailable (not built)"
+	                                                    : NULL;
+
+	assert(slam_status != NULL);
+
+	snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
+
+	// Initialize 3DoF tracker
+	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+
+	// Initialize SLAM tracker
+	struct xrt_slam_sinks *slam_sinks = NULL;
+	if (wh->tracking.slam_enabled) {
+		slam_sinks = wmr_hmd_slam_track(wh);
+		if (slam_sinks == NULL) {
+			WMR_WARN(wh, "Unable to setup the SLAM tracker");
+			return false;
+		}
+	}
+
+	struct xrt_slam_sinks entry_sinks = {0};
+	if (slam_enabled) {
+		entry_sinks = *slam_sinks;
+	}
+
+	*out_sinks = entry_sinks;
+	return true;
 }
 
 struct xrt_device *
@@ -1265,18 +1361,6 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	wh->log_level = log_level;
 
-	// Decide whether to initialize the SLAM tracker
-	bool slam_wanted = debug_get_bool_option_wmr_slam();
-#ifdef XRT_FEATURE_SLAM
-	bool slam_supported = true;
-#else
-	bool slam_supported = false;
-#endif
-	bool slam_enabled = slam_supported && slam_wanted;
-
-	wh->base.orientation_tracking_supported = true;
-	wh->base.position_tracking_supported = slam_enabled;
-	wh->base.hand_tracking_supported = false;
 	wh->hid_hololens_sensors_dev = hid_holo;
 	wh->hid_control_dev = hid_ctrl;
 
@@ -1309,11 +1393,6 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		return NULL;
 	}
 
-	// Setup data source
-	wh->slam.source = wmr_source_create(&wh->slam.xfctx, dev_holo, wh->config);
-	wh->slam.enabled = slam_enabled;
-	wh->use_slam_tracker = slam_enabled;
-
 	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 	wh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
 
@@ -1339,49 +1418,6 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	assert(wh->hmd_desc != NULL); /* Each supported device MUST have a manually created entry in our headset_map */
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
-
-	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
-
-	// Setup UI
-	u_var_add_root(wh, "WMR HMD", true);
-
-	u_var_add_gui_header(wh, NULL, "Tracking");
-	if (wh->slam.enabled) {
-		wh->gui.switch_tracker_btn.cb = wmr_hmd_switch_tracker;
-		wh->gui.switch_tracker_btn.ptr = wh;
-		u_var_add_button(wh, &wh->gui.switch_tracker_btn, "Switch to 3DoF Tracking");
-	}
-	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
-	u_var_add_pose(wh, &wh->offset, "Pose Offset");
-
-	u_var_add_gui_header(wh, NULL, "SLAM Tracking");
-	if (wh->slam.enabled) {
-		u_var_add_ro_text(wh, "Enabled", "Tracker status");
-	} else if (slam_supported && !slam_wanted) {
-		u_var_add_ro_text(wh, "Disabled by the user (WMR_SLAM=false)", "Tracker status");
-	} else if (slam_wanted && !slam_supported) {
-		u_var_add_ro_text(wh, "Unavailable (not built)", "Tracker status");
-	} else {
-		u_var_add_ro_text(wh, "Disabled", "Tracker status");
-		assert(false && "unexpected branch taken");
-	}
-
-	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
-	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
-
-	u_var_add_gui_header(wh, NULL, "Hololens Sensors' Companion device");
-	u_var_add_u8(wh, &wh->proximity_sensor, "HMD Proximity");
-	u_var_add_u16(wh, &wh->raw_ipd, "HMD IPD");
-
-	if (wh->hmd_desc->screen_enable_func) {
-		// Enabling/disabling the HMD screen at runtime is supported. Add button to debug GUI.
-		wh->gui.hmd_screen_enable_btn.cb = wmr_hmd_screen_enable_toggle;
-		wh->gui.hmd_screen_enable_btn.ptr = wh;
-		u_var_add_button(wh, &wh->gui.hmd_screen_enable_btn, "HMD Screen [On/Off]");
-	}
-
-	u_var_add_gui_header(wh, NULL, "Misc");
-	u_var_add_log_level(wh, &wh->log_level, "log_level");
 
 	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses,
 	// then rotate around the X axis to convert coordinate system from WMR (X right, Y down, Z away)
@@ -1470,20 +1506,19 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Switch on IMU on the HMD.
 	hololens_sensors_enable_imu(wh);
 
-	// Initialize SLAM tracker
-	struct xrt_slam_sinks *sinks = NULL;
-	if (wh->slam.enabled) {
-		sinks = wmr_hmd_slam_track(wh);
-		if (sinks == NULL) {
-			WMR_WARN(wh, "Unable to setup the SLAM tracker");
-			wmr_hmd_destroy(&wh->base);
-			wh = NULL;
-			return NULL;
-		}
+	// Switch on data streams on the HMD (only cameras for now as IMU is not yet integrated into wmr_source)
+	wh->tracking.source = wmr_source_create(&wh->tracking.xfctx, dev_holo, wh->config);
+
+	struct xrt_slam_sinks sinks = {0};
+	bool success = wmr_hmd_setup_trackers(wh, &sinks);
+	if (!success) {
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return NULL;
 	}
 
 	// Stream data source into sinks (if populated)
-	bool stream_started = xrt_fs_slam_stream_start(wh->slam.source, sinks);
+	bool stream_started = xrt_fs_slam_stream_start(wh->tracking.source, &sinks);
 	if (!stream_started) {
 		//! @todo Could reach this due to !XRT_HAVE_LIBUSB but the HMD should keep working
 		WMR_WARN(wh, "Failed to start WMR source");
@@ -1500,6 +1535,8 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		wh = NULL;
 		return NULL;
 	}
+
+	wmr_hmd_setup_ui(wh);
 
 	return &wh->base;
 }
