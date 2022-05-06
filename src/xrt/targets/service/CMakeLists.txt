@@ -56,7 +56,7 @@ if(XRT_HAVE_SYSTEMD)
 		)
 endif()
 
-if(XRT_INSTALL_SYSTEMD_UNIT_FILES)
+if(XRT_INSTALL_SYSTEMD_UNIT_FILES OR XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES)
 	set(UNIT_NAME monado)
 	set(conflicts monado-dev)
 	set(exit_on_disconnect OFF)
