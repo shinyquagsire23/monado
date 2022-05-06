@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #include "xrt/xrt_instance.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 #include "cli_common.h"
@@ -31,8 +32,8 @@ do_exit(struct xrt_instance **xi_ptr, int ret)
 int
 cli_cmd_probe(int argc, const char **argv)
 {
-	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	struct xrt_instance *xi = NULL;
+	xrt_result_t xret = XRT_SUCCESS;
 	int ret = 0;
 
 	// Initialize the prober.
@@ -44,11 +45,20 @@ cli_cmd_probe(int argc, const char **argv)
 	}
 
 	// Need to prime the prober with devices before dumping and listing.
-	printf(" :: Probing and selecting!\n");
+	printf(" :: Creating system devices!\n");
 
-	ret = xrt_instance_select(xi, xdevs, NUM_XDEVS);
-	if (ret != 0) {
-		return do_exit(&xi, ret);
+	struct xrt_system_devices *xsysd = NULL;
+	xret = xrt_instance_create_system( //
+	    xi,                            // Instance
+	    &xsysd,                        // System devices.
+	    NULL);                         // System compositor.
+	if (xret != XRT_SUCCESS) {
+		printf("\tCall to xrt_instance_create_system failed! '%i'\n", xret);
+		return do_exit(&xi, -1);
+	}
+	if (xsysd == NULL) {
+		printf("\tNo xrt_system_devices returned!\n");
+		return do_exit(&xi, -1);
 	}
 
 	struct xrt_prober *xp = NULL;
@@ -99,26 +109,11 @@ cli_cmd_probe(int argc, const char **argv)
 #endif
 
 	printf(" :: Destroying probed devices\n");
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (xdevs[i] == NULL) {
-			continue;
-		}
 
-		printf("\tDestroying '%s' [%s]\n", xdevs[i]->str, xdevs[i]->serial);
-		xrt_device_destroy(&xdevs[i]);
-	}
+	xrt_system_devices_destroy(&xsysd);
 
 	// End of program
 	printf(" :: All ok, shutting down.\n");
-
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (xdevs[i] == NULL) {
-			continue;
-		}
-
-		printf("\tDestroying '%s' [%s]\n", xdevs[i]->str, xdevs[i]->serial);
-		xrt_device_destroy(&xdevs[i]);
-	}
 
 	// Finally done
 	return do_exit(&xi, 0);

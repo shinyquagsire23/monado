@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #include "xrt/xrt_instance.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_prober.h"
 #include "cli_common.h"
 
@@ -29,8 +30,8 @@ do_exit(struct xrt_instance **xi_ptr, int ret)
 int
 cli_cmd_test(int argc, const char **argv)
 {
-	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	struct xrt_instance *xi = NULL;
+	xrt_result_t xret = XRT_SUCCESS;
 	int ret = 0;
 
 	// Initialize the prober.
@@ -70,37 +71,59 @@ cli_cmd_test(int argc, const char **argv)
 
 	// Regardless of whether xrt_prober is used, we can find and select
 	// (multiple) devices.
-	printf(" :: Probing and selecting devices!\n");
+	printf(" :: Creating system devices!\n");
 
-	ret = xrt_instance_select(xi, xdevs, NUM_XDEVS);
-	if (ret != 0) {
-		return do_exit(&xi, ret);
+	struct xrt_system_devices *xsysd = NULL;
+	xret = xrt_instance_create_system( //
+	    xi,                            // Instance
+	    &xsysd,                        // System devices.
+	    NULL);                         // System compositor.
+	if (xret != XRT_SUCCESS) {
+		printf("\tCall to xrt_instance_create_system failed! '%i'\n", xret);
+		return do_exit(&xi, -1);
 	}
-	if (xdevs[0] == NULL) {
+	if (xsysd == NULL) {
+		printf("\tNo xrt_system_devices returned!\n");
+		return do_exit(&xi, -1);
+	}
+	if (xsysd->xdevs[0] == NULL) {
 		printf("\tNo HMD found! :(\n");
 		return do_exit(&xi, -1);
 	}
 
+	printf(" :: Listing created devices!\n");
 
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (xdevs[i] == NULL) {
+	for (uint32_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		if (xsysd->xdevs[i] == NULL) {
 			continue;
 		}
 
-		printf("\tFound '%s'\n", xdevs[i]->str);
+		printf("\t%2u: %s\n", i, xsysd->xdevs[i]->str);
 	}
+
+	printf(" :: Listing role assignments!\n");
+
+#define PRINT_ROLE(ROLE, PAD)                                                                                          \
+	do {                                                                                                           \
+		if (xsysd->roles.ROLE == NULL) {                                                                       \
+			printf("\t" #ROLE ": " PAD "<none>\n");                                                        \
+		} else {                                                                                               \
+			printf("\t" #ROLE ": " PAD "%s\n", xsysd->roles.ROLE->str);                                    \
+		}                                                                                                      \
+	} while (false)
+
+	PRINT_ROLE(head, "               ");
+	PRINT_ROLE(left, "               ");
+	PRINT_ROLE(right, "              ");
+	PRINT_ROLE(gamepad, "            ");
+	PRINT_ROLE(hand_tracking.left, " ");
+	PRINT_ROLE(hand_tracking.right, "");
+
 
 	// End of program
 	printf(" :: All ok, shutting down.\n");
 
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		if (xdevs[i] == NULL) {
-			continue;
-		}
-
-		printf("\tDestroying '%s'\n", xdevs[i]->str);
-		xrt_device_destroy(&xdevs[i]);
-	}
+	xrt_system_devices_destroy(&xsysd);
 
 	// Finally done
 	return do_exit(&xi, 0);
