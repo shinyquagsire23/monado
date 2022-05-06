@@ -335,6 +335,29 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 	return &htd->base;
 }
 
+int
+ht_device_create_wmr(struct xrt_frame_context *xfctx,
+                     struct t_stereo_camera_calibration *calib,
+                     struct xrt_slam_sinks **out_sinks,
+                     struct xrt_device **out_device)
+{
+
+	XRT_TRACE_MARKER();
+	assert(calib != NULL);
+
+	//! @todo Is CENTER_OF_STEREO_CAMERA what we really want?
+	struct t_hand_tracking_sync *sync =
+	    t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA);
+
+	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
+
+	HT_DEBUG(htd, "Hand Tracker initialized!");
+
+	*out_sinks = &htd->async->sinks;
+	*out_device = &htd->base;
+	return 0;
+}
+
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 struct xrt_device *
 ht_device_create_depthai_ov9282()

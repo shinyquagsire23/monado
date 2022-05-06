@@ -11,10 +11,12 @@
  * @ingroup drv_wmr
  */
 
+#include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_tracking.h"
 
 #include "os/os_time.h"
 #include "os/os_hid.h"
@@ -31,6 +33,7 @@
 #include "util/u_device.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
+#include "util/u_sink.h"
 
 #include "tracking/t_tracking.h"
 
@@ -48,8 +51,15 @@
 #include <unistd.h> // for sleep()
 #endif
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#include "../drivers/ht/ht_interface.h"
+#endif
+
 //! Specifies whether the user wants to use a SLAM tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
+
+//! Specifies whether the user wants to use the hand tracker.
+DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
@@ -1192,6 +1202,70 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 	*out_angle_up = -atanf(tanangle_up);
 }
 
+/*!
+ * Creates an OpenCV-compatible @ref t_stereo_camera_calibration pointer from
+ * the WMR config.
+ *
+ * Note that the camera model used on WMR headsets seems to be the same as the
+ * one in Azure-Kinect-Sensor-SDK. That model is slightly different than
+ * OpenCV's in the following ways:
+ * 1. There are "center of distortion", codx and cody, parameters
+ * 2. The terms that use the tangential parameters, p1 and p2, aren't multiplied by 2
+ * 3. There is a "metric radius" that delimits a valid area of distortion/undistortion
+ *
+ * Thankfully, parameters of points 1 and 2 tend to be almost zero in practice and we
+ * only do unprojections (for hand tracking) in very safe camera regions so 3
+ * doesn't bother us that much either.
+ */
+XRT_MAYBE_UNUSED static struct t_stereo_camera_calibration *
+wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
+{
+	struct t_stereo_camera_calibration *calib = NULL;
+	t_stereo_camera_calibration_alloc(&calib, 8);
+
+	// Intrinsics
+	for (int view = 0; view < 2; view++) { // Assuming that cameras[0-1] are HT0 and HT1
+		struct t_camera_calibration *tcc = &calib->view[view];
+		struct wmr_camera_config *cam = &wh->config.cameras[view];
+		struct wmr_distortion_6KT *intr = &cam->distortion6KT;
+
+		tcc->image_size_pixels.h = wh->config.cameras[view].roi.extent.h;
+		tcc->image_size_pixels.w = wh->config.cameras[view].roi.extent.w;
+		tcc->intrinsics[0][0] = intr->params.fx * (double)cam->roi.extent.w;
+		tcc->intrinsics[1][1] = intr->params.fy * (double)cam->roi.extent.h;
+		tcc->intrinsics[0][2] = intr->params.cx * (double)cam->roi.extent.w;
+		tcc->intrinsics[1][2] = intr->params.cy * (double)cam->roi.extent.h;
+		tcc->intrinsics[2][2] = 1.0;
+
+		tcc->distortion[0] = intr->params.k[0];
+		tcc->distortion[1] = intr->params.k[1];
+		tcc->distortion[2] = intr->params.p1;
+		tcc->distortion[3] = intr->params.p2;
+		tcc->distortion[4] = intr->params.k[2];
+		tcc->distortion[5] = intr->params.k[3];
+		tcc->distortion[6] = intr->params.k[4];
+		tcc->distortion[7] = intr->params.k[5];
+		tcc->use_fisheye = false;
+	}
+
+	// Extrinsics (transform HT1 to HT0; or equivalently HT0 space into HT1 space)
+	struct wmr_camera_config *cam2 = &wh->config.cameras[1];
+	calib->camera_translation[0] = cam2->translation.x;
+	calib->camera_translation[1] = cam2->translation.y;
+	calib->camera_translation[2] = cam2->translation.z;
+	calib->camera_rotation[0][0] = cam2->rotation.v[0];
+	calib->camera_rotation[0][1] = cam2->rotation.v[1];
+	calib->camera_rotation[0][2] = cam2->rotation.v[2];
+	calib->camera_rotation[1][0] = cam2->rotation.v[3];
+	calib->camera_rotation[1][1] = cam2->rotation.v[4];
+	calib->camera_rotation[1][2] = cam2->rotation.v[5];
+	calib->camera_rotation[2][0] = cam2->rotation.v[6];
+	calib->camera_rotation[2][1] = cam2->rotation.v[7];
+	calib->camera_rotation[2][2] = cam2->rotation.v[8];
+
+	return calib;
+}
+
 static void
 wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 {
@@ -1236,6 +1310,33 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 	return sinks;
 }
 
+static int
+wmr_hmd_hand_track(struct wmr_hmd *wh, struct xrt_slam_sinks **out_sinks, struct xrt_device **out_device)
+{
+	DRV_TRACE_MARKER();
+
+	struct xrt_slam_sinks *sinks = NULL;
+	struct xrt_device *device = NULL;
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	struct t_stereo_camera_calibration *calib = wmr_hmd_create_stereo_camera_calib(wh);
+
+	int create_status = ht_device_create_wmr(&wh->tracking.xfctx, calib, &sinks, &device);
+	if (create_status != 0) {
+		return create_status;
+	}
+
+	t_stereo_camera_calibration_reference(&calib, NULL);
+
+	WMR_DEBUG(wh, "WMR HMD hand tracker successfully created");
+#endif
+
+	*out_sinks = sinks;
+	*out_device = device;
+
+	return 0;
+}
+
 static void
 wmr_hmd_setup_ui(struct wmr_hmd *wh)
 {
@@ -1256,6 +1357,9 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 	u_var_add_gui_header(wh, NULL, "SLAM Tracking");
 	u_var_add_ro_text(wh, wh->gui.slam_status, "Tracker status");
 
+	u_var_add_gui_header(wh, NULL, "Hand Tracking");
+	u_var_add_ro_text(wh, wh->gui.hand_status, "Tracker status");
+
 	u_var_add_gui_header(wh, NULL, "Hololens Sensors' Companion device");
 	u_var_add_u8(wh, &wh->proximity_sensor, "HMD Proximity");
 	u_var_add_u16(wh, &wh->raw_ipd, "HMD IPD");
@@ -1272,15 +1376,19 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 }
 
 /*!
+ * Procedure to setup trackers: 3dof, SLAM and hand tracking.
+ *
  * Determines which trackers to initialize and starts them.
  * Fills @p out_sinks to stream raw data to for tracking.
+ * In the case of hand tracking being enabled, it returns a hand tracker device in @p out_handtracker.
  *
  * @param wh the wmr headset device
  * @param out_sinks sinks to stream video/IMU data to for tracking
+ * @param out_handtracker a newly created hand tracker device
  * @return true on success, false when an unexpected state is reached.
  */
 static bool
-wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks)
+wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, struct xrt_device **out_handtracker)
 {
 	// We always have at least 3dof HMD tracking
 	bool dof3_enabled = true;
@@ -1294,10 +1402,21 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks)
 #endif
 	bool slam_enabled = slam_supported && slam_wanted;
 
+	// Decide whether to initialize the hand tracker
+	bool hand_wanted = debug_get_bool_option_wmr_handtracking();
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	bool hand_supported = true;
+#else
+	bool hand_supported = false;
+#endif
+	bool hand_enabled = hand_supported && hand_wanted;
+
 	wh->base.orientation_tracking_supported = dof3_enabled;
 	wh->base.position_tracking_supported = slam_enabled;
+	wh->base.hand_tracking_supported = false; // out_handtracker will handle it
 
 	wh->tracking.slam_enabled = slam_enabled;
+	wh->tracking.hand_enabled = hand_enabled;
 
 	wh->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
 
@@ -1306,9 +1425,15 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks)
 	                          : !slam_supported         ? "Unavailable (not built)"
 	                                                    : NULL;
 
-	assert(slam_status != NULL);
+	const char *hand_status = wh->tracking.hand_enabled ? "Enabled"
+	                          : !hand_wanted            ? "Disabled by the user (envvar set to false)"
+	                          : !hand_supported         ? "Unavailable (not built)"
+	                                                    : NULL;
+
+	assert(slam_status != NULL && hand_status != NULL);
 
 	snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
+	snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
 
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
@@ -1323,21 +1448,53 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks)
 		}
 	}
 
+	// Initialize hand tracker
+	struct xrt_slam_sinks *hand_sinks = NULL;
+	struct xrt_device *hand_device = NULL;
+	if (wh->tracking.hand_enabled) {
+		int hand_status = wmr_hmd_hand_track(wh, &hand_sinks, &hand_device);
+		if (hand_status != 0 || hand_sinks == NULL || hand_device == NULL) {
+			WMR_WARN(wh, "Unable to setup the hand tracker");
+			return false;
+		}
+	}
+
+	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
-	if (slam_enabled) {
+	if (slam_enabled && hand_enabled) {
+		struct xrt_frame_sink *entry_left_sink = NULL;
+		struct xrt_frame_sink *entry_right_sink = NULL;
+
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+
+		entry_sinks = (struct xrt_slam_sinks){
+		    .left = entry_left_sink,
+		    .right = entry_right_sink,
+		    .imu = slam_sinks->imu,
+		    .gt = slam_sinks->gt,
+		};
+	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
+	} else if (hand_enabled) {
+		entry_sinks = *hand_sinks;
+	} else {
+		entry_sinks = (struct xrt_slam_sinks){0};
 	}
 
 	*out_sinks = entry_sinks;
+	*out_handtracker = hand_device;
 	return true;
 }
 
-struct xrt_device *
+void
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
                struct xrt_prober_device *dev_holo,
-               enum u_logging_level log_level)
+               enum u_logging_level log_level,
+               struct xrt_device **out_hmd,
+               struct xrt_device **out_handtracker)
 {
 	DRV_TRACE_MARKER();
 
@@ -1349,7 +1506,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	struct wmr_hmd *wh = U_DEVICE_ALLOCATE(struct wmr_hmd, flags, 1, 0);
 	if (!wh) {
-		return NULL;
+		return;
 	}
 
 	// Populate the base members.
@@ -1370,7 +1527,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_ERROR(wh, "Failed to init mutex!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	// Thread and other state.
@@ -1379,7 +1536,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_ERROR(wh, "Failed to init threading!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	// Setup input.
@@ -1390,7 +1547,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_ERROR(wh, "Failed to load headset configuration!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
@@ -1500,7 +1657,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_ERROR(wh, "Activation of HMD failed");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	// Switch on IMU on the HMD.
@@ -1510,11 +1667,12 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->tracking.source = wmr_source_create(&wh->tracking.xfctx, dev_holo, wh->config);
 
 	struct xrt_slam_sinks sinks = {0};
-	bool success = wmr_hmd_setup_trackers(wh, &sinks);
+	struct xrt_device *hand_device = NULL;
+	bool success = wmr_hmd_setup_trackers(wh, &sinks, &hand_device);
 	if (!success) {
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	// Stream data source into sinks (if populated)
@@ -1524,7 +1682,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_WARN(wh, "Failed to start WMR source");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	// Hand over hololens sensor device to reading thread.
@@ -1533,10 +1691,11 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		WMR_ERROR(wh, "Failed to start thread!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
-		return NULL;
+		return;
 	}
 
 	wmr_hmd_setup_ui(wh);
 
-	return &wh->base;
+	*out_hmd = &wh->base;
+	*out_handtracker = hand_device;
 }

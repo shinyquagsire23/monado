@@ -105,7 +105,10 @@ struct wmr_camera_config
 	enum wmr_camera_purpose purpose;
 
 	struct xrt_rect roi;
-	struct xrt_pose pose;
+
+	struct xrt_vec3 translation;    //!< Raw translation (to HT0)
+	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0)
+	struct xrt_pose pose;           //!< Corrected pose from translation and rotation fields
 
 	struct wmr_distortion_6KT distortion6KT;
 };

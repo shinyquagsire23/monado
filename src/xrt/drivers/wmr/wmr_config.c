@@ -318,6 +318,8 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	}
 
 	wmr_config_compute_pose(&cam_config->pose, &translation, &rotation);
+	cam_config->translation = translation;
+	cam_config->rotation = rotation;
 
 	if (!JSON_INT(camera, "SensorWidth", &cam_config->roi.extent.w) ||
 	    !JSON_INT(camera, "SensorHeight", &cam_config->roi.extent.h)) {

@@ -36,6 +36,25 @@ extern "C" {
 struct xrt_device *
 ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration *calib);
 
+/*!
+ * Create hand tracker for WMR devices.
+ *
+ * @note The frame context comes from the WMR device.
+ *
+ * @ingroup drv_ht
+ *
+ * @param xfctx WMR context to attach the tracker to
+ * @param calib Calibration struct for stereo camera
+ * @param out_sinks Sinks to stream camera data to
+ * @param out_device Newly created hand tracker "device"
+ * @return int 0 on success
+ */
+int
+ht_device_create_wmr(struct xrt_frame_context *xfctx,
+                     struct t_stereo_camera_calibration *calib,
+                     struct xrt_slam_sinks **out_sinks,
+                     struct xrt_device **out_device);
+
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 struct xrt_device *
 ht_device_create_depthai_ov9282(void);

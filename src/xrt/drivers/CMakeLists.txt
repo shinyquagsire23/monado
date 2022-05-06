@@ -337,6 +337,11 @@ if(XRT_BUILD_DRIVER_WMR)
 		target_include_directories(drv_wmr PUBLIC ${LIBUSB1_INCLUDE_DIRS})
 		target_link_libraries(drv_wmr PRIVATE ${LIBUSB1_LIBRARIES})
 	endif()
+
+	if(XRT_BUILD_DRIVER_HANDTRACKING)
+		target_link_libraries(drv_wmr PRIVATE drv_ht)
+		target_link_libraries(drv_wmr PRIVATE drv_cemu)
+	endif()
 endif()
 
 if(XRT_BUILD_DRIVER_EUROC)

@@ -9,6 +9,7 @@
  * @ingroup drv_wmr
  */
 
+#include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_prober.h"
 
 #include "util/u_misc.h"
@@ -24,6 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#include "../multi_wrapper/multi.h"
+#include "../ht_ctrl_emu/ht_ctrl_emu_interface.h"
+#endif
 
 /*
  *
@@ -196,14 +202,31 @@ wmr_found(struct xrt_prober *xp,
 		return -1;
 	}
 
-	struct xrt_device *p = wmr_hmd_create(hmd_type, hid_holo, hid_companion, dev_holo, log_level);
-	if (!p) {
+	int out_idx = 0;
+	struct xrt_device *hmd = NULL;
+	struct xrt_device *ht = NULL;
+	wmr_hmd_create(hmd_type, hid_holo, hid_companion, dev_holo, log_level, &hmd, &ht);
+
+	if (hmd == NULL) {
 		U_LOG_IFL_E(log_level, "Failed to create WMR HMD device.");
 		return -1;
 	}
+	out_xdev[out_idx++] = hmd;
 
-	*out_xdev = p;
-	return 1;
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	if (ht != NULL) { // Create hand-tracked controllers
+		struct xrt_pose pose = XRT_POSE_IDENTITY;
+		struct xrt_device *wrap = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, hmd,
+		                                                         XRT_INPUT_GENERIC_HEAD_POSE, &pose);
+		struct xrt_device *two_hands[2];
+		cemu_devices_create(hmd, wrap, two_hands);
+
+		out_xdev[out_idx++] = two_hands[0];
+		out_xdev[out_idx++] = two_hands[1];
+	}
+#endif
+
+	return out_idx;
 }
 
 int

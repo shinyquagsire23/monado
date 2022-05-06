@@ -150,10 +150,17 @@ struct wmr_hmd
 		struct xrt_frame_context xfctx;
 
 		//! SLAM tracker.
+		//! @todo Right now, we are not consistent in how we interface with
+		//! trackers. In particular, we have a @ref xrt_tracked_slam field but not
+		//! an equivalent for hand tracking. Maybe we should try to use @ref
+		//! xrt_tracked_hand?
 		struct xrt_tracked_slam *slam;
 
 		//! Set at start. Whether the SLAM tracker was initialized.
 		bool slam_enabled;
+
+		//! Set at start. Whether the hand tracker was initialized.
+		bool hand_enabled;
 	} tracking;
 
 	//! Whether to track the HMD with 6dof SLAM or fallback to the `fusion` 3dof tracker
@@ -169,6 +176,7 @@ struct wmr_hmd
 	{
 		struct u_var_button hmd_screen_enable_btn;
 		struct u_var_button switch_tracker_btn;
+		char hand_status[128];
 		char slam_status[128];
 	} gui;
 };
@@ -179,12 +187,14 @@ wmr_hmd(struct xrt_device *p)
 	return (struct wmr_hmd *)p;
 }
 
-struct xrt_device *
+void
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
                struct os_hid_device *hid_ctrl,
                struct xrt_prober_device *dev_holo,
-               enum u_logging_level log_level);
+               enum u_logging_level log_level,
+               struct xrt_device **out_hmd,
+               struct xrt_device **out_handtracker);
 
 #define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
 #define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
