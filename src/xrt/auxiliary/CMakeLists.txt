@@ -282,8 +282,12 @@ if(XRT_HAVE_VULKAN)
 endif()
 
 if(XRT_BUILD_DRIVER_VIVE OR XRT_BUILD_DRIVER_SURVIVE)
-	set(VIVE_CONFIG_SOURCE_FILES vive/vive_config.h vive/vive_config.c)
-	add_library(aux_vive STATIC ${VIVE_CONFIG_SOURCE_FILES})
+	add_library(aux_vive STATIC
+		vive/vive_config.h
+		vive/vive_config.c
+		vive/vive_bindings.c
+		vive/vive_bindings.h
+		)
 	target_link_libraries(
 		aux_vive
 		PRIVATE
