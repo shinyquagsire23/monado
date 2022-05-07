@@ -369,8 +369,7 @@ struct render_viewport_data
  */
 
 /*!
- * Each rendering (@ref render_gfx
-) render to one or more targets
+ * Each rendering (@ref render_gfx) render to one or more targets
  * (@ref render_gfx_target_resources), each target can have one or more
  * views (@ref render_gfx_view), this struct holds all the data that is
  * specific to the target.
