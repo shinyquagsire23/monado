@@ -207,6 +207,8 @@ add_library(
 	util/u_string_list.cpp
 	util/u_string_list.h
 	util/u_string_list.hpp
+	util/u_system_helpers.c
+	util/u_system_helpers.h
 	util/u_template_historybuf.hpp
 	util/u_time.cpp
 	util/u_time.h
