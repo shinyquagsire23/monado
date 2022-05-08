@@ -25,11 +25,15 @@ vk_print_device_info(struct vk_bundle *vk,
 	          "\tvendor: 0x%04x\n"
 	          "\tproduct: 0x%04x\n"
 	          "\tapiVersion: %u.%u.%u\n"
-	          "\tdriverVersion: %u.%u.%u",
-	          title, pdp->deviceName, pdp->vendorID, pdp->deviceID, VK_VERSION_MAJOR(pdp->apiVersion),
-	          VK_VERSION_MINOR(pdp->apiVersion), VK_VERSION_PATCH(pdp->apiVersion),
-	          VK_VERSION_MAJOR(pdp->driverVersion), VK_VERSION_MINOR(pdp->driverVersion),
-	          VK_VERSION_PATCH(pdp->driverVersion));
+	          "\tdriverVersion: 0x%08x",
+	          title,                             //
+	          pdp->deviceName,                   //
+	          pdp->vendorID,                     //
+	          pdp->deviceID,                     //
+	          VK_VERSION_MAJOR(pdp->apiVersion), //
+	          VK_VERSION_MINOR(pdp->apiVersion), //
+	          VK_VERSION_PATCH(pdp->apiVersion), //
+	          pdp->driverVersion);               // Driver specific
 }
 
 void
