@@ -79,6 +79,8 @@ xrt_gfx_vk_provider_create(struct xrt_compositor_native *xcn,
 	    get_instance_proc_addr,                                     //
 	    physical_device,                                            //
 	    device,                                                     //
+	    true,                                                       //
+	    true,                                                       //
 	    timeline_semaphore_enabled,                                 //
 	    queue_family_index,                                         //
 	    queue_index);                                               //

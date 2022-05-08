@@ -770,6 +770,8 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             PFN_vkGetInstanceProcAddr getProc,
                             VkPhysicalDevice physicalDevice,
                             VkDevice device,
+                            bool external_fence_fd_enabled,
+                            bool external_semaphore_fd_enabled,
                             bool timeline_semaphore_enabled,
                             uint32_t queueFamilyIndex,
                             uint32_t queueIndex)
@@ -810,18 +812,18 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	// Default to info.
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
-	ret = vk_init_from_given(       //
-	    &c->vk,                     // vk_bundle
-	    getProc,                    // vkGetInstanceProcAddr
-	    instance,                   // instance
-	    physicalDevice,             // physical_device
-	    device,                     // device
-	    queueFamilyIndex,           // queue_family_index
-	    queueIndex,                 // queue_index
-	    true,                       // external_fence_fd_enabled
-	    true,                       // external_semaphore_fd_enabled
-	    timeline_semaphore_enabled, // timeline_semaphore_enabled
-	    log_level);                 // log_level
+	ret = vk_init_from_given(          //
+	    &c->vk,                        // vk_bundle
+	    getProc,                       // vkGetInstanceProcAddr
+	    instance,                      // instance
+	    physicalDevice,                // physical_device
+	    device,                        // device
+	    queueFamilyIndex,              // queue_family_index
+	    queueIndex,                    // queue_index
+	    external_fence_fd_enabled,     // external_fence_fd_enabled
+	    external_semaphore_fd_enabled, // external_semaphore_fd_enabled
+	    timeline_semaphore_enabled,    // timeline_semaphore_enabled
+	    log_level);                    // log_level
 	if (ret != VK_SUCCESS) {
 		goto err_free;
 	}

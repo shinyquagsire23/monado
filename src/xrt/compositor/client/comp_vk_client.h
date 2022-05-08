@@ -99,6 +99,8 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
                             PFN_vkGetInstanceProcAddr getProc,
                             VkPhysicalDevice physicalDevice,
                             VkDevice device,
+                            bool external_fence_fd_enabled,
+                            bool external_semaphore_fd_enabled,
                             bool timeline_semaphore_enabled,
                             uint32_t queueFamilyIndex,
                             uint32_t queueIndex);
