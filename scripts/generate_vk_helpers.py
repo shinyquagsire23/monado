@@ -246,16 +246,18 @@ def get_instance_cmds():
     ]
 
 
+# Sorted KHR, EXT, Vendor, interally alphabetically
 INSTANCE_EXTENSIONS_TO_CHECK = [
     "VK_EXT_display_surface_counter",
 ]
+# Sorted KHR, EXT, Vendor, interally alphabetically
 DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_timeline_semaphore",
     "VK_EXT_calibrated_timestamps",
+    "VK_EXT_display_control",
     "VK_EXT_global_priority",
     "VK_EXT_robustness2",
     "VK_GOOGLE_display_timing",
-    "VK_EXT_display_control",
 ]
 
 ROOT = Path(__file__).resolve().parent.parent
