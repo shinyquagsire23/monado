@@ -97,6 +97,8 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	    vkGetInstanceProcAddr,                                   //
 	    next->physicalDevice,                                    //
 	    next->device,                                            //
+	    true,                                                    // external_fence_fd_enabled
+	    true,                                                    // external_semaphore_fd_enabled
 	    timeline_semaphore_enabled,                              //
 	    next->queueFamilyIndex,                                  //
 	    next->queueIndex);                                       //

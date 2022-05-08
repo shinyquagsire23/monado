@@ -61,6 +61,8 @@ xrt_gfx_vk_provider_create(struct xrt_compositor_native *xcn,
                            PFN_vkGetInstanceProcAddr get_instance_proc_addr,
                            VkPhysicalDevice physical_device,
                            VkDevice device,
+                           bool external_fence_fd_enabled,
+                           bool external_semaphore_fd_enabled,
                            bool timeline_semaphore_enabled,
                            uint32_t queue_family_index,
                            uint32_t queue_index);
