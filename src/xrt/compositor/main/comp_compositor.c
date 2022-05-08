@@ -584,9 +584,7 @@ static const char *required_device_extensions[] = {
 #endif
 
 // Platform version of "external_fence" and "external_semaphore"
-#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD) // Optional
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
@@ -600,6 +598,17 @@ static const char *required_device_extensions[] = {
 static const char *optional_device_extensions[] = {
     VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME, //
     VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME,   //
+
+// Platform version of "external_fence" and "external_semaphore"
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME, //
+    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,     //
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE) // Not optional
+
+#else
+#error "Need port!"
+#endif
 
 #ifdef VK_KHR_timeline_semaphore
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
