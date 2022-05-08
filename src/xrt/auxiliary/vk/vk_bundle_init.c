@@ -992,6 +992,8 @@ vk_init_from_given(struct vk_bundle *vk,
                    VkDevice device,
                    uint32_t queue_family_index,
                    uint32_t queue_index,
+                   bool external_fence_fd_enabled,
+                   bool external_semaphore_fd_enabled,
                    bool timeline_semaphore_enabled,
                    enum u_logging_level log_level)
 {
@@ -1022,6 +1024,15 @@ vk_init_from_given(struct vk_bundle *vk,
 	// passed a vulkan context and do not call selectPhysicalDevice()
 	vk->vkGetPhysicalDeviceMemoryProperties(vk->physical_device, &vk->device_memory_props);
 
+	// Vulkan does not let us read what extensions was enabled.
+	if (external_fence_fd_enabled) {
+		vk->has_KHR_external_fence_fd = true;
+	}
+
+	// Vulkan does not let us read what extensions was enabled.
+	if (external_semaphore_fd_enabled) {
+		vk->has_KHR_external_semaphore_fd = true;
+	}
 
 #ifdef VK_KHR_timeline_semaphore
 	/*

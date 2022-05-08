@@ -818,6 +818,8 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 	    device,                     // device
 	    queueFamilyIndex,           // queue_family_index
 	    queueIndex,                 // queue_index
+	    true,                       // external_fence_fd_enabled
+	    true,                       // external_semaphore_fd_enabled
 	    timeline_semaphore_enabled, // timeline_semaphore_enabled
 	    log_level);                 // log_level
 	if (ret != VK_SUCCESS) {
