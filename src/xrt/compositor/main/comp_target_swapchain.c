@@ -49,6 +49,7 @@ static VkFormat preferred_color_formats[] = {
  *
  */
 
+#if 0
 static void
 comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts);
 
@@ -69,6 +70,7 @@ _find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, Vk
 
 static bool
 _check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode);
+#endif
 
 
 /*
@@ -83,184 +85,88 @@ get_vk(struct comp_target_swapchain *cts)
 	return &cts->base.c->base.vk;
 }
 
-#if defined(VK_EXT_display_surface_counter) && defined(VK_EXT_display_control)
-static bool
-check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct comp_target_swapchain *cts)
+static void
+destroy_old(struct comp_target_swapchain *cts, VkSwapchainKHR old)
 {
-	if (!vk->has_EXT_display_surface_counter) {
-		return true;
+	struct vk_bundle *vk = get_vk(cts);
+
+	if (old != VK_NULL_HANDLE) {
+		vk->vkDestroySwapchainKHR(vk->device, old, NULL);
 	}
-
-	VkSurfaceCapabilities2EXT caps = {
-	    .sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES2_EXT,
-	};
-
-	VkResult ret = vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT(vk->physical_device, cts->surface.handle, &caps);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilities2EXT: %s", vk_result_string(ret));
-		return false;
-	}
-
-	cts->surface.surface_counter_flags = caps.supportedSurfaceCounters;
-	COMP_DEBUG(ct->c, "Supported surface counter flags: %d", caps.supportedSurfaceCounters);
-
-	return true;
 }
 
-#endif
+static void
+destroy_image_views(struct comp_target_swapchain *cts)
+{
+	if (cts->base.images == NULL) {
+		return;
+	}
+
+	struct vk_bundle *vk = get_vk(cts);
+
+	for (uint32_t i = 0; i < cts->base.image_count; i++) {
+		if (cts->base.images[i].view == VK_NULL_HANDLE) {
+			continue;
+		}
+
+		vk->vkDestroyImageView(vk->device, cts->base.images[i].view, NULL);
+		cts->base.images[i].view = VK_NULL_HANDLE;
+	}
+
+	free(cts->base.images);
+	cts->base.images = NULL;
+}
 
 static void
-comp_target_swapchain_create_images(struct comp_target *ct,
-                                    uint32_t preferred_width,
-                                    uint32_t preferred_height,
-                                    VkFormat color_format,
-                                    VkColorSpaceKHR color_space,
-                                    VkImageUsageFlags image_usage,
-                                    VkPresentModeKHR present_mode)
+create_image_views(struct comp_target_swapchain *cts)
 {
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
-	VkBool32 supported;
-	VkResult ret;
 
-	uint64_t now_ns = os_monotonic_get_ns();
-	// Some platforms really don't like the pacing_compositor code.
-	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
-	if (cts->upc == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
-		u_pc_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
-		                           &U_PC_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->upc);
-	} else if (cts->upc == NULL) {
-		u_pc_fake_create(ct->c->settings.nominal_frame_interval_ns, now_ns, &cts->upc);
-	}
+	vk->vkGetSwapchainImagesKHR( //
+	    vk->device,              // device
+	    cts->swapchain.handle,   // swapchain
+	    &cts->base.image_count,  // pSwapchainImageCount
+	    NULL);                   // pSwapchainImages
+	assert(cts->base.image_count > 0);
+	COMP_DEBUG(cts->base.c, "Creating %d image views.", cts->base.image_count);
 
-	// Free old image views.
-	comp_target_swapchain_destroy_image_views(cts);
+	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, cts->base.image_count);
+	vk->vkGetSwapchainImagesKHR( //
+	    vk->device,              // device
+	    cts->swapchain.handle,   // swapchain
+	    &cts->base.image_count,  // pSwapchainImageCount
+	    images);                 // pSwapchainImages
 
-	VkSwapchainKHR old_swapchain_handle = cts->swapchain.handle;
+	destroy_image_views(cts);
 
-	cts->base.image_count = 0;
-	cts->swapchain.handle = VK_NULL_HANDLE;
-	cts->present_mode = present_mode;
-	cts->preferred.color_format = color_format;
-	cts->preferred.color_space = color_space;
+	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image, cts->base.image_count);
 
-
-	// Sanity check.
-	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR( //
-	    vk->physical_device,                        // physicalDevice
-	    vk->queue_family_index,                     // queueFamilyIndex
-	    cts->surface.handle,                        // surface
-	    &supported);                                // pSupported
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_result_string(ret));
-	} else if (!supported) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: Surface not supported!");
-	}
-
-	// More sanity checks.
-	if (!_check_surface_present_mode(cts, cts->surface.handle, cts->present_mode)) {
-		// Free old.
-		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
-		return;
-	}
-
-	// Find the correct format.
-	if (!_find_surface_format(cts, cts->surface.handle, &cts->surface.format)) {
-		// Free old.
-		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
-		return;
-	}
-
-	// Get the caps first.
-	VkSurfaceCapabilitiesKHR surface_caps;
-	ret = vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical_device, cts->surface.handle, &surface_caps);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s", vk_result_string(ret));
-
-		// Free old.
-		comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
-		return;
-	}
-
-	// Get the extents of the swapchain.
-	VkExtent2D extent = comp_target_swapchain_select_extent(cts, surface_caps, preferred_width, preferred_height);
-
-	if (surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
-	    surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		COMP_DEBUG(ct->c, "Swapping width and height, since we are going to pre rotate");
-		uint32_t w2 = extent.width;
-		uint32_t h2 = extent.height;
-		extent.width = h2;
-		extent.height = w2;
-	}
-
-	COMP_DEBUG(ct->c, "swapchain minImageCount %d maxImageCount %d", surface_caps.minImageCount,
-	           surface_caps.maxImageCount);
-
-	uint32_t image_count = surface_caps.minImageCount;
-	if (image_count < 3 && (surface_caps.maxImageCount >= 3 || surface_caps.maxImageCount == 0)) {
-		image_count = 3;
-	}
-	COMP_DEBUG(ct->c, "Creating compositor swapchain with %d images", image_count);
-
-
-	// Create the swapchain now.
-	VkSwapchainCreateInfoKHR swapchain_info = {
-	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-	    .surface = cts->surface.handle,
-	    .minImageCount = image_count,
-	    .imageFormat = cts->surface.format.format,
-	    .imageColorSpace = cts->surface.format.colorSpace,
-	    .imageExtent =
-	        {
-	            .width = extent.width,
-	            .height = extent.height,
-	        },
-	    .imageArrayLayers = 1,
-	    .imageUsage = image_usage,
-	    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-	    .queueFamilyIndexCount = 0,
-	    .preTransform = surface_caps.currentTransform,
-	    .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-	    .presentMode = cts->present_mode,
-	    .clipped = VK_TRUE,
-	    .oldSwapchain = old_swapchain_handle,
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = 1,
+	    .baseArrayLayer = 0,
+	    .layerCount = 1,
 	};
 
-	ret = vk->vkCreateSwapchainKHR(vk->device, &swapchain_info, NULL, &cts->swapchain.handle);
-
-	// Always destroy the old.
-	comp_target_swapchain_destroy_old(cts, old_swapchain_handle);
-
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s", vk_result_string(ret));
-		return;
+	for (uint32_t i = 0; i < cts->base.image_count; i++) {
+		cts->base.images[i].handle = images[i];
+		vk_create_view(                 //
+		    vk,                         // vk_bundle
+		    cts->base.images[i].handle, // image
+		    cts->surface.format.format, // format
+		    subresource_range,          // subresource_range
+		    &cts->base.images[i].view); // out_view
 	}
 
-
-	/*
-	 * Set target info.
-	 */
-
-	cts->base.width = extent.width;
-	cts->base.height = extent.height;
-	cts->base.format = cts->surface.format.format;
-	cts->base.surface_transform = surface_caps.currentTransform;
-
-	comp_target_swapchain_create_image_views(cts);
-
-#ifdef VK_EXT_display_control
-	if (!check_surface_counter_caps(ct, vk, cts)) {
-		COMP_ERROR(ct->c, "Failed to query surface counter capabilities");
-	}
-#endif
+	free(images);
 }
 
 static VkExtent2D
-comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
-                                    VkSurfaceCapabilitiesKHR caps,
-                                    uint32_t preferred_width,
-                                    uint32_t preferred_height)
+select_extent(struct comp_target_swapchain *cts,
+              VkSurfaceCapabilitiesKHR caps,
+              uint32_t preferred_width,
+              uint32_t preferred_height)
 {
 	// If width (and height) equals the special value 0xFFFFFFFF,
 	// the size of the surface will be set by the swapchain
@@ -286,90 +192,39 @@ comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
 	return caps.currentExtent;
 }
 
-static void
-comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchainKHR old)
-{
-	struct vk_bundle *vk = get_vk(cts);
-
-	if (old != VK_NULL_HANDLE) {
-		vk->vkDestroySwapchainKHR(vk->device, old, NULL);
-	}
-}
-
 static bool
-comp_target_swapchain_has_images(struct comp_target *ct)
+check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode)
 {
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	return cts->surface.handle != VK_NULL_HANDLE && cts->swapchain.handle != VK_NULL_HANDLE;
-}
-
-static VkResult
-comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
-{
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
+	VkResult ret;
 
-	if (!comp_target_swapchain_has_images(ct)) {
-		//! @todo what error to return here?
-		return VK_ERROR_INITIALIZATION_FAILED;
+	uint32_t present_mode_count;
+	VkPresentModeKHR *present_modes;
+	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count, NULL);
+
+	if (present_mode_count != 0) {
+		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, present_mode_count);
+		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count,
+		                                              present_modes);
+	} else {
+		COMP_ERROR(cts->base.c, "Could not enumerate present modes. '%s'", vk_result_string(ret));
+		return false;
 	}
 
-	return vk->vkAcquireNextImageKHR( //
-	    vk->device,                   // device
-	    cts->swapchain.handle,        // swapchain
-	    UINT64_MAX,                   // timeout
-	    semaphore,                    // semaphore
-	    VK_NULL_HANDLE,               // fence
-	    out_index);                   // pImageIndex
-}
+	for (uint32_t i = 0; i < present_mode_count; i++) {
+		if (present_modes[i] == present_mode) {
+			free(present_modes);
+			return true;
+		}
+	}
 
-static VkResult
-comp_target_swapchain_present(struct comp_target *ct,
-                              VkQueue queue,
-                              uint32_t index,
-                              VkSemaphore semaphore,
-                              uint64_t desired_present_time_ns,
-                              uint64_t present_slop_ns)
-{
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	struct vk_bundle *vk = get_vk(cts);
-
-	assert(cts->current_frame_id >= 0);
-	assert(cts->current_frame_id <= UINT32_MAX);
-
-	VkPresentTimeGOOGLE times = {
-	    .presentID = (uint32_t)cts->current_frame_id,
-	    .desiredPresentTime = desired_present_time_ns - present_slop_ns,
-	};
-
-	VkPresentTimesInfoGOOGLE timings = {
-	    .sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
-	    .swapchainCount = 1,
-	    .pTimes = &times,
-	};
-
-	VkPresentInfoKHR presentInfo = {
-	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
-	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &semaphore,
-	    .swapchainCount = 1,
-	    .pSwapchains = &cts->swapchain.handle,
-	    .pImageIndices = &index,
-	};
-
-	return vk->vkQueuePresentKHR(queue, &presentInfo);
+	free(present_modes);
+	COMP_ERROR(cts->base.c, "Requested present mode not supported.\n");
+	return false;
 }
 
 static bool
-comp_target_swapchain_check_ready(struct comp_target *ct)
-{
-	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
-	return cts->surface.handle != VK_NULL_HANDLE;
-}
-
-static bool
-_find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
+find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
 {
 	struct vk_bundle *vk = get_vk(cts);
 	uint32_t format_count;
@@ -488,108 +343,262 @@ error:
 	return false;
 }
 
+#if defined(VK_EXT_display_surface_counter) && defined(VK_EXT_display_control)
 static bool
-_check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode)
+check_surface_counter_caps(struct comp_target *ct, struct vk_bundle *vk, struct comp_target_swapchain *cts)
 {
-	struct vk_bundle *vk = get_vk(cts);
-	VkResult ret;
+	if (!vk->has_EXT_display_surface_counter) {
+		return true;
+	}
 
-	uint32_t present_mode_count;
-	VkPresentModeKHR *present_modes;
-	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count, NULL);
+	VkSurfaceCapabilities2EXT caps = {
+	    .sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES2_EXT,
+	};
 
-	if (present_mode_count != 0) {
-		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, present_mode_count);
-		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count,
-		                                              present_modes);
-	} else {
-		COMP_ERROR(cts->base.c, "Could not enumerate present modes. '%s'", vk_result_string(ret));
+	VkResult ret = vk->vkGetPhysicalDeviceSurfaceCapabilities2EXT(vk->physical_device, cts->surface.handle, &caps);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilities2EXT: %s", vk_result_string(ret));
 		return false;
 	}
 
-	for (uint32_t i = 0; i < present_mode_count; i++) {
-		if (present_modes[i] == present_mode) {
-			free(present_modes);
-			return true;
-		}
-	}
+	cts->surface.surface_counter_flags = caps.supportedSurfaceCounters;
+	COMP_DEBUG(ct->c, "Supported surface counter flags: %d", caps.supportedSurfaceCounters);
 
-	free(present_modes);
-	COMP_ERROR(cts->base.c, "Requested present mode not supported.\n");
-	return false;
+	return true;
 }
 
+#endif
+
+
+/*
+ *
+ * Member functions.
+ *
+ */
+
 static void
-comp_target_swapchain_destroy_image_views(struct comp_target_swapchain *cts)
+comp_target_swapchain_create_images(struct comp_target *ct,
+                                    uint32_t preferred_width,
+                                    uint32_t preferred_height,
+                                    VkFormat color_format,
+                                    VkColorSpaceKHR color_space,
+                                    VkImageUsageFlags image_usage,
+                                    VkPresentModeKHR present_mode)
 {
-	if (cts->base.images == NULL) {
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct vk_bundle *vk = get_vk(cts);
+	VkBool32 supported;
+	VkResult ret;
+
+	uint64_t now_ns = os_monotonic_get_ns();
+	// Some platforms really don't like the pacing_compositor code.
+	bool use_display_timing_if_available = cts->timing_usage == COMP_TARGET_USE_DISPLAY_IF_AVAILABLE;
+	if (cts->upc == NULL && use_display_timing_if_available && vk->has_GOOGLE_display_timing) {
+		u_pc_display_timing_create(ct->c->settings.nominal_frame_interval_ns,
+		                           &U_PC_DISPLAY_TIMING_CONFIG_DEFAULT, &cts->upc);
+	} else if (cts->upc == NULL) {
+		u_pc_fake_create(ct->c->settings.nominal_frame_interval_ns, now_ns, &cts->upc);
+	}
+
+	// Free old image views.
+	destroy_image_views(cts);
+
+	VkSwapchainKHR old_swapchain_handle = cts->swapchain.handle;
+
+	cts->base.image_count = 0;
+	cts->swapchain.handle = VK_NULL_HANDLE;
+	cts->present_mode = present_mode;
+	cts->preferred.color_format = color_format;
+	cts->preferred.color_space = color_space;
+
+
+	// Sanity check.
+	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR( //
+	    vk->physical_device,                        // physicalDevice
+	    vk->queue_family_index,                     // queueFamilyIndex
+	    cts->surface.handle,                        // surface
+	    &supported);                                // pSupported
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_result_string(ret));
+	} else if (!supported) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: Surface not supported!");
+	}
+
+	// More sanity checks.
+	if (!check_surface_present_mode(cts, cts->surface.handle, cts->present_mode)) {
+		// Free old.
+		destroy_old(cts, old_swapchain_handle);
 		return;
 	}
 
-	struct vk_bundle *vk = get_vk(cts);
-
-	for (uint32_t i = 0; i < cts->base.image_count; i++) {
-		if (cts->base.images[i].view == VK_NULL_HANDLE) {
-			continue;
-		}
-
-		vk->vkDestroyImageView(vk->device, cts->base.images[i].view, NULL);
-		cts->base.images[i].view = VK_NULL_HANDLE;
+	// Find the correct format.
+	if (!find_surface_format(cts, cts->surface.handle, &cts->surface.format)) {
+		// Free old.
+		destroy_old(cts, old_swapchain_handle);
+		return;
 	}
 
-	free(cts->base.images);
-	cts->base.images = NULL;
-}
+	// Get the caps first.
+	VkSurfaceCapabilitiesKHR surface_caps;
+	ret = vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical_device, cts->surface.handle, &surface_caps);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s", vk_result_string(ret));
 
-static void
-comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts)
-{
-	struct vk_bundle *vk = get_vk(cts);
+		// Free old.
+		destroy_old(cts, old_swapchain_handle);
+		return;
+	}
 
-	vk->vkGetSwapchainImagesKHR( //
-	    vk->device,              // device
-	    cts->swapchain.handle,   // swapchain
-	    &cts->base.image_count,  // pSwapchainImageCount
-	    NULL);                   // pSwapchainImages
-	assert(cts->base.image_count > 0);
-	COMP_DEBUG(cts->base.c, "Creating %d image views.", cts->base.image_count);
+	// Get the extents of the swapchain.
+	VkExtent2D extent = select_extent(cts, surface_caps, preferred_width, preferred_height);
 
-	VkImage *images = U_TYPED_ARRAY_CALLOC(VkImage, cts->base.image_count);
-	vk->vkGetSwapchainImagesKHR( //
-	    vk->device,              // device
-	    cts->swapchain.handle,   // swapchain
-	    &cts->base.image_count,  // pSwapchainImageCount
-	    images);                 // pSwapchainImages
+	if (surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
+	    surface_caps.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
+		COMP_DEBUG(ct->c, "Swapping width and height, since we are going to pre rotate");
+		uint32_t w2 = extent.width;
+		uint32_t h2 = extent.height;
+		extent.width = h2;
+		extent.height = w2;
+	}
 
-	comp_target_swapchain_destroy_image_views(cts);
+	COMP_DEBUG(ct->c, "swapchain minImageCount %d maxImageCount %d", surface_caps.minImageCount,
+	           surface_caps.maxImageCount);
 
-	cts->base.images = U_TYPED_ARRAY_CALLOC(struct comp_target_image, cts->base.image_count);
+	uint32_t image_count = surface_caps.minImageCount;
+	if (image_count < 3 && (surface_caps.maxImageCount >= 3 || surface_caps.maxImageCount == 0)) {
+		image_count = 3;
+	}
+	COMP_DEBUG(ct->c, "Creating compositor swapchain with %d images", image_count);
 
-	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .baseMipLevel = 0,
-	    .levelCount = 1,
-	    .baseArrayLayer = 0,
-	    .layerCount = 1,
+
+	// Create the swapchain now.
+	VkSwapchainCreateInfoKHR swapchain_info = {
+	    .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+	    .surface = cts->surface.handle,
+	    .minImageCount = image_count,
+	    .imageFormat = cts->surface.format.format,
+	    .imageColorSpace = cts->surface.format.colorSpace,
+	    .imageExtent =
+	        {
+	            .width = extent.width,
+	            .height = extent.height,
+	        },
+	    .imageArrayLayers = 1,
+	    .imageUsage = image_usage,
+	    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+	    .queueFamilyIndexCount = 0,
+	    .preTransform = surface_caps.currentTransform,
+	    .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+	    .presentMode = cts->present_mode,
+	    .clipped = VK_TRUE,
+	    .oldSwapchain = old_swapchain_handle,
 	};
 
-	for (uint32_t i = 0; i < cts->base.image_count; i++) {
-		cts->base.images[i].handle = images[i];
-		vk_create_view(                 //
-		    vk,                         // vk_bundle
-		    cts->base.images[i].handle, // image
-		    cts->surface.format.format, // format
-		    subresource_range,          // subresource_range
-		    &cts->base.images[i].view); // out_view
+	ret = vk->vkCreateSwapchainKHR(vk->device, &swapchain_info, NULL, &cts->swapchain.handle);
+
+	// Always destroy the old.
+	destroy_old(cts, old_swapchain_handle);
+
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(ct->c, "vkCreateSwapchainKHR: %s", vk_result_string(ret));
+		return;
 	}
 
-	free(images);
+
+	/*
+	 * Set target info.
+	 */
+
+	cts->base.width = extent.width;
+	cts->base.height = extent.height;
+	cts->base.format = cts->surface.format.format;
+	cts->base.surface_transform = surface_caps.currentTransform;
+
+	create_image_views(cts);
+
+#ifdef VK_EXT_display_control
+	if (!check_surface_counter_caps(ct, vk, cts)) {
+		COMP_ERROR(ct->c, "Failed to query surface counter capabilities");
+	}
+#endif
+}
+
+static bool
+comp_target_swapchain_has_images(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	return cts->surface.handle != VK_NULL_HANDLE && cts->swapchain.handle != VK_NULL_HANDLE;
+}
+
+static VkResult
+comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct vk_bundle *vk = get_vk(cts);
+
+	if (!comp_target_swapchain_has_images(ct)) {
+		//! @todo what error to return here?
+		return VK_ERROR_INITIALIZATION_FAILED;
+	}
+
+	return vk->vkAcquireNextImageKHR( //
+	    vk->device,                   // device
+	    cts->swapchain.handle,        // swapchain
+	    UINT64_MAX,                   // timeout
+	    semaphore,                    // semaphore
+	    VK_NULL_HANDLE,               // fence
+	    out_index);                   // pImageIndex
+}
+
+static VkResult
+comp_target_swapchain_present(struct comp_target *ct,
+                              VkQueue queue,
+                              uint32_t index,
+                              VkSemaphore semaphore,
+                              uint64_t desired_present_time_ns,
+                              uint64_t present_slop_ns)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	struct vk_bundle *vk = get_vk(cts);
+
+	assert(cts->current_frame_id >= 0);
+	assert(cts->current_frame_id <= UINT32_MAX);
+
+	VkPresentTimeGOOGLE times = {
+	    .presentID = (uint32_t)cts->current_frame_id,
+	    .desiredPresentTime = desired_present_time_ns - present_slop_ns,
+	};
+
+	VkPresentTimesInfoGOOGLE timings = {
+	    .sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
+	    .swapchainCount = 1,
+	    .pTimes = &times,
+	};
+
+	VkPresentInfoKHR presentInfo = {
+	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
+	    .waitSemaphoreCount = 1,
+	    .pWaitSemaphores = &semaphore,
+	    .swapchainCount = 1,
+	    .pSwapchains = &cts->swapchain.handle,
+	    .pImageIndices = &index,
+	};
+
+	return vk->vkQueuePresentKHR(queue, &presentInfo);
+}
+
+static bool
+comp_target_swapchain_check_ready(struct comp_target *ct)
+{
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+	return cts->surface.handle != VK_NULL_HANDLE;
 }
 
 
 /*
  *
- * Timing functions.
+ * Timing member functions.
  *
  */
 
@@ -710,7 +719,7 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 {
 	struct vk_bundle *vk = get_vk(cts);
 
-	comp_target_swapchain_destroy_image_views(cts);
+	destroy_image_views(cts);
 
 	if (cts->swapchain.handle != VK_NULL_HANDLE) {
 		vk->vkDestroySwapchainKHR( //
