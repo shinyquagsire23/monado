@@ -724,7 +724,7 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 		    vk->instance,        // instance
 		    cts->surface.handle, // surface
 		    NULL);               //
-		cts->swapchain.handle = VK_NULL_HANDLE;
+		cts->surface.handle = VK_NULL_HANDLE;
 	}
 
 	u_pc_destroy(&cts->upc);
