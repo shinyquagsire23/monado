@@ -516,6 +516,8 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 {
 	// beginning of GENERATED device extension code - do not modify - used by scripts
 	// Reset before filling out.
+	vk->has_KHR_external_fence_fd = false;
+	vk->has_KHR_external_semaphore_fd = false;
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_calibrated_timestamps = false;
 	vk->has_EXT_display_control = false;
@@ -528,6 +530,20 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 
 	for (uint32_t i = 0; i < ext_count; i++) {
 		const char *ext = exts[i];
+
+#if defined(VK_KHR_external_fence_fd)
+		if (strcmp(ext, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME) == 0) {
+			vk->has_KHR_external_fence_fd = true;
+			continue;
+		}
+#endif // defined(VK_KHR_external_fence_fd)
+
+#if defined(VK_KHR_external_semaphore_fd)
+		if (strcmp(ext, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME) == 0) {
+			vk->has_KHR_external_semaphore_fd = true;
+			continue;
+		}
+#endif // defined(VK_KHR_external_semaphore_fd)
 
 #if defined(VK_KHR_timeline_semaphore)
 		if (strcmp(ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0) {
