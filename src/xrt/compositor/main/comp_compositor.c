@@ -562,12 +562,12 @@ static const char *instance_extensions_windows[] = {
 // Note: Keep synchronized with comp_vk_glue - we should have everything they
 // do, plus VK_KHR_SWAPCHAIN_EXTENSION_NAME
 static const char *required_device_extensions[] = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,
-    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,                 //
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,      //
+    VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME,            //
+    VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,           //
+    VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME,        //
+    VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, //
 
 // Platform version of "external_memory"
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
