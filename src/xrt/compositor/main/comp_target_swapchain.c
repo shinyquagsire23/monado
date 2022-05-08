@@ -45,36 +45,6 @@ static VkFormat preferred_color_formats[] = {
 
 /*
  *
- * Pre declare functions.
- *
- */
-
-#if 0
-static void
-comp_target_swapchain_create_image_views(struct comp_target_swapchain *cts);
-
-static void
-comp_target_swapchain_destroy_image_views(struct comp_target_swapchain *cts);
-
-static void
-comp_target_swapchain_destroy_old(struct comp_target_swapchain *cts, VkSwapchainKHR old);
-
-static VkExtent2D
-comp_target_swapchain_select_extent(struct comp_target_swapchain *cts,
-                                    VkSurfaceCapabilitiesKHR caps,
-                                    uint32_t preferred_width,
-                                    uint32_t preferred_height);
-
-static bool
-_find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format);
-
-static bool
-_check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode);
-#endif
-
-
-/*
- *
  * Vulkan functions.
  *
  */
