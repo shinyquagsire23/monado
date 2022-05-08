@@ -489,6 +489,15 @@ vk_print_device_info(struct vk_bundle *vk,
                      const char *title);
 
 /*!
+ * Print device information about the device that bundle manages at the given
+ * logging level if the vk_bundle has that level enabled.
+ *
+ * @ingroup aux_vk
+ */
+void
+vk_print_opened_device_info(struct vk_bundle *vk, enum u_logging_level log_level);
+
+/*!
  * Print device features to the logger at the given logging level, if the
  * vk_bundle has that level enabled.
  */

@@ -37,6 +37,15 @@ vk_print_device_info(struct vk_bundle *vk,
 }
 
 void
+vk_print_opened_device_info(struct vk_bundle *vk, enum u_logging_level log_level)
+{
+	VkPhysicalDeviceProperties pdp;
+	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &pdp);
+
+	vk_print_device_info(vk, log_level, &pdp, 0, "Device info:\n");
+}
+
+void
 vk_print_features_info(struct vk_bundle *vk, enum u_logging_level log_level)
 {
 	U_LOG_IFL(log_level, vk->log_level,                                       //
