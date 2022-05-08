@@ -134,8 +134,7 @@ static const char *required_vk_device_extensions[] = {
 #endif
 
 // Platform version of "external_fence" and "external_semaphore"
-#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
-    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,     VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD) // Optional
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
@@ -147,6 +146,16 @@ static const char *required_vk_device_extensions[] = {
 };
 
 static const char *optional_device_extensions[] = {
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
+    VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE) // Not optional
+
+#else
+#error "Need port!"
+#endif
+
 #ifdef VK_KHR_timeline_semaphore
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
 #else
@@ -317,11 +326,27 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 		return res;
 	}
 
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	bool external_fence_fd_enabled = false;
+	bool external_semaphore_fd_enabled = false;
+#endif
+
 	for (uint32_t i = 0; i < ARRAY_SIZE(optional_device_extensions); i++) {
 		if (optional_device_extensions[i] &&
-		    vk_check_extension(props, prop_count, optional_device_extensions[i])) {
-			u_string_list_append_unique(device_extension_list, optional_device_extensions[i]);
+		    !vk_check_extension(props, prop_count, optional_device_extensions[i])) {
+			continue;
 		}
+
+		u_string_list_append_unique(device_extension_list, optional_device_extensions[i]);
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+		if (strcmp(optional_device_extensions[i], VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME) == 0) {
+			external_fence_fd_enabled = true;
+		}
+		if (strcmp(optional_device_extensions[i], VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME) == 0) {
+			external_semaphore_fd_enabled = true;
+		}
+#endif
 	}
 
 	free(props);
@@ -384,6 +409,10 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 		oxr_slog(&slog, "\n\tresult: %s", vk_result_string(*vulkanResult));
 		oxr_slog(&slog, "\n\tvulkanDevice: 0x%" PRIx64, (uint64_t)(intptr_t)*vulkanDevice);
 		oxr_slog(&slog, "\n\tvulkanInstance: 0x%" PRIx64, (uint64_t)(intptr_t)sys->vulkan_enable2_instance);
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+		oxr_slog(&slog, "\n\texternal_fence_fd: %s", external_fence_fd_enabled ? "true" : "false");
+		oxr_slog(&slog, "\n\texternal_semaphore_fd: %s", external_semaphore_fd_enabled ? "true" : "false");
+#endif
 #ifdef VK_KHR_timeline_semaphore
 		oxr_slog(&slog, "\n\ttimelineSemaphore: %s",
 		         timeline_semaphore_info.timelineSemaphore ? "true" : "false");
@@ -395,6 +424,13 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 
 		oxr_log_slog(log, &slog);
 	}
+
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
+	if (*vulkanResult == VK_SUCCESS) {
+		sys->vk.external_fence_fd_enabled = external_fence_fd_enabled;
+		sys->vk.external_semaphore_fd_enabled = external_semaphore_fd_enabled;
+	}
+#endif
 
 #ifdef VK_KHR_timeline_semaphore
 	// Have timeline semaphores added and as such enabled.

@@ -1198,6 +1198,8 @@ struct oxr_system
 	struct
 	{
 		// No better place to keep this state.
+		bool external_fence_fd_enabled;
+		bool external_semaphore_fd_enabled;
 		bool timeline_semaphore_enabled;
 	} vk;
 

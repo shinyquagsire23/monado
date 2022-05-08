@@ -13,6 +13,7 @@
 #endif
 
 #include "xrt/xrt_instance.h"
+#include "xrt/xrt_handles.h"
 #include "xrt/xrt_gfx_vk.h"
 
 #include "util/u_misc.h"
@@ -78,6 +79,24 @@ oxr_session_populate_vk(struct oxr_logger *log,
                         struct oxr_session *sess)
 {
 	bool timeline_semaphore_enabled = sess->sys->vk.timeline_semaphore_enabled;
+	bool external_fence_fd_enabled = sess->sys->vk.external_fence_fd_enabled;
+	bool external_semaphore_fd_enabled = sess->sys->vk.external_semaphore_fd_enabled;
+
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+	if (sys->inst->extensions.KHR_vulkan_enable && sys->inst->extensions.KHR_vulkan_enable2 &&
+	    !external_fence_fd_enabled && !external_semaphore_fd_enabled) {
+		oxr_warn(log,
+		         "Both KHR_vulkan_enable and KHR_vulkan_enable2 are enabled can not safely determine if "
+		         "external fence|semaphore FD has been enabled assuming yes.");
+		external_fence_fd_enabled = true;
+		external_semaphore_fd_enabled = true;
+	} else if (sys->inst->extensions.KHR_vulkan_enable) {
+		// We always return these extensions as required for version 1.
+		external_fence_fd_enabled = true;
+		external_semaphore_fd_enabled = true;
+	}
+#endif
 
 	if (!timeline_semaphore_enabled &&
 	    check_for_layer_mnd_enable_timeline_semaphore(log, next->instance, next->physicalDevice)) {
@@ -97,8 +116,8 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	    vkGetInstanceProcAddr,                                   //
 	    next->physicalDevice,                                    //
 	    next->device,                                            //
-	    true,                                                    // external_fence_fd_enabled
-	    true,                                                    // external_semaphore_fd_enabled
+	    external_fence_fd_enabled,                               //
+	    external_semaphore_fd_enabled,                           //
 	    timeline_semaphore_enabled,                              //
 	    next->queueFamilyIndex,                                  //
 	    next->queueIndex);                                       //
