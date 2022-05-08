@@ -162,6 +162,30 @@ select_extent(struct comp_target_swapchain *cts,
 	return caps.currentExtent;
 }
 
+static uint32_t
+select_image_count(struct comp_target_swapchain *cts,
+                   VkSurfaceCapabilitiesKHR caps,
+                   uint32_t preferred_at_least_image_count)
+{
+	// Min is equals to or greater to what we prefer, pick min then.
+	if (caps.minImageCount >= preferred_at_least_image_count) {
+		return caps.minImageCount;
+	}
+
+	// Any max is good, so pick the one we want.
+	if (caps.maxImageCount == 0) {
+		return preferred_at_least_image_count;
+	}
+
+	// Clamp to max.
+	if (caps.maxImageCount < preferred_at_least_image_count) {
+		return caps.maxImageCount;
+	}
+
+	// More then min less the max, pick what we want.
+	return preferred_at_least_image_count;
+}
+
 static bool
 check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode)
 {
@@ -434,12 +458,16 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	COMP_DEBUG(ct->c, "swapchain minImageCount %d maxImageCount %d", surface_caps.minImageCount,
 	           surface_caps.maxImageCount);
 
-	uint32_t image_count = surface_caps.minImageCount;
-	if (image_count < 3 && (surface_caps.maxImageCount >= 3 || surface_caps.maxImageCount == 0)) {
-		image_count = 3;
-	}
-	COMP_DEBUG(ct->c, "Creating compositor swapchain with %d images", image_count);
+	// Get the image count.
+	const uint32_t preferred_at_least_image_count = 3;
+	uint32_t image_count = select_image_count(cts, surface_caps, preferred_at_least_image_count);
 
+
+	/*
+	 * Do the creation.
+	 */
+
+	COMP_DEBUG(ct->c, "Creating compositor swapchain with %d images", image_count);
 
 	// Create the swapchain now.
 	VkSwapchainCreateInfoKHR swapchain_info = {
