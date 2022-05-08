@@ -259,6 +259,16 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	endif()
 endif()
 
+
+###
+# Null compositor
+#
+
+if(XRT_FEATURE_COMPOSITOR_NULL)
+	add_subdirectory(null)
+endif()
+
+
 ###
 # Multi client compositor library
 #

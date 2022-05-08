@@ -235,6 +235,7 @@ option_with_deps(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" DEPENDS kimera_vio
 # Feature configuration (sorted)
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
 option_with_deps(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" DEPENDS XRT_HAVE_VULKAN "XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32")
+option_with_deps(XRT_FEATURE_COMPOSITOR_NULL "Build testing null compositor" DEPENDS XRT_HAVE_VULKAN)
 option_with_deps(XRT_FEATURE_IPC "Enable the build of the IPC layer" DEPENDS "NOT WIN32")
 option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS XRT_FEATURE_COMPOSITOR_MAIN)
 option_with_deps(XRT_FEATURE_RENDERDOC "Enable RenderDoc API" DEPENDS "RT_LIBRARY OR WIN32")
@@ -287,7 +288,7 @@ option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will
 # cmake-format: on
 
 # Most users won't touch these.
-mark_as_advanced(XRT_FEATURE_COMPOSITOR_MAIN XRT_FEATURE_OPENXR)
+mark_as_advanced(XRT_FEATURE_COMPOSITOR_MAIN XRT_FEATURE_COMPOSITOR_NULL XRT_FEATURE_OPENXR)
 
 # Defaults for OpenXR layer support
 if(NOT DEFINED XRT_FEATURE_OPENXR_LAYER_DEPTH)
@@ -462,6 +463,7 @@ message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
 message(STATUS "#")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
 message(STATUS "#    FEATURE_COMPOSITOR_MAIN:              ${XRT_FEATURE_COMPOSITOR_MAIN}")
+message(STATUS "#    FEATURE_COMPOSITOR_NULL:              ${XRT_FEATURE_COMPOSITOR_NULL}")
 message(STATUS "#    FEATURE_IPC:                          ${XRT_FEATURE_IPC}")
 message(STATUS "#    FEATURE_OPENXR:                       ${XRT_FEATURE_OPENXR}")
 message(STATUS "#    FEATURE_OPENXR_LAYER_CUBE:            ${XRT_FEATURE_OPENXR_LAYER_CUBE}")
