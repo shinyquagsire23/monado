@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 
-#define NUM_XDEVS 8
 
 struct xrt_device;
 struct xrt_prober;
@@ -33,6 +32,7 @@ struct xrt_frame_context;
 struct xrt_settings_tracking;
 struct time_state;
 struct gui_scene_manager;
+struct xrt_system_devices;
 
 
 /*!
@@ -46,7 +46,7 @@ struct gui_program
 
 	struct gui_scene_manager *gsm;
 
-	struct xrt_device *xdevs[NUM_XDEVS];
+	struct xrt_system_devices *xsysd;
 	struct xrt_instance *instance;
 	struct xrt_prober *xp;
 

@@ -28,7 +28,7 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **xdevs)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
 {}
 
 void
@@ -36,7 +36,7 @@ oxr_sdl2_hack_stop(void **hack)
 {}
 
 #else
-
+#include "xrt/xrt_system.h"
 #include "ogl/ogl_api.h"
 
 #include "gui/gui_common.h"
@@ -179,7 +179,7 @@ sdl2_loop(struct sdl2_program *p)
 #ifdef XRT_BUILD_DRIVER_QWERTY
 			// Caution here, qwerty driver is being accessed by the main thread as well
 			if (qwerty_enabled) {
-				qwerty_process_event(p->base.xdevs, NUM_XDEVS, event);
+				qwerty_process_event(p->base.xsysd->xdevs, p->base.xsysd->xdev_count, event);
 			}
 #endif
 
@@ -295,20 +295,15 @@ oxr_sdl2_hack_create(void **out_hack)
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **xdevs)
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
 {
 	struct sdl2_program *p = (struct sdl2_program *)hack;
 	if (p == NULL) {
 		return;
 	}
 
-	if (xinst != NULL) {
-		xrt_instance_get_prober(xinst, &p->base.xp);
-	}
-
-	for (size_t i = 0; i < NUM_XDEVS; i++) {
-		p->base.xdevs[i] = xdevs[i];
-	}
+	// Share the system devices.
+	p->base.xsysd = xsysd;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 		U_LOG_E("Failed to init SDL2!");

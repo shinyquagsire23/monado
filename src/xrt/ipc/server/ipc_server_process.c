@@ -49,7 +49,7 @@ extern int
 oxr_sdl2_hack_create(void **out_hack);
 
 extern void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_device **xdevs);
+oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd);
 
 extern void
 oxr_sdl2_hack_stop(void **hack_ptr);
@@ -798,13 +798,8 @@ ipc_server_main(int argc, char **argv)
 
 	init_server_state(s);
 
-	struct xrt_device *xdevs[XRT_SYSTEM_MAX_DEVICES];
-	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
-		xdevs[i] = s->idevs[i].xdev;
-	}
-
 	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(s->hack, s->xinst, xdevs);
+	oxr_sdl2_hack_start(s->hack, s->xinst, s->xsysd);
 	/* ---- HACK ---- */
 
 	ret = main_loop(s);

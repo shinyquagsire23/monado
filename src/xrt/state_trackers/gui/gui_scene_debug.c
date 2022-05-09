@@ -482,6 +482,8 @@ gui_scene_debug(struct gui_program *p)
 {
 	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
 
+	gui_prober_select(p);
+
 	ds->base.render = scene_render;
 	ds->base.destroy = scene_destroy;
 
