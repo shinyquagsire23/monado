@@ -86,45 +86,6 @@ struct xrt_instance
 	                              struct xrt_system_compositor **out_xsysc);
 
 	/*!
-	 * Returns the devices of the system represented as @ref xrt_device.
-	 *
-	 * Should only be called once.
-	 *
-	 * @note Code consuming this interface should use xrt_instance_select()
-	 *
-	 * @param xinst Pointer to self
-	 * @param[in,out] xdevs Pointer to xrt_device array. Array elements will
-	 * be populated.
-	 * @param[in] xdev_count The capacity of the @p xdevs array.
-	 *
-	 * @return 0 on success, <0 on error.
-	 *
-	 * @see xrt_prober::probe, xrt_prober::select
-	 */
-	int (*select)(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count);
-
-	/*!
-	 * Creates a @ref xrt_system_compositor.
-	 *
-	 * Should only be called once.
-	 *
-	 * @note Code consuming this interface should use
-	 * xrt_instance_create_system_compositor()
-	 *
-	 * @param xinst Pointer to self
-	 * @param[in] xdev Device to use for creating the compositor
-	 * @param[out] out_xsc Pointer to create_system_compositor pointer, will
-	 * be populated.
-	 *
-	 * @return 0 on success, <0 on error.
-	 *
-	 * @see xrt_gfx_provider_create_native
-	 */
-	int (*create_system_compositor)(struct xrt_instance *xinst,
-	                                struct xrt_device *xdev,
-	                                struct xrt_system_compositor **out_xsc);
-
-	/*!
 	 * Get the instance @ref xrt_prober, if any.
 	 *
 	 * If the instance is not using an @ref xrt_prober, it may return null.
@@ -161,34 +122,6 @@ struct xrt_instance
 	 */
 	struct xrt_instance_info instance_info;
 };
-
-/*!
- * @copydoc xrt_instance::select
- *
- * Helper for calling through the function pointer.
- *
- * @public @memberof xrt_instance
- */
-static inline int
-xrt_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count)
-{
-	return xinst->select(xinst, xdevs, xdev_count);
-}
-
-/*!
- * @copydoc xrt_instance::create_system_compositor
- *
- * Helper for calling through the function pointer.
- *
- * @public @memberof xrt_instance
- */
-static inline int
-xrt_instance_create_system_compositor(struct xrt_instance *xinst,
-                                      struct xrt_device *xdev,
-                                      struct xrt_system_compositor **out_xsc)
-{
-	return xinst->create_system_compositor(xinst, xdev, out_xsc);
-}
 
 /*!
  * @copydoc xrt_instance::create_system

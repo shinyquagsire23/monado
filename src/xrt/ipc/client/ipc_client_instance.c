@@ -187,38 +187,6 @@ create_system_compositor(struct ipc_client_instance *ii,
  *
  */
 
-static int
-ipc_client_instance_select(struct xrt_instance *xinst, struct xrt_device **xdevs, size_t xdev_count)
-{
-	struct ipc_client_instance *ii = ipc_client_instance(xinst);
-
-	if (xdev_count < 1) {
-		return -1;
-	}
-
-	// @todo What about ownership?
-	for (size_t i = 0; i < xdev_count && i < ii->xdev_count; i++) {
-		xdevs[i] = ii->xdevs[i];
-	}
-
-	return 0;
-}
-
-static int
-ipc_client_instance_create_system_compositor(struct xrt_instance *xinst,
-                                             struct xrt_device *xdev,
-                                             struct xrt_system_compositor **out_xsysc)
-{
-	struct ipc_client_instance *ii = ipc_client_instance(xinst);
-
-	xrt_result_t xret = create_system_compositor(ii, xdev, out_xsysc);
-	if (xret != XRT_SUCCESS) {
-		return -1;
-	}
-
-	return 0;
-}
-
 static xrt_result_t
 ipc_client_instance_create_system(struct xrt_instance *xinst,
                                   struct xrt_system_devices **out_xsysd,
@@ -327,8 +295,6 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 {
 	struct ipc_client_instance *ii = U_TYPED_CALLOC(struct ipc_client_instance);
 	ii->base.create_system = ipc_client_instance_create_system;
-	ii->base.select = ipc_client_instance_select;
-	ii->base.create_system_compositor = ipc_client_instance_create_system_compositor;
 	ii->base.get_prober = ipc_client_instance_get_prober;
 	ii->base.destroy = ipc_client_instance_destroy;
 

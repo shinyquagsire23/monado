@@ -14,16 +14,6 @@
 #include <assert.h>
 
 
-static int
-t_instance_create_system_compositor_stub(struct xrt_instance *xinst,
-                                         struct xrt_device *xdev,
-                                         struct xrt_system_compositor **out_xsysc)
-{
-	*out_xsysc = NULL;
-
-	return -1;
-}
-
 static xrt_result_t
 t_instance_create_system(struct xrt_instance *xinst,
                          struct xrt_system_devices **out_xsysd,
@@ -70,8 +60,6 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	struct t_instance *tinst = U_TYPED_CALLOC(struct t_instance);
 	tinst->base.create_system = t_instance_create_system;
-	tinst->base.select = t_instance_select;
-	tinst->base.create_system_compositor = t_instance_create_system_compositor_stub;
 	tinst->base.get_prober = t_instance_get_prober;
 	tinst->base.destroy = t_instance_destroy;
 	tinst->xp = xp;
