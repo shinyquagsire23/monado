@@ -121,7 +121,7 @@ struct comp_settings
 	//! The Windows LUID for the GPU device suggested for D3D clients, never changes.
 	xrt_luid_t client_gpu_deviceLUID;
 
-	//! Whether @ref client_d3d_deviceLUID is valid
+	//! Whether @ref client_gpu_deviceLUID is valid
 	bool client_gpu_deviceLUID_valid;
 
 	//! Try to choose the mode with this index for direct mode
