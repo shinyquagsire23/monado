@@ -76,9 +76,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashset_destroy(&inst->action_sets.name_store);
 	u_hashset_destroy(&inst->action_sets.loc_store);
 
-	for (size_t i = 0; i < inst->system.xdev_count; i++) {
-		oxr_xdev_destroy(&inst->system.xdevs[i]);
-	}
+	xrt_system_devices_destroy(&inst->system.xsysd);
 
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_stop(&inst->hack);
@@ -101,14 +99,6 @@ static void
 cache_path(struct oxr_logger *log, struct oxr_instance *inst, const char *str, XrPath *out_path)
 {
 	oxr_path_get_or_create(log, inst, str, strlen(str), out_path);
-}
-
-#define NUM_XDEVS 16
-
-static inline size_t
-min_size_t(size_t a, size_t b)
-{
-	return a < b ? a : b;
 }
 
 static bool
@@ -181,7 +171,6 @@ oxr_instance_create(struct oxr_logger *log,
                     struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
-	struct xrt_device *xdevs[NUM_XDEVS] = {0};
 	int xinst_ret;
 	int m_ret;
 	int h_ret;
@@ -269,30 +258,34 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
+	struct oxr_system *sys = &inst->system;
 
-	xinst_ret = xrt_instance_select(inst->xinst, xdevs, NUM_XDEVS);
-	if (xinst_ret != 0) {
-		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to select device(s)");
+	// Create the compositor if we are not headless.
+	if (!inst->extensions.MND_headless) {
+		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xsysc);
+	} else {
+		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, NULL);
+	}
+
+	if (xret != XRT_SUCCESS) {
+		ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Failed to create the system '%i'", xret);
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
 
-	struct oxr_system *sys = &inst->system;
-
-#define POPULATE_ROLES(X) sys->role.X = XRT_DEVICE_ROLE_UNASSIGNED;
-	OXR_FOR_EACH_VALID_SUBACTION_PATH(POPULATE_ROLES)
-#undef POPULATE_ROLES
-
-	sys->xdev_count = min_size_t(ARRAY_SIZE(sys->xdevs), NUM_XDEVS);
-
-	for (uint32_t i = 0; i < sys->xdev_count; i++) {
-		sys->xdevs[i] = xdevs[i];
-	}
-	for (size_t i = sys->xdev_count; i < NUM_XDEVS; i++) {
-		oxr_xdev_destroy(&xdevs[i]);
+	ret = XR_SUCCESS;
+	if (sys->xsysd == NULL) {
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysd was NULL?");
+	} else if (!inst->extensions.MND_headless && sys->xsysc == NULL) {
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysc was NULL?");
+	} else if (inst->extensions.MND_headless && sys->xsysc != NULL) {
+		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysc was not NULL?");
 	}
 
-	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &sys->role.head, &sys->role.left, &sys->role.right);
+	if (ret != XR_SUCCESS) {
+		oxr_instance_destroy(log, &inst->handle);
+		return ret;
+	}
 
 	// Did we find any HMD
 	// @todo Headless with only controllers?
@@ -313,18 +306,6 @@ oxr_instance_create(struct oxr_logger *log,
 	// Sets the enabled extensions, this is where we should do any extra validation.
 	inst->extensions = *extensions;
 
-	// Create the compositor, if we are not headless.
-	if (!inst->extensions.MND_headless) {
-		xret = xrt_instance_create_system_compositor(inst->xinst, dev, &sys->xsysc);
-		if (ret < 0 || sys->xsysc == NULL) {
-			ret = oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
-			                "Failed to create the system compositor '%i'", xret);
-
-			oxr_instance_destroy(log, &inst->handle);
-			return ret;
-		}
-	}
-
 	ret = oxr_system_fill_in(log, inst, 1, &inst->system);
 	if (ret != XR_SUCCESS) {
 		oxr_instance_destroy(log, &inst->handle);
@@ -344,7 +325,7 @@ oxr_instance_create(struct oxr_logger *log,
 	u_var_add_root((void *)inst, "XrInstance", true);
 
 	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(inst->hack, inst->xinst, sys->xdevs);
+	oxr_sdl2_hack_start(inst->hack, inst->xinst, sys->xsysd->xdevs);
 	/* ---- HACK ---- */
 
 	oxr_log(log,

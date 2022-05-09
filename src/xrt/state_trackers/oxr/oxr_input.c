@@ -1448,8 +1448,8 @@ oxr_action_sync_data(struct oxr_logger *log,
 	int64_t now = time_state_get_now(sess->sys->inst->timekeeping);
 
 	// Loop over all xdev devices.
-	for (size_t i = 0; i < sess->sys->xdev_count; i++) {
-		oxr_xdev_update(sess->sys->xdevs[i]);
+	for (size_t i = 0; i < sess->sys->xsysd->xdev_count; i++) {
+		oxr_xdev_update(sess->sys->xsysd->xdevs[i]);
 	}
 
 	// Reset all action set attachments.

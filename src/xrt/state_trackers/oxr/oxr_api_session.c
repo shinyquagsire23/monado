@@ -327,15 +327,16 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 	hand_tracker->hand = createInfo->hand;
 	hand_tracker->hand_joint_set = createInfo->handJointSet;
 
-	//! @todo: move hand tracking device selection to oxr_system.
-	// if no xdev with hand tracking is found, create hand tracker without xdev.
-	for (uint32_t i = 0; i < sess->sys->xdev_count; i++) {
-		struct xrt_device *xdev = sess->sys->xdevs[i];
+	// Find the assigned device.
+	struct xrt_device *xdev = NULL;
+	if (createInfo->hand == XR_HAND_LEFT_EXT) {
+		xdev = sess->sys->xsysd->roles.hand_tracking.left;
+	} else if (createInfo->hand == XR_HAND_RIGHT_EXT) {
+		xdev = sess->sys->xsysd->roles.hand_tracking.right;
+	}
 
-		if (!xdev || !xdev->hand_tracking_supported) {
-			continue;
-		}
-
+	// Find the correct input on the device.
+	if (xdev != NULL && xdev->hand_tracking_supported) {
 		for (uint32_t j = 0; j < xdev->input_count; j++) {
 			struct xrt_input *input = &xdev->inputs[j];
 
@@ -348,10 +349,11 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 				break;
 			}
 		}
+	}
 
-		if (hand_tracker->xdev != NULL) {
-			break;
-		}
+	// Sanity checking.
+	if (xdev != NULL && hand_tracker->xdev == NULL) {
+		oxr_warn(log, "We got hand tracking xdev but it didn't have a hand tracking input.");
 	}
 
 	*out_hand_tracker = hand_tracker;

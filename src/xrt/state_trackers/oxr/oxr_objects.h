@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_compositor.h"
@@ -1163,11 +1164,11 @@ struct oxr_system
 {
 	struct oxr_instance *inst;
 
+	//! System devices used in all session types.
+	struct xrt_system_devices *xsysd;
+
 	//! System compositor, used to create session compositors.
 	struct xrt_system_compositor *xsysc;
-
-	struct xrt_device *xdevs[16];
-	size_t xdev_count;
 
 	/* index for xdevs array */
 	struct
@@ -1206,7 +1207,7 @@ struct oxr_system
 #endif
 };
 
-#define GET_XDEV_BY_ROLE(SYS, ROLE) SYS->role.ROLE == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : SYS->xdevs[SYS->role.ROLE]
+#define GET_XDEV_BY_ROLE(SYS, ROLE) ((SYS)->xsysd->roles.ROLE)
 
 #define MAKE_EXT_STATUS(mixed_case, all_caps) bool mixed_case;
 /*!
