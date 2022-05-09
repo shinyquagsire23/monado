@@ -75,7 +75,7 @@ client_loop(volatile struct ipc_client_state *ics)
 		return;
 	}
 
-	uint8_t buf[IPC_BUF_SIZE];
+	uint8_t buf[IPC_BUF_SIZE] = {0};
 
 	while (ics->server->running) {
 		const int half_a_second_ms = 500;
