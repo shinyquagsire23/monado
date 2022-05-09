@@ -25,6 +25,7 @@ extern "C" {
 #include "util/u_debug.h"
 #include "util/u_device.h"
 
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_instance.h"
@@ -1125,6 +1126,7 @@ public:
 
 private:
 	struct xrt_instance *m_xinst = NULL;
+	struct xrt_system_devices *m_xsysd = NULL;
 	struct xrt_device *m_xhmd = NULL;
 
 	CDeviceDriver_Monado *m_MonadoDeviceDriver = NULL;
@@ -1154,31 +1156,29 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 		return vr::VRInitError_Init_HmdNotFound;
 	}
 
-	struct xrt_device *xdevs[NUM_XDEVS] = {0};
-
-	ret = xrt_instance_select(m_xinst, xdevs, NUM_XDEVS);
-
-	int head;
-	int left;
-	int right;
-
-	u_device_assign_xdev_roles(xdevs, NUM_XDEVS, &head, &left, &right);
-
-	if (ret < 0 || head == XRT_DEVICE_ROLE_UNASSIGNED) {
-		ovrd_log("Failed to select HMD\n");
+	xrt_result_t xret;
+	xret = xrt_instance_create_system(m_xinst, &m_xsysd, NULL);
+	if (xret < 0) {
+		ovrd_log("Failed to create system devices\n");
+		xrt_instance_destroy(&m_xinst);
+		return vr::VRInitError_Init_HmdNotFound;
+	}
+	if (m_xsysd->roles.head == NULL) {
+		ovrd_log("Didn't get a HMD device!\n");
 		xrt_instance_destroy(&m_xinst);
 		return vr::VRInitError_Init_HmdNotFound;
 	}
 
-	m_xhmd = xdevs[head];
+	m_xhmd = m_xsysd->roles.head;
 
 	ovrd_log("Selected HMD %s\n", m_xhmd->str);
 	m_MonadoDeviceDriver = new CDeviceDriver_Monado(m_xinst, m_xhmd);
 	//! @todo provide a serial number
 	vr::VRServerDriverHost()->TrackedDeviceAdded(m_xhmd->str, vr::TrackedDeviceClass_HMD, m_MonadoDeviceDriver);
 
-	struct xrt_device *left_xdev = left == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : xdevs[left];
-	struct xrt_device *right_xdev = right == XRT_DEVICE_ROLE_UNASSIGNED ? NULL : xdevs[right];
+	struct xrt_device *left_xdev = m_xsysd->roles.left;
+	struct xrt_device *right_xdev = m_xsysd->roles.right;
+
 	// use steamvr room setup instead
 	struct xrt_vec3 offset = {0, 0, 0};
 	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
@@ -1203,16 +1203,10 @@ CServerDriver_Monado::Cleanup()
 		m_MonadoDeviceDriver = NULL;
 	}
 
-	if (m_xhmd) {
-		xrt_device_destroy(&m_xhmd);
-	}
-
-	if (m_left) {
-		xrt_device_destroy(&m_left->m_xdev);
-	}
-	if (m_right) {
-		xrt_device_destroy(&m_right->m_xdev);
-	}
+	xrt_system_devices_destroy(&m_xsysd);
+	m_xhmd = NULL;
+	m_left->m_xdev = NULL;
+	m_right->m_xdev = NULL;
 
 	if (m_xinst) {
 		xrt_instance_destroy(&m_xinst);
