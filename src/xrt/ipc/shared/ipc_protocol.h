@@ -14,6 +14,7 @@
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_results.h"
 #include "xrt/xrt_defines.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_device.h"
@@ -32,7 +33,6 @@
 #define IPC_MAX_CLIENTS 8
 #define IPC_EVENT_QUEUE_SIZE 32
 
-#define IPC_SHARED_MAX_DEVICES 8
 #define IPC_SHARED_MAX_INPUTS 1024
 #define IPC_SHARED_MAX_OUTPUTS 128
 #define IPC_SHARED_MAX_BINDINGS 64
@@ -191,7 +191,7 @@ struct ipc_shared_memory
 	 *
 	 * Only @ref itrack_count elements are populated/valid.
 	 */
-	struct ipc_shared_tracking_origin itracks[IPC_SHARED_MAX_DEVICES];
+	struct ipc_shared_tracking_origin itracks[XRT_SYSTEM_MAX_DEVICES];
 
 	/*!
 	 * Number of elements in @ref isdevs that are populated/valid.
@@ -203,7 +203,24 @@ struct ipc_shared_memory
 	 *
 	 * Only @ref isdev_count elements are populated/valid.
 	 */
-	struct ipc_shared_device isdevs[IPC_SHARED_MAX_DEVICES];
+	struct ipc_shared_device isdevs[XRT_SYSTEM_MAX_DEVICES];
+
+	/*!
+	 * Various roles for the devices.
+	 */
+	struct
+	{
+		int32_t head;
+		int32_t left;
+		int32_t right;
+		int32_t gamepad;
+
+		struct
+		{
+			int32_t left;
+			int32_t right;
+		} hand_tracking;
+	} roles;
 
 	struct
 	{

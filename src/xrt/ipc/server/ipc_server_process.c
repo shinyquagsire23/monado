@@ -10,6 +10,7 @@
  */
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_config_have.h"
@@ -71,6 +72,24 @@ DEBUG_GET_ONCE_LOG_OPTION(ipc_log, "IPC_LOG", U_LOGGING_WARN)
  *
  */
 
+static int32_t
+find_xdev_index(struct ipc_server *s, struct xrt_device *xdev)
+{
+	if (xdev == NULL) {
+		return -1;
+	}
+
+	for (int32_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		if (s->xsysd->xdevs[i] == xdev) {
+			return i;
+		}
+	}
+
+	IPC_WARN(s, "Could not find index for xdev: '%s'", xdev->str);
+
+	return -1;
+}
+
 static void
 init_idev(struct ipc_device *idev, struct xrt_device *xdev)
 {
@@ -85,8 +104,30 @@ init_idev(struct ipc_device *idev, struct xrt_device *xdev)
 static void
 teardown_idev(struct ipc_device *idev)
 {
-	xrt_device_destroy(&idev->xdev);
 	idev->io_active = false;
+}
+
+static int
+init_idevs(struct ipc_server *s)
+{
+	// Copy the devices over into the idevs array.
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		if (s->xsysd->xdevs[i] == NULL) {
+			continue;
+		}
+
+		init_idev(&s->idevs[i], s->xsysd->xdevs[i]);
+	}
+
+	return 0;
+}
+
+static void
+teardown_idevs(struct ipc_server *s)
+{
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
+		teardown_idev(&s->idevs[i]);
+	}
 }
 
 
@@ -103,9 +144,9 @@ teardown_all(struct ipc_server *s)
 
 	xrt_syscomp_destroy(&s->xsysc);
 
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
-		teardown_idev(&s->idevs[i]);
-	}
+	teardown_idevs(s);
+
+	xrt_system_devices_destroy(&s->xsysd);
 
 	xrt_instance_destroy(&s->xinst);
 
@@ -118,7 +159,7 @@ teardown_all(struct ipc_server *s)
 static int
 init_tracking_origins(struct ipc_server *s)
 {
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
 		struct xrt_device *xdev = s->idevs[i].xdev;
 		if (xdev == NULL) {
 			continue;
@@ -128,7 +169,7 @@ init_tracking_origins(struct ipc_server *s)
 		assert(xtrack != NULL);
 		size_t index = 0;
 
-		for (; index < IPC_SERVER_NUM_XDEVS; index++) {
+		for (; index < XRT_SYSTEM_MAX_DEVICES; index++) {
 			if (s->xtracks[index] == NULL) {
 				s->xtracks[index] = xtrack;
 				break;
@@ -206,8 +247,9 @@ init_shm(struct ipc_server *s)
 	uint32_t count = 0;
 	struct ipc_shared_memory *ism = s->ism;
 
+	// Setup the tracking origins.
 	count = 0;
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
 		struct xrt_tracking_origin *xtrack = s->xtracks[i];
 		if (xtrack == NULL) {
 			continue;
@@ -215,7 +257,7 @@ init_shm(struct ipc_server *s)
 
 		// The position of the tracking origin matches that in the
 		// servers memory.
-		assert(i < IPC_SHARED_MAX_DEVICES);
+		assert(i < XRT_SYSTEM_MAX_DEVICES);
 
 		struct ipc_shared_tracking_origin *itrack = &ism->itracks[count++];
 		memcpy(itrack->name, xtrack->name, sizeof(itrack->name));
@@ -232,7 +274,7 @@ init_shm(struct ipc_server *s)
 	uint32_t input_pair_index = 0;
 	uint32_t output_pair_index = 0;
 
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
 		struct xrt_device *xdev = s->idevs[i].xdev;
 		if (xdev == NULL) {
 			continue;
@@ -265,7 +307,7 @@ init_shm(struct ipc_server *s)
 
 		// Setup the tracking origin.
 		isdev->tracking_origin_index = (uint32_t)-1;
-		for (size_t k = 0; k < IPC_SERVER_NUM_XDEVS; k++) {
+		for (size_t k = 0; k < XRT_SYSTEM_MAX_DEVICES; k++) {
 			if (xdev->tracking_origin != s->xtracks[k]) {
 				continue;
 			}
@@ -320,6 +362,15 @@ init_shm(struct ipc_server *s)
 	// Finally tell the client how many devices we have.
 	s->ism->isdev_count = count;
 
+	// Assign all of the roles.
+	ism->roles.head = find_xdev_index(s, s->xsysd->roles.head);
+	ism->roles.left = find_xdev_index(s, s->xsysd->roles.left);
+	ism->roles.right = find_xdev_index(s, s->xsysd->roles.right);
+	ism->roles.gamepad = find_xdev_index(s, s->xsysd->roles.gamepad);
+	ism->roles.hand_tracking.left = find_xdev_index(s, s->xsysd->roles.hand_tracking.left);
+	ism->roles.hand_tracking.right = find_xdev_index(s, s->xsysd->roles.hand_tracking.right);
+
+	// Fill out git version info.
 	snprintf(s->ism->u_git_tag, IPC_VERSION_NAME_LEN, "%s", u_git_tag);
 
 	return 0;
@@ -418,29 +469,18 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS] = {0};
-	ret = xrt_instance_select(s->xinst, xdevs, IPC_SERVER_NUM_XDEVS);
+	ret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xsysc);
 	if (ret < 0) {
-		IPC_ERROR(s, "Failed to select/create devices!");
+		IPC_ERROR(s, "Could not create system!");
 		teardown_all(s);
 		return ret;
 	}
 
-	// Copy the devices over into the idevs array.
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
-		if (xdevs[i] == NULL) {
-			continue;
-		}
-
-		init_idev(&s->idevs[i], xdevs[i]);
-		xdevs[i] = NULL;
-	}
-
-	// If we don't have a HMD shutdown.
-	if (s->idevs[0].xdev == NULL) {
-		IPC_ERROR(s, "No HMD found!");
+	ret = init_idevs(s);
+	if (ret < 0) {
+		IPC_ERROR(s, "Failed to init idevs!");
 		teardown_all(s);
-		return -1;
+		return ret;
 	}
 
 	ret = init_tracking_origins(s);
@@ -448,13 +488,6 @@ init_all(struct ipc_server *s)
 		IPC_ERROR(s, "Failed to init tracking origins!");
 		teardown_all(s);
 		return -1;
-	}
-
-	ret = xrt_instance_create_system_compositor(s->xinst, s->idevs[0].xdev, &s->xsysc);
-	if (ret < 0) {
-		IPC_ERROR(s, "Could not create system compositor!");
-		teardown_all(s);
-		return ret;
 	}
 
 	ret = init_shm(s);
@@ -765,8 +798,8 @@ ipc_server_main(int argc, char **argv)
 
 	init_server_state(s);
 
-	struct xrt_device *xdevs[IPC_SERVER_NUM_XDEVS];
-	for (size_t i = 0; i < IPC_SERVER_NUM_XDEVS; i++) {
+	struct xrt_device *xdevs[XRT_SYSTEM_MAX_DEVICES];
+	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {
 		xdevs[i] = s->idevs[i].xdev;
 	}
 

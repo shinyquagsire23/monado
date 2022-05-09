@@ -12,6 +12,7 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "xrt/xrt_system.h"
 
 #include "util/u_logging.h"
 
@@ -44,7 +45,6 @@ extern "C" {
  *
  */
 
-#define IPC_SERVER_NUM_XDEVS 8
 #define IPC_MAX_CLIENT_SEMAPHORES 8
 #define IPC_MAX_CLIENT_SWAPCHAINS 32
 //#define IPC_MAX_CLIENTS 8
@@ -282,12 +282,14 @@ struct ipc_server
 	void *hack;
 	/* ---- HACK ---- */
 
+	//! System devices.
+	struct xrt_system_devices *xsysd;
 
 	//! System compositor.
 	struct xrt_system_compositor *xsysc;
 
-	struct ipc_device idevs[IPC_SERVER_NUM_XDEVS];
-	struct xrt_tracking_origin *xtracks[IPC_SERVER_NUM_XDEVS];
+	struct ipc_device idevs[XRT_SYSTEM_MAX_DEVICES];
+	struct xrt_tracking_origin *xtracks[XRT_SYSTEM_MAX_DEVICES];
 
 	struct ipc_shared_memory *ism;
 	xrt_shmem_handle_t ism_handle;

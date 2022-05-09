@@ -17,6 +17,7 @@
 #include "util/u_var.h"
 #include "util/u_debug.h"
 #include "util/u_git_tag.h"
+#include "util/u_system_helpers.h"
 
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
@@ -63,10 +64,10 @@ struct ipc_client_instance
 
 	struct ipc_connection ipc_c;
 
-	struct xrt_tracking_origin *xtracks[8];
+	struct xrt_tracking_origin *xtracks[XRT_SYSTEM_MAX_DEVICES];
 	size_t xtrack_count;
 
-	struct xrt_device *xdevs[8];
+	struct xrt_device *xdevs[XRT_SYSTEM_MAX_DEVICES];
 	size_t xdev_count;
 };
 
@@ -155,6 +156,30 @@ ipc_connect(struct ipc_connection *ipc_c)
 }
 #endif
 
+static xrt_result_t
+create_system_compositor(struct ipc_client_instance *ii,
+                         struct xrt_device *xdev,
+                         struct xrt_system_compositor **out_xsysc)
+{
+	struct xrt_system_compositor *xsysc = NULL;
+	struct xrt_image_native_allocator *xina = NULL;
+
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+	// On Android, we allocate images natively on the client side.
+	xina = android_ahardwarebuffer_allocator_create();
+#endif // XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+
+	int ret = ipc_client_create_system_compositor(&ii->ipc_c, xina, xdev, &xsysc);
+	if (ret < 0 || xsysc == NULL) {
+		xrt_images_destroy(&xina);
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	*out_xsysc = xsysc;
+
+	return 0;
+}
+
 
 /*
  *
@@ -185,23 +210,72 @@ ipc_client_instance_create_system_compositor(struct xrt_instance *xinst,
                                              struct xrt_system_compositor **out_xsysc)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
-	struct xrt_system_compositor *xsysc = NULL;
-	struct xrt_image_native_allocator *xina = NULL;
 
-#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
-	// On Android, we allocate images natively on the client side.
-	xina = android_ahardwarebuffer_allocator_create();
-#endif // XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
-
-	int ret = ipc_client_create_system_compositor(&ii->ipc_c, xina, xdev, &xsysc);
-	if (ret < 0 || xsysc == NULL) {
-		xrt_images_destroy(&xina);
+	xrt_result_t xret = create_system_compositor(ii, xdev, out_xsysc);
+	if (xret != XRT_SUCCESS) {
 		return -1;
 	}
 
+	return 0;
+}
+
+static xrt_result_t
+ipc_client_instance_create_system(struct xrt_instance *xinst,
+                                  struct xrt_system_devices **out_xsysd,
+                                  struct xrt_system_compositor **out_xsysc)
+{
+	struct ipc_client_instance *ii = ipc_client_instance(xinst);
+	xrt_result_t xret = XRT_SUCCESS;
+
+	assert(out_xsysd != NULL);
+	assert(*out_xsysd == NULL);
+	assert(out_xsysc == NULL || *out_xsysc == NULL);
+
+	// Allocate a helper u_system_devices struct.
+	struct u_system_devices *usysd = u_system_devices_allocate();
+
+	// Take the devices from this instance.
+	for (uint32_t i = 0; i < ii->xdev_count; i++) {
+		usysd->base.xdevs[i] = ii->xdevs[i];
+		ii->xdevs[i] = NULL;
+	}
+	ii->xdev_count = 0;
+
+#define SET_ROLE(ROLE)                                                                                                 \
+	usysd->base.roles.ROLE = ii->ipc_c.ism->roles.ROLE >= 0 ? usysd->base.xdevs[ii->ipc_c.ism->roles.ROLE] : NULL;
+
+	SET_ROLE(head);
+	SET_ROLE(left);
+	SET_ROLE(right);
+	SET_ROLE(gamepad);
+	SET_ROLE(hand_tracking.left);
+	SET_ROLE(hand_tracking.right);
+
+#undef SET_ROLE
+
+	// Done here now.
+	if (out_xsysc == NULL) {
+		*out_xsysd = &usysd->base;
+		return XRT_SUCCESS;
+	}
+
+	if (usysd->base.roles.head == NULL) {
+		IPC_ERROR((&ii->ipc_c), "No head device found but asking for system compositor!");
+		u_system_devices_destroy(&usysd);
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct xrt_system_compositor *xsysc = NULL;
+	xret = create_system_compositor(ii, usysd->base.roles.head, &xsysc);
+	if (xret != XRT_SUCCESS) {
+		u_system_devices_destroy(&usysd);
+		return xret;
+	}
+
+	*out_xsysd = &usysd->base;
 	*out_xsysc = xsysc;
 
-	return 0;
+	return XRT_SUCCESS;
 }
 
 static int
@@ -252,6 +326,7 @@ int
 ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
 	struct ipc_client_instance *ii = U_TYPED_CALLOC(struct ipc_client_instance);
+	ii->base.create_system = ipc_client_instance_create_system;
 	ii->base.select = ipc_client_instance_select;
 	ii->base.create_system_compositor = ipc_client_instance_create_system_compositor;
 	ii->base.get_prober = ipc_client_instance_get_prober;
