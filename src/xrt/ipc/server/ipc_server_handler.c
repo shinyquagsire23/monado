@@ -957,7 +957,7 @@ ipc_handle_compositor_semaphore_create(volatile struct ipc_client_state *ics,
 	xret = xrt_comp_create_semaphore(ics->xc, &handle, &xcsem);
 	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(ics->server, "Failed to create compositor semaphore!");
-		return XRT_SUCCESS;
+		return xret;
 	}
 
 	// Set it directly, no need to use reference here.

@@ -436,6 +436,9 @@ ipc_compositor_semaphore_create(struct xrt_compositor *xc,
 	xrt_graphics_sync_handle_t handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
 	IPC_CALL_CHK(ipc_call_compositor_semaphore_create(icc->ipc_c, &id, &handle, 1));
+	if (res != XRT_SUCCESS) {
+		return res;
+	}
 
 	struct ipc_client_compositor_semaphore *iccs = U_TYPED_CALLOC(struct ipc_client_compositor_semaphore);
 	iccs->base.reference.count = 1;
