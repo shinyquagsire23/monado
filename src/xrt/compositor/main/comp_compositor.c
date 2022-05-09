@@ -1196,7 +1196,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	 * Rest of info.
 	 */
 
-	struct xrt_system_compositor_info sys_info_storage;
+	struct xrt_system_compositor_info sys_info_storage = {0};
 	struct xrt_system_compositor_info *sys_info = &sys_info_storage;
 
 	// Required by OpenXR spec.
