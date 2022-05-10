@@ -349,6 +349,7 @@ public:
 		case XRT_DEVICE_VIVE_TRACKER_GEN1: break; // TODO
 		case XRT_DEVICE_VIVE_TRACKER_GEN2: break; // TODO
 		case XRT_DEVICE_REALSENSE: break;
+		case XRT_DEVICE_DEPTHAI: break;
 
 		case XRT_DEVICE_HAND_INTERACTION: break;  // there is no hardware
 		case XRT_DEVICE_GO_CONTROLLER: break;     // hardware has no haptics

@@ -627,6 +627,7 @@ enum xrt_device_name
 	XRT_DEVICE_HAND_TRACKER,
 
 	XRT_DEVICE_REALSENSE,
+	XRT_DEVICE_DEPTHAI,
 };
 
 /*!
