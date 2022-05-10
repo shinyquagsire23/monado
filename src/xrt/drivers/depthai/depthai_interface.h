@@ -11,6 +11,8 @@
 #pragma once
 
 #include "xrt/xrt_frameserver.h"
+#include "xrt/xrt_device.h"
+#include "xrt/xrt_prober.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +23,21 @@ extern "C" {
 
 struct t_stereo_camera_calibration;
 
+
+#define DEPTHAI_VID 0x03e7
+// 2485
+#define DEPTHAI_PID 0x2485
+// #define DEPTHAI_PID 0xf63b
+// #define DEPTHAI_PID_ENUMERATED 0x2485
+
+
+int
+depthai_3dof_device_found(struct xrt_prober *xp,
+                          struct xrt_prober_device **devices,
+                          size_t device_count,
+                          size_t index,
+                          cJSON *attached_data,
+                          struct xrt_device **out_xdev);
 
 /*!
  * @defgroup drv_depthai DepthAI frameserver driver
