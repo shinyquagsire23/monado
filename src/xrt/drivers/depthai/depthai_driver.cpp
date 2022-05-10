@@ -20,6 +20,7 @@
 #include "util/u_format.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
+#include "math/m_api.h"
 
 #include "tracking/t_tracking.h"
 
@@ -113,7 +114,8 @@ struct depthai_fs
 {
 	struct xrt_fs base;
 	struct xrt_frame_node node;
-	struct os_thread_helper play_thread;
+	struct os_thread_helper image_thread;
+	struct os_thread_helper imu_thread;
 
 	u_logging_level log_level;
 
@@ -123,9 +125,11 @@ struct depthai_fs
 
 	// Sink:, RGB, Left, Right, CamC.
 	xrt_frame_sink *sink[4];
+	xrt_imu_sink *imu_sink;
 
 	dai::Device *device;
-	dai::DataOutputQueue *queue;
+	dai::DataOutputQueue *image_queue;
+	dai::DataOutputQueue *imu_queue;
 
 	dai::ColorCameraProperties::SensorResolution color_sensor_resolution;
 	dai::ColorCameraProperties::ColorOrder color_order;
@@ -137,6 +141,9 @@ struct depthai_fs
 	uint32_t fps;
 	bool interleaved;
 	bool oak_d_lite;
+
+	bool want_cameras;
+	bool want_imu;
 };
 
 
@@ -311,10 +318,11 @@ depthai_print_calib(struct depthai_fs *depthai)
 	t_stereo_camera_calibration_reference(&c, NULL);
 }
 
+
 static void
 depthai_do_one_frame(struct depthai_fs *depthai)
 {
-	std::shared_ptr<dai::ImgFrame> imgFrame = depthai->queue->get<dai::ImgFrame>();
+	std::shared_ptr<dai::ImgFrame> imgFrame = depthai->image_queue->get<dai::ImgFrame>();
 	if (!imgFrame) {
 		std::cout << "Not ImgFrame" << std::endl;
 		return; // Nothing to do.
@@ -370,16 +378,111 @@ depthai_mainloop(void *ptr)
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
 	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
 
-	os_thread_helper_lock(&depthai->play_thread);
-	while (os_thread_helper_is_running_locked(&depthai->play_thread)) {
-		os_thread_helper_unlock(&depthai->play_thread);
+	os_thread_helper_lock(&depthai->image_thread);
+	while (os_thread_helper_is_running_locked(&depthai->image_thread)) {
+		os_thread_helper_unlock(&depthai->image_thread);
 
 		depthai_do_one_frame(depthai);
 
 		// Need to lock the thread when we go back to the while condition.
-		os_thread_helper_lock(&depthai->play_thread);
+		os_thread_helper_lock(&depthai->image_thread);
 	}
-	os_thread_helper_unlock(&depthai->play_thread);
+	os_thread_helper_unlock(&depthai->image_thread);
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
+	return nullptr;
+}
+
+int64_t
+dai_ts_to_monado_ts(dai::Timestamp &in)
+{
+	return std::chrono::time_point<std::chrono::steady_clock, std::chrono::steady_clock::duration>{
+	    std::chrono::seconds(in.sec) + std::chrono::nanoseconds(in.nsec)}
+	    .time_since_epoch()
+	    .count();
+}
+
+// Look at wmr_source_push_imu_packet - that's where these averaging shenanigans come from ;)
+static void
+depthai_do_one_imu_frame(struct depthai_fs *depthai)
+{
+	std::shared_ptr<dai::IMUData> imuData = depthai->imu_queue->get<dai::IMUData>();
+
+	std::vector<dai::IMUPacket> imuPackets = imuData->packets;
+
+	if (imuPackets.size() != 2) {
+		DEPTHAI_WARN(depthai, "Wrong number of IMU reports!");
+		// Yeah we're not dealing with this. Shouldn't ever happen
+		return;
+	}
+
+	assert(imuPackets.size() == 2);
+
+	struct xrt_vec3 a = {0, 0, 0};
+	struct xrt_vec3 g = {0, 0, 0};
+
+	int64_t ts = 0;
+
+	for (dai::IMUPacket imuPacket : imuPackets) {
+
+		dai::IMUReportAccelerometer &accel = imuPacket.acceleroMeter;
+		dai::IMUReportGyroscope &gyro = imuPacket.gyroscope;
+
+
+		int64_t ts_accel = dai_ts_to_monado_ts(accel.timestamp);
+		int64_t ts_gyro = dai_ts_to_monado_ts(gyro.timestamp);
+		int64_t diff = (ts_gyro - ts_accel);
+
+		ts += ts_accel / 4;
+		ts += ts_gyro / 4;
+
+		float diff_in_ms = fabs(diff) / (double)U_TIME_1MS_IN_NS;
+		if (diff_in_ms > 2.5) {
+			DEPTHAI_WARN(depthai, "Accel and gyro samples are too far apart - %f ms!", diff_in_ms);
+		}
+
+		struct xrt_vec3 this_a = {accel.x, accel.y, accel.z};
+		struct xrt_vec3 this_g = {gyro.x, gyro.y, gyro.z};
+
+
+		math_vec3_accum(&this_a, &a);
+		math_vec3_accum(&this_g, &g);
+	}
+
+	math_vec3_scalar_mul(0.5, &a);
+	math_vec3_scalar_mul(0.5, &g);
+
+
+	xrt_imu_sample sample;
+	sample.timestamp_ns = ts;
+	sample.accel_m_s2.x = a.x;
+	sample.accel_m_s2.y = a.y;
+	sample.accel_m_s2.z = a.z;
+
+	sample.gyro_rad_secs.x = g.x;
+	sample.gyro_rad_secs.y = g.y;
+	sample.gyro_rad_secs.z = g.z;
+	xrt_sink_push_imu(depthai->imu_sink, &sample);
+}
+
+static void *
+depthai_imu_mainloop(void *ptr)
+{
+	SINK_TRACE_MARKER();
+
+	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
+	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
+
+	os_thread_helper_lock(&depthai->imu_thread);
+	while (os_thread_helper_is_running_locked(&depthai->imu_thread)) {
+		os_thread_helper_unlock(&depthai->imu_thread);
+
+		depthai_do_one_imu_frame(depthai);
+
+		// Need to lock the thread when we go back to the while condition.
+		os_thread_helper_lock(&depthai->imu_thread);
+	}
+	os_thread_helper_unlock(&depthai->imu_thread);
 
 	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
 	return nullptr;
@@ -389,12 +492,16 @@ static bool
 depthai_destroy(struct depthai_fs *depthai)
 {
 	DEPTHAI_DEBUG(depthai, "DepthAI: Frameserver destroy called");
-
-	os_thread_helper_destroy(&depthai->play_thread);
+	os_thread_helper_destroy(&depthai->image_thread);
+	os_thread_helper_destroy(&depthai->imu_thread);
 
 	// To work around use after free issue detected by ASan, v2.13.3 has this bug.
-	depthai->queue->close();
-
+	if (depthai->image_queue) {
+		depthai->image_queue->close();
+	}
+	if (depthai->imu_queue) {
+		depthai->imu_queue->close();
+	}
 	delete depthai->device;
 
 	free(depthai);
@@ -502,7 +609,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 
 	// Start the pipeline
 	depthai->device->startPipeline(p);
-	depthai->queue = depthai->device->getOutputQueue("preview", 1, false).get(); // out of shared pointer
+	depthai->image_queue = depthai->device->getOutputQueue("preview", 1, false).get(); // out of shared pointer
 }
 
 static void
@@ -531,31 +638,53 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 	dai::Pipeline p = {};
 
-	const char *name = "frames";
-	std::shared_ptr<dai::node::XLinkOut> xlinkOut = p.create<dai::node::XLinkOut>();
-	xlinkOut->setStreamName(name);
+	const char *name_images = "image_frames";
+	const char *name_imu = "imu_samples";
 
-	dai::CameraBoardSocket sockets[2] = {
-	    dai::CameraBoardSocket::LEFT,
-	    dai::CameraBoardSocket::RIGHT,
-	};
+	if (depthai->want_cameras) {
 
-	for (int i = 0; i < 2; i++) {
-		std::shared_ptr<dai::node::MonoCamera> grayCam = nullptr;
+		std::shared_ptr<dai::node::XLinkOut> xlinkOut = p.create<dai::node::XLinkOut>();
+		xlinkOut->setStreamName(name_images);
 
-		grayCam = p.create<dai::node::MonoCamera>();
-		grayCam->setBoardSocket(sockets[i]);
-		grayCam->setResolution(depthai->grayscale_sensor_resolution);
-		grayCam->setImageOrientation(depthai->image_orientation);
-		grayCam->setFps(depthai->fps);
+		dai::CameraBoardSocket sockets[2] = {
+		    dai::CameraBoardSocket::LEFT,
+		    dai::CameraBoardSocket::RIGHT,
+		};
 
-		// Link plugins CAM -> XLINK
-		grayCam->out.link(xlinkOut->input);
+		for (int i = 0; i < 2; i++) {
+			std::shared_ptr<dai::node::MonoCamera> grayCam = nullptr;
+
+			grayCam = p.create<dai::node::MonoCamera>();
+			grayCam->setBoardSocket(sockets[i]);
+			grayCam->setResolution(depthai->grayscale_sensor_resolution);
+			grayCam->setImageOrientation(depthai->image_orientation);
+			grayCam->setFps(depthai->fps);
+
+			// Link plugins CAM -> XLINK
+			grayCam->out.link(xlinkOut->input);
+		}
+	}
+
+	if (depthai->want_imu) {
+		std::shared_ptr<dai::node::XLinkOut> xlinkOut_imu = p.create<dai::node::XLinkOut>();
+		xlinkOut_imu->setStreamName(name_imu);
+
+		auto imu = p.create<dai::node::IMU>();
+		imu->enableIMUSensor({dai::IMUSensor::ACCELEROMETER_RAW, dai::IMUSensor::GYROSCOPE_RAW}, 500);
+		imu->setBatchReportThreshold(2);
+		imu->setMaxBatchReports(2);
+		imu->out.link(xlinkOut_imu->input);
 	}
 
 	// Start the pipeline
 	depthai->device->startPipeline(p);
-	depthai->queue = depthai->device->getOutputQueue(name, 4, false).get(); // out of shared pointer
+	if (depthai->want_cameras) {
+		depthai->image_queue =
+		    depthai->device->getOutputQueue(name_images, 4, false).get(); // out of shared pointer
+	}
+	if (depthai->want_imu) {
+		depthai->imu_queue = depthai->device->getOutputQueue(name_imu, 4, false).get(); // out of shared pointer
+	}
 }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
@@ -668,7 +797,7 @@ depthai_fs_stream_start(struct xrt_fs *xfs,
 	depthai->sink[2] = xs; // 2 == CamC-2L / Right Gray
 	depthai->sink[3] = xs; // 3 == CamD-4L
 
-	os_thread_helper_start(&depthai->play_thread, depthai_mainloop, depthai);
+	os_thread_helper_start(&depthai->image_thread, depthai_mainloop, depthai);
 
 	return true;
 }
@@ -683,9 +812,13 @@ depthai_fs_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 	depthai->sink[1] = sinks->left;  // 1 == CamB-2L / Left Gray
 	depthai->sink[2] = sinks->right; // 2 == CamC-2L / Right Gray
 	depthai->sink[3] = nullptr;      // 3 == CamD-4L
-
-	os_thread_helper_start(&depthai->play_thread, depthai_mainloop, depthai);
-
+	if (depthai->want_cameras && sinks->left != NULL && sinks->right != NULL) {
+		os_thread_helper_start(&depthai->image_thread, depthai_mainloop, depthai);
+	}
+	if (depthai->want_imu && sinks->imu != NULL) {
+		os_thread_helper_start(&depthai->imu_thread, depthai_imu_mainloop, depthai);
+		depthai->imu_sink = sinks->imu;
+	}
 	return true;
 }
 
@@ -696,7 +829,8 @@ depthai_fs_stream_stop(struct xrt_fs *xfs)
 	DEPTHAI_DEBUG(depthai, "DepthAI: Stream stop called");
 
 	// This call fully stops the thread.
-	os_thread_helper_stop(&depthai->play_thread);
+	os_thread_helper_stop(&depthai->image_thread);
+	os_thread_helper_stop(&depthai->imu_thread);
 
 	return true;
 }
@@ -706,9 +840,9 @@ depthai_fs_is_running(struct xrt_fs *xfs)
 {
 	struct depthai_fs *depthai = depthai_fs(xfs);
 
-	os_thread_helper_lock(&depthai->play_thread);
-	bool running = os_thread_helper_is_running_locked(&depthai->play_thread);
-	os_thread_helper_unlock(&depthai->play_thread);
+	os_thread_helper_lock(&depthai->image_thread);
+	bool running = os_thread_helper_is_running_locked(&depthai->image_thread);
+	os_thread_helper_unlock(&depthai->image_thread);
 
 	return running;
 }
@@ -776,7 +910,7 @@ depthai_create_and_do_minimal_setup(void)
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
-	os_thread_helper_init(&depthai->play_thread);
+	os_thread_helper_init(&depthai->image_thread);
 
 	return depthai;
 }
@@ -792,6 +926,8 @@ extern "C" struct xrt_fs *
 depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	depthai->want_cameras = true;
+	depthai->want_imu = false;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
@@ -814,6 +950,8 @@ extern "C" struct xrt_fs *
 depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	depthai->want_cameras = true;
+	depthai->want_imu = false;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
@@ -828,6 +966,71 @@ depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
 
 	return &depthai->base;
 }
+
+extern "C" struct xrt_fs *
+depthai_fs_stereo_grayscale_and_imu(struct xrt_frame_context *xfctx)
+{
+	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	depthai->want_cameras = true;
+	depthai->want_imu = true;
+	if (depthai == nullptr) {
+		return nullptr;
+	}
+
+	// Last bit is to setup the pipeline.
+	depthai_setup_stereo_grayscale_pipeline(depthai);
+
+	// And finally add us to the context when we are done.
+	xrt_frame_context_add(xfctx, &depthai->node);
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
+
+	return &depthai->base;
+}
+
+
+extern "C" struct xrt_fs *
+depthai_fs_just_imu(struct xrt_frame_context *xfctx)
+{
+	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+	depthai->want_cameras = false;
+	depthai->want_imu = true;
+	if (depthai == nullptr) {
+		return nullptr;
+	}
+
+	// Last bit is to setup the pipeline.
+	depthai_setup_stereo_grayscale_pipeline(depthai);
+
+	// And finally add us to the context when we are done.
+	xrt_frame_context_add(xfctx, &depthai->node);
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
+
+	return &depthai->base;
+}
+
+
+// struct xrt_fs *
+// depthai_fs_just_imu(struct xrt_frame_context *xfctx)
+// {
+// 	{
+// 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
+// 	if (depthai == nullptr) {
+// 		return nullptr;
+// 	}
+
+// 	// Last bit is to setup the pipeline.
+// 	depthai_setup_stereo_grayscale_pipeline(depthai);
+
+// 	// And finally add us to the context when we are done.
+// 	xrt_frame_context_add(xfctx, &depthai->node);
+
+// 	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
+
+// 	return &depthai->base;
+// }
+// }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
 extern "C" struct xrt_fs *

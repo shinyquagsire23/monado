@@ -46,6 +46,23 @@ depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx);
 struct xrt_fs *
 depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx);
 
+/*!
+ * Create a DepthAI frameserver using two gray cameras and the IMU.
+ * Only OAK-D - OAK-D Lite doesn't have an IMU. Custom FFC setups may or may not work.
+ *
+ * @ingroup drv_depthai
+ */
+struct xrt_fs *
+depthai_fs_stereo_grayscale_and_imu(struct xrt_frame_context *xfctx);
+
+/*!
+ * Create a DepthAI frameserver using two gray cameras.
+ * Any DepthAI device with an IMU.
+ *
+ * @ingroup drv_depthai
+ */
+struct xrt_fs *
+depthai_fs_just_imu(struct xrt_frame_context *xfctx);
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
 /*!
