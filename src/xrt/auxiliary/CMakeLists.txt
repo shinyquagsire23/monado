@@ -139,7 +139,6 @@ if(XRT_HAVE_OPENCV)
 			tracking/t_tracker_psmv_fusion.hpp
 			tracking/t_tracker_psmv.cpp
 			tracking/t_tracker_psvr.cpp
-			tracking/t_tracker_hand.cpp
 		)
 	target_include_directories(aux_tracking SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
 	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})

@@ -78,12 +78,6 @@ struct p_factory
 	//! Pre-created psmv trackers.
 	struct xrt_tracked_psmv *xtmv[2];
 
-	//! Have we handed out the hand tracker.
-	bool started_xth;
-
-	//! Pre-created hand trackers.
-	struct xrt_tracked_hand *xth;
-
 	//! Have we handed out the psvr tracker.
 	bool started_xtvr;
 
@@ -197,7 +191,6 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	u_sink_simple_queue_create(&fact->xfctx, xsink, &xsink);
 
 	struct xrt_frame_sink *ht_sink = NULL;
-	t_hand_create(&fact->xfctx, fact->data, &fact->xth, &ht_sink);
 	u_sink_create_to_r8g8b8_or_l8(&fact->xfctx, ht_sink, &ht_sink);
 	u_sink_split_create(&fact->xfctx, xsink, ht_sink, &xsink);
 
@@ -380,36 +373,6 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
 }
 
 static int
-p_factory_create_tracked_hand(struct xrt_tracking_factory *xfact,
-                              struct xrt_device *xdev,
-                              struct xrt_tracked_hand **out_xth)
-{
-#ifdef XRT_HAVE_OPENCV
-	struct p_factory *fact = p_factory(xfact);
-
-	struct xrt_tracked_hand *xth = NULL;
-
-	p_factory_ensure_frameserver(fact);
-
-	if (!fact->started_xth) {
-		xth = fact->xth;
-	}
-
-	if (xth == NULL) {
-		return -1;
-	}
-
-	fact->started_xth = true;
-	t_hand_start(xth);
-	*out_xth = xth;
-
-	return 0;
-#else
-	return -1;
-#endif
-}
-
-static int
 p_factory_create_tracked_slam(struct xrt_tracking_factory *xfact,
                               struct xrt_device *xdev,
                               struct xrt_tracked_slam **out_xts)
@@ -454,7 +417,6 @@ p_tracking_init(struct prober *p)
 	fact->base.xfctx = &fact->xfctx;
 	fact->base.create_tracked_psmv = p_factory_create_tracked_psmv;
 	fact->base.create_tracked_psvr = p_factory_create_tracked_psvr;
-	fact->base.create_tracked_hand = p_factory_create_tracked_hand;
 	fact->base.create_tracked_slam = p_factory_create_tracked_slam;
 	fact->origin.type = XRT_TRACKING_TYPE_RGB;
 	fact->origin.offset.orientation.y = 1.0f;

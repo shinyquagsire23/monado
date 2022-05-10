@@ -26,7 +26,6 @@ struct xrt_tracking;
 struct xrt_tracking_factory;
 struct xrt_tracked_psmv;
 struct xrt_tracked_psvr;
-struct xrt_tracked_hand;
 struct xrt_tracked_slam;
 
 //! @todo This is from u_time, duplicated to avoid layer violation.
@@ -106,12 +105,7 @@ struct xrt_tracking_factory
 	                           struct xrt_device *xdev,
 	                           struct xrt_tracked_psvr **out_psvr);
 
-	/*!
-	 * Create a tracked hand.
-	 */
-	int (*create_tracked_hand)(struct xrt_tracking_factory *,
-	                           struct xrt_device *xdev,
-	                           struct xrt_tracked_hand **out_hand);
+
 
 	/*!
 	 * Create a SLAM tracker.
@@ -259,35 +253,6 @@ struct xrt_tracked_psvr
 };
 
 /*!
- * @interface xrt_tracked_hand
- *
- * A single tracked Hand
- */
-struct xrt_tracked_hand
-{
-	//! The tracking system origin for this hand.
-	struct xrt_tracking_origin *origin;
-
-	//! Device owning this hand.
-	struct xrt_device *xdev;
-
-	/*!
-	 * Called by the owning @ref xrt_device @ref xdev to get the pose of
-	 * the hand in the tracking space at the given time.
-	 */
-	void (*get_tracked_joints)(struct xrt_tracked_hand *,
-	                           enum xrt_input_name name,
-	                           timepoint_ns when_ns,
-	                           struct u_hand_joint_default_set *out_joints,
-	                           struct xrt_space_relation *out_relation);
-
-	/*!
-	 * Destroy this tracked hand.
-	 */
-	void (*destroy)(struct xrt_tracked_hand *);
-};
-
-/*!
  * @interface xrt_tracked_slam
  *
  * An adapter that wraps an external SLAM tracker to provide SLAM tracking.
@@ -384,17 +349,6 @@ xrt_tracked_psvr_destroy(struct xrt_tracked_psvr **xtvr_ptr)
 	*xtvr_ptr = NULL;
 }
 
-
-//! @public @memberof xrt_tracked_hand
-static inline void
-xrt_tracked_hand_get_joints(struct xrt_tracked_hand *h,
-                            enum xrt_input_name name,
-                            timepoint_ns when_ns,
-                            struct u_hand_joint_default_set *out_joints,
-                            struct xrt_space_relation *out_relation)
-{
-	h->get_tracked_joints(h, name, when_ns, out_joints, out_relation);
-}
 
 //! @public @memberof xrt_tracked_slam
 static inline void
