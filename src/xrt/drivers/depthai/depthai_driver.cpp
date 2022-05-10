@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2021-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -508,11 +508,6 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 static void
 depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 {
-
-	// Get the camera calibration
-	struct t_stereo_camera_calibration *calib = NULL;
-	depthai_get_gray_cameras_calibration(depthai, &calib);
-
 	// Hardcoded to OV_9282 L/R
 	if (!depthai->oak_d_lite) {
 		// OV_9282 L/R
