@@ -109,30 +109,6 @@ struct xrt_prober_entry
 typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
 
 /*!
- * Main root of all of the probing device.
- *
- * @ingroup xrt_iface
- */
-struct xrt_prober_entry_lists
-{
-	/*!
-	 * A null terminated list of null terminated lists of
-	 * @ref xrt_prober_entry.
-	 */
-	struct xrt_prober_entry **entries;
-
-	/*!
-	 * A null terminated list of @ref xrt_auto_prober creation functions.
-	 */
-	xrt_auto_prober_create_func_t *auto_probers;
-
-	/*!
-	 * Allows you to chain multiple prober entry lists.
-	 */
-	struct xrt_prober_entry_lists *next;
-};
-
-/*!
  * Bus type of a device.
  */
 enum xrt_bus_type
@@ -452,21 +428,6 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
 	*xp_ptr = NULL;
 }
 
-/*!
- * Create a prober with a list of known devices and autoprobers.
- *
- * Typically used by xrt_instance_create implementations to create the prober,
- * often with a shared list called `target_list`.
- *
- * @param[out] out_xp Pointer to xrt_prober pointer, will be populated with
- * created xrt_prober instance.
- * @param[in] list Prober entry list
- *
- * @public @memberof xrt_prober
- */
-int
-xrt_prober_create_with_lists(struct xrt_prober **out_xp, struct xrt_prober_entry_lists *list);
-
 
 /*
  *
@@ -518,6 +479,52 @@ struct xrt_auto_prober
 	 */
 	void (*destroy)(struct xrt_auto_prober *xap);
 };
+
+
+/*
+ *
+ * Prober creation.
+ *
+ */
+
+/*!
+ * Main root of all of the probing device.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_prober_entry_lists
+{
+	/*!
+	 * A null terminated list of null terminated lists of
+	 * @ref xrt_prober_entry.
+	 */
+	struct xrt_prober_entry **entries;
+
+	/*!
+	 * A null terminated list of @ref xrt_auto_prober creation functions.
+	 */
+	xrt_auto_prober_create_func_t *auto_probers;
+
+	/*!
+	 * Allows you to chain multiple prober entry lists.
+	 */
+	struct xrt_prober_entry_lists *next;
+};
+
+/*!
+ * Create a prober with a list of known devices and autoprobers.
+ *
+ * Typically used by xrt_instance_create implementations to create the prober,
+ * often with a shared list called `target_list`.
+ *
+ * @param[out] out_xp Pointer to xrt_prober pointer, will be populated with
+ * created xrt_prober instance.
+ * @param[in] list Prober entry list
+ *
+ * @public @memberof xrt_prober
+ */
+int
+xrt_prober_create_with_lists(struct xrt_prober **out_xp, struct xrt_prober_entry_lists *list);
 
 
 #ifdef __cplusplus
