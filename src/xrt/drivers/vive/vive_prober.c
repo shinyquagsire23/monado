@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 
 
 #include "util/u_debug.h"
+#include "util/u_prober.h"
 #include "util/u_trace_marker.h"
 
 #include "vive_device.h"
@@ -42,23 +43,27 @@ static int
 log_vive_string(struct xrt_prober *xp, struct xrt_prober_device *dev, enum xrt_prober_string type)
 {
 	unsigned char s[256] = {0};
+
 	int len = xrt_prober_get_string_descriptor(xp, dev, type, s, sizeof(s));
-	if (len > 0)
-		U_LOG_I("%s: %s", xrt_prober_string_to_string(type), s);
+	if (len > 0) {
+		U_LOG_I("%s: %s", u_prober_string_to_string(type), s);
+	}
+
 	return len;
 }
 
 static void
 log_vive_device(enum u_logging_level log_level, struct xrt_prober *xp, struct xrt_prober_device *dev)
 {
-	if (log_level > U_LOGGING_INFO)
+	if (log_level > U_LOGGING_INFO) {
 		return;
+	}
 
 	U_LOG_I("====== vive device ======");
 	U_LOG_I("Vendor:   %04x", dev->vendor_id);
 	U_LOG_I("Product:  %04x", dev->product_id);
 	U_LOG_I("Class:    %d", dev->usb_dev_class);
-	U_LOG_I("Bus type: %s", xrt_bus_type_to_string(dev->bus));
+	U_LOG_I("Bus type: %s", u_prober_bus_type_to_string(dev->bus));
 	log_vive_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER);
 	log_vive_string(xp, dev, XRT_PROBER_STRING_PRODUCT);
 	log_vive_string(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER);
@@ -74,8 +79,8 @@ init_vive1(struct xrt_prober *xp,
 {
 	log_vive_device(log_level, xp, dev);
 
-	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
-	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRODUCT_STRING)) {
+	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
+	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRODUCT_STRING)) {
 		return -1;
 	}
 
@@ -147,8 +152,8 @@ init_vive_pro(struct xrt_prober *xp,
 
 	log_vive_device(log_level, xp, dev);
 
-	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
-	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRO_PRODUCT_STRING)) {
+	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
+	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRO_PRODUCT_STRING)) {
 		U_LOG_D("Vive Pro manufacturer string did not match.");
 		return -1;
 	}
@@ -221,8 +226,8 @@ init_valve_index(struct xrt_prober *xp,
 
 	log_vive_device(log_level, xp, dev);
 
-	if (!xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
-	    !xrt_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VALVE_INDEX_PRODUCT_STRING)) {
+	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
+	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VALVE_INDEX_PRODUCT_STRING)) {
 		U_LOG_E("Valve Index manufacturer string did not match.");
 		return -1;
 	}
