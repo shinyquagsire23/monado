@@ -28,7 +28,10 @@ typedef struct cJSON cJSON;
 struct xrt_fs;
 struct xrt_frame_context;
 struct xrt_prober;
+struct xrt_prober_entry;
 struct xrt_prober_device;
+struct xrt_prober_entry_lists;
+struct xrt_auto_prober;
 struct xrt_tracking_factory;
 struct os_hid_device;
 
@@ -43,70 +46,6 @@ struct os_hid_device;
 #define XRT_MAX_DEVICES_PER_PROBE 16
 
 #define XRT_MAX_AUTO_PROBERS 16
-
-/*!
- * Function pointer type for a handler that gets called when a device matching vendor and product ID is detected.
- *
- * @param xp Prober
- * @param devices The array of prober devices found by the prober.
- * @param num_devices The number of elements in @p devices
- * @param index Which element in the prober device array matches your query?
- * @param attached_data
- * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
- * instances.
- *
- * @return the number of elements of @p out_xdevs populated by this call.
- */
-typedef int (*xrt_prober_found_func_t)(struct xrt_prober *xp,
-                                       struct xrt_prober_device **devices,
-                                       size_t num_devices,
-                                       size_t index,
-                                       cJSON *attached_data,
-                                       struct xrt_device **out_xdevs);
-
-/*!
- * Entry for a single device.
- *
- * @ingroup xrt_iface
- */
-struct xrt_prober_entry
-{
-	/*!
-	 * USB/Bluetooth vendor ID (VID) to filter on.
-	 */
-	uint16_t vendor_id;
-
-	/*!
-	 * USB/Bluetooth product ID (PID) to filter on.
-	 */
-	uint16_t product_id;
-
-	/*!
-	 * Handler that gets called when a device matching vendor and product ID is detected.
-	 *
-	 * @see xrt_prober_found_func_t
-	 */
-	xrt_prober_found_func_t found;
-
-	/*!
-	 * A human-readable name for the device associated with this VID/PID.
-	 */
-	const char *name;
-
-	/*!
-	 * A human-readable name for the driver associated with this VID/PID.
-	 *
-	 * Separate because a single driver might handle multiple VID/PID entries.
-	 */
-	const char *driver_name;
-};
-
-/*!
- * Function pointer type for creating a auto prober.
- *
- * @ingroup xrt_iface
- */
-typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
 
 /*!
  * Bus type of a device.
@@ -431,9 +370,80 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
 
 /*
  *
+ * Found device interface.
+ *
+ */
+
+/*!
+ * Function pointer type for a handler that gets called when a device matching vendor and product ID is detected.
+ *
+ * @param xp Prober
+ * @param devices The array of prober devices found by the prober.
+ * @param num_devices The number of elements in @p devices
+ * @param index Which element in the prober device array matches your query?
+ * @param attached_data
+ * @param out_xdevs An empty array of size @p XRT_MAX_DEVICES_PER_PROBE you may populate with @ref xrt_device
+ * instances.
+ *
+ * @return the number of elements of @p out_xdevs populated by this call.
+ */
+typedef int (*xrt_prober_found_func_t)(struct xrt_prober *xp,
+                                       struct xrt_prober_device **devices,
+                                       size_t num_devices,
+                                       size_t index,
+                                       cJSON *attached_data,
+                                       struct xrt_device **out_xdevs);
+
+/*!
+ * Entry for a single device.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_prober_entry
+{
+	/*!
+	 * USB/Bluetooth vendor ID (VID) to filter on.
+	 */
+	uint16_t vendor_id;
+
+	/*!
+	 * USB/Bluetooth product ID (PID) to filter on.
+	 */
+	uint16_t product_id;
+
+	/*!
+	 * Handler that gets called when a device matching vendor and product ID is detected.
+	 *
+	 * @see xrt_prober_found_func_t
+	 */
+	xrt_prober_found_func_t found;
+
+	/*!
+	 * A human-readable name for the device associated with this VID/PID.
+	 */
+	const char *name;
+
+	/*!
+	 * A human-readable name for the driver associated with this VID/PID.
+	 *
+	 * Separate because a single driver might handle multiple VID/PID entries.
+	 */
+	const char *driver_name;
+};
+
+
+/*
+ *
  * Auto prober.
  *
  */
+
+/*!
+ * Function pointer type for creating a auto prober.
+ *
+ * @ingroup xrt_iface
+ */
+typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
 
 /*!
  * @interface xrt_auto_prober
