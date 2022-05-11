@@ -10,16 +10,16 @@
 
 #pragma once
 
-#define XRT_DEVICE_NAME_LEN 256
-#define XRT_DEVICE_PRODUCT_NAME_LEN 64 // Incl. termination
-
 #include "xrt/xrt_defines.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct xrt_tracking;
+
+#define XRT_DEVICE_NAME_LEN 256
 
 
 /*!

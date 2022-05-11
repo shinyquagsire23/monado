@@ -380,7 +380,7 @@ wmr_create_bt_controller(struct xrt_prober *xp,
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
 
-	char product_name[XRT_DEVICE_PRODUCT_NAME_LEN] = {0};
+	char product_name[256] = {0};
 	int ret = xrt_prober_get_string_descriptor( //
 	    xp,                                     //
 	    xpdev,                                  //

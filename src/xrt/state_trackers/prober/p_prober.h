@@ -36,6 +36,8 @@
  *
  */
 
+#define P_PROBER_BLUETOOTH_PRODUCT_COUNT 64
+
 #define P_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
 #define P_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
 #define P_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
@@ -93,6 +95,8 @@ struct prober_device
 	struct
 	{
 		uint64_t id;
+
+		char product[P_PROBER_BLUETOOTH_PRODUCT_COUNT];
 	} bluetooth;
 
 #ifdef XRT_HAVE_LIBUVC
@@ -207,8 +211,12 @@ p_dev_get_usb_dev(struct prober *p,
  * @public @memberof prober
  */
 int
-p_dev_get_bluetooth_dev(
-    struct prober *p, uint64_t id, uint16_t vendor_id, uint16_t product_id, struct prober_device **out_pdev);
+p_dev_get_bluetooth_dev(struct prober *p,
+                        uint64_t id,
+                        uint16_t vendor_id,
+                        uint16_t product_id,
+                        const char *product_name,
+                        struct prober_device **out_pdev);
 
 /*!
  * @name Tracking systems

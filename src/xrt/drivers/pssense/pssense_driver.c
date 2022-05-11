@@ -328,6 +328,18 @@ pssense_found(struct xrt_prober *xp,
 		return -1;
 	}
 
+	unsigned char product_name[128];
+	ret = xrt_prober_get_string_descriptor( //
+	    xp,                                 //
+	    devices[index],                     //
+	    XRT_PROBER_STRING_PRODUCT,          //
+	    product_name,                       //
+	    sizeof(product_name));              //
+	if (ret != 0) {
+		U_LOG_E("Failed to get product name from Bluetooth device!");
+		return -1;
+	}
+
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
 	struct pssense_device *pssense = U_DEVICE_ALLOCATE(struct pssense_device, flags, 13, 1);
 
@@ -335,7 +347,7 @@ pssense_found(struct xrt_prober *xp,
 	pssense->base.destroy = pssense_device_destroy;
 	pssense->base.update_inputs = pssense_device_update_inputs;
 	pssense->base.name = XRT_DEVICE_PSSENSE;
-	snprintf(pssense->base.str, XRT_DEVICE_NAME_LEN, "%s", devices[index]->product_name);
+	snprintf(pssense->base.str, XRT_DEVICE_NAME_LEN, "%s", product_name);
 
 	pssense->log_level = debug_get_log_option_pssense_log();
 	pssense->hid = hid;

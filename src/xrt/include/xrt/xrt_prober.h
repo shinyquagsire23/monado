@@ -91,7 +91,6 @@ struct xrt_prober_device
 	 * USB/Bluetooth product ID (PID)
 	 */
 	uint16_t product_id;
-	char product_name[XRT_DEVICE_PRODUCT_NAME_LEN];
 
 	/*!
 	 * Device bus type

@@ -11,6 +11,7 @@
 #include "p_prober.h"
 
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include <libudev.h>
 #include <inttypes.h>
@@ -55,7 +56,7 @@ static void
 p_udev_enumerate_hidraw(struct prober *p, struct udev *udev);
 
 static void
-p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path, const char *product_name);
+p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path);
 
 static int
 p_udev_get_interface_number(struct udev_device *raw_dev, uint16_t *interface_number);
@@ -65,7 +66,7 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
                             uint32_t *out_bus_type,
                             uint16_t *out_vendor_id,
                             uint16_t *out_product_id,
-                            char (*out_product_name)[XRT_DEVICE_PRODUCT_NAME_LEN],
+                            char (*out_product_name)[P_PROBER_BLUETOOTH_PRODUCT_COUNT],
                             uint64_t *out_bluetooth_serial);
 
 static int
@@ -394,7 +395,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		uint16_t usb_addr = 0;
 		uint32_t bus_type = 0;
 		uint64_t bluetooth_id = 0;
-		char product_name[XRT_DEVICE_PRODUCT_NAME_LEN] = {0};
+		char product_name[P_PROBER_BLUETOOTH_PRODUCT_COUNT] = {0};
 		const char *sysfs_path;
 		const char *dev_path;
 		int ret;
@@ -439,7 +440,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		}
 
 		if (bus_type == HIDRAW_BUS_BLUETOOTH) {
-			ret = p_dev_get_bluetooth_dev(p, bluetooth_id, vendor_id, product_id, &pdev);
+			ret = p_dev_get_bluetooth_dev(p, bluetooth_id, vendor_id, product_id, product_name, &pdev);
 		} else if (bus_type == HIDRAW_BUS_USB) {
 			ret = p_dev_get_usb_dev(p, usb_bus, usb_addr, vendor_id, product_id, &pdev);
 		} else {
@@ -473,7 +474,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 		}
 
 		// Add this interface to the usb device.
-		p_udev_add_hidraw(pdev, interface, dev_path, product_name);
+		p_udev_add_hidraw(pdev, interface, dev_path);
 
 	next:
 		udev_device_unref(raw_dev);
@@ -483,7 +484,7 @@ p_udev_enumerate_hidraw(struct prober *p, struct udev *udev)
 }
 
 static void
-p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path, const char *product_name)
+p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *path)
 {
 	U_ARRAY_REALLOC_OR_FREE(pdev->hidraws, struct prober_hidraw, (pdev->num_hidraws + 1));
 
@@ -492,7 +493,6 @@ p_udev_add_hidraw(struct prober_device *pdev, uint32_t interface, const char *pa
 
 	hidraw->interface = interface;
 	hidraw->path = strdup(path);
-	strncpy(pdev->base.product_name, product_name, 64);
 }
 
 static int
@@ -549,7 +549,7 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
                             uint32_t *out_bus_type,
                             uint16_t *out_vendor_id,
                             uint16_t *out_product_id,
-                            char (*out_product_name)[XRT_DEVICE_PRODUCT_NAME_LEN],
+                            char (*out_product_name)[P_PROBER_BLUETOOTH_PRODUCT_COUNT],
                             uint64_t *out_bluetooth_serial)
 {
 	struct udev_device *hid_dev;
@@ -564,6 +564,7 @@ p_udev_get_and_parse_uevent(struct udev_device *raw_dev,
 	char *line;
 	char *tmp;
 	int ret;
+
 
 	// Dig through and find the regular hid node.
 	hid_dev = udev_device_get_parent_with_subsystem_devtype(raw_dev, "hid", NULL);
