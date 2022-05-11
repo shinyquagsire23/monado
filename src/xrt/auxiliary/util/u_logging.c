@@ -26,11 +26,11 @@ u_log_get_global_level(void)
 }
 
 // Logging sink global data.
-static u_log_sink_function_t g_log_sink_func;
+static u_log_sink_func_t g_log_sink_func;
 static void *g_log_sink_data;
 
 void
-u_log_set_sink(u_log_sink_function_t func, void *data)
+u_log_set_sink(u_log_sink_func_t func, void *data)
 {
 	g_log_sink_func = func;
 	g_log_sink_data = data;

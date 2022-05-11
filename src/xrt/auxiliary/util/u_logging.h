@@ -57,13 +57,13 @@ enum u_logging_level
  * @param args   Format parameters.
  * @param data   User data.
  */
-typedef void (*u_log_sink_function_t)(const char *file,
-                                      int line,
-                                      const char *func,
-                                      enum u_logging_level level,
-                                      const char *format,
-                                      va_list args,
-                                      void *data);
+typedef void (*u_log_sink_func_t)(const char *file,
+                                  int line,
+                                  const char *func,
+                                  enum u_logging_level level,
+                                  const char *format,
+                                  va_list args,
+                                  void *data);
 
 /*!
  * For places where you really just want printf, prints a new-line.
@@ -190,7 +190,7 @@ u_log_xdev(const char *file,
  * @param data User data to be passed into @p func.
  */
 void
-u_log_set_sink(u_log_sink_function_t func, void *data);
+u_log_set_sink(u_log_sink_func_t func, void *data);
 
 /*!
  * @}
