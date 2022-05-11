@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -100,7 +100,7 @@ p_open_video_device(struct xrt_prober *xp,
                     struct xrt_fs **out_xfs);
 
 static int
-p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
+p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_func_t cb, void *ptr);
 
 static int
 p_get_entries(struct xrt_prober *xp,
@@ -1008,7 +1008,7 @@ p_open_video_device(struct xrt_prober *xp,
 }
 
 static int
-p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
+p_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_func_t cb, void *ptr)
 {
 	struct prober *p = (struct prober *)xp;
 

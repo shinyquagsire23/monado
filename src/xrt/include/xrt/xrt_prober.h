@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -57,12 +57,12 @@ struct os_hid_device;
  *
  * @return the number of elements of @p out_xdevs populated by this call.
  */
-typedef int (*xrt_prober_found_function_t)(struct xrt_prober *xp,
-                                           struct xrt_prober_device **devices,
-                                           size_t num_devices,
-                                           size_t index,
-                                           cJSON *attached_data,
-                                           struct xrt_device **out_xdevs);
+typedef int (*xrt_prober_found_func_t)(struct xrt_prober *xp,
+                                       struct xrt_prober_device **devices,
+                                       size_t num_devices,
+                                       size_t index,
+                                       cJSON *attached_data,
+                                       struct xrt_device **out_xdevs);
 
 /*!
  * Entry for a single device.
@@ -84,9 +84,9 @@ struct xrt_prober_entry
 	/*!
 	 * Handler that gets called when a device matching vendor and product ID is detected.
 	 *
-	 * @see xrt_prober_found_function_t
+	 * @see xrt_prober_found_func_t
 	 */
-	xrt_prober_found_function_t found;
+	xrt_prober_found_func_t found;
 
 	/*!
 	 * A human-readable name for the device associated with this VID/PID.
@@ -106,7 +106,7 @@ struct xrt_prober_entry
  *
  * @ingroup xrt_iface
  */
-typedef struct xrt_auto_prober *(*xrt_auto_prober_creator)();
+typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
 
 /*!
  * Main root of all of the probing device.
@@ -124,7 +124,7 @@ struct xrt_prober_entry_lists
 	/*!
 	 * A null terminated list of @ref xrt_auto_prober creation functions.
 	 */
-	xrt_auto_prober_creator *auto_probers;
+	xrt_auto_prober_create_func_t *auto_probers;
 
 	/*!
 	 * Allows you to chain multiple prober entry lists.
@@ -186,12 +186,12 @@ struct xrt_prober_device
  *
  * @ingroup xrt_iface
  */
-typedef void (*xrt_prober_list_video_cb)(struct xrt_prober *xp,
-                                         struct xrt_prober_device *pdev,
-                                         const char *product,
-                                         const char *manufacturer,
-                                         const char *serial,
-                                         void *ptr);
+typedef void (*xrt_prober_list_video_func_t)(struct xrt_prober *xp,
+                                             struct xrt_prober_device *pdev,
+                                             const char *product,
+                                             const char *manufacturer,
+                                             const char *serial,
+                                             void *ptr);
 
 /*!
  * The main prober that probes and manages found but not opened HMD devices
@@ -263,7 +263,7 @@ struct xrt_prober
 	                         struct xrt_frame_context *xfctx,
 	                         struct xrt_fs **out_xfs);
 
-	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr);
+	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_func_t cb, void *ptr);
 
 	int (*get_entries)(struct xrt_prober *xp,
 	                   size_t *out_entry_count,
@@ -411,7 +411,7 @@ xrt_prober_open_video_device(struct xrt_prober *xp,
  * @public @memberof xrt_prober
  */
 static inline int
-xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_cb cb, void *ptr)
+xrt_prober_list_video_devices(struct xrt_prober *xp, xrt_prober_list_video_func_t cb, void *ptr)
 {
 	return xp->list_video_devices(xp, cb, ptr);
 }

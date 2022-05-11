@@ -43,7 +43,7 @@ extern "C" {
  * Probing function for Vive devices.
  *
  * @ingroup drv_vive
- * @see xrt_prober_found_function_t
+ * @see xrt_prober_found_func_t
  */
 int
 vive_found(struct xrt_prober *xp,
@@ -58,7 +58,7 @@ vive_found(struct xrt_prober *xp,
  * Probing function for HTC Vive and Valve Index controllers.
  *
  * @ingroup drv_vive
- * @see xrt_prober_found_function_t
+ * @see xrt_prober_found_func_t
  */
 int
 vive_controller_found(struct xrt_prober *xp,

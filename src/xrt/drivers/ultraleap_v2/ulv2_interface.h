@@ -33,7 +33,7 @@ extern "C" {
  * Probing function for Leap Motion Controller.
  *
  * @ingroup drv_ulv2
- * @see xrt_prober_found_function_t
+ * @see xrt_prober_found_func_t
  */
 int
 ulv2_found(struct xrt_prober *xp,

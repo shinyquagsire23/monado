@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -157,7 +157,7 @@ struct xrt_prober_entry *target_entry_lists[] = {
     NULL, // Terminate
 };
 
-xrt_auto_prober_creator target_auto_list[] = {
+xrt_auto_prober_create_func_t target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_PSVR
     psvr_create_auto_prober,
 #endif

@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -12,5 +12,5 @@
 
 extern struct xrt_prober_entry target_entry_list[];
 extern struct xrt_prober_entry *target_entry_lists[];
-extern xrt_auto_prober_creator target_auto_list[];
+extern xrt_auto_prober_create_func_t target_auto_list[];
 extern struct xrt_prober_entry_lists target_lists;
