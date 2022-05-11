@@ -1,5 +1,5 @@
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -14,6 +14,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_prober.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -172,8 +173,8 @@ wmr_found(struct xrt_prober *xp,
 	unsigned char buf[256] = {0};
 	int result = xrt_prober_get_string_descriptor(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, buf, sizeof(buf));
 
-	if (!xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_MANUFACTURER, MS_HOLOLENS_MANUFACTURER_STRING) ||
-	    !xrt_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, MS_HOLOLENS_PRODUCT_STRING)) {
+	if (!u_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_MANUFACTURER, MS_HOLOLENS_MANUFACTURER_STRING) ||
+	    !u_prober_match_string(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, MS_HOLOLENS_PRODUCT_STRING)) {
 		U_LOG_IFL_E(log_level, "HoloLens Sensors manufacturer or product strings did not match");
 		return -1;
 	}
