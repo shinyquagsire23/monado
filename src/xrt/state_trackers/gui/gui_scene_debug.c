@@ -480,9 +480,12 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 void
 gui_scene_debug(struct gui_program *p)
 {
-	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
+	// Only create devices if we have a instance and no system devices.
+	if (p->instance != NULL && p->xsysd == NULL) {
+		gui_prober_select(p);
+	}
 
-	gui_prober_select(p);
+	struct debug_scene *ds = U_TYPED_CALLOC(struct debug_scene);
 
 	ds->base.render = scene_render;
 	ds->base.destroy = scene_destroy;
