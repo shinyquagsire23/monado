@@ -846,6 +846,8 @@ u_sink_create_format_converter(struct xrt_frame_context *xfctx,
                                struct xrt_frame_sink *downstream,
                                struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	void (*func)(struct xrt_frame_sink *, struct xrt_frame *);
 
 	switch (format) {
@@ -874,6 +876,8 @@ u_sink_create_to_r8g8b8_or_l8(struct xrt_frame_context *xfctx,
                               struct xrt_frame_sink *downstream,
                               struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_r8g8b8_or_l8;
 	s->node.break_apart = break_apart;
@@ -894,6 +898,8 @@ u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(struct xrt_frame_context *xfctx,
                                                 struct xrt_frame_sink *downstream,
                                                 struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8;
 	s->node.break_apart = break_apart;
@@ -914,6 +920,8 @@ u_sink_create_to_r8g8b8_bayer_or_l8(struct xrt_frame_context *xfctx,
                                     struct xrt_frame_sink *downstream,
                                     struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_r8g8b8_bayer_or_l8;
 	s->node.break_apart = break_apart;
@@ -930,6 +938,8 @@ u_sink_create_to_rgb_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
                                          struct xrt_frame_sink *downstream,
                                          struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_rgb_yuv_yuyv_uyvy_or_l8;
 	s->node.break_apart = break_apart;
@@ -946,6 +956,8 @@ u_sink_create_to_yuv_yuyv_uyvy_or_l8(struct xrt_frame_context *xfctx,
                                      struct xrt_frame_sink *downstream,
                                      struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_yuv_yuyv_uyvy_or_l8;
 	s->node.break_apart = break_apart;
@@ -962,6 +974,8 @@ u_sink_create_to_yuv_or_yuyv(struct xrt_frame_context *xfctx,
                              struct xrt_frame_sink *downstream,
                              struct xrt_frame_sink **out_xfs)
 {
+	assert(downstream != NULL);
+
 	struct u_sink_converter *s = U_TYPED_CALLOC(struct u_sink_converter);
 	s->base.push_frame = convert_frame_yuv_or_yuyv;
 	s->node.break_apart = break_apart;
