@@ -190,10 +190,6 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	// Put a queue before it to multi-thread the filter.
 	u_sink_simple_queue_create(&fact->xfctx, xsink, &xsink);
 
-	struct xrt_frame_sink *ht_sink = NULL;
-	u_sink_create_to_r8g8b8_or_l8(&fact->xfctx, ht_sink, &ht_sink);
-	u_sink_split_create(&fact->xfctx, xsink, ht_sink, &xsink);
-
 	// Hardcoded quirk sink.
 	struct u_sink_quirk_params qp;
 	U_ZERO(&qp);
