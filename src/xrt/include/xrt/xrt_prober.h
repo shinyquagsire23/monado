@@ -33,6 +33,8 @@ struct xrt_prober_device;
 struct xrt_prober_entry_lists;
 struct xrt_auto_prober;
 struct xrt_tracking_factory;
+struct xrt_builder;
+struct xrt_system_devices;
 struct os_hid_device;
 
 /*!
@@ -121,12 +123,42 @@ struct xrt_prober
 
 	/*!
 	 * Enumerate all connected devices, whether or not we have an associated
-	 * driver.
+	 * driver. Can not be called with the device list is locked
+	 * @ref xrt_prober::lock_list and @ref xrt_prober::unlock_list.
 	 *
-	 * @note Code consuming this interface should use
-	 * xrt_prober_probe()
+	 * This function along with lock/unlock allows a @ref xrt_builder to
+	 * re-probe the devices after having opened another device. A bit more
+	 * detailed: It can get a list of devices, search it, open the enabling
+	 * one, release the list, do a probe, get the list again and re-scan
+	 * to detect any additional devices that may show up once the first
+	 * device has been been started.
+	 *
+	 * @note Code consuming this interface should use xrt_prober_probe()
+	 * @see xrt_prober::lock_list, xrt_prober::unlock_list
 	 */
 	int (*probe)(struct xrt_prober *xp);
+
+	/*!
+	 * Locks the prober list of probed devices and returns it, while locked
+	 * calling @ref xrt_prober::probe is forbidden. Not thread safe.
+	 * See @ref xrt_prober::probe for more detailed expected usage.
+	 *
+	 * @note Code consuming this interface should use xrt_prober_lock_list()
+	 * @see xrt_prober::probe, xrt_prober::unlock_list
+	 */
+	xrt_result_t (*lock_list)(struct xrt_prober *xp,
+	                          struct xrt_prober_device ***out_devices,
+	                          size_t *out_device_count);
+
+	/*!
+	 * Unlocks the list, allowing for @ref xrt_prober::probe to be called.
+	 * Takes a pointer to the list pointer and clears it. Not thread safe.
+	 * See @ref xrt_prober::probe for more detailed expected usage.
+	 *
+	 * @note Code consuming this interface should use xrt_prober_unlock_list()
+	 * @see xrt_prober::probe, xrt_prober::lock_list
+	 */
+	xrt_result_t (*unlock_list)(struct xrt_prober *xp, struct xrt_prober_device ***devices);
 
 	/*!
 	 * Dump a listing of all devices found on the system to platform
@@ -135,6 +167,16 @@ struct xrt_prober
 	 * @note Code consuming this interface should use xrt_prober_dump()
 	 */
 	int (*dump)(struct xrt_prober *xp);
+
+	/*!
+	 * Create system devices.
+	 *
+	 * @param[in]  xp        Prober self parameter.
+	 * @param[out] out_xsysd Return of system devices, the pointed pointer must be NULL.
+	 *
+	 * @note Code consuming this interface should use xrt_prober_create_system()
+	 */
+	xrt_result_t (*create_system)(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
 
 	/*!
 	 * Iterate through drivers (by ID and auto-probers) checking to see if
@@ -230,6 +272,32 @@ xrt_prober_probe(struct xrt_prober *xp)
 }
 
 /*!
+ * @copydoc xrt_prober::lock_list
+ *
+ * Helper function for @ref xrt_prober::lock_list.
+ *
+ * @public @memberof xrt_prober
+ */
+static inline xrt_result_t
+xrt_prober_lock_list(struct xrt_prober *xp, struct xrt_prober_device ***out_devices, size_t *out_device_count)
+{
+	return xp->lock_list(xp, out_devices, out_device_count);
+}
+
+/*!
+ * @copydoc xrt_prober::unlock_list
+ *
+ * Helper function for @ref xrt_prober::unlock_list.
+ *
+ * @public @memberof xrt_prober
+ */
+static inline xrt_result_t
+xrt_prober_unlock_list(struct xrt_prober *xp, struct xrt_prober_device ***devices)
+{
+	return xp->unlock_list(xp, devices);
+}
+
+/*!
  * @copydoc xrt_prober::dump
  *
  * Helper function for @ref xrt_prober::dump.
@@ -240,6 +308,19 @@ static inline int
 xrt_prober_dump(struct xrt_prober *xp)
 {
 	return xp->dump(xp);
+}
+
+/*!
+ * @copydoc xrt_prober::create_system
+ *
+ * Helper function for @ref xrt_prober::create_system.
+ *
+ * @public @memberof xrt_prober
+ */
+static inline xrt_result_t
+xrt_prober_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+{
+	return xp->create_system(xp, out_xsysd);
 }
 
 /*!
@@ -365,6 +446,157 @@ xrt_prober_destroy(struct xrt_prober **xp_ptr)
 
 	xp->destroy(xp_ptr);
 	*xp_ptr = NULL;
+}
+
+
+/*
+ *
+ * Builder interface.
+ *
+ */
+
+/*!
+ * A estimate from a setter upper about how many devices they can open.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_builder_estimate
+{
+	struct
+	{
+		bool head;
+		bool left;
+		bool right;
+		bool dof6;
+		uint32_t extra_device_count;
+	} certain, maybe;
+
+	/*!
+	 * A setter upper defined priority, mostly for vive vs survive.
+	 *
+	 * 0 normal priority, positive value higher, negative lower.
+	 */
+	int32_t priority;
+};
+
+/*!
+ * Function pointer type for creating a @ref xrt_builder.
+ *
+ * @ingroup xrt_iface
+ */
+typedef struct xrt_builder *(*xrt_builder_create_func_t)(void);
+
+/*!
+ * Sets up a collection of devices and builds a system, a setter upper.
+ *
+ * @ingroup xrt_iface
+ */
+struct xrt_builder
+{
+	//! Short identifier, like "vive", "north_star", "rgb_tracking".
+	const char *identifier;
+
+	//! "Localized" pretty name.
+	const char *name;
+
+	//! List of identifiers for drivers this setter-upper uses/supports.
+	const char **driver_identifiers;
+
+	//! Number of driver identifiers.
+	size_t driver_identifier_count;
+
+	//! Should this builder be excluded from automatic discovery.
+	bool exclude_from_automatic_discovery;
+
+	/*!
+	 * From the devices found, estimate without opening the devices how
+	 * good the system will be.
+	 *
+	 * @param[in]  xb           Builder self parameter.
+	 * @param[in]  xp           Prober
+	 * @param[in]  config       JSON config object if found for this setter upper.
+	 * @param[out] out_estimate Estimate to be filled out.
+	 *
+	 * @note Code consuming this interface should use xrt_builder_estimate_system()
+	 */
+	xrt_result_t (*estimate_system)(struct xrt_builder *xb,
+	                                cJSON *config,
+	                                struct xrt_prober *xp,
+	                                struct xrt_builder_estimate *out_estimate);
+
+	/*!
+	 * We are now committed to opening these devices.
+	 *
+	 * @param[in]  xb        Builder self parameter.
+	 * @param[in]  xp        Prober
+	 * @param[in]  config    JSON config object if found for this setter upper.
+	 * @param[out] out_xsysd Return of system devices, the pointed pointer must be NULL.
+	 *
+	 * @note Code consuming this interface should use xrt_builder_open_system()
+	 */
+	xrt_result_t (*open_system)(struct xrt_builder *xb,
+	                            cJSON *config,
+	                            struct xrt_prober *xp,
+	                            struct xrt_system_devices **out_xsysd);
+
+	/*!
+	 * Destroy this setter upper.
+	 *
+	 * @note Code consuming this interface should use xrt_builder_destroy()
+	 */
+	void (*destroy)(struct xrt_builder *xb);
+};
+
+/*!
+ * @copydoc xrt_builder::estimate_system
+ *
+ * Helper function for @ref xrt_builder::estimate_system.
+ *
+ * @public @memberof xrt_builder
+ */
+static inline xrt_result_t
+xrt_builder_estimate_system(struct xrt_builder *xb,
+                            cJSON *config,
+                            struct xrt_prober *xp,
+                            struct xrt_builder_estimate *estimate)
+{
+	return xb->estimate_system(xb, config, xp, estimate);
+}
+
+/*!
+ * @copydoc xrt_builder::open_system
+ *
+ * Helper function for @ref xrt_builder::open_system.
+ *
+ * @public @memberof xrt_builder
+ */
+static inline xrt_result_t
+xrt_builder_open_system(struct xrt_builder *xb,
+                        cJSON *config,
+                        struct xrt_prober *xp,
+                        struct xrt_system_devices **out_xsysd)
+{
+	return xb->open_system(xb, config, xp, out_xsysd);
+}
+
+/*!
+ * @copydoc xrt_builder::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * xb_ptr to null if freed.
+ *
+ * @public @memberof xrt_builder
+ */
+static inline void
+xrt_builder_destroy(struct xrt_builder **xb_ptr)
+{
+	struct xrt_builder *xb = *xb_ptr;
+	if (xb == NULL) {
+		return;
+	}
+
+	xb->destroy(xb);
+	*xb_ptr = NULL;
 }
 
 
@@ -504,6 +736,11 @@ struct xrt_auto_prober
  */
 struct xrt_prober_entry_lists
 {
+	/*!
+	 * A null terminated list of @ref xrt_builder creation functions.
+	 */
+	xrt_builder_create_func_t *builders;
+
 	/*!
 	 * A null terminated list of null terminated lists of
 	 * @ref xrt_prober_entry.

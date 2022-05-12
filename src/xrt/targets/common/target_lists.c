@@ -220,6 +220,7 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 };
 
 struct xrt_prober_entry_lists target_lists = {
+    NULL,
     target_entry_lists,
     target_auto_list,
     NULL,
