@@ -197,12 +197,8 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 
 	uint32_t num_dist = 14;
 
-#if 0
 	// Good enough assumption that they're using the same distortion model
 	bool use_fisheye = calibData.getDistortionModel(dai::CameraBoardSocket::LEFT) == dai::CameraModel::Fisheye;
-#else
-	bool use_fisheye = false;
-#endif
 	if (use_fisheye) {
 		num_dist = 4;
 	}
