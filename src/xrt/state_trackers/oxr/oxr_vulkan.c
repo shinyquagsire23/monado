@@ -332,7 +332,8 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 #endif
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(optional_device_extensions); i++) {
-		if (optional_device_extensions[i] &&
+		// Empty list or a not supported extension.
+		if (optional_device_extensions[i] == NULL ||
 		    !vk_check_extension(props, prop_count, optional_device_extensions[i])) {
 			continue;
 		}
