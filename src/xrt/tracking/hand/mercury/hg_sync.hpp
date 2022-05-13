@@ -208,7 +208,7 @@ public:
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
 	kine::kinematic_hand_4f *kinematic_hands[2];
-	bool last_frame_hand_detected[2];
+	bool last_frame_hand_detected[2] = {false, false};
 
 	xrt_frame *debug_frame;
 
