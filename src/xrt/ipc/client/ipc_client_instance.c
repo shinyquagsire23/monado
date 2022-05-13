@@ -207,6 +207,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 		usysd->base.xdevs[i] = ii->xdevs[i];
 		ii->xdevs[i] = NULL;
 	}
+	usysd->base.xdev_count = ii->xdev_count;
 	ii->xdev_count = 0;
 
 #define SET_ROLE(ROLE)                                                                                                 \
