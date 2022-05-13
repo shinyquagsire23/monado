@@ -122,6 +122,21 @@ force_genlock_mainloop(void *ptr)
 		 */
 		pthread_mutex_unlock(&q->mutex);
 
+		/*
+		 * Average the timestamps, SLAM systems break if they don't have the exact same timestamp.
+		 * (This is dumb, because on DepthAI the images *are* taken like 0.1ms apart, and we *could* expose
+		 * that, but oh well.)
+		 */
+
+		int64_t ts_1 = frames[0]->timestamp;
+		int64_t ts_2 = frames[1]->timestamp;
+
+		int64_t diff = (ts_2 - ts_1);
+
+		int64_t ts = ts_1 + (diff / 2);
+
+		frames[0]->timestamp = ts;
+		frames[1]->timestamp = ts;
 
 		// Send to the consumer, in left-right order.
 		xrt_sink_push_frame(q->consumer_left, frames[0]);
