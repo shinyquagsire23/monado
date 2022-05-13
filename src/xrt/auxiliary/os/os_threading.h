@@ -253,7 +253,7 @@ os_semaphore_get_realtime_clock(struct timespec *ts, uint64_t timeout_ns)
 		assert(false);
 		return -1;
 	}
-	uint64_t now_ns = os_timespec_to_ns(ts);
+	uint64_t now_ns = os_timespec_to_ns(&now);
 	uint64_t when_ns = timeout_ns + now_ns;
 
 	os_ns_to_timespec(when_ns, ts);
