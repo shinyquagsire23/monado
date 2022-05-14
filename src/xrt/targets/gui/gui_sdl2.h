@@ -38,6 +38,7 @@ struct sdl2_program
 	bool sdl_initialized;
 	SDL_Window *win;
 	SDL_GLContext ctx;
+	char layout_file[1024];
 };
 
 
