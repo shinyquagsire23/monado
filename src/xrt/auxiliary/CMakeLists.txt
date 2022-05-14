@@ -151,6 +151,8 @@ endif()
 # Util library.
 add_library(
 	aux_util STATIC
+	util/u_autoexpgain.c
+	util/u_autoexpgain.h
 	util/u_bitwise.c
 	util/u_bitwise.h
 	util/u_builders.c
