@@ -14,6 +14,7 @@
 #include "util/u_misc.h"
 #include "util/u_config_json.h"
 #include "util/u_debug.h"
+#include "util/u_pretty_print.h"
 #include "util/u_trace_marker.h"
 
 #include "os/os_hid.h"
@@ -81,8 +82,17 @@ teardown(struct prober *p);
 static int
 p_probe(struct xrt_prober *xp);
 
+static xrt_result_t
+p_lock_list(struct xrt_prober *xp, struct xrt_prober_device ***out_devices, size_t *out_device_count);
+
+static xrt_result_t
+p_unlock_list(struct xrt_prober *xp, struct xrt_prober_device ***devices);
+
 static int
 p_dump(struct xrt_prober *xp);
+
+static xrt_result_t
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
 
 static int
 p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_count);
@@ -277,11 +287,29 @@ add_usb_entry(struct prober *p, struct xrt_prober_entry *entry)
 	p->entries[p->num_entries++] = entry;
 }
 
+static void
+add_builder(struct prober *p, struct xrt_builder *xb)
+{
+	U_ARRAY_REALLOC_OR_FREE(p->builders, struct xrt_builder *, (p->builder_count + 1));
+	p->builders[p->builder_count++] = xb;
+
+	P_TRACE(p, "%s: %s", xb->identifier, xb->name);
+}
+
 static int
 collect_entries(struct prober *p)
 {
 	struct xrt_prober_entry_lists *lists = p->lists;
 	while (lists) {
+		for (size_t i = 0; lists->builders[i] != NULL; i++) {
+			struct xrt_builder *xb = lists->builders[i]();
+			if (xb == NULL) {
+				continue;
+			}
+
+			add_builder(p, xb);
+		}
+
 		for (size_t j = 0; lists->entries != NULL && lists->entries[j]; j++) {
 			struct xrt_prober_entry *entry = lists->entries[j];
 			for (size_t k = 0; entry[k].found != NULL; k++) {
@@ -406,7 +434,10 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	XRT_TRACE_MARKER();
 
 	p->base.probe = p_probe;
+	p->base.lock_list = p_lock_list;
+	p->base.unlock_list = p_unlock_list;
 	p->base.dump = p_dump;
+	p->base.create_system = p_create_system;
 	p->base.select = p_select_device;
 	p->base.open_hid_interface = p_open_hid_interface;
 	p->base.open_video_device = p_open_video_device;
@@ -553,6 +584,12 @@ teardown(struct prober *p)
 	// First remove the variable tracking.
 	u_var_remove_root((void *)p);
 
+	// Clean up all setter uppers.
+	for (size_t i = 0; i < p->builder_count; i++) {
+		xrt_builder_destroy(&p->builders[i]);
+	}
+	p->builder_count = 0;
+
 	// Clean up all auto_probers.
 	for (int i = 0; i < XRT_MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
 		p->auto_probers[i]->destroy(p->auto_probers[i]);
@@ -618,11 +655,10 @@ handle_found_device(
 static void
 add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
 {
-	// Build a list of all current probed devices.
-	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->device_count);
-	for (size_t i = 0; i < p->device_count; i++) {
-		dev_list[i] = &p->devices[i].base;
-	}
+	struct xrt_prober_device **dev_list = NULL;
+	size_t dev_count = 0;
+
+	xrt_prober_lock_list(&p->base, &dev_list, &dev_count);
 
 	// Loop over all devices and entries that might match them.
 	for (size_t i = 0; i < p->device_count; i++) {
@@ -666,8 +702,7 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 		}
 	}
 
-	// Free the temporary list.
-	free(dev_list);
+	xrt_prober_unlock_list(&p->base, &dev_list);
 }
 
 static void
@@ -780,6 +815,34 @@ apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t xdev
 	}
 }
 
+struct xrt_builder *
+find_builder_by_identifier(struct prober *p, const char *ident)
+{
+	for (size_t i = 0; i < p->builder_count; i++) {
+		if (strcmp(p->builders[i]->identifier, ident) != 0) {
+			continue;
+		}
+
+		// This is what we want.
+		return p->builders[i];
+	}
+
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	u_pp(dg, "Could not find builder with identifier '%s' among %u supported builders:", ident,
+	     (uint32_t)p->builder_count);
+
+	for (size_t i = 0; i < p->builder_count; i++) {
+		struct xrt_builder *xb = p->builders[i];
+		u_pp(dg, "\n\t%s: %s", xb->identifier, xb->name);
+	}
+
+	P_WARN(p, "%s", sink.buffer);
+
+	return NULL;
+}
+
 
 /*
  *
@@ -825,6 +888,44 @@ p_probe(struct xrt_prober *xp)
 	return 0;
 }
 
+static xrt_result_t
+p_lock_list(struct xrt_prober *xp, struct xrt_prober_device ***out_devices, size_t *out_device_count)
+{
+	struct prober *p = (struct prober *)xp;
+
+	assert(!p->list_locked);
+	assert(out_devices != NULL);
+	assert(*out_devices == NULL);
+
+	// Build a list of all current probed devices.
+	struct xrt_prober_device **dev_list = U_TYPED_ARRAY_CALLOC(struct xrt_prober_device *, p->device_count);
+	for (size_t i = 0; i < p->device_count; i++) {
+		dev_list[i] = &p->devices[i].base;
+	}
+
+	p->list_locked = true;
+
+	*out_devices = dev_list;
+	*out_device_count = p->device_count;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+p_unlock_list(struct xrt_prober *xp, struct xrt_prober_device ***devices)
+{
+	struct prober *p = (struct prober *)xp;
+
+	assert(p->list_locked);
+	assert(devices != NULL);
+
+	p->list_locked = false;
+	free(*devices);
+	*devices = NULL;
+
+	return XRT_SUCCESS;
+}
+
 static int
 p_dump(struct xrt_prober *xp)
 {
@@ -840,6 +941,115 @@ p_dump(struct xrt_prober *xp)
 	}
 
 	return 0;
+}
+
+static xrt_result_t
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+{
+	XRT_TRACE_MARKER();
+
+	struct prober *p = (struct prober *)xp;
+	struct xrt_builder *select = NULL;
+	enum u_config_json_active_config active;
+	xrt_result_t xret = XRT_SUCCESS;
+	struct u_pp_sink_stack_only sink; // Not inited, very large.
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+
+	/*
+	 * Logging.
+	 */
+
+	u_pp(dg, "Creating system:");
+	u_pp(dg, "\n\tBuilders:");
+	for (size_t i = 0; i < p->builder_count; i++) {
+		u_pp(dg, "\n\t\t%s: %s", p->builders[i]->identifier, p->builders[i]->name);
+	}
+
+
+	/*
+	 * Config.
+	 */
+
+	u_config_json_get_active(&p->json, &active);
+
+	switch (active) {
+	case U_ACTIVE_CONFIG_NONE: break;
+	case U_ACTIVE_CONFIG_REMOTE: select = find_builder_by_identifier(p, "remote"); break;
+	case U_ACTIVE_CONFIG_TRACKING: select = find_builder_by_identifier(p, "rgb_tracking"); break;
+	default: assert(false);
+	}
+
+	if (select != NULL) {
+		u_pp(dg, "\n\tConfig selected %s", select->identifier);
+	} else {
+		u_pp(dg, "\n\tNo builder selected in config (or wasn't compiled in)");
+	}
+
+
+	/*
+	 * Estimate.
+	 */
+
+	//! @todo Improve estimation selection logic.
+	if (select == NULL) {
+		for (size_t i = 0; i < p->builder_count; i++) {
+			struct xrt_builder *xb = p->builders[i];
+
+			if (xb->exclude_from_automatic_discovery) {
+				continue;
+			}
+
+			struct xrt_builder_estimate estimate = {0};
+			xrt_builder_estimate_system(xb, p->json.root, xp, &estimate);
+
+			if (estimate.certain.head) {
+				select = xb;
+				break;
+			}
+		}
+
+		if (select != NULL) {
+			u_pp(dg, "\n\tSelected %s because it was certain it could create a head", select->identifier);
+		} else {
+			u_pp(dg, "\n\tNo builder was certain that it could create a head device");
+		}
+	}
+
+	if (select == NULL) {
+		for (size_t i = 0; i < p->builder_count; i++) {
+			struct xrt_builder *xb = p->builders[i];
+
+			if (xb->exclude_from_automatic_discovery) {
+				continue;
+			}
+
+			struct xrt_builder_estimate estimate = {0};
+			xrt_builder_estimate_system(xb, p->json.root, xp, &estimate);
+
+			if (estimate.maybe.head) {
+				select = xb;
+				break;
+			}
+		}
+
+		if (select != NULL) {
+			u_pp(dg, "\n\tSelected %s because it maybe could create a head", select->identifier);
+		} else {
+			u_pp(dg, "\n\tNo builder could maybe create a head device");
+		}
+	}
+
+	if (select != NULL) {
+		u_pp(dg, "\n\tUsing builder %s: %s", select->identifier, select->name);
+		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd);
+		u_pp(dg, "\n\tResult: ");
+		u_pp_xrt_result(dg, xret);
+	}
+
+	P_INFO(p, "%s", sink.buffer);
+
+	return xret;
 }
 
 static int

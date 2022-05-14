@@ -124,6 +124,21 @@ struct prober
 
 	struct u_config_json json;
 
+	/*!
+	 * List of created builder.
+	 */
+	struct xrt_builder **builders;
+
+	/*!
+	 * The number of created builders.
+	 */
+	size_t builder_count;
+
+	/*!
+	 * Has the list been locked.
+	 */
+	bool list_locked;
+
 #ifdef XRT_HAVE_LIBUSB
 	struct
 	{
@@ -141,6 +156,7 @@ struct prober
 		ssize_t count;
 	} uvc;
 #endif
+
 
 	struct xrt_auto_prober *auto_probers[XRT_MAX_AUTO_PROBERS];
 
