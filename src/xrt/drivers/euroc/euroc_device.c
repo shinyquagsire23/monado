@@ -259,7 +259,7 @@ euroc_device_create(struct xrt_prober *xp)
 	u_var_add_pose(ed, &ed->offset, "offset");
 	u_var_add_pose(ed, &ed->tracking_origin.offset, "tracking offset");
 
-	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, xd, &ed->slam) >= 0;
+	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, &ed->slam) >= 0;
 	if (!tracked) {
 		EUROC_WARN(ed, "Unable to setup the SLAM tracker");
 		euroc_device_destroy(xd);

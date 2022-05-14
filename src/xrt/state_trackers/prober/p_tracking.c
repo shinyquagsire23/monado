@@ -308,9 +308,7 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
  */
 
 static int
-p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
-                              struct xrt_device *xdev,
-                              struct xrt_tracked_psmv **out_xtmv)
+p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact, struct xrt_tracked_psmv **out_xtmv)
 {
 #ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
@@ -339,9 +337,7 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact,
 }
 
 static int
-p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
-                              struct xrt_device *xdev,
-                              struct xrt_tracked_psvr **out_xtvr)
+p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact, struct xrt_tracked_psvr **out_xtvr)
 {
 #ifdef XRT_HAVE_OPENCV
 	struct p_factory *fact = p_factory(xfact);
@@ -369,9 +365,7 @@ p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact,
 }
 
 static int
-p_factory_create_tracked_slam(struct xrt_tracking_factory *xfact,
-                              struct xrt_device *xdev,
-                              struct xrt_tracked_slam **out_xts)
+p_factory_create_tracked_slam(struct xrt_tracking_factory *xfact, struct xrt_tracked_slam **out_xts)
 {
 #ifdef XRT_FEATURE_SLAM
 	struct p_factory *fact = p_factory(xfact);

@@ -1121,7 +1121,7 @@ psmv_found(struct xrt_prober *xp,
 	float diameter = PSMV_BALL_DIAMETER_M;
 	(void)diameter;
 	if (xp->tracking != NULL) {
-		xp->tracking->create_tracked_psmv(xp->tracking, &psmv->base, &psmv->ball);
+		xp->tracking->create_tracked_psmv(xp->tracking, &psmv->ball);
 	}
 #endif
 

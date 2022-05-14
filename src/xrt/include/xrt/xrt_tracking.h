@@ -94,25 +94,19 @@ struct xrt_tracking_factory
 	/*!
 	 * Create a tracked PSMV ball.
 	 */
-	int (*create_tracked_psmv)(struct xrt_tracking_factory *,
-	                           struct xrt_device *xdev,
-	                           struct xrt_tracked_psmv **out_psmv);
+	int (*create_tracked_psmv)(struct xrt_tracking_factory *, struct xrt_tracked_psmv **out_psmv);
 
 	/*!
 	 * Create a tracked PSVR HMD.
 	 */
-	int (*create_tracked_psvr)(struct xrt_tracking_factory *,
-	                           struct xrt_device *xdev,
-	                           struct xrt_tracked_psvr **out_psvr);
+	int (*create_tracked_psvr)(struct xrt_tracking_factory *, struct xrt_tracked_psvr **out_psvr);
 
 
 
 	/*!
 	 * Create a SLAM tracker.
 	 */
-	int (*create_tracked_slam)(struct xrt_tracking_factory *,
-	                           struct xrt_device *xdev,
-	                           struct xrt_tracked_slam **out_slam);
+	int (*create_tracked_slam)(struct xrt_tracking_factory *, struct xrt_tracked_slam **out_slam);
 };
 
 /*!

@@ -1023,7 +1023,7 @@ rs_hdev_create(struct xrt_prober *xp, int device_idx)
 	u_var_add_pose(rh, &rh->pose, "SLAM Pose");
 	u_var_add_pose(rh, &rh->offset, "Offset Pose");
 
-	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, xd, &rh->slam) >= 0;
+	bool tracked = xp->tracking->create_tracked_slam(xp->tracking, &rh->slam) >= 0;
 	if (!tracked) {
 		RS_WARN(rh, "Unable to setup the SLAM tracker");
 		rs_hdev_destroy(xd);

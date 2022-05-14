@@ -1103,7 +1103,7 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 
 	// If there is a tracking factory use it.
 	if (xp->tracking != NULL) {
-		xp->tracking->create_tracked_psvr(xp->tracking, &psvr->base, &psvr->tracker);
+		xp->tracking->create_tracked_psvr(xp->tracking, &psvr->tracker);
 	}
 
 	// Use the new origin if we got a tracking system.
