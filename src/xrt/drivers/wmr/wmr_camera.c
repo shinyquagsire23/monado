@@ -25,6 +25,8 @@
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
 
+static int
+update_expgain(struct wmr_camera *cam);
 
 /*
  *
@@ -48,8 +50,6 @@
 
 #define DEFAULT_EXPOSURE 6000
 #define DEFAULT_GAIN 127
-
-#define UI_EXPOSURE_STEP_SIZE 200
 
 struct wmr_camera_active_cmd
 {
@@ -92,8 +92,9 @@ struct wmr_camera
 
 	struct libusb_transfer *xfers[NUM_XFERS];
 
-	uint8_t last_gain, debug_gain;
-	uint8_t last_exposure, debug_exposure;
+	uint16_t last_exposure, exposure;
+	uint8_t last_gain, gain;
+	struct u_var_draggable_u16 exposure_ui; //! Widget to control `exposure` value
 
 	struct u_sink_debug debug_sinks[2];
 
@@ -360,6 +361,8 @@ img_xfer_cb(struct libusb_transfer *xfer)
 		u_frame_create_roi(xf, cam->configs[0].roi, &xf_left);
 		u_frame_create_roi(xf, cam->configs[1].roi, &xf_right);
 
+		update_expgain(cam);
+
 		if (cam->left_sink != NULL) {
 			xrt_sink_push_frame(cam->left_sink, xf_left);
 		}
@@ -373,19 +376,6 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	}
 
 	xrt_frame_reference(&xf, NULL);
-
-	if (cam->last_exposure != cam->debug_exposure || cam->last_gain != cam->debug_gain) {
-		int i;
-
-		for (i = 0; i < cam->config_count; i++) {
-			const struct wmr_camera_config *config = &cam->configs[i];
-			if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-				continue;
-			}
-			wmr_camera_set_exposure_gain(cam, config->location, cam->debug_exposure * UI_EXPOSURE_STEP_SIZE,
-			                             cam->debug_gain);
-		}
-	}
 
 out:
 	libusb_submit_transfer(xfer);
@@ -411,8 +401,8 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	int i;
 
 	cam->log_level = log_level;
-	cam->debug_gain = DEFAULT_GAIN;
-	cam->debug_exposure = DEFAULT_EXPOSURE / UI_EXPOSURE_STEP_SIZE;
+	cam->exposure = DEFAULT_EXPOSURE;
+	cam->gain = DEFAULT_GAIN;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -449,12 +439,17 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 		}
 	}
 
+	cam->exposure_ui.val = &cam->exposure;
+	cam->exposure_ui.max = WMR_MAX_EXPOSURE;
+	cam->exposure_ui.min = WMR_MIN_EXPOSURE;
+	cam->exposure_ui.step = 25;
+
 	u_sink_debug_init(&cam->debug_sinks[0]);
 	u_sink_debug_init(&cam->debug_sinks[1]);
 	u_var_add_root(cam, "WMR Camera", true);
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
-	u_var_add_u8(cam, &cam->debug_gain, "Gain");
-	u_var_add_u8(cam, &cam->debug_exposure, "Exposure * 200");
+	u_var_add_draggable_u16(cam, &cam->exposure_ui, "Exposure (usec)");
+	u_var_add_u8(cam, &cam->gain, "Gain");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
 
@@ -532,18 +527,9 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 		goto fail;
 	}
 
-	for (int i = 0; i < cam->config_count; i++) {
-		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-			continue;
-		}
-
-		res = wmr_camera_set_exposure_gain(cam, config->location, cam->debug_exposure * UI_EXPOSURE_STEP_SIZE,
-		                                   cam->debug_gain);
-		if (res < 0) {
-			WMR_CAM_ERROR(cam, "Failed to set initial gain for camera %d", i);
-			goto fail;
-		}
+	res = update_expgain(cam);
+	if (res < 0) {
+		goto fail;
 	}
 
 	for (int i = 0; i < NUM_XFERS; i++) {
@@ -610,6 +596,30 @@ fail:
 	return false;
 }
 
+static int
+update_expgain(struct wmr_camera *cam)
+{
+	if (cam->last_exposure == cam->exposure && cam->last_gain == cam->gain) {
+		return 0;
+	}
+	cam->last_exposure = cam->exposure;
+	cam->last_gain = cam->gain;
+
+	int res = 0;
+	for (int i = 0; i < cam->config_count; i++) {
+		const struct wmr_camera_config *config = &cam->configs[i];
+		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
+			continue;
+		}
+		res = wmr_camera_set_exposure_gain(cam, config->location, cam->exposure, cam->gain);
+		if (res != 0) {
+			WMR_CAM_ERROR(cam, "Failed to set exposure and gain for camera %d", i);
+			return res;
+		}
+	}
+	return res;
+}
+
 int
 wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t exposure, uint8_t gain)
 {
@@ -624,8 +634,6 @@ wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t
 	    .gain = __cpu_to_le16(gain),
 	    .camera_id2 = __cpu_to_le16(camera_id),
 	};
-
-	cam->last_gain = gain;
 
 	return send_buffer_to_device(cam, (uint8_t *)&cmd, sizeof(cmd));
 }
