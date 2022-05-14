@@ -9,9 +9,15 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct xrt_tracked_psvr;
+
 
 /*!
  * @defgroup drv_psvr PSVR driver
@@ -19,6 +25,28 @@ extern "C" {
  *
  * @brief Driver for the Sony PSVR HMD.
  */
+
+/*!
+ * Vendor id for PSVR.
+ *
+ * @ingroup drv_psvr
+ */
+#define PSVR_VID 0x054c
+
+/*!
+ * Product id for PSVR.
+ *
+ * @ingroup drv_psvr
+ */
+#define PSVR_PID 0x09af
+
+/*!
+ * Create PSVR device, with a optional tracker.
+ *
+ * @ingroup drv_psvr
+ */
+struct xrt_device *
+psvr_device_create(struct xrt_tracked_psvr *tracker);
 
 /*!
  * Create a probe for PSVR devices.

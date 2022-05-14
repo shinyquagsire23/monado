@@ -965,10 +965,10 @@ psvr_compute_distortion(struct xrt_device *xdev, int view, float u, float v, str
  */
 
 struct xrt_device *
-psvr_device_create(struct hid_device_info *sensor_hid_info,
-                   struct hid_device_info *control_hid_info,
-                   struct xrt_prober *xp,
-                   enum u_logging_level log_level)
+psvr_device_create_auto_prober(struct hid_device_info *sensor_hid_info,
+                               struct hid_device_info *control_hid_info,
+                               struct xrt_tracked_psvr *tracker,
+                               enum u_logging_level log_level)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -1101,10 +1101,8 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 		u_device_dump_config(&psvr->base, __func__, "Sony PSVR");
 	}
 
-	// If there is a tracking factory use it.
-	if (xp->tracking != NULL) {
-		xp->tracking->create_tracked_psvr(xp->tracking, &psvr->tracker);
-	}
+	// Did we get a tracker, use it!
+	psvr->tracker = tracker;
 
 	// Use the new origin if we got a tracking system.
 	if (psvr->tracker != NULL) {
@@ -1112,7 +1110,7 @@ psvr_device_create(struct hid_device_info *sensor_hid_info,
 	}
 
 	psvr->base.orientation_tracking_supported = true;
-	psvr->base.position_tracking_supported = xp->tracking != NULL;
+	psvr->base.position_tracking_supported = psvr->tracker != NULL;
 	psvr->base.device_type = XRT_DEVICE_TYPE_HMD;
 
 	PSVR_DEBUG(psvr, "YES!");

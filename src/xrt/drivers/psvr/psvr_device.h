@@ -31,9 +31,6 @@ extern "C" {
  *
  */
 
-#define PSVR_VID 0x054c
-#define PSVR_PID 0x09af
-
 #define PSVR_HANDLE_IFACE 4
 #define PSVR_CONTROL_IFACE 5
 
@@ -73,6 +70,8 @@ enum psvr_status_bits
  * Structs
  *
  */
+
+struct xrt_tracked_psvr;
 
 /*!
  * A parsed single gyro, accel and tick sample.
@@ -124,10 +123,10 @@ struct psvr_parsed_status
  */
 
 struct xrt_device *
-psvr_device_create(struct hid_device_info *sensor_hid_info,
-                   struct hid_device_info *control_hid_info,
-                   struct xrt_prober *xp,
-                   enum u_logging_level log_level);
+psvr_device_create_auto_prober(struct hid_device_info *sensor_hid_info,
+                               struct hid_device_info *control_hid_info,
+                               struct xrt_tracked_psvr *tracker,
+                               enum u_logging_level log_level);
 
 bool
 psvr_parse_sensor_packet(struct psvr_parsed_sensor *sensor, const uint8_t *buffer, int size);
