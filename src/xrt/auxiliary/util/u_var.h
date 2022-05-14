@@ -113,6 +113,14 @@ struct u_var_draggable_u16
 	uint16_t max;
 };
 
+struct u_var_histogram_f32
+{
+	float *values; //!< Bin heights
+	int count;     //!< Number of bins
+	float width;   //!< Widget width or 0 for auto
+	float height;  //!< Widget height or 0 for auto
+};
+
 /*!
  * What kind of variable is this tracking.
  */
@@ -150,6 +158,7 @@ enum u_var_kind
 	U_VAR_KIND_GUI_HEADER,
 	U_VAR_KIND_BUTTON,
 	U_VAR_KIND_COMBO,
+	U_VAR_KIND_HISTOGRAM_F32,
 	U_VAR_KIND_DRAGGABLE_U16,
 };
 
@@ -257,7 +266,8 @@ u_var_force_on(void);
 	ADD_FUNC(button, struct u_var_button, BUTTON)                                                                  \
 	ADD_FUNC(combo, struct u_var_combo, COMBO)                                                                     \
 	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)                                             \
-	ADD_FUNC(draggable_u16, struct u_var_draggable_u16, DRAGGABLE_U16)
+	ADD_FUNC(draggable_u16, struct u_var_draggable_u16, DRAGGABLE_U16)                                             \
+	ADD_FUNC(histogram_f32, struct u_var_histogram_f32, HISTOGRAM_F32)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM) void u_var_add_##SUFFIX(void *, TYPE *, const char *);
 

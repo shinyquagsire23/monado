@@ -238,6 +238,14 @@ on_combo_var(const char *name, void *ptr)
 }
 
 static void
+on_histogram_f32_var(const char *name, void *ptr)
+{
+	struct u_var_histogram_f32 *h = (struct u_var_histogram_f32 *)ptr;
+	ImVec2 zero = {h->width, h->height};
+	igPlotHistogramFloatPtr(name, h->values, h->count, 0, NULL, FLT_MAX, FLT_MAX, zero, sizeof(float));
+}
+
+static void
 on_draggable_f32_var(const char *name, void *ptr)
 {
 	struct u_var_draggable_f32 *d = (struct u_var_draggable_f32 *)ptr;
@@ -384,6 +392,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	case U_VAR_KIND_COMBO: on_combo_var(name, ptr); break;
 	case U_VAR_KIND_DRAGGABLE_U16: on_draggable_u16_var(name, ptr); break;
+	case U_VAR_KIND_HISTOGRAM_F32: on_histogram_f32_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }
