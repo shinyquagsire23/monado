@@ -13,4 +13,5 @@
 extern struct xrt_prober_entry target_entry_list[];
 extern struct xrt_prober_entry *target_entry_lists[];
 extern xrt_auto_prober_create_func_t target_auto_list[];
+extern xrt_builder_create_func_t target_builder_list[];
 extern struct xrt_prober_entry_lists target_lists;

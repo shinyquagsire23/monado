@@ -9,6 +9,8 @@
 #include "xrt/xrt_config_drivers.h"
 
 #include "target_lists.h"
+#include "target_builder_interface.h"
+
 
 #ifdef XRT_BUILD_DRIVER_ARDUINO
 #include "arduino/arduino_interface.h"
@@ -92,6 +94,26 @@
 #include "ht/ht_interface.h"
 #endif
 #endif
+
+
+/*!
+ * Builders
+ */
+xrt_builder_create_func_t target_builder_list[] = {
+#ifdef T_BUILDER_RGB_TRACKING
+    t_builder_rgb_tracking_create,
+#endif // T_BUILDER_RGB_TRACKING
+
+#ifdef T_BUILDER_REMOTE
+    t_builder_remote_create,
+#endif // T_BUILDER_REMOTE
+
+#ifdef T_BUILDER_LEGACY
+    t_builder_legacy_create,
+#endif // T_BUILDER_LEGACY
+
+    NULL,
+};
 
 
 /*!
@@ -220,7 +242,7 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 };
 
 struct xrt_prober_entry_lists target_lists = {
-    NULL,
+    target_builder_list,
     target_entry_lists,
     target_auto_list,
     NULL,

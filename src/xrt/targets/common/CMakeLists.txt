@@ -5,7 +5,14 @@
 # Lists
 #
 
-add_library(target_lists STATIC target_lists.c)
+add_library(target_lists STATIC
+	target_builder_interface.h
+	target_builder_legacy.c
+	target_builder_remote.c
+	target_builder_rgb_tracking.c
+	target_lists.c
+	target_lists.h
+	)
 target_link_libraries(
 	target_lists
 	PRIVATE
