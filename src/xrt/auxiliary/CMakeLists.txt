@@ -153,6 +153,8 @@ add_library(
 	aux_util STATIC
 	util/u_bitwise.c
 	util/u_bitwise.h
+	util/u_builders.c
+	util/u_builders.h
 	util/u_debug.c
 	util/u_debug.h
 	util/u_device.c

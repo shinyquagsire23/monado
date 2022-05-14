@@ -13,6 +13,7 @@
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_instance.h"
+#include "xrt/xrt_tracking.h"
 
 
 #ifdef __cplusplus
@@ -33,8 +34,11 @@ struct u_system_devices
 {
 	struct xrt_system_devices base;
 
-	//! Frame context for visual tracking.
+	//! Optional frame context for visual tracking.
 	struct xrt_frame_context xfctx;
+
+	//! Optional shared tracking origin.
+	struct xrt_tracking_origin origin;
 };
 
 /*!
