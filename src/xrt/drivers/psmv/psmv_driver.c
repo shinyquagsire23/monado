@@ -1000,9 +1000,6 @@ psmv_found(struct xrt_prober *xp,
            cJSON *attached_data,
            struct xrt_device **out_xdevs)
 {
-	struct os_hid_device *hid = NULL;
-	int ret;
-
 	// We do not receive any sensor packages on USB.
 	if (devices[index]->bus != XRT_BUS_TYPE_BLUETOOTH) {
 		return 0;
@@ -1015,9 +1012,30 @@ psmv_found(struct xrt_prober *xp,
 	default: return -1;
 	}
 
-	ret = xrt_prober_open_hid_interface(xp, devices[index], 0, &hid);
-	if (ret != 0) {
+	struct xrt_tracked_psmv *tracker = NULL;
+	if (xp->tracking != NULL) {
+		xp->tracking->create_tracked_psmv(xp->tracking, &tracker);
+	}
+
+	struct xrt_device *xdev = psmv_device_create(xp, devices[index], tracker);
+	if (xdev != NULL) {
 		return -1;
+	}
+
+	*out_xdevs = xdev;
+
+	return 1;
+}
+
+struct xrt_device *
+psmv_device_create(struct xrt_prober *xp, struct xrt_prober_device *xpdev, struct xrt_tracked_psmv *tracker)
+{
+	struct os_hid_device *hid = NULL;
+	int ret = 0;
+
+	ret = xrt_prober_open_hid_interface(xp, xpdev, 0, &hid);
+	if (ret != 0) {
+		return NULL;
 	}
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
@@ -1032,12 +1050,15 @@ psmv_found(struct xrt_prober *xp,
 	psmv->fusion.rot.w = 1.0f;
 	psmv->fusion.fusion = imu_fusion_create();
 	psmv->log_level = debug_get_log_option_psmv_log();
-	psmv->pid = devices[index]->product_id;
+	psmv->pid = xpdev->product_id;
 	psmv->hid = hid;
 
-	struct xrt_prober_device *dev = devices[index];
-	int str_serial_ret = xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER,
-	                                                      (unsigned char *)psmv->base.serial, XRT_DEVICE_NAME_LEN);
+	int str_serial_ret = xrt_prober_get_string_descriptor( //
+	    xp,                                                //
+	    xpdev,                                             //
+	    XRT_PROBER_STRING_SERIAL_NUMBER,                   //
+	    (unsigned char *)psmv->base.serial,                //
+	    XRT_DEVICE_NAME_LEN);                              //
 
 	static int controller_num = 0;
 	if (str_serial_ret <= 0) {
@@ -1050,7 +1071,7 @@ psmv_found(struct xrt_prober *xp,
 	m_imu_pre_filter_init(&psmv->calibration.prefilter, 1.f, 1.f);
 
 	// Default variance
-	switch (devices[index]->product_id) {
+	switch (xpdev->product_id) {
 	case PSMV_PID_ZCM1:
 		// Note that there is one axis "weird" in each - this model has
 		// 2-axis sensors.
@@ -1072,7 +1093,7 @@ psmv_found(struct xrt_prober *xp,
 		break;
 	default:
 		//! @todo cleanup to not leak
-		return -1;
+		return NULL;
 	}
 
 	// Setup inputs.
@@ -1098,7 +1119,7 @@ psmv_found(struct xrt_prober *xp,
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to init mutex!");
 		psmv_device_destroy(&psmv->base);
-		return ret;
+		return NULL;
 	}
 
 	// Thread and other state.
@@ -1106,23 +1127,21 @@ psmv_found(struct xrt_prober *xp,
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to init threading!");
 		psmv_device_destroy(&psmv->base);
-		return ret;
+		return NULL;
 	}
 	// Get calibration data.
 	ret = psmv_get_calibration(psmv);
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to get calibration data!");
 		psmv_device_destroy(&psmv->base);
-		return ret;
+		return NULL;
 	}
 
 #if 1
 	// 45mm
 	float diameter = PSMV_BALL_DIAMETER_M;
 	(void)diameter;
-	if (xp->tracking != NULL) {
-		xp->tracking->create_tracked_psmv(xp->tracking, &psmv->ball);
-	}
+	psmv->ball = tracker;
 #endif
 
 	if (psmv->ball != NULL) {
@@ -1155,7 +1174,7 @@ psmv_found(struct xrt_prober *xp,
 	if (ret != 0) {
 		PSMV_ERROR(psmv, "Failed to start thread!");
 		psmv_device_destroy(&psmv->base);
-		return ret;
+		return NULL;
 	}
 
 	// Start the variable tracking now that everything is in place.
@@ -1220,9 +1239,7 @@ psmv_found(struct xrt_prober *xp,
 	psmv->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 
 	// And finally done
-	*out_xdevs = &psmv->base;
-
-	return 1;
+	return &psmv->base;
 }
 
 
