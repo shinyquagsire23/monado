@@ -73,6 +73,14 @@ u_pp(struct u_pp_delegate dg, const char *fmt, ...) XRT_PRINTF_FORMAT(2, 3);
 void
 u_pp_xrt_input_name(struct u_pp_delegate dg, enum xrt_input_name name);
 
+/*!
+ * Pretty prints the @ref xrt_result_t.
+ *
+ * @ingroup aux_pretty
+ */
+void
+u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret);
+
 
 /*
  *

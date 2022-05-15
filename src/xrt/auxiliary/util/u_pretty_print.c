@@ -250,6 +250,40 @@ u_pp_xrt_input_name(struct u_pp_delegate dg, enum xrt_input_name name)
 	u_pp(dg, "XRT_INPUT_0x%04x_%s", id, str);
 }
 
+void
+u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret)
+{
+	switch (xret) {
+	// clang-format off
+	case XRT_SUCCESS:                                    DG("XRT_SUCCESS"); return;
+	case XRT_TIMEOUT:                                    DG("XRT_TIMEOUT"); return;
+	case XRT_ERROR_IPC_FAILURE:                          DG("XRT_ERROR_IPC_FAILURE"); return;
+	case XRT_ERROR_NO_IMAGE_AVAILABLE:                   DG("XRT_ERROR_NO_IMAGE_AVAILABLE"); return;
+	case XRT_ERROR_VULKAN:                               DG("XRT_ERROR_VULKAN"); return;
+	case XRT_ERROR_OPENGL:                               DG("XRT_ERROR_OPENGL"); return;
+	case XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS:     DG("XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS"); return;
+	case XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED: DG("XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED"); return;
+	case XRT_ERROR_ALLOCATION:                           DG("XRT_ERROR_ALLOCATION"); return;
+	case XRT_ERROR_POSE_NOT_ACTIVE:                      DG("XRT_ERROR_POSE_NOT_ACTIVE"); return;
+	case XRT_ERROR_FENCE_CREATE_FAILED:                  DG("XRT_ERROR_FENCE_CREATE_FAILED"); return;
+	case XRT_ERROR_NATIVE_HANDLE_FENCE_ERROR:            DG("XRT_ERROR_NATIVE_HANDLE_FENCE_ERROR"); return;
+	case XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED:        DG("XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED"); return;
+	case XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED:         DG("XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED"); return;
+	case XRT_ERROR_EGL_CONFIG_MISSING:                   DG("XRT_ERROR_EGL_CONFIG_MISSING"); return;
+	case XRT_ERROR_THREADING_INIT_FAILURE:               DG("XRT_ERROR_THREADING_INIT_FAILURE"); return;
+	case XRT_ERROR_IPC_SESSION_NOT_CREATED:              DG("XRT_ERROR_IPC_SESSION_NOT_CREATED"); return;
+	case XRT_ERROR_IPC_SESSION_ALREADY_CREATED:          DG("XRT_ERROR_IPC_SESSION_ALREADY_CREATED"); return;
+	// clang-format on
+	default: break;
+	}
+
+	if (xret < 0) {
+		u_pp(dg, "XRT_ERROR_0x%08x", xret);
+	} else {
+		u_pp(dg, "XRT_SUCCESS_0x%08x", xret);
+	}
+}
+
 u_pp_delegate_t
 u_pp_sink_stack_only_init(struct u_pp_sink_stack_only *sink)
 {
