@@ -74,6 +74,29 @@ void
 u_pp_xrt_input_name(struct u_pp_delegate dg, enum xrt_input_name name);
 
 
+/*
+ *
+ * Sinks.
+ *
+ */
+
+/*!
+ * Stack only pretty printer sink, no need to free, must be inited before use.
+ *
+ * @ingroup aux_pretty
+ */
+struct u_pp_sink_stack_only
+{
+	//! How much of the buffer is used.
+	size_t used;
+
+	//! Storage for the sink.
+	char buffer[1024 * 8];
+};
+
+u_pp_delegate_t
+u_pp_sink_stack_only_init(struct u_pp_sink_stack_only *sink);
+
 
 #ifdef __cplusplus
 }

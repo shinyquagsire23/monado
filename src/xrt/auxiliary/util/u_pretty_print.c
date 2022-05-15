@@ -38,6 +38,30 @@ get_xrt_input_type_short_str(enum xrt_input_type type)
 	}
 }
 
+void
+stack_only_sink(void *ptr, const char *str, size_t length)
+{
+	struct u_pp_sink_stack_only *sink = (struct u_pp_sink_stack_only *)ptr;
+
+	size_t used = sink->used;
+	size_t left = ARRAY_SIZE(sink->buffer) - used;
+	if (left == 0) {
+		return;
+	}
+
+	if (length >= left) {
+		length = left - 1;
+	}
+
+	memcpy(sink->buffer + used, str, length);
+
+	used += length;
+
+	// Null terminate and update used.
+	sink->buffer[used] = '\0';
+	sink->used = used;
+}
+
 
 /*
  *
@@ -224,4 +248,11 @@ u_pp_xrt_input_name(struct u_pp_delegate dg, enum xrt_input_name name)
 	const char *str = get_xrt_input_type_short_str(type);
 
 	u_pp(dg, "XRT_INPUT_0x%04x_%s", id, str);
+}
+
+u_pp_delegate_t
+u_pp_sink_stack_only_init(struct u_pp_sink_stack_only *sink)
+{
+	sink->used = 0;
+	return (u_pp_delegate_t){sink, stack_only_sink};
 }
