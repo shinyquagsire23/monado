@@ -1018,7 +1018,7 @@ psmv_found(struct xrt_prober *xp,
 	}
 
 	struct xrt_device *xdev = psmv_device_create(xp, devices[index], tracker);
-	if (xdev != NULL) {
+	if (xdev == NULL) {
 		return -1;
 	}
 
