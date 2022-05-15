@@ -8,7 +8,7 @@
  * @ingroup comp_render
  */
 
-#include "render/render_interfaces.h"
+#include "render/render_interface.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -112,7 +112,7 @@ if(XRT_HAVE_VULKAN)
 		render/render_buffer.c
 		render/render_compute.c
 		render/render_gfx.c
-		render/render_interfaces.h
+		render/render_interface.h
 		render/render_resources.c
 		render/render_shaders.c
 		render/render_util.c

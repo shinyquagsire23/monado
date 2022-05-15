@@ -10,7 +10,7 @@
 
 #include "main/comp_compositor.h"
 
-#include "render/render_interfaces.h"
+#include "render/render_interface.h"
 
 #include <stdio.h>
 

@@ -10,7 +10,7 @@
 
 #include "xrt/xrt_device.h"
 #include "math/m_vec2.h"
-#include "render/render_interfaces.h"
+#include "render/render_interface.h"
 
 #include <stdio.h>
 
