@@ -313,6 +313,12 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		// Ensure that all handles are consumed or none are.
 		xrt_graphics_buffer_handle_t buf = u_graphics_buffer_ref(native_images[i].handle);
 
+		if (!xrt_graphics_buffer_is_valid(buf)) {
+			U_LOG_E("Could not ref/duplicate graphics buffer handle");
+			ret = VK_ERROR_INITIALIZATION_FAILED;
+			break;
+		}
+
 		ret = vk_create_image_from_native( //
 		    vk,                            // vk_bundle
 		    xscci,                         // info
