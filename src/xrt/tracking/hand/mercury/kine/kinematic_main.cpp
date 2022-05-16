@@ -135,6 +135,71 @@ do_it_for_bone(struct kinematic_hand_4f *hand, int finger_idx, int bone_idx, boo
 	bone->bone_relation.linear() = bone->bone_relation.linear() * rot;
 }
 
+#if 1
+static void
+clamp_to_x_axis(struct kinematic_hand_4f *hand,
+                int finger_idx,
+                int bone_idx,
+                bool clamp_angle = false,
+                float min_angle = 0,
+                float max_angle = 0)
+{
+	bone_t &bone = hand->fingers[finger_idx].bones[bone_idx];
+	// U_LOG_E("before_anything");
+
+	// std::cout << bone->bone_relation.linear().matrix() << std::endl;
+	int axis = 0;
+	Eigen::Vector3f axes[3] = {Eigen::Vector3f::UnitX(), Eigen::Vector3f::UnitY(), Eigen::Vector3f::UnitZ()};
+
+
+	// The input rotation will very likely rotate a vector pointed in the direction of axis we want to lock to...
+	// somewhere else. So, we find the new direction
+	Eigen::Vector3f axis_rotated_by_input = bone.bone_relation.linear() * axes[axis];
+
+	// And find a correction rotation that rotates our input rotation such that it doesn't affect vectors pointing
+	// in the direction of our axis anymore.
+	Eigen::Matrix3f correction_rot =
+	    Eigen::Quaternionf().setFromTwoVectors(axis_rotated_by_input.normalized(), axes[axis]).matrix();
+	bone.bone_relation.linear() = correction_rot * bone.bone_relation.linear();
+
+
+	if (!clamp_angle) {
+		return;
+	}
+
+	Eigen::Vector3f axis_to_clamp_rotation = axes[(axis + 1) % 3];
+
+	Eigen::Vector3f new_ortho_direction = bone.bone_relation.linear() * axis_to_clamp_rotation;
+	float rotation_value = atan2(new_ortho_direction((axis + 2) % 3), new_ortho_direction((axis + 1) % 3));
+
+
+
+	if (rotation_value < max_angle && rotation_value > min_angle) {
+		return;
+	}
+
+	float positive_rotation_value, negative_rotation_value;
+
+
+	if (rotation_value < 0) {
+		positive_rotation_value = (M_PI * 2) - rotation_value;
+		negative_rotation_value = rotation_value;
+	} else {
+		negative_rotation_value = (-M_PI * 2) + rotation_value;
+		positive_rotation_value = rotation_value;
+	}
+
+	if ((positive_rotation_value - max_angle) > (min_angle - negative_rotation_value)) {
+		// Difference between max angle and positive value is higher, so we're closer to the minimum bound.
+		rotation_value = min_angle;
+	} else {
+		rotation_value = max_angle;
+	}
+
+	bone.bone_relation.linear() = Eigen::AngleAxisf(rotation_value, axes[axis]).toRotationMatrix();
+}
+
+#else
 static void
 clamp_to_x_axis(struct kinematic_hand_4f *hand,
                 int finger_idx,
@@ -201,7 +266,8 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 		// No, the sine of the joint limit
 		float rotation_value = asin(cross(0));
 
-		//!@bug No. If the rotation value is outside of the allowed values, clamp it to the rotation it's *closest to*.
+		//!@bug No. If the rotation value is outside of the allowed values, clamp it to the rotation it's
+		//!*closest to*.
 		// That's different than using clamp, rotation formalisms are complicated.
 		clamp(&rotation_value, min_angle, max_angle);
 
@@ -216,6 +282,8 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 		// std::cout << n << "\n";
 	}
 }
+#endif
+
 
 // Is this not just swing-twist about the Z axis? Dunnoooo... Find out later.
 static void
@@ -460,13 +528,15 @@ optimize_new_frame(xrt_vec3 model_joints_3d[21],
 }
 
 void
-alloc_kinematic_hand(kinematic_hand_4f **out_kinematic_hand) {
+alloc_kinematic_hand(kinematic_hand_4f **out_kinematic_hand)
+{
 	kinematic_hand_4f *h = new kinematic_hand_4f;
 	*out_kinematic_hand = h;
 }
 
 void
-free_kinematic_hand(kinematic_hand_4f **kinematic_hand) {
+free_kinematic_hand(kinematic_hand_4f **kinematic_hand)
+{
 	delete *kinematic_hand;
 }
 
