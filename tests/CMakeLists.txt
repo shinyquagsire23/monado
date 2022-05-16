@@ -24,7 +24,10 @@ set(tests
     tests_worker
 	)
 if(XRT_HAVE_D3D11)
-	list(APPEND tests tests_aux_d3d)
+	list(APPEND tests tests_aux_d3d tests_comp_client_d3d11)
+endif()
+if(XRT_HAVE_VULKAN)
+	list(APPEND tests tests_comp_client_vulkan)
 endif()
 foreach(testname ${tests})
 
@@ -46,4 +49,9 @@ target_link_libraries(tests_rational PRIVATE aux_math)
 
 if(XRT_HAVE_D3D11)
 	target_link_libraries(tests_aux_d3d PRIVATE aux_d3d)
+	target_link_libraries(tests_comp_client_d3d11 PRIVATE comp_client comp_mock)
+endif()
+
+if(XRT_HAVE_VULKAN)
+	target_link_libraries(tests_comp_client_vulkan PRIVATE comp_client comp_mock comp_util aux_vk)
 endif()

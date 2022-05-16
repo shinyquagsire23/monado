@@ -82,12 +82,9 @@ isDepthStencilFormat(DXGI_FORMAT format)
 TEST_CASE("d3d11_allocate", "[.][needgpu]")
 {
 	ComGuard comGuard;
-	wil::com_ptr<IDXGIAdapter> adapter;
-
-	CHECK_NOTHROW(adapter = getAdapterByIndex(0, U_LOGGING_TRACE));
 	wil::com_ptr<ID3D11Device> device;
 	wil::com_ptr<ID3D11DeviceContext> context;
-	CHECK_NOTHROW(std::tie(device, context) = createD3D11Device(adapter, U_LOGGING_TRACE));
+	std::tie(device, context) = createD3D11Device();
 	auto device5 = device.query<ID3D11Device5>();
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> images;
 	std::vector<wil::unique_handle> handles;
