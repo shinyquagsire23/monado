@@ -223,6 +223,8 @@ add_library(
 	util/u_verify.h
 	util/u_process.c
 	util/u_process.h
+	util/u_win32_com_guard.cpp
+	util/u_win32_com_guard.hpp
 	util/u_worker.c
 	util/u_worker.cpp
 	util/u_worker.h
