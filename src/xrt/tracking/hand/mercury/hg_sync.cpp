@@ -445,10 +445,10 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		math_pose_identity(&put_in_set->hand_pose.pose);
 
 		switch (htd->output_space) {
-		case MERCURY_OUTPUT_SPACE_LEFT_CAMERA: {
+		case HT_OUTPUT_SPACE_LEFT_CAMERA: {
 			put_in_set->hand_pose.pose.orientation = htd->stereo_camera_to_left_camera;
 		} break;
-		case MERCURY_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA: {
+		case HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA: {
 			put_in_set->hand_pose.pose.orientation.w = 1.0;
 			put_in_set->hand_pose.pose.position.x = -htd->baseline / 2;
 		} break;
@@ -485,7 +485,7 @@ HandTracking::cCallbackDestroy(t_hand_tracking_sync *ht_sync)
  */
 
 extern "C" t_hand_tracking_sync *
-t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib, mercury_output_space output_space)
+t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib, hand_tracking_output_space output_space)
 {
 	XRT_TRACE_MARKER();
 

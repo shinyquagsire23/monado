@@ -18,14 +18,17 @@
 extern "C" {
 #endif
 
+enum hand_tracking_output_space
+{
+	HT_OUTPUT_SPACE_LEFT_CAMERA,
+	HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA,
+};
 
-// /*!
-//  * Result of a two hand tracking processing.
-//  */
-// struct t_hand_tracking_result_two
-// {
-// 	struct xrt_hand_joint_set hands[2]; // left, right
-// };
+enum hand_tracking_algorithm
+{
+	HT_ALGORITHM_MERCURY,
+	HT_ALGORITHM_OLD_RGB
+};
 
 /*!
  * Synchronously processes frames and returns two hands.

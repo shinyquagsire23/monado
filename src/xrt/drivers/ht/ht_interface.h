@@ -14,6 +14,7 @@
 #include "xrt/xrt_config_drivers.h"
 
 #include "tracking/t_tracking.h"
+#include "tracking/t_hand_tracking.h"
 #include "xrt/xrt_prober.h"
 
 
@@ -50,10 +51,12 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
  * @return int 0 on success
  */
 int
-ht_device_create_wmr(struct xrt_frame_context *xfctx,
-                     struct t_stereo_camera_calibration *calib,
-                     struct xrt_slam_sinks **out_sinks,
-                     struct xrt_device **out_device);
+ht_device_create(struct xrt_frame_context *xfctx,
+                 struct t_stereo_camera_calibration *calib,
+                 enum hand_tracking_output_space output_space,
+                 enum hand_tracking_algorithm algorithm_choice,
+                 struct xrt_slam_sinks **out_sinks,
+                 struct xrt_device **out_device);
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
 struct xrt_device *

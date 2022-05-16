@@ -1321,7 +1321,12 @@ wmr_hmd_hand_track(struct wmr_hmd *wh, struct xrt_slam_sinks **out_sinks, struct
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	struct t_stereo_camera_calibration *calib = wmr_hmd_create_stereo_camera_calib(wh);
 
-	int create_status = ht_device_create_wmr(&wh->tracking.xfctx, calib, &sinks, &device);
+	int create_status = ht_device_create(&wh->tracking.xfctx,                     //
+	                                     calib,                                   //
+	                                     HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA, //
+	                                     HT_ALGORITHM_MERCURY,                    //
+	                                     &sinks,                                  //
+	                                     &device);
 	if (create_status != 0) {
 		return create_status;
 	}

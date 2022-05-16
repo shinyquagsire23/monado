@@ -286,7 +286,7 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 	if (use_old_rgb) {
 		sync = t_hand_tracking_sync_old_rgb_create(calib);
 	} else {
-		sync = t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_LEFT_CAMERA);
+		sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA);
 	}
 
 	struct ht_device *htd = ht_device_create_common(calib, true, &finder.xfctx, sync);
@@ -336,18 +336,18 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 }
 
 int
-ht_device_create_wmr(struct xrt_frame_context *xfctx,
-                     struct t_stereo_camera_calibration *calib,
-                     struct xrt_slam_sinks **out_sinks,
-                     struct xrt_device **out_device)
+ht_device_create(struct xrt_frame_context *xfctx,
+                 struct t_stereo_camera_calibration *calib,
+                 enum hand_tracking_output_space output_space,
+                 enum hand_tracking_algorithm algorithm_choice,
+                 struct xrt_slam_sinks **out_sinks,
+                 struct xrt_device **out_device)
 {
 
 	XRT_TRACE_MARKER();
 	assert(calib != NULL);
 
-	//! @todo Is CENTER_OF_STEREO_CAMERA what we really want?
-	struct t_hand_tracking_sync *sync =
-	    t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA);
+	struct t_hand_tracking_sync *sync = t_hand_tracking_sync_mercury_create(calib, output_space);
 
 	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
 
@@ -380,7 +380,7 @@ ht_device_create_depthai_ov9282()
 
 	struct t_hand_tracking_sync *sync;
 
-	sync = t_hand_tracking_sync_mercury_create(calib, MERCURY_OUTPUT_SPACE_LEFT_CAMERA);
+	sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA);
 
 	struct ht_device *htd = ht_device_create_common(calib, true, &xfctx, sync);
 

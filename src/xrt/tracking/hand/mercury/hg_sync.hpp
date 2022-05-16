@@ -173,7 +173,7 @@ public:
 
 	bool use_fisheye;
 
-	enum mercury_output_space output_space;
+	enum hand_tracking_output_space output_space;
 
 	struct t_stereo_camera_calibration *calib;
 
