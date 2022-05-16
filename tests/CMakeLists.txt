@@ -9,21 +9,24 @@ if(ANDROID)
 	target_link_libraries(tests_main PUBLIC log)
 endif()
 
-foreach(
-	testname
-	tests_cxx_wrappers
-	tests_generic_callbacks
-	tests_history_buf
-	tests_id_ringbuffer
-	tests_input_transform
-	tests_json
-	tests_lowpass_float
-	tests_lowpass_integer
-	tests_pacing
-	tests_quatexpmap
-	tests_rational
-	tests_worker
+set(tests
+    tests_cxx_wrappers
+    tests_generic_callbacks
+    tests_history_buf
+    tests_id_ringbuffer
+    tests_input_transform
+    tests_json
+    tests_lowpass_float
+    tests_lowpass_integer
+    tests_pacing
+    tests_quatexpmap
+    tests_rational
+    tests_worker
 	)
+if(XRT_HAVE_D3D11)
+	list(APPEND tests tests_aux_d3d)
+endif()
+foreach(testname ${tests})
 
 	add_executable(${testname} ${testname}.cpp)
 	target_link_libraries(${testname} PRIVATE tests_main)
@@ -40,3 +43,7 @@ target_link_libraries(tests_lowpass_float PRIVATE aux_math)
 target_link_libraries(tests_lowpass_integer PRIVATE aux_math)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
+
+if(XRT_HAVE_D3D11)
+	target_link_libraries(tests_aux_d3d PRIVATE aux_d3d)
+endif()
