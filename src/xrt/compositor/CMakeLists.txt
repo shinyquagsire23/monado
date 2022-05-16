@@ -277,3 +277,13 @@ target_include_directories(comp_multi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(XRT_FEATURE_COMPOSITOR_MAIN)
 	target_link_libraries(comp_main PRIVATE comp_multi)
 endif()
+
+###
+# Mock native compositor
+add_library(comp_mock STATIC mock/mock_compositor.cpp mock/mock_compositor.h)
+target_include_directories(comp_mock PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+	comp_mock
+	PUBLIC xrt-interfaces
+	PRIVATE aux_util
+	)
