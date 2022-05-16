@@ -11,6 +11,7 @@
 
 #include "hg_sync.hpp"
 #include "hg_model.hpp"
+#include <numeric>
 
 namespace xrt::tracking::hand::mercury {
 // Flags to tell state tracker that these are indeed valid joints
@@ -49,11 +50,18 @@ getCalibration(struct HandTracking *htd, t_stereo_camera_calibration *calibratio
 	xrt_vec3 trans = {(float)wrap.camera_translation_mat(0, 0), (float)wrap.camera_translation_mat(1, 0),
 	                  (float)wrap.camera_translation_mat(2, 0)};
 	htd->baseline = m_vec3_len(trans);
+	HT_DEBUG(htd, "I think the baseline is %f meters!", htd->baseline);
 	// Note, this assumes camera 0 is the left camera and camera 1 is the right camera.
 	// If you find one with the opposite arrangement, you'll need to invert htd->baseline, and look at
 	// hgJointDisparityMath
 
 	htd->use_fisheye = wrap.view[0].use_fisheye;
+
+	if (htd->use_fisheye) {
+		HT_DEBUG(htd, "I think the cameras are fisheye!");
+	} else {
+		HT_DEBUG(htd, "I think the cameras are not fisheye!");
+	}
 
 	cv::Matx34d P1;
 	cv::Matx34d P2;
@@ -105,10 +113,24 @@ getCalibration(struct HandTracking *htd, t_stereo_camera_calibration *calibratio
 		} else {
 			htd->views[i].distortion = wrap.view[i].distortion_mat;
 		}
+
+		if (htd->log_level <= U_LOGGING_DEBUG) {
+			HT_DEBUG(htd, "R%d ->", i);
+			std::cout << htd->views[i].rotate_camera_to_stereo_camera << std::endl;
+
+			HT_DEBUG(htd, "K%d ->", i);
+			std::cout << htd->views[i].cameraMatrix << std::endl;
+
+			HT_DEBUG(htd, "D%d ->", i);
+			std::cout << htd->views[i].distortion << std::endl;
+		}
 	}
 
-	htd->one_view_size_px.w = wrap.view[0].image_size_pixels.w;
-	htd->one_view_size_px.h = wrap.view[0].image_size_pixels.h;
+	htd->calibration_one_view_size_px.w = wrap.view[0].image_size_pixels.w;
+	htd->calibration_one_view_size_px.h = wrap.view[0].image_size_pixels.h;
+
+	htd->last_frame_one_view_size_px = htd->calibration_one_view_size_px;
+	htd->multiply_px_coord_for_undistort = 1.0f;
 
 	cv::Matx33d rotate_stereo_camera_to_left_camera = htd->views[0].rotate_camera_to_stereo_camera.inv();
 
@@ -235,6 +257,29 @@ applyJointWidths(struct HandTracking *htd, struct xrt_hand_joint_set *set)
 	    .040f * .5f; // Measured my wrist thickness with calipers
 }
 
+static bool handle_changed_image_size(HandTracking *htd, xrt_size &new_one_view_size)
+{
+	int gcd_calib = std::gcd(htd->calibration_one_view_size_px.h, htd->calibration_one_view_size_px.w);
+	int gcd_new = std::gcd(new_one_view_size.h, new_one_view_size.w);
+
+	int lcm_h_calib = htd->calibration_one_view_size_px.h/gcd_calib;
+	int lcm_w_calib = htd->calibration_one_view_size_px.w/gcd_calib;
+
+	int lcm_h_new = new_one_view_size.h/gcd_new;
+	int lcm_w_new = new_one_view_size.w/gcd_new;
+
+	bool good = (lcm_h_calib == lcm_h_new) && (lcm_w_calib == lcm_w_new);
+
+	if (!good) {
+		HT_WARN(htd, "Can't process this frame, wrong aspect ratio.");
+		return false;
+	}
+
+	htd->multiply_px_coord_for_undistort = (float)htd->calibration_one_view_size_px.h/(float)new_one_view_size.h;
+	htd->last_frame_one_view_size_px = new_one_view_size;
+	return true;
+}
+
 /*
  *
  * Member functions.
@@ -296,12 +341,19 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	const int full_height = left_frame->height;
 	const int full_width = left_frame->width*2;
 
-	const int view_width = htd->one_view_size_px.w;
-	const int view_height = htd->one_view_size_px.h;
+	if ((left_frame->width != (uint32_t)htd->last_frame_one_view_size_px.w) || (left_frame->height != (uint32_t)htd->last_frame_one_view_size_px.h))
+	{
+		xrt_size new_one_view_size;
+		new_one_view_size.h = left_frame->height;
+		new_one_view_size.w = left_frame->width;
+		// Could be an assert, should never happen.
+		if (!handle_changed_image_size(htd, new_one_view_size)) {
+			return;
+		}
+	}
 
-	assert(full_height == view_height);
-
-	htd->multiply_px_coord_for_undistort = 1.0f;
+	const int view_width = htd->last_frame_one_view_size_px.w;
+	const int view_height = htd->last_frame_one_view_size_px.h;
 
 	const cv::Size full_size = cv::Size(full_width, full_height);
 	const cv::Size view_size = cv::Size(view_width, view_height);

@@ -169,7 +169,7 @@ public:
 
 	struct u_sink_debug debug_sink = {};
 
-	int multiply_px_coord_for_undistort;
+	float multiply_px_coord_for_undistort;
 
 	bool use_fisheye;
 
@@ -177,7 +177,10 @@ public:
 
 	struct t_stereo_camera_calibration *calib;
 
-	struct xrt_size one_view_size_px = {};
+	struct xrt_size calibration_one_view_size_px = {};
+
+	// So that we can calibrate cameras at 1280x800 but ship images over USB at 640x400
+	struct xrt_size last_frame_one_view_size_px = {};
 
 #ifdef USE_NCNN
 	ncnn_net_t net;
