@@ -39,6 +39,8 @@ if(XRT_HAVE_D3D11 AND XRT_HAVE_VULKAN)
 		d3d/d3d_d3d11_allocator.cpp
 		d3d/d3d_d3d11_allocator.h
 		d3d/d3d_d3d11_allocator.hpp
+		d3d/d3d_d3d11_fence.cpp
+		d3d/d3d_d3d11_fence.hpp
 		d3d/d3d_dxgi_formats.h
 		d3d/d3d_helpers.cpp
 		d3d/d3d_helpers.hpp
