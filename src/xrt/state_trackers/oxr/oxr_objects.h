@@ -1112,6 +1112,42 @@ oxr_session_populate_egl(struct oxr_logger *log,
 
 /*
  *
+ * D3D11, located in various files.
+ *
+ */
+
+#ifdef XR_USE_GRAPHICS_API_D3D11
+
+XrResult
+oxr_d3d11_get_requirements(struct oxr_logger *log,
+                           struct oxr_system *sys,
+                           XrGraphicsRequirementsD3D11KHR *graphicsRequirements);
+
+/**
+ * @brief Check to ensure the device provided at session create matches the LUID we returned earlier.
+ *
+ * @return XR_SUCCESS if the device matches the LUID
+ */
+XrResult
+oxr_d3d11_check_device(struct oxr_logger *log, struct oxr_system *sys, ID3D11Device *device);
+
+
+XrResult
+oxr_session_populate_d3d11(struct oxr_logger *log,
+                           struct oxr_system *sys,
+                           XrGraphicsBindingD3D11KHR const *next,
+                           struct oxr_session *sess);
+
+XrResult
+oxr_swapchain_d3d11_create(struct oxr_logger *,
+                           struct oxr_session *sess,
+                           const XrSwapchainCreateInfo *,
+                           struct oxr_swapchain **out_swapchain);
+
+#endif
+
+/*
+ *
  * Structs
  *
  */
@@ -1205,6 +1241,10 @@ struct oxr_system
 	} vk;
 
 #endif
+#ifdef XR_USE_GRAPHICS_API_D3D11
+	LUID suggested_d3d_luid;
+	bool suggested_d3d_luid_valid;
+#endif
 };
 
 #define GET_XDEV_BY_ROLE(SYS, ROLE) ((SYS)->xsysd->roles.ROLE)
@@ -1219,6 +1259,7 @@ struct oxr_extension_status
 {
 	OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXT_STATUS)
 };
+#undef MAKE_EXT_STATUS
 
 /*!
  * Main object that ties everything together.

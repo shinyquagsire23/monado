@@ -265,6 +265,10 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrCreateVulkanInstanceKHR, KHR_vulkan_enable2);
 #endif // OXR_HAVE_KHR_vulkan_enable2
 
+#ifdef OXR_HAVE_KHR_D3D11_enable
+	ENTRY_IF_EXT(xrGetD3D11GraphicsRequirementsKHR, KHR_D3D11_enable);
+#endif // OXR_HAVE_KHR_D3D11_enable
+
 	/*
 	 * Not logging here because there's no need to loudly advertise
 	 * which extensions the loader knows about (it calls this on

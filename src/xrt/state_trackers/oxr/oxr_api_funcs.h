@@ -224,6 +224,14 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
                             VkResult *vulkanResult);
 #endif
 
+#ifdef XR_USE_GRAPHICS_API_D3D11
+
+//! OpenXR API function @ep{xrGetD3D11GraphicsRequirementsKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
+                                      XrSystemId systemId,
+                                      XrGraphicsRequirementsD3D11KHR *graphicsRequirements);
+#endif // XR_USE_GRAPHICS_API_D3D11
 
 /*
  *

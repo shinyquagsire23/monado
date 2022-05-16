@@ -734,6 +734,28 @@ oxr_session_create_impl(struct oxr_logger *log,
 	}
 #endif
 
+#ifdef XR_USE_GRAPHICS_API_D3D11
+	XrGraphicsBindingD3D11KHR const *d3d11 =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D11_KHR, XrGraphicsBindingD3D11KHR);
+	if (d3d11 != NULL) {
+		OXR_VERIFY_ARG_NOT_NULL(log, d3d11->device);
+
+		if (!sys->gotten_requirements) {
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called xrGetD3D11GraphicsRequirementsKHR");
+		}
+		XrResult result = oxr_d3d11_check_device(log, sys, d3d11->device);
+
+		if (!XR_SUCCEEDED(result)) {
+			return result;
+		}
+
+
+		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
+		return oxr_session_populate_d3d11(log, sys, d3d11, *out_session);
+	}
+#endif
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)

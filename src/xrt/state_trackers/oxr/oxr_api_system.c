@@ -417,3 +417,30 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
 	return oxr_vk_create_vulkan_device(&log, sys, createInfo, vulkanDevice, vulkanResult);
 }
 #endif
+
+
+/*
+ *
+ * D3D11
+ *
+ */
+
+#ifdef XR_USE_GRAPHICS_API_D3D11
+
+XrResult
+oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
+                                      XrSystemId systemId,
+                                      XrGraphicsRequirementsD3D11KHR *graphicsRequirements)
+{
+
+	struct oxr_instance *inst;
+	struct oxr_logger log;
+	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetD3D11GraphicsRequirementsKHR");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR);
+	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+
+	sys->gotten_requirements = true;
+
+	return oxr_d3d11_get_requirements(&log, sys, graphicsRequirements);
+}
+#endif

@@ -494,6 +494,15 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 
+#if defined(XR_USE_GRAPHICS_API_D3D11)
+	XrGraphicsBindingD3D11KHR const *d3d11 =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D11_KHR, XrGraphicsBindingD3D11KHR);
+	if (d3d11 != NULL) {
+		OXR_VERIFY_EXTENSION(log, inst, KHR_D3D11_enable);
+		return oxr_verify_XrGraphicsBindingD3D11KHR(log, d3d11);
+	}
+#endif // XR_USE_GRAPHICS_API_D3D11
+
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)
@@ -603,3 +612,17 @@ oxr_verify_XrGraphicsBindingOpenGLESAndroidKHR(struct oxr_logger *log, const XrG
 }
 #endif // defined(XR_USE_PLATFORM_ANDROID) &&
        // defined(XR_USE_GRAPHICS_API_OPENGL_ES)
+
+#if defined(XR_USE_GRAPHICS_API_D3D11)
+XrResult
+oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *log, const XrGraphicsBindingD3D11KHR *next)
+{
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_D3D11_KHR) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
+	}
+	if (next->device == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingD3D11KHR::device cannot be NULL");
+	}
+	return XR_SUCCESS;
+}
+#endif // defined(XR_USE_GRAPHICS_API_D3D11)
