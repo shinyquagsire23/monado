@@ -13,6 +13,7 @@
 
 #cmakedefine XRT_HAVE_BASALT_SLAM
 #cmakedefine XRT_HAVE_DBUS
+#cmakedefine XRT_HAVE_DXGI
 #cmakedefine XRT_HAVE_EGL
 #cmakedefine XRT_HAVE_FFMPEG
 #cmakedefine XRT_HAVE_GST
@@ -34,3 +35,4 @@
 #cmakedefine XRT_HAVE_WAYLAND
 #cmakedefine XRT_HAVE_WAYLAND_DIRECT
 #cmakedefine XRT_HAVE_WIL
+#cmakedefine XRT_HAVE_WINRT
