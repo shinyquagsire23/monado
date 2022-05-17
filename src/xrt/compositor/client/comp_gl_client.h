@@ -36,6 +36,7 @@ struct client_gl_compositor;
  */
 struct client_gl_swapchain
 {
+	//! Implements @ref xrt_swapchain_gl
 	struct xrt_swapchain_gl base;
 
 	struct xrt_swapchain_native *xscn;
@@ -43,24 +44,29 @@ struct client_gl_swapchain
 	//! The texture target of images in this swapchain.
 	uint32_t tex_target;
 
-	//! The compositor this swapchain was created on. Used when swapchain functions need access to the GL context.
+	/*!
+	 * The compositor this swapchain was created on. Used when swapchain functions need access to the GL context.
+	 *
+	 * Not an owning pointer.
+	 */
 	struct client_gl_compositor *gl_compositor;
 };
 
 /*!
  * Fetches the OpenGL context that is current on this thread and makes the OpenGL context given in the graphics binding
- * current instead. Only one thread at a time can operate on the sections between @ref client_gl_context_begin_func and
- * @ref client_gl_context_end_func, therefore client_gl_context_end_func MUST be called to avoid blocking the next
- * thread calling @ref client_gl_context_begin_func.
+ * current instead. Only one thread at a time can operate on the sections between @ref client_gl_context_begin_func_t
+ * and
+ * @ref client_gl_context_end_func_t, therefore client_gl_context_end_func_t MUST be called to avoid blocking the next
+ * thread calling @ref client_gl_context_begin_func_t.
  *
- * If the return value is not XRT_SUCCESS, @ref client_gl_context_end_func should not be called.
+ * If the return value is not XRT_SUCCESS, @ref client_gl_context_end_func_t should not be called.
  */
-typedef xrt_result_t (*client_gl_context_begin_func)(struct xrt_compositor *xc);
+typedef xrt_result_t (*client_gl_context_begin_func_t)(struct xrt_compositor *xc);
 
 /*!
- * Makes the OpenGL context current that was current before @ref client_gl_context_begin_func was called.
+ * Makes the OpenGL context current that was current before @ref client_gl_context_begin_func_t was called.
  */
-typedef void (*client_gl_context_end_func)(struct xrt_compositor *xc);
+typedef void (*client_gl_context_end_func_t)(struct xrt_compositor *xc);
 
 /*!
  * The type of a swapchain create constructor.
@@ -75,10 +81,10 @@ typedef void (*client_gl_context_end_func)(struct xrt_compositor *xc);
  * - Must populate `destroy`
  * - Does not need to save/restore texture binding
  */
-typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(struct xrt_compositor *xc,
-                                                                 const struct xrt_swapchain_create_info *info,
-                                                                 struct xrt_swapchain_native *xscn,
-                                                                 struct client_gl_swapchain **out_sc);
+typedef struct xrt_swapchain *(*client_gl_swapchain_create_func_t)(struct xrt_compositor *xc,
+                                                                   const struct xrt_swapchain_create_info *info,
+                                                                   struct xrt_swapchain_native *xscn,
+                                                                   struct client_gl_swapchain **out_sc);
 
 /*!
  * The type of a fence insertion function.
@@ -87,7 +93,8 @@ typedef struct xrt_swapchain *(*client_gl_swapchain_create_func)(struct xrt_comp
  *
  * The returned graphics sync handle is given to xrt_compositor::layer_commit.
  */
-typedef xrt_result_t (*client_gl_insert_fence_func)(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle);
+typedef xrt_result_t (*client_gl_insert_fence_func_t)(struct xrt_compositor *xc,
+                                                      xrt_graphics_sync_handle_t *out_handle);
 
 /*!
  * @class client_gl_compositor
@@ -106,23 +113,23 @@ struct client_gl_compositor
 	/*!
 	 * Function pointer for making the OpenGL context current.
 	 */
-	client_gl_context_begin_func context_begin;
+	client_gl_context_begin_func_t context_begin;
 
 	/*!
 	 * Function pointer for restoring prior OpenGL context.
 	 */
-	client_gl_context_end_func context_end;
+	client_gl_context_end_func_t context_end;
 
 	/*!
 	 * Function pointer for creating the client swapchain.
 	 */
-	client_gl_swapchain_create_func create_swapchain;
+	client_gl_swapchain_create_func_t create_swapchain;
 
 	/*!
 	 * Function pointer for inserting fences on
 	 * xrt_compositor::layer_commit.
 	 */
-	client_gl_insert_fence_func insert_fence;
+	client_gl_insert_fence_func_t insert_fence;
 
 	/*!
 	 * @ref client_gl_xlib_compositor::app_context can only be current on one thread; block other threads while we
@@ -165,10 +172,10 @@ client_gl_compositor(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_context_begin_func context_begin,
-                          client_gl_context_end_func context_end,
-                          client_gl_swapchain_create_func create_swapchain,
-                          client_gl_insert_fence_func insert_fence);
+                          client_gl_context_begin_func_t context_begin,
+                          client_gl_context_end_func_t context_end,
+                          client_gl_swapchain_create_func_t create_swapchain,
+                          client_gl_insert_fence_func_t insert_fence);
 
 /*!
  * Free all resources from the client_gl_compositor, does not free the

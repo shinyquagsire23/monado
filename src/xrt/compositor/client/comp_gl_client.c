@@ -520,10 +520,10 @@ client_gl_compositor_close(struct client_gl_compositor *c)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_context_begin_func context_begin,
-                          client_gl_context_end_func context_end,
-                          client_gl_swapchain_create_func create_swapchain,
-                          client_gl_insert_fence_func insert_fence)
+                          client_gl_context_begin_func_t context_begin,
+                          client_gl_context_end_func_t context_end,
+                          client_gl_swapchain_create_func_t create_swapchain,
+                          client_gl_insert_fence_func_t insert_fence)
 {
 	assert(context_begin != NULL);
 	assert(context_end != NULL);

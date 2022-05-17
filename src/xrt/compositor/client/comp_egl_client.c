@@ -327,7 +327,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
 	ceglc->dpy = display;
 
-	client_gl_swapchain_create_func sc_create = NULL;
+	client_gl_swapchain_create_func_t sc_create = NULL;
 
 	EGL_DEBUG("Extension availability:");
 #define DUMP_EXTENSION_STATUS(EXT) EGL_DEBUG("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
@@ -381,7 +381,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	 * EGL_ANDROID_native_fence_sync is available, revisit this when a more
 	 * generic synchronization mechanism is implemented.
 	 */
-	client_gl_insert_fence_func insert_fence_func = NULL;
+	client_gl_insert_fence_func_t insert_fence_func = NULL;
 	if (GLAD_EGL_ANDROID_native_fence_sync) {
 		insert_fence_func = insert_fence_android_native;
 	}

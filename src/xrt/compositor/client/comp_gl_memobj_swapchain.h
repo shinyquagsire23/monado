@@ -43,7 +43,7 @@ struct client_gl_memobj_swapchain
  *
  * The caller must ensure that the app context is current.
  *
- * @see client_gl_swapchain_create_func, client_gl_compositor_init
+ * @see client_gl_swapchain_create_func_t, client_gl_compositor_init
  */
 struct xrt_swapchain *
 client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
