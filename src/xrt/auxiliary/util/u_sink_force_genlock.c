@@ -74,7 +74,6 @@ force_genlock_mainloop(void *ptr)
 			break;
 		}
 
-		// Just in case.
 		if (q->frames[0] == NULL || q->frames[1] == NULL) {
 			continue;
 		}
@@ -85,7 +84,7 @@ force_genlock_mainloop(void *ptr)
 		 * We need to take a reference on the current frame, this is to
 		 * keep it alive during the call to the consumer should it be
 		 * replaced. But we no longer need to hold onto the frame on the
-		 * queue so we just move the pointer.
+		 * queue so we move the pointer.
 		 */
 		frames[0] = q->frames[0];
 		frames[1] = q->frames[1];
@@ -124,7 +123,7 @@ force_genlock_mainloop(void *ptr)
 
 		/*
 		 * Average the timestamps, SLAM systems break if they don't have the exact same timestamp.
-		 * (This is dumb, because on DepthAI the images *are* taken like 0.1ms apart, and we *could* expose
+		 * (This is not great, because on DepthAI the images *are* taken like 0.1ms apart, and we *could* expose
 		 * that, but oh well.)
 		 */
 

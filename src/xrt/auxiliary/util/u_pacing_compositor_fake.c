@@ -202,7 +202,7 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	// To make sure the code can start from a non-zero frame id.
 	ft->frame_id_generator = 5;
 
-	// Just a wild guess.
+	// An arbitrary guess.
 	ft->present_to_display_offset_ns = U_TIME_1MS_IN_NS * 4;
 
 	// 20% of the frame time.

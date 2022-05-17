@@ -645,7 +645,7 @@ static void
 pc_update_vblank_from_display_control(struct u_pacing_compositor *upc, uint64_t last_vblank_ns)
 {
 	/*
-	 * This is a no-op, here just in case display control is used at the
+	 * This is a no-op, here in case display control is used at the
 	 * same time as the google extension. We ignore this call.
 	 */
 }
@@ -670,7 +670,7 @@ pc_destroy(struct u_pacing_compositor *upc)
 }
 
 const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT = {
-    // Just a wild guess.
+    // An arbitrary guess.
     .present_to_display_offset_ns = U_TIME_1MS_IN_NS * 4,
     .margin_ns = U_TIME_1MS_IN_NS,
     // Start by assuming the compositor takes 10% of the frame.
@@ -695,12 +695,13 @@ u_pc_display_timing_create(uint64_t estimated_frame_period_ns,
 	pc->base.destroy = pc_destroy;
 	pc->frame_period_ns = estimated_frame_period_ns;
 
-	// Estimate of how long after "present" the photons hit the eyes
+	// Estimate of how long after "present" the eyes see the photons
 	pc->present_to_display_offset_ns = config->present_to_display_offset_ns;
 
 	// Start at this of frame time.
 	pc->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_fraction);
-	// Max compositor time: if we ever hit this, write a better compositor.
+	// Max compositor time: if we ever reach this, write a better compositor. (using too much time per frame on the
+	// compositor)
 	pc->comp_time_max_ns = get_percent_of_time(estimated_frame_period_ns, config->comp_time_max_fraction);
 	// When missing, back off in these increments
 	pc->adjust_missed_ns = get_percent_of_time(estimated_frame_period_ns, config->adjust_missed_fraction);

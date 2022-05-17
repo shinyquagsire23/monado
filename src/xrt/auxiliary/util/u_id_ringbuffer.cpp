@@ -31,7 +31,7 @@ struct u_id_ringbuffer
 
 namespace {
 
-// just enough iterator to get it done: basically copy and paste from u_template_historybuf_const_iterator.inl
+// just-enough iterator to get it done: basically copy and paste from u_template_historybuf_const_iterator.inl
 struct IdRingbufferIterator : public RandomAccessIteratorBase<const RingBufferHelper>
 {
 	using base = RandomAccessIteratorBase<const RingBufferHelper>;

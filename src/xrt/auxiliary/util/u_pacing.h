@@ -120,7 +120,7 @@ struct u_pacing_compositor
 	 * @param[in] earliest_present_time_ns The earliest the GPU could have presented - might be before @p
 	 *                                     actual_present_time_ns if a @p desired_present_time_ns was passed.
 	 * @param[in] present_margin_ns        How "early" present happened compared to when it needed to happen in
-	 *                                     order to hit @p earliestPresentTime.
+	 *                                     order to finish at @p earliestPresentTime.
 	 * @param[in] when_ns                  The time when we got the info, nominally from @ref
 	 *                                     os_monotonic_get_ns
 	 *

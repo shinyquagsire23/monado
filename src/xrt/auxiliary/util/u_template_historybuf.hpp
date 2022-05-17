@@ -69,7 +69,7 @@ public:
 	/*!
 	 * @brief Logically remove the oldest element from the buffer.
 	 *
-	 * The value still remains in the backing container until overwritten, it just isn't accessible anymore.
+	 * The value still remains in the backing container until overwritten, but it isn't accessible anymore.
 	 *
 	 * This invalidates iterators. They won't be poisoned, but they will return something you don't expect.
 	 */
@@ -80,7 +80,7 @@ public:
 	}
 
 	/*!
-	 * @brief Access something at a given age, where age 0 is the most recent value, age 1 precedes it, etc.
+	 * @brief Use a value at a given age, where age 0 is the most recent value, age 1 precedes it, etc.
 	 * (reverse chronological order)
 	 *
 	 * Out of bounds accesses will return nullptr.
@@ -94,7 +94,6 @@ public:
 
 	/*!
 	 * @brief Like get_at_age() but values larger than the oldest age are clamped.
-	 *
 	 */
 	T *
 	get_at_clamped_age(size_t age) noexcept
@@ -118,7 +117,7 @@ public:
 	}
 
 	/*!
-	 * @brief Access something at a given index, where 0 is the least-recent value still stored, index 1 follows it,
+	 * @brief Use a value at a given index, where 0 is the least-recent value still stored, index 1 follows it,
 	 * etc. (chronological order)
 	 *
 	 * Out of bounds accesses will return nullptr.

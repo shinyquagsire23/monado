@@ -19,7 +19,7 @@ extern "C" {
 /**
  * Container type to let you store IDs in a ring buffer, and maybe your own data in your own parallel array.
  *
- * The IDs are just uint64_t. If you don't need any of the order-dependent functionality, you can treat use them for any
+ * The IDs are uint64_t. If you don't need any of the order-dependent functionality, you can treat use them for any
  * purpose you like.
  *
  * Some functionality requires that IDs be pushed in increasing order, but it's highlighted in the docs.
@@ -187,7 +187,7 @@ u_id_ringbuffer_lower_bound_id(struct u_id_ringbuffer *uirb, uint64_t search_id,
 /**
  * Find the element with the supplied ID @p search_id in an unordered buffer.
  *
- * This does *not* depend on order so just does a linear search. If you are keeping your IDs in ascending order, use
+ * This does *not* depend on order so does a linear search. If you are keeping your IDs in ascending order, use
  * u_id_ringbuffer_lower_bound_id() instead.
  *
  * @param uirb self pointer

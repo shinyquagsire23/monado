@@ -60,7 +60,7 @@ struct u_cardboard_distortion_arguments
  * Values to create a distortion mesh from cardboard values.
  *
  * This matches the formula in the cardboard SDK, while the array is fixed size
- * just setting the K value to zero will make it not have a effect.
+ * setting the K value to zero will make it not have a effect.
  *
  *    p' = p (1 + K0 r^2 + K1 r^4 + ... + Kn r^(2n))
  *

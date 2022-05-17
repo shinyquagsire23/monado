@@ -178,7 +178,7 @@ RingBufferHelper::index_to_inner_index(size_t index, size_t &out_inner_idx) cons
 	if (index >= length_) {
 		return false;
 	}
-	// Just add to the front (oldest) index and take modulo capacity_
+	// add to the front (oldest) index and take modulo capacity_
 	out_inner_idx = (front_impl_() + index) % capacity_;
 	return true;
 }
@@ -188,7 +188,7 @@ RingBufferHelper::push_back_location() noexcept
 {
 	// We always increment the latest inner index modulo capacity_
 	latest_inner_idx_ = (latest_inner_idx_ + 1) % capacity_;
-	// Length cannot exceed capacity_. If it already was capacity_, that just means we're overwriting something at
+	// Length cannot exceed capacity_. If it already was capacity_, that means we're overwriting something at
 	// latest_inner_idx_
 	length_ = std::min(length_ + 1, capacity_);
 	return latest_inner_idx_;

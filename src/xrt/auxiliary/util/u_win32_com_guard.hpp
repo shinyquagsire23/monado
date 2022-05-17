@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief An object that serves to keep the reference count of COM initialization above 0.
+ * @brief An object that serves to keep the reference count of COM initialization greater than 0.
  *
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_util

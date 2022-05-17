@@ -148,7 +148,6 @@ queue_mainloop(void *ptr)
 			break;
 		}
 
-		// Just in case.
 		if (queue_is_empty(q)) {
 			continue;
 		}
@@ -160,7 +159,7 @@ queue_mainloop(void *ptr)
 		 * We need to take a reference on the current frame, this is to
 		 * keep it alive during the call to the consumer should it be
 		 * replaced. But we no longer need to hold onto the frame on the
-		 * queue so we just dequeue it.
+		 * queue so we dequeue it.
 		 */
 		frame = queue_pop(q);
 

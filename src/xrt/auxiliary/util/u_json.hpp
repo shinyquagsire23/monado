@@ -89,7 +89,7 @@ private:
 public:
 	// Class resource management
 
-	//! This is public just so that make_shared works; do not use outside of this file.
+	//! This is public so that make_shared works; do not use outside of this file.
 	JSONNode(cJSON *cjson, bool is_owner, const JSONNode::Ptr &parent)
 	    : cjson(cjson), is_owner(is_owner), parent(parent)
 	{}
@@ -190,7 +190,7 @@ public:
 	operator[](const string &key) const
 	{
 		const char *name = key.c_str();
-		JSON_ASSERTW(isObject(), "Trying to access field '%s' from non-object %s", name, toString().c_str());
+		JSON_ASSERTW(isObject(), "Trying to retrieve field '%s' from non-object %s", name, toString().c_str());
 
 		cJSON *value = cJSON_GetObjectItemCaseSensitive(cjson, name);
 		JSON_ASSERTW(value != nullptr, "Unable to retrieve field '%s' from %s", name, toString().c_str());
@@ -201,7 +201,7 @@ public:
 	JSONNode
 	operator[](int i) const
 	{
-		JSON_ASSERTW(isArray(), "Trying to access index '%d' from non-array %s", i, toString().c_str());
+		JSON_ASSERTW(isArray(), "Trying to retrieve index '%d' from non-array %s", i, toString().c_str());
 
 		cJSON *value = cJSON_GetArrayItem(cjson, i);
 		JSON_ASSERTW(value != nullptr, "Unable to retrieve index %d from %s", i, toString().c_str());
@@ -427,7 +427,7 @@ private:
 	 * @brief Receives inputs and transitions the automata from state to state.
 	 *
 	 * This is the table of transitions. Can be thought of as three regular FSM
-	 * that get switched based on the stack's [top] value. The function is just
+	 * that get switched based on the stack's [top] value. The function is
 	 * the implementation of the table.
 	 *
 	 * [top],  [state],          [symbol]    -> [new-state],      [stack-action]

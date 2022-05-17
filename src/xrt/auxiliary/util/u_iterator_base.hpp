@@ -65,7 +65,7 @@ public:
 	}
 
 	/*!
-	 * @brief True if this iterator is "irrecoverably" invalid (aka, cleared/default constructed).
+	 * @brief True if this iterator is "irrecoverably" invalid (that is, cleared or default constructed).
 	 *
 	 * Implies !valid() but is stronger. `buf.end().is_cleared()` is false.
 	 */
@@ -128,7 +128,8 @@ public:
 
 
 	/**
-	 * @brief Default constructor - initializes to "cleared" aka irrecoverably invalid
+	 * @brief Default constructor - initializes to "cleared" (that is, irrecoverably invalid - because we have no
+	 * reference to a container)
 	 */
 	RandomAccessIteratorBase() = default;
 
@@ -172,7 +173,7 @@ protected:
 	void
 	decrement_n(std::size_t n);
 
-	//! Access the container or helper
+	//! Get the associated container or helper
 	ContainerOrHelper *
 	container() const noexcept
 	{

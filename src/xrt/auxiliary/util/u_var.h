@@ -175,10 +175,8 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
  * side-effects.
  *
  * This is intended only for debugging and is turned off by default, as this all
- * very very unsafe. It is just pointers straight into objects, completely
+ * very very unsafe. It is only pointers straight into objects, completely
  * ignores ownership or any safe practices.
- *
- * If it's stupid, but it works, it ain't stupid.
  *
  * ```c
  * // On create

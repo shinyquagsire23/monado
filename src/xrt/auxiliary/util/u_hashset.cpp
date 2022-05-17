@@ -81,12 +81,12 @@ u_hashset_insert_item(struct u_hashset *hs, struct u_hashset_item *item)
 extern "C" int
 u_hashset_create_and_insert_str(struct u_hashset *hs, const char *str, size_t length, struct u_hashset_item **out_item)
 {
-	struct u_hashset_item *dummy = NULL;
+	struct u_hashset_item *unused = NULL;
 	struct u_hashset_item *item = NULL;
 	size_t size = 0;
 	int ret;
 
-	ret = u_hashset_find_str(hs, str, length, &dummy);
+	ret = u_hashset_find_str(hs, str, length, &unused);
 	if (ret >= 0) {
 		return -1;
 	}

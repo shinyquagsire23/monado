@@ -107,7 +107,7 @@ u_string_list_append_array(struct u_string_list *usl, const char *const *arr, ui
 /*!
  * @brief Append a new string literal to the list, if it's not the same as a string already in the list.
  *
- * (Comparing string contents, not just pointers)
+ * (Comparing string contents, not pointers)
  *
  * @param usl self pointer
  * @param str a non-null, null-terminated string that must live at least as long as the list, preferably a string
@@ -122,7 +122,7 @@ u_string_list_append_unique(struct u_string_list *usl, const char *str);
 /*!
  * @brief Check if the string is in the list.
  *
- * (Comparing string contents, not just pointers)
+ * (Comparing string contents, not pointers)
  *
  * @param usl self pointer
  * @param str a non-null, null-terminated string.

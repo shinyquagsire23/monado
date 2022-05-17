@@ -76,7 +76,7 @@ bool
 u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device_simple_info *info);
 
 /*!
- * Just setup the device's display's 2D extents.
+ * Setup the device's display's 2D extents.
  * Good for headsets without traditional VR optics.
  *
  * @return true on success.

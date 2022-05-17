@@ -60,7 +60,7 @@ namespace detail {
 			return valid();
 		}
 
-		//! Access the container: for internal use
+		//! Get the associated container: for internal use
 		container_type *
 		container() const noexcept
 		{

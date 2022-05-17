@@ -66,7 +66,7 @@ typedef void (*u_log_sink_func_t)(const char *file,
                                   void *data);
 
 /*!
- * For places where you really just want printf, prints a new-line.
+ * For places where you really want printf, prints a new-line.
  */
 #define U_LOG_RAW(...)                                                                                                 \
 	do {                                                                                                           \

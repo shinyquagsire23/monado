@@ -80,7 +80,7 @@ extern "C" {
 /*!
  * Reallocates or frees dynamically-allocated memory.
  *
- * Just wraps realloc with a return value check, freeing the provided memory if
+ * Wraps realloc with a return value check, freeing the provided memory if
  * it is NULL, to avoid leaks. Use U_ARRAY_REALLOC_OR_FREE() instead.
  *
  * @ingroup aux_util

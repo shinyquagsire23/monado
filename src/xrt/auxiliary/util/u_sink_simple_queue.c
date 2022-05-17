@@ -86,7 +86,7 @@ queue_mainloop(void *ptr)
 		 * We need to take a reference on the current frame, this is to
 		 * keep it alive during the call to the consumer should it be
 		 * replaced. But we no longer need to hold onto the frame on the
-		 * queue so we just move the pointer.
+		 * queue so we move the pointer.
 		 */
 		frame = q->frame;
 		q->frame = NULL;

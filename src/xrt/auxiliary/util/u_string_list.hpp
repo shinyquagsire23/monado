@@ -111,7 +111,7 @@ public:
 	/*!
 	 * @brief Check if the string is in the list.
 	 *
-	 * (Comparing string contents, not just pointers)
+	 * (Comparing string contents, not pointers)
 	 *
 	 * @param str a non-null, null-terminated string.
 	 *
@@ -131,7 +131,7 @@ public:
 	/*!
 	 * @brief Append a new string to the list if it doesn't match any existing string.
 	 *
-	 * (Comparing string contents, not just pointers)
+	 * (Comparing string contents, not pointers)
 	 *
 	 * This does a simple linear search, because it is assumed that the size of this list is fairly small.
 	 *

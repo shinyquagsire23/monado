@@ -56,7 +56,7 @@ u_frame_clone(struct xrt_frame *to_copy, struct xrt_frame **out_frame)
 {
 	struct xrt_frame *xf = U_TYPED_CALLOC(struct xrt_frame);
 
-	// Paranoia: Explicitly only copy the fields we want
+	// Explicitly only copy the fields we want
 	xf->width = to_copy->width;
 	xf->height = to_copy->height;
 	xf->stride = to_copy->stride;

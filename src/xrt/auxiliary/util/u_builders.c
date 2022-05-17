@@ -66,7 +66,7 @@ u_builder_search(struct xrt_prober *xp,
 
 		results->xpdevs[results->xpdev_count++] = xpdev;
 
-		// Abort if full.
+		// Exit if full.
 		if (results->xpdev_count >= ARRAY_SIZE(results->xpdevs)) {
 			return;
 		}

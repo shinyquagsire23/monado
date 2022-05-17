@@ -214,7 +214,7 @@ u_device_setup_split_side_by_side(struct xrt_device *xdev, const struct u_device
 		}
 	}
 	{
-		/* left eye - just mirroring right eye now */
+		/* left eye - mirroring right eye */
 		xdev->hmd->distortion.fov[0].angle_up = xdev->hmd->distortion.fov[1].angle_up;
 		xdev->hmd->distortion.fov[0].angle_down = xdev->hmd->distortion.fov[1].angle_down;
 

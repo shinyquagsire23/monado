@@ -217,7 +217,7 @@ locked_group_should_wait(struct pool *p, struct group *g)
 	 * work is outstanding what we should do then is increase the worker
 	 * limit and wait on the conditional.
 	 *
-	 * Similar to above, we where woken up, there are more work outstanding
+	 * Similar to preceding, we were woken up, there are more work outstanding
 	 * on the group and we had been released, remove one released and up the
 	 * worker limit, then wait on the conditional.
 	 *
@@ -225,7 +225,7 @@ locked_group_should_wait(struct pool *p, struct group *g)
 	 * submitted, then break out of the loop and decrement the released
 	 * count.
 	 *
-	 * As above, but we where one of many woken up but only one thread had
+	 * As preceding, but we were one of many woken up but only one thread had
 	 * been released and that released count had been taken, then we should
 	 * do nothing and wait again.
 	 */
