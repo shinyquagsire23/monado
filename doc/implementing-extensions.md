@@ -23,7 +23,7 @@ The general steps to implement an OpenXR extension in Monado are as follows.
 * Implement the `oxr_` Monado internal functions in an appropriate source file
   `src/state_trackers/oxr/oxr_api_*.c`. Trivial functions can be implemented
   right there along with the usual parameter checks. More complex functions that
-  access more internal monado state should call functions implemented in the
+  use more internal Monado state should call functions implemented in the
   relevant `oxr_*.c` file (without `_api_`). The definitions for those functions
   go into `src/xrt/state_trackers/oxr/oxr_objects.h`.
 * Monado internal implementations of "objects" (think XrSession or

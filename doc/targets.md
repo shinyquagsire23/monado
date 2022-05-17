@@ -37,14 +37,13 @@ executable, or the well-known symbol name if it's a shared library. In some
 cases, the entry point might be provided by one of the modules being combined to
 form the target. For instance, an OpenXR runtime must expose
 `xrNegotiateLoaderRuntimeInterface`: this function is provided by the OpenXR
-state tracker `st_oxr`, so the OpenXR runtime target just has to link the state
-tracker in and ensure that symbol is present and visible in the final build
-product.
+state tracker `st_oxr`, so the OpenXR runtime target links the state tracker in
+and ensures that symbol is present and visible in the final build product.
 
-Then, the target must provide access to the collection of devices desired.
-Target device access is provided by implementing the `xrt_instance` interface in
-your target and providing a definition of `xrt_instance_create` that
-instantiates your implementation.
+Then, the target must provide an interface to the collection of devices desired.
+This is done by implementing the `xrt_instance` interface in your target and
+providing a definition of `xrt_instance_create` that instantiates your
+implementation.
 
 All methods of `xrt_instance` are required, though the `get_prober` method may
 output a null pointer if the instance is not using a prober, and targets that do
@@ -85,6 +84,6 @@ Note that in this case, there are two processes involved, which have different
 - The runtime has a "stub" or "client proxy" implementation that delegates to
   the service over the IPC.
 - The service has a normal or complete instance implementation that actually
-  provides access to devices, etc.
+  provides hardware device interaction, etc.
 
 ![Out-of-process OpenXR runtime diagram](images/out-of-proc.drawio.svg)

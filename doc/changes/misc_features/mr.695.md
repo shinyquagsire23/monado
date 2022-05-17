@@ -1,1 +1,1 @@
-Implement tracking overrides via wrapper devices and add a tracking override configuration gui.
+Implement tracking overrides using wrapper devices and add a tracking override configuration gui.

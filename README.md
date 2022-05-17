@@ -21,8 +21,7 @@ and AR on mobile, PC/desktop, and any other device
 come up with a lot of weird hardware).
 Monado aims to be a complete and conforming implementation
 of the OpenXR API made by Khronos.
-The project currently is being developed for GNU/Linux
-and aims to support other operating systems in the near future.
+The project is primarily developed on GNU/Linux, but also runs on Android and Windows.
 "Monado" has no specific meaning and is just a name.
 
 ## Monado source tree
@@ -248,10 +247,8 @@ scripts/format-project.sh
 You can optionally put something like `CLANG_FORMAT=clang-format-7` before that command
 if your clang-format binary isn't named `clang-format`.
 **Note that you'll typically prefer** to use something like `git clang-format`
-to just re-format your changes, in case version differences in tools result in overall format changes.
-The CI "style" job currently runs on Debian Buster, so it has clang-format-7.
-We will probably update that job to Bullseye or Ubuntu 20.10, which will allow
-using clang-format-11 by default, soon.
+to re-format only your changes, in case version differences in tools result in overall format changes.
+The CI "style" job currently runs on Debian Bullseye, so it has clang-format-11.
 
 [OpenHMD]: http://openhmd.net
 [drm-lease]: https://haagch.frickel.club/#!drmlease%2Emd

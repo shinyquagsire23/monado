@@ -48,7 +48,7 @@ minimize frustration.
 
 ## Notes
 
-Kept out of the table above to limit its width.
+Kept out of the preceding table to limit its width.
 
 * Server type:
   * a: Windowed

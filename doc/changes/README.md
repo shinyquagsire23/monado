@@ -55,13 +55,11 @@ Each change should add a changelog fragment file, whose contents are
 Markdown-formatted text describing the change briefly. Reference metadata will
 be used to automatically add links to associated issues/merge requests/pull
 requests, so no need to add these in your fragment text. The simplest changelog
-fragment just contains one line of Markdown text describing the change:
+fragment contains one line of Markdown text describing the change:
 
 ```md
 Here the author of a change has written some text about it.
 ```
-
-(If you change the template in your Proclamation config file, your project can use a different markup format than Markdown.)
 
 ### References
 
@@ -95,7 +93,7 @@ extension added. (You can also use `.rst` or `.txt` as your extension in your
 project.)
 
 To specify additional references in a file, prefix the contents of the changelog
-fragment with a block delimited above and below by `---`, with one reference on
+fragment with a block delimited before and after by `---`, with one reference on
 each line. (This can be seen as a very minimal subset of "YAML Front Matter", if
 you're familiar with that concept.) For example:
 
@@ -109,7 +107,7 @@ Here the author of a change has written some text about it.
 
 There are provisions for providing your own reference parser if this format is
 entirely unusable, but they're underdeveloped. (Most use cases found by the
-original author can actually be accommodated just by changing the template and
+original author can actually be accommodated by changing the template and
 specifying `.`-delimited fields in references.) If this functionality is
 interesting to you, get involved in the development of Proclamation and help
 finish it!
@@ -166,7 +164,7 @@ elaborate use-cases than this.)
   - `insert_point_pattern` - Useful mainly if you're not using the default
     template. The first match of this regex will be considered the first line of
     a release entry, and your new release will be put in your changelog file
-    above it. Default works with the default template (looks for a second-level
+    before it. Default works with the default template (looks for a second-level
     Markdown heading).
   - `extra_data` - Any extra data you'd like to pass along to your custom
     template.

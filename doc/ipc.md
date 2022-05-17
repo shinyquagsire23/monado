@@ -17,10 +17,10 @@ There are three main communication needs:
   any, to start communication. (Auto-starting, where available, is handled by
   platform-specific mechanisms: the client currently has no code to explicitly
   start up the service.)
-- The client and service must share a dedicated channel for IPC calls (aka
-  **RPC** - remote procedure call), typically a socket.
-- The service must share access to device data updating at various rates, shared
-  by all clients. This is typically done with a form of **shared memory**.
+- The client and service must share a dedicated channel for IPC calls (also
+  known as **RPC** - remote procedure call), typically a socket.
+- The service must share device data updating at various rates, shared by all
+  clients. This is typically done with a form of **shared memory**.
 
 Each platform's implementation has a way of meeting each of these needs. The
 specific way each need is met is highlighted below.
@@ -47,7 +47,7 @@ descriptor to the client, so it has (read) access to this data.
 
 ## Android Platform Details
 
-On Android, in order to pass platform objects, allow for service activation, and
+On Android, to pass platform objects, allow for service activation, and
 fit better within the idioms of the platform, Monado provides a Binder/AIDL
 service instead of a named socket. (The named sockets we typically use are not
 permitted by the platform, and "abstract" named sockets are currently available,
@@ -90,11 +90,11 @@ From there, the native-code mainloop starts when this service received a valid
 `Surface`. By default, the JVM code will signal the mainloop to shut down a short
 time after the last client disconnects, to work best within the platform.
 
-At startup, just as on Linux, the shared memory segment is created. The
-[ashmem][] API is used to create/destroy an anonymous **shared memory** segment
-on Android, instead of standard POSIX shared memory, but is otherwise treated
-and used exactly the same as on standard Linux: file descriptors are duplicated
-and passed through IPC calls, etc.
+At startup, as on Linux, the shared memory segment is created. The [ashmem][]
+API is used to create/destroy an anonymous **shared memory** segment on Android,
+instead of standard POSIX shared memory, but is otherwise treated and used
+exactly the same as on standard Linux: file descriptors are duplicated and
+passed through IPC calls, etc.
 
 When the client side starts up, it creates an __anonymous socket pair__ to use
 for IPC calls (the **RPC** function) later. It then passes one of the two file
@@ -123,8 +123,8 @@ multiple clients and client transition without shutdown.
 ### Synchronization
 
 Synchronization of new client connections is a special challenge on the Android
-platform, since new clients arrive via calls into JVM code while the mainloop is
-native code. Unlike Linux, we cannot simply use epoll to check if there are new
+platform, since new clients arrive using calls into JVM code while the mainloop is
+C/C++ code. Unlike Linux, we cannot simply use epoll to check if there are new
 connections to our locating socket.
 
 We have the following design goals/constraints:

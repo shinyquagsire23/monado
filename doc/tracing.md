@@ -54,7 +54,7 @@ Then run the following commands before launching Monado.
 
 # Start the daemon ftrace probes daemon.
 # Only needs to be run once and keeps running.
-# Not needed with the above config.
+# Not needed with the preceding config.
 ./perfetto/out/linux_clang_release/traced_probes &
 
 # When you want to run a capture do and then run Monado.

@@ -5,11 +5,11 @@ Copyright 2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-## Prerequisites 
+## Prerequisites
 
 Before proceeding you will need to have monado installed (or built) and capable
 of running applications. If you do not have any hardware this should still work
-with the dummy driver. For those building Monado themselves you have to make
+with the simulated driver. For those building Monado themselves you have to make
 sure the GUI is built. In short the commands `monado-gui` and `monado-service`
 are needed.
 

@@ -88,10 +88,10 @@ Monado are in `src/xrt/targets/common/target_lists.c`. These are shared by the
 various targets (OpenXR runtime shared library, service executable, utility
 executables) also found in `src/xrt/targets`. If you're using Monado as a
 toolkit or component rather than as a standalone runtime and service, you can
-replicate whatever portions of the target lists in your own target, or just
-directly implement the @ref xrt_instance interface more directly, linking in
-only those drivers and components you need. **Note**, however, that Monado is
-intended to not expose any external API other than the OpenXR API: the @ref
-xrt_iface are subject to change as required so those writing drivers or other
-software on those interfaces are encouraged to upstream as much as possible to
-minimize maintenance burden.
+replicate whatever portions of the target lists in your own target, or directly
+implement the @ref xrt_instance interface more directly, linking in only those
+drivers and components you need. **Note**, however, that Monado is intended to
+not expose any external API other than the OpenXR API: the @ref xrt_iface are
+subject to change as required so those writing drivers or other software on
+those interfaces are encouraged to upstream as much as possible to minimize
+maintenance burden.

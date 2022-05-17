@@ -1,7 +1,7 @@
 # Code Style and Conventions {#conventions}
 
 <!--
-Copyright 2021, Collabora, Ltd. and the Monado contributors
+Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
@@ -19,7 +19,7 @@ Here are some general code style guidelines we follow.
 ## APIs
 
 Internal APIs, when it makes sense, should be C APIs. Headers that define
-general communication interfaces between modules (not just use of utilities)
+general communication interfaces between modules (not only use of utilities)
 belong in the `xrt/include/xrt` directory, and should not depend on any other module outside
 that directory. (As a historical note: this directory gets its name from a
 compressed version of the phrase "XR RunTime", a generic term for Monado and an
@@ -161,8 +161,8 @@ are gradually migrating those that don't fit this pattern. If you call a
 destroy function that does not take a pointer-to-a-pointer, make sure to do
 null checks before calling and set it to null after it returns.
 
-Also note: when an interface includes a "destroy" function pointer, it just
-takes the normal pointer to an object: The free function wrapper is the one that
-takes a pointer-to-a-pointer and handles the null checks. See for example @ref
+Also note: when an interface includes a "destroy" function pointer, it takes the
+normal pointer to an object: The free function wrapper is the one that takes a
+pointer-to-a-pointer and handles the null checks. See for example @ref
 xrt_instance_destroy takes the pointer-to-a-pointer, while the interface method
-@ref xrt_instance::destroy takes just the single pointer.
+@ref xrt_instance::destroy takes the single pointer.

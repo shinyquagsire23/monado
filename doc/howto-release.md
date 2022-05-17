@@ -47,4 +47,4 @@ git tag v21.0.0 -m"v21.0.0"
 
 ## Do gitlab release
 
-The Gitlab UI has a friendly interface, just follow the guide there.
+The Gitlab UI has a friendly interface, follow the guide there.

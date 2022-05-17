@@ -566,12 +566,12 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
   - comp: Set a compositor window title.
     ([!418](https://gitlab.freedesktop.org/monado/monado/merge_requests/418))
 - IPC
-  - server: Almost completely overhaul the handling of swapchain life cycle
+  - server: Almost completely overhaul the handling of swapchain lifecycle
     including: correctly track which swapchains are alive; reuse ids; enforce the
     maximum number of swapchains; and destroy underlying swapchains when they are
     destroyed by the client.
     ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))
-  - util: Make sure to not access NULL control messages, say in the case of the
+  - util: Make sure to not dereference NULL control messages, say in the case of the
     server failing to create a swapchain. Also add a whole bunch of paranoia when
     it comes to the alignment of the control message buffers.
     ([!359](https://gitlab.freedesktop.org/monado/monado/merge_requests/359))

@@ -7,7 +7,7 @@ SPDX-License-Identifier: BSL-1.0
 
 A "brief" overview of the various time-points that a frame goes through, from
 when the application gets go ahead to render the frame to when pixels are turned
-into photons. This is only a single frame, where all of the timings are hit and
+into photons. This is only a single frame, where all of the timings are achieved and
 the application is single threaded. The HMD also only turns on the display
 during the vblank period, meaning the pixel to photon transformation is delayed
 from scanout starting to the vblank period (like for the Index).
@@ -43,6 +43,6 @@ information.
 * @ref xrt_comp_layer_stereo_projection - This and other layer functions are
   called to list the layers the compositor should render.
 * @ref xrt_comp_layer_commit - The compositor starts to render the frame,
-  trying to hit the **present** time.
+  trying to finish at the **present** time.
 
 [`VK_GOOGLE_display_timing`]: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VK_GOOGLE_display_timing.html
