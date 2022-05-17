@@ -10,12 +10,18 @@
 
 #include "comp_d3d11_client.h"
 
+#include "xrt/xrt_compositor.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_handles.h"
+#include "xrt/xrt_deleters.hpp"
+#include "xrt/xrt_results.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "d3d/d3d_dxgi_formats.h"
 #include "d3d/d3d_helpers.hpp"
 #include "d3d/d3d_d3d11_allocator.hpp"
+#include "d3d/d3d_d3d11_fence.hpp"
 #include "util/u_misc.h"
+#include "util/u_pretty_print.h"
 #include "util/u_time.h"
 #include "util/u_logging.h"
 #include "util/u_debug.h"
@@ -23,8 +29,10 @@
 #include "util/u_win32_com_guard.hpp"
 
 #include <d3d11_1.h>
+#include <d3d11_3.h>
 #include <wil/resource.h>
 #include <wil/com.h>
+#include <wil/result_macros.h>
 
 #include <assert.h>
 #include <inttypes.h>
@@ -74,22 +82,19 @@ DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
  */
 #define D3D_ERROR(c, ...) U_LOG_IFL_E(c->log_level, __VA_ARGS__);
 
-namespace {
+using unique_compositor_semaphore_ref = std::unique_ptr<
+    struct xrt_compositor_semaphore,
+    xrt::deleters::reference_deleter<struct xrt_compositor_semaphore, xrt_compositor_semaphore_reference>>;
 
-/// Deleter for xrt_swapchain
-struct xsc_deleter
-{
-	void
-	operator()(struct xrt_swapchain *xsc) const noexcept
-	{
-
-		xrt_swapchain_reference(&xsc, NULL);
-	}
-};
-} // namespace
+using unique_swapchain_ref =
+    std::unique_ptr<struct xrt_swapchain,
+                    xrt::deleters::reference_deleter<struct xrt_swapchain, xrt_swapchain_reference>>;
 
 // 0 is special
 static constexpr uint64_t kKeyedMutexKey = 0;
+
+// Timeout to wait for completion
+static constexpr auto kFenceTimeout = 500ms;
 
 /*!
  * @class client_d3d11_compositor
@@ -122,7 +127,43 @@ struct client_d3d11_compositor
 	wil::com_ptr<ID3D11Device5> comp_device;
 
 	//! Immediate context for @ref comp_device
-	wil::com_ptr<ID3D11DeviceContext3> comp_context;
+	wil::com_ptr<ID3D11DeviceContext4> comp_context;
+
+	//! Device used for the fence, currently the @ref app_device.
+	wil::com_ptr<ID3D11Device5> fence_device;
+
+	//! Immediate context for @ref fence_device
+	wil::com_ptr<ID3D11DeviceContext4> fence_context;
+
+	// wil::unique_handle timeline_semaphore_handle;
+
+	/*!
+	 * A timeline semaphore made by the native compositor and imported by us.
+	 *
+	 * When this is valid, we should use xrt_compositor::layer_commit_with_sync:
+	 * it means the native compositor knows about timeline semaphores, and we can import its semaphores, so we can
+	 * pass @ref timeline_semaphore instead of blocking locally.
+	 */
+	unique_compositor_semaphore_ref timeline_semaphore;
+
+	/*!
+	 * A fence (timeline semaphore) object, owned by @ref fence_device.
+	 *
+	 * Signal using @ref fence_context if this is not null.
+	 *
+	 * Wait on it in `layer_commit` if @ref timeline_semaphore *is* null/invalid.
+	 */
+	wil::com_ptr<ID3D11Fence> fence;
+
+	/*!
+	 * Event used for blocking in `layer_commit` if required (if @ref timeline_semaphore *is* null/invalid)
+	 */
+	wil::unique_event_nothrow local_wait_event;
+
+	/*!
+	 * The value most recently signaled on the timeline semaphore
+	 */
+	uint64_t timeline_semaphore_value;
 };
 
 static_assert(std::is_standard_layout<client_d3d11_compositor>::value);
@@ -164,8 +205,6 @@ struct client_d3d11_swapchain_data
 /*!
  * Wraps the real compositor swapchain providing a D3D11 based interface.
  *
- * Almost a one to one mapping to a OpenXR swapchain.
- *
  * @ingroup comp_client
  * @implements xrt_swapchain_d3d11
  */
@@ -174,11 +213,12 @@ struct client_d3d11_swapchain
 	struct xrt_swapchain_d3d11 base;
 
 	//! Owning reference to the imported swapchain.
-	std::unique_ptr<xrt_swapchain, xsc_deleter> xsc;
+	unique_swapchain_ref xsc;
 
 	//! Non-owning reference to our parent compositor.
 	struct client_d3d11_compositor *c;
 
+	//! implementation struct with things that aren't standard_layout
 	std::unique_ptr<client_d3d11_swapchain_data> data;
 };
 
@@ -203,6 +243,27 @@ as_client_d3d11_compositor(struct xrt_compositor *xc)
 {
 	return (struct client_d3d11_compositor *)xc;
 }
+
+
+/*
+ *
+ * Logging helper.
+ *
+ */
+static constexpr size_t kErrorBufSize = 256;
+
+template <size_t N>
+static inline bool
+formatMessage(DWORD err, char (&buf)[N])
+{
+	if (0 != FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err,
+	                        LANG_SYSTEM_DEFAULT, buf, N - 1, NULL)) {
+		return true;
+	}
+	memset(buf, 0, N);
+	return false;
+}
+
 
 /*
  *
@@ -304,6 +365,7 @@ client_d3d11_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	}
 	return xret;
 }
+
 static void
 client_d3d11_swapchain_destroy(struct xrt_swapchain *xsc)
 {
@@ -311,6 +373,11 @@ client_d3d11_swapchain_destroy(struct xrt_swapchain *xsc)
 	std::unique_ptr<client_d3d11_swapchain> sc(as_client_d3d11_swapchain(xsc));
 }
 
+/*
+ *
+ * Import helpers
+ *
+ */
 
 static wil::com_ptr<ID3D11Texture2D1>
 import_image(ID3D11Device1 &device, HANDLE h)
@@ -323,6 +390,19 @@ import_image(ID3D11Device1 &device, HANDLE h)
 	THROW_IF_FAILED(device.OpenSharedResource1(h, __uuidof(ID3D11Texture2D1), tex.put_void()));
 	return tex;
 }
+
+static wil::com_ptr<ID3D11Fence>
+import_fence(ID3D11Device5 &device, HANDLE h)
+{
+	wil::com_ptr<ID3D11Fence> fence;
+
+	if (h == nullptr) {
+		return {};
+	}
+	THROW_IF_FAILED(device.OpenSharedFence(h, __uuidof(ID3D11Fence), fence.put_void()));
+	return fence;
+}
+
 
 xrt_result_t
 client_d3d11_create_swapchain(struct xrt_compositor *xc,
@@ -403,6 +483,7 @@ try {
 		xins.emplace_back(xin);
 	}
 
+	// Import into the native compositor, to create the corresponding swapchain which we wrap.
 	xrt_swapchain *xsc = nullptr;
 	xret = xrt_comp_import_swapchain(&(c->xcn->base), &vkinfo, xins.data(), image_count, &xsc);
 	if (xret != XRT_SUCCESS) {
@@ -414,6 +495,7 @@ try {
 		h.release();
 	}
 
+	// Let unique_ptr manage the lifetime of xsc now
 	sc->xsc.reset(xsc);
 
 	sc->base.base.destroy = client_d3d11_swapchain_destroy;
@@ -501,6 +583,7 @@ client_d3d11_compositor_layer_begin(struct xrt_compositor *xc,
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
 
+	// Pipe down call into native compositor.
 	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
 }
 
@@ -512,12 +595,11 @@ client_d3d11_compositor_layer_stereo_projection(struct xrt_compositor *xc,
                                                 const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *l_xscn, *r_xscn;
 
 	assert(data->type == XRT_LAYER_STEREO_PROJECTION);
 
-	l_xscn = as_client_d3d11_swapchain(l_xsc)->xsc.get();
-	r_xscn = as_client_d3d11_swapchain(r_xsc)->xsc.get();
+	struct xrt_swapchain *l_xscn = as_client_d3d11_swapchain(l_xsc)->xsc.get();
+	struct xrt_swapchain *r_xscn = as_client_d3d11_swapchain(r_xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, data);
@@ -552,11 +634,10 @@ client_d3d11_compositor_layer_quad(struct xrt_compositor *xc,
                                    const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *xscfb;
 
 	assert(data->type == XRT_LAYER_QUAD);
 
-	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
+	struct xrt_swapchain *xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
@@ -569,11 +650,10 @@ client_d3d11_compositor_layer_cube(struct xrt_compositor *xc,
                                    const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *xscfb;
 
 	assert(data->type == XRT_LAYER_CUBE);
 
-	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
+	struct xrt_swapchain *xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, data);
@@ -586,11 +666,10 @@ client_d3d11_compositor_layer_cylinder(struct xrt_compositor *xc,
                                        const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *xscfb;
 
 	assert(data->type == XRT_LAYER_CYLINDER);
 
-	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
+	struct xrt_swapchain *xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, data);
@@ -603,11 +682,10 @@ client_d3d11_compositor_layer_equirect1(struct xrt_compositor *xc,
                                         const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *xscfb;
 
 	assert(data->type == XRT_LAYER_EQUIRECT1);
 
-	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
+	struct xrt_swapchain *xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_equirect1(&c->xcn->base, xdev, xscfb, data);
@@ -620,11 +698,10 @@ client_d3d11_compositor_layer_equirect2(struct xrt_compositor *xc,
                                         const struct xrt_layer_data *data)
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
-	struct xrt_swapchain *xscfb;
 
 	assert(data->type == XRT_LAYER_EQUIRECT2);
 
-	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
+	struct xrt_swapchain *xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
 	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_equirect2(&c->xcn->base, xdev, xscfb, data);
@@ -641,17 +718,38 @@ client_d3d11_compositor_layer_commit(struct xrt_compositor *xc,
 	assert(!xrt_graphics_sync_handle_is_valid(sync_handle));
 
 	xrt_result_t xret = XRT_SUCCESS;
-	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
-
-	/*!
-	 * @todo The swapchain images should have been externally synchronized? actually probably sync here
-	 */
-
-	if (xret != XRT_SUCCESS) {
-		return XRT_SUCCESS;
+	if (c->fence) {
+		c->timeline_semaphore_value++;
+		HRESULT hr = c->fence_context->Signal(c->fence.get(), c->timeline_semaphore_value);
+		if (!SUCCEEDED(hr)) {
+			char buf[kErrorBufSize];
+			formatMessage(hr, buf);
+			D3D_ERROR(c, "Error signaling fence: %s", buf);
+			return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+		}
+	}
+	if (c->timeline_semaphore) {
+		// We got this from the native compositor, so we can pass it back
+		return xrt_comp_layer_commit_with_semaphore(&c->xcn->base, frame_id, c->timeline_semaphore.get(),
+		                                            c->timeline_semaphore_value);
 	}
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	if (c->fence) {
+		// Wait on it ourselves, if we have it and didn't tell the native compositor to wait on it.
+		xret = xrt::auxiliary::d3d::waitOnFenceWithTimeout(c->fence, c->local_wait_event,
+		                                                   c->timeline_semaphore_value, kFenceTimeout);
+		if (xret != XRT_SUCCESS) {
+			struct u_pp_sink_stack_only sink; // Not inited, very large.
+			u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+			u_pp(dg, "Problem waiting on fence: ");
+			u_pp_xrt_result(dg, xret);
+			D3D_ERROR(c, "%s", sink.buffer);
+
+			return xret;
+		}
+	}
+
+	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 
@@ -678,6 +776,70 @@ static void
 client_d3d11_compositor_destroy(struct xrt_compositor *xc)
 {
 	std::unique_ptr<struct client_d3d11_compositor> c{as_client_d3d11_compositor(xc)};
+}
+
+static void
+client_d3d11_compositor_init_try_timeline_semaphores(struct client_d3d11_compositor *c)
+{
+	c->timeline_semaphore_value = 1;
+	// See if we can make a "timeline semaphore", also known as ID3D11Fence
+	if (!c->xcn->base.create_semaphore || !c->xcn->base.layer_commit_with_semaphore) {
+		return;
+	}
+	struct xrt_compositor_semaphore *xcsem = nullptr;
+	wil::unique_handle timeline_semaphore_handle;
+	if (XRT_SUCCESS != xrt_comp_create_semaphore(&(c->xcn->base), timeline_semaphore_handle.put(), &xcsem)) {
+		D3D_WARN(c, "Native compositor tried but failed to created a timeline semaphore for us.");
+		return;
+	}
+	D3D_INFO(c, "Native compositor created a timeline semaphore for us.");
+
+	unique_compositor_semaphore_ref timeline_semaphore{xcsem};
+
+	// try to import and signal
+	wil::com_ptr<ID3D11Fence> fence = import_fence(*(c->fence_device), timeline_semaphore_handle.get());
+	HRESULT hr = c->fence_context->Signal(fence.get(), c->timeline_semaphore_value);
+	if (!SUCCEEDED(hr)) {
+		D3D_WARN(c,
+		         "Your graphics driver does not support importing the native compositor's "
+		         "semaphores into D3D11, falling back to local blocking.");
+		return;
+	}
+
+	D3D_INFO(c, "We imported a timeline semaphore and can signal it.");
+	// OK, keep these resources around.
+	c->fence = std::move(fence);
+	c->timeline_semaphore = std::move(timeline_semaphore);
+	// c->timeline_semaphore_handle = std::move(timeline_semaphore_handle);
+}
+
+static void
+client_d3d11_compositor_init_try_internal_blocking(struct client_d3d11_compositor *c)
+{
+	wil::com_ptr<ID3D11Fence> fence;
+	HRESULT hr = c->fence_device->CreateFence( //
+	    0,                                     // InitialValue
+	    D3D11_FENCE_FLAG_NONE,                 // Flags
+	    __uuidof(ID3D11Fence),                 // ReturnedInterface
+	    fence.put_void());                     // ppFence
+
+	if (!SUCCEEDED(hr)) {
+		char buf[kErrorBufSize];
+		formatMessage(hr, buf);
+		D3D_WARN(c, "Cannot even create an ID3D11Fence for internal use: %s", buf);
+		return;
+	}
+
+	hr = c->local_wait_event.create();
+	if (!SUCCEEDED(hr)) {
+		char buf[kErrorBufSize];
+		formatMessage(hr, buf);
+		D3D_ERROR(c, "Error creating event for synchronization usage: %s", buf);
+		return;
+	}
+
+	D3D_INFO(c, "We created our own ID3D11Fence and will wait on it ourselves.");
+	c->fence = std::move(fence);
 }
 
 struct xrt_compositor_d3d11 *
@@ -707,6 +869,22 @@ try {
 		our_context.query_to(c->comp_context.put());
 	}
 
+	// Upcast fence to context version 4 and reference fence device.
+	{
+		c->app_device.query_to(c->fence_device.put());
+		c->app_context.query_to(c->fence_context.put());
+	}
+
+	// See if we can make a "timeline semaphore", also known as ID3D11Fence
+	client_d3d11_compositor_init_try_timeline_semaphores(c.get());
+	if (!c->timeline_semaphore) {
+		// OK native compositor doesn't know how to handle timeline semaphores, or we can't import them, but we
+		// can still use them entirely internally.
+		client_d3d11_compositor_init_try_internal_blocking(c.get());
+	}
+	if (!c->fence) {
+		D3D_WARN(c, "No sync mechanism for D3D11 was successful!");
+	}
 	c->base.base.get_swapchain_create_properties = client_d3d11_compositor_get_swapchain_create_properties;
 	c->base.base.create_swapchain = client_d3d11_create_swapchain;
 	c->base.base.begin_session = client_d3d11_compositor_begin_session;
