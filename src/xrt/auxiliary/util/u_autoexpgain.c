@@ -9,7 +9,9 @@
 
 #include "math/m_api.h"
 #include "util/u_autoexpgain.h"
+#include "util/u_debug.h"
 #include "util/u_format.h"
+#include "util/u_logging.h"
 #include "util/u_misc.h"
 #include "util/u_var.h"
 
@@ -17,13 +19,27 @@
 #include <math.h>
 #include <stdint.h>
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
+DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
+
+#define AEG_TRACE(...) U_LOG_IFL_T(aeg->log_level, __VA_ARGS__)
+#define AEG_DEBUG(...) U_LOG_IFL_D(aeg->log_level, __VA_ARGS__)
+#define AEG_INFO(...) U_LOG_IFL_I(aeg->log_level, __VA_ARGS__)
+#define AEG_WARN(...) U_LOG_IFL_W(aeg->log_level, __VA_ARGS__)
+#define AEG_ERROR(...) U_LOG_IFL_E(aeg->log_level, __VA_ARGS__)
+#define AEG_ASSERT(predicate, ...)                                                                                     \
+	do {                                                                                                           \
+		bool p = predicate;                                                                                    \
+		if (!p) {                                                                                              \
+			U_LOG(U_LOGGING_ERROR, __VA_ARGS__);                                                           \
+			assert(false && "AEG_ASSERT failed: " #predicate);                                             \
+			exit(EXIT_FAILURE);                                                                            \
+		}                                                                                                      \
+	} while (false);
+#define AEG_ASSERT_(predicate) AEG_ASSERT(predicate, "Assertion failed " #predicate)
 
 #define LEVELS 256 //!< Possible pixel intensity values, only 8-bit supported
 #define INITIAL_BRIGHTNESS 0.5
-#define INITIAL_MAX_BRIGHTNES_STEP 0.05 //!< 0.1 is faster but introduces oscilations more often
+#define INITIAL_MAX_BRIGHTNESS_STEP 0.05 //!< 0.1 is faster but introduces oscillations more often
 #define INITIAL_THRESHOLD 0.1
 #define GRID_COLS 40 //!< Amount of columns for the histogram sample grid
 
@@ -31,6 +47,8 @@
 struct u_autoexpgain
 {
 	bool enable; //!< Whether to enable auto exposure and gain adjustment
+
+	enum u_logging_level log_level;
 
 	//! Algorithm strategy that affects how score and brightness are computed
 	enum u_aeg_strategy strategy;
@@ -97,7 +115,7 @@ brightness_to_expgain(struct u_autoexpgain *aeg, float brightness, float *out_ex
 		steps = steps_dr;
 		steps_count = sizeof(steps_dr) / sizeof(struct step);
 	} else {
-		assert(false && "unexpected branch taken");
+		AEG_ASSERT(false, "Unexpected strategy=%d", aeg->strategy);
 	}
 
 	// Other simpler tables that might work for WMR are:
@@ -105,10 +123,10 @@ brightness_to_expgain(struct u_autoexpgain *aeg, float brightness, float *out_ex
 	// {{0, 120, 16}, {0.2, 6000, 16}, {0.9, 6000, 255}, {1.0, 9000, 255}};
 
 	// Assertions
-	assert(steps_count >= 2 && "Exoected at least two steps");
-	assert(steps[0].b == 0 && "First step should be at b=0");
-	assert(steps[steps_count - 1].b == 1 && "Last step should be at b=1");
-	assert(brightness >= 0 && brightness <= 1);
+	AEG_ASSERT(steps_count >= 2, "Expected at least two steps but %d found", steps_count);
+	AEG_ASSERT(steps[0].b == 0, "First step should be at b=0");
+	AEG_ASSERT(steps[steps_count - 1].b == 1, "Last step should be at b=1");
+	AEG_ASSERT(brightness >= 0 && brightness <= 1, "Invalid brightness=%f", brightness);
 
 	// Compute the piecewise function result from `steps`
 	float exposure = 0;
@@ -140,11 +158,7 @@ update_expgain(struct u_autoexpgain *aeg)
 	}
 	aeg->last_brightness = brightness;
 
-	float exposure = -1;
-	float gain = -1;
-	brightness_to_expgain(aeg, brightness, &exposure, &gain);
-	aeg->exposure = (uint16_t)exposure;
-	aeg->gain = (uint8_t)gain;
+	brightness_to_expgain(aeg, brightness, &aeg->exposure, &aeg->gain);
 }
 
 //! Returns a value in the range [-1, 1] describing how dark-bright the image
@@ -183,7 +197,7 @@ get_score(struct u_autoexpgain *aeg, struct xrt_frame *xf)
 
 	float score = 0;
 
-	// Score that tries to make the mean reach TARGET_MEAN.
+	// Score that tries to make the mean reach a `target_mean`.
 
 	float target_mean = -1;
 	if (aeg->strategy == U_AEG_STRATEGY_TRACKING) {
@@ -192,6 +206,8 @@ get_score(struct u_autoexpgain *aeg, struct xrt_frame *xf)
 		target_mean = LEVELS / 4;
 	} else if (aeg->strategy == U_AEG_STRATEGY_DYNAMIC_RANGE) {
 		target_mean = LEVELS / 2;
+	} else {
+		AEG_ASSERT(false, "Unexpected strategy=%d", aeg->strategy);
 	}
 
 	const float range_size = mean < target_mean ? target_mean : (LEVELS - target_mean);
@@ -200,7 +216,6 @@ get_score(struct u_autoexpgain *aeg, struct xrt_frame *xf)
 
 	return score;
 }
-
 
 static void
 update_brightness(struct u_autoexpgain *aeg, struct xrt_frame *xf)
@@ -240,6 +255,7 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint
 	struct u_autoexpgain *aeg = U_TYPED_CALLOC(struct u_autoexpgain);
 
 	aeg->enable = enabled_from_start;
+	aeg->log_level = debug_get_log_option_aeg_log();
 	aeg->strategy = strategy;
 	aeg->strategy_combo.count = U_AEG_STRATEGY_COUNT;
 	aeg->strategy_combo.options = "Tracking\0Dynamic Range\0\0";
@@ -253,7 +269,7 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint
 	aeg->brightness.step = 0.002;
 	aeg->brightness.val = INITIAL_BRIGHTNESS;
 	aeg->last_brightness = INITIAL_BRIGHTNESS;
-	aeg->max_brightness_step = INITIAL_MAX_BRIGHTNES_STEP;
+	aeg->max_brightness_step = INITIAL_MAX_BRIGHTNESS_STEP;
 
 	aeg->threshold = INITIAL_THRESHOLD;
 	aeg->frame_counter = 0;
@@ -267,7 +283,7 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint
 void
 u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root)
 {
-	u_var_add_bool(root, &aeg->enable, "Enable AEG");
+	u_var_add_bool(root, &aeg->enable, "Update brightness automatically");
 	u_var_add_u8(root, &aeg->update_every, "Update every X frames");
 	u_var_add_combo(root, &aeg->strategy_combo, "Strategy");
 	u_var_add_draggable_f32(root, &aeg->brightness, "Brightness");
@@ -275,6 +291,7 @@ u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root)
 	u_var_add_f32(root, &aeg->max_brightness_step, "Max brightness step");
 	u_var_add_ro_f32(root, &aeg->current_score, "Image score");
 	u_var_add_histogram_f32(root, &aeg->histogram_ui, "Intensity histogram");
+	u_var_add_log_level(root, &aeg->log_level, "AEG log level");
 }
 
 void
