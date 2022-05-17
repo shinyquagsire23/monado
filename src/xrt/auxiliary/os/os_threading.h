@@ -58,6 +58,8 @@ struct os_mutex
 
 /*!
  * Init.
+ *
+ * @public @memberof os_mutex
  */
 static inline int
 os_mutex_init(struct os_mutex *om)
@@ -67,6 +69,8 @@ os_mutex_init(struct os_mutex *om)
 
 /*!
  * Lock.
+ *
+ * @public @memberof os_mutex
  */
 static inline void
 os_mutex_lock(struct os_mutex *om)
@@ -74,6 +78,11 @@ os_mutex_lock(struct os_mutex *om)
 	pthread_mutex_lock(&om->mutex);
 }
 
+/*!
+ * Try to lock, but do not block.
+ *
+ * @public @memberof os_mutex
+ */
 static inline int
 os_mutex_trylock(struct os_mutex *om)
 {
@@ -82,6 +91,8 @@ os_mutex_trylock(struct os_mutex *om)
 
 /*!
  * Unlock.
+ *
+ * @public @memberof os_mutex
  */
 static inline void
 os_mutex_unlock(struct os_mutex *om)
@@ -91,6 +102,8 @@ os_mutex_unlock(struct os_mutex *om)
 
 /*!
  * Clean up.
+ *
+ * @public @memberof os_mutex
  */
 static inline void
 os_mutex_destroy(struct os_mutex *om)
@@ -111,6 +124,8 @@ struct os_cond
 
 /*!
  * Init.
+ *
+ * @public @memberof os_cond
  */
 static inline int
 os_cond_init(struct os_cond *oc)
@@ -120,6 +135,8 @@ os_cond_init(struct os_cond *oc)
 
 /*!
  * Signal.
+ *
+ * @public @memberof os_cond
  */
 static inline void
 os_cond_signal(struct os_cond *oc)
@@ -129,6 +146,8 @@ os_cond_signal(struct os_cond *oc)
 
 /*!
  * Wait.
+ *
+ * @public @memberof os_cond
  */
 static inline void
 os_cond_wait(struct os_cond *oc, struct os_mutex *om)
@@ -138,6 +157,8 @@ os_cond_wait(struct os_cond *oc, struct os_mutex *om)
 
 /*!
  * Clean up.
+ *
+ * @public @memberof os_cond
  */
 static inline void
 os_cond_destroy(struct os_cond *oc)
@@ -163,11 +184,15 @@ struct os_thread
 
 /*!
  * Run function.
+ *
+ * @public @memberof os_thread
  */
 typedef void *(*os_run_func)(void *);
 
 /*!
  * Init.
+ *
+ * @public @memberof os_thread
  */
 static inline int
 os_thread_init(struct os_thread *ost)
@@ -177,6 +202,8 @@ os_thread_init(struct os_thread *ost)
 
 /*!
  * Start thread.
+ *
+ * @public @memberof os_thread
  */
 static inline int
 os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
@@ -186,6 +213,8 @@ os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
 
 /*!
  * Join.
+ *
+ * @public @memberof os_thread
  */
 static inline void
 os_thread_join(struct os_thread *ost)
@@ -198,6 +227,8 @@ os_thread_join(struct os_thread *ost)
 
 /*!
  * Destruction.
+ *
+ * @public @memberof os_thread
  */
 static inline void
 os_thread_destroy(struct os_thread *ost)
@@ -235,6 +266,8 @@ struct os_semaphore
 
 /*!
  * Init.
+ *
+ * @public @memberof os_semaphore
  */
 static inline int
 os_semaphore_init(struct os_semaphore *os, int count)
@@ -244,6 +277,8 @@ os_semaphore_init(struct os_semaphore *os, int count)
 
 /*!
  * Release.
+ *
+ * @public @memberof os_semaphore
  */
 static inline void
 os_semaphore_release(struct os_semaphore *os)
@@ -255,6 +290,8 @@ os_semaphore_release(struct os_semaphore *os)
  * Set @p ts to the current time, plus the timeout_ns value.
  *
  * Intended for use by the threading code only: the timestamps are not interchangeable with other sources of time.
+ *
+ * @public @memberof os_semaphore
  */
 static inline int
 os_semaphore_get_realtime_clock(struct timespec *ts, uint64_t timeout_ns)
@@ -280,6 +317,8 @@ os_semaphore_get_realtime_clock(struct timespec *ts, uint64_t timeout_ns)
 
 /*!
  * Wait, if @p timeout_ns is zero then waits forever.
+ *
+ * @public @memberof os_semaphore
  */
 static inline void
 os_semaphore_wait(struct os_semaphore *os, uint64_t timeout_ns)
@@ -299,6 +338,8 @@ os_semaphore_wait(struct os_semaphore *os, uint64_t timeout_ns)
 
 /*!
  * Clean up.
+ *
+ * @public @memberof os_semaphore
  */
 static inline void
 os_semaphore_destroy(struct os_semaphore *os)
