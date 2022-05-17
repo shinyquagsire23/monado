@@ -234,7 +234,7 @@ u_pc_info(struct u_pacing_compositor *upc,
 }
 
 /*!
- * @copydoc u_pacing_compositor::info_display_control
+ * @copydoc u_pacing_compositor::update_vblank_from_display_control
  *
  * Helper for calling through the function pointer.
  *
