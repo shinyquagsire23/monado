@@ -32,7 +32,7 @@ sumOfHandJointDistances(const Hand3D &one, const Hand3D &two)
 float
 errHandHistory(const HandHistory3D &history_hand, const Hand3D &present_hand)
 {
-	// Remember we never have to deal with an empty hand. Can always access the last element.
+	// Remember we never have to deal with an empty hand. Can always read the last element.
 	return sumOfHandJointDistances(history_hand.last_hands_unfiltered.back(), present_hand);
 }
 

@@ -151,7 +151,7 @@ struct ht_view
 	cv::Mat debug_out_to_this;
 
 	struct det_output det_outputs[2];                // left, right
-	struct keypoint_estimation_run_info run_info[2]; // Stupid
+	struct keypoint_estimation_run_info run_info[2];
 
 	struct keypoint_output keypoint_outputs[2];
 };
@@ -198,7 +198,7 @@ public:
 	float baseline = {};
 	struct xrt_quat stereo_camera_to_left_camera = {};
 
-	uint64_t current_frame_timestamp = {}; // SUPER dumb.
+	uint64_t current_frame_timestamp = {};
 
 	// Change this whenever you want
 	volatile bool debug_scribble = true;

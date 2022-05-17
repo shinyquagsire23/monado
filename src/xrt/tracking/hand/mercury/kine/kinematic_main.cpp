@@ -23,7 +23,7 @@ namespace xrt::tracking::hand::mercury::kine {
 static void
 _two_set_ele(Eigen::Matrix<float, 3, 21> &thing, Eigen::Affine3f jt, int idx)
 {
-	// Stupid and slow
+	// slow
 	thing.col(idx) = jt.translation();
 }
 
@@ -343,7 +343,7 @@ clamp_proximals(struct kinematic_hand_4f *hand,
 
 
 	if (our_z.z() > 0) {
-		//!@bug We need smarter joint limiting, limiting via tanangles is not acceptable as joints can rotate
+		//!@bug We need smarter joint limiting, limiting using tanangles is not acceptable as joints can rotate
 		//! outside of the 180 degree hemisphere.
 		our_z.z() = -0.000001f;
 	}

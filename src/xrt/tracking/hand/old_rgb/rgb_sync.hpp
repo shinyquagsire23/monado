@@ -258,7 +258,7 @@ public:
 	float baseline = {};
 	struct xrt_quat stereo_camera_to_left_camera = {};
 
-	uint64_t current_frame_timestamp = {}; // SUPER dumb.
+	uint64_t current_frame_timestamp = {};
 
 	std::vector<HandHistory3D> histories_3d = {};
 

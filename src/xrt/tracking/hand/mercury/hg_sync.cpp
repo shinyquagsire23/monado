@@ -151,7 +151,7 @@ getCalibration(struct HandTracking *htd, t_stereo_camera_calibration *calibratio
 
 	math_quat_from_matrix_3x3(&s, &tmp);
 
-	// Weird that I have to invert this quat, right? I think at some point - like probably just above this - I must
+	// Weird that I have to invert this quat, right? I think at some point - like probably just before this - I must
 	// have swapped row-major and col-major - remember, if you transpose a rotation matrix, you get its inverse.
 	// Doesn't matter that I don't understand - non-inverted looks definitely wrong, inverted looks definitely
 	// right.

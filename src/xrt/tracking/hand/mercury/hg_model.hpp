@@ -64,7 +64,7 @@ refine_center_of_distribution(
 	int max_kern_width = 10;
 
 
-	//!@todo this is stupid and has at least one edge case, make it more readable and link to a jupyter notebook
+	//! @todo this is not good and has at least one edge case, make it more readable and link to a jupyter notebook
 	int kern_width_x = std::max(0, std::min(coarse_x, std::min(max_kern_width, abs(coarse_x - w) - 1)));
 	int kern_width_y = std::max(0, std::min(coarse_y, std::min(max_kern_width, abs(coarse_y - h) - 1)));
 	int min_x = coarse_x - kern_width_x;
