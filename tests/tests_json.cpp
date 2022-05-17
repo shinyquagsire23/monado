@@ -124,7 +124,7 @@ TEST_CASE("u_json")
 		CHECK(json_node.toString(false) == loaded.toString(false));
 	}
 
-	SECTION("Access methods work")
+	SECTION("Read methods work")
 	{
 		CHECK(json_node["eta"].asString() == "theta");
 		CHECK(json_node["eta"].asDouble(3.14) == 3.14);

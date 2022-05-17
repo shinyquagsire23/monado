@@ -61,7 +61,7 @@ stringifyTimePoint(std::chrono::steady_clock::time_point tp)
 	using three_commas =
 	    std::ratio_multiply<std::ratio<1, 1000>, std::ratio_multiply<std::ratio<1, 1000>, std::ratio<1, 1000>>>;
 	static_assert(std::ratio_equal<three_commas, std::nano>::value);
-	// 9 because of the static assert above: there's no compile-time rational log10? :-O
+	// 9 because of the preceding static assert: there's no compile-time rational log10? :-O
 	oss << std::setfill('0') << std::setw(9);
 	oss << dur.count();
 	return oss.str();
