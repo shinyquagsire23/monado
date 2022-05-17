@@ -270,7 +270,7 @@ struct mock_compositor
 		 */
 		xrt_result_t (*wait_image)(struct mock_compositor *mc,
 		                           struct mock_compositor_swapchain *mcsc,
-		                           uint64_t timeout,
+		                           uint64_t timeout_ns,
 		                           uint32_t index);
 
 		/*!

@@ -28,13 +28,13 @@ mock_compositor_swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-mock_compositor_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
+mock_compositor_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	struct mock_compositor_swapchain *mcsc = mock_compositor_swapchain(xsc);
 	struct mock_compositor *mc = mcsc->mc;
 
 	if (mc->swapchain_hooks.wait_image) {
-		return mc->swapchain_hooks.wait_image(mc, mcsc, timeout, index);
+		return mc->swapchain_hooks.wait_image(mc, mcsc, timeout_ns, index);
 	}
 	mcsc->waited[index] = true;
 	return XRT_SUCCESS;
