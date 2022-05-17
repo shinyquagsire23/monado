@@ -285,14 +285,14 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 }
 
 static xrt_result_t
-client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
+client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
 
 	// Pipe down call into native swapchain.
-	return xrt_swapchain_wait_image(&sc->xscn->base, timeout, index);
+	return xrt_swapchain_wait_image(&sc->xscn->base, timeout_ns, index);
 }
 
 static xrt_result_t
