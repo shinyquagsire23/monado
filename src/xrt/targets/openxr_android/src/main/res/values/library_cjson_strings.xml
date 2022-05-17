@@ -9,7 +9,7 @@
     <string name="library_cJSON_author">Dave Gamble and cJSON contributors</string>
     <!-- Library section -->
     <string name="library_cJSON_libraryName">cJSON</string>
-    <string name="library_cJSON_libraryDescription">cJSON is a parser that tries to share the same philosophy as JSON itself. Simple, dumb, out of the way.</string>
+    <string name="library_cJSON_libraryDescription">cJSON is a parser that tries to share the same philosophy as JSON itself. Simple and out of the way.</string>
     <string name="library_cJSON_libraryWebsite">https://github.com/DaveGamble/cJSON</string>
     <string name="library_cJSON_libraryVersion">1.7.12</string>
     <!-- OpenSource section -->

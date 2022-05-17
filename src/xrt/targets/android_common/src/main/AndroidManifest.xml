@@ -30,7 +30,7 @@
         android:required="false"
         android:version="1" />
 
-    <!-- for sensor access -->
+    <!-- for sensor usage -->
     <uses-feature
         android:name="android.hardware.sensor.accelerometer"
         android:required="false" />

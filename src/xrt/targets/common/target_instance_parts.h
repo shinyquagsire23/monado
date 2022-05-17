@@ -25,7 +25,7 @@
 /*!
  * Main "real" instance implementation.
  *
- * Used in instances both with and without compositor access.
+ * Used in instances both with and without compositor usage.
  *
  * @implements xrt_instance
  */
