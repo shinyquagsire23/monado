@@ -727,7 +727,8 @@ vk_create_image_from_native(struct vk_bundle *vk,
  * Given a DeviceMemory handle created to be exportable, outputs the native buffer type (FD on desktop Linux)
  * equivalent.
  *
- * Caller assumes ownership of handle which should be unreferenced with @ref u_graphics_buffer_unref
+ * Caller assumes ownership of handle which should be unreferenced with @ref u_graphics_buffer_unref when no longer
+ * needed.
  *
  * @param vk Vulkan bundle
  * @param device_memory The memory to get the handle of
@@ -1221,7 +1222,7 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 XRT_CHECK_RESULT VkResult
 vk_create_semaphore_and_native(struct vk_bundle *vk, VkSemaphore *out_sem, xrt_graphics_sync_handle_t *out_native);
 
-#ifdef VK_KHR_timeline_semaphore
+#if defined(VK_KHR_timeline_semaphore) || defined(XRT_DOXYGEN)
 /*
  * Creates a Vulkan timeline semaphore and a native graphics sync
  * handle, see @ref vk_create_semaphore_and_native for more details.
@@ -1249,7 +1250,7 @@ vk_create_timeline_semaphore_and_native(struct vk_bundle *vk,
 XRT_CHECK_RESULT VkResult
 vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem);
 
-#ifdef VK_KHR_timeline_semaphore
+#if defined(VK_KHR_timeline_semaphore) || defined(XRT_DOXYGEN)
 /*!
  * @brief Creates a Vulkan timeline semaphore from a native graphics sync
  * handle, see @ref vk_create_semaphore_from_native for more details.
@@ -1267,7 +1268,7 @@ vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync
  *
  */
 
-#ifdef VK_EXT_calibrated_timestamps
+#if defined(VK_EXT_calibrated_timestamps) || defined(XRT_DOXYGEN)
 /*!
  * Convert timestamps in GPU ticks (as return by VkQueryPool timestamp queries)
  * into host CPU nanoseconds, same time domain as @ref os_monotonic_get_ns.
@@ -1283,7 +1284,7 @@ vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync
  *
  * @param vk                The Vulkan bundle.
  * @param count             Number of timestamps to be converted.
- * @parma in_out_timestamps Array of timestamps to be converted, done in place.
+ * @param[in,out] in_out_timestamps Array of timestamps to be converted, done in place.
  *
  * @ingroup aux_vk
  */
