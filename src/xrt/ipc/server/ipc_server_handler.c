@@ -788,11 +788,10 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	// return our result to the caller.
 	struct xrt_swapchain_native *xscn = (struct xrt_swapchain_native *)xsc;
 
-	// Sanity checking.
+	// Limit checking
 	assert(xsc->image_count <= IPC_MAX_SWAPCHAIN_HANDLES);
 	assert(xsc->image_count <= max_handle_capacity);
 
-	// Paranoia.
 	for (size_t i = 1; i < xsc->image_count; i++) {
 		assert(xscn->images[0].size == xscn->images[i].size);
 		assert(xscn->images[0].use_dedicated_allocation == xscn->images[i].use_dedicated_allocation);

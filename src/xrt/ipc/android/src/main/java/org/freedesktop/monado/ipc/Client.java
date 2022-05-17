@@ -293,7 +293,7 @@ public class Client implements ServiceConnection {
     /**
      * Handle the asynchronous connection of the binder IPC.
      *
-     * @param name    should match the intent above, but not used.
+     * @param name    should match the preceding intent, but not used.
      * @param service the associated service, which we cast in this function.
      */
     @Override
@@ -309,13 +309,13 @@ public class Client implements ServiceConnection {
     /**
      * Handle asynchronous disconnect.
      *
-     * @param name should match the intent above, but not used.
+     * @param name should match the preceding intent, but not used.
      */
     @Override
     public void onServiceDisconnected(ComponentName name) {
         Log.i(TAG, "onServiceDisconnected");
         shutdown();
-        //! @todo tell native that the world is crumbling, then close the fd here.
+        //! @todo tell C/C++ that the world is crumbling, then close the fd here.
     }
 
     /*

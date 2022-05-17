@@ -528,7 +528,7 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	// This is how much we should sleep.
 	uint64_t diff_ns = wake_up_time_ns - now_ns;
 
-	// A minor tweak that helps hit the time better.
+	// A minor tweak that helps achieve the timing better.
 	diff_ns -= measured_scheduler_latency_ns;
 
 	os_nanosleep(diff_ns);
@@ -886,7 +886,7 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 	if (image_count < in_image_count) {
 		for (uint32_t k = 0; k < image_count && k < in_image_count; k++) {
 			/*
-			 * Paranoia, we do know that any fd not touched by
+			 * Overly-broad condition: we know that any fd not touched by
 			 * ipc_call_swapchain_create will be -1.
 			 */
 			if (remote_fds[k] >= 0) {
@@ -908,7 +908,7 @@ ipc_compositor_images_allocate(struct xrt_image_native_allocator *xina,
 	// Close any fds we are not interested in.
 	for (; i < image_count; i++) {
 		/*
-		 * Paranoia, we do know that any fd not touched by
+		 * Overly-broad condition: we know that any fd not touched by
 		 * ipc_call_swapchain_create will be -1.
 		 */
 		if (remote_fds[i] >= 0) {

@@ -233,8 +233,7 @@ init_shm(struct ipc_server *s)
 		return -1;
 	}
 
-	// we have a filehandle, we will pass this to
-	// our client rather than access via filesystem
+	// we have a filehandle, we will pass this to our client
 	s->ism_handle = handle;
 
 
@@ -256,7 +255,7 @@ init_shm(struct ipc_server *s)
 		}
 
 		// The position of the tracking origin matches that in the
-		// servers memory.
+		// server's memory.
 		assert(i < XRT_SYSTEM_MAX_DEVICES);
 
 		struct ipc_shared_tracking_origin *itrack = &ism->itracks[count++];

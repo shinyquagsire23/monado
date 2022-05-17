@@ -27,7 +27,7 @@
 #define IPC_BUF_SIZE 512   // must be >= largest message length in bytes
 #define IPC_MAX_VIEWS 8    // max views we will return configs for
 #define IPC_MAX_FORMATS 32 // max formats our server-side compositor supports
-#define IPC_MAX_DEVICES 8  // max number of devices we will map via shared mem
+#define IPC_MAX_DEVICES 8  // max number of devices we will map using shared mem
 #define IPC_MAX_LAYERS 16
 #define IPC_MAX_SLOTS 128
 #define IPC_MAX_CLIENTS 8
