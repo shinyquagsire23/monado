@@ -125,7 +125,7 @@ os_precise_sleeper_deinit(struct os_precise_sleeper *ops)
 /*!
  * @brief Sleep the given number of nanoseconds, trying harder to be precise.
  *
- * On some platforms, there is no way to improve sleep precision easily with some OS-specific state, so we just forward
+ * On some platforms, there is no way to improve sleep precision easily with some OS-specific state, so we forward
  * to os_nanosleep().
  *
  * Note that on all platforms, the system scheduler has the final say.
@@ -146,7 +146,7 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 		}
 	}
 #endif
-	// If we fall through from an implementation, or there's no implementation needed for a platform, we just
+	// If we fall through from an implementation, or there's no implementation needed for a platform, we
 	// delegate to the regular os_nanosleep.
 	os_nanosleep(nsec);
 }
@@ -155,7 +155,7 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 /*!
  * @brief Convert a timespec struct to nanoseconds.
  *
- * Note that this just does the value combining, no adjustment for epochs is performed.
+ * Note that this does the value combining, no adjustment for epochs is performed.
  *
  * @ingroup aux_os_time_extra
  */
@@ -171,7 +171,7 @@ os_timespec_to_ns(const struct timespec *spec)
 /*!
  * @brief Convert an nanosecond integer to a timespec struct.
  *
- * Note that this just does the value splitting, no adjustment for epochs is performed.
+ * Note that this does the value splitting, no adjustment for epochs is performed.
  * @ingroup aux_os_time_extra
  */
 static inline void

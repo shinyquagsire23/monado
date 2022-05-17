@@ -605,7 +605,7 @@ get_device_ext_props(struct vk_bundle *vk,
 	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
 	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
 
-	// Check above returns on failure.
+	// The preceding check returns on failure.
 	*out_props = props;
 	*out_prop_count = prop_count;
 

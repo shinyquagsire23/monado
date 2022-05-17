@@ -39,8 +39,8 @@ extern "C" {
 
 /*!
  * A bundle of Vulkan functions and objects, used by both @ref comp and @ref
- * comp_client. Note that they both have different instances of the object and
- * as such VkInstance and so on.
+ * comp_client. Note that they both have different instances of the object, and
+ * thus different VkInstance, etc.
  *
  * @ingroup aux_vk
  */
@@ -871,7 +871,7 @@ VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 
 /*!
- * Set the image layout via a berrier command, takes the pool lock.
+ * Set the image layout using a barrier command, takes the pool lock.
  *
  * @pre Requires successful call to vk_init_mutex.
  *

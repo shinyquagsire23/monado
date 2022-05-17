@@ -70,8 +70,7 @@ os_hid_write(struct os_hid_device *hid_dev, const uint8_t *data, size_t size)
 /*!
  * Get a numbered feature report.
  *
- * If the device doesn't have more than one feature report, just request
- * report 0.
+ * If the device doesn't have more than one feature report, request report 0.
  *
  * @public @memberof os_hid_device
  */
