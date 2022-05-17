@@ -219,6 +219,8 @@ run_func(void *ptr)
 {
 	struct multi_compositor *mc = (struct multi_compositor *)ptr;
 
+	os_thread_helper_name(&(mc->wait_thread.oth), "Multi-Compositor Client Wait Thread");
+
 	os_thread_helper_lock(&mc->wait_thread.oth);
 
 	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {

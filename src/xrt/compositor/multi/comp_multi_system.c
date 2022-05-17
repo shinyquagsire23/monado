@@ -356,7 +356,9 @@ static int
 multi_main_loop(struct multi_system_compositor *msc)
 {
 	COMP_TRACE_MARKER();
-	os_thread_helper_name(&(msc->oth), "Multi-System Compositor", L"Multi-System Compositor");
+
+	os_thread_helper_name(&(msc->oth), "Multi-Compositor");
+
 	struct xrt_compositor *xc = &msc->xcn->base;
 
 	//! @todo Don't make this a hack.
