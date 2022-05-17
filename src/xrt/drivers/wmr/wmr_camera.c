@@ -447,8 +447,8 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	}
 
 	bool enable_aeg = debug_get_bool_option_wmr_autoexposure();
-	int aeg_update_every = 3; // WMR takes about three frames until the cmd changes the image
-	cam->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, aeg_update_every);
+	int frame_delay = 3; // WMR takes about three frames until the cmd changes the image
+	cam->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
 
 	cam->exposure_ui.val = &cam->exposure;
 	cam->exposure_ui.max = WMR_MAX_EXPOSURE;

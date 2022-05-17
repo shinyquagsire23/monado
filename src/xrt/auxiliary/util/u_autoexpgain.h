@@ -31,11 +31,11 @@ struct u_autoexpgain;
  *
  * @param strategy What objective is preferred for the algorithm.
  * @param enabled_from_start Update exposure/gain from the start.
- * @param update_every Every how many frames should we update exposure/gain
+ * @param frame_delay About how many frames does it take for exp and gain to settle in.
  * @return struct u_autoexpgain* Created object
  */
 struct u_autoexpgain *
-u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint8_t update_every);
+u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, int frame_delay);
 
 //! Setup UI for the AEG algorithm
 void

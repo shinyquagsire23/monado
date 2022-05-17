@@ -39,18 +39,48 @@ DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
 
 #define LEVELS 256 //!< Possible pixel intensity values, only 8-bit supported
 #define INITIAL_BRIGHTNESS 0.5
-#define INITIAL_MAX_BRIGHTNESS_STEP 0.05 //!< 0.1 is faster but introduces oscillations more often
+#define INITIAL_MAX_BRIGHTNESS_STEP 0.1
 #define INITIAL_THRESHOLD 0.1
 #define GRID_COLS 40 //!< Amount of columns for the histogram sample grid
+
+//! AEG State machine states
+enum u_aeg_state
+{
+	IDLE,
+	BRIGHTEN,
+	STOP_BRIGHTEN, //!< Avoid oscillations by
+	DARKEN,
+	STOP_DARKEN, //!< Similar to STOP_BRIGHTEN
+};
+
+//! This actions are triggered when the image is too dark, bright or good enough
+enum u_aeg_action
+{
+	GOOD,
+	DARK,
+	BRIGHT,
+};
 
 //! Auto exposure and gain (AEG) adjustment algorithm state.
 struct u_autoexpgain
 {
 	bool enable; //!< Whether to enable auto exposure and gain adjustment
 
+	//! AEG is a finite state machine. @see set_state.
+	enum u_aeg_state state;
+
 	enum u_logging_level log_level;
 
-	//! Algorithm strategy that affects how score and brightness are computed
+	//! Counts how many times we've overshooted in the last brightness change.
+	//! It's then used for exponential backoff of the brightness step.
+	int overshoots;
+
+	//! There are buffer states that wait `frame_delay` frames to ensure we are
+	//! not overshooting. This field counts the remaining frames to wait.
+	//! @see set_state
+	int wait;
+
+	//! The selected strategy affects various targets of the algorithm.
 	enum u_aeg_strategy strategy;
 	struct u_var_combo strategy_combo; //!< UI combo box for selecting `strategy`
 
@@ -70,19 +100,145 @@ struct u_autoexpgain
 	//! images with a good enough `brightness` value.
 	float current_score;
 
-	//! Scores further than `threshold` from zero will trigger a `brightness` update.
+	//! Scores further than `threshold` from the target score will trigger a
+	//! `brightness` update.
 	float threshold;
 
-	uint32_t frame_counter; //!< Number of frames received
-
-	//! Every how many frames should we update `brightness`. Some cameras take a
-	//! couple of frames until the new exposure/gain sets in and a new score can
-	//! be recomputed properly.
-	uint8_t update_every;
+	//! A camera might take a couple of frames until the new exposure/gain sets in
+	//! the image. Knowing how many (this variable) helps in avoiding overshooting
+	//! brightness changes.
+	int frame_delay;
 
 	float exposure; //!< Currently computed exposure value to use
 	float gain;     //!< Currently computed gain value to use
 };
+
+static const char *
+state_to_string(enum u_aeg_state state)
+{
+	if (state == IDLE) {
+		return "IDLE";
+	} else if (state == BRIGHTEN) {
+		return "BRIGHTEN";
+	} else if (state == STOP_BRIGHTEN) {
+		return "STOP_BRIGHTEN";
+	} else if (state == DARKEN) {
+		return "DARKEN";
+	} else if (state == STOP_DARKEN) {
+		return "STOP_DARKEN";
+	} else {
+		AEG_ASSERT_(false);
+	}
+	return NULL;
+}
+
+static const char *
+action_to_string(enum u_aeg_action action)
+{
+	if (action == DARK) {
+		return "DARK";
+	} else if (action == BRIGHT) {
+		return "BRIGHT";
+	} else if (action == GOOD) {
+		return "GOOD";
+	} else {
+		AEG_ASSERT_(false);
+	}
+	return NULL;
+}
+
+/*!
+ * Defines the AEG state machine transitions.
+ * The main idea is that if brightness needs to change then we go from `IDLE` to
+ * `BRIGHTEN`/`DARKEN`. To avoid oscillations we detect overshootings
+ * and exponentially backoff our brightness step. We only reset our `overshoots`
+ * counter after the image have been good for `frame_delay` frames, this delay
+ * is counted during `STOP_DARKEN`/`STOP_BRIGHTEN` states.
+ *
+ * A diagram of the state machine is below:
+ * ![AEG state machine](images/autoexpgain.drawio.svg)
+ */
+static void
+set_state(struct u_autoexpgain *aeg, enum u_aeg_action action)
+{
+	enum u_aeg_state new_state;
+	if (aeg->state == IDLE) {
+		if (action == DARK) {
+			new_state = BRIGHTEN;
+		} else if (action == BRIGHT) {
+			new_state = DARKEN;
+		} else if (action == GOOD) {
+			new_state = IDLE;
+		} else {
+			AEG_ASSERT_(false);
+		}
+	} else if (aeg->state == BRIGHTEN) {
+		if (action == DARK) {
+			new_state = BRIGHTEN;
+		} else if (action == BRIGHT) {
+			aeg->overshoots++;
+			new_state = DARKEN;
+		} else if (action == GOOD) {
+			new_state = STOP_BRIGHTEN;
+		} else {
+			AEG_ASSERT_(false);
+		}
+	} else if (aeg->state == STOP_BRIGHTEN) {
+		if (action == DARK) {
+			new_state = BRIGHTEN;
+		} else if (action == BRIGHT) {
+			aeg->overshoots++;
+			new_state = DARKEN;
+		} else if (action == GOOD) {
+			aeg->wait--;
+			new_state = aeg->wait == 0 ? IDLE : STOP_BRIGHTEN;
+		} else {
+			AEG_ASSERT_(false);
+		}
+
+		if (new_state != STOP_BRIGHTEN) {
+			aeg->wait = aeg->frame_delay;
+		}
+	} else if (aeg->state == DARKEN) {
+		if (action == DARK) {
+			aeg->overshoots++;
+			new_state = BRIGHTEN;
+		} else if (action == BRIGHT) {
+			new_state = DARKEN;
+		} else if (action == GOOD) {
+			new_state = STOP_DARKEN;
+		} else {
+			AEG_ASSERT_(false);
+		}
+	} else if (aeg->state == STOP_DARKEN) {
+		if (action == DARK) {
+			aeg->overshoots++;
+			new_state = BRIGHTEN;
+		} else if (action == BRIGHT) {
+			new_state = DARKEN;
+		} else if (action == GOOD) {
+			aeg->wait--;
+			new_state = aeg->wait == 0 ? IDLE : STOP_DARKEN;
+		} else {
+			AEG_ASSERT_(false);
+		}
+
+		if (new_state != STOP_DARKEN) {
+			aeg->wait = aeg->frame_delay;
+		}
+	} else {
+		AEG_ASSERT_(false);
+	}
+	if (new_state == IDLE) {
+		aeg->overshoots = 0;
+	}
+	aeg->overshoots = CLAMP(aeg->overshoots, 0, 3);
+
+	AEG_TRACE("[%s] ---%s--> [%s] (overshoots=%d, wait=%d)", state_to_string(aeg->state), action_to_string(action),
+	          state_to_string(new_state), aeg->overshoots, aeg->wait);
+
+	aeg->state = new_state;
+}
 
 //! Maps a `brightness` in [0, 1] to a pair of exposure and gain values based on
 //! a piecewise function.
@@ -227,19 +383,33 @@ update_brightness(struct u_autoexpgain *aeg, struct xrt_frame *xf)
 		return;
 	}
 
-	aeg->frame_counter++;
-	if (aeg->frame_counter % aeg->update_every != 0) {
-		return;
+	float target_score;
+	if (aeg->strategy == U_AEG_STRATEGY_TRACKING) {
+		target_score = -aeg->threshold; // Makes 0 the right bound of our "good enugh" range
+	} else if (aeg->strategy == U_AEG_STRATEGY_DYNAMIC_RANGE) {
+		target_score = 0;
+	} else {
+		AEG_ASSERT(false, "Unexpected strategy=%d", aeg->strategy);
 	}
 
-	bool score_is_high = fabsf(score) > aeg->threshold;
-	if (!score_is_high) {
+	enum u_aeg_action action; // State machine input action
+	if (score > target_score + aeg->threshold) {
+		action = BRIGHT;
+	} else if (score < target_score - aeg->threshold) {
+		action = DARK;
+	} else {
+		action = GOOD;
+	}
+
+	set_state(aeg, action);
+
+	if (aeg->state != BRIGHTEN && aeg->state != DARKEN) {
 		return;
 	}
 
 	float max_step = aeg->max_brightness_step;
-	float step = CLAMP(max_step * score, -max_step, max_step);
-	aeg->brightness.val -= step;
+	float step = max_step * score / powf(2.0f, aeg->overshoots);
+	aeg->brightness.val -= CLAMP(step, -max_step, max_step);
 	aeg->brightness.val = CLAMP(aeg->brightness.val, 0, 1);
 }
 
@@ -250,12 +420,15 @@ update_brightness(struct u_autoexpgain *aeg, struct xrt_frame *xf)
  */
 
 struct u_autoexpgain *
-u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint8_t update_every)
+u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, int frame_delay)
 {
 	struct u_autoexpgain *aeg = U_TYPED_CALLOC(struct u_autoexpgain);
 
 	aeg->enable = enabled_from_start;
 	aeg->log_level = debug_get_log_option_aeg_log();
+	aeg->state = IDLE;
+	aeg->wait = frame_delay;
+	aeg->overshoots = 0;
 	aeg->strategy = strategy;
 	aeg->strategy_combo.count = U_AEG_STRATEGY_COUNT;
 	aeg->strategy_combo.options = "Tracking\0Dynamic Range\0\0";
@@ -272,8 +445,7 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, uint
 	aeg->max_brightness_step = INITIAL_MAX_BRIGHTNESS_STEP;
 
 	aeg->threshold = INITIAL_THRESHOLD;
-	aeg->frame_counter = 0;
-	aeg->update_every = update_every;
+	aeg->frame_delay = frame_delay;
 
 	brightness_to_expgain(aeg, INITIAL_BRIGHTNESS, &aeg->exposure, &aeg->gain);
 
@@ -284,7 +456,7 @@ void
 u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root)
 {
 	u_var_add_bool(root, &aeg->enable, "Update brightness automatically");
-	u_var_add_u8(root, &aeg->update_every, "Update every X frames");
+	u_var_add_i32(root, &aeg->frame_delay, "Frame update delay");
 	u_var_add_combo(root, &aeg->strategy_combo, "Strategy");
 	u_var_add_draggable_f32(root, &aeg->brightness, "Brightness");
 	u_var_add_f32(root, &aeg->threshold, "Score threshold");

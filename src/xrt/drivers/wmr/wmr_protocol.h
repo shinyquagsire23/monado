@@ -55,7 +55,7 @@ extern "C" {
 #define STR_TO_U32(s) ((uint32_t)(((s)[0]) | ((s)[1] << 8) | ((s)[2] << 16) | ((s)[3] << 24)))
 #define WMR_MAGIC STR_TO_U32("Dlo+")
 
-#define WMR_MIN_EXPOSURE 120
+#define WMR_MIN_EXPOSURE 60
 #define WMR_MAX_OBSERVED_EXPOSURE 6000
 #define WMR_MAX_EXPOSURE 9000
 #define WMR_MIN_GAIN 16
