@@ -25,6 +25,7 @@ Checks:       |
     -readability-implicit-bool-conversion,
     -readability-redundant-access-specifiers,
     -readability-uppercase-literal-suffix,
+    -readability-identifier-length,
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/xrt/.*'
 AnalyzeTemporaryDtors: false
