@@ -135,7 +135,7 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 			char buffer[UUID_STR_SIZE] = {0};
 			snprint_uuid(buffer, ARRAY_SIZE(buffer), &vk_res->client_gpu_deviceUUID);
 
-			// Trailing space above, means 'to' should be right next to '%s'.
+			// Trailing space from snprint_uuid, means 'to' should be right next to '%s'.
 			VK_DEBUG(vk, "Suggest %d with uuid: %sto clients", vk_res->client_gpu_index, buffer);
 
 			if (get_device_luid(vk, vk_res->client_gpu_index, &vk_res->client_gpu_deviceLUID)) {

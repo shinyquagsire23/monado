@@ -143,7 +143,7 @@ _lease_finished(void *data, struct wp_drm_lease_v1 *wp_drm_lease_v1)
 		lease->leased_fd = -1;
 	}
 
-	COMP_DEBUG(lease->w->base.base.c, "Lease has been terminated");
+	COMP_DEBUG(lease->w->base.base.c, "Lease has been closed");
 	lease->finished = true;
 }
 

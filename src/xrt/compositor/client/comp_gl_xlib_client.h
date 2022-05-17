@@ -38,7 +38,7 @@ struct client_gl_xlib_compositor
 
 	/*!
 	 * Temporary storage for "current" OpenGL context while app_context is
-	 * made current via context_begin/context_end. We only need one because
+	 * made current using context_begin/context_end. We only need one because
 	 * app_context can only be made current in one thread at a time too.
 	 */
 	struct client_gl_context temp_context;

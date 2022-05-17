@@ -37,7 +37,7 @@ struct client_gl_memobj_swapchain
 
 /*!
  * Create a swapchain, belonging to a client_gl_compositor, that uses
- * GL_memory_object and related extensions to access the native buffer.
+ * GL_memory_object and related extensions to use the native buffer.
  *
  * This is most commonly used on desktop OpenGL.
  *

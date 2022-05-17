@@ -45,7 +45,7 @@ struct client_gl_swapchain
 	uint32_t tex_target;
 
 	/*!
-	 * The compositor this swapchain was created on. Used when swapchain functions need access to the GL context.
+	 * The compositor this swapchain was created on. Used when swapchain functions need to use the GL context.
 	 *
 	 * Not an owning pointer.
 	 */

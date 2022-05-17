@@ -43,7 +43,7 @@ vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 	dist_uv = dist_uv + extent_pixel_size / 2.0;
 
 
-	// In order to correctly sample we need to put position (0, 0) in the
+	// To correctly sample we need to put position (0, 0) in the
 	// middle of the (0, 0) texel in the distortion texures. That's why we
 	// offset with half the texel size, pushing all samples into the middle
 	// of each texels, a kin to a vertex buffer. We need to put uv coord

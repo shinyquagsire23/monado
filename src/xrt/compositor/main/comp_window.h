@@ -48,7 +48,7 @@ struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c);
 
 /*!
- * Create a direct surface to a HMD via Wayland.
+ * Create a direct surface to a HMD using Wayland.
  *
  * @ingroup comp
  */
