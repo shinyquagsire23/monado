@@ -36,16 +36,17 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
-	xrt_result_t res = xsc->acquire_image(xsc, &index);
+	xrt_result_t res = xrt_swapchain_acquire_image(xsc, &index);
 	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xsc->acquire_image failed");
+		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_acquire_image failed");
 	}
 	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xsc->acquire_image failed");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_acquire_image failed");
 	}
 
 	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Internal acquire call returned non-ready image.");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Internal xrt_swapchain_acquire_image call returned non-ready image.");
 	}
 
 	sc->acquired.num++;
@@ -80,12 +81,12 @@ oxr_swapchain_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
-	xrt_result_t res = xsc->wait_image(xsc, waitInfo->timeout, index);
+	xrt_result_t res = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
 	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xsc->wait_image failed");
+		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_wait_image failed");
 	}
 	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xsc->wait_image failed");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_wait_image failed");
 	}
 
 	// The app can only wait on one image.
@@ -109,12 +110,12 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	uint32_t index = sc->waited.index;
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
-	xrt_result_t res = xsc->release_image(xsc, index);
+	xrt_result_t res = xrt_swapchain_release_image(xsc, index);
 	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xsc->release_image failed");
+		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_release_image failed");
 	}
 	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xsc->release_image failed");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_release_image failed");
 	}
 
 	// Only decerement here.
