@@ -16,6 +16,18 @@ mentioned in these examples.
 
 Here are some general code style guidelines we follow.
 
+Note that we aim to "code with respect", to avoid terminology that may limit our
+community or hurt those in it, as well as to conform with emerging industry
+standards. Good guidelines to look to include the
+[Android Coding with Respect][] policy and the
+[Write Inclusive Documentation][] page from the Google developer documentation
+style guide. The latter also links to a word list for clear documentation,
+which, while not binding on this project, is useful in making sure your code,
+comments, and docs are understandable by the worldwide Monado community.
+
+[Android Coding with Respect]: https://source.android.com/setup/contribute/respectful-code
+[Write Inclusive Documentation]: https://developers.google.com/style/inclusive-documentation
+
 ## APIs
 
 Internal APIs, when it makes sense, should be C APIs. Headers that define
