@@ -51,7 +51,7 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 }
 
 static xrt_result_t
-swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
+swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
