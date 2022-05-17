@@ -67,7 +67,7 @@ instances.
 
 Depending on whether your device can be created from a detected USB HID device,
 you will also need to implement either @ref xrt_auto_prober or a function
-matching @ref xrt_prober_found_function_t which is the function pointer type of
+matching @ref xrt_prober_found_func_t which is the function pointer type of
 @ref xrt_prober_entry::found. See below for more details.
 
 ## Probing
@@ -79,7 +79,7 @@ or if you don't want to use the built-in HID support for some reason.
 
 If you can detect based on VID/PID, you will instead implement If you can use
 built-in HID, you might consider looking at @ref hdk_found, which is a nice
-example of how to implement @ref xrt_prober_found_function_t to perform
+example of how to implement @ref xrt_prober_found_func_t to perform
 detection of an HMD based on the USB HID for its IMU.
 
 Either way, your device's detection details will need to be added to a list used

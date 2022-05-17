@@ -114,8 +114,8 @@ the same value.
 
 For example, consider @ref client_gl_swapchain
 
-- Its first element is named @ref client_gl_swapchain::base and is of type @ref
-  xrt_swapchain_gl - meaning that it implements @ref xrt_swapchain_gl
+- Its first element is named @ref client_gl_swapchain::base and is of type
+  @ref xrt_swapchain_gl - meaning that it implements @ref xrt_swapchain_gl
 - @ref xrt_swapchain_gl in turn starts with @ref xrt_swapchain_gl::base which is
   @ref xrt_swapchain - meaning that @ref xrt_swapchain_gl **extends** @ref
   xrt_swapchain. (Both @ref xrt_swapchain_gl and @ref xrt_swapchain are abstract
