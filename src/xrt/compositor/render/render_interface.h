@@ -257,7 +257,7 @@ struct render_resources
 			VkImageView image_view;
 			VkDeviceMemory memory;
 		} color;
-	} dummy;
+	} scratch;
 
 	struct
 	{
@@ -276,7 +276,7 @@ struct render_resources
 		//! Uniform data binding.
 		uint32_t ubo_binding;
 
-		//! Dummy sampler for null images.
+		//! Default sampler for null images.
 		VkSampler default_sampler;
 
 		//! Descriptor set layout for compute distortion.

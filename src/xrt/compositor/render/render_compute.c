@@ -649,7 +649,7 @@ render_compute_clear(struct render_compute *crc,                 //
 
 	VkSampler sampler = r->compute.default_sampler;
 	VkSampler src_samplers[2] = {sampler, sampler};
-	VkImageView src_image_views[2] = {r->dummy.color.image_view, r->dummy.color.image_view};
+	VkImageView src_image_views[2] = {r->scratch.color.image_view, r->scratch.color.image_view};
 	VkSampler distortion_samplers[6] = {sampler, sampler, sampler, sampler, sampler, sampler};
 
 	update_compute_discriptor_set(     //

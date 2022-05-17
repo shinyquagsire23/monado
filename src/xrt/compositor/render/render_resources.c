@@ -568,7 +568,7 @@ render_resources_init(struct render_resources *r,
 
 
 	/*
-	 * Dummy
+	 * Simulated
 	 */
 
 	{
@@ -584,20 +584,20 @@ render_resources_init(struct render_resources *r,
 		    .layerCount = 1,
 		};
 
-		C(vk_create_image_simple(    //
-		    vk,                      // vk_bundle
-		    extent,                  // extent
-		    format,                  // format
-		    usage,                   // usage
-		    &r->dummy.color.memory,  // out_mem
-		    &r->dummy.color.image)); // out_image
+		C(vk_create_image_simple(      //
+		    vk,                        // vk_bundle
+		    extent,                    // extent
+		    format,                    // format
+		    usage,                     // usage
+		    &r->scratch.color.memory,  // out_mem
+		    &r->scratch.color.image)); // out_image
 
-		C(vk_create_view(                 //
-		    vk,                           // vk_bundle
-		    r->dummy.color.image,         // image
-		    format,                       // format
-		    subresource_range,            // subresource_range
-		    &r->dummy.color.image_view)); // out_view
+		C(vk_create_view(                   //
+		    vk,                             // vk_bundle
+		    r->scratch.color.image,         // image
+		    format,                         // format
+		    subresource_range,              // subresource_range
+		    &r->scratch.color.image_view)); // out_view
 	}
 
 
@@ -814,9 +814,9 @@ render_resources_close(struct render_resources *r)
 
 	struct vk_bundle *vk = r->vk;
 
-	D(ImageView, r->dummy.color.image_view);
-	D(Image, r->dummy.color.image);
-	DF(Memory, r->dummy.color.memory);
+	D(ImageView, r->scratch.color.image_view);
+	D(Image, r->scratch.color.image);
+	DF(Memory, r->scratch.color.memory);
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
