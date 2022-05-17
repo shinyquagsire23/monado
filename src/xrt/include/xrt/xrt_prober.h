@@ -193,7 +193,7 @@ struct xrt_prober
 	 * call, opening those devices to create instances of xrt_device
 	 * implementations.
 	 *
-	 * If no HMD (not even a dummy HMD) is found, then no devices will be
+	 * If no HMD (not even a simulated HMD) is found, then no devices will be
 	 * returned (all xdevs will be NULL). Otherwise, xdevs will be populated
 	 * with the HMD in xdevs[0], and any subsequent non-NULL values
 	 * referring to additional non-HMD devices.
@@ -738,7 +738,7 @@ struct xrt_auto_prober
 	const char *name;
 
 	/*!
-	 * Do the internal probing that the driver needs to do in order to find
+	 * Do the internal probing that the driver needs to do to find
 	 * devices.
 	 *
 	 * @param xap Self pointer
@@ -746,7 +746,7 @@ struct xrt_auto_prober
 	 * config, if any.
 	 * @param[in] no_hmds If true, do not probe for HMDs, only other
 	 * devices.
-	 * @param[in] xp Prober: provided for access to the tracking factory,
+	 * @param[in] xp Prober: provided to use the tracking factory,
 	 * among other reasons.
 	 * @param[out] out_xdevs Array of @ref XRT_MAX_DEVICES_PER_PROBE @c NULL
 	 * @ref xrt_device pointers. First elements will be populated with new
@@ -800,7 +800,7 @@ struct xrt_prober_entry_lists
 	xrt_auto_prober_create_func_t *auto_probers;
 
 	/*!
-	 * Allows you to chain multiple prober entry lists.
+	 * Lets you chain multiple prober entry lists.
 	 */
 	struct xrt_prober_entry_lists *next;
 };

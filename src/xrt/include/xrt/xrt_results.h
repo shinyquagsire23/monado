@@ -77,7 +77,7 @@ typedef enum xrt_result
 
 	/*!
 	 * The pose is no longer active, this happens when the application
-	 * tries to access a pose that is no longer active.
+	 * tries to get a pose that is no longer active.
 	 */
 	XRT_ERROR_POSE_NOT_ACTIVE = -8,
 
