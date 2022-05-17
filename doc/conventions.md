@@ -50,7 +50,10 @@ directed-acyclic-graph.
       *implemented* in other modules.)
   - Generally, we do not declare typedefs for `struct` and `enum` types, but
     instead refer to them in long form, saying `struct` or `enum` then the name.
-  - If a typedef is needed, it should be named ending with `_t`.
+    The exception to not using typedefs is function pointers used as function
+    arguments as these become very hard to both read and type out.
+  - If a typedef is needed, it should be named ending with `_t`. Function
+    pointer typedefs should end with `_func_t`.
   - Parameters: `lower_snake_case` or acronyms.
     - Output parameters should begin with `out_`.
     - Of special note: Structures/types that represent "objects" often have long
