@@ -152,8 +152,7 @@ struct wmr_hmd
 		//! SLAM tracker.
 		//! @todo Right now, we are not consistent in how we interface with
 		//! trackers. In particular, we have a @ref xrt_tracked_slam field but not
-		//! an equivalent for hand tracking. Maybe we should try to use @ref
-		//! xrt_tracked_hand?
+		//! an equivalent for hand tracking.
 		struct xrt_tracked_slam *slam;
 
 		//! Set at start. Whether the SLAM tracker was initialized.
