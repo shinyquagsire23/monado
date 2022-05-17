@@ -31,7 +31,7 @@ PATCH_NAME=fixes.diff
     else
         # At least one non-auto-fixable error. e.g. "a o t h e r" (remove spaces)
         echo
-        echo "Codespell found at least one issue it couldn't auto-fix, see above."
+        echo "Codespell found at least one issue it couldn't auto-fix, see preceding."
         echo "If the issue isn't actually a problem, edit IGNORE_WORDS_LIST in $(dirname $0)/codespell-project.sh"
         echo "Otherwise, you may run \`$(dirname $0)/codespell-project.sh -i 3\` locally to interactively fix."
         echo

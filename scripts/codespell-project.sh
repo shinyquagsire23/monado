@@ -8,13 +8,13 @@
 #     -i 3
 # as arguments to interactively fix detected issues,
 # including ambiguous ones,
-# rather than just directly fixing the ones it can.
+# rather than only directly fixing the ones it can.
 
 # Success error code if no mistakes or only auto-fixable mistakes found.
 # Failure error code if one or more ambiguous fixes found (requiring interactive fixing).
 
 # See https://github.com/codespell-project/codespell
-# or just run pip3 install codespell
+# or run pip3 install codespell
 
 set -e
 
