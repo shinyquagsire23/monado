@@ -251,8 +251,8 @@ oxr_instance_create(struct oxr_logger *log,
 	android_looper_poll_until_activity_resumed();
 #endif
 
-	xinst_ret = xrt_instance_create(&i_info, &inst->xinst);
-	if (xinst_ret != 0) {
+	xret = xrt_instance_create(&i_info, &inst->xinst);
+	if (xret != XRT_SUCCESS) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create prober");
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;

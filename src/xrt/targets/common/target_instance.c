@@ -68,7 +68,7 @@ t_instance_create_system(struct xrt_instance *xinst,
  *
  */
 
-int
+xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
 	struct xrt_prober *xp = NULL;
@@ -77,7 +77,7 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {
-		return ret;
+		return XRT_ERROR_PROBER_CREATION_FAILED;
 	}
 
 	struct t_instance *tinst = U_TYPED_CALLOC(struct t_instance);
@@ -88,5 +88,5 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	*out_xinst = &tinst->base;
 
-	return 0;
+	return XRT_SUCCESS;
 }

@@ -19,10 +19,10 @@ U_TRACE_TARGET_SETUP(U_TRACE_WHICH_OPENXR)
 #include "xrt/xrt_instance.h"
 
 // Forward declaration
-int
+xrt_result_t
 ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst);
 
-int
+xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
 	u_trace_marker_init();

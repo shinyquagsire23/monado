@@ -62,7 +62,11 @@ cli_cmd_probe(int argc, const char **argv)
 	}
 
 	struct xrt_prober *xp = NULL;
-	xrt_instance_get_prober(xi, &xp);
+	xret = xrt_instance_get_prober(xi, &xp);
+	if (xret != XRT_SUCCESS) {
+		printf("\tNo xrt_prober could be created!\n");
+		return do_exit(&xi, -1);
+	}
 
 	size_t num_entries;
 	struct xrt_prober_entry **entries;

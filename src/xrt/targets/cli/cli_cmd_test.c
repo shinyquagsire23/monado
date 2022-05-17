@@ -43,8 +43,8 @@ cli_cmd_test(int argc, const char **argv)
 	}
 	struct xrt_prober *xp = NULL;
 
-	ret = xrt_instance_get_prober(xi, &xp);
-	if (ret != 0) {
+	xret = xrt_instance_get_prober(xi, &xp);
+	if (xret != XRT_SUCCESS) {
 		do_exit(&xi, ret);
 	}
 	if (xp != NULL) {
@@ -55,9 +55,9 @@ cli_cmd_test(int argc, const char **argv)
 		// listing.
 		printf(" :: Probing!\n");
 
-		ret = xrt_prober_probe(xp);
-		if (ret != 0) {
-			return do_exit(&xi, ret);
+		xret = xrt_prober_probe(xp);
+		if (xret != XRT_SUCCESS) {
+			return do_exit(&xi, -1);
 		}
 
 		// So the user can see what we found.

@@ -291,7 +291,7 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
  *
  * @public @memberof ipc_instance
  */
-int
+xrt_result_t
 ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_xinst)
 {
 	struct ipc_client_instance *ii = U_TYPED_CALLOC(struct ipc_client_instance);
@@ -316,26 +316,26 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 		          "#\n"
 		          "###");
 		free(ii);
-		return -1;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	// get our xdev shm from the server and mmap it
-	xrt_result_t r = ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
-	if (r != XRT_SUCCESS) {
+	xrt_result_t xret = ipc_call_instance_get_shm_fd(&ii->ipc_c, &ii->ipc_c.ism_handle, 1);
+	if (xret != XRT_SUCCESS) {
 		IPC_ERROR((&ii->ipc_c), "Failed to retrieve shm fd!");
 		free(ii);
-		return -1;
+		return xret;
 	}
 
 	struct ipc_app_state desc = {0};
 	desc.info = *i_info;
 	desc.pid = getpid(); // Extra info.
 
-	r = ipc_call_system_set_client_info(&ii->ipc_c, &desc);
-	if (r != XRT_SUCCESS) {
+	xret = ipc_call_system_set_client_info(&ii->ipc_c, &desc);
+	if (xret != XRT_SUCCESS) {
 		IPC_ERROR((&ii->ipc_c), "Failed to set instance info!");
 		free(ii);
-		return -1;
+		return xret;
 	}
 
 	const int flags = MAP_SHARED;
@@ -346,7 +346,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	if (ii->ipc_c.ism == NULL) {
 		IPC_ERROR((&ii->ipc_c), "Failed to mmap shm!");
 		free(ii);
-		return -1;
+		return XRT_ERROR_IPC_FAILURE;
 	}
 
 	if (strncmp(u_git_tag, ii->ipc_c.ism->u_git_tag, IPC_VERSION_NAME_LEN) != 0) {
@@ -355,7 +355,7 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 		if (!debug_get_bool_option_ipc_ignore_version()) {
 			IPC_ERROR((&ii->ipc_c), "Set IPC_IGNORE_VERSION=1 to ignore this version conflict");
 			free(ii);
-			return -1;
+			return XRT_ERROR_IPC_FAILURE;
 		}
 	}
 
@@ -400,5 +400,5 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	os_mutex_init(&ii->ipc_c.mutex);
 
-	return 0;
+	return XRT_SUCCESS;
 }

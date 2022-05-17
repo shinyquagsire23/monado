@@ -1149,14 +1149,13 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 
 	//! @todo instance initialization is difficult to replicate
 
-	int ret;
-	ret = xrt_instance_create(NULL, &m_xinst);
-	if (ret < 0) {
+	xrt_result_t xret;
+	xret = xrt_instance_create(NULL, &m_xinst);
+	if (xret != XRT_SUCCESS) {
 		ovrd_log("Failed to create instance\n");
 		return vr::VRInitError_Init_HmdNotFound;
 	}
 
-	xrt_result_t xret;
 	xret = xrt_instance_create_system(m_xinst, &m_xsysd, NULL);
 	if (xret < 0) {
 		ovrd_log("Failed to create system devices\n");

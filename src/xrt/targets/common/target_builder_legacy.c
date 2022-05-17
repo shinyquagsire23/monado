@@ -141,7 +141,8 @@ static xrt_result_t
 legacy_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
 {
 	struct u_system_devices *usysd = u_system_devices_allocate();
-	int ret = 0;
+	xrt_result_t xret;
+	int ret;
 
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
@@ -151,9 +152,9 @@ legacy_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 	 * Create the devices.
 	 */
 
-	ret = xrt_prober_probe(xp);
-	if (ret < 0) {
-		return XRT_ERROR_ALLOCATION;
+	xret = xrt_prober_probe(xp);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
 	ret = xrt_prober_select(xp, usysd->base.xdevs, ARRAY_SIZE(usysd->base.xdevs));

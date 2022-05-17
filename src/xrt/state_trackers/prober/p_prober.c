@@ -657,8 +657,13 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 {
 	struct xrt_prober_device **dev_list = NULL;
 	size_t dev_count = 0;
+	xrt_result_t xret;
 
-	xrt_prober_lock_list(&p->base, &dev_list, &dev_count);
+	xret = xrt_prober_lock_list(&p->base, &dev_list, &dev_count);
+	if (xret != XRT_SUCCESS) {
+		P_ERROR(p, "Failed to lock list!");
+		return;
+	}
 
 	// Loop over all devices and entries that might match them.
 	for (size_t i = 0; i < p->device_count; i++) {
@@ -702,7 +707,10 @@ add_from_devices(struct prober *p, struct xrt_device **xdevs, size_t xdev_count,
 		}
 	}
 
-	xrt_prober_unlock_list(&p->base, &dev_list);
+	xret = xrt_prober_unlock_list(&p->base, &dev_list);
+	if (xret != XRT_SUCCESS) {
+		P_ERROR(p, "Failed to unlock list!");
+	}
 }
 
 static void
@@ -850,13 +858,17 @@ find_builder_by_identifier(struct prober *p, const char *ident)
  *
  */
 
-static int
+static xrt_result_t
 p_probe(struct xrt_prober *xp)
 {
 	XRT_TRACE_MARKER();
 
 	struct prober *p = (struct prober *)xp;
 	XRT_MAYBE_UNUSED int ret = 0;
+
+	if (p->list_locked) {
+		return XRT_ERROR_PROBER_LIST_LOCKED;
+	}
 
 	// Free old list first.
 	teardown_devices(p);
@@ -865,7 +877,7 @@ p_probe(struct xrt_prober *xp)
 	ret = p_udev_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate udev devices\n");
-		return -1;
+		return XRT_ERROR_PROBING_FAILED;
 	}
 #endif
 
@@ -873,7 +885,7 @@ p_probe(struct xrt_prober *xp)
 	ret = p_libusb_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate libusb devices\n");
-		return -1;
+		return XRT_ERROR_PROBING_FAILED;
 	}
 #endif
 
@@ -881,11 +893,11 @@ p_probe(struct xrt_prober *xp)
 	ret = p_libuvc_probe(p);
 	if (ret != 0) {
 		P_ERROR(p, "Failed to enumerate libuvc devices\n");
-		return -1;
+		return XRT_ERROR_PROBING_FAILED;
 	}
 #endif
 
-	return 0;
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
@@ -893,7 +905,10 @@ p_lock_list(struct xrt_prober *xp, struct xrt_prober_device ***out_devices, size
 {
 	struct prober *p = (struct prober *)xp;
 
-	assert(!p->list_locked);
+	if (p->list_locked) {
+		return XRT_ERROR_PROBER_LIST_LOCKED;
+	}
+
 	assert(out_devices != NULL);
 	assert(*out_devices == NULL);
 
@@ -916,7 +931,10 @@ p_unlock_list(struct xrt_prober *xp, struct xrt_prober_device ***devices)
 {
 	struct prober *p = (struct prober *)xp;
 
-	assert(p->list_locked);
+	if (!p->list_locked) {
+		return XRT_ERROR_PROBER_LIST_NOT_LOCKED;
+	}
+
 	assert(devices != NULL);
 
 	p->list_locked = false;

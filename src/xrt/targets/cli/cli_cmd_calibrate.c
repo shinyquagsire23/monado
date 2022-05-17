@@ -29,6 +29,7 @@ struct program
 static int
 init(struct program *p)
 {
+	xrt_result_t xret;
 	int ret;
 
 	// Fist initialize the instance.
@@ -41,10 +42,10 @@ init(struct program *p)
 	// Get the prober pointer.
 	// In general, null probers are OK, but this module directly uses the
 	// prober.
-	ret = xrt_instance_get_prober(p->xi, &p->xp);
-	if (ret != 0) {
+	xret = xrt_instance_get_prober(p->xi, &p->xp);
+	if (xret != XRT_SUCCESS) {
 		fprintf(stderr, "Failed to get prober from instance.\n");
-		return ret;
+		return -1;
 	}
 	if (p->xp == NULL) {
 		fprintf(stderr, "Null prober returned - cannot proceed.\n");
@@ -52,10 +53,10 @@ init(struct program *p)
 	}
 
 	// Need to prime the prober before listing devices.
-	ret = xrt_prober_probe(p->xp);
-	if (ret != 0) {
+	xret = xrt_prober_probe(p->xp);
+	if (xret != XRT_SUCCESS) {
 		fprintf(stderr, "Failed to probe for devices.\n");
-		return ret;
+		return -1;
 	}
 
 	return 0;

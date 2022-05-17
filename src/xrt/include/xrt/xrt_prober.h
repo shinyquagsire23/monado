@@ -136,7 +136,7 @@ struct xrt_prober
 	 * @note Code consuming this interface should use xrt_prober_probe()
 	 * @see xrt_prober::lock_list, xrt_prober::unlock_list
 	 */
-	int (*probe)(struct xrt_prober *xp);
+	xrt_result_t (*probe)(struct xrt_prober *xp);
 
 	/*!
 	 * Locks the prober list of probed devices and returns it, while locked
@@ -265,7 +265,7 @@ struct xrt_prober
  *
  * @public @memberof xrt_prober
  */
-static inline int
+static inline xrt_result_t
 xrt_prober_probe(struct xrt_prober *xp)
 {
 	return xp->probe(xp);

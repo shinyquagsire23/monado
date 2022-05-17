@@ -449,6 +449,9 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 static int
 init_all(struct ipc_server *s)
 {
+	xrt_result_t xret;
+	int ret;
+
 	s->process = u_process_create_if_not_running();
 
 	if (!s->process) {
@@ -462,18 +465,18 @@ init_all(struct ipc_server *s)
 	s->exit_on_disconnect = debug_get_bool_option_exit_on_disconnect();
 	s->log_level = debug_get_log_option_ipc_log();
 
-	int ret = xrt_instance_create(NULL, &s->xinst);
-	if (ret < 0) {
+	xret = xrt_instance_create(NULL, &s->xinst);
+	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(s, "Failed to create instance!");
 		teardown_all(s);
-		return ret;
+		return -1;
 	}
 
-	ret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xsysc);
-	if (ret < 0) {
+	xret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xsysc);
+	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(s, "Could not create system!");
 		teardown_all(s);
-		return ret;
+		return -1;
 	}
 
 	ret = init_idevs(s);
@@ -487,7 +490,7 @@ init_all(struct ipc_server *s)
 	if (ret < 0) {
 		IPC_ERROR(s, "Failed to init tracking origins!");
 		teardown_all(s);
-		return -1;
+		return ret;
 	}
 
 	ret = init_shm(s);

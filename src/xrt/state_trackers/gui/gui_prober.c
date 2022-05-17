@@ -36,25 +36,25 @@ do_exit(struct gui_program *p, int ret)
 int
 gui_prober_init(struct gui_program *p)
 {
-	int ret = 0;
+	xrt_result_t xret;
 
 	// Initialize the prober.
-	ret = xrt_instance_create(NULL, &p->instance);
-	if (ret != 0) {
-		return do_exit(p, ret);
+	xret = xrt_instance_create(NULL, &p->instance);
+	if (xret != 0) {
+		return do_exit(p, -1);
 	}
 
 	// Still need the prober to get video devices.
-	ret = xrt_instance_get_prober(p->instance, &p->xp);
-	if (ret != 0) {
-		return do_exit(p, ret);
+	xret = xrt_instance_get_prober(p->instance, &p->xp);
+	if (xret != XRT_SUCCESS) {
+		return do_exit(p, -1);
 	}
 
 	if (p->xp != NULL) {
 		// Need to prime the prober with devices before dumping and listing.
-		ret = xrt_prober_probe(p->xp);
-		if (ret != 0) {
-			return do_exit(p, ret);
+		xret = xrt_prober_probe(p->xp);
+		if (xret != XRT_SUCCESS) {
+			return do_exit(p, -1);
 		}
 	}
 

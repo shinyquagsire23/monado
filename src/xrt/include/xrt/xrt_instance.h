@@ -103,10 +103,9 @@ struct xrt_instance
 	 * @param[out] out_xp Pointer to xrt_prober pointer, will be populated
 	 * or set to NULL.
 	 *
-	 * @return 0 on success, <0 on error. (Note that success may mean
-	 * returning a null pointer!)
+	 * @return XRT_SUCCESS on success, other error code on error.
 	 */
-	int (*get_prober)(struct xrt_instance *xinst, struct xrt_prober **out_xp);
+	xrt_result_t (*get_prober)(struct xrt_instance *xinst, struct xrt_prober **out_xp);
 
 	/*!
 	 * Destroy the instance and its owned objects, including the prober (if
@@ -145,7 +144,7 @@ xrt_instance_create_system(struct xrt_instance *xinst,
  *
  * @public @memberof xrt_instance
  */
-static inline int
+static inline xrt_result_t
 xrt_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 {
 	return xinst->get_prober(xinst, out_xp);
@@ -195,7 +194,7 @@ xrt_instance_destroy(struct xrt_instance **xinst_ptr)
  *
  * @relates xrt_instance
  */
-int
+xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst);
 
 /*!

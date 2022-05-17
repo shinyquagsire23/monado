@@ -56,7 +56,7 @@ u_system_devices_allocate(void)
 xrt_result_t
 u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_system_devices **out_xsysd)
 {
-	int ret = 0;
+	xrt_result_t xret;
 
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
@@ -67,14 +67,14 @@ u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_syste
 	 */
 
 	struct xrt_prober *xp = NULL;
-	ret = xrt_instance_get_prober(xinst, &xp);
-	if (ret < 0) {
-		return XRT_ERROR_ALLOCATION;
+	xret = xrt_instance_get_prober(xinst, &xp);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
-	ret = xrt_prober_probe(xp);
-	if (ret < 0) {
-		return XRT_ERROR_ALLOCATION;
+	xret = xrt_prober_probe(xp);
+	if (xret < 0) {
+		return xret;
 	}
 
 	return xrt_prober_create_system(xp, out_xsysd);
