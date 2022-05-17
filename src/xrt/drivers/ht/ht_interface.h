@@ -46,6 +46,8 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
  *
  * @param xfctx WMR context to attach the tracker to
  * @param calib Calibration struct for stereo camera
+ * @param output_space What the origin of the output data should be
+ * @param algorithm_choice Which algorithm to use for hand tracking
  * @param out_sinks Sinks to stream camera data to
  * @param out_device Newly created hand tracker "device"
  * @return int 0 on success
