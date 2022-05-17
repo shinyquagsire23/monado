@@ -502,8 +502,8 @@ p_udev_get_usb_hid_address(struct udev_device *raw_dev,
                            uint16_t *out_usb_bus,
                            uint16_t *out_usb_addr)
 {
-	uint16_t dummy_vendor;
-	uint16_t dummy_product;
+	uint16_t unused_vendor;
+	uint16_t unused_product;
 	struct udev_device *usb_dev;
 
 	if (bus_type != HIDRAW_BUS_USB) {
@@ -517,7 +517,7 @@ p_udev_get_usb_hid_address(struct udev_device *raw_dev,
 		return -1;
 	}
 
-	return p_udev_get_usb_device_info(usb_dev, out_dev_class, &dummy_vendor, &dummy_product, out_usb_bus,
+	return p_udev_get_usb_device_info(usb_dev, out_dev_class, &unused_vendor, &unused_product, out_usb_bus,
 	                                  out_usb_addr);
 }
 
