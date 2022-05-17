@@ -855,7 +855,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
-ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t id, uint64_t timeout, uint32_t index)
+ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t id, uint64_t timeout_ns, uint32_t index)
 {
 	if (ics->xc == NULL) {
 		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
@@ -865,7 +865,7 @@ ipc_handle_swapchain_wait_image(volatile struct ipc_client_state *ics, uint32_t 
 	uint32_t sc_index = id;
 	struct xrt_swapchain *xsc = ics->xscs[sc_index];
 
-	xrt_swapchain_wait_image(xsc, timeout, index);
+	xrt_swapchain_wait_image(xsc, timeout_ns, index);
 
 	return XRT_SUCCESS;
 }

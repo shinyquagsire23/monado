@@ -183,12 +183,12 @@ ipc_compositor_swapchain_destroy(struct xrt_swapchain *xsc)
 }
 
 static xrt_result_t
-ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index)
+ipc_compositor_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	struct ipc_client_swapchain *ics = ipc_client_swapchain(xsc);
 	struct ipc_client_compositor *icc = ics->icc;
 
-	IPC_CALL_CHK(ipc_call_swapchain_wait_image(icc->ipc_c, ics->id, timeout, index));
+	IPC_CALL_CHK(ipc_call_swapchain_wait_image(icc->ipc_c, ics->id, timeout_ns, index));
 
 	return res;
 }

@@ -166,7 +166,7 @@
 	"swapchain_wait_image": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},
-			{"name": "timeout", "type": "uint64_t"},
+			{"name": "timeout_ns", "type": "uint64_t"},
 			{"name": "index", "type": "uint32_t"}
 		]
 	},
