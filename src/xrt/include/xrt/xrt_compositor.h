@@ -407,9 +407,16 @@ struct xrt_swapchain
 	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *out_index);
 
 	/*!
-	 * See xrWaitSwapchainImage, state tracker needs to track index.
+	 * Wait until image @p index is available for exclusive use, or until @p timeout_ns expires.
+	 *
+	 * See xrWaitSwapchainImage, which is the basis for this API.
+	 * The state tracker needs to track image index, which should have come from @ref xrt_swapchain_acquire_image
+
+	 * @param xsc Self pointer
+	 * @param timeout_ns Timeout in nanoseconds,
+	 * @param index Image index to wait for.
 	 */
-	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc, uint64_t timeout, uint32_t index);
+	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
