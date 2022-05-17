@@ -273,10 +273,10 @@ on_elem(struct u_var_info *info, void *priv)
 
 	const float drag_speed = 0.2f;
 	const float power = 1.0f;
-	const ImVec2 dummy = {0, 0};
+	const ImVec2 scratch = {0, 0};
 	ImGuiColorEditFlags flags =
 	    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel;
-	(void)dummy;
+	(void)scratch;
 	ImGuiInputTextFlags i_flags = ImGuiInputTextFlags_None;
 	ImGuiInputTextFlags ro_i_flags = ImGuiInputTextFlags_ReadOnly;
 

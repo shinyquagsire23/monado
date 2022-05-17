@@ -273,7 +273,7 @@ scene_render(struct gui_scene *scene, struct gui_program *p)
 		         ts->overrides[i].tracker_device_serial);
 		if (igCheckbox(buf, &checked)) {
 
-			// abort adding override when clicking to edit one
+			// skip adding override when clicking to edit one
 			ts->gui_add_override_active = false;
 
 			ts->gui_edit_override_index = i;
