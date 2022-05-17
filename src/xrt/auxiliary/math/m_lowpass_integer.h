@@ -53,7 +53,7 @@ void
 m_lowpass_integer_add_sample(struct m_lowpass_integer *mli, int64_t sample);
 
 /*!
- * Access the filtered value.
+ * Get the filtered value.
  *
  * Probably 0 or other meaningless value if it's not initialized: see @ref m_lowpass_integer_is_initialized
  *
@@ -65,7 +65,7 @@ int64_t
 m_lowpass_integer_get_state(const struct m_lowpass_integer *mli);
 
 /*!
- * Access whether we have initialized state.
+ * Get whether we have initialized state.
  *
  * @param mli self-pointer
  *

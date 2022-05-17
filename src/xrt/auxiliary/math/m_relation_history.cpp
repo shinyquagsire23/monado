@@ -68,7 +68,7 @@ m_relation_history_push(struct m_relation_history *rh, struct xrt_space_relation
 		// if we aren't empty, we can compare against the latest timestamp.
 		if (rh->impl.empty() || rhe.timestamp > rh->impl.back().timestamp) {
 			// Everything explodes if the timestamps in relation_history aren't monotonically increasing. If
-			// we get a timestamp that's before the most recent timestamp in the buffer, just don't put it
+			// we get a timestamp that's before the most recent timestamp in the buffer, don't put it
 			// in the history.
 			rh->impl.push_back(rhe);
 			ret = true;
@@ -103,7 +103,7 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 		if (it == e) {
 			// lower bound is at the end:
 			// The desired timestamp is after what our buffer contains.
-			// Aka pose-prediction.
+			// (pose-prediction)
 			int64_t diff_prediction_ns = static_cast<int64_t>(at_timestamp_ns) - rh->impl.back().timestamp;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
 
@@ -121,7 +121,7 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 		if (it == b) {
 			// lower bound is at the beginning (and it's not an exact match):
 			// The desired timestamp is before what our buffer contains.
-			// Aka a weird edge case where somebody asks for a really old pose and we do our best.
+			// (an edge case where somebody asks for a really old pose and we do our best)
 			int64_t diff_prediction_ns = static_cast<int64_t>(at_timestamp_ns) - rh->impl.front().timestamp;
 			double delta_s = time_ns_to_s(diff_prediction_ns);
 			U_LOG_T("Extrapolating %f s before the front of the buffer!", delta_s);
@@ -145,7 +145,7 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 		xrt_space_relation result{};
 		result.relation_flags = (enum xrt_space_relation_flags)(predecessor.relation.relation_flags &
 		                                                        successor.relation.relation_flags);
-		// First-order implementation - just lerp between the before and after
+		// First-order implementation - lerp between the before and after
 		if (0 != (result.relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT)) {
 			result.pose.position = m_vec3_lerp(predecessor.relation.pose.position,
 			                                   successor.relation.pose.position, amount_to_lerp);

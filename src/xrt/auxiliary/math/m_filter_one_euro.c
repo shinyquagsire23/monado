@@ -197,7 +197,8 @@ m_filter_euro_vec2_run_no_commit(struct m_filter_euro_vec2 *f,
 {
 
 	if (filter_one_euro_handle_first_sample(&f->base, ts, false)) {
-		// First sample - no filtering yet - and we're not committing anything to the filter so just return
+		// First sample - no filtering yet - and we're not committing anything to the filter so return right
+		// away
 		*out_y = *in_y;
 		return;
 	}

@@ -56,7 +56,7 @@ struct m_imu_pre_filter
 };
 
 /*!
- * A simple init function that just takes the two ticks_to_float values, all
+ * A simple init function that takes the two ticks_to_float values, all
  * other values are set to identity.
  */
 void

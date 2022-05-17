@@ -88,7 +88,7 @@ quat_exp(Eigen::MatrixBase<Derived> const &vec)
 	return ret.normalized();
 }
 
-/// Taylor series expansion of theta over sin(theta), aka cosecant, for
+/// Taylor series expansion of theta over sin(theta), also known as cosecant, for
 /// use near 0 when you want continuity and validity at 0.
 template <typename Scalar>
 inline Scalar
@@ -112,7 +112,7 @@ quat_ln(Eigen::Quaternion<Scalar> const &quat)
 {
 	// ln q = ( (phi)/(norm of vec) vec, ln(norm of quat))
 	// When we assume a unit quaternion, ln(norm of quat) = 0
-	// so then we just scale the vector part by phi/sin(phi) to get the
+	// so then we scale the vector part by phi/sin(phi) to get the
 	// result (i.e., ln(qv, qw) = (phi/sin(phi)) * qv )
 	Scalar vecnorm = quat.vec().norm();
 

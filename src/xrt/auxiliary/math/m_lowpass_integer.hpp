@@ -44,7 +44,7 @@ namespace detail {
 		 * more influence from new input. @p alpha_.isBetweenZeroAndOne() must be true.
 		 *
 		 * @param val The value to initialize the filter with. Does not
-		 * affect the filter itself: only seen if you access state
+		 * affect the filter itself: only seen if you get the state
 		 * before initializing the filter with the first sample.
 		 */
 		explicit IntegerLowPassIIR(math::Rational<Scalar> alpha_, Value const &val)
@@ -56,7 +56,7 @@ namespace detail {
 		}
 
 		/*!
-		 * Reset the filter to just-created state.
+		 * Reset the filter to newly-created state.
 		 */
 		void
 		reset(Value const &val) noexcept
@@ -100,7 +100,7 @@ namespace detail {
 
 /*!
  * A very simple integer low-pass filter, using a "one-pole infinite impulse response"
- * design (one-pole IIR), aka exponential filter.
+ * design (one-pole IIR), also known as an exponential filter.
  *
  * Configurable in scalar type.
  */
@@ -121,7 +121,7 @@ public:
 	}
 
 	/*!
-	 * Reset the filter to just-created state.
+	 * Reset the filter to newly-created state.
 	 */
 	void
 	reset() noexcept
@@ -144,7 +144,7 @@ public:
 	}
 
 	/*!
-	 * Access the filtered value.
+	 * Get the filtered value.
 	 */
 	Scalar
 	getState() const noexcept
@@ -154,7 +154,7 @@ public:
 
 
 	/*!
-	 * Access whether we have initialized state.
+	 * Get whether we have initialized state.
 	 */
 	bool
 	isInitialized() const noexcept

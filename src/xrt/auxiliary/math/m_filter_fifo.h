@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A fifo that also allows you to dynamically filter.
+ * @brief  A fifo that also lets you dynamically filter.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_math
  */
@@ -94,8 +94,7 @@ void
 m_ff_f64_push(struct m_ff_f64 *ff, const double *sample, uint64_t timestamp_ns);
 
 /*!
- * Return the sample at the index, zero means the last sample push, one second
- * last and so on.
+ * Return the sample at the index, 0 means the last sample push, 1 second-to-last, etc.
  */
 bool
 m_ff_f64_get(struct m_ff_f64 *ff, size_t num, double *out_sample, uint64_t *out_timestamp_ns);

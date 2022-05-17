@@ -45,7 +45,7 @@ namespace detail {
 		 * blocked.
 		 *
 		 * @param val The value to initialize the filter with. Does not
-		 * affect the filter itself: only seen if you access state
+		 * affect the filter itself: only seen if you get state
 		 * before initializing the filter with the first sample.
 		 */
 		explicit LowPassIIR(Scalar cutoff_hz, Value const &val) noexcept
@@ -53,7 +53,7 @@ namespace detail {
 		{}
 
 		/*!
-		 * Reset the filter to just-created state.
+		 * Reset the filter to newly-created state.
 		 */
 		void
 		reset(Value const &val) noexcept
@@ -122,7 +122,7 @@ public:
 
 
 	/*!
-	 * Reset the filter to just-created state.
+	 * Reset the filter to newly-created state.
 	 */
 	void
 	reset() noexcept
@@ -146,7 +146,7 @@ public:
 	}
 
 	/*!
-	 * Access the filtered value.
+	 * Get the filtered value.
 	 */
 	Scalar
 	getState() const noexcept
@@ -155,7 +155,7 @@ public:
 	}
 
 	/*!
-	 * Access the time of last update.
+	 * Get the time of last update.
 	 */
 	timepoint_ns
 	getTimestampNs() const noexcept
@@ -164,7 +164,7 @@ public:
 	}
 
 	/*!
-	 * Access whether we have initialized state.
+	 * Get whether we have initialized state.
 	 */
 	bool
 	isInitialized() const noexcept

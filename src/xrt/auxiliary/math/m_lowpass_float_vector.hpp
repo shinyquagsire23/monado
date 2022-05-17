@@ -44,7 +44,7 @@ public:
 
 
 	/*!
-	 * Reset the filter to just-created state.
+	 * Reset the filter to newly-created state.
 	 */
 	void
 	reset() noexcept
@@ -68,7 +68,7 @@ public:
 	}
 
 	/*!
-	 * Access the filtered value.
+	 * Get the filtered value.
 	 */
 	Vector const &
 	getState() const noexcept
@@ -77,7 +77,7 @@ public:
 	}
 
 	/*!
-	 * Access the time of last update.
+	 * Get the time of last update.
 	 */
 	std::uint64_t
 	getTimestampNs() const noexcept
@@ -86,7 +86,7 @@ public:
 	}
 
 	/*!
-	 * Access whether we have initialized state.
+	 * Get whether we have initialized state.
 	 */
 	bool
 	isInitialized() const noexcept

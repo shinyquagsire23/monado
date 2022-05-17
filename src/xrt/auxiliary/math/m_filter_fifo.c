@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  A fifo that also allows you to dynamically filter.
+ * @brief  A fifo that also lets you dynamically filter.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup aux_math
  */

@@ -51,7 +51,7 @@ void
 m_lowpass_float_add_sample(struct m_lowpass_float *mlf, float sample, timepoint_ns timestamp_ns);
 
 /*!
- * Access the filtered value.
+ * Get the filtered value.
  *
  * Probably 0 or other meaningless value if it's not initialized: see @ref m_lowpass_float_is_initialized
  *
@@ -63,7 +63,7 @@ float
 m_lowpass_float_get_state(const struct m_lowpass_float *mlf);
 
 /*!
- * Access the time of last update
+ * Get the time of last update
  *
  * @param mlf self-pointer
  *
@@ -73,7 +73,7 @@ timepoint_ns
 m_lowpass_float_get_timestamp_ns(const struct m_lowpass_float *mlf);
 
 /*!
- * Access whether we have initialized state.
+ * Get whether we have initialized state.
  *
  * @param mlf self-pointer
  *

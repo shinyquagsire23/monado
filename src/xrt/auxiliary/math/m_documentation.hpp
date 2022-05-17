@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Header with just documentation.
+ * @brief  Header with only documentation.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_math
  */

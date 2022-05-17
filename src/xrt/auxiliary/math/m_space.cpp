@@ -251,13 +251,13 @@ apply_relation(const struct xrt_space_relation *a,
 	 */
 
 	int new_flags = 0;
-	// Make sure to not drop a orientation, even if just one is valid.
+	// Make sure to not drop a orientation, even if only one is valid.
 	if (af.has_orientation || bf.has_orientation) {
 		new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 	}
 
 	/*
-	 * Make sure to not drop a position, even if just one is valid.
+	 * Make sure to not drop a position, even if only one is valid.
 	 *
 	 * When position is valid, always set orientation valid to "upgrade"
 	 * poses with valid position but invalid orientation to fully valid
