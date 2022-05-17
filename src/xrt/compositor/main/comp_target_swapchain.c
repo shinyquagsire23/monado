@@ -529,6 +529,8 @@ run_vblank_event_thread(void *ptr)
 
 	COMP_DEBUG(ct->c, "Surface thread starting");
 
+	os_thread_helper_name(&cts->vblank.event_thread, "VBlank Event Thread");
+
 	os_thread_helper_lock(&cts->vblank.event_thread);
 
 	while (os_thread_helper_is_running_locked(&cts->vblank.event_thread)) {

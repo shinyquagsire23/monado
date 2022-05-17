@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -15,8 +15,6 @@
 #include "main/comp_window.h"
 #include "util/u_misc.h"
 #include "os/os_threading.h"
-
-#include <processthreadsapi.h>
 
 
 #undef ALLOW_CLOSING_WINDOW
@@ -163,9 +161,6 @@ comp_window_mswin_flush(struct comp_target *ct)
 static void
 comp_window_mswin_thread(struct comp_window_mswin *cwm)
 {
-	// OK if this fails
-	(void)SetThreadDescription(GetCurrentThread(), L"Message Handler");
-
 	struct comp_target *ct = &cwm->base.base;
 
 	RECT rc = {0, 0, (LONG)(ct->width), (LONG)ct->height};
@@ -246,6 +241,8 @@ comp_window_mswin_thread_func(void *ptr)
 {
 
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ptr;
+	os_thread_helper_name(&(cwm->oth), "Compositor Window Message Thread");
+
 	comp_window_mswin_thread(cwm);
 	os_thread_helper_signal_stop(&cwm->oth);
 	COMP_WARN(cwm->base.base.c, "Windows window message thread now exiting.");
