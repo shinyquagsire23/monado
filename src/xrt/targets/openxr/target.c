@@ -39,10 +39,10 @@ U_TRACE_TARGET_SETUP(U_TRACE_WHICH_SERVICE)
 
 /*
  * For non-service runtime, xrt_instance_create defined in target_instance
- * helper lib, so we just have a dummy symbol below to silence warnings about
+ * helper lib, so we just have a placeholder symbol below to silence warnings about
  * empty translation units.
  */
 #include <xrt/xrt_compiler.h>
-XRT_MAYBE_UNUSED static const int DUMMY = 42;
+XRT_MAYBE_UNUSED static const int PLACEHOLDER = 42;
 
 #endif
