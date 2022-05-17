@@ -1035,6 +1035,13 @@ enum xrt_output_name
 #define XRT_FREQUENCY_UNSPECIFIED 0
 
 /*!
+ * Value used as a timeout to indicate the timeout should never occur.
+ *
+ * @ingroup xrt_iface
+ */
+#define XRT_INFINITE_DURATION (0x7fffffffffffffffLL)
+
+/*!
  * A union of all output types.
  *
  * @see xrt_output_type
