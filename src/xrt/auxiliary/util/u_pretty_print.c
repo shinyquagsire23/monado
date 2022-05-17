@@ -273,6 +273,12 @@ u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret)
 	case XRT_ERROR_THREADING_INIT_FAILURE:               DG("XRT_ERROR_THREADING_INIT_FAILURE"); return;
 	case XRT_ERROR_IPC_SESSION_NOT_CREATED:              DG("XRT_ERROR_IPC_SESSION_NOT_CREATED"); return;
 	case XRT_ERROR_IPC_SESSION_ALREADY_CREATED:          DG("XRT_ERROR_IPC_SESSION_ALREADY_CREATED"); return;
+	case XRT_ERROR_PROBER_NOT_SUPPORTED:                 DG("XRT_ERROR_PROBER_NOT_SUPPORTED"); return;
+	case XRT_ERROR_PROBER_CREATION_FAILED:               DG("XRT_ERROR_PROBER_CREATION_FAILED"); return;
+	case XRT_ERROR_PROBER_LIST_LOCKED:                   DG("XRT_ERROR_PROBER_LIST_LOCKED"); return;
+	case XRT_ERROR_PROBER_LIST_NOT_LOCKED:               DG("XRT_ERROR_PROBER_LIST_NOT_LOCKED"); return;
+	case XRT_ERROR_PROBING_FAILED:                       DG("XRT_ERROR_PROBING_FAILED"); return;
+	case XRT_ERROR_DEVICE_CREATION_FAILED:               DG("XRT_ERROR_DEVICE_CREATION_FAILED"); return;
 	// clang-format on
 	default: break;
 	}

@@ -78,4 +78,28 @@ typedef enum xrt_result
 	 * The client has already created a session on this IPC connection.
 	 */
 	XRT_ERROR_IPC_SESSION_ALREADY_CREATED = -16,
+	/*!
+	 * The prober list has not been locked before this call.
+	 */
+	XRT_ERROR_PROBER_NOT_SUPPORTED = -17,
+	/*!
+	 * Creating the @ref xrt_prober failed.
+	 */
+	XRT_ERROR_PROBER_CREATION_FAILED = -18,
+	/*!
+	 * The prober list is locked (already).
+	 */
+	XRT_ERROR_PROBER_LIST_LOCKED = -19,
+	/*!
+	 * The prober list has not been locked before this call.
+	 */
+	XRT_ERROR_PROBER_LIST_NOT_LOCKED = -20,
+	/*!
+	 * The probring failed.
+	 */
+	XRT_ERROR_PROBING_FAILED = -21,
+	/*!
+	 * Creating a @ref xrt_device failed.
+	 */
+	XRT_ERROR_DEVICE_CREATION_FAILED = -22,
 } xrt_result_t;
