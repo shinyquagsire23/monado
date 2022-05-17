@@ -202,7 +202,6 @@ ns_vipd_parse(struct ns_hmd *ns)
 
 	try_get_fov(ns, config_json, &temp_data->fov[0], &temp_data->fov[1]);
 
-	// stupid
 	memcpy(&ns->base.hmd->distortion.fov[0], &temp_data->fov[0], sizeof(struct xrt_fov));
 	memcpy(&ns->base.hmd->distortion.fov[1], &temp_data->fov[1], sizeof(struct xrt_fov));
 

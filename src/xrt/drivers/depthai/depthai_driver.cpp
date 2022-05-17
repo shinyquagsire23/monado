@@ -334,7 +334,6 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	auto nano = std::chrono::duration_cast<std::chrono::duration<int64_t, std::nano>>(duration);
 	uint64_t timestamp_ns = nano.count();
 
-	// Sanity check.
 	if (num >= ARRAY_SIZE(depthai->sink)) {
 		DEPTHAI_ERROR(depthai, "Instance number too large! (%u)", num);
 		return;

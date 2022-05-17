@@ -256,7 +256,7 @@ struct psmv_parsed_calibration_zcm1
 	 * vector before subtracting from the gyro 80rpm measures, I get a
 	 * better calibration.
 	 *
-	 * So in order to get the accurate 80rpm measures:
+	 * So to get the accurate 80rpm measures:
 	 * GyroMeasure80rpm-(GyroBias1*UnknownVector2) or
 	 * GyroMeasure80rpm-(GyroBias2*UnknownVector2)
 	 */
@@ -408,7 +408,7 @@ struct psmv_parsed_input
 			//! Accelerometer and gyro scope samples (ZCM2).
 			struct psmv_parsed_sample sample;
 
-			//! Copy of above (ZCM2).
+			//! Copy of preceding (ZCM2).
 			struct psmv_parsed_sample sample_copy;
 		};
 	};
@@ -1005,7 +1005,7 @@ psmv_found(struct xrt_prober *xp,
 		return 0;
 	}
 
-	// Sanity check for device type.
+	// Validate device type.
 	switch (devices[index]->product_id) {
 	case PSMV_PID_ZCM1: break;
 	case PSMV_PID_ZCM2: break;

@@ -276,7 +276,7 @@ struct vive_headset_lighthouse_v2_pulse_report
 {
 	uint8_t id;
 	struct vive_headset_lighthouse_v2_pulse pulse[4];
-	/* Seen to be all values in range [0 - 53], related to hit sensor (and
+	/* Seen to be all values in range [0 - 53], related to triggered sensor (and
 	 * imu?). */
 	uint8_t unknown1;
 	/* Always 0 */

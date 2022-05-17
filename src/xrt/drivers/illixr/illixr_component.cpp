@@ -19,7 +19,7 @@
 
 using namespace ILLIXR;
 
-/// Dummy plugin class for an instance during phonebook registration
+/// Simulated plugin class for an instance during phonebook registration
 class illixr_plugin : public plugin
 {
 public:

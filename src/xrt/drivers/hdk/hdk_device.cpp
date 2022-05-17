@@ -155,7 +155,7 @@ hdk_device_update(struct hdk_device *hd)
 
 	// HDMI status only valid in reports version 3.
 	// Expecting either version 1 (100Hz) or 3 (400Hz):
-	// https://github.com/OSVR/OSVR-HDK-MCU-Firmware/blob/master/Source%20code/Embedded/src/DeviceDrivers/BNO070_using_hostif.c#L511
+	// https://github.com/OSVR/OSVR-HDK-MCU-Firmware/blob/main/Source%20code/Embedded/src/DeviceDrivers/BNO070_using_hostif.c#L511
 
 	// Next byte is sequence number, ignore
 	buf++;
@@ -191,7 +191,7 @@ hdk_device_update(struct hdk_device *hd)
 
 	// This is in the "world" coordinate system.
 
-	// Note that we must "rotate" this velocity by the first transform above
+	// Note that we must "rotate" this velocity by the first transform from earlier
 	// (90 about x), hence putting it in a pure quat.
 	struct xrt_quat ang_vel_quat;
 	ang_vel_quat.x = fromFixedPoint<6, 9>(hdk_get_le_int16(buf));

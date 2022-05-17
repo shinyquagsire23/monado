@@ -5,7 +5,7 @@
  * @brief  Sample HMD device, use as a starting point to make your own device driver.
  *
  *
- * Based largely on dummy_hmd.c
+ * Based largely on simulated_hmd.c
  *
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>

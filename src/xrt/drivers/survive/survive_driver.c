@@ -1357,7 +1357,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	}
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	// We want to hit this codepath when we find a HMD but no controllers.
+	// We want to enter this codepath when we find a HMD but no controllers.
 	if ((ss->hmd != NULL) && !found_controllers) {
 		struct t_stereo_camera_calibration *cal = NULL;
 
@@ -1376,7 +1376,8 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 			out_xdevs[out_idx++] = two_hands[0];
 			out_xdevs[out_idx++] = two_hands[1];
 		}
-		// Don't need it anymore. And it's not even created unless we hit this codepath, which is somewhat hard.
+		// Don't need it anymore. And it's not even created unless we enter this codepath, which is somewhat
+		// hard.
 		t_stereo_camera_calibration_reference(&cal, NULL);
 	}
 #endif

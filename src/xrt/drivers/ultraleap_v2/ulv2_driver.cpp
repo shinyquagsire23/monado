@@ -183,7 +183,7 @@ ulv2_process_hand(Leap::Hand hand, xrt_hand_joint_set *joint_set, int hi)
 			ulv2_process_joint(nextJ(ld), fb(ld).basis(), fb(ld).width(), hi, xrtj(LITTLE_TIP));
 			break;
 			// I hear that Sagittarius has a better api, in C even, so hopefully
-			// there'll be less weird boilerplate whenever we get access to that
+			// there'll be less weird boilerplate whenever we get that
 		}
 	}
 }
@@ -220,7 +220,7 @@ leap_input_loop(void *ptr_to_xdev)
 			          "connected to Leap Motion "
 			          "controller. Retrying (%i / %i)",
 			          i, num_tries);
-			// This codepath should very rarely get hit as nowadays this gets probed by VID/PID, so you'd
+			// This codepath should very rarely be enter as nowadays this gets probed by VID/PID, so you'd
 			// have to be pretty fast to unplug after it gets probed and before this check.
 		} else {
 			ULV2_INFO(ulv2d,

@@ -286,7 +286,8 @@ init_valve_index(struct xrt_prober *xp,
 			out_xdevs[out_idx++] = two_hands[0];
 			out_xdevs[out_idx++] = two_hands[1];
 		}
-		// Don't need it anymore. And it's not even created unless we hit this codepath, which is somewhat hard.
+		// Don't need it anymore. And it's not even created unless we enter this codepath, which is somewhat
+		// hard.
 		t_stereo_camera_calibration_reference(&cal, NULL);
 	}
 #endif

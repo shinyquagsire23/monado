@@ -435,7 +435,7 @@ _handle_sweep_pulse(struct lighthouse_watchman *watchman, uint8_t id, uint32_t t
 	}
 
 	if (frame->sweep_ids & (1 << id)) {
-		LH_WARN("%s: sensor %u hit twice per frame, assuming reflection", watchman->name, id);
+		LH_WARN("%s: sensor %u triggered twice per frame, assuming reflection", watchman->name, id);
 		return;
 	}
 

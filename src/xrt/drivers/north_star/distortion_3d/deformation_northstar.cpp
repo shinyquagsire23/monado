@@ -182,7 +182,7 @@ OpticalSystem::SolveDisplayUVToRenderUV(const Vector2 &inputUV, Vector2 const &i
 		Vector3 rayDir;
 
 		// we can do all three calls below to RenderUVToDisplayUV at the
-		// same time via SIMD or better yet we can vectorize across all
+		// same time using SIMD or better yet we can vectorize across all
 		// the uvs if we have a list of them
 		curDisplayUV = RenderUVToDisplayUV(curCameraUV);
 		Vector2 displayUVGradX =

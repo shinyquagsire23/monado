@@ -41,7 +41,7 @@
 
 
 /*!
- * Stupid convenience macro to print out a pose, only used for debugging
+ * Convenience macro to print out a pose, only used for debugging
  */
 #define print_pose(msg, pose)                                                                                          \
 	U_LOG_E(msg " %f %f %f  %f %f %f %f", pose.position.x, pose.position.y, pose.position.z, pose.orientation.x,   \

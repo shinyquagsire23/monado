@@ -376,7 +376,7 @@ hydra_system_enter_motion_control(struct hydra_system *hs, timepoint_ns now)
 
 	os_hid_set_feature(hs->command_hid, HYDRA_REPORT_START_MOTION, sizeof(HYDRA_REPORT_START_MOTION));
 
-	// Doing a dummy get-feature now.
+	// Doing a throwaway get-feature now.
 	uint8_t buf[91] = {0};
 	os_hid_get_feature(hs->command_hid, 0, buf, sizeof(buf));
 
@@ -594,7 +594,7 @@ hydra_found(struct xrt_prober *xp,
 	struct hydra_system *hs = U_TYPED_CALLOC(struct hydra_system);
 	hs->base.type = XRT_TRACKING_TYPE_HYDRA;
 	snprintf(hs->base.name, XRT_TRACKING_NAME_LEN, "%s", "Razer Hydra magnetic tracking");
-	// Dummy transform from local space to base.
+	// Arbitrary static transform from local space to base.
 	hs->base.offset.position.y = 1.0f;
 	hs->base.offset.position.z = -0.25f;
 	hs->base.offset.orientation.w = 1.0f;
