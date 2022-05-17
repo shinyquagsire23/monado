@@ -318,6 +318,8 @@ struct render_resources
  * Allocate pools and static resources.
  *
  * @ingroup comp_main
+ *
+ * @public @memberof render_resources
  */
 bool
 render_resources_init(struct render_resources *r,
@@ -327,6 +329,8 @@ render_resources_init(struct render_resources *r,
 
 /*!
  * Free all pools and static resources, does not free the struct itself.
+ *
+ * @public @memberof render_resources
  */
 void
 render_resources_close(struct render_resources *r);
@@ -334,13 +338,16 @@ render_resources_close(struct render_resources *r);
 /*!
  * Returns the timestamps for when the latest GPU work started and stopped that
  * was submitted using @ref render_gfx or @ref render_compute cmd buf builders.
- * Returned in the same time domain as returned by @ref os_monotonic_get_ns.
+ *
+ * Returned in the same time domain as returned by @ref os_monotonic_get_ns .
  * Behaviour for this function is undefined if the GPU has not completed before
  * calling this function, so make sure to call vkQueueWaitIdle or wait on the
  * fence that the work was submitted with have fully completed. See other
- * limitation mentioned for @ref vk_convert_timestamps_to_host_ns.
+ * limitation mentioned for @ref vk_convert_timestamps_to_host_ns .
  *
  * @see vk_convert_timestamps_to_host_ns
+ *
+ * @public @memberof render_resources
  */
 bool
 render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_start_ns, uint64_t *out_gpu_end_ns);
@@ -421,6 +428,8 @@ struct render_gfx_target_resources
 
 /*!
  * Init a target resource struct, caller has to keep target alive until closed.
+ *
+ * @public @memberof render_gfx_target_resources
  */
 bool
 render_gfx_target_resources_init(struct render_gfx_target_resources *rtr,
@@ -430,6 +439,8 @@ render_gfx_target_resources_init(struct render_gfx_target_resources *rtr,
 
 /*!
  * Frees all resources held by the target, does not free the struct itself.
+ *
+ * @public @memberof render_gfx_target_resources
  */
 void
 render_gfx_target_resources_close(struct render_gfx_target_resources *rtr);
@@ -479,12 +490,16 @@ struct render_gfx
 
 /*!
  * Init struct and create resources needed for rendering.
+ *
+ * @public @memberof render_gfx
  */
 bool
 render_gfx_init(struct render_gfx *rr, struct render_resources *r);
 
 /*!
  * Begins the rendering, takes the vk_bundle's pool lock and leaves it locked.
+ *
+ * @public @memberof render_gfx
  */
 bool
 render_gfx_begin(struct render_gfx *rr);
@@ -492,12 +507,16 @@ render_gfx_begin(struct render_gfx *rr);
 /*!
  * Frees any unneeded resources and ends the command buffer so it can be used,
  * also unlocks the vk_bundle's pool lock that was taken by begin.
+ *
+ * @public @memberof render_gfx
  */
 bool
 render_gfx_end(struct render_gfx *rr);
 
 /*!
  * Frees all resources held by the rendering, does not free the struct itself.
+ *
+ * @public @memberof render_gfx
  */
 void
 render_gfx_close(struct render_gfx *rr);
@@ -520,25 +539,47 @@ struct render_gfx_mesh_ubo_data
 };
 
 /*!
+ * @name Drawing functions
+ * @{
+ */
+
+/*!
  * This function allocates everything to start a single rendering. This is the
  * first function you call when you start rendering, you follow up with a call
  * to render_gfx_begin_view.
+ *
+ * @public @memberof render_gfx
  */
 bool
 render_gfx_begin_target(struct render_gfx *rr, struct render_gfx_target_resources *rtr);
 
+/*!
+ * @public @memberof render_gfx
+ */
 void
 render_gfx_end_target(struct render_gfx *rr);
 
+/*!
+ * @public @memberof render_gfx
+ */
 void
 render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewport_data *viewport_data);
 
+/*!
+ * @public @memberof render_gfx
+ */
 void
 render_gfx_end_view(struct render_gfx *rr);
 
+/*!
+ * @public @memberof render_gfx
+ */
 void
 render_gfx_distortion(struct render_gfx *rr);
 
+/*!
+ * @}
+ */
 
 /*
  *
@@ -546,13 +587,20 @@ render_gfx_distortion(struct render_gfx *rr);
  *
  */
 
+/*!
+ * @name Update functions
+ * @{
+ */
+/*!
+ * @public @memberof render_gfx
+ */
 void
 render_gfx_update_distortion(struct render_gfx *rr,
                              uint32_t view,
                              VkSampler sampler,
                              VkImageView image_view,
                              struct render_gfx_mesh_ubo_data *data);
-
+//! @}
 
 
 /*
@@ -580,6 +628,8 @@ struct render_compute
 
 /*!
  * UBO data that is sent to the compute distortion shaders.
+ *
+ * Used in @ref render_compute
  */
 struct render_compute_distortion_ubo_data
 
@@ -592,12 +642,16 @@ struct render_compute_distortion_ubo_data
 
 /*!
  * Init struct and create resources needed for compute rendering.
+ *
+ * @public @memberof render_compute
  */
 bool
 render_compute_init(struct render_compute *crc, struct render_resources *r);
 
 /*!
  * Frees all resources held by the compute rendering, does not free the struct itself.
+ *
+ * @public @memberof render_compute
  */
 void
 render_compute_close(struct render_compute *crc);
@@ -605,6 +659,8 @@ render_compute_close(struct render_compute *crc);
 /*!
  * Begin the compute command buffer building, takes the vk_bundle's pool lock
  * and leaves it locked.
+ *
+ * @public @memberof render_compute
  */
 bool
 render_compute_begin(struct render_compute *crc);
@@ -612,10 +668,15 @@ render_compute_begin(struct render_compute *crc);
 /*!
  * Frees any unneeded resources and ends the command buffer so it can be used,
  * also unlocks the vk_bundle's pool lock that was taken by begin.
+ *
+ * @public @memberof render_compute
  */
 bool
 render_compute_end(struct render_compute *crc);
 
+/*!
+ * @public @memberof render_compute
+ */
 void
 render_compute_projection_timewarp(struct render_compute *crc,
                                    VkSampler src_samplers[2],
@@ -628,6 +689,9 @@ render_compute_projection_timewarp(struct render_compute *crc,
                                    VkImageView target_image_view,
                                    const struct render_viewport_data views[2]);
 
+/*!
+ * @public @memberof render_compute
+ */
 void
 render_compute_projection(struct render_compute *crc,                    //
                           VkSampler src_samplers[2],                     //
@@ -637,6 +701,9 @@ render_compute_projection(struct render_compute *crc,                    //
                           VkImageView target_image_view,                 //
                           const struct render_viewport_data views[2]);   //
 
+/*!
+ * @public @memberof render_compute
+ */
 void
 render_compute_clear(struct render_compute *crc,                  //
                      VkImage target_image,                        //
