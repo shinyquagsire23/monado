@@ -8,6 +8,7 @@
  * @ingroup comp_multi
  */
 
+#include "os/os_threading.h"
 #include "xrt/xrt_gfx_native.h"
 
 #include "os/os_time.h"
@@ -355,7 +356,7 @@ static int
 multi_main_loop(struct multi_system_compositor *msc)
 {
 	COMP_TRACE_MARKER();
-
+	os_thread_helper_name(&(msc->oth), "Multi-System Compositor", L"Multi-System Compositor");
 	struct xrt_compositor *xc = &msc->xcn->base;
 
 	//! @todo Don't make this a hack.
