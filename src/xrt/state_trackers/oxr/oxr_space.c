@@ -423,7 +423,7 @@ oxr_space_locate(
 			oxr_slog(&slog, "\n\tReturning invalid pose");
 			oxr_log_slog(log, &slog);
 		} else {
-			oxr_slog_abort(&slog);
+			oxr_slog_cancel(&slog);
 		}
 
 		return XR_SUCCESS;
@@ -476,7 +476,7 @@ oxr_space_locate(
 		oxr_pp_relation_indented(&slog, &result, "relation");
 		oxr_log_slog(log, &slog);
 	} else {
-		oxr_slog_abort(&slog);
+		oxr_slog_cancel(&slog);
 	}
 
 	return oxr_session_success_result(spc->sess);

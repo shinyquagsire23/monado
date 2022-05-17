@@ -106,7 +106,7 @@ oxr_verify_localized_name(struct oxr_logger *log, const char *string, uint32_t a
 		                 name);
 	}
 
-	// Future work: validate well-formed UTF-8?
+	/// @todo validate well-formed UTF-8?
 	return XR_SUCCESS;
 }
 
@@ -209,9 +209,9 @@ oxr_verify_full_path(struct oxr_logger *log, const char *path, size_t length, co
 		// Empty string
 		return oxr_error(log, XR_ERROR_PATH_FORMAT_INVALID, "(%s) a empty string is not a valid path", name);
 	case VERIFY_SLASH:
-		// Is this '/foo/' or '/'
+		// Is this '/path_component/' or '/'
 		if (length > 1) {
-			// It was '/foo/'
+			// It was '/path_component/'
 			return XR_SUCCESS;
 		}
 		// It was '/'
@@ -223,7 +223,7 @@ oxr_verify_full_path(struct oxr_logger *log, const char *path, size_t length, co
 		                 name);
 
 	case VERIFY_MIDDLE:
-		// '/foo/bar' okay!
+		// '/path_component/trailing_path_component' okay!
 		return XR_SUCCESS;
 	default:
 		// We should not end up here.

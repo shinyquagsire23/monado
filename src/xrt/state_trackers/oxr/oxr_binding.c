@@ -527,11 +527,11 @@ oxr_action_get_input_source_localized_name(struct oxr_logger *log,
 		add_string(temp, sizeof(temp), &current, oip->localized_name);
 	}
 
-	//! @todo This implementation is very very very ugly.
+	//! @todo This implementation is very very very inelegant.
 	if ((getInfo->whichComponents & XR_INPUT_SOURCE_LOCALIZED_NAME_COMPONENT_BIT) != 0) {
 		/*
-		 * The above enum is miss-named it should be called identifier
-		 * instead of component.
+		 * The preceding enum is misnamed: it should be called identifier
+		 * instead of component. But, this is a spec bug.
 		 */
 		add_string(temp, sizeof(temp), &current,
 		           get_identifier_str_in_profile(log, sess->sys->inst, getInfo->sourcePath, oip));

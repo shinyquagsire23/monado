@@ -114,10 +114,10 @@ oxr_slog_dg(struct oxr_sink_logger *slog)
 }
 
 /*!
- * Abort logging, frees all internal data.
+ * Cancel logging, frees all internal data.
  */
 void
-oxr_slog_abort(struct oxr_sink_logger *slog);
+oxr_slog_cancel(struct oxr_sink_logger *slog);
 
 /*!
  * Flush sink as a log message, frees all internal data.

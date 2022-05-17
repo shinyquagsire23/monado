@@ -50,8 +50,8 @@ is_fmt_func_arg_start(const char *fmt)
  * Prints the first part of a logging message, has three forms.
  *
  * ```c++
- * print_prefix(l, "(myInfo->foo) is bad", "XR_ERROR_VALIDATION_FAILURE");
- * // XR_ERROR_VALIDATION_FAILURE: xrMyFunc(myInfo->foo) is bad
+ * print_prefix(l, "(myInfo->memberName) is bad", "XR_ERROR_VALIDATION_FAILURE");
+ * // XR_ERROR_VALIDATION_FAILURE: xrMyFunc(myInfo->memberName) is bad
  *
  * print_prefix(l, "This is bad", "XR_ERROR_VALIDATION_FAILURE");
  * // XR_ERROR_VALIDATION_FAILURE in xrMyFunc: This is bad
@@ -240,7 +240,7 @@ oxr_slog_add_array(struct oxr_sink_logger *slog, const char *str, size_t size)
 }
 
 void
-oxr_slog_abort(struct oxr_sink_logger *slog)
+oxr_slog_cancel(struct oxr_sink_logger *slog)
 {
 	slog_free_store(slog);
 }

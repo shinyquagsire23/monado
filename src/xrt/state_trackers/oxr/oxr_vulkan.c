@@ -247,7 +247,6 @@ vk_get_device_ext_props(struct oxr_logger *log,
 		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties (%d)", res);
 	}
 
-	// Check above returns on failure.
 	*out_props = props;
 	*out_prop_count = prop_count;
 

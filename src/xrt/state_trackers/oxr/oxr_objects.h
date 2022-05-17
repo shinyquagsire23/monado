@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Contains the instance struct that a lot of things hang from.
+ * @brief  The objects representing OpenXR handles, and prototypes for internal functions used in the state tracker.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup oxr_main
  */
@@ -1151,7 +1151,7 @@ struct oxr_handle_base
 
 /*!
  * Single or multiple devices grouped together to form a system that sessions
- * can be created from. Might need to open devices in order to get all
+ * can be created from. Might need to open devices to get all
  * properties from it, but shouldn't.
  *
  * Not strictly an object, but an atom.
@@ -1571,7 +1571,7 @@ struct oxr_subaction_paths
  *
  * This structure has no pointer to the @ref oxr_action_set that created it
  * because the application is allowed to destroy an action before the session,
- * which should change nothing except not allow the application to access the
+ * which should change nothing except not allow the application to use the
  * corresponding data anymore.
  *
  * @ingroup oxr_input

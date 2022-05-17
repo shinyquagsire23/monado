@@ -351,7 +351,7 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 		}
 	}
 
-	// Sanity checking.
+	// Consistency checking.
 	if (xdev != NULL && hand_tracker->xdev == NULL) {
 		oxr_warn(log, "We got hand tracking xdev but it didn't have a hand tracking input.");
 	}

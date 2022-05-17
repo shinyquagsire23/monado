@@ -365,7 +365,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 			oxr_slog(&slog, "\n\tReturning invalid poses");
 			oxr_log_slog(log, &slog);
 		} else {
-			oxr_slog_abort(&slog);
+			oxr_slog_cancel(&slog);
 		}
 
 		return XR_SUCCESS;
@@ -426,7 +426,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 			struct xrt_quat *q = &pose->orientation;
 			struct xrt_quat norm = *q;
 			math_quat_normalize(&norm);
-			oxr_slog_abort(&slog);
+			oxr_slog_cancel(&slog);
 			return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
 			                 "Quaternion %a %a %a %a (normalized %a %a %a %a) "
 			                 "in xrLocateViews was invalid",
@@ -443,7 +443,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 	if (print) {
 		oxr_log_slog(log, &slog);
 	} else {
-		oxr_slog_abort(&slog);
+		oxr_slog_cancel(&slog);
 	}
 
 	return oxr_session_success_result(sess);

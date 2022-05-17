@@ -91,7 +91,7 @@ struct oxr_input_transform_threshold_data
 	//! The "greater-than" threshold value
 	float threshold;
 
-	//! If true, values above threshold are false instead of
+	//! If true, values greater than `threshold` are false instead of
 	//! true
 	bool invert;
 };
@@ -275,8 +275,7 @@ oxr_input_transform_init_bool_to_vec1(struct oxr_input_transform *transform,
 /*!
  * Create a transform array to convert @p input_type to @p result_type.
  *
- * @todo In the future, this should be configured using knowledge from the
- * device as well as user options.
+ * @todo This should be configured using knowledge from the device as well as user options/policy.
  *
  * @param[in] log The logger
  * @param[in] slog The sink logger

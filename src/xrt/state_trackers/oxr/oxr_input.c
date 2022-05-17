@@ -778,7 +778,7 @@ oxr_action_attachment_bind(struct oxr_logger *log,
 	if (sess->sys->inst->debug_bindings) {
 		oxr_log_slog(log, &slog);
 	} else {
-		oxr_slog_abort(&slog);
+		oxr_slog_cancel(&slog);
 	}
 
 	return XR_SUCCESS;
