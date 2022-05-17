@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,6 +10,7 @@
  *
  * @author Drew DeVault <sir@cmpwn.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  *
  * @ingroup aux_os
  */
@@ -61,13 +62,105 @@ extern "C" {
  */
 
 /*!
- * @brief Sleep the given number of nanoseconds.
+ * Return a monotonic clock in nanoseconds.
+ * @ingroup aux_os_time
+ */
+static inline uint64_t
+os_monotonic_get_ns(void);
+
+/*!
+ * Sleep the given number of nanoseconds.
  *
  * Note that on some platforms, this may be somewhat less accurate than you might want.
  * On all platforms, the system scheduler has the final say.
  *
+ * @see os_precise_sleeper
+ *
  * @ingroup aux_os_time
  */
+static inline void
+os_nanosleep(int64_t nsec);
+
+/*!
+ * A structure for storing state as needed for more precise sleeping, mostly for compositor use.
+ * @ingroup aux_os_time
+ */
+struct os_precise_sleeper;
+
+/*!
+ * Initialize members of @ref os_precise_sleeper.
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_init(struct os_precise_sleeper *ops);
+
+/*!
+ * De-initialize members of @ref os_precise_sleeper, and free resources, without actually freeing the given
+ * pointer.
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_deinit(struct os_precise_sleeper *ops);
+
+/*!
+ * Sleep the given number of nanoseconds, trying harder to be precise.
+ *
+ * On some platforms, there is no way to improve sleep precision easily with some OS-specific state, so we forward
+ * to os_nanosleep().
+ *
+ * Note that on all platforms, the system scheduler has the final say.
+ *
+ * @public @memberof os_precise_sleeper
+ */
+static inline void
+os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec);
+
+#if defined(XRT_HAVE_TIMESPEC) || defined(XRT_DOXYGEN)
+/*!
+ * Convert a timespec struct to nanoseconds.
+ *
+ * Note that this only does the value combining, no adjustment for epochs is performed.
+ *
+ * @ingroup aux_os_time_extra
+ */
+static inline uint64_t
+os_timespec_to_ns(const struct timespec *spec);
+
+/*!
+ * Convert an nanosecond integer to a timespec struct.
+ *
+ * Note that this only does the value splitting, no adjustment for epochs is performed.
+ * @ingroup aux_os_time_extra
+ */
+static inline void
+os_ns_to_timespec(uint64_t ns, struct timespec *spec);
+#endif
+
+#if defined(XRT_HAVE_TIMEVAL) || defined(XRT_DOXYGEN)
+/*!
+ * Convert a timeval struct to nanoseconds.
+ * @ingroup aux_os_time_extra
+ */
+static inline uint64_t
+os_timeval_to_ns(struct timeval *val);
+#endif
+
+#if defined(XRT_OS_LINUX) || defined(XRT_DOXYGEN)
+/*!
+ * Return a realtime clock in nanoseconds (Linux-only)
+ *
+ * @ingroup aux_os_time_extra
+ */
+static inline uint64_t
+os_realtime_get_ns(void);
+#endif
+
+/*
+ *
+ * implementations follow
+ *
+ */
+
 static inline void
 os_nanosleep(int64_t nsec)
 {
@@ -81,10 +174,6 @@ os_nanosleep(int64_t nsec)
 #endif
 }
 
-/*!
- * @brief A structure for storing state as needed for more precise sleeping, mostly for compositor use.
- * @ingroup aux_os_time
- */
 struct os_precise_sleeper
 {
 #if defined(XRT_OS_WINDOWS)
@@ -94,10 +183,6 @@ struct os_precise_sleeper
 #endif
 };
 
-/*!
- * @brief Initialize members of @ref os_precise_sleeper.
- * @public @memberof os_precise_sleeper
- */
 static inline void
 os_precise_sleeper_init(struct os_precise_sleeper *ops)
 {
@@ -106,11 +191,6 @@ os_precise_sleeper_init(struct os_precise_sleeper *ops)
 #endif
 }
 
-/*!
- * @brief De-initialize members of @ref os_precise_sleeper, and free resources, without actually freeing the given
- * pointer.
- * @public @memberof os_precise_sleeper
- */
 static inline void
 os_precise_sleeper_deinit(struct os_precise_sleeper *ops)
 {
@@ -122,16 +202,6 @@ os_precise_sleeper_deinit(struct os_precise_sleeper *ops)
 #endif
 }
 
-/*!
- * @brief Sleep the given number of nanoseconds, trying harder to be precise.
- *
- * On some platforms, there is no way to improve sleep precision easily with some OS-specific state, so we forward
- * to os_nanosleep().
- *
- * Note that on all platforms, the system scheduler has the final say.
- *
- * @public @memberof os_precise_sleeper
- */
 static inline void
 os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 {
@@ -152,13 +222,6 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 }
 
 #if defined(XRT_HAVE_TIMESPEC)
-/*!
- * @brief Convert a timespec struct to nanoseconds.
- *
- * Note that this does the value combining, no adjustment for epochs is performed.
- *
- * @ingroup aux_os_time_extra
- */
 static inline uint64_t
 os_timespec_to_ns(const struct timespec *spec)
 {
@@ -168,12 +231,6 @@ os_timespec_to_ns(const struct timespec *spec)
 	return ns;
 }
 
-/*!
- * @brief Convert an nanosecond integer to a timespec struct.
- *
- * Note that this does the value splitting, no adjustment for epochs is performed.
- * @ingroup aux_os_time_extra
- */
 static inline void
 os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 {
@@ -187,10 +244,6 @@ os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 
 #define OS_NS_PER_USEC (1000)
 
-/*!
- * @brief Convert a timeval struct to nanoseconds.
- * @ingroup aux_os_time_extra
- */
 static inline uint64_t
 os_timeval_to_ns(struct timeval *val)
 {
@@ -199,12 +252,9 @@ os_timeval_to_ns(struct timeval *val)
 	ns += (uint64_t)val->tv_usec * OS_NS_PER_USEC;
 	return ns;
 }
-#endif // XRT_HAVE_TIMEVAL
+#endif // defined(XRT_HAVE_TIMEVAL) && defined(XRT_OS_LINUX)
 
-/*!
- * @brief Return a monotonic clock in nanoseconds.
- * @ingroup aux_os_time
- */
+
 static inline uint64_t
 os_monotonic_get_ns(void)
 {
@@ -233,10 +283,6 @@ os_monotonic_get_ns(void)
 }
 
 #ifdef XRT_OS_LINUX
-/*!
- * @brief Return a realtime clock in nanoseconds.
- * @ingroup aux_os_time
- */
 static inline uint64_t
 os_realtime_get_ns(void)
 {
