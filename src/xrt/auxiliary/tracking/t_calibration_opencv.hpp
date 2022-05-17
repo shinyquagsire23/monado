@@ -25,7 +25,7 @@ namespace xrt::auxiliary::tracking {
 /*!
  * @brief Essential calibration data wrapped for C++.
  *
- * Just like the cv::Mat that it holds, this object does not own all the memory
+ * Like the cv::Mat that it holds, this object does not own all the memory
  * it points to!
  */
 struct CameraCalibrationWrapper
@@ -67,7 +67,7 @@ struct CameraCalibrationWrapper
 /*!
  * @brief Essential stereo calibration data wrapped for C++.
  *
- * Just like the cv::Mat that it holds, this object does not own (all) the
+ * Like the cv::Mat that it holds, this object does not own (all) the
  * memory it points to!
  */
 struct StereoCameraCalibrationWrapper
@@ -198,8 +198,7 @@ struct StereoRectificationMaps
 
 
 /*!
- * @brief Provides cached, precomputed access to normalized image coordinates
- * from original, distorted ones.
+ * @brief Provides cached, precomputed normalized image coordinates from original, distorted ones.
  *
  * Populates internal structures using cv::undistortPoints() and performs
  * subpixel sampling to interpolate for each query. Essentially, this class lets

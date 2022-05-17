@@ -209,7 +209,7 @@ ensure_buffers_are_allocated(class Calibration &c, int rows, int cols)
 	}
 
 	// If our rgb is not allocated but our gray already is, alloc our rgb
-	// now. We will hit this path if we receive L8 format.
+	// now. We will end up in this path if we receive L8 format.
 	if (c.gray.cols == cols && c.gray.rows == rows) {
 		refresh_gui_frame(c, rows, cols);
 		return;
@@ -352,7 +352,7 @@ do_view_sb_checkers(class Calibration &c, struct ViewState &view, cv::Mat &gray,
 
 #ifdef SB_CHEESBOARD_CORNERS_MARKER_SUPPORTED
 	if (c.board.marker) {
-		// Only available in OpenCV 4.3 and above.
+		// Only available in OpenCV 4.3 and newer.
 		flags += cv::CALIB_CB_MARKER;
 	}
 #endif

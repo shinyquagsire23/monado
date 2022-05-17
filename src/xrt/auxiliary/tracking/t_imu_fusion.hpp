@@ -268,7 +268,7 @@ SimpleIMUFusion::handleAccel(Eigen::Vector3d const &accel, timepoint_ns timestam
 			return false;
 		}
 
-		// Initially, just set it to totally trust gravity.
+		// Initially, set it to totally trust gravity.
 		started_ = true;
 		quat_ = Eigen::Quaterniond::FromTwoVectors(accel.normalized(), Eigen::Vector3d::UnitY());
 		accel_filter_.addSample(accel, timestamp);

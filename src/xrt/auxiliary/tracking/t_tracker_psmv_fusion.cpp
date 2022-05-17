@@ -119,7 +119,7 @@ namespace {
 		imu.handleGyro(map_vec3(sample->gyro_rad_secs).cast<double>(), timestamp_ns);
 		imu.postCorrect();
 
-		//! @todo use better measurements instead of the above "simple
+		//! @todo use better measurements instead of the preceding "simple
 		//! fusion"
 		if (filter_time_ns != 0 && filter_time_ns != timestamp_ns) {
 			float dt = time_ns_to_s(timestamp_ns - filter_time_ns);

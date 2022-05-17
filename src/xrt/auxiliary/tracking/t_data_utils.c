@@ -346,7 +346,7 @@ t_calibration_gui_params_load_or_default(struct t_calibration_params *p)
 {
 	t_calibration_gui_params_default(p);
 
-	// Load defaults from file, if it exists. This overwrites the above
+	// Load defaults from file, if it exists. This overwrites the preceding
 	struct u_config_json config_json = {0};
 
 	u_gui_state_open_file(&config_json);

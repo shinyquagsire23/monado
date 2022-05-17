@@ -173,8 +173,8 @@ do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
  * computed by your functor.
  *
  * Having this as a struct with a method, instead of a single "algorithm"-style
- * function, allows you to keep your complicated filtering logic in your own
- * loop, just calling in when you have a new candidate for "best".
+ * function, lets you keep your complicated filtering logic in your own
+ * loop, calling in when you have a new candidate for "best".
  *
  * @note Create by calling make_lowest_score_finder() with your
  * function/lambda that takes an element and returns the score, to deduce the

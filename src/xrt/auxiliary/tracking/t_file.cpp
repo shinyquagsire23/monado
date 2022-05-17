@@ -119,7 +119,7 @@ StereoRectificationMaps::StereoRectificationMaps(t_stereo_camera_calibration *da
 		//! @todo for some reason this looks weird?
 		// Alpha of 1.0 kinda works, not really.
 		int flags = cv::CALIB_ZERO_DISPARITY;
-		double balance = 0.0; // aka alpha.
+		double balance = 0.0; // also known as alpha.
 		double fov_scale = 1.0;
 
 		cv::fisheye::stereoRectify(
@@ -217,8 +217,8 @@ t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_cal
 	t_stereo_camera_calibration_alloc(&data_ptr, 5); // Hardcoded to 5 distortion parameters.
 	StereoCameraCalibrationWrapper wrapped(data_ptr);
 
-	// Dummy matrix
-	cv::Mat dummy;
+	// Scratch-space temporary matrix
+	cv::Mat scratch;
 
 	// Read our calibration from this file
 	// clang-format off
@@ -229,13 +229,13 @@ t_stereo_camera_calibration_load_v1(FILE *calib_file, struct t_stereo_camera_cal
 	result = result && read_cv_mat(calib_file, &wrapped.view[1].distortion_mat, "r_distortion"); // 5 x 1
 	result = result && read_cv_mat(calib_file, &wrapped.view[0].distortion_fisheye_mat, "l_distortion_fisheye"); // 4 x 1
 	result = result && read_cv_mat(calib_file, &wrapped.view[1].distortion_fisheye_mat, "r_distortion_fisheye"); // 4 x 1
-	result = result && read_cv_mat(calib_file, &dummy, "l_rotation"); // 3 x 3
-	result = result && read_cv_mat(calib_file, &dummy, "r_rotation"); // 3 x 3
-	result = result && read_cv_mat(calib_file, &dummy, "l_translation"); // empty
-	result = result && read_cv_mat(calib_file, &dummy, "r_translation"); // empty
-	result = result && read_cv_mat(calib_file, &dummy, "l_projection"); // 3 x 4
-	result = result && read_cv_mat(calib_file, &dummy, "r_projection"); // 3 x 4
-	result = result && read_cv_mat(calib_file, &dummy, "disparity_to_depth");  // 4 x 4
+	result = result && read_cv_mat(calib_file, &scratch, "l_rotation"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &scratch, "r_rotation"); // 3 x 3
+	result = result && read_cv_mat(calib_file, &scratch, "l_translation"); // empty
+	result = result && read_cv_mat(calib_file, &scratch, "r_translation"); // empty
+	result = result && read_cv_mat(calib_file, &scratch, "l_projection"); // 3 x 4
+	result = result && read_cv_mat(calib_file, &scratch, "r_projection"); // 3 x 4
+	result = result && read_cv_mat(calib_file, &scratch, "disparity_to_depth");  // 4 x 4
 	result = result && read_cv_mat(calib_file, &mat_image_size, "mat_image_size");
 
 	if (!result) {
@@ -447,8 +447,8 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_cal
 	CALIB_WARN("Deprecated function: %s", __func__);
 
 	StereoCameraCalibrationWrapper wrapped(data);
-	// Dummy matrix
-	cv::Mat dummy;
+	// Scratch-space temporary matrix
+	cv::Mat scratch;
 
 	write_cv_mat(calib_file, &wrapped.view[0].intrinsics_mat);
 	write_cv_mat(calib_file, &wrapped.view[1].intrinsics_mat);
@@ -456,13 +456,13 @@ t_stereo_camera_calibration_save_v1(FILE *calib_file, struct t_stereo_camera_cal
 	write_cv_mat(calib_file, &wrapped.view[1].distortion_mat);
 	write_cv_mat(calib_file, &wrapped.view[0].distortion_fisheye_mat);
 	write_cv_mat(calib_file, &wrapped.view[1].distortion_fisheye_mat);
-	write_cv_mat(calib_file, &dummy); // view[0].rotation_mat
-	write_cv_mat(calib_file, &dummy); // view[1].rotation_mat
-	write_cv_mat(calib_file, &dummy); // l_translation
-	write_cv_mat(calib_file, &dummy); // r_translation
-	write_cv_mat(calib_file, &dummy); // view[0].projection_mat
-	write_cv_mat(calib_file, &dummy); // view[1].projection_mat
-	write_cv_mat(calib_file, &dummy); // disparity_to_depth_mat
+	write_cv_mat(calib_file, &scratch); // view[0].rotation_mat
+	write_cv_mat(calib_file, &scratch); // view[1].rotation_mat
+	write_cv_mat(calib_file, &scratch); // l_translation
+	write_cv_mat(calib_file, &scratch); // r_translation
+	write_cv_mat(calib_file, &scratch); // view[0].projection_mat
+	write_cv_mat(calib_file, &scratch); // view[1].projection_mat
+	write_cv_mat(calib_file, &scratch); // disparity_to_depth_mat
 
 	cv::Mat mat_image_size;
 	mat_image_size.create(1, 2, CV_32F);

@@ -197,7 +197,7 @@ typedef struct match_data
 {
 	float angle = {};              // angle from reference vector
 	float distance = {};           // distance from base of reference vector
-	int32_t vertex_index = {};     // index aka tag
+	int32_t vertex_index = {};     // index also known as tag
 	Eigen::Vector4f position = {}; // 3d position of vertex
 	blob_point_t src_blob = {};    // blob this vertex was derived from
 } match_data_t;
@@ -915,7 +915,7 @@ disambiguate(TrackerPSVR &t,
 	uint32_t matched_vertex_indices[PSVR_NUM_LEDS];
 
 	// we can early-out if we are 'close enough' to our last match model.
-	// if we just hold the previous led configuration, this increases
+	// if we hold the previous led configuration, this increases
 	// performance and should cut down on jitter.
 	if (t.last_optical_model > 0 && t.done_correction) {
 
@@ -1293,9 +1293,8 @@ sample_line(cv::Mat &src, const cv::Point2i &start, const cv::Point2i &end, int 
 			// cv is row, column
 			uint8_t *val = src.ptr(curr_y, curr_x);
 
-			// @todo: we are just counting pixels rather
-			// than measuring length - bresenhams may introduce some
-			// inaccuracy here.
+			/// @todo: we are counting pixels rather than measuring length - bresenhams may introduce some
+			/// inaccuracy here.
 			if (*val > 128) {
 				(*inside_length) += 1;
 			}

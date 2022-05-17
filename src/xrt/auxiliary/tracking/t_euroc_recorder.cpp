@@ -100,7 +100,7 @@ euroc_recorder_flush(struct euroc_recorder *er)
 		er->imu_queue.pop();
 	}
 
-	// Flush csv streams. Not necessary, just doing it to increase flush frequency
+	// Flush csv streams. Not necessary, doing it only to increase flush frequency
 	er->imu_csv->flush();
 	er->left_cam_csv->flush();
 	er->right_cam_csv->flush();
