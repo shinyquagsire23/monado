@@ -243,7 +243,7 @@ public:
 	{
 		SteamVRDriverControlOutput out;
 
-		// for the future: XRT_GET_OUTPUT_TYPE(monado_output_name);
+		/// @todo when there are multiple output types: XRT_GET_OUTPUT_TYPE(monado_output_name);
 		enum xrt_output_type monado_output_type = XRT_OUTPUT_TYPE_VIBRATION;
 
 		out.monado_output_type = monado_output_type;

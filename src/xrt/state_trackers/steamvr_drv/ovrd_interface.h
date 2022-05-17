@@ -15,7 +15,7 @@
  * @defgroup st_ovrd SteamVR driver provider
  *
  * Wraps a @ref xrt_instance and one or more @ref xrt_device and exposes those
- * to SteamVR via the OpenVR driver interface.
+ * to SteamVR through the OpenVR driver interface.
  *
  * @ingroup xrt
  */
