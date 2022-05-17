@@ -156,7 +156,7 @@ client_gl_compositor(struct xrt_compositor *xc)
 }
 
 /*!
- * Fill in a client_gl_compositor and do common OpenGL sanity checking.
+ * Fill in a client_gl_compositor and do common OpenGL readiness checking.
  *
  * OpenGL can have multiple backing window systems we have to interact with, so
  * there isn't just one unified OpenGL client constructor.
