@@ -715,6 +715,7 @@ enum xrt_input_type
 enum xrt_input_name
 {
 	// clang-format off
+	//! Standard pose used for rendering
 	XRT_INPUT_GENERIC_HEAD_POSE                  = XRT_INPUT_NAME(0x0000, POSE),
 	XRT_INPUT_GENERIC_HEAD_DETECT                = XRT_INPUT_NAME(0x0001, BOOLEAN),
 	XRT_INPUT_GENERIC_HAND_TRACKING_LEFT         = XRT_INPUT_NAME(0x0002, HAND_TRACKING),

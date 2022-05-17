@@ -47,6 +47,11 @@ struct os_hid_device;
  */
 #define XRT_MAX_DEVICES_PER_PROBE 16
 
+/*!
+ * The maximum number of @ref xrt_auto_prober instances that can be handled.
+ *
+ * @ingroup xrt_iface
+ */
 #define XRT_MAX_AUTO_PROBERS 16
 
 /*!
@@ -101,6 +106,12 @@ struct xrt_prober_device
 /*!
  * Callback for listing video devices.
  *
+ * @param xp Prober
+ * @param pdev Prober device being iterated
+ * @param product Product string, if available
+ * @param manufacturer Manufacturer string, if available
+ * @param serial Serial number string, if available
+ * @param ptr Your opaque userdata pointer as provided to @ref xrt_prober_list_video_devices
  * @ingroup xrt_iface
  */
 typedef void (*xrt_prober_list_video_func_t)(struct xrt_prober *xp,
@@ -133,17 +144,16 @@ struct xrt_prober
 	 * to detect any additional devices that may show up once the first
 	 * device has been been started.
 	 *
-	 * @note Code consuming this interface should use xrt_prober_probe()
 	 * @see xrt_prober::lock_list, xrt_prober::unlock_list
 	 */
 	xrt_result_t (*probe)(struct xrt_prober *xp);
 
 	/*!
-	 * Locks the prober list of probed devices and returns it, while locked
-	 * calling @ref xrt_prober::probe is forbidden. Not thread safe.
+	 * Locks the prober list of probed devices and returns it.
+	 * While locked, calling @ref xrt_prober::probe is forbidden. Not thread safe.
+	 *
 	 * See @ref xrt_prober::probe for more detailed expected usage.
 	 *
-	 * @note Code consuming this interface should use xrt_prober_lock_list()
 	 * @see xrt_prober::probe, xrt_prober::unlock_list
 	 */
 	xrt_result_t (*lock_list)(struct xrt_prober *xp,
@@ -155,7 +165,6 @@ struct xrt_prober
 	 * Takes a pointer to the list pointer and clears it. Not thread safe.
 	 * See @ref xrt_prober::probe for more detailed expected usage.
 	 *
-	 * @note Code consuming this interface should use xrt_prober_unlock_list()
 	 * @see xrt_prober::probe, xrt_prober::lock_list
 	 */
 	xrt_result_t (*unlock_list)(struct xrt_prober *xp, struct xrt_prober_device ***devices);
@@ -206,6 +215,16 @@ struct xrt_prober
 	 */
 	int (*select)(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_capacity);
 
+	/*!
+	 * Open a HID (Human Interface Device) interface using native HID support.
+	 *
+	 * @param xp Pointer to self
+	 * @param xpdev prober device
+	 * @param iface HID interface number
+	 * @param[out] out_hid_dev instance of @ref os_hid_device for the given interface
+	 *
+	 * @return 0 on success, <0 on error.
+	 */
 	int (*open_hid_interface)(struct xrt_prober *xp,
 	                          struct xrt_prober_device *xpdev,
 	                          int iface,
@@ -220,8 +239,28 @@ struct xrt_prober
 	                         struct xrt_frame_context *xfctx,
 	                         struct xrt_fs **out_xfs);
 
+	/*!
+	 * Iterate through available video devices, calling your callback @p cb with your userdata @p ptr.
+	 *
+	 * @param xp Pointer to self
+	 * @param cb Callback function
+	 * @param ptr Opaque pointer for your userdata, passed through to the callback.
+	 *
+	 * @see xrt_prober_list_video_func_t
+	 * @return 0 on success, <0 on error.
+	 */
 	int (*list_video_devices)(struct xrt_prober *xp, xrt_prober_list_video_func_t cb, void *ptr);
 
+	/*!
+	 * Retrieve the raw @ref xrt_prober_entry and @ref xrt_auto_prober arrays.
+	 *
+	 * @param xp Pointer to self
+	 * @param[out] out_entry_count The size of @p out_entries
+	 * @param[out] out_entries An array of prober entries
+	 * @param[out] out_auto_probers An array of up to @ref XRT_MAX_AUTO_PROBERS auto-probers
+	 *
+	 * @return 0 on success, <0 on error.
+	 */
 	int (*get_entries)(struct xrt_prober *xp,
 	                   size_t *out_entry_count,
 	                   struct xrt_prober_entry ***out_entries,
@@ -246,6 +285,14 @@ struct xrt_prober
 	                             unsigned char *out_buffer,
 	                             size_t max_length);
 
+	/*!
+	 * Determine whether a prober device can be opened.
+	 *
+	 * @param xp Pointer to self
+	 * @param xpdev prober device
+	 *
+	 * @return true if @p xpdev can be opened.
+	 */
 	bool (*can_open)(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
 
 	/*!
@@ -558,9 +605,9 @@ static inline xrt_result_t
 xrt_builder_estimate_system(struct xrt_builder *xb,
                             cJSON *config,
                             struct xrt_prober *xp,
-                            struct xrt_builder_estimate *estimate)
+                            struct xrt_builder_estimate *out_estimate)
 {
-	return xb->estimate_system(xb, config, xp, estimate);
+	return xb->estimate_system(xb, config, xp, out_estimate);
 }
 
 /*!

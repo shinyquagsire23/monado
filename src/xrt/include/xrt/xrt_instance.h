@@ -132,9 +132,9 @@ struct xrt_instance
 static inline xrt_result_t
 xrt_instance_create_system(struct xrt_instance *xinst,
                            struct xrt_system_devices **out_xsysd,
-                           struct xrt_system_compositor **out_xsc)
+                           struct xrt_system_compositor **out_xsysc)
 {
-	return xinst->create_system(xinst, out_xsysd, out_xsc);
+	return xinst->create_system(xinst, out_xsysd, out_xsysc);
 }
 
 /*!
