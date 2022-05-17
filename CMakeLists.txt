@@ -62,7 +62,7 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.12)
 else()
 	find_program(PYTHON_EXECUTABLE python3)
 	if(PYTHON_EXECUTABLE MATCHES "WindowsApps")
-		# If you hit this error, you will have to install Python 3 or try harder to tell CMake where it is.
+		# If you receive this error, you will have to install Python 3 or try harder to tell CMake where it is.
 		message(
 			FATAL_ERROR
 				"Found WindowsApps alias for Python. Make sure Python3 is installed, then choose 'Manage App Execution Aliases' in Start and disable the aliases for Python."
@@ -260,8 +260,8 @@ option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense
 
 # Drivers to build (sorted)
 option_with_deps(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" DEPENDS ANDROID)
-option_with_deps(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE via via D-Bus" DEPENDS XRT_HAVE_DBUS)
-option_with_deps(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE, via D-Bus)" DEPENDS XRT_HAVE_DBUS)
+option_with_deps(XRT_BUILD_DRIVER_ARDUINO "Enable Arduino input device with BLE" DEPENDS XRT_HAVE_DBUS)
+option_with_deps(XRT_BUILD_DRIVER_DAYDREAM "Enable the Google Daydream View controller driver (BLE)" DEPENDS XRT_HAVE_DBUS)
 option_with_deps(XRT_BUILD_DRIVER_DEPTHAI "DepthAI" DEPENDS depthai_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_EUROC "Enable EuRoC dataset driver for SLAM evaluation" DEPENDS XRT_HAVE_OPENCV)
 option_with_deps(XRT_BUILD_DRIVER_HANDTRACKING "Enable Camera Hand Tracking driver" DEPENDS XRT_HAVE_ONNXRUNTIME XRT_HAVE_OPENCV XRT_HAVE_V4L2)

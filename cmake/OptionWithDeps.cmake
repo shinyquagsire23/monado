@@ -30,7 +30,7 @@ conditions are not true, it triggers an error.
 
 This is based on cmake_dependent_options but meets common expectations better:
 if you explicitly try to enable something that is not available, you get an error
-instead of just having it silently disabled.
+instead of having it silently disabled.
 
 .. command:: option_with_deps
 
@@ -60,13 +60,14 @@ Example invocation:
 
 .. code-block:: cmake
 
-  option_with_deps(USE_FOO "Use Foo" DEPENDS "USE_BAR" "NOT USE_ZOT")
+  option_with_deps(USE_PACKAGE_ABC "Use Abc" DEPENDS "USE_PACKAGE_XYZ" "NOT USE_CONFLICTING_PACKAGE")
 
-If ``USE_BAR`` is true and ``USE_ZOT`` is false, this provides an option called
-``USE_FOO`` that defaults to ON. Otherwise, it sets ``USE_FOO`` to OFF and
-hides the option from the user. If the status of ``USE_BAR`` or ``USE_ZOT``
-ever changes, any value for the ``USE_FOO`` option is saved so that when the
-option is re-enabled it retains its old value.
+If ``USE_PACKAGE_XYZ`` is true and ``USE_CONFLICTING_PACKAGE`` is false, this provides
+an option called ``USE_PACKAGE_ABC`` that defaults to ON. Otherwise, it sets
+``USE_PACKAGE_ABC`` to OFF and hides the option from the user. If the status of
+``USE_PACKAGE_XYZ`` or ``USE_CONFLICTING_PACKAGE`` ever changes, any value for the
+``USE_PACKAGE_ABC`` option is saved so that when the option is re-enabled it retains
+its old value.
 
 #]=======================================================================]
 

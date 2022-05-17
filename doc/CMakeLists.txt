@@ -12,7 +12,7 @@ option_with_deps(
 	)
 option_with_deps(
 	BUILD_DOC_EXTRACT_ALL
-	"Extract all entities for documentation, not just documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)"
+	"Extract all entities for documentation, not only documented ones (conflicts with BUILD_DOC_WARN_UNDOCUMENTED)"
 	DEFAULT OFF
 	DEPENDS DOXYGEN_FOUND "NOT BUILD_DOC_WARN_UNDOCUMENTED"
 	)

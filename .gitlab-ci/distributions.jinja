@@ -19,7 +19,7 @@ Please run the following after modifying this file:
 
     ci-fairy generate-template --config .gitlab-ci/config.yml .gitlab-ci/distributions.jinja > .gitlab-ci/distributions
 
-or just use the makefile.
+or better yet, use the makefile.
 #}
 {% for distro in distributions -%} {%- for image in distro.images if "deb_version_suffix" in image %}
 Origin: monado.freedesktop.org
