@@ -24,7 +24,7 @@
 
 #include "target_builder_interface.h"
 
-#include "dummy/dummy_interface.h"
+#include "simulated/simulated_interface.h"
 
 #ifdef XRT_HAVE_OPENCV
 #include "tracking/t_tracking.h"
@@ -330,7 +330,7 @@ rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 		}
 #endif
 	} else {
-		head = dummy_hmd_create();
+		head = simulated_hmd_create();
 	}
 
 

@@ -280,7 +280,7 @@ option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS Leap
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32")
-option(XRT_BUILD_DRIVER_DUMMY "Enable dummy driver" ON)
+option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
 
 option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
 
@@ -314,7 +314,7 @@ list(
 	"ANDROID"
 	"ARDUINO"
 	"DAYDREAM"
-	"DUMMY"
+	"SIMULATED"
 	"HANDTRACKING"
 	"HDK"
 	"HYDRA"
@@ -477,7 +477,7 @@ message(STATUS "#    DRIVER_ANDROID:      ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:      ${XRT_BUILD_DRIVER_ARDUINO}")
 message(STATUS "#    DRIVER_DAYDREAM:     ${XRT_BUILD_DRIVER_DAYDREAM}")
 message(STATUS "#    DRIVER_DEPTHAI:      ${XRT_BUILD_DRIVER_DEPTHAI}")
-message(STATUS "#    DRIVER_DUMMY:        ${XRT_BUILD_DRIVER_DUMMY}")
+message(STATUS "#    DRIVER_SIMULATED:        ${XRT_BUILD_DRIVER_SIMULATED}")
 message(STATUS "#    DRIVER_EUROC:        ${XRT_BUILD_DRIVER_EUROC}")
 message(STATUS "#    DRIVER_HANDTRACKING: ${XRT_BUILD_DRIVER_HANDTRACKING}")
 message(STATUS "#    DRIVER_HDK:          ${XRT_BUILD_DRIVER_HDK}")

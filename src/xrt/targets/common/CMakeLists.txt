@@ -30,8 +30,8 @@ if(XRT_BUILD_DRIVER_DAYDREAM)
 	target_link_libraries(target_lists PRIVATE drv_daydream)
 endif()
 
-if(XRT_BUILD_DRIVER_DUMMY)
-	target_link_libraries(target_lists PRIVATE drv_dummy)
+if(XRT_BUILD_DRIVER_SIMULATED)
+	target_link_libraries(target_lists PRIVATE drv_simulated)
 endif()
 
 if(XRT_BUILD_DRIVER_HDK)

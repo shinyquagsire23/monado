@@ -16,8 +16,8 @@
 #include "arduino/arduino_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_DUMMY
-#include "dummy/dummy_interface.h"
+#ifdef XRT_BUILD_DRIVER_SIMULATED
+#include "simulated/simulated_interface.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_HDK
@@ -228,9 +228,9 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
     qwerty_create_auto_prober,
 #endif
 
-#ifdef XRT_BUILD_DRIVER_DUMMY
-    // Dummy headset driver last.
-    dummy_create_auto_prober,
+#ifdef XRT_BUILD_DRIVER_SIMULATED
+    // Simulated headset driver last.
+    simulated_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
