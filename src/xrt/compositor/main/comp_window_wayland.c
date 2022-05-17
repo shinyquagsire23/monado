@@ -322,7 +322,7 @@ comp_window_wayland_init(struct comp_target *ct)
 	w_wayland->xdg_toplevel = xdg_surface_get_toplevel(w_wayland->xdg_surface);
 
 	xdg_toplevel_add_listener(w_wayland->xdg_toplevel, &xdg_toplevel_listener, w_wayland);
-	/* Sane defaults */
+	/* basic defaults */
 	xdg_toplevel_set_app_id(w_wayland->xdg_toplevel, "openxr");
 	xdg_toplevel_set_title(w_wayland->xdg_toplevel, "OpenXR application");
 

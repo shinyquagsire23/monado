@@ -27,7 +27,7 @@ extern "C" {
  * be careful about which displays we attempt to acquire.
  * We may wish to allow user configuration to extend this list.
  */
-XRT_MAYBE_UNUSED static const char *NV_DIRECT_WHITELIST[] = {
+XRT_MAYBE_UNUSED static const char *NV_DIRECT_ALLOWLIST[] = {
     "Sony SIE  HMD *08",           "HTC Corporation HTC-VIVE",
     "HTC Corporation VIVE Pro",    "Oculus VR Inc. Rift", /* Matches DK1, DK2 and CV1 */
     "Valve Corporation Index HMD",

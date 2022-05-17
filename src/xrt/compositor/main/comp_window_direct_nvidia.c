@@ -144,7 +144,7 @@ append_nvidia_entry_on_match(struct comp_window_direct_nvidia *w,
 	if (strncmp(wl_entry, disp->displayName, wl_entry_length) != 0)
 		return false;
 
-	// we have a match with this whitelist entry.
+	// we have a match with this allowlist entry.
 	w->base.base.c->settings.preferred.width = disp->physicalResolution.width;
 	w->base.base.c->settings.preferred.height = disp->physicalResolution.height;
 	struct comp_window_direct_nvidia_display d = {.name = U_TYPED_ARRAY_CALLOC(char, disp_entry_length + 1),
@@ -172,7 +172,6 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 	struct comp_window_direct_nvidia *w_direct = (struct comp_window_direct_nvidia *)ct;
 	struct vk_bundle *vk = get_vk(ct);
 
-	// Sanity check.
 	if (vk->instance == VK_NULL_HANDLE) {
 		COMP_ERROR(ct->c, "Vulkan not initialized before NVIDIA init!");
 		return false;
@@ -183,7 +182,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 		return false;
 	}
 
-	// find our display using nvidia whitelist, enumerate its modes, and
+	// find our display using nvidia allowlist, enumerate its modes, and
 	// pick the best one get a list of attached displays
 	uint32_t display_count;
 	if (vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count, NULL) != VK_SUCCESS) {
@@ -205,7 +204,7 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 		return false;
 	}
 
-	// TODO: what if we have multiple whitelisted HMD displays connected?
+	/// @todo what if we have multiple allowlisted HMD displays connected?
 	for (uint32_t i = 0; i < display_count; i++) {
 		struct VkDisplayPropertiesKHR disp = *(display_props + i);
 
@@ -213,9 +212,9 @@ comp_window_direct_nvidia_init(struct comp_target *ct)
 			append_nvidia_entry_on_match(w_direct, ct->c->settings.nvidia_display, &disp);
 		}
 
-		// check this display against our whitelist
-		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++)
-			if (append_nvidia_entry_on_match(w_direct, NV_DIRECT_WHITELIST[j], &disp))
+		// check this display against our allowlist
+		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); j++)
+			if (append_nvidia_entry_on_match(w_direct, NV_DIRECT_ALLOWLIST[j], &disp))
 				break;
 	}
 

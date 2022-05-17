@@ -760,15 +760,15 @@ compositor_init_vulkan(struct comp_compositor *c)
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 static bool
-_match_wl_entry(const char *wl_entry, VkDisplayPropertiesKHR *disp)
+_match_allowlist_entry(const char *al_entry, VkDisplayPropertiesKHR *disp)
 {
-	unsigned long wl_entry_length = strlen(wl_entry);
+	unsigned long al_entry_length = strlen(al_entry);
 	unsigned long disp_entry_length = strlen(disp->displayName);
-	if (disp_entry_length < wl_entry_length)
+	if (disp_entry_length < al_entry_length)
 		return false;
 
-	// we have a match with this whitelist entry.
-	if (strncmp(wl_entry, disp->displayName, wl_entry_length) == 0)
+	// we have a match with this allowlist entry.
+	if (strncmp(al_entry, disp->displayName, al_entry_length) == 0)
 		return true;
 
 	return false;
@@ -814,25 +814,25 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 
 	for (uint32_t i = 0; i < display_count; i++) {
 		VkDisplayPropertiesKHR *disp = display_props + i;
-		// check this display against our whitelist
-		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_WHITELIST); j++) {
-			if (_match_wl_entry(NV_DIRECT_WHITELIST[j], disp)) {
+		// check this display against our allowlist
+		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); j++) {
+			if (_match_allowlist_entry(NV_DIRECT_ALLOWLIST[j], disp)) {
 				free(display_props);
 				return true;
 			}
 		}
 
-		if (c->settings.nvidia_display && _match_wl_entry(c->settings.nvidia_display, disp)) {
+		if (c->settings.nvidia_display && _match_allowlist_entry(c->settings.nvidia_display, disp)) {
 			free(display_props);
 			return true;
 		}
 	}
 
-	COMP_ERROR(c, "NVIDIA: No whitelisted displays found!");
+	COMP_ERROR(c, "NVIDIA: No allowlisted displays found!");
 
-	COMP_ERROR(c, "== Current Whitelist ==");
-	for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_WHITELIST); i++)
-		COMP_ERROR(c, "%s", NV_DIRECT_WHITELIST[i]);
+	COMP_ERROR(c, "== Current Allowlist ==");
+	for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); i++)
+		COMP_ERROR(c, "%s", NV_DIRECT_ALLOWLIST[i]);
 
 	COMP_ERROR(c, "== Found Displays ==");
 	for (uint32_t i = 0; i < display_count; i++)

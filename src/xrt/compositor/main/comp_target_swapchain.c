@@ -631,7 +631,7 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	cts->preferred.color_space = color_space;
 
 
-	// Sanity check.
+	// Preliminary check of the environment
 	ret = vk->vkGetPhysicalDeviceSurfaceSupportKHR( //
 	    vk->physical_device,                        // physicalDevice
 	    vk->queue_family_index,                     // queueFamilyIndex
@@ -643,7 +643,6 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: Surface not supported!");
 	}
 
-	// More sanity checks.
 	if (!check_surface_present_mode(cts, cts->surface.handle, cts->present_mode)) {
 		// Free old.
 		destroy_old(cts, old_swapchain_handle);
