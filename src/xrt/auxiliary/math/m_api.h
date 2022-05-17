@@ -50,6 +50,31 @@ extern "C" {
  */
 #define MATH_GRAVITY_M_S2 (9.8066)
 
+/*!
+ * Minimum of A and B.
+ *
+ * @ingroup aux_math
+ */
+#ifndef MIN // Avoid clash with OpenCV def
+#define MIN(A, B) ((A) < (B) ? (A) : (B))
+#endif
+
+/*!
+ * Maximum of A and B.
+ *
+ * @ingroup aux_math
+ */
+#ifndef MAX // Avoid clash with OpenCV def
+#define MAX(A, B) ((A) > (B) ? (A) : (B))
+#endif
+
+/*!
+ * X clamped to the range [A, B].
+ *
+ * @ingroup aux_math
+ */
+#define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
+
 
 /*
  *

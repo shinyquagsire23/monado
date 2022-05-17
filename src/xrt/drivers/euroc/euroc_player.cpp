@@ -16,6 +16,7 @@
 #include "util/u_var.h"
 #include "util/u_sink.h"
 #include "tracking/t_frame_cv_mat_wrapper.hpp"
+#include "math/m_api.h"
 #include "math/m_filter_fifo.h"
 
 #include "euroc_driver.h"
@@ -46,7 +47,6 @@ DEBUG_GET_ONCE_BOOL_OPTION(play_from_start, "EUROC_PLAY_FROM_START", false)
 DEBUG_GET_ONCE_BOOL_OPTION(print_progress, "EUROC_PRINT_PROGRESS", false)
 
 #define EUROC_PLAYER_STR "Euroc Player"
-#define CLAMP(X, A, B) (MIN(MAX((X), (A)), (B)))
 
 using std::async;
 using std::find_if;

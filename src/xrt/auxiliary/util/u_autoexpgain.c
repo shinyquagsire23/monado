@@ -7,6 +7,7 @@
  * @ingroup aux_util
  */
 
+#include "math/m_api.h"
 #include "util/u_autoexpgain.h"
 #include "util/u_format.h"
 #include "util/u_misc.h"
