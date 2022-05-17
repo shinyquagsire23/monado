@@ -123,6 +123,7 @@ else()
 	set(CMAKE_THREAD_PREFER_PTHREAD ON)
 	find_package(Threads)
 	target_link_libraries(xrt-pthreads INTERFACE Threads::Threads)
+	target_compile_definitions(xrt-pthreads INTERFACE _GNU_SOURCE)
 endif()
 
 if(PKGCONFIG_FOUND AND NOT ANDROID)

@@ -21,11 +21,13 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <assert.h>
+#define OS_THREAD_HAVE_SETNAME
 #elif defined(XRT_OS_WINDOWS)
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <assert.h>
+#define OS_THREAD_HAVE_SETNAME
 #else
 #error "OS not supported"
 #endif
@@ -201,6 +203,21 @@ static inline void
 os_thread_destroy(struct os_thread *ost)
 {}
 
+/*!
+ * Make a best effort to name our thread.
+ *
+ * @public @memberof os_thread
+ */
+static inline void
+os_thread_name(struct os_thread *ost, const char *name)
+{
+#ifdef OS_THREAD_HAVE_SETNAME
+	pthread_setname_np(ost->thread, name);
+#else
+	(void)ost;
+	(void)name;
+#endif
+}
 
 /*
  *
@@ -517,6 +534,21 @@ os_thread_helper_signal_locked(struct os_thread_helper *oth)
 	pthread_cond_signal(&oth->cond);
 }
 
+/*!
+ * Make a best effort to name our thread.
+ *
+ * @public @memberof os_thread_helper
+ */
+static inline void
+os_thread_helper_name(struct os_thread_helper *oth, const char *name)
+{
+#ifdef OS_THREAD_HAVE_SETNAME
+	pthread_setname_np(oth->thread, name);
+#else
+	(void)oth;
+	(void)name;
+#endif
+}
 
 /*!
  * @}
