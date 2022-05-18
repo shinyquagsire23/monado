@@ -37,7 +37,7 @@ enum m_relation_history_result
 };
 
 /*!
- * @brief Creates an opaque relation_history object.
+ * Creates an opaque relation_history object.
  *
  * @public @memberof m_relation_history
  */
@@ -59,7 +59,7 @@ m_relation_history_push(struct m_relation_history *rh,
                         uint64_t timestamp);
 
 /*!
- * @brief Interpolates or extrapolates to the desired timestamp.
+ * Interpolates or extrapolates to the desired timestamp.
  *
  * Read-only operation - doesn't remove anything from the buffer or anything like that - you can call this as often as
  * you want.
@@ -72,7 +72,7 @@ m_relation_history_get(struct m_relation_history *rh,
                        struct xrt_space_relation *out_relation);
 
 /*!
- * @brief Get the latest report in the buffer, if any.
+ * Get the latest report in the buffer, if any.
  *
  * @param rh self
  * @param[out] out_time_ns Populated with the latest report time, if any
@@ -88,12 +88,20 @@ m_relation_history_get_latest(struct m_relation_history *rh,
                               struct xrt_space_relation *out_relation);
 
 /*!
- * @brief Returns the number of items in the history.
+ * Returns the number of items in the history.
  *
  * @public @memberof m_relation_history
  */
 uint32_t
 m_relation_history_get_size(const struct m_relation_history *rh);
+
+/*!
+ * Clears the history from all of the items.
+ *
+ * @public @memberof m_relation_history
+ */
+void
+m_relation_history_clear(struct m_relation_history *rh);
 
 /*!
  * Destroys an opaque relation_history object.
@@ -178,6 +186,15 @@ public:
 	size() const noexcept
 	{
 		return m_relation_history_get_size(mPtr);
+	}
+
+	/*!
+	 * @copydoc m_relation_history_clear
+	 */
+	void
+	clear() noexcept
+	{
+		return m_relation_history_clear(mPtr);
 	}
 };
 

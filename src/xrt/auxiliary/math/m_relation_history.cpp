@@ -195,6 +195,13 @@ m_relation_history_get_size(const struct m_relation_history *rh)
 }
 
 void
+m_relation_history_clear(struct m_relation_history *rh)
+{
+	std::unique_lock<os::Mutex> lock(rh->mutex);
+	rh->impl = {};
+}
+
+void
 m_relation_history_destroy(struct m_relation_history **rh_ptr)
 {
 	struct m_relation_history *rh = *rh_ptr;
