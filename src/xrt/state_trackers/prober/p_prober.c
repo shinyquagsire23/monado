@@ -79,7 +79,7 @@ teardown_devices(struct prober *p);
 static void
 teardown(struct prober *p);
 
-static int
+static xrt_result_t
 p_probe(struct xrt_prober *xp);
 
 static xrt_result_t
