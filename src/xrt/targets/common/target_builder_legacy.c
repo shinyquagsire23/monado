@@ -115,7 +115,12 @@ static const char *driver_list[] = {
 #if defined(XRT_BUILD_DRIVER_HANDTRACKING) && defined(XRT_BUILD_DRIVER_DEPTHAI)
     "ht",
 #endif
+
+#if defined(XRT_BUILD_DRIVER_SIMULATED)
+    "simulated",
+#endif
 };
+
 
 /*
  *
