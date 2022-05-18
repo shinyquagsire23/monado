@@ -65,6 +65,9 @@ stages:
   extends:
     - .monado.variables.{{distro.name}}:{{image.codename}}
     - .fdo.container-build@{{distro.name}} # from ci-templates
+  only:
+    changes:
+      - .gitlab-ci/**/*
   variables:
     {# The packages list is actually a mapping, not an array, but the same syntax works. #}
     {# Needed to be a mapping so it could be "merged" #}
@@ -86,8 +89,6 @@ stages:
   extends:
     - .monado.variables.{{distro.name}}:{{image.codename}}
     - .fdo.{{ "suffixed" if "repo_suffix" in image else "distribution" }}-image@{{distro.name}} # from ci-templates
-  needs:
-    - {{distro.name}}:{{image.codename}}:container_prep
 
 {% endfor -%} {%- endfor %}
 
@@ -240,7 +241,6 @@ reprepro:package:
     - {{ base_job_to_use_image_containing("reprepro") }}
     - .monado.packaging.conditions
   needs:
-    - {{ base_job_to_use_image_containing("reprepro") | replace(".monado.image.", "") | trim + ":container_prep" }}
 {% for distro in distributions -%} {%- for image in distro.images if "deb_version_suffix" in image %}
     - {{packaging_job_name(distro, image)}}
 {% endfor -%} {%- endfor %}
