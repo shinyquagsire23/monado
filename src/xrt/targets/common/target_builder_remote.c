@@ -82,8 +82,10 @@ remote_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 	}
 
 	struct xrt_device *head = NULL, *left = NULL, *right = NULL;
-	r_create_devices(port, &head, &left, &right);
 
+#ifdef XRT_BUILD_DRIVER_REMOTE
+	r_create_devices(port, &head, &left, &right);
+#endif
 	if (head == NULL) {
 		u_system_devices_destroy(&usysd);
 		xrt_device_destroy(&left);
