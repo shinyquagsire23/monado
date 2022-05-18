@@ -99,6 +99,8 @@ stages:
 {% endfor -%} {%- endfor %}
 {% endmacro -%}
 
+{% include 'win_containers.yml' %}
+
 # Style check job
 format-and-spellcheck:
   extends:
@@ -191,6 +193,17 @@ reuse:
 {%- endif %}
 
 {% endfor -%} {%- endfor -%} {%- endfor %}
+
+# Windows build
+windows:
+  stage: build
+  extends:
+    - .monado.image.windows
+  script:
+    - ./.gitlab-ci/windows/monado_build.ps1
+  artifacts:
+    paths:
+      - install
 
 # Packaging
 .monado.packaging.conditions:

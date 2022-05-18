@@ -1,0 +1,78 @@
+# {# included by ci.template #}
+# {# SPDX-License-Identifier: CC0-1.0 #}
+# {# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors #}
+
+###
+# Windows container-related jobs (prep and usage)
+
+.monado.common_variables.windows:vs2022:
+  inherit:
+    default: false
+  variables:
+    FDO_DISTRIBUTION_TAG: "20220518.0"
+    MONADO_BASE_IMAGE_PATH: "win2019/vs2022_base"
+    MONADO_MAIN_IMAGE_PATH: "win2019/vs2022"
+
+.monado.variables.windows:vs2022:
+  inherit:
+    default: false
+  extends:
+    - .monado.common_variables.windows:vs2022
+  variables:
+    MONADO_IMAGE_PATH: "$MONADO_MAIN_IMAGE_PATH"
+    MONADO_IMAGE: "$CI_REGISTRY_IMAGE/$MONADO_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+    MONADO_UPSTREAM_IMAGE: "$CI_REGISTRY/$FDO_UPSTREAM_REPO/$MONADO_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+
+# Shared container-building job
+.monado.windows.container_prep:
+  inherit:
+    default: false
+  tags:
+    - windows
+    - "1909"
+    - shell
+  variables:
+    GIT_STRATEGY: fetch
+  only:
+    changes:
+      - .gitlab-ci/**/*
+
+  stage: container_prep
+  script:
+    - |
+      .gitlab-ci\windows\monado_container.ps1 -RegistryUri "$CI_REGISTRY" -RegistryUsername "$CI_REGISTRY_USER" -UserImage "$MONADO_IMAGE" -UpstreamImage "$MONADO_UPSTREAM_IMAGE" -Dockerfile "$DOCKERFILE" -BaseImage "$MONADO_BASE_IMAGE" -BaseUpstreamImage "$MONADO_UPSTREAM_BASE_IMAGE" -Verbose
+
+# This container just installs Visual C++ Build Tools.
+win:container_prep:base:
+  extends:
+    - .monado.windows.container_prep
+    - .monado.common_variables.windows:vs2022
+  variables:
+    DOCKERFILE: Dockerfile.vs2022
+    MONADO_IMAGE_PATH: ${MONADO_BASE_IMAGE_PATH}
+    MONADO_IMAGE: "$CI_REGISTRY_IMAGE/$MONADO_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+    MONADO_UPSTREAM_IMAGE: "$CI_REGISTRY/$FDO_UPSTREAM_REPO/$MONADO_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+
+# This container adds other deps
+win:container_prep:
+  extends:
+    - .monado.windows.container_prep
+    - .monado.variables.windows:vs2022
+  needs:
+    - win:container_prep:base
+  variables:
+    DOCKERFILE: Dockerfile.build
+    MONADO_BASE_IMAGE: "$CI_REGISTRY_IMAGE/$MONADO_BASE_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+    MONADO_UPSTREAM_BASE_IMAGE: "$CI_REGISTRY/$FDO_UPSTREAM_REPO/$MONADO_BASE_IMAGE_PATH:$FDO_DISTRIBUTION_TAG"
+
+# Base job to use a Windows build container
+.monado.image.windows:
+  tags:
+    - windows
+    - "1909"
+    - docker
+  extends:
+    - .monado.variables.windows:vs2022
+  image: $MONADO_IMAGE
+  needs:
+    - win:container_prep

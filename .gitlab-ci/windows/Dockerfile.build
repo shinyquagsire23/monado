@@ -1,0 +1,17 @@
+# Copyright 2019-2022, Mesa contributors
+# Copyright 2022, Collabora, Ltd.
+# SPDX-License-Identifier: MIT
+# Based on https://gitlab.freedesktop.org/mesa/mesa/-/blob/8396df5ad90aeb6ab2267811aba2187954562f81/.gitlab-ci/windows/Dockerfile_build
+
+# escape=`
+
+ARG base_image
+FROM ${base_image}
+
+# Make sure any failure in PowerShell scripts is fatal
+SHELL ["powershell", "-ExecutionPolicy", "RemoteSigned", "-Command", "$ErrorActionPreference = 'Stop';"]
+ENV ErrorActionPreference='Stop'
+
+
+COPY "monado_deps_build.ps1" "C:/"
+RUN "C:/monado_deps_build.ps1"
