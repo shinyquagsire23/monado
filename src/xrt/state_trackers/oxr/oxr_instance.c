@@ -171,7 +171,6 @@ oxr_instance_create(struct oxr_logger *log,
                     struct oxr_instance **out_instance)
 {
 	struct oxr_instance *inst = NULL;
-	int xinst_ret;
 	int m_ret;
 	int h_ret;
 	xrt_result_t xret;
