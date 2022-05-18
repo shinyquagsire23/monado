@@ -48,14 +48,18 @@ t_instance(struct xrt_instance *xinst)
  *
  */
 
-static int
+static xrt_result_t
 t_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 {
 	struct t_instance *tinst = t_instance(xinst);
 
+	if (tinst->xp == NULL) {
+		return XRT_ERROR_PROBER_NOT_SUPPORTED;
+	}
+
 	*out_xp = tinst->xp;
 
-	return 0;
+	return XRT_SUCCESS;
 }
 
 static void
