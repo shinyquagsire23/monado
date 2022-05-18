@@ -20,7 +20,7 @@ extern "C" {
 struct xrt_hmd_parts;
 
 /*!
- * @defgroup aux_distortion Distortion utilities.
+ * @defgroup aux_distortion Distortion utilities
  * @ingroup aux_util
  */
 

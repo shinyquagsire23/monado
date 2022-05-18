@@ -24,7 +24,7 @@ struct xrt_device;
 
 
 /*!
- * @defgroup aux_log Logging functions.
+ * @defgroup aux_log Logging functions
  * @ingroup aux_util
  */
 

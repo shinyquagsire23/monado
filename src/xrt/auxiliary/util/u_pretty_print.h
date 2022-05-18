@@ -16,10 +16,11 @@ extern "C" {
 
 
 /*!
- * @defgroup aux_pretty Pretty printing functions.
+ * @defgroup aux_pretty Pretty printing functions and helpers
+ * @ingroup aux_util
  *
- * Multiple modules implement additional pretty printing functions like
- * @ref oxr_api.
+ * This is common functionality used directly and shared by additional pretty
+ * printing functions implemented in multiple modules, such as @ref oxr_api.
  *
  * Some functions have a `_indented` suffix added to them, this means that what
  * they print starts indented, but also they start with a newline. This is so
@@ -29,8 +30,10 @@ extern "C" {
  */
 
 /*!
- * Function prototype for receiving pretty printed strings, do not keep a
- * reference to the pointer as it's often allocated on the stack for speed.
+ * Function prototype for receiving pretty printed strings.
+ *
+ * @note Do not keep a reference to the pointer as it's often allocated on the
+ * stack for speed.
  *
  * @ingroup aux_pretty
  */
