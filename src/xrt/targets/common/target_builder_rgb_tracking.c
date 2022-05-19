@@ -41,6 +41,11 @@
 #include <assert.h>
 
 
+#if !defined(XRT_BUILD_DRIVER_PSVR) && !defined(XRT_BUILD_DRIVER_PSMV)
+#error "Must only be built with either XRT_BUILD_DRIVER_PSVR or XRT_BUILD_DRIVER_PSMV set"
+#endif
+
+
 /*
  *
  * Helper functions.

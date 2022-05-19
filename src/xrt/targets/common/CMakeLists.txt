@@ -8,8 +8,6 @@
 add_library(target_lists STATIC
 	target_builder_interface.h
 	target_builder_legacy.c
-	target_builder_remote.c
-	target_builder_rgb_tracking.c
 	target_lists.c
 	target_lists.h
 	)
@@ -22,6 +20,16 @@ target_link_libraries(
 	)
 target_include_directories(target_lists PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Builders
+if(XRT_BUILD_DRIVER_REMOTE)
+	target_sources(target_lists PRIVATE target_builder_remote.c)
+endif()
+
+if(XRT_BUILD_DRIVER_PSVR OR XRT_BUILD_DRIVER_PSMV)
+	target_sources(target_lists PRIVATE target_builder_rgb_tracking.c)
+endif()
+
+# Drivers
 if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
 endif()

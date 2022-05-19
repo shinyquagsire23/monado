@@ -16,11 +16,14 @@
 
 #include "target_builder_interface.h"
 
-#ifdef XRT_BUILD_DRIVER_REMOTE
 #include "remote/r_interface.h"
-#endif
 
 #include <assert.h>
+
+
+#ifndef XRT_BUILD_DRIVER_REMOTE
+#error "Must only be built with XRT_BUILD_DRIVER_REMOTE set"
+#endif
 
 
 /*
@@ -83,9 +86,8 @@ remote_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 
 	struct xrt_device *head = NULL, *left = NULL, *right = NULL;
 
-#ifdef XRT_BUILD_DRIVER_REMOTE
 	r_create_devices(port, &head, &left, &right);
-#endif
+
 	if (head == NULL) {
 		u_system_devices_destroy(&usysd);
 		xrt_device_destroy(&left);
