@@ -74,5 +74,3 @@ win:container_prep:
   extends:
     - .monado.variables.windows:vs2022
   image: $MONADO_IMAGE
-  needs:
-    - win:container_prep
