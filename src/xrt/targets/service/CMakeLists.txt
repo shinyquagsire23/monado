@@ -101,6 +101,13 @@ endif()
 
 if(XRT_HAVE_SDL2)
 	target_link_libraries(
-		monado-service PRIVATE st_gui xrt-external-imgui-sdl2 aux_ogl drv_qwerty_includes
+		monado-service PRIVATE st_gui xrt-external-imgui-sdl2 aux_ogl
 		)
+
+	if(XRT_BUILD_DRIVER_QWERTY)
+		target_link_libraries(
+			monado-service PRIVATE drv_qwerty_includes
+			)
+	endif()
 endif()
+
