@@ -46,7 +46,7 @@ DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
 //! AEG State machine states
 enum u_aeg_state
 {
-	IDLE,
+	IDLE = 0,
 	BRIGHTEN,
 	STOP_BRIGHTEN, //!< Avoid oscillations by
 	DARKEN,
@@ -56,7 +56,7 @@ enum u_aeg_state
 //! This actions are triggered when the image is too dark, bright or good enough
 enum u_aeg_action
 {
-	GOOD,
+	GOOD = 0,
 	DARK,
 	BRIGHT,
 };
@@ -161,7 +161,7 @@ action_to_string(enum u_aeg_action action)
 static void
 set_state(struct u_autoexpgain *aeg, enum u_aeg_action action)
 {
-	enum u_aeg_state new_state;
+	enum u_aeg_state new_state = -1;
 	if (aeg->state == IDLE) {
 		if (action == DARK) {
 			new_state = BRIGHTEN;
@@ -383,7 +383,7 @@ update_brightness(struct u_autoexpgain *aeg, struct xrt_frame *xf)
 		return;
 	}
 
-	float target_score;
+	float target_score = 0;
 	if (aeg->strategy == U_AEG_STRATEGY_TRACKING) {
 		target_score = -aeg->threshold; // Makes 0 the right bound of our "good enugh" range
 	} else if (aeg->strategy == U_AEG_STRATEGY_DYNAMIC_RANGE) {
