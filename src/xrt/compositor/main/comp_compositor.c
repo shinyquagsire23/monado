@@ -1133,6 +1133,9 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	COMP_DEBUG(c, "Doing init %p", (void *)c);
 
+	// Do this as early as possible.
+	comp_base_init(&c->base);
+
 	// Init the settings to default.
 	comp_settings_init(&c->settings, xdev);
 
@@ -1261,8 +1264,6 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	comp_renderer_add_debug_vars(c->r);
 
 	c->state = COMP_STATE_READY;
-
-	comp_base_init(&c->base);
 
 	return comp_multi_create_system_compositor(&c->base.base, sys_info, out_xsysc);
 }
