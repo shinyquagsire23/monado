@@ -233,7 +233,6 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrRequestDisplayRefreshRateFB, FB_display_refresh_rate);
 #endif
 
-#if 0
 #ifdef OXR_HAVE_EXT_debug_utils
 	ENTRY_IF_EXT(xrSetDebugUtilsObjectNameEXT, EXT_debug_utils);
 	ENTRY_IF_EXT(xrCreateDebugUtilsMessengerEXT, EXT_debug_utils);
@@ -243,7 +242,6 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrSessionEndDebugUtilsLabelRegionEXT, EXT_debug_utils);
 	ENTRY_IF_EXT(xrSessionInsertDebugUtilsLabelEXT, EXT_debug_utils);
 #endif // OXR_HAVE_EXT_debug_utils
-#endif
 
 #ifdef OXR_HAVE_KHR_opengl_enable
 	ENTRY_IF_EXT(xrGetOpenGLGraphicsRequirementsKHR, KHR_opengl_enable);

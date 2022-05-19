@@ -181,7 +181,7 @@
 /*
  * XR_EXT_debug_utils
  */
-#if defined(XR_EXT_debug_utils)
+#if defined(XR_EXT_debug_utils) && defined(XRT_FEATURE_OPENXR_DEBUG_UTILS)
 #define OXR_HAVE_EXT_debug_utils
 #define OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) _(EXT_debug_utils, EXT_DEBUG_UTILS)
 #else
