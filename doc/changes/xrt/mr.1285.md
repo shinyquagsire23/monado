@@ -1,6 +1,7 @@
 ---
 - mr.1285
 - mr.1299
+- mr.1313
 ---
 
 Introduce @ref xrt_builder struct and various functions on @ref xrt_prober
