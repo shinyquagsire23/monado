@@ -390,6 +390,7 @@ struct u_worker_thread_pool *
 u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_count)
 {
 	XRT_TRACE_MARKER();
+	int ret;
 
 	assert(starting_worker_count < thread_count);
 	if (starting_worker_count >= thread_count) {
@@ -408,6 +409,16 @@ u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_coun
 	p->thread_count = thread_count;
 	p->running = true;
 
+	ret = os_mutex_init(&p->mutex);
+	if (ret != 0) {
+		goto err_alloc;
+	}
+
+	ret = os_cond_init(&p->available.cond);
+	if (ret != 0) {
+		goto err_mutex;
+	}
+
 	for (size_t i = 0; i < thread_count; i++) {
 		p->threads[i].p = p;
 		os_thread_init(&p->threads[i].thread);
@@ -415,6 +426,15 @@ u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_coun
 	}
 
 	return (struct u_worker_thread_pool *)p;
+
+
+err_mutex:
+	os_mutex_destroy(&p->mutex);
+
+err_alloc:
+	free(p);
+
+	return NULL;
 }
 
 void
