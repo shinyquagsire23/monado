@@ -220,6 +220,7 @@ wmr_cam_usb_thread(void *ptr)
 		os_thread_helper_lock(&cam->usb_thread);
 	}
 
+	//! @todo Think this is not needed? what condition are we waiting for?
 	os_thread_helper_wait_locked(&cam->usb_thread);
 	os_thread_helper_unlock(&cam->usb_thread);
 	return NULL;
