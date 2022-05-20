@@ -169,6 +169,16 @@ os_cond_signal(struct os_cond *oc)
 /*!
  * Wait.
  *
+ * Be sure to call this in a loop, testing some other condition that you
+ * are actually waiting for, as condition variable waits are subject to
+ * spurious wakeups.
+ *
+ * Must be called with the mutex @p om locked.
+ *
+ * Once the wait begins, the mutex @p om is unlocked, to allow another
+ * thread access to change the thing you're monitoring. By the time this
+ * returns, you once again own the lock.
+ *
  * @public @memberof os_cond
  */
 static inline void
@@ -590,7 +600,15 @@ os_thread_helper_is_running_locked(struct os_thread_helper *oth)
 /*!
  * Wait for a signal.
  *
+ * Be sure to call this in a loop, testing some other condition that you
+ * are actually waiting for, as this is backed by a condition variable
+ * wait and is thus subject to spurious wakeups.
+ *
  * Must be called with the helper locked.
+ *
+ * As this wraps a cond-var wait, once the wait begins, the helper is
+ * unlocked, to allow another thread access to change the thing you're
+ * monitoring. By the time this returns, you once again own the lock.
  *
  * @public @memberof os_thread_helper
  */
