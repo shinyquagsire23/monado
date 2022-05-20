@@ -47,6 +47,18 @@ struct comp_window_mswin
 static WCHAR szWindowClass[] = L"Monado";
 static WCHAR szWindowData[] = L"MonadoWindow";
 
+#define COMP_ERROR_GETLASTERROR(C, MSG_WITH_PLACEHOLDER, MSG_WITHOUT_PLACEHOLDER)                                      \
+	do {                                                                                                           \
+		DWORD err = GetLastError();                                                                            \
+		char *buf = NULL;                                                                                      \
+		if (0 != FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, err,        \
+		                        LANG_SYSTEM_DEFAULT, (LPSTR)&buf, 256, NULL)) {                                \
+			COMP_ERROR(C, MSG_WITH_PLACEHOLDER, buf);                                                      \
+			LocalFree(buf);                                                                                \
+		} else {                                                                                               \
+			COMP_ERROR(C, MSG_WITHOUT_PLACEHOLDER);                                                        \
+		}                                                                                                      \
+	} while (0)
 /*
  *
  * Functions.
@@ -171,7 +183,7 @@ comp_window_mswin_window_loop(struct comp_window_mswin *cwm)
 	    CreateWindowExW(0, szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 	                    rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, cwm->instance, NULL);
 	if (cwm->window == NULL) {
-		COMP_ERROR(ct->c, "Failed to create window");
+		COMP_ERROR_GETLASTERROR(ct->c, "Failed to create window: %s", "Failed to create window");
 		// parent thread will be notified (by caller) that we have exited.
 		return;
 	}
@@ -244,7 +256,8 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 	COMP_INFO(ct->c, "Registering window class");
 	ATOM window_class = RegisterClassExW(&wcex);
 	if (!window_class) {
-		COMP_ERROR(ct->c, "Failed to register window class");
+		COMP_ERROR_GETLASTERROR(ct->c, "Failed to register window class: %s",
+		                        "Failed to register window class");
 		// parent thread will be notified (by caller) that we have exited.
 		return;
 	}
