@@ -151,7 +151,7 @@ void
 ht_async_break_apart(struct xrt_frame_node *node)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
-	os_thread_helper_stop(&hta->mainloop);
+	os_thread_helper_stop_and_wait(&hta->mainloop);
 }
 
 void

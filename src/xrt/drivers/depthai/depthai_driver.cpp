@@ -824,8 +824,8 @@ depthai_fs_stream_stop(struct xrt_fs *xfs)
 	DEPTHAI_DEBUG(depthai, "DepthAI: Stream stop called");
 
 	// This call fully stops the thread.
-	os_thread_helper_stop(&depthai->image_thread);
-	os_thread_helper_stop(&depthai->imu_thread);
+	os_thread_helper_stop_and_wait(&depthai->image_thread);
+	os_thread_helper_stop_and_wait(&depthai->imu_thread);
 
 	return true;
 }
