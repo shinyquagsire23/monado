@@ -123,7 +123,7 @@ endif()
 ####
 # Instance
 #
-if(XRT_FEATURE_COMPOSITOR_MAIN)
+if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
 	add_library(target_instance STATIC target_instance.c)
 	target_link_libraries(
 		target_instance
@@ -132,10 +132,17 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			aux_util
 			st_prober
 			target_lists
-			comp_main
 			drv_includes
 		)
 	target_include_directories(target_instance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+	if(XRT_FEATURE_COMPOSITOR_MAIN)
+		target_link_libraries(target_instance PRIVATE comp_main)
+	endif()
+
+	if(XRT_FEATURE_COMPOSITOR_NULL)
+		target_link_libraries(target_instance PRIVATE comp_null)
+	endif()
 endif()
 
 ####

@@ -237,7 +237,7 @@ option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON
 option_with_deps(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" DEPENDS XRT_HAVE_VULKAN "XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32")
 option_with_deps(XRT_FEATURE_COMPOSITOR_NULL "Build testing null compositor" DEPENDS XRT_HAVE_VULKAN)
 option_with_deps(XRT_FEATURE_IPC "Enable the build of the IPC layer" DEPENDS "NOT WIN32")
-option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS XRT_FEATURE_COMPOSITOR_MAIN)
+option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS "XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL")
 option_with_deps(XRT_FEATURE_RENDERDOC "Enable RenderDoc API" DEPENDS "RT_LIBRARY OR WIN32")
 option_with_deps(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" DEPENDS XRT_FEATURE_IPC XRT_FEATURE_OPENXR)
 option_with_deps(XRT_FEATURE_SERVICE_SYSTEMD "Enable systemd socket activation of the service" DEPENDS XRT_HAVE_SYSTEMD XRT_FEATURE_SERVICE)
