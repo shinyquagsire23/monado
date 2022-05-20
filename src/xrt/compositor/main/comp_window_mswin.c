@@ -42,6 +42,8 @@ struct comp_window_mswin
 
 	bool fullscreen_requested;
 	bool should_exit;
+	bool thread_started;
+	bool thread_exited;
 };
 
 static WCHAR szWindowClass[] = L"Monado";
@@ -212,6 +214,7 @@ comp_window_mswin_window_loop(struct comp_window_mswin *cwm)
 	// Unblock the parent thread now that we're successfully running.
 	{
 		os_thread_helper_lock(&cwm->oth);
+		cwm->thread_started = true;
 		os_thread_helper_signal_locked(&cwm->oth);
 		os_thread_helper_unlock(&cwm->oth);
 	}
@@ -252,6 +255,16 @@ comp_window_mswin_window_loop(struct comp_window_mswin *cwm)
 }
 
 static void
+comp_window_mswin_mark_exited(struct comp_window_mswin *cwm)
+{
+	// Unblock the parent thread to advise of our exit
+	os_thread_helper_lock(&cwm->oth);
+	cwm->thread_exited = true;
+	os_thread_helper_signal_locked(&cwm->oth);
+	os_thread_helper_unlock(&cwm->oth);
+}
+
+static void
 comp_window_mswin_thread(struct comp_window_mswin *cwm)
 {
 	struct comp_target *ct = &cwm->base.base;
@@ -280,7 +293,7 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 	if (!window_class) {
 		COMP_ERROR_GETLASTERROR(ct->c, "Failed to register window class: %s",
 		                        "Failed to register window class");
-		// parent thread will be notified (by caller) that we have exited.
+		comp_window_mswin_mark_exited(cwm);
 		return;
 	}
 
@@ -291,6 +304,8 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 		COMP_ERROR_GETLASTERROR(ct->c, "Failed to unregister window class: %s",
 		                        "Failed to unregister window class");
 	}
+
+	comp_window_mswin_mark_exited(cwm);
 }
 
 static void *
@@ -322,9 +337,10 @@ comp_window_mswin_init(struct comp_target *ct)
 
 	// Wait for thread to start, create window, etc.
 	os_thread_helper_lock(&cwm->oth);
-	os_thread_helper_wait_locked(&cwm->oth);
-	// if it fails it will exit immediately.
-	bool ret = os_thread_helper_is_running_locked(&cwm->oth);
+	while (!cwm->thread_started && !cwm->thread_exited) {
+		os_thread_helper_wait_locked(&cwm->oth);
+	}
+	bool ret = cwm->thread_started && !cwm->thread_exited;
 	os_thread_helper_unlock(&cwm->oth);
 	return ret;
 }
