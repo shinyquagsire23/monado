@@ -10,7 +10,6 @@ target_link_libraries(
 		aux_util
 		st_prober
 		ipc_server
-		comp_main
 		target_lists
 		target_instance
 		oxr_sdl2
