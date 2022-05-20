@@ -75,19 +75,33 @@ static LRESULT CALLBACK
 WndProc(HWND hWnd, unsigned int message, WPARAM wParam, LPARAM lParam)
 {
 	struct comp_window_mswin *cwm = GetPropW(hWnd, szWindowData);
+
 	if (!cwm) {
 		// This is before we've set up our window, or for some other helper window...
 		// We might want to handle messages differently in here.
 		return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
+	struct comp_compositor *c = cwm->base.base.c;
 	switch (message) {
-	case WM_PAINT: draw_window(hWnd, cwm); return 0;
-	case WM_CLOSE: cwm->should_exit = true; return 0;
-	case WM_DESTROY:
-		// Post a quit message and return.
-		cwm->should_exit = true;
+	case WM_PAINT:
+		// COMP_INFO(c, "WM_PAINT");
+		draw_window(hWnd, cwm);
+		break;
+	case WM_QUIT:
+		// COMP_INFO(c, "WM_QUIT");
 		PostQuitMessage(0);
-		return 0;
+		break;
+	case WM_CLOSE:
+		// COMP_INFO(c, "WM_CLOSE");
+		cwm->should_exit = true;
+		DestroyWindow(hWnd);
+		cwm->window = NULL;
+		break;
+	case WM_DESTROY:
+		// COMP_INFO(c, "WM_DESTROY");
+		// Post a quit message and return.
+		PostQuitMessage(0);
+		break;
 	default: return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
 	return 0;
@@ -228,7 +242,15 @@ comp_window_mswin_window_loop(struct comp_window_mswin *cwm)
 #endif
 		}
 	}
+	if (cwm->window != NULL) {
+		// Got shut down by app code, not by a window message, so we still need to clean up our window.
+		if (0 == DestroyWindow(cwm->window)) {
+			COMP_ERROR_GETLASTERROR(ct->c, "DestroyWindow failed: %s", "DestroyWindow failed");
+		}
+		cwm->window = NULL;
+	}
 }
+
 static void
 comp_window_mswin_thread(struct comp_window_mswin *cwm)
 {
@@ -261,10 +283,14 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 		// parent thread will be notified (by caller) that we have exited.
 		return;
 	}
+
 	comp_window_mswin_window_loop(cwm);
 
 	COMP_INFO(ct->c, "Unregistering window class");
-	UnregisterClassW((LPCWSTR)window_class, NULL);
+	if (0 == UnregisterClassW((LPCWSTR)window_class, NULL)) {
+		COMP_ERROR_GETLASTERROR(ct->c, "Failed to unregister window class: %s",
+		                        "Failed to unregister window class");
+	}
 }
 
 static void *
