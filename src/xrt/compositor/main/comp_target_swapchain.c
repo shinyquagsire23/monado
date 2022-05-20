@@ -937,7 +937,7 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 
 	// Thread if it has been started must be stopped first.
 	if (cts->vblank.has_started) {
-		os_thread_helper_stop(&cts->vblank.event_thread);
+		// Destroy also stops the thread.
 		os_thread_helper_destroy(&cts->vblank.event_thread);
 		cts->vblank.has_started = false;
 	}

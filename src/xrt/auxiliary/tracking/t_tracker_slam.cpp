@@ -913,7 +913,7 @@ t_slam_node_break_apart(struct xrt_frame_node *node)
 	auto &t = *container_of(node, TrackerSlam, node);
 	t.slam->finalize();
 	t.slam->stop();
-	os_thread_helper_stop(&t.oth);
+	os_thread_helper_stop_and_wait(&t.oth);
 	SLAM_DEBUG("SLAM tracker dismantled");
 }
 

@@ -748,7 +748,7 @@ euroc_player_stream_stop(struct xrt_fs *xfs)
 	struct euroc_player *ep = euroc_player(xfs);
 	ep->is_running = false;
 
-	os_thread_helper_stop(&ep->play_thread);
+	// Destroy also stops the thread.
 	os_thread_helper_destroy(&ep->play_thread);
 
 	return true;

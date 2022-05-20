@@ -208,7 +208,8 @@ survive_device_destroy(struct xrt_device *xdev)
 
 	if (survive->sys->hmd == NULL && all_null) {
 		U_LOG_D("Tearing down libsurvive context");
-		os_thread_helper_stop(&survive->sys->event_thread);
+
+		// Destroy also stops the thread.
 		os_thread_helper_destroy(&survive->sys->event_thread);
 
 		// Now that the thread is not running we can destroy the lock.

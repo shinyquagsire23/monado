@@ -369,7 +369,9 @@ ulv2_device_destroy(struct xrt_device *xdev)
 	struct ulv2_device *ulv2d = ulv2_device(xdev);
 
 	ulv2d->pthread_should_stop = true;
-	os_thread_helper_stop(&ulv2d->leap_loop_oth);
+
+	// Destroy also stops the thread.
+	os_thread_helper_destroy(&ulv2d->leap_loop_oth);
 
 	// Remove the variable tracking.
 	u_var_remove_root(ulv2d);

@@ -91,8 +91,9 @@ static void
 comp_window_mswin_destroy(struct comp_target *ct)
 {
 	struct comp_window_mswin *cwm = (struct comp_window_mswin *)ct;
-	// Stop the Windows thread first.
-	os_thread_helper_stop(&cwm->oth);
+
+	// Stop the Windows thread first, destroy also stops the thread.
+	os_thread_helper_destroy(&cwm->oth);
 
 	comp_target_swapchain_cleanup(&cwm->base);
 

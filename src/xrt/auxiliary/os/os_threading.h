@@ -483,7 +483,7 @@ os_thread_helper_signal_stop(struct os_thread_helper *oth)
  * @public @memberof os_thread_helper
  */
 static inline int
-os_thread_helper_stop(struct os_thread_helper *oth)
+os_thread_helper_stop_and_wait(struct os_thread_helper *oth)
 {
 	void *retval = NULL;
 
@@ -515,7 +515,7 @@ os_thread_helper_stop(struct os_thread_helper *oth)
 /*!
  * Destroy the thread helper, externally synchronizable.
  *
- * Integrates a call to @ref os_thread_helper_stop, so you may just call this for full cleanup
+ * Integrates a call to @ref os_thread_helper_stop_and_wait, so you may just call this for full cleanup
  *
  * @public @memberof os_thread_helper
  */
@@ -524,7 +524,7 @@ os_thread_helper_destroy(struct os_thread_helper *oth)
 {
 	assert(oth->initialized);
 	// Stop the thread.
-	os_thread_helper_stop(oth);
+	os_thread_helper_stop_and_wait(oth);
 
 	// Destroy resources.
 	pthread_mutex_destroy(&oth->mutex);

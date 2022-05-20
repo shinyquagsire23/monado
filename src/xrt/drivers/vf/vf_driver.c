@@ -401,7 +401,7 @@ vf_fs_destroy(struct vf_fs *vid)
 {
 	g_main_loop_quit(vid->loop);
 
-	os_thread_helper_stop(&vid->play_thread);
+	// Destroy also stops the thread.
 	os_thread_helper_destroy(&vid->play_thread);
 
 	free(vid);

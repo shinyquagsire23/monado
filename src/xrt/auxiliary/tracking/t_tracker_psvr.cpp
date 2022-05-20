@@ -1948,7 +1948,7 @@ frame(TrackerPSVR &t, struct xrt_frame *xf)
 static void
 break_apart(TrackerPSVR &t)
 {
-	os_thread_helper_stop(&t.oth);
+	os_thread_helper_stop_and_wait(&t.oth);
 }
 
 } // namespace xrt::auxiliary::tracking::psvr

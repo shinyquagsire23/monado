@@ -74,7 +74,8 @@ cli_cmd_slambatch(int argc, const char **argv)
 	timepoint_ns end_time = os_monotonic_get_ns();
 
 	pthread_cancel(wfk_thread.thread);
-	os_thread_helper_stop(&wfk_thread);
+
+	// Destroy also stops the thread.
 	os_thread_helper_destroy(&wfk_thread);
 
 	printf("Done in %.2fs.\n", (double)(end_time - start_time) / U_TIME_1S_IN_NS);
