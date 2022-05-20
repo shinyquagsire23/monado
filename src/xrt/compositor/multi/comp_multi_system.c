@@ -503,8 +503,8 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 {
 	struct multi_system_compositor *msc = multi_system_compositor(xsc);
 
-	// Stop the render thread first.
-	os_thread_helper_stop(&msc->oth);
+	// Destroy the render thread first, destroy also stops the thread.
+	os_thread_helper_destroy(&msc->oth);
 
 	xrt_comp_native_destroy(&msc->xcn);
 

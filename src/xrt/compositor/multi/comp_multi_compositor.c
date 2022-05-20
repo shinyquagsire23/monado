@@ -807,8 +807,8 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 
 	drain_events(mc);
 
-	// Stop the wait thread.
-	os_thread_helper_stop(&mc->wait_thread.oth);
+	// Destroy the wait thread, destroy also stops the thread.
+	os_thread_helper_destroy(&mc->wait_thread.oth);
 
 	// We are now off the rendering list, clear slots for any swapchains.
 	slot_clear(&mc->progress);
