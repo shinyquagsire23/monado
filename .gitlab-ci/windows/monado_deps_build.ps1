@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: MIT
 # Based on https://gitlab.freedesktop.org/mesa/mesa/-/blob/8396df5ad90aeb6ab2267811aba2187954562f81/.gitlab-ci/windows/mesa_deps_build.ps1
 
+$VulkanRTVersion = "1.3.211.0"
+
 # Download new TLS certs from Windows Update
 Get-Date
 Write-Host "Updating TLS certificate store"
@@ -22,6 +24,17 @@ if (!$?) {
     Exit 1
 }
 Remove-Item "C:\vcredist_x64.exe" -Force
+
+Get-Date
+Write-Host "Installing Vulkan runtime components"
+$VulkanInstaller = "C:\VulkanRTInstaller.exe"
+Invoke-WebRequest -Uri "https://sdk.lunarg.com/sdk/download/$VulkanRTVersion/windows/VulkanRT-$VulkanRTVersion-Installer.exe" -OutFile "$VulkanInstaller"
+Start-Process -NoNewWindow -Wait "$VulkanInstaller" -ArgumentList "/S"
+if (!$?) {
+    Write-Host "Failed to install Vulkan runtime components"
+    Exit 1
+}
+Remove-Item "$VulkanInstaller" -Force
 
 Get-Date
 Write-Host "Installing Scoop"

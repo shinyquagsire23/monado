@@ -201,7 +201,7 @@ arch:rolling:container_prep:
     default: false
   variables:
     MONADO_WIN_BASE_TAG: "20220518.0"
-    MONADO_WIN_MAIN_TAG: "20220518.0"
+    MONADO_WIN_MAIN_TAG: "20220520.0"
     MONADO_BASE_IMAGE_PATH: "win2019/vs2022_base"
     MONADO_MAIN_IMAGE_PATH: "win2019/vs2022"
 
