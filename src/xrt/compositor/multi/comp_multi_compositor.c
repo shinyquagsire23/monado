@@ -226,6 +226,7 @@ run_func(void *ptr)
 	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {
 
 		if (mc->wait_thread.xcsem == NULL && mc->wait_thread.xcf == NULL) {
+			//! @todo what condition should we spin on here to handle spurious wakeups?
 			os_thread_helper_wait_locked(&mc->wait_thread.oth);
 			// Fall through here on stopping to clean up and outstanding waits.
 		}
@@ -274,6 +275,8 @@ run_func(void *ptr)
 		mc->wait_thread.waiting = false;
 
 		if (mc->wait_thread.blocked) {
+			// Release one thread
+			mc->wait_thread.blocked = false;
 			os_thread_helper_signal_locked(&mc->wait_thread.oth);
 		}
 	}
@@ -289,9 +292,12 @@ wait_for_wait_thread_locked(struct multi_compositor *mc)
 	// Should we wait for the last frame.
 	if (mc->wait_thread.waiting) {
 		COMP_TRACE_IDENT(blocked);
+
+		// OK, wait until the wait thread releases us by setting blocked to false
 		mc->wait_thread.blocked = true;
-		os_thread_helper_wait_locked(&mc->wait_thread.oth);
-		mc->wait_thread.blocked = false;
+		while (mc->wait_thread.blocked) {
+			os_thread_helper_wait_locked(&mc->wait_thread.oth);
+		}
 	}
 }
 

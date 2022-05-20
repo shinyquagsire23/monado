@@ -146,7 +146,12 @@ struct multi_compositor
 		//! Is the thread waiting, if so the client should block.
 		bool waiting;
 
-		//! Is the client thread blocked, if so it should be woken up.
+		/*!
+		 * Is the client thread blocked?
+		 *
+		 * Set to true by the client thread,
+		 * cleared by the wait thread to release the client thread.
+		 */
 		bool blocked;
 	} wait_thread;
 
