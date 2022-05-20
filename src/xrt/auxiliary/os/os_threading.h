@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -187,7 +187,7 @@ struct os_thread
  *
  * @public @memberof os_thread
  */
-typedef void *(*os_run_func)(void *);
+typedef void *(*os_run_func_t)(void *);
 
 /*!
  * Init.
@@ -206,7 +206,7 @@ os_thread_init(struct os_thread *ost)
  * @public @memberof os_thread
  */
 static inline int
-os_thread_start(struct os_thread *ost, os_run_func func, void *ptr)
+os_thread_start(struct os_thread *ost, os_run_func_t func, void *ptr)
 {
 	return pthread_create(&ost->thread, NULL, func, ptr);
 }
@@ -397,7 +397,7 @@ os_thread_helper_init(struct os_thread_helper *oth)
  * @public @memberof os_thread_helper
  */
 static inline int
-os_thread_helper_start(struct os_thread_helper *oth, os_run_func func, void *ptr)
+os_thread_helper_start(struct os_thread_helper *oth, os_run_func_t func, void *ptr)
 {
 	pthread_mutex_lock(&oth->mutex);
 
