@@ -470,8 +470,10 @@ windows:
   script:
     - ./.gitlab-ci/windows/monado_build.ps1
   artifacts:
+    when: always
     paths:
       - install
+      - build/Testing/Temporary
 
 # Packaging
 .monado.packaging.conditions:
