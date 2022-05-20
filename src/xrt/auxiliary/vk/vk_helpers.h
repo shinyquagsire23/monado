@@ -72,8 +72,10 @@ struct vk_bundle
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 		bool fence_win32_handle;
 
+		bool binary_semaphore_d3d12_fence;
 		bool binary_semaphore_win32_handle;
 
+		bool timeline_semaphore_d3d12_fence;
 		bool timeline_semaphore_win32_handle;
 #else
 #error "Need port for fence sync handles checkers"

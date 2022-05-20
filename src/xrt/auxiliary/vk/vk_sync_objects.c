@@ -32,6 +32,9 @@ vk_get_semaphore_handle_type(struct vk_bundle *vk)
 	}
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	if (vk->external.binary_semaphore_d3d12_fence) {
+		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+	}
 	if (vk->external.binary_semaphore_win32_handle) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 	}
@@ -50,6 +53,9 @@ vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
 	}
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+	if (vk->external.timeline_semaphore_d3d12_fence) {
+		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+	}
 	if (vk->external.timeline_semaphore_win32_handle) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 	}

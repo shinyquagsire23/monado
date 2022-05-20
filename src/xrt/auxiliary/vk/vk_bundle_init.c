@@ -210,8 +210,11 @@ is_fence_bit_supported(struct vk_bundle *vk, VkExternalFenceHandleTypeFlagBits h
 	return true;
 }
 
-static bool
-is_binary_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
+static void
+get_binary_semaphore_bit_support(struct vk_bundle *vk,
+                                 VkExternalSemaphoreHandleTypeFlagBits handle_type,
+                                 bool *out_importable,
+                                 bool *out_exportable)
 {
 	VkPhysicalDeviceExternalSemaphoreInfo external_semaphore_info = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO,
@@ -227,29 +230,37 @@ is_binary_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandl
 	    &external_semaphore_info,                          // pExternalSemaphoreInfo
 	    &external_semaphore_props);                        // pExternalSemaphoreProperties
 
-	const VkExternalSemaphoreFeatureFlagBits bits =    //
-	    VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT | //
-	    VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;  //
+	const VkExternalSemaphoreFeatureFlagBits bits = external_semaphore_props.externalSemaphoreFeatures;
 
-	VkExternalSemaphoreFeatureFlagBits masked = bits & external_semaphore_props.externalSemaphoreFeatures;
-	if (masked != bits) {
-		// All must be supported.
-		return false;
-	}
-
-	return true;
+	*out_importable = (bits & VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) != 0;
+	*out_exportable = (bits & VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) != 0;
 }
 
 static bool
-is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
+is_binary_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
 {
+	bool importable = false, exportable = false;
+	get_binary_semaphore_bit_support(vk, handle_type, &importable, &exportable);
+
+	return importable && exportable;
+}
+
+static void
+get_timeline_semaphore_bit_support(struct vk_bundle *vk,
+                                   VkExternalSemaphoreHandleTypeFlagBits handle_type,
+                                   bool *out_importable,
+                                   bool *out_exportable)
+{
+	*out_importable = false;
+	*out_exportable = false;
+
 #ifdef VK_KHR_timeline_semaphore
 	/*
 	 * This technically is for the device not the physical device,
 	 * but we can use it as a way to gate running the detection code.
 	 */
 	if (!vk->features.timeline_semaphore) {
-		return false;
+		return;
 	}
 
 	VkSemaphoreTypeCreateInfo semaphore_type_create_info = {
@@ -271,20 +282,20 @@ is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHan
 	    &external_semaphore_info,                          // pExternalSemaphoreInfo
 	    &external_semaphore_props);                        // pExternalSemaphoreProperties
 
-	const VkExternalSemaphoreFeatureFlagBits bits =    //
-	    VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT | //
-	    VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT;  //
+	const VkExternalSemaphoreFeatureFlagBits bits = external_semaphore_props.externalSemaphoreFeatures;
 
-	VkExternalSemaphoreFeatureFlagBits masked = bits & external_semaphore_props.externalSemaphoreFeatures;
-	if (masked != bits) {
-		// All must be supported.
-		return false;
-	}
-
-	return true;
-#else
-	return false;
+	*out_importable = (bits & VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT) != 0;
+	*out_exportable = (bits & VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT) != 0;
 #endif
+}
+
+bool
+is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
+{
+	bool importable = false, exportable = false;
+	get_timeline_semaphore_bit_support(vk, handle_type, &importable, &exportable);
+
+	return importable && exportable;
 }
 
 static void
@@ -322,13 +333,18 @@ fill_in_external_object_properties(struct vk_bundle *vk)
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT);
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
+
 	vk->external.fence_win32_handle = is_fence_bit_supported( //
 	    vk, VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
+	vk->external.binary_semaphore_d3d12_fence = is_binary_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT);
 	vk->external.binary_semaphore_win32_handle = is_binary_semaphore_bit_supported( //
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
 	//! @todo Is this safe to assume working, do we need to check an extension?
+	vk->external.timeline_semaphore_d3d12_fence = is_timeline_semaphore_bit_supported( //
+	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT);
 	vk->external.timeline_semaphore_win32_handle = is_timeline_semaphore_bit_supported( //
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 

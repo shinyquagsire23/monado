@@ -91,9 +91,13 @@ vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_le
 	          vk->external.fence_win32_handle ? "true" : "false"); //
 
 	U_LOG_IFL(log_level, vk->log_level,                                         //
-	          "Supported semaphores:\n\t%s: %s\n\t%s: %s",                      //
+	          "Supported semaphores:\n\t%s: %s\n\t%s: %s\n\t%s: %s\n\t%s: %s",  //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT(binary)",      //
+	          vk->external.binary_semaphore_d3d12_fence ? "true" : "false",     //
 	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT(binary)",     //
 	          vk->external.binary_semaphore_win32_handle ? "true" : "false",    //
+	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT(timeline)",    //
+	          vk->external.timeline_semaphore_d3d12_fence ? "true" : "false",   //
 	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT(timeline)",   //
 	          vk->external.timeline_semaphore_win32_handle ? "true" : "false"); //
 
