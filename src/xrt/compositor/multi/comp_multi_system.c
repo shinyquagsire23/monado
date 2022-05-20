@@ -412,6 +412,7 @@ multi_main_loop(struct multi_system_compositor *msc)
 	}
 
 	xrt_comp_end_session(xc);
+	os_thread_helper_unlock(&msc->oth);
 
 	return 0;
 }
