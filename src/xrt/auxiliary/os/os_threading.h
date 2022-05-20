@@ -54,6 +54,9 @@ extern "C" {
 struct os_mutex
 {
 	pthread_mutex_t mutex;
+#ifndef NDEBUG
+	bool initialized;
+#endif
 };
 
 /*!
@@ -64,6 +67,10 @@ struct os_mutex
 static inline int
 os_mutex_init(struct os_mutex *om)
 {
+	assert(!om->initialized);
+#ifndef NDEBUG
+	om->initialized = true;
+#endif
 	return pthread_mutex_init(&om->mutex, NULL);
 }
 
@@ -75,6 +82,7 @@ os_mutex_init(struct os_mutex *om)
 static inline void
 os_mutex_lock(struct os_mutex *om)
 {
+	assert(om->initialized);
 	pthread_mutex_lock(&om->mutex);
 }
 
@@ -86,6 +94,7 @@ os_mutex_lock(struct os_mutex *om)
 static inline int
 os_mutex_trylock(struct os_mutex *om)
 {
+	assert(om->initialized);
 	return pthread_mutex_trylock(&om->mutex);
 }
 
@@ -97,6 +106,7 @@ os_mutex_trylock(struct os_mutex *om)
 static inline void
 os_mutex_unlock(struct os_mutex *om)
 {
+	assert(om->initialized);
 	pthread_mutex_unlock(&om->mutex);
 }
 
@@ -108,7 +118,11 @@ os_mutex_unlock(struct os_mutex *om)
 static inline void
 os_mutex_destroy(struct os_mutex *om)
 {
+	assert(om->initialized);
 	pthread_mutex_destroy(&om->mutex);
+#ifndef NDEBUG
+	om->initialized = false;
+#endif
 }
 
 
@@ -120,6 +134,9 @@ os_mutex_destroy(struct os_mutex *om)
 struct os_cond
 {
 	pthread_cond_t cond;
+#ifndef NDEBUG
+	bool initialized;
+#endif
 };
 
 /*!
@@ -130,6 +147,10 @@ struct os_cond
 static inline int
 os_cond_init(struct os_cond *oc)
 {
+	assert(!oc->initialized);
+#ifndef NDEBUG
+	oc->initialized = true;
+#endif
 	return pthread_cond_init(&oc->cond, NULL);
 }
 
@@ -141,6 +162,7 @@ os_cond_init(struct os_cond *oc)
 static inline void
 os_cond_signal(struct os_cond *oc)
 {
+	assert(oc->initialized);
 	pthread_cond_signal(&oc->cond);
 }
 
@@ -152,6 +174,7 @@ os_cond_signal(struct os_cond *oc)
 static inline void
 os_cond_wait(struct os_cond *oc, struct os_mutex *om)
 {
+	assert(oc->initialized);
 	pthread_cond_wait(&oc->cond, &om->mutex);
 }
 
@@ -163,7 +186,11 @@ os_cond_wait(struct os_cond *oc, struct os_mutex *om)
 static inline void
 os_cond_destroy(struct os_cond *oc)
 {
+	assert(oc->initialized);
 	pthread_cond_destroy(&oc->cond);
+#ifndef NDEBUG
+	oc->initialized = false;
+#endif
 }
 
 
@@ -364,6 +391,7 @@ struct os_thread_helper
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
+	bool initialized;
 	bool running;
 };
 
@@ -387,6 +415,7 @@ os_thread_helper_init(struct os_thread_helper *oth)
 		pthread_mutex_destroy(&oth->mutex);
 		return ret;
 	}
+	oth->initialized = true;
 
 	return 0;
 }
@@ -401,6 +430,7 @@ os_thread_helper_start(struct os_thread_helper *oth, os_run_func_t func, void *p
 {
 	pthread_mutex_lock(&oth->mutex);
 
+	assert(oth->initialized);
 	if (oth->running) {
 		pthread_mutex_unlock(&oth->mutex);
 		return -1;
@@ -431,6 +461,7 @@ os_thread_helper_signal_stop(struct os_thread_helper *oth)
 {
 	// The fields are protected.
 	pthread_mutex_lock(&oth->mutex);
+	assert(oth->initialized);
 
 	// Report we're stopping the thread.
 	oth->running = false;
@@ -458,8 +489,10 @@ os_thread_helper_stop(struct os_thread_helper *oth)
 
 	// The fields are protected.
 	pthread_mutex_lock(&oth->mutex);
+	assert(oth->initialized);
 
 	if (!oth->running) {
+		// it already exited
 		pthread_mutex_unlock(&oth->mutex);
 		return 0;
 	}
@@ -482,17 +515,21 @@ os_thread_helper_stop(struct os_thread_helper *oth)
 /*!
  * Destroy the thread helper, externally synchronizable.
  *
+ * Integrates a call to @ref os_thread_helper_stop, so you may just call this for full cleanup
+ *
  * @public @memberof os_thread_helper
  */
 static inline void
 os_thread_helper_destroy(struct os_thread_helper *oth)
 {
+	assert(oth->initialized);
 	// Stop the thread.
 	os_thread_helper_stop(oth);
 
 	// Destroy resources.
 	pthread_mutex_destroy(&oth->mutex);
 	pthread_cond_destroy(&oth->cond);
+	oth->initialized = false;
 }
 
 /*!
@@ -529,6 +566,7 @@ static inline bool
 os_thread_helper_is_running(struct os_thread_helper *oth)
 {
 	os_thread_helper_lock(oth);
+	assert(oth->initialized);
 	bool ret = oth->running;
 	os_thread_helper_unlock(oth);
 	return ret;
