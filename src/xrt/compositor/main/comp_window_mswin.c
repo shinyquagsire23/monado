@@ -35,6 +35,7 @@ struct comp_window_mswin
 	struct comp_target_swapchain base;
 	struct os_thread_helper oth;
 
+	ATOM window_class;
 	HINSTANCE instance;
 	HWND window;
 
@@ -160,35 +161,12 @@ comp_window_mswin_flush(struct comp_target *ct)
 }
 
 static void
-comp_window_mswin_thread(struct comp_window_mswin *cwm)
+comp_window_mswin_window_loop(struct comp_window_mswin *cwm)
 {
 	struct comp_target *ct = &cwm->base.base;
-
 	RECT rc = {0, 0, (LONG)(ct->width), (LONG)ct->height};
 
-	WNDCLASSEXW wcex;
-	U_ZERO(&wcex);
-	wcex.cbSize = sizeof(WNDCLASSEXW);
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
-
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = cwm->instance;
-	wcex.lpszClassName = szWindowClass;
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-//! @todo icon
-#if 0
-	wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SAMPLEGUI));
-	wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_SAMPLEGUI);
-	wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-#endif
-	if (!RegisterClassExW(&wcex)) {
-		COMP_ERROR(ct->c, "Failed to register window class");
-		// parent thread will be notified (by caller) that we have exited.
-		return;
-	}
-
+	COMP_INFO(ct->c, "Creating window");
 	cwm->window =
 	    CreateWindowExW(0, szWindowClass, L"Monado (Windowed)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
 	                    rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, cwm->instance, NULL);
@@ -198,19 +176,22 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 		return;
 	}
 
+	COMP_INFO(ct->c, "Setting window properties and showing window");
 	SetPropW(cwm->window, szWindowData, cwm);
 	SetWindowLongPtr(cwm->window, GWLP_USERDATA, (LONG_PTR)(cwm));
 	ShowWindow(cwm->window, SW_SHOWDEFAULT);
 	UpdateWindow(cwm->window);
 
+	COMP_INFO(ct->c, "Unblocking parent thread");
 	// Unblock the parent thread now that we're successfully running.
 	{
 		os_thread_helper_lock(&cwm->oth);
 		os_thread_helper_signal_locked(&cwm->oth);
 		os_thread_helper_unlock(&cwm->oth);
 	}
-	COMP_WARN(cwm->base.base.c, "Starting the Windows window message loop");
+	COMP_INFO(ct->c, "Starting the Windows window message loop");
 
+	bool done = false;
 	while (os_thread_helper_is_running(&cwm->oth)) {
 		// force handling messages.
 		MSG msg;
@@ -236,6 +217,42 @@ comp_window_mswin_thread(struct comp_window_mswin *cwm)
 		}
 	}
 }
+static void
+comp_window_mswin_thread(struct comp_window_mswin *cwm)
+{
+	struct comp_target *ct = &cwm->base.base;
+
+	RECT rc = {0, 0, (LONG)(ct->width), (LONG)ct->height};
+
+	WNDCLASSEXW wcex;
+	U_ZERO(&wcex);
+	wcex.cbSize = sizeof(WNDCLASSEXW);
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = cwm->instance;
+	wcex.lpszClassName = szWindowClass;
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+//! @todo icon
+#if 0
+	wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SAMPLEGUI));
+	wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_SAMPLEGUI);
+	wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+#endif
+	COMP_INFO(ct->c, "Registering window class");
+	ATOM window_class = RegisterClassExW(&wcex);
+	if (!window_class) {
+		COMP_ERROR(ct->c, "Failed to register window class");
+		// parent thread will be notified (by caller) that we have exited.
+		return;
+	}
+	comp_window_mswin_window_loop(cwm);
+
+	COMP_INFO(ct->c, "Unregistering window class");
+	UnregisterClassW((LPCWSTR)window_class, NULL);
+}
 
 static void *
 comp_window_mswin_thread_func(void *ptr)
@@ -246,7 +263,7 @@ comp_window_mswin_thread_func(void *ptr)
 
 	comp_window_mswin_thread(cwm);
 	os_thread_helper_signal_stop(&cwm->oth);
-	COMP_WARN(cwm->base.base.c, "Windows window message thread now exiting.");
+	COMP_INFO(cwm->base.base.c, "Windows window message thread now exiting.");
 	return NULL;
 }
 
