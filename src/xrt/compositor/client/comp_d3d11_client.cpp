@@ -518,10 +518,8 @@ client_d3d11_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	l_xscn = as_client_d3d11_swapchain(l_xsc)->xsc.get();
 	r_xscn = as_client_d3d11_swapchain(r_xsc)->xsc.get();
 
-	struct xrt_layer_data d = *data;
-	d.flip_y = !d.flip_y;
-
-	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, &d);
+	// no flip required: D3D11 swapchain image convention matches Vulkan
+	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, data);
 }
 
 static xrt_result_t
@@ -542,10 +540,8 @@ client_d3d11_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
 	struct xrt_swapchain *l_d_xscn = as_client_d3d11_swapchain(l_d_xsc)->xsc.get();
 	struct xrt_swapchain *r_d_xscn = as_client_d3d11_swapchain(r_d_xsc)->xsc.get();
 
-	struct xrt_layer_data d = *data;
-	d.flip_y = !d.flip_y;
-
-	return xrt_comp_layer_stereo_projection_depth(&c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, &d);
+	// no flip required: D3D11 swapchain image convention matches Vulkan
+	return xrt_comp_layer_stereo_projection_depth(&c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
 }
 
 static xrt_result_t
