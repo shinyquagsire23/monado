@@ -328,6 +328,39 @@ u_json_get_double_array(const cJSON *json_array, double *out_array, size_t max_s
 	return i;
 }
 
+size_t
+u_json_get_int_array(const cJSON *json_array, int *out_array, size_t max_size)
+{
+	assert(out_array != NULL);
+
+	if (!json_array) {
+		return 0;
+	}
+	if (!cJSON_IsArray(json_array)) {
+		return 0;
+	}
+
+	size_t i = 0;
+	const cJSON *elt;
+	cJSON_ArrayForEach(elt, json_array)
+	{
+		if (i >= max_size) {
+			break;
+		}
+
+		if (!u_json_get_int(elt, &out_array[i])) {
+			U_LOG_W(
+			    "u_json_get_int got a non-number in a "
+			    "numeric array");
+			return i;
+		}
+
+		i++;
+	}
+
+	return i;
+}
+
 bool
 u_json_get_matrix_3x3(const cJSON *json, struct xrt_matrix_3x3 *out_matrix)
 {
