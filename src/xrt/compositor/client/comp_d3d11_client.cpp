@@ -518,7 +518,7 @@ client_d3d11_compositor_layer_stereo_projection(struct xrt_compositor *xc,
 	l_xscn = as_client_d3d11_swapchain(l_xsc)->xsc.get();
 	r_xscn = as_client_d3d11_swapchain(r_xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_stereo_projection(&c->xcn->base, xdev, l_xscn, r_xscn, data);
 }
 
@@ -540,7 +540,7 @@ client_d3d11_compositor_layer_stereo_projection_depth(struct xrt_compositor *xc,
 	struct xrt_swapchain *l_d_xscn = as_client_d3d11_swapchain(l_d_xsc)->xsc.get();
 	struct xrt_swapchain *r_d_xscn = as_client_d3d11_swapchain(r_d_xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_stereo_projection_depth(&c->xcn->base, xdev, l_xscn, r_xscn, l_d_xscn, r_d_xscn, data);
 }
 
@@ -557,7 +557,7 @@ client_d3d11_compositor_layer_quad(struct xrt_compositor *xc,
 
 	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_quad(&c->xcn->base, xdev, xscfb, data);
 }
 
@@ -574,7 +574,7 @@ client_d3d11_compositor_layer_cube(struct xrt_compositor *xc,
 
 	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_cube(&c->xcn->base, xdev, xscfb, data);
 }
 
@@ -591,7 +591,7 @@ client_d3d11_compositor_layer_cylinder(struct xrt_compositor *xc,
 
 	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_cylinder(&c->xcn->base, xdev, xscfb, data);
 }
 
@@ -608,7 +608,7 @@ client_d3d11_compositor_layer_equirect1(struct xrt_compositor *xc,
 
 	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_equirect1(&c->xcn->base, xdev, xscfb, data);
 }
 
@@ -625,7 +625,7 @@ client_d3d11_compositor_layer_equirect2(struct xrt_compositor *xc,
 
 	xscfb = as_client_d3d11_swapchain(xsc)->xsc.get();
 
-	// no flip required: D3D11 swapchain image convention matches Vulkan
+	// No flip required: D3D11 swapchain image convention matches Vulkan.
 	return xrt_comp_layer_equirect2(&c->xcn->base, xdev, xscfb, data);
 }
 
