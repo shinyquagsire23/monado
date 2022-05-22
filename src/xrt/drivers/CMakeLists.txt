@@ -81,7 +81,7 @@ if(XRT_BUILD_DRIVER_HYDRA)
 	set(HYDRA_SOURCE_FILES)
 
 	add_library(drv_hydra STATIC hydra/hydra_driver.c hydra/hydra_interface.h)
-	target_link_libraries(drv_hydra PRIVATE xrt-interfaces aux_os)
+	target_link_libraries(drv_hydra PRIVATE xrt-interfaces aux_os aux_util)
 	list(APPEND ENABLED_DRIVERS hydra)
 endif()
 
