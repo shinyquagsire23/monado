@@ -303,6 +303,8 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	ii->ipc_c.imc.socket_fd = -1;
 	ii->ipc_c.ism_handle = XRT_SHMEM_HANDLE_INVALID;
 
+	os_mutex_init(&ii->ipc_c.mutex);
+
 	if (!ipc_connect(&ii->ipc_c)) {
 		IPC_ERROR((&ii->ipc_c),
 		          "Failed to connect to monado service process\n\n"
@@ -397,8 +399,6 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 	ii->xdev_count = count;
 
 	*out_xinst = &ii->base;
-
-	os_mutex_init(&ii->ipc_c.mutex);
 
 	return XRT_SUCCESS;
 }
