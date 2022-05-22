@@ -449,6 +449,15 @@ void
 math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat);
 
 /*!
+ * Initialize a 3x3 matrix from a quaternion
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_from_quat(const struct xrt_quat *q, struct xrt_matrix_3x3 *result_out);
+
+/*!
  * Initialize a double 3x3 matrix to the identity matrix
  *
  * @see xrt_matrix_3x3

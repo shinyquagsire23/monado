@@ -474,6 +474,26 @@ math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat)
 }
 
 extern "C" void
+math_matrix_3x3_from_quat(const struct xrt_quat *q, struct xrt_matrix_3x3 *result_out)
+{
+	struct xrt_matrix_3x3 result = {{
+	    1 - 2 * q->y * q->y - 2 * q->z * q->z,
+	    2 * q->x * q->y - 2 * q->w * q->z,
+	    2 * q->x * q->z + 2 * q->w * q->y,
+
+	    2 * q->x * q->y + 2 * q->w * q->z,
+	    1 - 2 * q->x * q->x - 2 * q->z * q->z,
+	    2 * q->y * q->z - 2 * q->w * q->x,
+
+	    2 * q->x * q->z - 2 * q->w * q->y,
+	    2 * q->y * q->z + 2 * q->w * q->x,
+	    1 - 2 * q->x * q->x - 2 * q->y * q->y,
+	}};
+
+	*result_out = result;
+}
+
+extern "C" void
 math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat)
 {
 	map_matrix_3x3_f64(*mat) = Eigen::Matrix3d::Identity();
