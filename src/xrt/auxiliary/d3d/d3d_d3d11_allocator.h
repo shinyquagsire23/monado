@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Header exposing factory function for D3D11-backed image
-   buffer allocator.
+ * @brief Header for D3D11-backed image buffer allocator factory function.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_d3d
  */
@@ -13,6 +12,7 @@
 #include "xrt/xrt_compositor.h"
 
 #include <d3d11.h>
+
 
 #ifdef __cplusplus
 extern "C" {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Higher-level D3D11-backed image buffer allocation routine
+ * @brief Higher-level D3D11-backed image buffer allocation routine.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_d3d
  */
@@ -21,6 +21,7 @@
 
 
 namespace xrt::auxiliary::d3d {
+
 /**
  * Allocate images (ID3D11Texture2D1) that have a corresponding native handle.
  *
@@ -46,4 +47,5 @@ allocateSharedImages(ID3D11Device5 &device,
                      bool keyed_mutex,
                      std::vector<wil::com_ptr<ID3D11Texture2D1>> &out_images,
                      std::vector<wil::unique_handle> &out_handles);
+
 }; // namespace xrt::auxiliary::d3d

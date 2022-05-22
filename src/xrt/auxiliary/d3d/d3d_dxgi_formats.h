@@ -7,10 +7,17 @@
  * @ingroup aux_d3d
  */
 
+#pragma once
+
 #include "xrt/xrt_windows.h"
 #include "xrt/xrt_vulkan_includes.h"
 
 #include <dxgiformat.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline DXGI_FORMAT
 d3d_vk_format_to_dxgi(int64_t format)
@@ -37,6 +44,7 @@ d3d_vk_format_to_dxgi(int64_t format)
 	default: return (DXGI_FORMAT)0;
 	}
 }
+
 static inline DXGI_FORMAT
 d3d_dxgi_format_to_typeless_dxgi(DXGI_FORMAT format)
 {
@@ -91,3 +99,7 @@ d3d_convert_usage_bits_to_bind_flags(enum xrt_swapchain_usage_bits xsub)
 	}
 	return ret;
 }
+
+#ifdef __cplusplus
+}
+#endif

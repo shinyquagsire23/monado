@@ -20,6 +20,7 @@
 
 #include <utility>
 
+
 namespace xrt::auxiliary::d3d {
 
 /**
@@ -61,4 +62,5 @@ getAdapterByLUID(const xrt_luid_t &luid, u_logging_level log_level = U_LOGGING_I
  */
 std::pair<wil::com_ptr<ID3D11Device>, wil::com_ptr<ID3D11DeviceContext>>
 createD3D11Device(const wil::com_ptr<IDXGIAdapter> &adapter = nullptr, u_logging_level log_level = U_LOGGING_INFO);
+
 } // namespace xrt::auxiliary::d3d
