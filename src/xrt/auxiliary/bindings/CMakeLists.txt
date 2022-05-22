@@ -28,4 +28,4 @@ add_library(
 # needed globally for steamvr input profile generation in steamvr target
 set_property(GLOBAL PROPERTY AUX_BINDINGS_DIR_PROP "${CMAKE_CURRENT_SOURCE_DIR}")
 
-target_link_libraries(aux_generated_bindings PRIVATE xrt-interfaces aux_util)
+target_link_libraries(aux_generated_bindings PRIVATE xrt-interfaces)
