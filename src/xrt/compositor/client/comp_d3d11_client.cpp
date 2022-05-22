@@ -16,6 +16,7 @@
 #include "d3d/d3d_helpers.hpp"
 #include "d3d/d3d_d3d11_allocator.hpp"
 #include "util/u_misc.h"
+#include "util/u_time.h"
 #include "util/u_logging.h"
 #include "util/u_debug.h"
 #include "util/u_handles.h"
