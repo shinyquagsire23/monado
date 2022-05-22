@@ -15,6 +15,9 @@
 #include "math/m_vec3.h"
 #include "math/m_api.h"
 
+#include "util/u_time.h"
+
+
 #define DEG_TO_RAD(DEG) (DEG * M_PI / 180.)
 
 #define VELOCIY_VALID_FLAGS                                                                                            \
