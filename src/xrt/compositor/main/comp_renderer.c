@@ -573,6 +573,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(orig_width * mul);
 	r->mirror_to_debug_gui.image_extent.height = (uint32_t)(orig_height * mul);
+	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
 
 	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
 	                                    XRT_FORMAT_R8G8B8X8);
@@ -768,6 +769,8 @@ renderer_destroy(struct comp_renderer *r)
 
 	// Left eye readback
 	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
+
+	u_sink_debug_destroy(&r->mirror_to_debug_gui.debug_sink);
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);

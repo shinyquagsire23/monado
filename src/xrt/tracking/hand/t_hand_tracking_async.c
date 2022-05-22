@@ -159,6 +159,7 @@ ht_async_destroy(struct xrt_frame_node *node)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
 	os_thread_helper_destroy(&hta->mainloop);
+	os_mutex_destroy(&hta->present.mutex);
 
 	t_ht_sync_destroy(&hta->provider);
 
@@ -179,6 +180,7 @@ t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_h
 
 	hta->provider = sync;
 
+	os_mutex_init(&hta->present.mutex);
 	os_thread_helper_init(&hta->mainloop);
 	os_thread_helper_start(&hta->mainloop, ht_async_mainloop, hta);
 	xrt_frame_context_add(xfctx, &hta->base.node);

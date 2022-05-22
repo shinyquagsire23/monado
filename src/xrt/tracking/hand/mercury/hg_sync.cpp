@@ -11,6 +11,7 @@
 
 #include "hg_sync.hpp"
 #include "hg_model.hpp"
+#include "util/u_sink.h"
 #include <numeric>
 
 namespace xrt::tracking::hand::mercury {
@@ -290,10 +291,13 @@ HandTracking::HandTracking()
 {
 	this->base.process = &HandTracking::cCallbackProcess;
 	this->base.destroy = &HandTracking::cCallbackDestroy;
+	u_sink_debug_init(&this->debug_sink);
 }
 
 HandTracking::~HandTracking()
 {
+	u_sink_debug_destroy(&this->debug_sink);
+
 	release_onnx_wrap(&this->views[0].keypoint[0]);
 	release_onnx_wrap(&this->views[0].keypoint[1]);
 	release_onnx_wrap(&this->views[0].detection);

@@ -259,6 +259,8 @@ sdl2_close(struct sdl2_program *p)
 		p->win = NULL;
 	}
 
+	os_thread_helper_destroy(&p->oth);
+
 	if (p->sdl_initialized) {
 		//! @todo: Properly quit SDL without crashing SDL client apps
 		// SDL_Quit();
@@ -295,6 +297,8 @@ oxr_sdl2_hack_create(void **out_hack)
 	if (p == NULL) {
 		return -1;
 	}
+
+	os_thread_helper_init(&p->oth);
 
 	*out_hack = p;
 
