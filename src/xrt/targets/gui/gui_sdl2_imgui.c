@@ -16,6 +16,7 @@
 
 #include "ogl/ogl_api.h"
 #include "gui/gui_imgui.h"
+#include "xrt/xrt_compiler.h"
 
 #include "gui_sdl2.h"
 
@@ -55,7 +56,7 @@ gui_sdl2_imgui_loop(struct sdl2_program *p)
 	ImGuiIO *io = igGetIO();
 
 	// Make window layout file "imgui.ini" live in config dir
-	int res = u_file_get_path_in_config_dir("imgui.ini", p->layout_file, sizeof(p->layout_file));
+	XRT_MAYBE_UNUSED int res = u_file_get_path_in_config_dir("imgui.ini", p->layout_file, sizeof(p->layout_file));
 	assert(res > 0);
 	io->IniFilename = p->layout_file;
 

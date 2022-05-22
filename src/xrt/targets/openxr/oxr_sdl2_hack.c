@@ -7,6 +7,7 @@
  */
 
 #include "util/u_file.h"
+#include "xrt/xrt_compiler.h"
 #include "xrt/xrt_instance.h"
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_drivers.h"
@@ -145,7 +146,7 @@ sdl2_loop(struct sdl2_program *p)
 	ImGuiIO *io = igGetIO();
 
 	// Make window layout file "imgui.ini" live in config dir
-	int res = u_file_get_path_in_config_dir("imgui.ini", p->layout_file, sizeof(p->layout_file));
+	XRT_MAYBE_UNUSED int res = u_file_get_path_in_config_dir("imgui.ini", p->layout_file, sizeof(p->layout_file));
 	assert(res > 0);
 	io->IniFilename = p->layout_file;
 
