@@ -349,11 +349,11 @@ static int
 survive_controller_haptic_pulse(struct survive_device *survive, union xrt_output_value *value)
 {
 	float duration_seconds;
-	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
+	if (value->vibration.duration_ns == XRT_MIN_HAPTIC_DURATION) {
 		SURVIVE_TRACE(survive, "Haptic pulse duration: using %f minimum", MIN_HAPTIC_DURATION);
 		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
-		duration_seconds = time_ns_to_s(value->vibration.duration);
+		duration_seconds = time_ns_to_s(value->vibration.duration_ns);
 	}
 
 	float frequency = value->vibration.frequency;
@@ -366,7 +366,7 @@ survive_controller_haptic_pulse(struct survive_device *survive, union xrt_output
 	float amplitude = value->vibration.amplitude;
 
 	SURVIVE_TRACE(survive, "Got Haptic pulse amp %f, %fHz, %" PRId64 "ns", value->vibration.amplitude,
-	              value->vibration.frequency, value->vibration.duration);
+	              value->vibration.frequency, value->vibration.duration_ns);
 	SURVIVE_TRACE(survive, "Doing Haptic pulse amp %f, %fHz, %fs", amplitude, frequency, duration_seconds);
 
 	return survive_simple_object_haptic((struct SurviveSimpleObject *)survive->survive_obj, frequency, amplitude,

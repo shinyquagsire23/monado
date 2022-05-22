@@ -12,7 +12,6 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
-#include "util/u_time.h"
 
 #include "xrt/xrt_results.h"
 
@@ -1052,7 +1051,7 @@ union xrt_output_value {
 	{
 		float frequency;
 		float amplitude;
-		time_duration_ns duration;
+		int64_t duration_ns;
 	} vibration;
 };
 

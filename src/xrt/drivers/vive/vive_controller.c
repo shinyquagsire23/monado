@@ -421,11 +421,11 @@ static int
 vive_controller_haptic_pulse(struct vive_controller_device *d, union xrt_output_value *value)
 {
 	float duration_seconds;
-	if (value->vibration.duration == XRT_MIN_HAPTIC_DURATION) {
+	if (value->vibration.duration_ns == XRT_MIN_HAPTIC_DURATION) {
 		VIVE_TRACE(d, "Haptic pulse duration: using %f minimum", MIN_HAPTIC_DURATION);
 		duration_seconds = MIN_HAPTIC_DURATION;
 	} else {
-		duration_seconds = time_ns_to_s(value->vibration.duration);
+		duration_seconds = time_ns_to_s(value->vibration.duration_ns);
 	}
 
 	VIVE_TRACE(d, "Haptic pulse amp %f, %fHz, %fs", value->vibration.amplitude, value->vibration.frequency,

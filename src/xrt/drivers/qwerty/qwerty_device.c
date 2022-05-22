@@ -130,7 +130,7 @@ qwerty_set_output(struct xrt_device *xd, enum xrt_output_name name, union xrt_ou
 	struct qwerty_device *qd = qwerty_device(xd);
 	float frequency = value->vibration.frequency;
 	float amplitude = value->vibration.amplitude;
-	time_duration_ns duration = value->vibration.duration;
+	time_duration_ns duration = value->vibration.duration_ns;
 	if (amplitude || duration || frequency) {
 		QWERTY_INFO(qd,
 		            "[%s] Haptic output: \n"

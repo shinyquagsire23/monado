@@ -1774,7 +1774,7 @@ set_action_output_vibration(struct oxr_session *sess,
 	union xrt_output_value value = {0};
 	value.vibration.frequency = data->frequency;
 	value.vibration.amplitude = data->amplitude;
-	value.vibration.duration = data->duration;
+	value.vibration.duration_ns = data->duration;
 
 	for (uint32_t i = 0; i < cache->output_count; i++) {
 		struct oxr_action_output *output = &cache->outputs[i];
