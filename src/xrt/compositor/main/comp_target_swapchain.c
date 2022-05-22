@@ -8,6 +8,7 @@
  * @ingroup comp_main
  */
 
+#include "os/os_threading.h"
 #include "xrt/xrt_config_os.h"
 
 #include "util/u_misc.h"
@@ -976,4 +977,5 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 	cts->base.calc_frame_pacing = comp_target_swapchain_calc_frame_pacing;
 	cts->base.mark_timing_point = comp_target_swapchain_mark_timing_point;
 	cts->base.update_timings = comp_target_swapchain_update_timings;
+	os_thread_helper_init(&cts->vblank.event_thread);
 }
