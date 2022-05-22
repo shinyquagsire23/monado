@@ -6,9 +6,12 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
-#include <iostream>
 #include <math/m_relation_history.h>
+#include <util/u_time.h>
 #include <util/u_template_historybuf.hpp>
+#include <iostream>
+
+
 using xrt::auxiliary::util::HistoryBuffer;
 
 template <typename Container>
