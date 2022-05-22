@@ -863,6 +863,11 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		}
 	}
 
+	// Init threads.
+	os_thread_helper_init(&d->mainboard_thread);
+	os_thread_helper_init(&d->sensors_thread);
+	os_thread_helper_init(&d->watchman_thread);
+
 	// Init here.
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 

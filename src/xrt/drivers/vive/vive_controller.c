@@ -1048,6 +1048,10 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->base.get_tracked_pose = vive_controller_device_get_tracked_pose;
 	d->base.set_output = vive_controller_device_set_output;
 
+	// Have to init before destroy is called.
+	os_mutex_init(&d->lock);
+	os_thread_helper_init(&d->controller_thread);
+
 	if (vive_get_imu_range_report(d->controller_hid, &d->config.imu.gyro_range, &d->config.imu.acc_range) != 0) {
 		// reading range report fails for powered off controller
 		vive_controller_device_destroy(&d->base);
@@ -1159,15 +1163,7 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	}
 
 	if (d->controller_hid) {
-		// Mutex before thread.
-		int ret = os_mutex_init(&d->lock);
-		if (ret != 0) {
-			VIVE_ERROR(d, "Failed to init mutex!");
-			vive_controller_device_destroy(&d->base);
-			return NULL;
-		}
-
-		ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
+		int ret = os_thread_helper_start(&d->controller_thread, vive_controller_run_thread, d);
 		if (ret != 0) {
 			VIVE_ERROR(d, "Failed to start mainboard thread!");
 			vive_controller_device_destroy(&d->base);
