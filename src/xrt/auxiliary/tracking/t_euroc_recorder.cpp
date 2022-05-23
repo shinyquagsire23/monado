@@ -12,6 +12,7 @@
 #include "os/os_time.h"
 #include "util/u_frame.h"
 #include "util/u_sink.h"
+#include "util/u_var.h"
 
 #include <cassert>
 #include <ctime>
@@ -33,8 +34,11 @@ using std::filesystem::create_directories;
 struct euroc_recorder
 {
 	struct xrt_frame_node node;
-	string path;         //!< Destination path for the dataset
-	bool first_received; //!< Whether we have received the first sample
+	string path; //!< Destination path for the dataset
+
+	bool recording;                    //!< Whether samples are being recorded
+	bool files_created;                //!< Whether the dataset directory structure has been created
+	struct u_var_button recording_btn; //!< UI button to start/stop `recording`
 
 	// Cloner sinks: copy frame to heap for quick release of the original
 	struct xrt_slam_sinks cloner_queues; //!< Queue sinks that write into cloner sinks
@@ -67,11 +71,11 @@ struct euroc_recorder
 static void
 euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 {
-	// Create directory structure and files only on first received frame
-	if (er->first_received) {
+	// Create directory structure and files only once
+	if (er->files_created) {
 		return;
 	}
-	er->first_received = true;
+	er->files_created = true;
 
 	string path = er->path;
 
@@ -110,7 +114,6 @@ extern "C" void
 euroc_recorder_save_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 {
 	euroc_recorder *er = container_of(sink, euroc_recorder, writer_imu_sink);
-	euroc_recorder_try_mkfiles(er);
 
 	timepoint_ns ts = sample->timestamp_ns;
 	xrt_vec3_f64 a = sample->accel_m_s2;
@@ -124,8 +127,6 @@ euroc_recorder_save_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 static void
 euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_left)
 {
-	euroc_recorder_try_mkfiles(er);
-
 	string cam_name = is_left ? "cam0" : "cam1";
 	uint64_t ts = frame->timestamp;
 
@@ -169,6 +170,11 @@ euroc_recorder_receive_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 	// sinks so we use an std::queue to temporarily store IMU samples, later we
 	// write them to disk when writing left frames.
 	euroc_recorder *er = container_of(sink, euroc_recorder, cloner_imu_sink);
+
+	if (!er->recording) {
+		return;
+	}
+
 	er->imu_queue.push(*sample);
 }
 
@@ -176,6 +182,10 @@ euroc_recorder_receive_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 static void
 euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bool is_left)
 {
+	if (!er->recording) {
+		return;
+	}
+
 	// Let's clone the frame so that we can release the src_frame quickly
 	xrt_frame *copy = nullptr;
 	u_frame_clone(src_frame, &copy);
@@ -228,9 +238,14 @@ euroc_recorder_node_destroy(struct xrt_frame_node *node)
  */
 
 extern "C" xrt_slam_sinks *
-euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path)
+euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, bool record_from_start)
 {
 	struct euroc_recorder *er = new euroc_recorder{};
+
+	er->recording = record_from_start;
+	if (record_from_start) {
+		euroc_recorder_try_mkfiles(er);
+	}
 
 	struct xrt_frame_node *xfn = &er->node;
 	xfn->break_apart = euroc_recorder_node_break_apart;
@@ -275,4 +290,23 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path)
 
 	xrt_slam_sinks *public_sinks = &er->cloner_queues;
 	return public_sinks;
+}
+
+static void
+euroc_recorder_btn_cb(void *ptr)
+{
+	euroc_recorder *er = (euroc_recorder *)ptr;
+	euroc_recorder_try_mkfiles(er);
+	er->recording = !er->recording;
+	snprintf(er->recording_btn.label, sizeof(er->recording_btn.label),
+	         er->recording ? "Stop recording" : "Record EuRoC dataset");
+}
+
+extern "C" void
+euroc_recorder_add_ui(struct xrt_slam_sinks *public_sinks, void *root)
+{
+	euroc_recorder *er = container_of(public_sinks, euroc_recorder, cloner_queues);
+	er->recording_btn.cb = euroc_recorder_btn_cb;
+	er->recording_btn.ptr = er;
+	u_var_add_button(root, &er->recording_btn, er->recording ? "Stop recording" : "Record EuRoC dataset");
 }

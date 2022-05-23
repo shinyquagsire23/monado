@@ -302,7 +302,6 @@ struct TrackerSlam
 	MatFrame *cv_wrapper;           //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
 
 	struct xrt_slam_sinks *euroc_recorder; //!< EuRoC dataset recording sinks
-	bool euroc_record;                     //!< When true, samples will be saved to disk in EuRoC format
 
 	// Used mainly for checking that the timestamps come in order
 	timepoint_ns last_imu_ts = INT64_MIN;   //!< Last received IMU sample timestamp
@@ -748,8 +747,8 @@ setup_ui(TrackerSlam &t)
 	u_var_add_root(&t, "SLAM Tracker", true);
 	u_var_add_log_level(&t, &t.log_level, "Log Level");
 	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
-	u_var_add_bool(&t, &t.euroc_record, "Record as EuRoC");
 	u_var_add_bool(&t, &t.gt.override_tracking, "Track with ground truth (if available)");
+	euroc_recorder_add_ui(t.euroc_recorder, &t);
 
 	u_var_add_gui_header(&t, NULL, "Trajectory Filter");
 	u_var_add_bool(&t, &t.filter.use_moving_average_filter, "Enable moving average filter");
@@ -850,9 +849,7 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	}
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
-	if (t.euroc_record) {
-		xrt_sink_push_imu(t.euroc_recorder->imu, s);
-	}
+	xrt_sink_push_imu(t.euroc_recorder->imu, s);
 
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
 	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
@@ -890,10 +887,7 @@ t_slam_frame_sink_push_left(struct xrt_frame_sink *sink, struct xrt_frame *frame
 {
 	auto &t = *container_of(sink, TrackerSlam, left_sink);
 	push_frame(t, frame, true);
-
-	if (t.euroc_record) {
-		xrt_sink_push_frame(t.euroc_recorder->left, frame);
-	}
+	xrt_sink_push_frame(t.euroc_recorder->left, frame);
 }
 
 extern "C" void
@@ -901,10 +895,7 @@ t_slam_frame_sink_push_right(struct xrt_frame_sink *sink, struct xrt_frame *fram
 {
 	auto &t = *container_of(sink, TrackerSlam, right_sink);
 	push_frame(t, frame, false);
-
-	if (t.euroc_record) {
-		xrt_sink_push_frame(t.euroc_recorder->right, frame);
-	}
+	xrt_sink_push_frame(t.euroc_recorder->right, frame);
 }
 
 extern "C" void
@@ -1039,7 +1030,7 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	xrt_frame_context_add(xfctx, &t.node);
 
-	t.euroc_recorder = euroc_recorder_create(xfctx, NULL);
+	t.euroc_recorder = euroc_recorder_create(xfctx, NULL, false);
 
 	t.pred_type = config->prediction;
 
