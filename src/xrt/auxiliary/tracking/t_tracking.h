@@ -217,6 +217,59 @@ t_stereo_camera_calibration_save(const char *calib_path, struct t_stereo_camera_
 
 /*
  *
+ * IMU calibration data.
+ *
+ */
+
+/*!
+ * @brief Parameters for accelerometer and gyroscope calibration.
+ * @see slam_tracker::imu_calibration for a more detailed description and references.
+ */
+struct t_inertial_calibration
+{
+	//! Linear transformation for raw measurements alignment and scaling.
+	double transform[3][3];
+
+	//! Offset to apply to raw measurements.
+	double offset[3];
+
+	//! Modeled sensor bias. @see slam_tracker::imu_calibration.
+	double bias_std[3];
+
+	//! Modeled measurement noise. @see slam_tracker::imu_calibration.
+	double noise_std[3];
+};
+
+/*!
+ * @brief Combined IMU calibration data.
+ */
+struct t_imu_calibration
+{
+	//! Accelerometer calibration data.
+	struct t_inertial_calibration accel;
+
+	//! Gyroscope calibration data.
+	struct t_inertial_calibration gyro;
+};
+/*!
+ * Prints a @ref t_inertial_calibration struct
+ *
+ * @relates t_camera_calibration
+ */
+void
+t_inertial_calibration_dump(struct t_inertial_calibration *c);
+
+/*!
+ * Small helper function that dumps the imu calibration data to logging.
+ *
+ * @relates t_camera_calibration
+ */
+void
+t_imu_calibration_dump(struct t_imu_calibration *c);
+
+
+/*
+ *
  * Conversion functions.
  *
  */

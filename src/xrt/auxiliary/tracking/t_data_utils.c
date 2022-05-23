@@ -356,3 +356,25 @@ t_calibration_gui_params_load_or_default(struct t_calibration_params *p)
 		t_calibration_gui_params_parse_from_json(scene, p);
 	}
 }
+
+void
+t_inertial_calibration_dump(struct t_inertial_calibration *c)
+{
+	U_LOG_RAW("t_inertial_calibration {");
+	dump_mat("transform", c->transform);
+	dump_vector("offset", c->offset);
+	dump_vector("bias_std", c->bias_std);
+	dump_vector("noise_std", c->noise_std);
+	U_LOG_RAW("}");
+}
+
+void
+t_imu_calibration_dump(struct t_imu_calibration *c)
+{
+	U_LOG_RAW("t_imu_calibration {");
+	U_LOG_RAW("accel = ");
+	t_inertial_calibration_dump(&c->accel);
+	U_LOG_RAW("gyro = ");
+	t_inertial_calibration_dump(&c->gyro);
+	U_LOG_RAW("}");
+}
