@@ -38,7 +38,7 @@ The project is primarily developed on GNU/Linux, but also runs on Android and Wi
 
 Dependencies include:
 
-* [CMake][] 3.13 or newer (Note Ubuntu 18.04 only has 3.10) or meson >= 0.49
+* [CMake][] 3.13 or newer (Note Ubuntu 18.04 only has 3.10)
 * Python 3.6 or newer
 * Vulkan headers and loader - Fedora package `vulkan-loader-devel`
 * OpenGL headers
@@ -140,26 +140,6 @@ make install
 ```
 
 Documentation can be browsed by opening `doc/html/index.html` in the build directory in a web browser.
-
-### Meson
-
-The build process is similar to other Meson builds.
-For a system wide installation requiring root privileges:
-
-```bash
-meson --prefix=/usr build
-ninja -C build install
-```
-
-For a local installation in ~/.local:
-
-```bash
-meson --prefix=~/.local -Dinstall-active-runtime=false build
-ninja -C build install
-```
-
-Note that the installation of the `active_runtime.json` file should be disabled for installations without
-root privileges because this file is always installed in meson's syconfdir (usually /etc).
 
 ## Getting started using OpenXR with Monado
 

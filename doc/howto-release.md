@@ -27,7 +27,6 @@ git commit -m"doc: Remove old changelog fragments" doc/changes
 Edit the files
 
 * `CMakelists.txt`
-* `meson.build`
 * `src/xrt/state_trackers/oxr/oxr_instance.c`
 
 See previous commits for exact places.
