@@ -16,6 +16,8 @@
 #include "util/u_logging.h"
 #include "util/u_misc.h"
 
+#include <assert.h>
+
 #define FPS_WIDGET_NUM_FRAME_TIMES 50
 
 struct u_frame_times_widget
@@ -61,6 +63,11 @@ u_frame_times_widget_push_sample(struct u_frame_times_widget *widget, uint64_t n
 
 	widget->times_ns[widget->index] = new_frame_time;
 
+	assert(widget->index >= 0);
+	assert(widget->index < FPS_WIDGET_NUM_FRAME_TIMES);
+	assert(last_index >= 0);
+	assert(last_index < FPS_WIDGET_NUM_FRAME_TIMES);
+
 	uint64_t diff = widget->times_ns[widget->index] - widget->times_ns[last_index];
 	widget->timings_ms[widget->index] = (float)time_ns_to_ms_f(diff);
 }
@@ -87,6 +94,7 @@ u_frame_times_widget_init(struct u_frame_times_widget *widget, float target_fram
 	ft->dynamic_rescale = false;
 	ft->center_reference_timing = true;
 	widget->debug_var = ft;
+	widget->index = 0;
 }
 
 // Call u_var_remove_root first!
