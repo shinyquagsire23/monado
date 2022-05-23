@@ -12,6 +12,7 @@
 #pragma once
 
 #include "util/u_logging.h"
+#include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 #include "util/u_misc.h"
 
@@ -422,9 +423,13 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 
 
 
-//! SLAM prediction type. Naming scheme as follows:
-//! P: position, O: orientation, A: angular velocity, L: linear velocity
-//! S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
+/*!
+ * SLAM prediction type. Naming scheme as follows:
+ * P: position, O: orientation, A: angular velocity, L: linear velocity
+ * S: From SLAM poses (slow, precise), I: From IMU data (fast, noisy)
+ *
+ * @see xrt_tracked_slam
+ */
 enum t_slam_prediction_type
 {
 	SLAM_PRED_NONE = 0,    //!< No prediction, always return the last SLAM tracked pose
@@ -432,6 +437,23 @@ enum t_slam_prediction_type
 	SLAM_PRED_SP_SO_IA_SL, //!< Predicts from last SLAM pose with angular velocity computed from IMU
 	SLAM_PRED_SP_SO_IA_IL, //!< Predicts from last SLAM pose with angular and linear velocity computed from IMU
 	SLAM_PRED_COUNT,
+};
+
+/*!
+ * This struct complements calibration data from @ref
+ * t_stereo_camera_calibration and @ref t_imu_calibration
+ *
+ * @see xrt_tracked_slam
+ */
+struct t_slam_calib_extras
+{
+	double imu_frequency; //! IMU samples per second
+	struct
+	{
+		double frequency;                //!< Camera FPS
+		struct xrt_matrix_4x4 T_imu_cam; //!< Transform IMU to camera. Column major.
+		float rpmax;                     //!< Used for rt8 calibrations. Rpmax or "metric_radius" property.
+	} cams[2];
 };
 
 /*!
@@ -444,9 +466,14 @@ struct t_slam_tracker_config
 	enum u_logging_level log_level; //!< SLAM tracking logging level
 	const char *slam_config;        //!< Config file path, format is specific to the SLAM implementation in use
 	bool submit_from_start;         //!< Whether to submit data to the SLAM tracker without user action
-	enum t_slam_prediction_type prediction; //! Which level of prediction to use
+	enum t_slam_prediction_type prediction; //!< Which level of prediction to use
 	bool write_csvs;                        //!< Whether to enable CSV writers from the start for later analysis
 	const char *csv_path;                   //!< Path to write CSVs to
+
+	// Instead of a slam_config file you can set custom calibration data
+	const struct t_stereo_camera_calibration *stereo_calib; //!< Camera calibration data
+	const struct t_imu_calibration *imu_calib;              //!< IMU calibration data
+	const struct t_slam_calib_extras *extra_calib;          //!< Extra calibration data
 };
 
 /*!

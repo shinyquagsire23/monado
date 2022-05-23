@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_config_have.h"
+#include "xrt/xrt_defines.h"
 #include "xrt/xrt_tracking.h"
 #include "xrt/xrt_frameserver.h"
 #include "util/u_debug.h"
@@ -15,6 +16,7 @@
 #include "util/u_misc.h"
 #include "util/u_var.h"
 #include "os/os_threading.h"
+#include "math/m_api.h"
 #include "math/m_filter_fifo.h"
 #include "math/m_filter_one_euro.h"
 #include "math/m_predict.h"
@@ -32,6 +34,7 @@
 #include <fstream>
 #include <iomanip>
 #include <map>
+#include <string>
 
 #define SLAM_TRACE(...) U_LOG_IFL_T(t.log_level, __VA_ARGS__)
 #define SLAM_DEBUG(...) U_LOG_IFL_D(t.log_level, __VA_ARGS__)
@@ -59,7 +62,7 @@
 #endif
 
 //! @see t_slam_tracker_config
-DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", nullptr)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_SL))
@@ -72,11 +75,13 @@ constexpr int UI_TIMING_POSE_COUNT = 192;
 constexpr int UI_GTDIFF_POSE_COUNT = 192;
 
 using std::ifstream;
+using std::make_shared;
 using std::make_unique;
 using std::map;
 using std::ofstream;
 using std::shared_ptr;
 using std::string;
+using std::to_string;
 using std::unique_ptr;
 using std::vector;
 using std::filesystem::create_directories;
@@ -778,6 +783,70 @@ setup_ui(TrackerSlam &t)
 	// Later, gt_ui_setup will setup the tracking error UI if ground truth becomes available
 }
 
+static void
+add_camera_calibration(const TrackerSlam &t,
+                       const t_stereo_camera_calibration *stereo_calib,
+                       const t_slam_calib_extras *extra_calib)
+{
+	for (int i = 0; i < 2; i++) {
+		const t_camera_calibration &view = stereo_calib->view[i];
+		const auto &extra = extra_calib->cams[i];
+		const auto params = make_shared<FPARAMS_ACC>();
+
+		params->cam_index = i;
+		params->width = view.image_size_pixels.w;
+		params->height = view.image_size_pixels.h;
+		params->frequency = extra.frequency;
+
+		params->fx = view.intrinsics[0][0];
+		params->fy = view.intrinsics[1][1];
+		params->cx = view.intrinsics[0][2];
+		params->cy = view.intrinsics[1][2];
+
+		params->distortion_model = view.use_fisheye ? "kb4" : string{"rt"} + to_string(view.distortion_num);
+		if (view.use_fisheye) { // Kannala-brandt pinhole (OpenCV's "fisheye")
+			params->distortion.assign(view.distortion_fisheye, std::end(view.distortion_fisheye));
+			SLAM_ASSERT_(params->distortion.size() == 4);
+		} else { // Radial-tangential pinhole
+			params->distortion.assign(view.distortion, view.distortion + view.distortion_num);
+
+			if (params->distortion_model == "rt8") { // rt8 has a ninth parameter rpmax ("metric_radius")
+				params->distortion.push_back(extra.rpmax);
+			}
+		}
+
+		xrt_matrix_4x4 T; // Row major T_imu_cam
+		math_matrix_4x4_transpose(&extra.T_imu_cam, &T);
+		params->t_imu_cam = cv::Matx<float, 4, 4>{T.v};
+
+		shared_ptr<FRESULT_ACC> result{};
+		t.slam->use_feature(F_ADD_CAMERA_CALIBRATION, params, result);
+	}
+}
+
+static void
+add_imu_calibration(const TrackerSlam &t, const t_imu_calibration *imu_calib, const t_slam_calib_extras *extra_calib)
+{
+	const auto params = make_shared<FPARAMS_AIC>();
+	params->imu_index = 0; // Multiple IMU setups unsupported
+	params->frequency = extra_calib->imu_frequency;
+
+	const t_inertial_calibration &accel = imu_calib->accel;
+	params->accel.transform = cv::Matx<double, 3, 3>{&accel.transform[0][0]};
+	params->accel.offset = cv::Matx<double, 3, 1>{&accel.offset[0]};
+	params->accel.bias_std = cv::Matx<double, 3, 1>{&accel.bias_std[0]};
+	params->accel.noise_std = cv::Matx<double, 3, 1>{&accel.noise_std[0]};
+
+	const t_inertial_calibration &gyro = imu_calib->gyro;
+	params->gyro.transform = cv::Matx<double, 3, 3>{&gyro.transform[0][0]};
+	params->gyro.offset = cv::Matx<double, 3, 1>{&gyro.offset[0]};
+	params->gyro.bias_std = cv::Matx<double, 3, 1>{&gyro.bias_std[0]};
+	params->gyro.noise_std = cv::Matx<double, 3, 1>{&gyro.noise_std[0]};
+
+	shared_ptr<FRESULT_AIC> result{};
+	t.slam->use_feature(F_ADD_IMU_CALIBRATION, params, result);
+}
+
 } // namespace xrt::auxiliary::tracking::slam
 
 using namespace xrt::auxiliary::tracking::slam;
@@ -960,6 +1029,9 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 	config->prediction = t_slam_prediction_type(debug_get_num_option_slam_prediction_type());
 	config->write_csvs = debug_get_bool_option_slam_write_csvs();
 	config->csv_path = debug_get_option_slam_csv_path();
+	config->stereo_calib = NULL;
+	config->imu_calib = NULL;
+	config->extra_calib = NULL;
 }
 
 extern "C" int
@@ -968,11 +1040,10 @@ t_slam_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_slam **out_xts,
               struct xrt_slam_sinks **out_sink)
 {
-	struct t_slam_tracker_config *default_config = nullptr;
+	struct t_slam_tracker_config default_config = {};
 	if (config == nullptr) {
-		default_config = U_TYPED_CALLOC(struct t_slam_tracker_config);
-		t_slam_fill_default_config(default_config);
-		config = default_config;
+		t_slam_fill_default_config(&default_config);
+		config = &default_config;
 	}
 
 	enum u_logging_level log_level = config->log_level;
@@ -993,10 +1064,15 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	// Check the user has provided a SLAM_CONFIG file
 	const char *config_file = config->slam_config;
-	if (!config_file) {
-		U_LOG_IFL_W(log_level,
-		            "SLAM tracker requires a config file set with the SLAM_CONFIG environment variable");
+	bool some_calib = config->stereo_calib || config->imu_calib;
+	if (!config_file && !some_calib) {
+		U_LOG_IFL_W(log_level, "Unable to determine sensor calibration, did you forgot to set SLAM_CONFIG?");
 		return -1;
+	}
+
+	if (!config_file) {
+		// Indicate the external system to use default (non-calibration) settings
+		config_file = "DEFAULT";
 	}
 
 	auto &t = *(new TrackerSlam{});
@@ -1007,6 +1083,22 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	std::string config_file_string = std::string(config_file);
 	t.slam = new slam_tracker{config_file_string};
+
+	// Try to send camera calibration data to the SLAM system
+	if (config->stereo_calib && config->extra_calib && t.slam->supports_feature(F_ADD_CAMERA_CALIBRATION)) {
+		SLAM_INFO("Sending Camera calibration from Monado");
+		add_camera_calibration(t, config->stereo_calib, config->extra_calib);
+	} else {
+		SLAM_INFO("Cameras will use the calibration provided by the SLAM_CONFIG file");
+	}
+
+	// Try to send IMU calibration data to the SLAM system
+	if (config->imu_calib && config->extra_calib && t.slam->supports_feature(F_ADD_IMU_CALIBRATION)) {
+		SLAM_INFO("Sending IMU calibration from Monado");
+		add_imu_calibration(t, config->imu_calib, config->extra_calib);
+	} else {
+		SLAM_INFO("The IMU will use the calibration provided by the SLAM_CONFIG file");
+	}
 
 	t.slam->initialize();
 
@@ -1062,10 +1154,6 @@ t_slam_create(struct xrt_frame_context *xfctx,
 	t.filt_traj_writer = new TrajectoryWriter{dir, "filtering.csv", write_csvs};
 
 	setup_ui(t);
-
-	if (default_config != nullptr) {
-		free(default_config);
-	}
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;
