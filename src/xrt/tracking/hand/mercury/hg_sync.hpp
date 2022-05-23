@@ -214,7 +214,7 @@ public:
 
 	void (*keypoint_estimation_run_func)(void *);
 
-	u_frame_times_widget ft_widget;
+	u_frame_times_widget ft_widget = {};
 
 public:
 	explicit HandTracking();
