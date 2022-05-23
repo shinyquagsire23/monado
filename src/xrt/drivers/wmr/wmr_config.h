@@ -107,7 +107,7 @@ struct wmr_camera_config
 	struct xrt_rect roi;
 
 	struct xrt_vec3 translation;    //!< Raw translation (to HT0)
-	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0)
+	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0), row major
 	struct xrt_pose pose;           //!< Corrected pose from translation and rotation fields
 
 	struct wmr_distortion_6KT distortion6KT;
@@ -116,7 +116,9 @@ struct wmr_camera_config
 /* Configuration for a single inertial sensor */
 struct wmr_inertial_sensor_config
 {
-	struct xrt_pose pose;
+	struct xrt_vec3 translation;    //!< Raw translation (to HT0). Usually non-zero only on accelerometers.
+	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0), row major
+	struct xrt_pose pose;           //!< Corrected pose from translation and rotation fields
 
 	/* Current bias and mix matrix extracted from
 	 * the configuration, which provides coefficients
@@ -124,6 +126,12 @@ struct wmr_inertial_sensor_config
 	 * so we just take the constant coefficient */
 	struct xrt_vec3 bias_offsets;
 	struct xrt_matrix_3x3 mix_matrix;
+
+	//! Bias random walk variance. @see slam_tracker::inertial_calibration.
+	struct xrt_vec3 bias_var;
+
+	//! Measurement noise standard deviation. @see slam_tracker::inertial_calibration.
+	struct xrt_vec3 noise_std;
 };
 
 /* Configuration for the set of inertial sensors */

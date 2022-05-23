@@ -15,6 +15,7 @@
 #include "xrt/xrt_config_have.h"
 #include "xrt/xrt_config_build.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_tracking.h"
 
@@ -1248,21 +1249,55 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 		tcc->use_fisheye = false;
 	}
 
-	// Extrinsics (transform HT1 to HT0; or equivalently HT0 space into HT1 space)
-	struct wmr_camera_config *cam2 = &wh->config.cameras[1];
-	calib->camera_translation[0] = cam2->translation.x;
-	calib->camera_translation[1] = cam2->translation.y;
-	calib->camera_translation[2] = cam2->translation.z;
-	calib->camera_rotation[0][0] = cam2->rotation.v[0];
-	calib->camera_rotation[0][1] = cam2->rotation.v[1];
-	calib->camera_rotation[0][2] = cam2->rotation.v[2];
-	calib->camera_rotation[1][0] = cam2->rotation.v[3];
-	calib->camera_rotation[1][1] = cam2->rotation.v[4];
-	calib->camera_rotation[1][2] = cam2->rotation.v[5];
-	calib->camera_rotation[2][0] = cam2->rotation.v[6];
-	calib->camera_rotation[2][1] = cam2->rotation.v[7];
-	calib->camera_rotation[2][2] = cam2->rotation.v[8];
+	// Extrinsics
 
+	// Compute transform from HT1 to HT0 (HT0 space into HT1 space)
+	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
+	calib->camera_translation[0] = ht1->translation.x;
+	calib->camera_translation[1] = ht1->translation.y;
+	calib->camera_translation[2] = ht1->translation.z;
+	calib->camera_rotation[0][0] = ht1->rotation.v[0];
+	calib->camera_rotation[0][1] = ht1->rotation.v[1];
+	calib->camera_rotation[0][2] = ht1->rotation.v[2];
+	calib->camera_rotation[1][0] = ht1->rotation.v[3];
+	calib->camera_rotation[1][1] = ht1->rotation.v[4];
+	calib->camera_rotation[1][2] = ht1->rotation.v[5];
+	calib->camera_rotation[2][0] = ht1->rotation.v[6];
+	calib->camera_rotation[2][1] = ht1->rotation.v[7];
+	calib->camera_rotation[2][2] = ht1->rotation.v[8];
+
+	return calib;
+}
+
+XRT_MAYBE_UNUSED static struct t_imu_calibration
+wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
+{
+	float *at = wh->config.sensors.accel.mix_matrix.v;
+	struct xrt_vec3 ao = wh->config.sensors.accel.bias_offsets;
+	struct xrt_vec3 ab = wh->config.sensors.accel.bias_var;
+	struct xrt_vec3 an = wh->config.sensors.accel.noise_std;
+
+	float *gt = wh->config.sensors.gyro.mix_matrix.v;
+	struct xrt_vec3 go = wh->config.sensors.gyro.bias_offsets;
+	struct xrt_vec3 gb = wh->config.sensors.gyro.bias_var;
+	struct xrt_vec3 gn = wh->config.sensors.gyro.noise_std;
+
+	struct t_imu_calibration calib = {
+	    .accel =
+	        {
+	            .transform = {{at[0], at[1], at[2]}, {at[3], at[4], at[5]}, {at[6], at[7], at[8]}},
+	            .offset = {-ao.x, -ao.y, -ao.z}, // negative because slam system will add, not subtract
+	            .bias_std = {sqrt(ab.x), sqrt(ab.y), sqrt(ab.z)}, // sqrt because we want stdev not variance
+	            .noise_std = {an.x, an.y, an.z},
+	        },
+	    .gyro =
+	        {
+	            .transform = {{gt[0], gt[1], gt[2]}, {gt[3], gt[4], gt[5]}, {gt[6], gt[7], gt[8]}},
+	            .offset = {-go.x, -go.y, -go.z},
+	            .bias_std = {sqrt(gb.x), sqrt(gb.y), sqrt(gb.z)},
+	            .noise_std = {gn.x, gn.y, gn.z},
+	        },
+	};
 	return calib;
 }
 

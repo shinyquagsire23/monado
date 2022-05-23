@@ -193,15 +193,22 @@ wmr_inertial_sensor_config_parse(struct wmr_inertial_sensor_config *c, cJSON *se
 	}
 
 	wmr_config_compute_pose(&c->pose, &translation, &rotation);
+	c->translation = translation;
+	c->rotation = rotation;
 
 	/* compute the bias offsets and mix matrix by taking the constant
 	 * coefficients from the configuration */
 	cJSON *mix_model = cJSON_GetObjectItem(sensor, "MixingMatrixTemperatureModel");
 	cJSON *bias_model = cJSON_GetObjectItem(sensor, "BiasTemperatureModel");
+	cJSON *bias_var = cJSON_GetObjectItem(sensor, "BiasUncertainty");
+	cJSON *noise_std = cJSON_GetObjectItem(sensor, "Noise");
+
 	float mix_model_values[3 * 3 * 4];
 	float bias_model_values[12];
+	float bias_var_values[3];
+	float noise_std_values[3 * 2];
 
-	if (mix_model == NULL || bias_model == NULL) {
+	if (mix_model == NULL || bias_model == NULL || noise_std == NULL || bias_var == NULL) {
 		WMR_WARN(log_level, "Missing Inertial Sensor calibration");
 		return false;
 	}
@@ -222,6 +229,21 @@ wmr_inertial_sensor_config_parse(struct wmr_inertial_sensor_config *c, cJSON *se
 	c->bias_offsets.y = bias_model_values[4];
 	c->bias_offsets.z = bias_model_values[8];
 
+	if (u_json_get_float_array(bias_var, bias_var_values, 3) != 3) {
+		WMR_WARN(log_level, "Invalid Inertial Sensor calibration (invalid BiasUncertainty)");
+		return false;
+	}
+	c->bias_var.x = bias_var_values[0];
+	c->bias_var.y = bias_var_values[1];
+	c->bias_var.z = bias_var_values[2];
+
+	if (u_json_get_float_array(noise_std, noise_std_values, 3 * 2) != 3 * 2) {
+		WMR_WARN(log_level, "Invalid Inertial Sensor calibration (invalid Noise)");
+		return false;
+	}
+	c->noise_std.x = noise_std_values[0];
+	c->noise_std.y = noise_std_values[1];
+	c->noise_std.z = noise_std_values[2];
 	return true;
 }
 
