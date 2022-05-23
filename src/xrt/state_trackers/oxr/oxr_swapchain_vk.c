@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,7 +10,6 @@
 
 #include <stdlib.h>
 
-#include "xrt/xrt_gfx_xlib.h"
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"

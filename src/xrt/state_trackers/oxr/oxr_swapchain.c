@@ -1,4 +1,4 @@
-// Copyright 2018-2021, Collabora, Ltd.
+// Copyright 2018-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,8 +8,6 @@
  */
 
 #include <stdlib.h>
-
-#include "xrt/xrt_gfx_xlib.h"
 
 #include "util/u_debug.h"
 #include "util/u_misc.h"
