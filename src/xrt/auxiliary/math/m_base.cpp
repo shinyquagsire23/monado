@@ -387,7 +387,7 @@ math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float
  *
  */
 
-void
+extern "C" void
 math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
                          const struct xrt_matrix_2x2 *right,
                          struct xrt_matrix_2x2 *result_out)
@@ -493,13 +493,13 @@ math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *
 	map_matrix_3x3(*result) = m.inverse();
 }
 
-void
+extern "C" void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result)
 {
 	map_matrix_4x4(*result) = Eigen::Matrix4f::Identity();
 }
 
-void
+extern "C" void
 math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
                          const struct xrt_matrix_4x4 *right,
                          struct xrt_matrix_4x4 *result)
@@ -507,7 +507,7 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
 	map_matrix_4x4(*result) = copy(left) * copy(right);
 }
 
-void
+extern "C" void
 math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
@@ -519,7 +519,7 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x
 	map_matrix_4x4(*result) = transformation.matrix().inverse();
 }
 
-void
+extern "C" void
 math_matrix_4x4_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
@@ -533,7 +533,7 @@ math_matrix_4x4_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, 
 	map_matrix_4x4(*result) = transformation.matrix();
 }
 
-void
+extern "C" void
 math_matrix_4x4_inverse_view_projection(const struct xrt_matrix_4x4 *view,
                                         const struct xrt_matrix_4x4 *projection,
                                         struct xrt_matrix_4x4 *result)
