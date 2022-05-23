@@ -56,6 +56,12 @@
 #include "../drivers/ht/ht_interface.h"
 #endif
 
+// Unsure if these can change nor how to get them if so
+#define CAMERA_FREQUENCY 30      //!< Observed value (OV7251)
+#define IMU_FREQUENCY 1000       //!< Observed value (ICM20602)
+#define IMU_SAMPLES_PER_PACKET 4 //!< There are 4 samples for each USB IMU packet
+#define SLAM_IMU_FREQUENCY IMU_FREQUENCY / IMU_SAMPLES_PER_PACKET
+
 //! Specifies whether the user wants to use a SLAM tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 
@@ -1301,6 +1307,48 @@ wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
 	return calib;
 }
 
+//! IMU extrinsics, frequencies, and rpmax
+XRT_MAYBE_UNUSED static struct t_slam_calib_extras
+wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
+{
+	// Compute transform from IMU to HT0 (HT0 space into IMU space)
+	struct wmr_camera_config *ht0 = &wh->config.cameras[0];
+	struct xrt_matrix_3x3 rot_imu_ht0 = wh->config.sensors.accel.rotation;
+	math_matrix_3x3_transpose(&rot_imu_ht0, &rot_imu_ht0); // Row major to col major
+	struct xrt_vec3 tra_imu_ht0 = wh->config.sensors.accel.translation;
+	struct xrt_matrix_4x4 t_imu_ht0;
+	math_matrix_4x4_isometry_from_rt(&rot_imu_ht0, &tra_imu_ht0, &t_imu_ht0);
+
+	// Compute transform from IMU to HT1 (HT1 space into IMU space)
+	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
+	struct xrt_matrix_3x3 ht1_rotation_cm; // HT1 rotation but column major
+	math_matrix_3x3_transpose(&ht1->rotation, &ht1_rotation_cm);
+	struct xrt_matrix_4x4 t_ht1_ht0;
+	math_matrix_4x4_isometry_from_rt(&ht1_rotation_cm, &ht1->translation, &t_ht1_ht0);
+	struct xrt_matrix_4x4 t_ht0_ht1;
+	math_matrix_4x4_isometry_inverse(&t_ht1_ht0, &t_ht0_ht1);
+	struct xrt_matrix_4x4 t_imu_ht1;
+	math_matrix_4x4_multiply(&t_imu_ht0, &t_ht0_ht1, &t_imu_ht1);
+
+	struct t_slam_calib_extras calib = {
+	    .imu_frequency = SLAM_IMU_FREQUENCY,
+	    .cams =
+	        {
+	            {
+	                .frequency = CAMERA_FREQUENCY,
+	                .T_imu_cam = t_imu_ht0,
+	                .rpmax = ht0->distortion6KT.params.metric_radius,
+	            },
+	            {
+	                .frequency = CAMERA_FREQUENCY,
+	                .T_imu_cam = t_imu_ht1,
+	                .rpmax = ht1->distortion6KT.params.metric_radius,
+	            },
+	        },
+	};
+	return calib;
+}
+
 static void
 wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 {
@@ -1322,14 +1370,23 @@ wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 }
 
 static struct xrt_slam_sinks *
-wmr_hmd_slam_track(struct wmr_hmd *wh)
+wmr_hmd_slam_track(struct wmr_hmd *wh,
+                   struct t_stereo_camera_calibration *stereo_calib,
+                   struct t_imu_calibration *imu_calib,
+                   struct t_slam_calib_extras *extra_calib)
 {
 	DRV_TRACE_MARKER();
 
 	struct xrt_slam_sinks *sinks = NULL;
 
 #ifdef XRT_FEATURE_SLAM
-	int create_status = t_slam_create(&wh->tracking.xfctx, NULL, &wh->tracking.slam, &sinks);
+	struct t_slam_tracker_config config = {0};
+	t_slam_fill_default_config(&config);
+	config.stereo_calib = stereo_calib; // No need to do refcount here
+	config.imu_calib = imu_calib;
+	config.extra_calib = extra_calib;
+
+	int create_status = t_slam_create(&wh->tracking.xfctx, &config, &wh->tracking.slam, &sinks);
 	if (create_status != 0) {
 		return NULL;
 	}
@@ -1346,7 +1403,10 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 }
 
 static int
-wmr_hmd_hand_track(struct wmr_hmd *wh, struct xrt_slam_sinks **out_sinks, struct xrt_device **out_device)
+wmr_hmd_hand_track(struct wmr_hmd *wh,
+                   struct t_stereo_camera_calibration *stereo_calib,
+                   struct xrt_slam_sinks **out_sinks,
+                   struct xrt_device **out_device)
 {
 	DRV_TRACE_MARKER();
 
@@ -1354,10 +1414,9 @@ wmr_hmd_hand_track(struct wmr_hmd *wh, struct xrt_slam_sinks **out_sinks, struct
 	struct xrt_device *device = NULL;
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	struct t_stereo_camera_calibration *calib = wmr_hmd_create_stereo_camera_calib(wh);
 
 	int create_status = ht_device_create(&wh->tracking.xfctx,                     //
-	                                     calib,                                   //
+	                                     stereo_calib,                            //
 	                                     HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA, //
 	                                     HT_ALGORITHM_MERCURY,                    //
 	                                     &sinks,                                  //
@@ -1365,8 +1424,6 @@ wmr_hmd_hand_track(struct wmr_hmd *wh, struct xrt_slam_sinks **out_sinks, struct
 	if (create_status != 0) {
 		return create_status;
 	}
-
-	t_stereo_camera_calibration_reference(&calib, NULL);
 
 	WMR_DEBUG(wh, "WMR HMD hand tracker successfully created");
 #endif
@@ -1475,13 +1532,17 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
 	snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
 
+	struct t_stereo_camera_calibration *stereo_calib = wmr_hmd_create_stereo_camera_calib(wh);
+	struct t_imu_calibration imu_calib = wmr_hmd_create_imu_calib(wh);
+	struct t_slam_calib_extras extra_calib = wmr_hmd_create_extra_calib(wh);
+
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (wh->tracking.slam_enabled) {
-		slam_sinks = wmr_hmd_slam_track(wh);
+		slam_sinks = wmr_hmd_slam_track(wh, stereo_calib, &imu_calib, &extra_calib);
 		if (slam_sinks == NULL) {
 			WMR_WARN(wh, "Unable to setup the SLAM tracker");
 			return false;
@@ -1492,12 +1553,14 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	struct xrt_slam_sinks *hand_sinks = NULL;
 	struct xrt_device *hand_device = NULL;
 	if (wh->tracking.hand_enabled) {
-		int hand_status = wmr_hmd_hand_track(wh, &hand_sinks, &hand_device);
+		int hand_status = wmr_hmd_hand_track(wh, stereo_calib, &hand_sinks, &hand_device);
 		if (hand_status != 0 || hand_sinks == NULL || hand_device == NULL) {
 			WMR_WARN(wh, "Unable to setup the hand tracker");
 			return false;
 		}
 	}
+
+	t_stereo_camera_calibration_reference(&stereo_calib, NULL);
 
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
