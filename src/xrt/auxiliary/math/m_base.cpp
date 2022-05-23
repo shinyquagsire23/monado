@@ -12,6 +12,7 @@
 
 #include "math/m_api.h"
 #include "math/m_eigen_interop.hpp"
+#include "util/u_logging.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -419,6 +420,17 @@ math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat)
 }
 
 extern "C" void
+math_matrix_3x3_print(const struct xrt_matrix_3x3 *mat)
+{
+	const auto &m = mat->v;
+	U_LOG_RAW("[\n");
+	U_LOG_RAW("\t%f, %f, %f,\n", m[0], m[3], m[6]);
+	U_LOG_RAW("\t%f, %f, %f,\n", m[1], m[4], m[7]);
+	U_LOG_RAW("\t%f, %f, %f \n", m[2], m[5], m[8]);
+	U_LOG_RAW("]\n");
+}
+
+extern "C" void
 math_matrix_3x3_f64_transform_vec3_f64(const struct xrt_matrix_3x3_f64 *left,
                                        const struct xrt_vec3_f64 *right,
                                        struct xrt_vec3_f64 *result_out)
@@ -448,6 +460,13 @@ math_matrix_3x3_f64_from_plus_x_z(const struct xrt_vec3_f64 *plus_x,
 	result->v[6] = plus_x->z;
 	result->v[7] = plus_y.z;
 	result->v[8] = plus_z->z;
+}
+
+extern "C" void
+math_matrix_3x3_rotation_from_isometry(const struct xrt_matrix_4x4 *isometry, struct xrt_matrix_3x3 *result)
+{
+	Eigen::Isometry3f transform{map_matrix_4x4(*isometry)};
+	map_matrix_3x3(*result) = transform.linear();
 }
 
 extern "C" void
@@ -494,9 +513,28 @@ math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *
 }
 
 extern "C" void
+math_matrix_3x3_transpose(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result)
+{
+	Eigen::Matrix3f m = copy(in);
+	map_matrix_3x3(*result) = m.transpose();
+}
+
+extern "C" void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result)
 {
 	map_matrix_4x4(*result) = Eigen::Matrix4f::Identity();
+}
+
+extern "C" void
+math_matrix_4x4_print(const struct xrt_matrix_4x4 *mat)
+{
+	const auto &m = mat->v;
+	U_LOG_RAW("[\n");
+	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[0], m[4], m[8], m[12]);
+	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[1], m[5], m[9], m[13]);
+	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[2], m[6], m[10], m[14]);
+	U_LOG_RAW("\t%f, %f, %f, %f \n", m[3], m[7], m[11], m[15]);
+	U_LOG_RAW("]\n");
 }
 
 extern "C" void
@@ -505,6 +543,27 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
                          struct xrt_matrix_4x4 *result)
 {
 	map_matrix_4x4(*result) = copy(left) * copy(right);
+}
+
+extern "C" void
+math_matrix_4x4_inverse(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result)
+{
+	Eigen::Matrix4f m = copy(in);
+	map_matrix_4x4(*result) = m.inverse();
+}
+
+extern "C" void
+math_matrix_4x4_transpose(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result)
+{
+	Eigen::Matrix4f m = copy(in);
+	map_matrix_4x4(*result) = m.transpose();
+}
+
+extern "C" void
+math_matrix_4x4_isometry_inverse(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result)
+{
+	Eigen::Isometry3f m{copy(in)};
+	map_matrix_4x4(*result) = m.inverse().matrix();
 }
 
 extern "C" void
@@ -517,6 +576,17 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x
 	Eigen::Isometry3f transformation = translation * orientation;
 
 	map_matrix_4x4(*result) = transformation.inverse().matrix();
+}
+
+extern "C" void
+math_matrix_4x4_isometry_from_rt(const struct xrt_matrix_3x3 *rotation,
+                                 const struct xrt_vec3 *translation,
+                                 struct xrt_matrix_4x4 *result)
+{
+	Eigen::Isometry3f transformation = Eigen::Isometry3f::Identity();
+	transformation.linear() = map_matrix_3x3(*rotation);
+	transformation.translation() = map_vec3(*translation);
+	map_matrix_4x4(*result) = transformation.matrix();
 }
 
 extern "C" void
@@ -580,6 +650,13 @@ extern "C" void
 math_vec3_f64_cross(const struct xrt_vec3_f64 *l, const struct xrt_vec3_f64 *r, struct xrt_vec3_f64 *result)
 {
 	map_vec3_f64(*result) = map_vec3_f64(*l).cross(map_vec3_f64(*r));
+}
+
+extern "C" void
+math_vec3_translation_from_isometry(const struct xrt_matrix_4x4 *transform, struct xrt_vec3 *result)
+{
+	Eigen::Isometry3f isometry{map_matrix_4x4(*transform)};
+	map_vec3(*result) = isometry.translation();
 }
 
 extern "C" void

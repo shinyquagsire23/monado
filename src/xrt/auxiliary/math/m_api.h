@@ -164,6 +164,15 @@ void
 math_vec3_f64_cross(const struct xrt_vec3_f64 *l, const struct xrt_vec3_f64 *r, struct xrt_vec3_f64 *result);
 
 /*!
+ * Get translation vector from isometry matrix (col-major).
+ *
+ * @relates xrt_vec3
+ * @ingroup aux_math
+ */
+void
+math_vec3_translation_from_isometry(const struct xrt_matrix_4x4 *isometry, struct xrt_vec3 *result);
+
+/*!
  * Normalize a vec3 in place.
  *
  * @relates xrt_vec3
@@ -418,6 +427,15 @@ void
 math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat);
 
 /*!
+ * Print a 3x3 (col-major) matrix to stdout
+ *
+ * @see xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_print(const struct xrt_matrix_3x3 *mat);
+
+/*!
  * Transform a vec3 by a 3x3 matrix
  *
  * @see xrt_matrix_3x3
@@ -460,6 +478,15 @@ void
 math_matrix_3x3_inverse(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result);
 
 /*!
+ * Transpose Matrix3x3
+ *
+ * @relates xrt_matrix_3x3
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_transpose(const struct xrt_matrix_3x3 *in, struct xrt_matrix_3x3 *result);
+
+/*!
  * Create a rotation from two vectors plus x and z, by
  * creating a rotation matrix by crossing z and x to
  * get the y axis.
@@ -475,6 +502,15 @@ math_matrix_3x3_f64_from_plus_x_z(const struct xrt_vec3_f64 *plus_x,
                                   struct xrt_matrix_3x3_f64 *result);
 
 /*!
+ * Get the rotation matrix from an isomertry matrix (col-major).
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_3x3_rotation_from_isometry(const struct xrt_matrix_4x4 *isometry, struct xrt_matrix_3x3 *result);
+
+/*!
  * Initialize Matrix4x4 with identity.
  *
  * @relates xrt_matrix_4x4
@@ -482,6 +518,15 @@ math_matrix_3x3_f64_from_plus_x_z(const struct xrt_vec3_f64 *plus_x,
  */
 void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result);
+
+/*!
+ * Prints a Matrix4x4 (col-major).
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_print(const struct xrt_matrix_4x4 *mat);
 
 /*!
  * Multiply Matrix4x4.
@@ -495,6 +540,33 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
                          struct xrt_matrix_4x4 *result);
 
 /*!
+ * Invert Matrix4x4.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_inverse(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result);
+
+/*!
+ * Invert a homogeneous isometry 4x4 (col-major) matrix in SE(3).
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_isometry_inverse(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result);
+
+/*!
+ * Transpose Matrix4x4
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_transpose(const struct xrt_matrix_4x4 *in, struct xrt_matrix_4x4 *result);
+
+/*!
  * Compute view matrix from xrt_pose.
  *
  * @relates xrt_matrix_4x4
@@ -502,6 +574,18 @@ math_matrix_4x4_multiply(const struct xrt_matrix_4x4 *left,
  */
 void
 math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result);
+
+/*!
+ * Get an isometry matrix —in SE(3)— from a rotation matrix —SO(3)— and a
+ * translation vector. All col-major matrices.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_isometry_from_rt(const struct xrt_matrix_3x3 *rotation,
+                                 const struct xrt_vec3 *translation,
+                                 struct xrt_matrix_4x4 *result);
 
 /*!
  * Compute quad layer model matrix from xrt_pose and xrt_vec2 size.

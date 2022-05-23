@@ -99,6 +99,18 @@ map_vec3_f64(struct xrt_vec3_f64 &v)
 }
 
 /*!
+ * @brief Wrap an internal 3x3 matrix struct in an Eigen type, const overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_matrix_3x3&` by Eigen routines as
+ * if it were a `Eigen::Matrix3f&`.
+ */
+static inline Eigen::Map<const Eigen::Matrix3f>
+map_matrix_3x3(const struct xrt_matrix_3x3 &m)
+{
+	return Eigen::Map<const Eigen::Matrix3f>(m.v);
+}
+
+/*!
  * @brief Wrap an internal 3x3 matrix struct in an Eigen type, non-const
  * overload.
  *
@@ -122,6 +134,19 @@ static inline Eigen::Map<Eigen::Matrix3d>
 map_matrix_3x3_f64(struct xrt_matrix_3x3_f64 &m)
 {
 	return Eigen::Map<Eigen::Matrix3d>(m.v);
+}
+
+/*!
+ * @brief Wrap an internal 4x4 matrix struct in an Eigen type, const
+ * overload.
+ *
+ * Permits zero-overhead manipulation of `xrt_matrix_4x4&` by Eigen routines as
+ * if it were a `Eigen::Matrix4f&`.
+ */
+static inline Eigen::Map<const Eigen::Matrix4f>
+map_matrix_4x4(const struct xrt_matrix_4x4 &m)
+{
+	return Eigen::Map<const Eigen::Matrix4f>(m.v);
 }
 
 /*!
