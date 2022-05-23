@@ -13,6 +13,7 @@
 #include "util/u_distortion_mesh.h"
 #include "util/u_var.h"
 #include "util/u_logging.h"
+#include "util/u_time.h"
 
 #include "math/m_api.h"
 #include "math/m_space.h"
