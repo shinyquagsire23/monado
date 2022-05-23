@@ -73,6 +73,7 @@ struct wmr_source
 	struct m_ff_vec3_f32 *accel_ff;    //!< Queue of accelerometer data to display in UI
 
 	bool is_running;              //!< Whether the device is streaming
+	bool first_imu_received;      //!< Don't send frames until first IMU sample
 	bool average_imus;            //!< Average 4 IMU samples before sending them to the sinks
 	time_duration_ns hw2mono;     //!< Estimated offset from IMU to monotonic clock
 	time_duration_ns cam_hw2mono; //!< Cache for hw2mono used in last left frame
@@ -124,7 +125,7 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	clock_cam_hw2mono(ws, xf, true);
 	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
-	if (ws->out_sinks.left) {
+	if (ws->out_sinks.left && ws->first_imu_received) {
 		xrt_sink_push_frame(ws->out_sinks.left, xf);
 	}
 }
@@ -136,7 +137,7 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	clock_cam_hw2mono(ws, xf, false);
 	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
-	if (ws->out_sinks.right) {
+	if (ws->out_sinks.right && ws->first_imu_received) {
 		xrt_sink_push_frame(ws->out_sinks.right, xf);
 	}
 }
@@ -160,6 +161,7 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	if (ws->out_sinks.imu) {
 		xrt_sink_push_imu(ws->out_sinks.imu, s);
 	}
+	ws->first_imu_received = true;
 }
 
 

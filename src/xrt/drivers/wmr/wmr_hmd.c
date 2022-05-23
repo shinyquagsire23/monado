@@ -68,6 +68,9 @@ DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 //! Specifies whether the user wants to use the hand tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 
+//! Whether to submit samples to the SLAM tracker from the start.
+DEBUG_GET_ONCE_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", NULL)
+
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
 static void
@@ -1385,6 +1388,9 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 	config.stereo_calib = stereo_calib; // No need to do refcount here
 	config.imu_calib = imu_calib;
 	config.extra_calib = extra_calib;
+	if (debug_get_option_slam_submit_from_start() == NULL) {
+		config.submit_from_start = true;
+	}
 
 	int create_status = t_slam_create(&wh->tracking.xfctx, &config, &wh->tracking.slam, &sinks);
 	if (create_status != 0) {
