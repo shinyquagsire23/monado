@@ -27,7 +27,7 @@ namespace xrt::auxiliary::tracking::slam {
 
 // For implementation: same as IMPLEMENTATION_VERSION_*
 // For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
-constexpr int HEADER_VERSION_MAJOR = 2; //!< API Breakages
+constexpr int HEADER_VERSION_MAJOR = 3; //!< API Breakages
 constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
 constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
 
@@ -185,17 +185,22 @@ private:
   constexpr int FID_##SHORT_NAME = ID;                                         \
   constexpr int F_##NAME = ID;
 
+/*!
+ * Container of parameters for a pinhole camera calibration (fx, fy, cx, cy)
+ * with an optional distortion.
+ *
+ *`distortion_model` and its corresponding `distortion` parameters are not
+ * standardized in this struct to facilitate implementation prototyping.
+ */
 struct cam_calibration {
-  enum class cam_model { pinhole, fisheye };
-
   int cam_index; //!< For multi-camera setups. For stereo 0 ~ left, 1 ~ right.
-  int width, height; //<! Resolution
-  double frequency;  //<! Frames per second
-  double fx, fy;     //<! Focal point
-  double cx, cy;     //<! Principal point
-  cam_model model;
-  std::vector<double> model_params;
-  cv::Matx<double, 4, 4> T_cam_imu; //!< Transformation from camera to imu space
+  int width, height;                //<! Resolution
+  double frequency;                 //<! Frames per second
+  double fx, fy;                    //<! Focal point
+  double cx, cy;                    //<! Principal point
+  std::string distortion_model;     //!< Models like: none, rt4, rt5, rt8, kb4
+  std::vector<double> distortion;   //!< Parameters for the distortion_model
+  cv::Matx<double, 4, 4> t_imu_cam; //!< Transformation from IMU to camera
 };
 
 struct inertial_calibration {
@@ -204,7 +209,7 @@ struct inertial_calibration {
   //! This transform will be applied to raw measurements.
   cv::Matx<double, 3, 3> transform;
 
-  //! Offset to apply to raw measurements to; called bias in other contexts.
+  //! Offset to add to raw measurements to; called bias in other contexts.
   cv::Matx<double, 3, 1> offset;
 
   // Parameters for the random processes that model this IMU. See section "2.1
