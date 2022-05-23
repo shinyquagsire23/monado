@@ -409,13 +409,13 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 extern "C" void
 math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat)
 {
-	mat->v[0] = mat->v[4] = mat->v[8] = 1.0;
+	map_matrix_3x3(*mat) = Eigen::Matrix3f::Identity();
 }
 
 extern "C" void
 math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat)
 {
-	mat->v[0] = mat->v[4] = mat->v[8] = 1.0;
+	map_matrix_3x3_f64(*mat) = Eigen::Matrix3d::Identity();
 }
 
 extern "C" void
@@ -514,9 +514,9 @@ math_matrix_4x4_view_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x
 	Eigen::Quaternionf orientation = copy(&pose->orientation);
 
 	Eigen::Translation3f translation(position);
-	Eigen::Affine3f transformation = translation * orientation;
+	Eigen::Isometry3f transformation = translation * orientation;
 
-	map_matrix_4x4(*result) = transformation.matrix().inverse();
+	map_matrix_4x4(*result) = transformation.inverse().matrix();
 }
 
 extern "C" void
@@ -609,9 +609,9 @@ m_mat4_f64_view(const struct xrt_pose *pose, struct xrt_matrix_4x4_f64 *result)
 	Eigen::Quaterniond orientation = copyd(pose->orientation);
 
 	Eigen::Translation3d translation(position);
-	Eigen::Affine3d transformation = translation * orientation;
+	Eigen::Isometry3d transformation = translation * orientation;
 
-	map_matrix_4x4_f64(*result) = transformation.matrix().inverse();
+	map_matrix_4x4_f64(*result) = transformation.inverse().matrix();
 }
 
 
@@ -632,21 +632,10 @@ math_pose_validate(const struct xrt_pose *pose)
 extern "C" void
 math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 {
-	assert(pose != NULL);
-	assert(outPose != NULL);
-
-	// Store results to temporary locals so we can do this "in-place"
-	// (pose == outPose) if desired. Pure copies here.
-	Eigen::Vector3f newPosition = position(*pose);
-	Eigen::Quaternionf newOrientation = orientation(*pose);
-
-	// Conjugate legal here since pose must be normalized/unit length.
-	newOrientation = newOrientation.conjugate();
-	// Use the newly inverted rotation, to rotate position.
-	newPosition = -(newOrientation * newPosition);
-
-	position(*outPose) = newPosition;
-	orientation(*outPose) = newOrientation;
+	Eigen::Isometry3f transform{orientation(*pose) * Eigen::Translation3f{position(*pose)}};
+	Eigen::Isometry3f inverse = transform.inverse();
+	position(*outPose) = inverse.translation();
+	orientation(*outPose) = inverse.rotation();
 }
 
 extern "C" void
