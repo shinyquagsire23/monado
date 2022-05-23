@@ -1397,6 +1397,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 		return 0;
 	}
 
+	os_thread_helper_init(&ss->event_thread);
 	ret = os_thread_helper_start(&ss->event_thread, run_event_thread, ss);
 	if (ret != 0) {
 		U_LOG_IFL_E(ss->log_level, "Failed to start event thread!");
