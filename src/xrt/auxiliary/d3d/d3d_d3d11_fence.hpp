@@ -32,8 +32,6 @@ namespace xrt::auxiliary::d3d {
  * @return xrt_result_t, one of:
  * - @ref XRT_SUCCESS
  * - @ref XRT_ERROR_ALLOCATION
- * - @ref XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED
- * - @ref XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED
  * - @ref XRT_ERROR_D3D11
  */
 xrt_result_t
