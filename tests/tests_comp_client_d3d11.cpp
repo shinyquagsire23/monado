@@ -13,7 +13,8 @@
 #include "catch/catch.hpp"
 #include "util/u_handles.h"
 
-#include <d3d/d3d_helpers.hpp>
+#include <d3d/d3d_dxgi_helpers.hpp>
+#include <d3d/d3d_d3d11_helpers.hpp>
 #include <stdint.h>
 #include <util/u_win32_com_guard.hpp>
 
@@ -21,6 +22,7 @@
 
 
 using namespace xrt::auxiliary::d3d;
+using namespace xrt::auxiliary::d3d::d3d11;
 using namespace xrt::auxiliary::util;
 
 TEST_CASE("client_compositor", "[.][needgpu]")
@@ -32,7 +34,7 @@ TEST_CASE("client_compositor", "[.][needgpu]")
 
 	wil::com_ptr<ID3D11Device> device;
 	wil::com_ptr<ID3D11DeviceContext> context;
-	std::tie(device, context) = createD3D11Device();
+	std::tie(device, context) = createDevice();
 	struct xrt_compositor_d3d11 *xcd3d = client_d3d11_compositor_create(xcn, device.get());
 	struct xrt_compositor *xc = &xcd3d->base;
 

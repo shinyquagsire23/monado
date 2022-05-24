@@ -863,7 +863,7 @@ try {
 		// Now, try to get an equivalent device of our own
 		wil::com_ptr<ID3D11Device> our_dev;
 		wil::com_ptr<ID3D11DeviceContext> our_context;
-		std::tie(our_dev, our_context) = xrt::auxiliary::d3d::createD3D11Device(adapter, c->log_level);
+		std::tie(our_dev, our_context) = xrt::auxiliary::d3d::d3d11::createDevice(adapter, c->log_level);
 		our_dev.query_to(c->comp_device.put());
 		our_context.query_to(c->comp_context.put());
 	}

@@ -5,12 +5,14 @@
  * @brief Direct3D 11 tests.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
+#include "aux_d3d_dxgi_formats.hpp"
 
 #include <iostream>
 
 #include "catch/catch.hpp"
 
-#include <d3d/d3d_helpers.hpp>
+#include <d3d/d3d_dxgi_helpers.hpp>
+#include <d3d/d3d_d3d11_helpers.hpp>
 #include <d3d/d3d_d3d11_allocator.hpp>
 #include <util/u_win32_com_guard.hpp>
 
@@ -49,43 +51,17 @@ TEST_CASE("d3d11_device", "[.][needgpu]")
 	CHECK(adapter);
 	wil::com_ptr<ID3D11Device> device;
 	wil::com_ptr<ID3D11DeviceContext> context;
-	CHECK_NOTHROW(std::tie(device, context) = createD3D11Device(adapter, U_LOGGING_TRACE));
+	CHECK_NOTHROW(std::tie(device, context) = createDevice(adapter, U_LOGGING_TRACE));
 	CHECK(device);
 	CHECK(context);
 }
-static constexpr std::initializer_list<DXGI_FORMAT> colorFormats = {
-    DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, DXGI_FORMAT_B8G8R8A8_UNORM,     DXGI_FORMAT_R16G16B16A16_FLOAT,
-    DXGI_FORMAT_R16G16B16A16_UNORM,  DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R16G16B16A16_UNORM,
-    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, DXGI_FORMAT_R8G8B8A8_UNORM,
-};
 
-static constexpr std::initializer_list<DXGI_FORMAT> depthStencilFormats = {
-    DXGI_FORMAT_D16_UNORM,
-    DXGI_FORMAT_D24_UNORM_S8_UINT,
-    DXGI_FORMAT_D32_FLOAT_S8X24_UINT,
-    DXGI_FORMAT_D32_FLOAT,
-};
-static constexpr std::initializer_list<DXGI_FORMAT> formats = {
-    DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, DXGI_FORMAT_B8G8R8A8_UNORM,       DXGI_FORMAT_R16G16B16A16_FLOAT,
-    DXGI_FORMAT_R16G16B16A16_UNORM,  DXGI_FORMAT_R16G16B16A16_FLOAT,   DXGI_FORMAT_R16G16B16A16_UNORM,
-    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, DXGI_FORMAT_R8G8B8A8_UNORM,       DXGI_FORMAT_D16_UNORM,
-    DXGI_FORMAT_D24_UNORM_S8_UINT,   DXGI_FORMAT_D32_FLOAT_S8X24_UINT, DXGI_FORMAT_D32_FLOAT,
-};
-
-static inline bool
-isDepthStencilFormat(DXGI_FORMAT format)
-{
-	const auto b = depthStencilFormats.begin();
-	const auto e = depthStencilFormats.end();
-	auto it = std::find(b, e, format);
-	return it != e;
-}
 TEST_CASE("d3d11_allocate", "[.][needgpu]")
 {
 	ComGuard comGuard;
 	wil::com_ptr<ID3D11Device> device;
 	wil::com_ptr<ID3D11DeviceContext> context;
-	std::tie(device, context) = createD3D11Device();
+	std::tie(device, context) = createDevice();
 	auto device5 = device.query<ID3D11Device5>();
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> images;
 	std::vector<wil::unique_handle> handles;

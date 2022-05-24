@@ -18,7 +18,7 @@ if(XRT_HAVE_OPENGL OR XRT_HAVE_OPENGLES)
 endif()
 
 # Direct3D library
-if(XRT_HAVE_D3D11 AND XRT_HAVE_VULKAN)
+if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
 	add_subdirectory(d3d)
 endif()
 

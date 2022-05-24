@@ -27,8 +27,10 @@ set(tests
 	tests_pose
 	)
 if(XRT_HAVE_D3D11)
-	list(APPEND tests tests_aux_d3d tests_comp_client_d3d11)
+	list(APPEND tests tests_aux_d3d_d3d11 tests_comp_client_d3d11)
 endif()
+# if(XRT_HAVE_D3D12)
+# endif()
 if(XRT_HAVE_VULKAN)
 	list(APPEND tests tests_comp_client_vulkan)
 endif()
@@ -59,8 +61,12 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 endif()
 
 if(XRT_HAVE_D3D11)
-	target_link_libraries(tests_aux_d3d PRIVATE aux_d3d)
+	target_link_libraries(tests_aux_d3d_d3d11 PRIVATE aux_d3d)
 	target_link_libraries(tests_comp_client_d3d11 PRIVATE comp_client comp_mock)
+endif()
+
+if(XRT_HAVE_D3D12)
+	# target_link_libraries(tests_comp_client_d3d12 PRIVATE comp_client comp_mock)
 endif()
 
 if(XRT_HAVE_VULKAN)
