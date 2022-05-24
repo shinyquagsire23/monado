@@ -279,6 +279,7 @@ u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret)
 	case XRT_ERROR_PROBER_LIST_NOT_LOCKED:               DG("XRT_ERROR_PROBER_LIST_NOT_LOCKED"); return;
 	case XRT_ERROR_PROBING_FAILED:                       DG("XRT_ERROR_PROBING_FAILED"); return;
 	case XRT_ERROR_DEVICE_CREATION_FAILED:               DG("XRT_ERROR_DEVICE_CREATION_FAILED"); return;
+	case XRT_ERROR_D3D11:                                DG("XRT_ERROR_D3D11"); return;
 	// clang-format on
 	default: break;
 	}
