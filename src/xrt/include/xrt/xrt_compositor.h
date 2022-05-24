@@ -15,12 +15,19 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_handles.h"
 #include "xrt/xrt_config_os.h"
-
-#if defined(XRT_OS_WINDOWS)
+#include "xrt/xrt_config_have.h"
 #include "xrt/xrt_windows.h"
+
+#if defined(XRT_HAVE_D3D11)
 #include <d3d11.h>
 #elif defined(XRT_DOXYGEN)
 struct ID3D11Texture2D;
+#endif
+
+#if defined(XRT_HAVE_D3D12)
+#include <d3d12.h>
+#elif defined(XRT_DOXYGEN)
+struct ID3D12Resource;
 #endif
 
 #ifdef __cplusplus
@@ -1650,7 +1657,7 @@ xrt_compositor_vk(struct xrt_compositor *xc)
 	return (struct xrt_compositor_vk *)xc;
 }
 
-#if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
+#if defined(XRT_HAVE_D3D11) || defined(XRT_DOXYGEN)
 
 /*
  *
@@ -1697,6 +1704,42 @@ struct xrt_d3d_requirements
 };
 
 #endif // XRT_OS_WINDOWS
+
+
+#if defined(XRT_HAVE_D3D12) || defined(XRT_DOXYGEN)
+/*
+ *
+ * D3D12 interface.
+ *
+ */
+
+/*!
+ * Base class for a D3D12 client swapchain.
+ *
+ * @ingroup xrt_iface comp_client
+ * @extends xrt_swapchain
+ */
+struct xrt_swapchain_d3d12
+{
+	//! @public Base
+	struct xrt_swapchain base;
+
+	//! Images to be used by the caller.
+	ID3D12Resource *images[XRT_MAX_SWAPCHAIN_IMAGES];
+};
+
+/*!
+ * Base class for a D3D12 client compositor.
+ *
+ * @ingroup xrt_iface comp_client
+ * @extends xrt_compositor
+ */
+struct xrt_compositor_d3d12
+{
+	//! @public Base
+	struct xrt_compositor base;
+};
+#endif
 
 /*
  *

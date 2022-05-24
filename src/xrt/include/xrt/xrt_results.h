@@ -147,7 +147,15 @@ typedef enum xrt_result
 	 */
 	XRT_ERROR_DEVICE_CREATION_FAILED = -22,
 	/*!
+	 * Some D3D error, from code shared between D3D11 and D3D12
+	 */
+	XRT_ERROR_D3D = -23,
+	/*!
 	 * Some D3D11 error
 	 */
-	XRT_ERROR_D3D11 = -23,
+	XRT_ERROR_D3D11 = -24,
+	/*!
+	 * Some D3D12 error
+	 */
+	XRT_ERROR_D3D12 = -25,
 } xrt_result_t;
