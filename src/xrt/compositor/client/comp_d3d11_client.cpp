@@ -441,8 +441,8 @@ try {
 	std::unique_ptr<struct client_d3d11_swapchain> sc = std::make_unique<struct client_d3d11_swapchain>();
 	sc->data = std::make_unique<client_d3d11_swapchain_data>();
 	auto &data = sc->data;
-	xret = xrt::auxiliary::d3d::allocateSharedImages(*(c->comp_device), xinfo, image_count, true, data->comp_images,
-	                                                 data->handles);
+	xret = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(c->comp_device), xinfo, image_count, true,
+	                                                        data->comp_images, data->handles);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -736,8 +736,8 @@ client_d3d11_compositor_layer_commit(struct xrt_compositor *xc,
 
 	if (c->fence) {
 		// Wait on it ourselves, if we have it and didn't tell the native compositor to wait on it.
-		xret = xrt::auxiliary::d3d::waitOnFenceWithTimeout(c->fence, c->local_wait_event,
-		                                                   c->timeline_semaphore_value, kFenceTimeout);
+		xret = xrt::auxiliary::d3d::d3d11::waitOnFenceWithTimeout(c->fence, c->local_wait_event,
+		                                                          c->timeline_semaphore_value, kFenceTimeout);
 		if (xret != XRT_SUCCESS) {
 			struct u_pp_sink_stack_only sink; // Not inited, very large.
 			u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);

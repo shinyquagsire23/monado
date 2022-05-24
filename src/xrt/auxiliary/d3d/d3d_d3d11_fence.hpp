@@ -17,7 +17,7 @@
 
 #include <chrono>
 
-namespace xrt::auxiliary::d3d {
+namespace xrt::auxiliary::d3d::d3d11 {
 
 /**
  * Allocate a fence (ID3D11Fence) that has a corresponding native handle.
@@ -56,4 +56,4 @@ waitOnFenceWithTimeout(wil::com_ptr<ID3D11Fence> fence,
                        uint64_t value,
                        std::chrono::milliseconds timeout_ms);
 
-}; // namespace xrt::auxiliary::d3d
+}; // namespace xrt::auxiliary::d3d::d3d11

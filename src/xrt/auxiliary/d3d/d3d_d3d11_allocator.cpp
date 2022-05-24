@@ -52,7 +52,7 @@ DEBUG_GET_ONCE_LOG_OPTION(d3d11_log, "DXGI_LOG", U_LOGGING_WARN)
 #define D3DA_WARN(...) U_LOG_IFL_W(debug_get_log_option_d3d11_log(), __VA_ARGS__)
 #define D3DA_ERROR(...) U_LOG_IFL_E(debug_get_log_option_d3d11_log(), __VA_ARGS__)
 
-namespace xrt::auxiliary::d3d {
+namespace xrt::auxiliary::d3d::d3d11 {
 
 wil::unique_handle
 createSharedHandle(const wil::com_ptr<ID3D11Texture2D1> &image)
@@ -125,7 +125,7 @@ try {
 }
 DEFAULT_CATCH(XRT_ERROR_ALLOCATION)
 
-} // namespace xrt::auxiliary::d3d
+} // namespace xrt::auxiliary::d3d::d3d11
 
 struct d3d11_allocator
 {
@@ -145,8 +145,8 @@ d3d11_images_allocate(struct xrt_image_native_allocator *xina,
 
 		std::vector<wil::com_ptr<ID3D11Texture2D1>> images;
 		std::vector<wil::unique_handle> handles;
-		auto result = xrt::auxiliary::d3d::allocateSharedImages(*(d3da->device), *xsci, image_count, false,
-		                                                        images, handles);
+		auto result = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(d3da->device), *xsci, image_count,
+		                                                               false, images, handles);
 		if (XRT_SUCCESS != result) {
 			return result;
 		}

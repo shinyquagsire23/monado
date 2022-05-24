@@ -20,7 +20,7 @@
 #include <vector>
 
 
-namespace xrt::auxiliary::d3d {
+namespace xrt::auxiliary::d3d::d3d11 {
 
 /**
  * Allocate images (ID3D11Texture2D1) that have a corresponding native handle.
@@ -48,4 +48,4 @@ allocateSharedImages(ID3D11Device5 &device,
                      std::vector<wil::com_ptr<ID3D11Texture2D1>> &out_images,
                      std::vector<wil::unique_handle> &out_handles);
 
-}; // namespace xrt::auxiliary::d3d
+}; // namespace xrt::auxiliary::d3d::d3d11

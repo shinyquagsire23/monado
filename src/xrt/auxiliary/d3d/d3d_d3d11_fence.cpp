@@ -46,7 +46,7 @@ using namespace std::chrono;
 	}
 
 
-namespace xrt::auxiliary::d3d {
+namespace xrt::auxiliary::d3d::d3d11 {
 
 xrt_result_t
 createSharedFence(ID3D11Device5 &device,
@@ -116,4 +116,4 @@ waitOnFenceWithTimeout(wil::com_ptr<ID3D11Fence> fence,
 	return XRT_TIMEOUT;
 }
 
-} // namespace xrt::auxiliary::d3d
+} // namespace xrt::auxiliary::d3d::d3d11

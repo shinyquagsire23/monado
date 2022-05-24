@@ -17,6 +17,7 @@
 #include <d3d11_4.h>
 
 using namespace xrt::auxiliary::d3d;
+using namespace xrt::auxiliary::d3d::d3d11;
 using namespace xrt::auxiliary::util;
 
 TEST_CASE("dxgi_adapter", "[.][needgpu]")
