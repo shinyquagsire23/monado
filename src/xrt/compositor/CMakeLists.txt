@@ -71,7 +71,13 @@ if(XRT_HAVE_D3D11)
 		comp_client PRIVATE client/comp_d3d11_client.cpp client/comp_d3d11_client.h
 				    client/comp_d3d11_glue.c
 		)
-	target_link_libraries(comp_client PRIVATE aux_d3d)
+endif()
+
+if(XRT_HAVE_D3D12)
+	target_sources(
+		comp_client PRIVATE client/comp_d3d12_client.cpp client/comp_d3d12_client.h
+				    client/comp_d3d12_glue.c
+		)
 endif()
 
 ##
