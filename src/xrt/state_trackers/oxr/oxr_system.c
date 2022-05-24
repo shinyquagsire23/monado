@@ -103,7 +103,7 @@ oxr_system_fill_in(struct oxr_logger *log, struct oxr_instance *inst, XrSystemId
 	sys->vulkan_enable2_instance = VK_NULL_HANDLE;
 	sys->suggested_vulkan_physical_device = VK_NULL_HANDLE;
 #endif
-#ifdef XR_USE_GRAPHICS_API_D3D11
+#if defined(XR_USE_GRAPHICS_API_D3D11) || defined(XR_USE_GRAPHICS_API_D3D12)
 	U_ZERO(&(sys->suggested_d3d_luid));
 	sys->suggested_d3d_luid_valid = false;
 #endif

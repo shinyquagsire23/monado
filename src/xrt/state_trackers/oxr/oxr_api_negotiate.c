@@ -274,6 +274,10 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrGetD3D11GraphicsRequirementsKHR, KHR_D3D11_enable);
 #endif // OXR_HAVE_KHR_D3D11_enable
 
+#ifdef OXR_HAVE_KHR_D3D12_enable
+	ENTRY_IF_EXT(xrGetD3D12GraphicsRequirementsKHR, KHR_D3D12_enable);
+#endif // OXR_HAVE_KHR_D3D12_enable
+
 	/*
 	 * Not logging here because there's no need to loudly advertise
 	 * which extensions the loader knows about (it calls this on

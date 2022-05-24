@@ -771,7 +771,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingD3D11KHR const *d3d11 =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D11_KHR, XrGraphicsBindingD3D11KHR);
 	if (d3d11 != NULL) {
-		OXR_VERIFY_ARG_NOT_NULL(log, d3d11->device);
+		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
 
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
@@ -787,6 +787,29 @@ oxr_session_create_impl(struct oxr_logger *log,
 		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_d3d11(log, sys, d3d11, *out_session);
+	}
+#endif
+
+#ifdef XR_USE_GRAPHICS_API_D3D12
+	XrGraphicsBindingD3D12KHR const *d3d12 =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D12_KHR, XrGraphicsBindingD3D12KHR);
+	if (d3d12 != NULL) {
+		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
+
+		if (!sys->gotten_requirements) {
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called xrGetD3D12GraphicsRequirementsKHR");
+		}
+		XrResult result = oxr_d3d12_check_device(log, sys, d3d12->device);
+
+		if (!XR_SUCCEEDED(result)) {
+			return result;
+		}
+
+
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
+		return oxr_session_populate_d3d12(log, sys, d3d12, *out_session);
 	}
 #endif
 	/*

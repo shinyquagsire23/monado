@@ -509,6 +509,16 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // XR_USE_GRAPHICS_API_D3D11
 
+
+#if defined(XR_USE_GRAPHICS_API_D3D12)
+	XrGraphicsBindingD3D12KHR const *d3d12 =
+	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D12_KHR, XrGraphicsBindingD3D12KHR);
+	if (d3d12 != NULL) {
+		OXR_VERIFY_EXTENSION(log, inst, KHR_D3D12_enable);
+		return oxr_verify_XrGraphicsBindingD3D12KHR(log, d3d12);
+	}
+#endif // XR_USE_GRAPHICS_API_D3D12
+
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)
@@ -633,6 +643,25 @@ oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *log, const XrGraphicsBin
 	return XR_SUCCESS;
 }
 #endif // defined(XR_USE_GRAPHICS_API_D3D11)
+
+#if defined(XR_USE_GRAPHICS_API_D3D12)
+XrResult
+oxr_verify_XrGraphicsBindingD3D12KHR(struct oxr_logger *log, const XrGraphicsBindingD3D12KHR *next)
+{
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_D3D12_KHR) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
+	}
+	if (next->device == NULL) {
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
+		                 "XrGraphicsBindingD3D12KHR::device cannot be NULL");
+	}
+	if (next->queue == NULL) {
+		// not specified in spec nor cts, so assume it's this
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingD3D12KHR::queue cannot be NULL");
+	}
+	return XR_SUCCESS;
+}
+#endif // defined(XR_USE_GRAPHICS_API_D3D12)
 
 #ifdef XR_EXT_dpad_binding
 XrResult

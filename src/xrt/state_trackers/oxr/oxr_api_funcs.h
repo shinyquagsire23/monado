@@ -245,6 +245,15 @@ oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
                                       XrGraphicsRequirementsD3D11KHR *graphicsRequirements);
 #endif // XR_USE_GRAPHICS_API_D3D11
 
+#ifdef XR_USE_GRAPHICS_API_D3D12
+
+//! OpenXR API function @ep{xrGetD3D11GraphicsRequirementsKHR}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrGetD3D12GraphicsRequirementsKHR(XrInstance instance,
+                                      XrSystemId systemId,
+                                      XrGraphicsRequirementsD3D12KHR *graphicsRequirements);
+#endif // XR_USE_GRAPHICS_API_D3D12
+
 /*
  *
  * oxr_api_session.c

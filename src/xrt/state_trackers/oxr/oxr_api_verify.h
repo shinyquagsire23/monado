@@ -291,13 +291,17 @@ XrResult
 oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *, const XrGraphicsBindingD3D11KHR *);
 #endif // defined(XR_USE_GRAPHICS_API_D3D11)
 
+#if defined(XR_USE_GRAPHICS_API_D3D12)
+XrResult
+oxr_verify_XrGraphicsBindingD3D12KHR(struct oxr_logger *, const XrGraphicsBindingD3D12KHR *);
+#endif // defined(XR_USE_GRAPHICS_API_D3D12)
+
 #ifdef XR_EXT_dpad_binding
 XrResult
 oxr_verify_XrInteractionProfileDpadBindingEXT(struct oxr_logger *,
                                               const XrInteractionProfileDpadBindingEXT *,
                                               const char *error_prefix);
 #endif // XR_EXT_dpad_binding
-
 
 /*!
  * @}
