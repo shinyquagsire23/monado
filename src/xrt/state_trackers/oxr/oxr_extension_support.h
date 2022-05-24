@@ -124,6 +124,17 @@
 
 
 /*
+ * XR_KHR_D3D12_enable
+ */
+#if defined(XR_KHR_D3D12_enable) && defined(XR_USE_GRAPHICS_API_D3D12)
+#define OXR_HAVE_KHR_D3D12_enable
+#define OXR_EXTENSION_SUPPORT_KHR_D3D12_enable(_) _(KHR_D3D12_enable, KHR_D3D12_ENABLE)
+#else
+#define OXR_EXTENSION_SUPPORT_KHR_D3D12_enable(_)
+#endif
+
+
+/*
  * XR_KHR_loader_init
  */
 #if defined(XR_KHR_loader_init) && defined(XR_USE_PLATFORM_ANDROID)
@@ -346,6 +357,7 @@
     OXR_EXTENSION_SUPPORT_KHR_composition_layer_equirect2(_) \
     OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) \
     OXR_EXTENSION_SUPPORT_KHR_D3D11_enable(_) \
+    OXR_EXTENSION_SUPPORT_KHR_D3D12_enable(_) \
     OXR_EXTENSION_SUPPORT_KHR_loader_init(_) \
     OXR_EXTENSION_SUPPORT_KHR_loader_init_android(_) \
     OXR_EXTENSION_SUPPORT_KHR_opengl_enable(_) \

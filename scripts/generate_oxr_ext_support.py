@@ -19,6 +19,7 @@ EXTENSIONS = (
     ['XR_KHR_composition_layer_equirect2', 'XRT_FEATURE_OPENXR_LAYER_EQUIRECT2'],
     ['XR_KHR_convert_timespec_time', 'XR_USE_TIMESPEC'],
     ['XR_KHR_D3D11_enable', 'XR_USE_GRAPHICS_API_D3D11'],
+    ['XR_KHR_D3D12_enable', 'XR_USE_GRAPHICS_API_D3D12'],
     ['XR_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
     ['XR_KHR_loader_init_android', 'OXR_HAVE_KHR_loader_init', 'XR_USE_PLATFORM_ANDROID'],
     ['XR_KHR_opengl_enable', 'XR_USE_GRAPHICS_API_OPENGL'],
