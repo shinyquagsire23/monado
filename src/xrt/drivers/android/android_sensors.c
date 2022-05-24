@@ -227,6 +227,13 @@ android_device_create()
 
 	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
+	int ret = os_mutex_init(&d->lock);
+	if (ret != 0) {
+		U_LOG_E("Failed to init mutex!");
+		android_device_destroy(&d->base);
+		return 0;
+	}
+
 	struct xrt_android_display_metrics metrics;
 	if (!android_custom_surface_get_display_metrics(android_globals_get_vm(), android_globals_get_activity(),
 	                                                &metrics)) {
@@ -241,7 +248,8 @@ android_device_create()
 	d->base.hmd->screens[0].nominal_frame_interval_ns = time_s_to_ns(1.0f / metrics.refresh_rate);
 
 	// Everything done, finally start the thread.
-	int ret = os_thread_helper_start(&d->oth, android_run_thread, d);
+	os_thread_helper_init(&d->oth);
+	ret = os_thread_helper_start(&d->oth, android_run_thread, d);
 	if (ret != 0) {
 		ANDROID_ERROR(d, "Failed to start thread!");
 		android_device_destroy(&d->base);
