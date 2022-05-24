@@ -15,6 +15,7 @@
 #include <d3d11_4.h>
 #include <wil/com.h>
 
+#include <chrono>
 
 namespace xrt::auxiliary::d3d {
 
@@ -39,5 +40,20 @@ createSharedFence(ID3D11Device5 &device,
                   bool share_cross_adapter,
                   xrt_graphics_sync_handle_t *out_handle,
                   wil::com_ptr<ID3D11Fence> &out_d3dfence);
+
+/*!
+ * Wait for a fence to be signaled with value equal or greater than @p value within @p timeout_ns nanoseconds.
+ *
+ * @param fence The fence to wait on.
+ * @param event An event to use to wait. Please use a dedicated event for a single thread's calls to this function.
+ * @param value The desired fence value
+ * @param timeout_ms After this long, we may return early with @ref XRT_TIMEOUT even before the fence
+ * reaches the value.
+ */
+xrt_result_t
+waitOnFenceWithTimeout(wil::com_ptr<ID3D11Fence> fence,
+                       wil::unique_event_nothrow &event,
+                       uint64_t value,
+                       std::chrono::milliseconds timeout_ms);
 
 }; // namespace xrt::auxiliary::d3d

@@ -13,6 +13,7 @@
 #include "util/u_logging.h"
 #include "util/u_debug.h"
 #include "util/u_handles.h"
+#include "util/u_time.h"
 
 #include "xrt/xrt_windows.h"
 
@@ -23,6 +24,8 @@
 
 #include <inttypes.h>
 #include <memory>
+
+using namespace std::chrono;
 
 
 #define DEFAULT_CATCH(...)                                                                                             \
@@ -92,5 +95,25 @@ try {
 	return XRT_SUCCESS;
 }
 DEFAULT_CATCH(XRT_ERROR_ALLOCATION)
+
+xrt_result_t
+waitOnFenceWithTimeout(wil::com_ptr<ID3D11Fence> fence,
+                       wil::unique_event_nothrow &event,
+                       uint64_t value,
+                       std::chrono::milliseconds timeout_ms)
+{
+	DWORD dwTimeout = duration_cast<duration<DWORD, std::milli>>(timeout_ms).count();
+	// Have to use this instead of ID3D11DeviceContext4::Wait because the latter has no timeout
+	// parameter.
+	fence->SetEventOnCompletion(value, event.get());
+	if (value <= fence->GetCompletedValue()) {
+		// oh we already reached this value.
+		return XRT_SUCCESS;
+	}
+	if (event.wait(dwTimeout)) {
+		return XRT_SUCCESS;
+	}
+	return XRT_TIMEOUT;
+}
 
 } // namespace xrt::auxiliary::d3d
