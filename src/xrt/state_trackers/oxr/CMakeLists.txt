@@ -69,10 +69,14 @@ if(XRT_HAVE_EGL)
 	target_sources(st_oxr PRIVATE oxr_session_gfx_egl.c)
 endif()
 
+if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
+	target_sources(st_oxr PRIVATE oxr_d3d.cpp)
+	target_link_libraries(st_oxr PRIVATE aux_d3d)
+endif()
+
 if(XRT_HAVE_D3D11)
 	target_compile_definitions(st_oxr PRIVATE XR_USE_GRAPHICS_API_D3D11)
 	target_sources(st_oxr PRIVATE oxr_session_gfx_d3d11.c oxr_swapchain_d3d11.c oxr_d3d11.cpp)
-	target_link_libraries(st_oxr PRIVATE aux_d3d)
 endif()
 
 if(ANDROID)

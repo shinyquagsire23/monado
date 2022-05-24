@@ -16,6 +16,7 @@
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_openxr_includes.h"
 #include "xrt/xrt_config_os.h"
+#include "xrt/xrt_config_have.h"
 
 #include "os/os_threading.h"
 
@@ -26,6 +27,11 @@
 
 #include "oxr_extension_support.h"
 #include "oxr_subaction.h"
+
+#if defined(XRT_HAVE_D3D11) || defined(XRT_HAVE_D3D12)
+#include <dxgi.h>
+#include <d3dcommon.h>
+#endif
 
 #ifdef XRT_FEATURE_RENDERDOC
 #include "renderdoc_app.h"
@@ -1109,6 +1115,22 @@ oxr_session_populate_egl(struct oxr_logger *log,
 
 #endif
 
+/*
+ *
+ * D3D version independent routines, located in oxr_d3d.cpp
+ *
+ */
+
+#if defined(XRT_HAVE_D3D11) || defined(XRT_HAVE_D3D12) || defined(XRT_DOXYGEN)
+XrResult
+oxr_d3d_get_requirements(struct oxr_logger *log,
+                         struct oxr_system *sys,
+                         LUID *adapter_luid,
+                         D3D_FEATURE_LEVEL *min_feature_level);
+
+XrResult
+oxr_d3d_check_device(struct oxr_logger *log, struct oxr_system *sys, IDXGIDevice *device);
+#endif
 
 /*
  *
