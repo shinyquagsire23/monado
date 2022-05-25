@@ -349,7 +349,7 @@ vk_create_image_advanced(struct vk_bundle *vk,
 
 	VkImageCreateInfo image_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-	    .imageType = VK_IMAGE_TYPE_2D,
+	    .imageType = extent.depth > 1 ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D,
 	    .format = format,
 	    .extent = extent,
 	    .mipLevels = 1,
