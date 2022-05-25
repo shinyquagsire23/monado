@@ -9,7 +9,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "d3d/d3d_helpers.hpp"
+#include "d3d/d3d_dxgi_helpers.hpp"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -73,20 +73,13 @@ oxr_d3d_get_requirements(struct oxr_logger *log,
 }
 
 XrResult
-oxr_d3d_check_device(struct oxr_logger *log, struct oxr_system *sys, IDXGIDevice *device)
+oxr_d3d_check_luid(struct oxr_logger *log, struct oxr_system *sys, LUID *adapter_luid)
 {
-	try {
-		wil::com_ptr<IDXGIAdapter> adapter;
-		THROW_IF_FAILED(device->GetAdapter(adapter.put()));
-		DXGI_ADAPTER_DESC desc{};
-		adapter->GetDesc(&desc);
-		if (desc.AdapterLuid.HighPart != sys->suggested_d3d_luid.HighPart ||
-		    desc.AdapterLuid.LowPart != sys->suggested_d3d_luid.LowPart) {
+	if (adapter_luid->HighPart != sys->suggested_d3d_luid.HighPart ||
+	    adapter_luid->LowPart != sys->suggested_d3d_luid.LowPart) {
 
-			return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
-			                 " supplied device does not match required LUID.");
-		}
-		return XR_SUCCESS;
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
+		                 " supplied device does not match required LUID.");
 	}
-	DEFAULT_CATCH(" failure checking adapter LUID")
+	return XR_SUCCESS;
 }

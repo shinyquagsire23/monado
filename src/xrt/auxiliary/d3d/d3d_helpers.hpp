@@ -11,11 +11,16 @@
 
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_compositor.h"
+#include "xrt/xrt_config_have.h"
 
 #include "util/u_logging.h"
 
 #include <dxgi.h>
+
+#ifdef XRT_HAVE_D3D11
 #include <d3d11.h>
+#endif
+
 #include <wil/com.h>
 
 #include <utility>
@@ -50,6 +55,7 @@ getAdapterByIndex(uint16_t index, u_logging_level log_level = U_LOGGING_INFO);
 wil::com_ptr<IDXGIAdapter>
 getAdapterByLUID(const xrt_luid_t &luid, u_logging_level log_level = U_LOGGING_INFO);
 
+#ifdef XRT_HAVE_D3D11
 /**
  * @brief Create a D3D11 Device object
  *
@@ -62,5 +68,6 @@ getAdapterByLUID(const xrt_luid_t &luid, u_logging_level log_level = U_LOGGING_I
  */
 std::pair<wil::com_ptr<ID3D11Device>, wil::com_ptr<ID3D11DeviceContext>>
 createD3D11Device(const wil::com_ptr<IDXGIAdapter> &adapter = nullptr, u_logging_level log_level = U_LOGGING_INFO);
+#endif // XRT_HAVE_D3D11
 
 } // namespace xrt::auxiliary::d3d

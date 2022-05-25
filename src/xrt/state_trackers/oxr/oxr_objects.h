@@ -1206,14 +1206,16 @@ oxr_session_populate_egl(struct oxr_logger *log,
  */
 
 #if defined(XRT_HAVE_D3D11) || defined(XRT_HAVE_D3D12) || defined(XRT_DOXYGEN)
+/// Common GetRequirements call for D3D11 and D3D12
 XrResult
 oxr_d3d_get_requirements(struct oxr_logger *log,
                          struct oxr_system *sys,
                          LUID *adapter_luid,
                          D3D_FEATURE_LEVEL *min_feature_level);
 
+/// Verify the provided LUID matches the expected one in @p sys
 XrResult
-oxr_d3d_check_device(struct oxr_logger *log, struct oxr_system *sys, IDXGIDevice *device);
+oxr_d3d_check_luid(struct oxr_logger *log, struct oxr_system *sys, LUID *adapter_luid);
 #endif
 
 /*

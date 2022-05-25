@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief D3D backed image buffer allocator.
+ * @brief D3D11 backed image buffer allocator.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_d3d
  */
@@ -10,6 +10,7 @@
 #include "d3d_d3d11_allocator.h"
 #include "d3d_d3d11_allocator.hpp"
 
+#include "d3d_d3d11_bits.h"
 #include "d3d_dxgi_formats.h"
 
 #include "util/u_misc.h"
@@ -90,7 +91,7 @@ try {
 	                            xsci.height,
 	                            xsci.array_size,
 	                            xsci.mip_count,
-	                            d3d_convert_usage_bits_to_bind_flags(xsci.bits)};
+	                            d3d_convert_usage_bits_to_d3d11_bind_flags(xsci.bits)};
 	desc.SampleDesc.Count = xsci.sample_count;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
 	if (keyed_mutex) {

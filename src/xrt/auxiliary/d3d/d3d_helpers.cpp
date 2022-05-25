@@ -99,6 +99,7 @@ getAdapterByLUID(const xrt_luid_t &luid, u_logging_level log_level)
 	return ret;
 }
 
+#ifdef XRT_HAVE_D3D11
 HRESULT
 tryCreateD3D11Device(const wil::com_ptr<IDXGIAdapter> &adapter,
                      D3D_DRIVER_TYPE driver_type,
@@ -141,4 +142,6 @@ createD3D11Device(const wil::com_ptr<IDXGIAdapter> &adapter, u_logging_level log
 	THROW_IF_FAILED(hr);
 	return {device, context};
 }
+#endif // XRT_HAVE_D3D11
+
 } // namespace xrt::auxiliary::d3d

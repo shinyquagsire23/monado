@@ -48,7 +48,11 @@ oxr_d3d11_check_device(struct oxr_logger *log, struct oxr_system *sys, ID3D11Dev
 	try {
 		wil::com_ptr<IDXGIDevice> dxgiDevice;
 		THROW_IF_FAILED(device->QueryInterface(dxgiDevice.put()));
-		return oxr_d3d_check_device(log, sys, dxgiDevice.get());
+		wil::com_ptr<IDXGIAdapter> adapter;
+		THROW_IF_FAILED(dxgiDevice->GetAdapter(adapter.put()));
+		DXGI_ADAPTER_DESC desc{};
+		adapter->GetDesc(&desc);
+		return oxr_d3d_check_luid(log, sys, &desc.AdapterLuid);
 	}
 	DEFAULT_CATCH(" failure checking adapter LUID")
 }

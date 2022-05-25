@@ -17,7 +17,7 @@
 #include "xrt/xrt_results.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "d3d/d3d_dxgi_formats.h"
-#include "d3d/d3d_helpers.hpp"
+#include "d3d/d3d_d3d11_helpers.hpp"
 #include "d3d/d3d_d3d11_allocator.hpp"
 #include "d3d/d3d_d3d11_fence.hpp"
 #include "util/u_misc.h"
