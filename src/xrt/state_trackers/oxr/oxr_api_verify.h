@@ -181,6 +181,16 @@ extern "C" {
 		}                                                                                                      \
 	} while (false)
 
+#define OXR_VERIFY_SWAPCHAIN_USAGE_FLAGS_NOT_MUTUALLY_EXCLUSIVE(log, flags, mutually_exclusive_a,                      \
+                                                                mutually_exclusive_b)                                  \
+	do {                                                                                                           \
+		if (((flags) & (mutually_exclusive_a)) != 0 && ((flags) & (mutually_exclusive_b)) != 0) {              \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,                                             \
+			                 "(" #flags ") Swapchain usage flags " #mutually_exclusive_a                   \
+			                 " and " #mutually_exclusive_b                                                 \
+			                 " are mutually exclusive in this graphics API");                              \
+		}                                                                                                      \
+	} while (false)
 
 /*
  *
