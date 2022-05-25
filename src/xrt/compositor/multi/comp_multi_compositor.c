@@ -293,6 +293,9 @@ wait_for_wait_thread_locked(struct multi_compositor *mc)
 	if (mc->wait_thread.waiting) {
 		COMP_TRACE_IDENT(blocked);
 
+		// There should only be one thread entering here.
+		assert(mc->wait_thread.blocked == false);
+
 		// OK, wait until the wait thread releases us by setting blocked to false
 		mc->wait_thread.blocked = true;
 		while (mc->wait_thread.blocked) {
