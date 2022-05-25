@@ -11,6 +11,7 @@
 #include "ht_interface.h"
 
 
+#include "tracking/t_tracking.h"
 #include "util/u_var.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
@@ -39,7 +40,6 @@
 #include <cjson/cJSON.h>
 
 DEBUG_GET_ONCE_LOG_OPTION(ht_log, "HT_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
 
 #define HT_TRACE(htd, ...) U_LOG_XDEV_IFL_T(&htd->base, htd->log_level, __VA_ARGS__)
@@ -235,123 +235,6 @@ ht_device_create_common(struct t_stereo_camera_calibration *calib,
 
 	htd->async = t_hand_tracking_async_default_create(xfctx, sync);
 	return htd;
-}
-
-struct index_camera_finder
-{
-	struct xrt_fs *xfs;
-	struct xrt_frame_context xfctx;
-	bool found;
-};
-
-static void
-on_video_device(struct xrt_prober *xp,
-                struct xrt_prober_device *pdev,
-                const char *product,
-                const char *manufacturer,
-                const char *serial,
-                void *ptr)
-{
-	struct index_camera_finder *finder = (struct index_camera_finder *)ptr;
-
-	// Hardcoded for the Index.
-	if (product != NULL && manufacturer != NULL) {
-		if ((strcmp(product, "3D Camera") == 0) && (strcmp(manufacturer, "Etron Technology, Inc.") == 0)) {
-			xrt_prober_open_video_device(xp, pdev, &finder->xfctx, &finder->xfs);
-			return;
-		}
-	}
-}
-
-struct xrt_device *
-ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration *calib)
-{
-	XRT_TRACE_MARKER();
-	assert(calib != NULL);
-
-
-	struct index_camera_finder finder = {0};
-
-	xrt_prober_list_video_devices(xp, on_video_device, &finder);
-
-
-	if (finder.xfs == NULL) {
-		return NULL;
-	}
-
-	bool use_old_rgb = debug_get_bool_option_ht_use_old_rgb();
-
-	struct t_hand_tracking_sync *sync;
-
-	if (use_old_rgb) {
-		sync = t_hand_tracking_sync_old_rgb_create(calib);
-	} else {
-
-		struct t_image_boundary_info info;
-		info.views[0].type = HT_IMAGE_BOUNDARY_CIRCLE;
-		info.views[1].type = HT_IMAGE_BOUNDARY_CIRCLE;
-
-
-		//!@todo This changes by like 50ish pixels from device to device. For now, the solution is simple: just
-		//! make the circle a bit bigger than we'd like.
-		// Maybe later we can do vignette calibration? Write a tiny optimizer that tries to fit Index's
-		// gradient? Unsure.
-		info.views[0].boundary.circle.normalized_center.x = 0.5f;
-		info.views[0].boundary.circle.normalized_center.y = 0.5f;
-
-		info.views[1].boundary.circle.normalized_center.x = 0.5f;
-		info.views[1].boundary.circle.normalized_center.y = 0.5f;
-
-		info.views[0].boundary.circle.normalized_radius = 0.55;
-		info.views[1].boundary.circle.normalized_radius = 0.55;
-
-		sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA, info);
-	}
-
-	struct ht_device *htd = ht_device_create_common(calib, true, &finder.xfctx, sync);
-
-	struct xrt_frame_sink *tmp = NULL;
-
-	u_sink_stereo_sbs_to_slam_sbs_create(&htd->xfctx, &htd->async->left, &htd->async->right, &tmp);
-
-	if (use_old_rgb) {
-		u_sink_create_format_converter(&htd->xfctx, XRT_FORMAT_R8G8B8, tmp, &tmp);
-	} else {
-		u_sink_create_format_converter(&htd->xfctx, XRT_FORMAT_L8, tmp, &tmp);
-	}
-
-	// This puts the format converter on its own thread, so that nothing gets backed up if it runs slower
-	// than the native camera framerate.
-	u_sink_simple_queue_create(&htd->xfctx, tmp, &tmp);
-
-	struct xrt_fs_mode *modes = NULL;
-	uint32_t count;
-
-	xrt_fs_enumerate_modes(finder.xfs, &modes, &count);
-
-
-	bool found_mode = false;
-	uint32_t selected_mode = 0;
-
-	for (; selected_mode < count; selected_mode++) {
-		if (modes[selected_mode].format == XRT_FORMAT_YUYV422) {
-			found_mode = true;
-			break;
-		}
-	}
-
-	if (!found_mode) {
-		selected_mode = 0;
-		HT_WARN(htd, "Couldn't find desired camera mode! Something's probably wrong.");
-	}
-
-	free(modes);
-
-	xrt_fs_stream_start(finder.xfs, tmp, XRT_FS_CAPTURE_TYPE_TRACKING, selected_mode);
-
-	HT_DEBUG(htd, "Hand Tracker initialized!");
-
-	return &htd->base;
 }
 
 int
