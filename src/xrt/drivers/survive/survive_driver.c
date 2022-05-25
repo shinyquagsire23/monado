@@ -1341,8 +1341,6 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 		out_xdevs[out_idx++] = &ss->hmd->base;
 	}
 
-	bool found_controllers = false;
-
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 
 		if (out_idx == XRT_MAX_DEVICES_PER_PROBE - 1) {
@@ -1353,35 +1351,8 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 
 		if (ss->controllers[i] != NULL) {
 			out_xdevs[out_idx++] = &ss->controllers[i]->base;
-			found_controllers = true;
 		}
 	}
-
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	// We want to enter this codepath when we find a HMD but no controllers.
-	if ((ss->hmd != NULL) && !found_controllers) {
-		struct t_stereo_camera_calibration *cal = NULL;
-
-		struct xrt_pose head_in_left_cam;
-		vive_get_stereo_camera_calibration(&ss->hmd->hmd.config, &cal, &head_in_left_cam);
-
-		struct xrt_device *ht = ht_device_create_index(xp, cal);
-		if (ht != NULL) { // Returns NULL if there's a problem and the hand tracker can't start. By no means a
-			          // fatal error.
-			struct xrt_device *wrap =
-			    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, &ss->hmd->base,
-			                                   XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
-			struct xrt_device *two_hands[2];
-			cemu_devices_create(&ss->hmd->base, wrap, two_hands);
-
-			out_xdevs[out_idx++] = two_hands[0];
-			out_xdevs[out_idx++] = two_hands[1];
-		}
-		// Don't need it anymore. And it's not even created unless we enter this codepath, which is somewhat
-		// hard.
-		t_stereo_camera_calibration_reference(&cal, NULL);
-	}
-#endif
 
 
 	survive_already_initialized = true;
