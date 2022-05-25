@@ -272,7 +272,7 @@ static bool handle_changed_image_size(HandTracking *htd, xrt_size &new_one_view_
 	bool good = (lcm_h_calib == lcm_h_new) && (lcm_w_calib == lcm_w_new);
 
 	if (!good) {
-		HT_WARN(htd, "Can't process this frame, wrong aspect ratio.");
+		HT_WARN(htd, "Can't process this frame, wrong aspect ratio. What we wanted: %dx%d, what we got: %dx%d", lcm_h_calib, lcm_w_calib, lcm_h_new, lcm_w_new);
 		return false;
 	}
 
