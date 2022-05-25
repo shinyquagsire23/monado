@@ -227,8 +227,18 @@ run_func(void *ptr)
 	mc->wait_thread.alive = true;
 	os_thread_helper_signal_locked(&mc->wait_thread.oth);
 
+	/*
+	 * One can view the layer_commit function and the wait thread as a
+	 * producer/consumer pair. This loop is the consumer side of that pair.
+	 * We look for either a fence or a semaphore on each loop, if none are
+	 * found we check if we are running then wait on the conditional
+	 * variable once again waiting to be signalled by the producer.
+	 */
 	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {
-
+		/*
+		 * Here we wait for the either a semaphore or a fence, if
+		 * neither has been set we wait/sleep here (again).
+		 */
 		if (mc->wait_thread.xcsem == NULL && mc->wait_thread.xcf == NULL) {
 			// Spurious wakeups are handled below.
 			os_thread_helper_wait_locked(&mc->wait_thread.oth);
