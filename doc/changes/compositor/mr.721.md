@@ -2,6 +2,7 @@
 - mr.754
 - mr.759
 - mr.1323
+- mr.1346
 - issue.171
 ---
 multi: Introduce a new multi client compositor layer, this allows rendering code
