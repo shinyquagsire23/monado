@@ -241,8 +241,8 @@ endif()
 
 if(XRT_BUILD_DRIVER_SURVIVE)
 	add_library(
-		drv_survive STATIC survive/survive_driver.c survive/survive_driver.h
-				   survive/survive_interface.h survive/survive_prober.c
+		drv_survive STATIC survive/survive_driver.c 
+				   survive/survive_interface.h 
 		)
 	target_link_libraries(
 		drv_survive

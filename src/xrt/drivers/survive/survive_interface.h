@@ -10,6 +10,11 @@
 
 #pragma once
 
+
+#include "xrt/xrt_results.h"
+#include "xrt/xrt_defines.h"
+#include "vive/vive_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,13 +26,8 @@ extern "C" {
  * @brief
  */
 
-/*!
- * Create a probe for libsurvive
- *
- * @ingroup drv_survive
- */
-struct xrt_auto_prober *
-survive_create_auto_prober();
+int
+survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive_config);
 
 #ifdef __cplusplus
 }

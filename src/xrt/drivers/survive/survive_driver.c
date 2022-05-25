@@ -48,14 +48,8 @@
 #include "vive/vive_config.h"
 #include "vive/vive_bindings.h"
 
-#include "../ht/ht_interface.h"
-#include "../multi_wrapper/multi.h"
-#include "../ht_ctrl_emu/ht_ctrl_emu_interface.h"
-#include "xrt/xrt_config_drivers.h"
 
 #include "util/u_trace_marker.h"
-
-#include "survive_driver.h"
 
 // If we haven't gotten a config for devices this long after startup, just start without those devices
 #define DEFAULT_WAIT_TIMEOUT 3.5f
@@ -67,9 +61,6 @@
 
 //! excl HMD we support 16 devices (controllers, trackers, ...)
 #define MAX_TRACKED_DEVICE_COUNT 16
-
-// initializing survive_driver once creates xrt_devices for all connected devices
-static bool survive_already_initialized = false;
 
 DEBUG_GET_ONCE_BOOL_OPTION(survive_disable_hand_emulation, "SURVIVE_DISABLE_HAND_EMULATION", false)
 
@@ -1242,52 +1233,9 @@ run_event_thread(void *ptr)
 	return NULL;
 }
 
-
-static void
-survive_get_user_config(struct survive_system *ss)
-{
-	// Set defaults
-	ss->wait_timeout = DEFAULT_WAIT_TIMEOUT;
-
-	// Open and parse file
-	struct u_config_json wrap = {0};
-	u_config_json_open_or_create_main_file(&wrap);
-	if (!wrap.file_loaded) {
-		return;
-	}
-
-	// Find the dict we care about in the file. It might not be there; if so return early.
-	cJSON *config_json = cJSON_GetObjectItemCaseSensitive(wrap.root, "config_survive");
-	if (config_json == NULL) {
-		return;
-	}
-
-	// Get wait timeout key. No need to null-check - read u_json_get_float.
-	cJSON *wait_timeout = cJSON_GetObjectItemCaseSensitive(config_json, "wait_timeout");
-	u_json_get_float(wait_timeout, &ss->wait_timeout);
-
-	// Log
-	U_LOG_D("Wait timeout is %f seconds!", ss->wait_timeout);
-
-	// Clean up after ourselves
-	cJSON_Delete(wrap.root);
-	return;
-}
-
 int
-survive_device_autoprobe(struct xrt_auto_prober *xap,
-                         cJSON *attached_data,
-                         bool no_hmds,
-                         struct xrt_prober *xp,
-                         struct xrt_device **out_xdevs)
+survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive_config)
 {
-	if (survive_already_initialized) {
-		U_LOG_I(
-		    "Skipping libsurvive initialization, already "
-		    "initialized");
-		return 0;
-	}
-
 	SurviveSimpleContext *actx = NULL;
 #if 1
 	char *survive_args[] = {
@@ -1303,7 +1251,7 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 
 	if (!actx) {
 		U_LOG_E("failed to init survive");
-		return false;
+		return 0;
 	}
 
 	struct survive_system *ss = U_TYPED_CALLOC(struct survive_system);
@@ -1320,15 +1268,13 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 
 	ss->log_level = debug_get_log_option_survive_log();
 
-	survive_get_user_config(ss);
+	ss->wait_timeout = DEFAULT_WAIT_TIMEOUT;
+
 
 	while (!add_connected_devices(ss)) {
 		U_LOG_IFL_E(ss->log_level, "Failed to get device config from survive");
 		continue;
 	}
-
-	// U_LOG_D("Survive HMD %p, controller %p %p", (void *)ss->hmd,
-	//        (void *)ss->controllers[0], (void *)ss->controllers[1]);
 
 	if (ss->log_level <= U_LOGGING_DEBUG) {
 		if (ss->hmd) {
@@ -1337,8 +1283,10 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 	}
 
 	int out_idx = 0;
-	if (ss->hmd && !no_hmds) {
+
+	if (ss->hmd != NULL) {
 		out_xdevs[out_idx++] = &ss->hmd->base;
+		*out_vive_config = &ss->hmd->hmd.config;
 	}
 
 	for (int i = 0; i < MAX_TRACKED_DEVICE_COUNT; i++) {
@@ -1353,9 +1301,6 @@ survive_device_autoprobe(struct xrt_auto_prober *xap,
 			out_xdevs[out_idx++] = &ss->controllers[i]->base;
 		}
 	}
-
-
-	survive_already_initialized = true;
 
 	// Mutex before thread.
 	int ret = os_mutex_init(&ss->lock);
