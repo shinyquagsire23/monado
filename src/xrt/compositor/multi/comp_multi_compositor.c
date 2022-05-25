@@ -124,6 +124,14 @@ drain_events(struct multi_compositor *mc)
  *
  */
 
+static bool
+is_pushed_or_waiting_locked(struct multi_compositor *mc)
+{
+	return mc->wait_thread.waiting ||     //
+	       mc->wait_thread.xcf != NULL || //
+	       mc->wait_thread.xcsem != NULL; //
+}
+
 static void
 wait_fence(struct xrt_compositor_fence **xcf_ptr)
 {
@@ -305,7 +313,7 @@ static void
 wait_for_wait_thread_locked(struct multi_compositor *mc)
 {
 	// Should we wait for the last frame.
-	if (mc->wait_thread.waiting) {
+	if (is_pushed_or_waiting_locked(mc)) {
 		COMP_TRACE_IDENT(blocked);
 
 		// There should only be one thread entering here.
