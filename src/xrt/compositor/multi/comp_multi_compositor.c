@@ -293,8 +293,11 @@ run_func(void *ptr)
 
 		os_thread_helper_lock(&mc->wait_thread.oth);
 
-		// Finally no longer waiting.
-		//! @todo Move to before wait_for_scheduled_free?
+		/*
+		 * Finally no longer waiting, this must be done after
+		 * wait_for_scheduled_free because it moves the slots/layers
+		 * from progress to scheduled to be picked up by the compositor.
+		 */
 		mc->wait_thread.waiting = false;
 
 		if (mc->wait_thread.blocked) {
