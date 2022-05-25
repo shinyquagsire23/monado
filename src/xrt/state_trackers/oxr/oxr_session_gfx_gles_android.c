@@ -59,6 +59,12 @@ oxr_session_populate_gles_android(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED, "Call to getProcAddress(eglQueryContext) failed");
 	}
 
+	if (next->context == EGL_NO_CONTEXT) {
+		dlclose(so);
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
+		                 "XrGraphicsBindingOpenGLESAndroidKHR has EGL_NO_CONTEXT");
+	}
+
 	if (!eglQueryContext(next->display, next->context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
 		dlclose(so);
 		return oxr_error(log, XR_ERROR_INITIALIZATION_FAILED,
