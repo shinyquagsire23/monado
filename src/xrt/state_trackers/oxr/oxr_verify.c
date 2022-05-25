@@ -621,7 +621,8 @@ oxr_verify_XrGraphicsBindingD3D11KHR(struct oxr_logger *log, const XrGraphicsBin
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
 	}
 	if (next->device == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "XrGraphicsBindingD3D11KHR::device cannot be NULL");
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID,
+		                 "XrGraphicsBindingD3D11KHR::device cannot be NULL");
 	}
 	return XR_SUCCESS;
 }
