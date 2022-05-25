@@ -223,6 +223,10 @@ run_func(void *ptr)
 
 	os_thread_helper_lock(&mc->wait_thread.oth);
 
+	// Signal the start funtion that we are enterting the loop.
+	mc->wait_thread.alive = true;
+	os_thread_helper_signal_locked(&mc->wait_thread.oth);
+
 	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {
 
 		if (mc->wait_thread.xcsem == NULL && mc->wait_thread.xcf == NULL) {
@@ -922,6 +926,16 @@ multi_compositor_create(struct multi_system_compositor *msc,
 
 	// Last start the wait thread.
 	os_thread_helper_start(&mc->wait_thread.oth, run_func, mc);
+
+	os_thread_helper_lock(&mc->wait_thread.oth);
+
+	// Wait for the wait thread to fully start.
+	while (!mc->wait_thread.alive) {
+		os_thread_helper_wait_locked(&mc->wait_thread.oth);
+	}
+
+	os_thread_helper_unlock(&mc->wait_thread.oth);
+
 
 	*out_xcn = &mc->base;
 

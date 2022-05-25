@@ -143,6 +143,9 @@ struct multi_compositor
 		//! The wait thread itself
 		struct os_thread_helper oth;
 
+		//! Have we gotten to the loop?
+		bool alive;
+
 		//! Is the thread waiting, if so the client should block.
 		bool waiting;
 
