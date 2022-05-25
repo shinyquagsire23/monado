@@ -223,14 +223,14 @@ run_func(void *ptr)
 
 	os_thread_helper_lock(&mc->wait_thread.oth);
 
-	// Signal the start funtion that we are enterting the loop.
+	// Signal the start function that we are enterting the loop.
 	mc->wait_thread.alive = true;
 	os_thread_helper_signal_locked(&mc->wait_thread.oth);
 
 	while (os_thread_helper_is_running_locked(&mc->wait_thread.oth)) {
 
 		if (mc->wait_thread.xcsem == NULL && mc->wait_thread.xcf == NULL) {
-			//! @todo what condition should we spin on here to handle spurious wakeups?
+			// Spurious wakeups are handled below.
 			os_thread_helper_wait_locked(&mc->wait_thread.oth);
 			// Fall through here on stopping to clean up and outstanding waits.
 		}
@@ -240,12 +240,13 @@ run_func(void *ptr)
 		struct xrt_compositor_semaphore *xcsem = mc->wait_thread.xcsem; // No need to ref, a move.
 		uint64_t value = mc->wait_thread.value;
 
+		// Ok to clear these on spurious wakeup as they are empty then anyways.
 		mc->wait_thread.frame_id = 0;
 		mc->wait_thread.xcf = NULL;
 		mc->wait_thread.xcsem = NULL;
 		mc->wait_thread.value = 0;
 
-		// We are being stopped, loop back and check running.
+		// We are being stopped, or a spurious wakeup, loop back and check running.
 		if (xcf == NULL && xcsem == NULL) {
 			continue;
 		}
