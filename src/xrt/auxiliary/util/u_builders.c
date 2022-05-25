@@ -20,12 +20,15 @@
 struct xrt_prober_device *
 u_builder_find_prober_device(struct xrt_prober_device *const *xpdevs,
                              size_t xpdev_count,
+                             uint16_t vendor_id,
                              uint16_t product_id,
-                             uint16_t vendor_id)
+                             enum xrt_bus_type bus_type)
 {
 	for (size_t i = 0; i < xpdev_count; i++) {
 		struct xrt_prober_device *xpdev = xpdevs[i];
-		if (xpdev->product_id != product_id || xpdev->vendor_id != vendor_id) {
+		if (xpdev->product_id != product_id || //
+		    xpdev->vendor_id != vendor_id ||   //
+		    xpdev->bus != bus_type) {
 			continue;
 		}
 

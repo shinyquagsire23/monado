@@ -230,7 +230,8 @@ rgb_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp
 	 */
 
 #ifdef XRT_BUILD_DRIVER_PSVR
-	struct xrt_prober_device *psvr = u_builder_find_prober_device(xpdevs, xpdev_count, PSVR_VID, PSVR_PID);
+	struct xrt_prober_device *psvr =
+	    u_builder_find_prober_device(xpdevs, xpdev_count, PSVR_VID, PSVR_PID, XRT_BUS_TYPE_USB);
 	if (psvr != NULL) {
 		estimate->certain.head = true;
 	}
@@ -322,7 +323,8 @@ rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 	struct xrt_device *psmv_purple = NULL;
 
 #ifdef XRT_BUILD_DRIVER_PSVR
-	struct xrt_prober_device *psvr = u_builder_find_prober_device(xpdevs, xpdev_count, PSVR_VID, PSVR_PID);
+	struct xrt_prober_device *psvr =
+	    u_builder_find_prober_device(xpdevs, xpdev_count, PSVR_VID, PSVR_PID, XRT_BUS_TYPE_USB);
 	if (psvr != NULL) {
 		head = psvr_device_create(build.psvr);
 	}

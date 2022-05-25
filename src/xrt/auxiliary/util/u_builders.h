@@ -59,8 +59,9 @@ struct u_builder_search_results
 struct xrt_prober_device *
 u_builder_find_prober_device(struct xrt_prober_device *const *xpdevs,
                              size_t xpdev_count,
+                             uint16_t vendor_id,
                              uint16_t product_id,
-                             uint16_t vendor_id);
+                             enum xrt_bus_type bus_type);
 
 /*!
  * Find all of the @ref xrt_prober_device that matches any in the given list of
