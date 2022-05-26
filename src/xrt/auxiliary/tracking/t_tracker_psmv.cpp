@@ -355,13 +355,17 @@ run(TrackerPSMV &t)
 	os_thread_helper_lock(&t.oth);
 
 	while (os_thread_helper_is_running_locked(&t.oth)) {
+
 		// No data
 		if (!t.has_imu || t.frame == NULL) {
 			os_thread_helper_wait_locked(&t.oth);
-		}
 
-		if (!os_thread_helper_is_running_locked(&t.oth)) {
-			break;
+			/*
+			 * Loop back to the top to check if we should stop,
+			 * also handles spurious wakeups by re-checking the
+			 * condition in the if case. Essentially two loops.
+			 */
+			continue;
 		}
 
 		// Take a reference on the current frame, this keeps it alive
