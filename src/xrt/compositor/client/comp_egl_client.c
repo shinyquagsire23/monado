@@ -72,50 +72,34 @@ typedef EGLBoolean
  *
  */
 
-struct old_helper
-{
-	EGLDisplay dpy;
-	EGLContext ctx;
-	EGLSurface read, draw;
-};
-
-static inline struct old_helper
-old_save(void)
-{
-	struct old_helper old = {
-	    .dpy = eglGetCurrentDisplay(),
-	    .ctx = EGL_NO_CONTEXT,
-	    .read = EGL_NO_SURFACE,
-	    .draw = EGL_NO_SURFACE,
-	};
-
-	// Do we have a valid display?
-	if (old.dpy != EGL_NO_DISPLAY) {
-		old.ctx = eglGetCurrentContext();
-		old.read = eglGetCurrentSurface(EGL_READ);
-		old.draw = eglGetCurrentSurface(EGL_DRAW);
-	}
-
-	return old;
-}
-
 static inline void
-old_restore(struct old_helper *old, EGLDisplay current_dpy)
+save_context(struct client_egl_context *ctx)
 {
-	if (old->dpy == EGL_NO_DISPLAY) {
-		// There were no display, just unbind the context.
-		if (eglMakeCurrent(current_dpy, EGL_NO_CONTEXT, EGL_NO_SURFACE, EGL_NO_SURFACE)) {
-			return;
-		}
-	} else {
-		if (eglMakeCurrent(old->dpy, old->draw, old->read, old->ctx)) {
-			return;
-		}
-	}
+	ctx->dpy = eglGetCurrentDisplay();
+	ctx->ctx = EGL_NO_CONTEXT;
+	ctx->read = EGL_NO_SURFACE;
+	ctx->draw = EGL_NO_SURFACE;
 
-	EGL_ERROR("Failed to make old EGL context current! (%p, %p, %p, %p)", old->dpy, old->draw, old->read, old->ctx);
+	if (ctx->dpy != EGL_NO_DISPLAY) {
+		ctx->ctx = eglGetCurrentContext();
+		ctx->read = eglGetCurrentSurface(EGL_READ);
+		ctx->draw = eglGetCurrentSurface(EGL_DRAW);
+	}
 }
 
+static inline bool
+restore_context(struct client_egl_context *ctx)
+{
+	/* We're using the current display if we're trying to restore a null context */
+	EGLDisplay dpy = ctx->dpy == EGL_NO_DISPLAY ? eglGetCurrentDisplay() : ctx->dpy;
+
+	if (dpy == EGL_NO_DISPLAY) {
+		/* If the current display is also null then the call is a no-op */
+		return true;
+	}
+
+	return eglMakeCurrent(dpy, ctx->draw, ctx->read, ctx->ctx);
+}
 
 /*
  *
@@ -207,7 +191,7 @@ insert_fence_android_native(struct xrt_compositor *xc, xrt_graphics_sync_handle_
 	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
 
 	*out_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
-	EGLDisplay dpy = ceglc->dpy;
+	EGLDisplay dpy = ceglc->current.dpy;
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 
@@ -239,14 +223,23 @@ insert_fence_android_native(struct xrt_compositor *xc, xrt_graphics_sync_handle_
 static xrt_result_t
 client_egl_context_begin(struct xrt_compositor *xc)
 {
-	//! @todo Implement
+	struct client_egl_compositor *eglc = client_egl_compositor(xc);
+
+	save_context(&eglc->previous);
+	struct client_egl_context *cur = &eglc->current;
+
+	if (!eglMakeCurrent(cur->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, cur->ctx)) {
+		return XRT_ERROR_OPENGL;
+	}
 	return XRT_SUCCESS;
 }
 
 static void
 client_egl_context_end(struct xrt_compositor *xc)
 {
-	//! @todo Implement
+	struct client_egl_compositor *eglc = client_egl_compositor(xc);
+
+	restore_context(&eglc->previous);
 }
 
 static void
@@ -286,8 +279,9 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	// On Android this extension is 'hidden'.
 	ensure_native_fence_is_loaded(display, get_gl_procaddr);
 
-	// Save old display, context and drawables.
-	struct old_helper old = old_save();
+	// Save old EGL display, context and drawables.
+	struct client_egl_context old = {0};
+	save_context(&old);
 
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
 		EGL_ERROR("eglMakeCurrent: %s\n\tFailed to make EGL context current", egl_error_str(eglGetError()));
@@ -297,7 +291,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	EGLint egl_client_type;
 	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
-		old_restore(&old, display);
+		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -308,7 +302,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		break;
 #else
 		EGL_ERROR("OpenGL support not including in this runtime build");
-		old_restore(&old, display);
+		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 #endif
 
@@ -318,14 +312,15 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		break;
 #else
 		EGL_ERROR("OpenGL|ES support not including in this runtime build");
-		old_restore(&old, display);
+		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 #endif
 	default: EGL_ERROR("Unsupported EGL client type"); return XRT_ERROR_OPENGL;
 	}
 
 	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
-	ceglc->dpy = display;
+	ceglc->current.dpy = display;
+	ceglc->current.ctx = context;
 
 	client_gl_swapchain_create_func_t sc_create = NULL;
 
@@ -365,7 +360,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		EGL_ERROR(
 		    "Could not find a required extension: need either EGL_EXT_image_dma_buf_import or "
 		    "GL_EXT_memory_object_fd");
-		old_restore(&old, display);
+		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -396,12 +391,12 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	if (!bret) {
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
-		old_restore(&old, display);
+		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 	}
 
 	ceglc->base.base.base.destroy = client_egl_compositor_destroy;
-	old_restore(&old, display);
+	restore_context(&old);
 	*out_xcgl = &ceglc->base.base;
 
 	return XRT_SUCCESS;

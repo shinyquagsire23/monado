@@ -20,6 +20,12 @@
 extern "C" {
 #endif
 
+struct client_egl_context
+{
+	EGLDisplay dpy;
+	EGLContext ctx;
+	EGLSurface read, draw;
+};
 
 /*!
  * EGL based compositor, carries the extra needed EGL information needed by the
@@ -30,8 +36,7 @@ extern "C" {
 struct client_egl_compositor
 {
 	struct client_gl_compositor base;
-
-	EGLDisplay dpy;
+	struct client_egl_context current, previous;
 };
 
 /*!

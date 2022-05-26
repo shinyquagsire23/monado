@@ -200,7 +200,7 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.base.image_count =
 	    native_xsc->image_count; // Fetch the number of images from the native swapchain.
 	sc->base.xscn = xscn;
-	sc->display = ceglc->dpy;
+	sc->display = ceglc->current.dpy;
 
 	struct xrt_swapchain_gl *xscgl = &sc->base.base;
 
