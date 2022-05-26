@@ -610,6 +610,16 @@ render_resources_init(struct render_resources *r,
 
 	C(vk_create_pipeline_cache(vk, &r->pipeline_cache));
 
+	VkCommandPoolCreateInfo command_pool_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+	    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+	    .queueFamilyIndex = vk->queue_family_index,
+	};
+
+	C(vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &r->cmd_pool));
+
+	C(vk_create_command_buffer(vk, r->cmd_pool, &r->cmd));
+
 
 	/*
 	 * Mesh static.
@@ -823,6 +833,7 @@ render_resources_close(struct render_resources *r)
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
+	D(CommandPool, r->cmd_pool);
 	D(DescriptorPool, r->mesh.descriptor_pool);
 	D(QueryPool, r->query_pool);
 	render_buffer_close(vk, &r->mesh.vbo);

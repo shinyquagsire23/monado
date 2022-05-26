@@ -835,7 +835,7 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
 
 /*
  *
- * Helpers for writing command buffers.
+ * Helpers for writing command buffers using the global command pool.
  *
  */
 
@@ -1010,20 +1010,20 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
  */
 
 /*!
- * Creates a new command buffer using the bundle's pool, takes the cmd_pool_mutex.
+ * Creates a new command buffer using a specified pool.
  *
  * Does error logging.
  */
 VkResult
-vk_create_command_buffer(struct vk_bundle *vk, VkCommandBuffer *out_command_buffer);
+vk_create_command_buffer(struct vk_bundle *vk, VkCommandPool pool, VkCommandBuffer *out_command_buffer);
 
 /*!
- * Destroys a command buffer, takes the cmd_pool_mutex.
+ * Destroys a command buffer.
  *
  * Does error logging.
  */
 void
-vk_destroy_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
+vk_destroy_command_buffer(struct vk_bundle *vk, VkCommandPool pool, VkCommandBuffer command_buffer);
 
 /*!
  * Issues the vkBeginCommandBuffer function on the command buffer.

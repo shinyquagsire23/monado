@@ -212,12 +212,17 @@ struct render_resources
 	//! Shared for all rendering.
 	VkPipelineCache pipeline_cache;
 
+	VkCommandPool cmd_pool;
+
 	VkQueryPool query_pool;
 
 
 	/*
 	 * Static
 	 */
+
+	//! Command buffer for recording everything.
+	VkCommandBuffer cmd;
 
 	struct
 	{
@@ -478,9 +483,6 @@ struct render_gfx
 	//! The current target we are rendering too, can change during command building.
 	struct render_gfx_target_resources *rtr;
 
-	//! Command buffer where all commands are recorded.
-	VkCommandBuffer cmd;
-
 	//! Holds per view data.
 	struct render_gfx_view views[2];
 
@@ -618,9 +620,6 @@ struct render_compute
 {
 	//! Shared resources.
 	struct render_resources *r;
-
-	//! Command buffer where all commands are recorded.
-	VkCommandBuffer cmd;
 
 	//! Shared descriptor set between clear, projection and timewarp.
 	VkDescriptorSet descriptor_set;

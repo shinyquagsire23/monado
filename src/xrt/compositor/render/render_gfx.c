@@ -499,12 +499,6 @@ render_gfx_init(struct render_gfx *rr, struct render_resources *r)
 
 
 	/*
-	 * Per rendering.
-	 */
-
-	C(vk_create_command_buffer(vk, &rr->cmd));
-
-	/*
 	 * Mesh per view
 	 */
 
@@ -528,26 +522,21 @@ render_gfx_begin(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	VkResult ret = vk_begin_command_buffer(vk, rr->cmd);
-	if (ret != VK_SUCCESS) {
-		os_mutex_unlock(&vk->cmd_pool_mutex);
-		return false;
-	}
+	C(vk->vkResetCommandPool(vk->device, rr->r->cmd_pool, 0));
+	C(vk_begin_command_buffer(vk, rr->r->cmd));
 
 	vk->vkCmdResetQueryPool( //
-	    rr->cmd,             // commandBuffer
+	    rr->r->cmd,          // commandBuffer
 	    rr->r->query_pool,   // queryPool
 	    0,                   // firstQuery
 	    2);                  // queryCount
 
 	vk->vkCmdWriteTimestamp(               //
-	    rr->cmd,                           // commandBuffer
+	    rr->r->cmd,                        // commandBuffer
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // pipelineStage
 	    rr->r->query_pool,                 // queryPool
 	    0);                                // query
 
-	// Yes we leave the mutex locked.
 	return true;
 }
 
@@ -557,16 +546,12 @@ render_gfx_end(struct render_gfx *rr)
 	struct vk_bundle *vk = vk_from_rr(rr);
 
 	vk->vkCmdWriteTimestamp(                  //
-	    rr->cmd,                              // commandBuffer
+	    rr->r->cmd,                           // commandBuffer
 	    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // pipelineStage
 	    rr->r->query_pool,                    // queryPool
 	    1);                                   // query
 
-	VkResult ret = vk_end_command_buffer(vk, rr->cmd);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	if (ret != VK_SUCCESS) {
-		return false;
-	}
+	C(vk_end_command_buffer(vk, rr->r->cmd));
 
 	return true;
 }
@@ -576,9 +561,6 @@ render_gfx_close(struct render_gfx *rr)
 {
 	struct vk_bundle *vk = vk_from_rr(rr);
 	struct render_resources *r = rr->r;
-
-	vk_destroy_command_buffer(vk, rr->cmd);
-	rr->cmd = VK_NULL_HANDLE;
 
 	// Reclaimed by vkResetDescriptorPool.
 	rr->views[0].mesh.descriptor_set = VK_NULL_HANDLE;
@@ -609,7 +591,7 @@ render_gfx_begin_target(struct render_gfx *rr, struct render_gfx_target_resource
 
 	// This is shared across both views.
 	begin_render_pass(vk,                    //
-	                  rr->cmd,               //
+	                  rr->r->cmd,            //
 	                  rr->rtr->render_pass,  //
 	                  rr->rtr->framebuffer,  //
 	                  rr->rtr->data.width,   //
@@ -627,7 +609,7 @@ render_gfx_end_target(struct render_gfx *rr)
 	rr->rtr = NULL;
 
 	// Stop the [shared] render pass.
-	vk->vkCmdEndRenderPass(rr->cmd);
+	vk->vkCmdEndRenderPass(rr->r->cmd);
 }
 
 void
@@ -655,7 +637,7 @@ render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewpo
 	    .maxDepth = 1.0f,
 	};
 
-	vk->vkCmdSetViewport(rr->cmd,    // commandBuffer
+	vk->vkCmdSetViewport(rr->r->cmd, // commandBuffer
 	                     0,          // firstViewport
 	                     1,          // viewportCount
 	                     &viewport); // pViewports
@@ -677,10 +659,10 @@ render_gfx_begin_view(struct render_gfx *rr, uint32_t view, struct render_viewpo
 	        },
 	};
 
-	vk->vkCmdSetScissor(rr->cmd,   // commandBuffer
-	                    0,         // firstScissor
-	                    1,         // scissorCount
-	                    &scissor); // pScissors
+	vk->vkCmdSetScissor(rr->r->cmd, // commandBuffer
+	                    0,          // firstScissor
+	                    1,          // scissorCount
+	                    &scissor);  // pScissors
 }
 
 void
@@ -705,7 +687,7 @@ render_gfx_distortion(struct render_gfx *rr)
 
 	VkDescriptorSet descriptor_sets[1] = {v->mesh.descriptor_set};
 	vk->vkCmdBindDescriptorSets(         //
-	    rr->cmd,                         // commandBuffer
+	    r->cmd,                          // commandBuffer
 	    VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
 	    r->mesh.pipeline_layout,         // layout
 	    0,                               // firstSet
@@ -715,7 +697,7 @@ render_gfx_distortion(struct render_gfx *rr)
 	    NULL);                           // pDynamicOffsets
 
 	vk->vkCmdBindPipeline(               //
-	    rr->cmd,                         // commandBuffer
+	    r->cmd,                          // commandBuffer
 	    VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint
 	    rr->rtr->mesh.pipeline);         // pipeline
 
@@ -729,7 +711,7 @@ render_gfx_distortion(struct render_gfx *rr)
 	assert(ARRAY_SIZE(buffers) == ARRAY_SIZE(offsets));
 
 	vk->vkCmdBindVertexBuffers( //
-	    rr->cmd,                // commandBuffer
+	    r->cmd,                 // commandBuffer
 	    0,                      // firstBinding
 	    ARRAY_SIZE(buffers),    // bindingCount
 	    buffers,                // pBuffers
@@ -742,13 +724,13 @@ render_gfx_distortion(struct render_gfx *rr)
 
 	if (r->mesh.index_count_total > 0) {
 		vk->vkCmdBindIndexBuffer(  //
-		    rr->cmd,               // commandBuffer
+		    r->cmd,                // commandBuffer
 		    r->mesh.ibo.buffer,    // buffer
 		    0,                     // offset
 		    VK_INDEX_TYPE_UINT32); // indexType
 
 		vk->vkCmdDrawIndexed(            //
-		    rr->cmd,                     // commandBuffer
+		    r->cmd,                      // commandBuffer
 		    r->mesh.index_counts[view],  // indexCount
 		    1,                           // instanceCount
 		    r->mesh.index_offsets[view], // firstIndex
@@ -756,7 +738,7 @@ render_gfx_distortion(struct render_gfx *rr)
 		    0);                          // firstInstance
 	} else {
 		vk->vkCmdDraw(            //
-		    rr->cmd,              // commandBuffer
+		    r->cmd,               // commandBuffer
 		    r->mesh.vertex_count, // vertexCount
 		    1,                    // instanceCount
 		    0,                    // firstVertex

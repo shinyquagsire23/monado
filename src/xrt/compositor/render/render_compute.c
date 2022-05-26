@@ -262,8 +262,6 @@ render_compute_init(struct render_compute *crc, struct render_resources *r)
 	struct vk_bundle *vk = r->vk;
 	crc->r = r;
 
-	C(vk_create_command_buffer(vk, &crc->cmd));
-
 	C(vk_create_descriptor_set(           //
 	    vk,                               //
 	    r->compute.descriptor_pool,       // descriptor_pool
@@ -278,26 +276,21 @@ render_compute_begin(struct render_compute *crc)
 {
 	struct vk_bundle *vk = vk_from_crc(crc);
 
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	VkResult ret = vk_begin_command_buffer(vk, crc->cmd);
-	if (ret != VK_SUCCESS) {
-		os_mutex_unlock(&vk->cmd_pool_mutex);
-		return false;
-	}
+	C(vk->vkResetCommandPool(vk->device, crc->r->cmd_pool, 0));
+	C(vk_begin_command_buffer(vk, crc->r->cmd));
 
 	vk->vkCmdResetQueryPool( //
-	    crc->cmd,            // commandBuffer
+	    crc->r->cmd,         // commandBuffer
 	    crc->r->query_pool,  // queryPool
 	    0,                   // firstQuery
 	    2);                  // queryCount
 
 	vk->vkCmdWriteTimestamp(               //
-	    crc->cmd,                          // commandBuffer
+	    crc->r->cmd,                       // commandBuffer
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // pipelineStage
 	    crc->r->query_pool,                // queryPool
 	    0);                                // query
 
-	// Yes we leave the mutex locked.
 	return true;
 }
 
@@ -307,16 +300,12 @@ render_compute_end(struct render_compute *crc)
 	struct vk_bundle *vk = vk_from_crc(crc);
 
 	vk->vkCmdWriteTimestamp(                  //
-	    crc->cmd,                             // commandBuffer
+	    crc->r->cmd,                          // commandBuffer
 	    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // pipelineStage
 	    crc->r->query_pool,                   // queryPool
 	    1);                                   // query
 
-	VkResult ret = vk_end_command_buffer(vk, crc->cmd);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	if (ret != VK_SUCCESS) {
-		return false;
-	}
+	C(vk_end_command_buffer(vk, crc->r->cmd));
 
 	return true;
 }
@@ -327,8 +316,6 @@ render_compute_close(struct render_compute *crc)
 	assert(crc->r != NULL);
 
 	struct vk_bundle *vk = vk_from_crc(crc);
-
-	vk_destroy_command_buffer(vk, crc->cmd);
 
 	// Reclaimed by vkResetDescriptorPool.
 	crc->descriptor_set = VK_NULL_HANDLE;
@@ -398,7 +385,7 @@ render_compute_projection_timewarp(struct render_compute *crc,
 
 	vk_cmd_image_barrier_gpu_locked( //
 	    vk,                          //
-	    crc->cmd,                    //
+	    r->cmd,                      //
 	    target_image,                //
 	    0,                           //
 	    VK_ACCESS_SHADER_WRITE_BIT,  //
@@ -427,12 +414,12 @@ render_compute_projection_timewarp(struct render_compute *crc,
 	    crc->descriptor_set);          //
 
 	vk->vkCmdBindPipeline(                        //
-	    crc->cmd,                                 // commandBuffer
+	    r->cmd,                                   // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE,           // pipelineBindPoint
 	    r->compute.distortion_timewarp_pipeline); // pipeline
 
 	vk->vkCmdBindDescriptorSets(        //
-	    crc->cmd,                       // commandBuffer
+	    r->cmd,                         // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
@@ -447,7 +434,7 @@ render_compute_projection_timewarp(struct render_compute *crc,
 	assert(w != 0 && h != 0);
 
 	vk->vkCmdDispatch( //
-	    crc->cmd,      // commandBuffer
+	    r->cmd,        // commandBuffer
 	    w,             // groupCountX
 	    h,             // groupCountY
 	    2);            // groupCountZ
@@ -465,7 +452,7 @@ render_compute_projection_timewarp(struct render_compute *crc,
 	};
 
 	vk->vkCmdPipelineBarrier(                 //
-	    crc->cmd,                             //
+	    r->cmd,                               //
 	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, //
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    //
 	    0,                                    //
@@ -518,7 +505,7 @@ render_compute_projection(struct render_compute *crc,
 
 	vk_cmd_image_barrier_gpu_locked( //
 	    vk,                          //
-	    crc->cmd,                    //
+	    r->cmd,                      //
 	    target_image,                //
 	    0,                           //
 	    VK_ACCESS_SHADER_WRITE_BIT,  //
@@ -547,12 +534,12 @@ render_compute_projection(struct render_compute *crc,
 	    crc->descriptor_set);          //
 
 	vk->vkCmdBindPipeline(               //
-	    crc->cmd,                        // commandBuffer
+	    r->cmd,                          // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE,  // pipelineBindPoint
 	    r->compute.distortion_pipeline); // pipeline
 
 	vk->vkCmdBindDescriptorSets(        //
-	    crc->cmd,                       // commandBuffer
+	    r->cmd,                         // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
@@ -567,7 +554,7 @@ render_compute_projection(struct render_compute *crc,
 	assert(w != 0 && h != 0);
 
 	vk->vkCmdDispatch( //
-	    crc->cmd,      // commandBuffer
+	    r->cmd,        // commandBuffer
 	    w,             // groupCountX
 	    h,             // groupCountY
 	    2);            // groupCountZ
@@ -585,7 +572,7 @@ render_compute_projection(struct render_compute *crc,
 	};
 
 	vk->vkCmdPipelineBarrier(                 //
-	    crc->cmd,                             //
+	    r->cmd,                               //
 	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, //
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    //
 	    0,                                    //
@@ -639,7 +626,7 @@ render_compute_clear(struct render_compute *crc,                 //
 
 	vk_cmd_image_barrier_gpu_locked( //
 	    vk,                          //
-	    crc->cmd,                    //
+	    r->cmd,                      //
 	    target_image,                //
 	    0,                           //
 	    VK_ACCESS_SHADER_WRITE_BIT,  //
@@ -668,12 +655,12 @@ render_compute_clear(struct render_compute *crc,                 //
 	    crc->descriptor_set);          // descriptor_set
 
 	vk->vkCmdBindPipeline(              //
-	    crc->cmd,                       // commandBuffer
+	    r->cmd,                         // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
 	    r->compute.clear_pipeline);     // pipeline
 
 	vk->vkCmdBindDescriptorSets(        //
-	    crc->cmd,                       // commandBuffer
+	    r->cmd,                         // commandBuffer
 	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
 	    r->compute.pipeline_layout,     // layout
 	    0,                              // firstSet
@@ -688,7 +675,7 @@ render_compute_clear(struct render_compute *crc,                 //
 	assert(w != 0 && h != 0);
 
 	vk->vkCmdDispatch( //
-	    crc->cmd,      // commandBuffer
+	    r->cmd,        // commandBuffer
 	    w,             // groupCountX
 	    h,             // groupCountY
 	    2);            // groupCountZ
@@ -706,7 +693,7 @@ render_compute_clear(struct render_compute *crc,                 //
 	};
 
 	vk->vkCmdPipelineBarrier(                 //
-	    crc->cmd,                             //
+	    r->cmd,                               //
 	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, //
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    //
 	    0,                                    //

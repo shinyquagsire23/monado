@@ -882,7 +882,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 
 		renderer_build_rendering(r, rr, rtr, src_samplers, src_image_views, src_norm_rects);
 
-		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		renderer_submit_queue(r, rr->r->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		return;
 	}
@@ -906,7 +906,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
-		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		renderer_submit_queue(r, rr->r->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
@@ -919,7 +919,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
-		renderer_submit_queue(r, rr->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		renderer_submit_queue(r, rr->r->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		// We mark afterwards to not include CPU time spent.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
@@ -1098,7 +1098,7 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 
 	comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
-	renderer_submit_queue(r, crc->cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+	renderer_submit_queue(r, crc->r->cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 }
 
 
