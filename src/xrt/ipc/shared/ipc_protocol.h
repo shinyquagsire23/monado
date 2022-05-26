@@ -20,6 +20,7 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_tracking.h"
 
+#include <sys/types.h>
 
 #define IPC_MSG_SOCK_FILE "monado_comp_ipc"
 #define IPC_MAX_SWAPCHAIN_HANDLES 8
