@@ -10,6 +10,7 @@
 
 #pragma once
 
+#define COMP_MAX_LAYERS 16
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_defines.h"
 

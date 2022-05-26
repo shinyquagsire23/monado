@@ -35,8 +35,6 @@ struct comp_window_peek;
 extern "C" {
 #endif
 
-#define COMP_MAX_LAYERS 16
-
 /*
  *
  * Structs
