@@ -10,6 +10,7 @@
  * @ingroup comp_main
  */
 
+#include "render/render_interface.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_compositor.h"
@@ -970,7 +971,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
  */
 
 static void
-get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
+get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt_pose out_eye[2])
 {
 	COMP_TRACE_MARKER();
 
@@ -1007,8 +1008,365 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_results[2])
 		m_relation_chain_push_pose_if_not_identity(&xrc, &base_space_pose);
 		m_relation_chain_resolve(&xrc, &result);
 
-		out_results[i] = result.pose;
+		out_eye[i] = eye_pose;
+		out_world[i] = result.pose;
 	}
+}
+
+static void
+ensure_scratch_image(struct comp_renderer *r,
+                     struct render_viewport_data *out_l_viewport_data,
+                     struct render_viewport_data *out_r_viewport_data)
+{
+	struct xrt_view *l_v = &r->c->xdev->hmd->views[0];
+	struct xrt_view *r_v = &r->c->xdev->hmd->views[1];
+
+	uint32_t w = MAX(l_v->viewport.w_pixels, r_v->viewport.w_pixels);
+	uint32_t h = MAX(l_v->viewport.h_pixels, r_v->viewport.h_pixels);
+
+	// Adjust size to be bigger, 140%, to match default recommended viewport size.
+	//! @todo Make this match fully, or even match app provided layers.
+	w = (uint32_t)(w * 1.4f);
+	h = (uint32_t)(h * 1.4f);
+
+	struct render_viewport_data l_viewport_data = {
+	    .w = w,
+	    .h = h,
+	    .x = 0,
+	    .y = 0,
+	};
+
+	struct render_viewport_data r_viewport_data = {
+	    .w = w,
+	    .h = h,
+	    .x = w,
+	    .y = 0,
+	};
+
+	VkExtent2D extent = {w * 2, h};
+
+	if (!render_ensure_scratch_image(&r->c->nr, extent)) {
+		U_LOG_E("Failed to create scratch image!");
+		assert(false);
+	}
+
+	*out_l_viewport_data = l_viewport_data;
+	*out_r_viewport_data = r_viewport_data;
+}
+
+static void
+do_layers(struct comp_renderer *r,
+          struct render_compute *crc,
+          const struct comp_layer *layers,
+          const uint32_t layer_count)
+{
+	struct render_viewport_data views[2];
+
+	// Create scratch image and get target views.
+	ensure_scratch_image(r, &views[0], &views[1]);
+
+	struct render_compute_layer_ubo_data *ubo_data =
+	    (struct render_compute_layer_ubo_data *)crc->r->compute.layer.ubo.mapped;
+
+	for (uint32_t i = 0; i < 2; i++) {
+		ubo_data->views[i] = views[i];
+	}
+
+	ubo_data->pre_transforms[0] = crc->r->distortion.uv_to_tanangle[0];
+	ubo_data->pre_transforms[1] = crc->r->distortion.uv_to_tanangle[1];
+
+	VkImage target_image = crc->r->scratch.color.image;
+	VkImageView target_image_view = crc->r->scratch.color.unorm_view; // Have to write in linear
+
+	struct xrt_pose world_poses[2], eye_poses[2];
+	get_view_poses(r, world_poses, eye_poses);
+
+	// Not the transform of the views, but the inverse: actual view matrices.
+	struct xrt_matrix_4x4 world_view_mats[2], eye_view_mats[2];
+	math_matrix_4x4_view_from_pose(&world_poses[0], &world_view_mats[0]);
+	math_matrix_4x4_view_from_pose(&world_poses[1], &world_view_mats[1]);
+	math_matrix_4x4_view_from_pose(&eye_poses[0], &eye_view_mats[0]);
+	math_matrix_4x4_view_from_pose(&eye_poses[1], &eye_view_mats[1]);
+
+	// Tightly pack color and optional depth images.
+	uint32_t cur_image = 0;
+	VkSampler src_samplers[COMP_MAX_IMAGES];
+	VkImageView src_image_views[COMP_MAX_IMAGES];
+
+	for (uint32_t layer_i = 0; layer_i < layer_count; layer_i++) {
+		const struct xrt_layer_data *data = &layers[layer_i].data;
+		const struct comp_layer *layer = &layers[layer_i];
+
+		ubo_data->layer_type[layer_i].val = data->type;
+		ubo_data->layer_type[layer_i].unpremultiplied =
+		    (data->flags & XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT) != 0;
+
+		// Base index into arrays that have a value per view & per layer.
+		uint32_t view_index_for_layer = layer_i * COMP_VIEWS_PER_LAYER;
+
+		//! Stop compositing layers if device's sampled image limit is reached.
+		//! This is necessary until composition can be split in multiple passes.
+		//! @todo: remove this after multi-pass composition is implemented.
+		uint32_t required_image_samplers;
+		switch (data->type) {
+		case XRT_LAYER_STEREO_PROJECTION: required_image_samplers = 2; break;
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH: required_image_samplers = 4; break;
+		case XRT_LAYER_QUAD: required_image_samplers = 1; break;
+		default: required_image_samplers = 0;
+		}
+		//! Exit loop if shader cannot receive more image samplers
+		if (cur_image + required_image_samplers >
+		    crc->r->vk->features.max_per_stage_descriptor_sampled_images) {
+			for (uint32_t i = layer_i; i < layer_count; i++) {
+				ubo_data->layer_type[i].val = UINT32_MAX; //! @todo make this not needed.
+			}
+			break;
+		}
+
+
+		switch (data->type) {
+		case XRT_LAYER_STEREO_PROJECTION_DEPTH:
+		case XRT_LAYER_STEREO_PROJECTION: {
+			const struct xrt_layer_projection_view_data *lvd = NULL;
+			const struct xrt_layer_projection_view_data *rvd = NULL;
+			const struct xrt_layer_depth_data *l_dvd = NULL;
+			const struct xrt_layer_depth_data *r_dvd = NULL;
+
+			if (data->type == XRT_LAYER_STEREO_PROJECTION) {
+				const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
+				lvd = &stereo->l;
+				rvd = &stereo->r;
+			} else {
+				const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
+				lvd = &stereo->l;
+				rvd = &stereo->r;
+				l_dvd = &stereo->l_d;
+				r_dvd = &stereo->r_d;
+			}
+
+			uint32_t left_array_index = lvd->sub.array_index;
+			uint32_t right_array_index = rvd->sub.array_index;
+			const struct comp_swapchain_image *left = &layer->sc_array[0]->images[lvd->sub.image_index];
+			const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
+
+			// Left
+			src_samplers[cur_image] = left->sampler;
+			src_image_views[cur_image] = get_image_view(left, data->flags, left_array_index);
+			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image++;
+
+			// Right
+			src_samplers[cur_image] = right->sampler;
+			src_image_views[cur_image] = get_image_view(right, data->flags, right_array_index);
+			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image++;
+
+			// Depth
+			if (data->type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+				uint32_t d_left_array_index = lvd->sub.array_index;
+				uint32_t d_right_array_index = rvd->sub.array_index;
+				const struct comp_swapchain_image *d_left =
+				    &layer->sc_array[2]->images[l_dvd->sub.image_index];
+				const struct comp_swapchain_image *d_right =
+				    &layer->sc_array[3]->images[r_dvd->sub.image_index];
+
+				// Depth left
+				src_samplers[cur_image] = d_left->sampler;
+				src_image_views[cur_image] = get_image_view(d_left, data->flags, d_left_array_index);
+				ubo_data->images_samplers[view_index_for_layer + 0].images[1] = cur_image++;
+
+				// Depth right
+				src_samplers[cur_image] = d_right->sampler;
+				src_image_views[cur_image] = get_image_view(d_right, data->flags, d_right_array_index);
+				ubo_data->images_samplers[view_index_for_layer + 1].images[1] = cur_image++;
+			}
+
+			struct xrt_normalized_rect *post_transforms = &ubo_data->post_transforms[view_index_for_layer];
+			post_transforms[0] = lvd->sub.norm_rect;
+			post_transforms[1] = rvd->sub.norm_rect;
+			if (data->flip_y) {
+				post_transforms[0].h = -post_transforms[0].h;
+				post_transforms[0].y = 1.0f + post_transforms[0].y;
+				post_transforms[1].h = -post_transforms[1].h;
+				post_transforms[1].y = 1.0f + post_transforms[1].y;
+			}
+
+			// unused if timewarp is off
+			if (!r->c->debug.atw_off) {
+				render_calc_time_warp_matrix(                         //
+				    &lvd->pose,                                       //
+				    &lvd->fov,                                        //
+				    &world_poses[0],                                  //
+				    &ubo_data->transforms[view_index_for_layer + 0]); //
+				render_calc_time_warp_matrix(                         //
+				    &rvd->pose,                                       //
+				    &rvd->fov,                                        //
+				    &world_poses[1],                                  //
+				    &ubo_data->transforms[view_index_for_layer + 1]); //
+			}
+
+		} break;
+		case XRT_LAYER_QUAD: {
+			const struct xrt_layer_quad_data *q = &layer->data.quad;
+			const struct comp_swapchain_image *image = &layer->sc_array[0]->images[q->sub.image_index];
+			uint32_t array_index = q->sub.array_index;
+
+			// Same image for both views
+			src_samplers[cur_image] = image->sampler;
+			src_image_views[cur_image] = get_image_view(image, layer->data.flags, array_index);
+			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image;
+			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image;
+			cur_image++;
+
+
+			struct xrt_normalized_rect *post_transforms = &ubo_data->post_transforms[view_index_for_layer];
+
+			// Same image for both views
+			post_transforms[0] = q->sub.norm_rect;
+			post_transforms[1] = q->sub.norm_rect;
+
+			// quad layers calculated in flipped space than projection layers.
+			// Note: different y flip logic compared to projection layers.
+			if (!data->flip_y) {
+				post_transforms[0].h = -post_transforms[0].h;
+				post_transforms[0].y = post_transforms[0].y - post_transforms[0].h;
+				post_transforms[1].h = -post_transforms[1].h;
+				post_transforms[1].y = post_transforms[1].y - post_transforms[1].h;
+			}
+
+			ubo_data->quad_extent[layer_i].val = data->quad.size;
+
+			// Is this layer viewspace or not.
+			const struct xrt_matrix_4x4 *view_mats =
+			    (layer->data.flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) ? eye_view_mats
+			                                                               : world_view_mats;
+
+			for (uint32_t view_i = 0; view_i < 2; view_i++) {
+				// transform quad pose into view space for each view
+				math_matrix_4x4_transform_vec3(
+				    &view_mats[view_i], &data->quad.pose.position,
+				    &ubo_data->quad_position[view_index_for_layer + view_i].val);
+
+				// neutral quad layer faces +z, towards the user
+				struct xrt_vec3 normal = (struct xrt_vec3){.x = 0, .y = 0, .z = 1};
+
+				// rotation of the quad normal in world space
+				struct xrt_quat rotation = data->quad.pose.orientation;
+				math_quat_rotate_vec3(&rotation, &normal, &normal);
+
+				/*
+				 * normal is a vector that originates on the plane, not on the origin.
+				 * Instead of using the inverse quad transform to transform it into view space we can
+				 * simply add up vectors:
+				 *
+				 * combined_normal [in world space] = plane_origin [in world space] + normal [in plane
+				 * space] [with plane in world space]
+				 *
+				 * Then combined_normal can be transformed to view space via view matrix and a new
+				 * normal_view_space retrieved:
+				 *
+				 * normal_view_space = combined_normal [in view space] - plane_origin [in view space]
+				 */
+				struct xrt_vec3 normal_view_space = normal;
+				math_vec3_accum(&data->quad.pose.position, &normal_view_space);
+				math_matrix_4x4_transform_vec3(&view_mats[view_i], &normal_view_space,
+				                               &normal_view_space);
+				math_vec3_subtract(&ubo_data->quad_position[view_index_for_layer + view_i].val,
+				                   &normal_view_space);
+				ubo_data->quad_normal[view_index_for_layer + view_i].val = normal_view_space;
+
+
+				struct xrt_vec3 scale = {1.f, 1.f, 1.f};
+				struct xrt_matrix_4x4 plane_transform_view_space;
+				math_matrix_4x4_model(&data->quad.pose, &scale, &plane_transform_view_space);
+				math_matrix_4x4_multiply(&view_mats[view_i], &plane_transform_view_space,
+				                         &plane_transform_view_space);
+				math_matrix_4x4_inverse(
+				    &plane_transform_view_space,
+				    &ubo_data->inverse_quad_transform[view_index_for_layer + view_i]);
+			}
+
+			// hide a quad layer by pointing its normal away from the camera in view space
+			struct xrt_vec3 hidden_normal = {.x = 0, .y = 0, .z = -1};
+			switch (q->visibility) {
+			case XRT_LAYER_EYE_VISIBILITY_NONE:
+				ubo_data->quad_normal[view_index_for_layer + 0].val = hidden_normal;
+				ubo_data->quad_normal[view_index_for_layer + 1].val = hidden_normal;
+				break;
+			case XRT_LAYER_EYE_VISIBILITY_LEFT_BIT:
+				ubo_data->quad_normal[view_index_for_layer + 1].val = hidden_normal;
+				break;
+			case XRT_LAYER_EYE_VISIBILITY_RIGHT_BIT:
+				ubo_data->quad_normal[view_index_for_layer + 0].val = hidden_normal;
+				break;
+			case XRT_LAYER_EYE_VISIBILITY_BOTH: break;
+			}
+
+		} break;
+		default:
+			COMP_ERROR(r->c, "Layer type %d not supported by compute shader, skipping", data->type);
+			ubo_data->layer_type[layer_i].val = UINT32_MAX;
+		}
+	}
+
+	for (uint32_t i = layer_count; i < COMP_MAX_LAYERS; i++) {
+		ubo_data->layer_type[i].val = UINT32_MAX;
+	}
+
+	//! @todo: If Vulkan 1.2, use VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT and skip this
+	while (cur_image < crc->r->compute.layer.image_array_size) {
+		src_samplers[cur_image] = crc->r->compute.default_sampler;
+		src_image_views[cur_image] = crc->r->mock.color.image_view;
+		cur_image++;
+	}
+
+	render_compute_layers(                        //
+	    crc,                                      //
+	    src_samplers,                             //
+	    src_image_views,                          //
+	    cur_image,                                //
+	    target_image,                             //
+	    target_image_view,                        //
+	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
+	    !r->c->debug.atw_off);                    //
+}
+
+static void
+do_distortion(struct comp_renderer *r, struct render_compute *crc, const struct render_viewport_data views[2])
+{
+	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
+	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
+
+	VkImageView view = crc->r->scratch.color.srgb_view; // Read with gamma curve.
+	VkSampler sampler = crc->r->compute.default_sampler;
+
+	VkImageView src_image_views[2] = {view, view};
+	VkSampler src_samplers[2] = {sampler, sampler};
+
+	struct xrt_normalized_rect src_norm_rects[2] = {
+	    {
+	        // Left, takes up half the screen.
+	        .x = 0.0f,
+	        .y = 0.0f,
+	        .w = 0.5f,
+	        .h = 1.0f,
+	    },
+	    {
+	        // Right, takes up half the screen.
+	        .x = 0.5f,
+	        .y = 0.0f,
+	        .w = 0.5f,
+	        .h = 1.0f,
+	    },
+	};
+
+	render_compute_projection( //
+	    crc,                   //
+	    src_samplers,          //
+	    src_image_views,       //
+	    src_norm_rects,        //
+	    target_image,          //
+	    target_image_view,     //
+	    views                  //
+	);
 }
 
 static void
@@ -1030,8 +1388,9 @@ do_projection_layers(struct comp_renderer *r,
 	VkImage target_image = r->c->target->images[r->acquired_buffer].handle;
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
-	struct xrt_pose new_view_poses[2];
-	get_view_poses(r, new_view_poses);
+	struct xrt_pose new_world_poses[2];
+	struct xrt_pose unused[2]; // New eye poses, unused.
+	get_view_poses(r, new_world_poses, unused);
 
 	VkSampler src_samplers[2] = {
 	    left->sampler,
@@ -1078,7 +1437,7 @@ do_projection_layers(struct comp_renderer *r,
 		    src_norm_rects,                 //
 		    src_poses,                      //
 		    src_fovs,                       //
-		    new_view_poses,                 //
+		    new_world_poses,                //
 		    target_image,                   //
 		    target_image_view,              //
 		    views);                         //
@@ -1103,7 +1462,7 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
 	uint32_t layer_count = c->base.slot.layer_count;
-	if (layer_count > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
@@ -1111,7 +1470,7 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
-	} else if (layer_count > 0 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
@@ -1119,6 +1478,10 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
+	} else if (layer_count > 0) {
+		do_layers(r, crc, c->base.slot.layers, layer_count);
+
+		do_distortion(r, crc, views);
 	} else {
 		render_compute_clear(  //
 		    crc,               //
