@@ -247,6 +247,7 @@ struct vk_bundle
 
 	PFN_vkCreateCommandPool vkCreateCommandPool;
 	PFN_vkDestroyCommandPool vkDestroyCommandPool;
+	PFN_vkResetCommandPool vkResetCommandPool;
 
 	PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers;
 	PFN_vkBeginCommandBuffer vkBeginCommandBuffer;

@@ -48,6 +48,7 @@ def get_device_cmds():
         None,
         Cmd("vkCreateCommandPool"),
         Cmd("vkDestroyCommandPool"),
+        Cmd("vkResetCommandPool"),
         None,
         Cmd("vkAllocateCommandBuffers"),
         Cmd("vkBeginCommandBuffer"),
