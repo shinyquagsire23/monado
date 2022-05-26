@@ -377,7 +377,7 @@ queue_upload_for_first_level_and_layer(
 	    vk,                                       //
 	    cmd,                                      //
 	    dst,                                      //
-	    0,                                        //
+	    VK_ACCESS_TRANSFER_WRITE_BIT,             //
 	    VK_ACCESS_SHADER_READ_BIT,                //
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     //
 	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
