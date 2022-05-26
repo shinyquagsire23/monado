@@ -609,7 +609,6 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 	struct vk_bundle *vk = &c->vk;
-	VkCommandBuffer cmd_buffer;
 	VkResult ret;
 	xrt_result_t xret;
 
@@ -623,22 +622,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	struct xrt_swapchain *xsc = &xscn->base;
 
-	ret = vk_init_cmd_buffer(vk, &cmd_buffer);
-	if (ret != VK_SUCCESS) {
-		return XRT_ERROR_VULKAN;
-	}
-
 	VkAccessFlags barrier_access_mask = vk_csci_get_barrier_access_mask(info->bits);
 	VkImageLayout barrier_optimal_layout = vk_csci_get_barrier_optimal_layout(info->format);
 	VkImageAspectFlags barrier_aspect_mask = vk_csci_get_barrier_aspect_mask(info->format);
-
-	VkImageSubresourceRange subresource_range = {
-	    .aspectMask = barrier_aspect_mask,
-	    .baseMipLevel = 0,
-	    .levelCount = VK_REMAINING_MIP_LEVELS,
-	    .baseArrayLayer = 0,
-	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-	};
 
 	struct client_vk_swapchain *sc = U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
@@ -653,30 +639,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	for (uint32_t i = 0; i < xsc->image_count; i++) {
 		ret = vk_create_image_from_native(vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
 
-
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
 		}
-
-		/*
-		 * This is only to please the validation layer, that may or may
-		 * not be a bug in the validation layer. That may or may not be
-		 * fixed in the future version of the validation layer.
-		 */
-		vk_cmd_image_barrier_gpu(            //
-		    vk,                              // vk_bundle
-		    cmd_buffer,                      // cmd_buffer
-		    sc->base.images[i],              // image
-		    0,                               // src_access_mask
-		    barrier_access_mask,             // dst_access_mask
-		    VK_IMAGE_LAYOUT_UNDEFINED,       // old_layout
-		    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // new_layout
-		    subresource_range);              // subresource_range
-	}
-
-	ret = vk_submit_cmd_buffer(vk, cmd_buffer);
-	if (ret != VK_SUCCESS) {
-		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
 	}
 
 	// Prerecord command buffers for swapchain image ownership/layout transitions
