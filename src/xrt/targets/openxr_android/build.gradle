@@ -16,6 +16,8 @@ plugins {
     id 'com.quittle.svg-2-android-vector'
 }
 
+// apply from: file("../android_common/fetch-eigen.gradle")
+
 androidGitVersion {
     tagPattern(/^v[0-9]+.*/)
     codeFormat = 'MMNPBBBBB'
@@ -68,6 +70,28 @@ task copyDownloadedLicenses(type: Copy) {
     filter(filterLicense)
     dependsOn downloadCddl
 }
+
+// Grab Eigen if we can't find it on the system.
+task downloadEigen(type: Download) {
+    src "https://gitlab.com/libeigen/eigen/-/archive/${project.eigenFetchVersion}/eigen-${project.eigenFetchVersion}.tar.gz"
+    dest new File(project.buildDir, "intermediates/eigenDownload/eigen-${project.eigenFetchVersion}.tar.gz")
+}
+
+def eigenUnpackDir = new File(project.buildDir, 'intermediates/eigen')
+task unpackEigen(dependsOn: downloadEigen, type: Copy) {
+    from tarTree(downloadEigen.dest)
+    into eigenUnpackDir
+}
+
+if (!(new File(project.file(project.eigenIncludeDir), "Eigen/Core")).exists()) {
+    println "project.eigenIncludeDir not set or not valid, so downloading Eigen at build time"
+    project.ext.eigenIncludeDir = "${eigenUnpackDir}/eigen-${project.eigenFetchVersion}"
+} else {
+    println "Using Eigen as specified/detected in project.eigenIncludeDir: ${project.eigenIncludeDir}"
+    downloadEigen.enabled = false
+    unpackEigen.enabled = false
+}
+
 android {
     compileSdkVersion project.sharedTargetSdk
     buildToolsVersion '30.0.3'
@@ -102,6 +126,9 @@ android {
         // Be sure to copy over licenses formatted as required.
         preBuild.dependsOn(copyLicenses)
         preBuild.dependsOn(copyDownloadedLicenses)
+
+        // We also need the unpacked Eigen
+        preBuild.dependsOn(unpackEigen)
     }
 
     buildTypes {

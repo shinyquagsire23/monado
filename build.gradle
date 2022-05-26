@@ -17,6 +17,9 @@ buildscript {
         hiltVersion = '2.35.1'
 
         materialVersion = "1.3.0"
+
+        // This is the version to download if we can't find it locally.
+        eigenFetchVersion = '3.4.0'
     }
     repositories {
         google()
