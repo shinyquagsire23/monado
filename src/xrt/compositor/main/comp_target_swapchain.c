@@ -540,7 +540,11 @@ run_vblank_event_thread(void *ptr)
 			// Wait to be woken up.
 			os_thread_helper_wait_locked(&cts->vblank.event_thread);
 
-			// Check if we should stop.
+			/*
+			 * Loop back to the top to check if we should stop,
+			 * also handles spurious wakeups by re-checking the
+			 * condition in the if case. Essentially two loops.
+			 */
 			continue;
 		}
 
