@@ -548,6 +548,37 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
+static VkResult
+prepare_mock_image(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
+{
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = VK_REMAINING_MIP_LEVELS,
+	    .baseArrayLayer = 0,
+	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+
+	// Take the lock here.
+	os_mutex_lock(&vk->cmd_pool_mutex);
+
+	vk_cmd_image_barrier_gpu_locked(              //
+	    vk,                                       //
+	    cmd,                                      //
+	    dst,                                      //
+	    0,                                        //
+	    VK_ACCESS_TRANSFER_WRITE_BIT,             //
+	    VK_IMAGE_LAYOUT_UNDEFINED,                //
+	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
+	    subresource_range);                       //
+
+	// Once we are done writing commands.
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+	return VK_SUCCESS;
+}
+
+
 /*
  *
  * 'Exported' renderer functions.
@@ -621,6 +652,19 @@ render_resources_init(struct render_resources *r,
 		    format,                      // format
 		    subresource_range,           // subresource_range
 		    &r->mock.color.image_view)); // out_view
+
+
+		VkCommandBuffer cmd = VK_NULL_HANDLE;
+		C(vk_init_cmd_buffer(vk, &cmd));
+
+		C(prepare_mock_image(      //
+		    vk,                    // vk_bundle
+		    cmd,                   // cmd
+		    r->mock.color.image)); // dsat
+
+		C(vk_submit_cmd_buffer(vk, cmd));
+
+		// No need to wait, submit waits on the fence.
 	}
 
 
