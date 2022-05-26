@@ -427,15 +427,6 @@ void
 math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat);
 
 /*!
- * Print a 3x3 (col-major) matrix to stdout
- *
- * @see xrt_matrix_3x3
- * @ingroup aux_math
- */
-void
-math_matrix_3x3_print(const struct xrt_matrix_3x3 *mat);
-
-/*!
  * Transform a vec3 by a 3x3 matrix
  *
  * @see xrt_matrix_3x3
@@ -518,15 +509,6 @@ math_matrix_3x3_rotation_from_isometry(const struct xrt_matrix_4x4 *isometry, st
  */
 void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result);
-
-/*!
- * Prints a Matrix4x4 (col-major).
- *
- * @relates xrt_matrix_4x4
- * @ingroup aux_math
- */
-void
-math_matrix_4x4_print(const struct xrt_matrix_4x4 *mat);
 
 /*!
  * Multiply Matrix4x4.

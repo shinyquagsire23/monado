@@ -12,7 +12,6 @@
 
 #include "math/m_api.h"
 #include "math/m_eigen_interop.hpp"
-#include "util/u_logging.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -420,17 +419,6 @@ math_matrix_3x3_f64_identity(struct xrt_matrix_3x3_f64 *mat)
 }
 
 extern "C" void
-math_matrix_3x3_print(const struct xrt_matrix_3x3 *mat)
-{
-	const auto &m = mat->v;
-	U_LOG_RAW("[\n");
-	U_LOG_RAW("\t%f, %f, %f,\n", m[0], m[3], m[6]);
-	U_LOG_RAW("\t%f, %f, %f,\n", m[1], m[4], m[7]);
-	U_LOG_RAW("\t%f, %f, %f \n", m[2], m[5], m[8]);
-	U_LOG_RAW("]\n");
-}
-
-extern "C" void
 math_matrix_3x3_f64_transform_vec3_f64(const struct xrt_matrix_3x3_f64 *left,
                                        const struct xrt_vec3_f64 *right,
                                        struct xrt_vec3_f64 *result_out)
@@ -523,18 +511,6 @@ extern "C" void
 math_matrix_4x4_identity(struct xrt_matrix_4x4 *result)
 {
 	map_matrix_4x4(*result) = Eigen::Matrix4f::Identity();
-}
-
-extern "C" void
-math_matrix_4x4_print(const struct xrt_matrix_4x4 *mat)
-{
-	const auto &m = mat->v;
-	U_LOG_RAW("[\n");
-	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[0], m[4], m[8], m[12]);
-	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[1], m[5], m[9], m[13]);
-	U_LOG_RAW("\t%f, %f, %f, %f,\n", m[2], m[6], m[10], m[14]);
-	U_LOG_RAW("\t%f, %f, %f, %f \n", m[3], m[7], m[11], m[15]);
-	U_LOG_RAW("]\n");
 }
 
 extern "C" void

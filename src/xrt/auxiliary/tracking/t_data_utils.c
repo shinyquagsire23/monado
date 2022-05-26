@@ -12,6 +12,7 @@
 #include "util/u_config_json.h"
 #include "util/u_misc.h"
 #include "util/u_logging.h"
+#include "util/u_pretty_print.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -357,24 +358,38 @@ t_calibration_gui_params_load_or_default(struct t_calibration_params *p)
 	}
 }
 
+static void
+t_inertial_calibration_dump_pp(u_pp_delegate_t dg, struct t_inertial_calibration *c)
+{
+	u_pp(dg, "t_inertial_calibration {");
+	u_pp_array2d_f64(dg, &c->transform[0][0], 3, 3, "transform", "\t");
+	u_pp_array_f64(dg, c->offset, 3, "offset", "\t");
+	u_pp_array_f64(dg, c->bias_std, 3, "bias_std", "\t");
+	u_pp_array_f64(dg, c->noise_std, 3, "noise_std", "\t");
+	u_pp(dg, "}");
+}
+
 void
 t_inertial_calibration_dump(struct t_inertial_calibration *c)
 {
-	U_LOG_RAW("t_inertial_calibration {");
-	dump_mat("transform", c->transform);
-	dump_vector("offset", c->offset);
-	dump_vector("bias_std", c->bias_std);
-	dump_vector("noise_std", c->noise_std);
-	U_LOG_RAW("}");
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+	t_inertial_calibration_dump_pp(dg, c);
+	U_LOG(U_LOGGING_DEBUG, "%s", sink.buffer);
 }
 
 void
 t_imu_calibration_dump(struct t_imu_calibration *c)
 {
-	U_LOG_RAW("t_imu_calibration {");
-	U_LOG_RAW("accel = ");
-	t_inertial_calibration_dump(&c->accel);
-	U_LOG_RAW("gyro = ");
-	t_inertial_calibration_dump(&c->gyro);
-	U_LOG_RAW("}");
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	u_pp(dg, "t_imu_calibration {\n");
+	u_pp(dg, "accel = ");
+	t_inertial_calibration_dump_pp(dg, &c->accel);
+	u_pp(dg, "gyro = ");
+	t_inertial_calibration_dump_pp(dg, &c->gyro);
+	u_pp(dg, "}");
+
+	U_LOG(U_LOGGING_DEBUG, "%s", sink.buffer);
 }
