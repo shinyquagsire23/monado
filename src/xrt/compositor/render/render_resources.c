@@ -182,6 +182,59 @@ init_mesh_ubo_buffers(struct vk_bundle *vk, struct render_buffer *l_ubo, struct 
  */
 
 static VkResult
+create_compute_layer_descriptor_set_layout(struct vk_bundle *vk,
+                                           uint32_t src_binding,
+                                           uint32_t target_binding,
+                                           uint32_t ubo_binding,
+                                           uint32_t source_images_count,
+                                           VkDescriptorSetLayout *out_descriptor_set_layout)
+{
+	VkResult ret;
+
+	VkDescriptorSetLayoutBinding set_layout_bindings[3] = {
+	    {
+	        .binding = src_binding,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	        .descriptorCount = source_images_count,
+	        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	    },
+	    {
+	        .binding = target_binding,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+	        .descriptorCount = 1,
+	        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	    },
+	    {
+	        .binding = ubo_binding,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+	        .descriptorCount = 1,
+	        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
+	    },
+	};
+
+	VkDescriptorSetLayoutCreateInfo set_layout_info = {
+	    .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+	    .bindingCount = ARRAY_SIZE(set_layout_bindings),
+	    .pBindings = set_layout_bindings,
+	};
+
+	VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+	ret = vk->vkCreateDescriptorSetLayout( //
+	    vk->device,                        //
+	    &set_layout_info,                  //
+	    NULL,                              //
+	    &descriptor_set_layout);           //
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkCreateDescriptorSetLayout failed: %s", vk_result_string(ret));
+		return ret;
+	}
+
+	*out_descriptor_set_layout = descriptor_set_layout;
+
+	return VK_SUCCESS;
+}
+
+static VkResult
 create_compute_distortion_descriptor_set_layout(struct vk_bundle *vk,
                                                 uint32_t src_binding,
                                                 uint32_t distortion_binding,
@@ -240,11 +293,60 @@ create_compute_distortion_descriptor_set_layout(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
+struct compute_layer_params
+{
+	VkBool32 do_timewarp;
+	VkBool32 do_color_correction;
+	uint32_t max_layers;
+	uint32_t views_per_layer;
+	uint32_t image_array_size;
+};
+
 struct compute_distortion_params
 {
 	uint32_t distortion_texel_count;
 	VkBool32 do_timewarp;
 };
+
+static VkResult
+create_compute_layer_pipeline(struct vk_bundle *vk,
+                              VkPipelineCache pipeline_cache,
+                              VkShaderModule shader,
+                              VkPipelineLayout pipeline_layout,
+                              const struct compute_layer_params *params,
+                              VkPipeline *out_compute_pipeline)
+{
+#define ENTRY(ID, FIELD)                                                                                               \
+	{                                                                                                              \
+	    .constantID = ID,                                                                                          \
+	    .offset = offsetof(struct compute_layer_params, FIELD),                                                    \
+	    sizeof(params->FIELD),                                                                                     \
+	}
+
+	VkSpecializationMapEntry entries[] = {
+	    ENTRY(1, do_timewarp),         //
+	    ENTRY(2, do_color_correction), //
+	    ENTRY(3, max_layers),          //
+	    ENTRY(4, views_per_layer),     //
+	    ENTRY(5, image_array_size),    //
+	};
+#undef ENTRY
+
+	VkSpecializationInfo specialization_info = {
+	    .mapEntryCount = ARRAY_SIZE(entries),
+	    .pMapEntries = entries,
+	    .dataSize = sizeof(*params),
+	    .pData = params,
+	};
+
+	return vk_create_compute_pipeline( //
+	    vk,                            // vk_bundle
+	    pipeline_cache,                // pipeline_cache
+	    shader,                        // shader
+	    pipeline_layout,               // pipeline_layout
+	    &specialization_info,          // specialization_info
+	    out_compute_pipeline);         // out_compute_pipeline
+}
 
 static VkResult
 create_compute_distortion_pipeline(struct vk_bundle *vk,
@@ -705,6 +807,11 @@ render_resources_init(struct render_resources *r,
 	r->compute.target_binding = 2;
 	r->compute.ubo_binding = 3;
 
+	r->compute.layer.image_array_size = vk->features.max_per_stage_descriptor_sampled_images;
+	if (r->compute.layer.image_array_size > COMP_MAX_IMAGES) {
+		r->compute.layer.image_array_size = COMP_MAX_IMAGES;
+	}
+
 
 	/*
 	 * Mock, used as a default image empty image.
@@ -841,12 +948,14 @@ render_resources_init(struct render_resources *r,
 	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
 	    &r->compute.default_sampler));         // out_sampler
 
+
 	struct vk_descriptor_pool_info compute_pool_info = {
 	    .uniform_per_descriptor_count = 1,
-	    .sampler_per_descriptor_count = 8,
+	    // layer images
+	    .sampler_per_descriptor_count = r->compute.layer.image_array_size + 6,
 	    .storage_image_per_descriptor_count = 1,
 	    .storage_buffer_per_descriptor_count = 0,
-	    .descriptor_count = 1,
+	    .descriptor_count = 2,
 	    .freeable = false,
 	};
 
@@ -854,6 +963,68 @@ render_resources_init(struct render_resources *r,
 	    vk,                            // vk_bundle
 	    &compute_pool_info,            // info
 	    &r->compute.descriptor_pool)); // out_descriptor_pool
+
+
+	/*
+	 * Layer pipeline
+	 */
+
+	C(create_compute_layer_descriptor_set_layout(  //
+	    vk,                                        // vk_bundle
+	    r->compute.src_binding,                    // src_binding,
+	    r->compute.target_binding,                 // target_binding,
+	    r->compute.ubo_binding,                    // ubo_binding,
+	    r->compute.layer.image_array_size,         // source_images_count,
+	    &r->compute.layer.descriptor_set_layout)); // out_descriptor_set_layout
+
+	C(vk_create_pipeline_layout(                //
+	    vk,                                     // vk_bundle
+	    r->compute.layer.descriptor_set_layout, // descriptor_set_layout
+	    &r->compute.layer.pipeline_layout));    // out_pipeline_layout
+
+	struct compute_layer_params layer_params = {
+	    .do_timewarp = false,
+	    .do_color_correction = true,
+	    .max_layers = COMP_MAX_LAYERS,
+	    .views_per_layer = COMP_VIEWS_PER_LAYER,
+	    .image_array_size = r->compute.layer.image_array_size,
+	};
+
+	C(create_compute_layer_pipeline(               //
+	    vk,                                        // vk_bundle
+	    r->pipeline_cache,                         // pipeline_cache
+	    r->shaders->layer_comp,                    // shader
+	    r->compute.layer.pipeline_layout,          // pipeline_layout
+	    &layer_params,                             // params
+	    &r->compute.layer.non_timewarp_pipeline)); // out_compute_pipeline
+
+	struct compute_layer_params layer_timewarp_params = {
+	    .do_timewarp = true,
+	    .do_color_correction = true,
+	    .max_layers = COMP_MAX_LAYERS,
+	    .views_per_layer = COMP_VIEWS_PER_LAYER,
+	    .image_array_size = r->compute.layer.image_array_size,
+	};
+
+	C(create_compute_layer_pipeline(           //
+	    vk,                                    // vk_bundle
+	    r->pipeline_cache,                     // pipeline_cache
+	    r->shaders->layer_comp,                // shader
+	    r->compute.layer.pipeline_layout,      // pipeline_layout
+	    &layer_timewarp_params,                // params
+	    &r->compute.layer.timewarp_pipeline)); // out_compute_pipeline
+
+	size_t layer_ubo_size = sizeof(struct render_compute_layer_ubo_data);
+
+	C(render_buffer_init(        //
+	    vk,                      // vk_bundle
+	    &r->compute.layer.ubo,   // buffer
+	    ubo_usage_flags,         // usage_flags
+	    memory_property_flags,   // memory_property_flags
+	    layer_ubo_size));        // size
+	C(render_buffer_map(         //
+	    vk,                      // vk_bundle
+	    &r->compute.layer.ubo)); // buffer
 
 
 	/*
@@ -1108,6 +1279,12 @@ render_resources_close(struct render_resources *r)
 	render_buffer_close(vk, &r->mesh.ubos[1]);
 
 	D(DescriptorPool, r->compute.descriptor_pool);
+
+	D(DescriptorSetLayout, r->compute.layer.descriptor_set_layout);
+	D(Pipeline, r->compute.layer.non_timewarp_pipeline);
+	D(Pipeline, r->compute.layer.timewarp_pipeline);
+	D(PipelineLayout, r->compute.layer.pipeline_layout);
+
 	D(DescriptorSetLayout, r->compute.distortion.descriptor_set_layout);
 	D(Pipeline, r->compute.distortion.pipeline);
 	D(Pipeline, r->compute.distortion.timewarp_pipeline);
@@ -1119,6 +1296,7 @@ render_resources_close(struct render_resources *r)
 
 	render_distortion_buffer_close(r);
 	render_buffer_close(vk, &r->compute.clear.ubo);
+	render_buffer_close(vk, &r->compute.layer.ubo);
 	render_buffer_close(vk, &r->compute.distortion.ubo);
 
 	teardown_scratch_image(r);

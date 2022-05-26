@@ -120,6 +120,7 @@ if(XRT_HAVE_VULKAN)
 	set(SHADERS
 	    shaders/clear.comp
 	    shaders/distortion.comp
+	    shaders/layer.comp
 	    shaders/mesh.frag
 	    shaders/mesh.vert
 	    shaders/layer.frag

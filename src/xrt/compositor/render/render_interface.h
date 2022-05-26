@@ -11,6 +11,9 @@
 #pragma once
 
 #define COMP_MAX_LAYERS 16
+#define COMP_VIEWS_PER_LAYER 2
+#define COMP_MAX_IMAGES 32
+
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_defines.h"
 
@@ -76,6 +79,7 @@ render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
 struct render_shaders
 {
 	VkShaderModule clear_comp;
+	VkShaderModule layer_comp;
 	VkShaderModule distortion_comp;
 
 	VkShaderModule mesh_vert;
@@ -310,6 +314,27 @@ struct render_resources
 
 		struct
 		{
+			//! Descriptor set layout for compute.
+			VkDescriptorSetLayout descriptor_set_layout;
+
+			//! Pipeline layout used for compute distortion.
+			VkPipelineLayout pipeline_layout;
+
+			//! Doesn't depend on target so is static.
+			VkPipeline non_timewarp_pipeline;
+
+			//! Doesn't depend on target so is static.
+			VkPipeline timewarp_pipeline;
+
+			//! Size of combined image sampler array
+			uint32_t image_array_size;
+
+			//! Target info.
+			struct render_buffer ubo;
+		} layer;
+
+		struct
+		{
 			//! Descriptor set layout for compute distortion.
 			VkDescriptorSetLayout descriptor_set_layout;
 
@@ -333,6 +358,8 @@ struct render_resources
 
 			//! Target info.
 			struct render_buffer ubo;
+
+			//! @todo other resources
 		} clear;
 	} compute;
 
@@ -673,7 +700,71 @@ struct render_compute
 	struct render_resources *r;
 
 	//! Shared descriptor set between clear, projection and timewarp.
+	VkDescriptorSet descriptor_set;
+
+	//! Descriptor set for distortion.
 	VkDescriptorSet distortion_descriptor_set;
+};
+
+/*!
+ * UBO data that is sent to the compute layer shaders.
+ *
+ * Used in @ref render_compute
+ */
+struct render_compute_layer_ubo_data
+{
+	struct render_viewport_data views[2];
+	struct xrt_normalized_rect pre_transforms[2];
+	struct xrt_normalized_rect post_transforms[COMP_MAX_LAYERS * COMP_VIEWS_PER_LAYER];
+
+	//! std140 uvec2, corresponds to enum xrt_layer_type and unpremultiplied alpha.
+	struct
+	{
+		uint32_t val;
+		uint32_t unpremultiplied;
+		uint32_t padding[2];
+	} layer_type[COMP_MAX_LAYERS];
+
+	//! Which image/sampler(s) correspond to each layer.
+	struct
+	{
+		uint32_t images[2];
+		//! @todo Implement separated samplers and images (and change to samplers[2])
+		uint32_t padding[2];
+	} images_samplers[COMP_MAX_LAYERS * 2];
+
+
+	/*!
+	 * For projection layers
+	 */
+
+	//! Timewarp matrices
+	struct xrt_matrix_4x4 transforms[COMP_MAX_LAYERS * COMP_VIEWS_PER_LAYER];
+
+
+	/*!
+	 * For quad layers
+	 */
+
+	//! All quad transforms and coordinates are in view space
+	struct
+	{
+		struct xrt_vec3 val;
+		float padding;
+	} quad_position[COMP_MAX_LAYERS * 2];
+	struct
+	{
+		struct xrt_vec3 val;
+		float padding;
+	} quad_normal[COMP_MAX_LAYERS * 2];
+	struct xrt_matrix_4x4 inverse_quad_transform[COMP_MAX_LAYERS * 2];
+
+	//! Quad extent in world scale
+	struct
+	{
+		struct xrt_vec2 val;
+		float padding[2];
+	} quad_extent[COMP_MAX_LAYERS];
 };
 
 /*!
@@ -722,6 +813,19 @@ render_compute_begin(struct render_compute *crc);
  */
 bool
 render_compute_end(struct render_compute *crc);
+
+/*!
+ * @public @memberof render_compute
+ */
+void
+render_compute_layers(struct render_compute *crc,                   //
+                      VkSampler src_samplers[COMP_MAX_IMAGES],      //
+                      VkImageView src_image_views[COMP_MAX_IMAGES], //
+                      uint32_t image_count,                         //
+                      VkImage target_image,                         //
+                      VkImageView target_image_view,                //
+                      VkImageLayout transition_to,                  //
+                      bool timewarp);                               //
 
 /*!
  * @public @memberof render_compute

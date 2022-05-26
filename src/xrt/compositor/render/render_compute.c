@@ -86,6 +86,74 @@ calc_dispatch_dims(const struct render_viewport_data views[2], uint32_t *out_w, 
  */
 
 XRT_MAYBE_UNUSED static void
+update_compute_layer_descriptor_set(struct vk_bundle *vk,
+                                    uint32_t src_binding,
+                                    VkSampler src_samplers[COMP_MAX_IMAGES],
+                                    VkImageView src_image_views[COMP_MAX_IMAGES],
+                                    uint32_t image_count,
+                                    uint32_t target_binding,
+                                    VkImageView target_image_view,
+                                    uint32_t ubo_binding,
+                                    VkBuffer ubo_buffer,
+                                    VkDeviceSize ubo_size,
+                                    VkDescriptorSet descriptor_set)
+{
+	assert(image_count <= COMP_MAX_IMAGES);
+
+	VkDescriptorImageInfo src_image_info[COMP_MAX_IMAGES];
+	for (uint32_t i = 0; i < image_count; i++) {
+		src_image_info[i].sampler = src_samplers[i];
+		src_image_info[i].imageView = src_image_views[i];
+		src_image_info[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	}
+
+	VkDescriptorImageInfo target_image_info = {
+	    .imageView = target_image_view,
+	    .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+	};
+
+	VkDescriptorBufferInfo buffer_info = {
+	    .buffer = ubo_buffer,
+	    .offset = 0,
+	    .range = ubo_size,
+	};
+
+	VkWriteDescriptorSet write_descriptor_sets[3] = {
+	    {
+	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	        .dstSet = descriptor_set,
+	        .dstBinding = src_binding,
+	        .descriptorCount = image_count,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	        .pImageInfo = src_image_info,
+	    },
+	    {
+	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	        .dstSet = descriptor_set,
+	        .dstBinding = target_binding,
+	        .descriptorCount = 1,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+	        .pImageInfo = &target_image_info,
+	    },
+	    {
+	        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	        .dstSet = descriptor_set,
+	        .dstBinding = ubo_binding,
+	        .descriptorCount = 1,
+	        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+	        .pBufferInfo = &buffer_info,
+	    },
+	};
+
+	vk->vkUpdateDescriptorSets(            //
+	    vk->device,                        //
+	    ARRAY_SIZE(write_descriptor_sets), // descriptorWriteCount
+	    write_descriptor_sets,             // pDescriptorWrites
+	    0,                                 // descriptorCopyCount
+	    NULL);                             // pDescriptorCopies
+}
+
+XRT_MAYBE_UNUSED static void
 update_compute_distortion_descriptor_set(struct vk_bundle *vk,
                                          uint32_t src_binding,
                                          VkSampler src_samplers[2],
@@ -262,6 +330,12 @@ render_compute_init(struct render_compute *crc, struct render_resources *r)
 	struct vk_bundle *vk = r->vk;
 	crc->r = r;
 
+	C(vk_create_descriptor_set(                 //
+	    vk,                                     //
+	    r->compute.descriptor_pool,             // descriptor_pool
+	    r->compute.layer.descriptor_set_layout, // descriptor_set_layout
+	    &crc->descriptor_set));                 // descriptor_set
+
 	C(vk_create_descriptor_set(                      //
 	    vk,                                          //
 	    r->compute.descriptor_pool,                  // descriptor_pool
@@ -326,11 +400,116 @@ render_compute_close(struct render_compute *crc)
 	struct vk_bundle *vk = vk_from_crc(crc);
 
 	// Reclaimed by vkResetDescriptorPool.
+	crc->descriptor_set = VK_NULL_HANDLE;
 	crc->distortion_descriptor_set = VK_NULL_HANDLE;
 
 	vk->vkResetDescriptorPool(vk->device, crc->r->compute.descriptor_pool, 0);
 
 	crc->r = NULL;
+}
+
+void
+render_compute_layers(struct render_compute *crc,
+                      VkSampler src_samplers[COMP_MAX_IMAGES],
+                      VkImageView src_image_views[COMP_MAX_IMAGES],
+                      uint32_t image_count,
+                      VkImage target_image,
+                      VkImageView target_image_view,
+                      VkImageLayout transition_to,
+                      bool timewarp)
+{
+	assert(crc->r != NULL);
+
+	struct vk_bundle *vk = vk_from_crc(crc);
+	struct render_resources *r = crc->r;
+
+	struct render_compute_layer_ubo_data *ubo_data =
+	    (struct render_compute_layer_ubo_data *)crc->r->compute.layer.ubo.mapped;
+
+	/*
+	 * Source, target and distortion images.
+	 */
+
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = VK_REMAINING_MIP_LEVELS,
+	    .baseArrayLayer = 0,
+	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+
+	vk_cmd_image_barrier_gpu_locked( //
+	    vk,                          //
+	    r->cmd,                      //
+	    target_image,                //
+	    0,                           //
+	    VK_ACCESS_SHADER_WRITE_BIT,  //
+	    VK_IMAGE_LAYOUT_UNDEFINED,   //
+	    VK_IMAGE_LAYOUT_GENERAL,     //
+	    subresource_range);          //
+
+	update_compute_layer_descriptor_set( //
+	    vk,                              //
+	    r->compute.src_binding,          //
+	    src_samplers,                    //
+	    src_image_views,                 //
+	    image_count,                     //
+	    r->compute.target_binding,       //
+	    target_image_view,               //
+	    r->compute.ubo_binding,          //
+	    r->compute.layer.ubo.buffer,     //
+	    VK_WHOLE_SIZE,                   //
+	    crc->descriptor_set);            //
+
+	vk->vkCmdBindPipeline(              //
+	    crc->r->cmd,                    // commandBuffer
+	    VK_PIPELINE_BIND_POINT_COMPUTE, // pipelineBindPoint
+	    timewarp ? r->compute.layer.timewarp_pipeline : r->compute.layer.non_timewarp_pipeline); // pipeline
+
+	vk->vkCmdBindDescriptorSets(          //
+	    r->cmd,                           // commandBuffer
+	    VK_PIPELINE_BIND_POINT_COMPUTE,   // pipelineBindPoint
+	    r->compute.layer.pipeline_layout, // layout
+	    0,                                // firstSet
+	    1,                                // descriptorSetCount
+	    &crc->descriptor_set,             // pDescriptorSets
+	    0,                                // dynamicOffsetCount
+	    NULL);                            // pDynamicOffsets
+
+
+	uint32_t w = 0, h = 0;
+	calc_dispatch_dims(ubo_data->views, &w, &h);
+	assert(w != 0 && h != 0);
+
+	vk->vkCmdDispatch( //
+	    r->cmd,        // commandBuffer
+	    w,             // groupCountX
+	    h,             // groupCountY
+	    2);            // groupCountZ
+
+	VkImageMemoryBarrier memoryBarrier = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+	    .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+	    .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+	    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+	    .newLayout = transition_to,
+	    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+	    .image = target_image,
+	    .subresourceRange = subresource_range,
+	};
+
+	vk->vkCmdPipelineBarrier(                 //
+	    r->cmd,                               //
+	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, //
+	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    //
+	    0,                                    //
+	    0,                                    //
+	    NULL,                                 //
+	    0,                                    //
+	    NULL,                                 //
+	    1,                                    //
+	    &memoryBarrier);                      //
 }
 
 void

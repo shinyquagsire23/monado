@@ -24,6 +24,7 @@
 #include "xrt/xrt_config_build.h"
 
 #include "shaders/clear.comp.h"
+#include "shaders/layer.comp.h"
 #include "shaders/distortion.comp.h"
 #include "shaders/layer.frag.h"
 #include "shaders/layer.vert.h"
@@ -93,6 +94,11 @@ render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 	              sizeof(shaders_clear_comp), // size
 	              &s->clear_comp));           // out
 
+	C(shader_load(vk,                         // vk_bundle
+	              shaders_layer_comp,         // data
+	              sizeof(shaders_layer_comp), // size
+	              &s->layer_comp));           // out
+
 	C(shader_load(vk,                              // vk_bundle
 	              shaders_distortion_comp,         // data
 	              sizeof(shaders_distortion_comp), // size
@@ -161,6 +167,7 @@ render_shaders_close(struct render_shaders *s, struct vk_bundle *vk)
 {
 	D(clear_comp);
 	D(distortion_comp);
+	D(layer_comp);
 	D(mesh_vert);
 	D(mesh_frag);
 	D(equirect1_vert);
