@@ -10,6 +10,7 @@
 #include "util/u_misc.h"
 #include "util/u_pretty_print.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -360,6 +361,27 @@ u_pp_small_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m
 }
 
 void
+u_pp_small_array_f64(struct u_pp_delegate dg, const double *arr, size_t n)
+{
+	assert(n != 0);
+	DG("[");
+	for (size_t i = 0; i < n - 1; i++) {
+		u_pp(dg, "%lf, ", arr[i]);
+	}
+	u_pp(dg, "%lf]", arr[n - 1]);
+}
+
+void
+u_pp_small_array2d_f64(struct u_pp_delegate dg, const double *arr, size_t n, size_t m)
+{
+	DG("[\n");
+	for (size_t i = 0; i < n; i++) {
+		u_pp_small_array_f64(dg, &arr[i], m);
+	}
+	DG("\n]");
+}
+
+void
 u_pp_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec, const char *name, const char *indent)
 {
 	u_pp(dg, "\n%s%s = ", indent, name);
@@ -423,6 +445,20 @@ u_pp_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m, cons
 	     indent, m->v[2], m->v[6], m->v[10], m->v[14], //
 	     indent, m->v[3], m->v[7], m->v[11], m->v[15], //
 	     indent);                                      //
+}
+
+void
+u_pp_array_f64(u_pp_delegate_t dg, const double *arr, size_t n, const char *name, const char *indent)
+{
+	u_pp(dg, "\n%s%s = ", indent, name);
+	u_pp_small_array_f64(dg, arr, n);
+}
+
+void
+u_pp_array2d_f64(u_pp_delegate_t dg, const double *arr, size_t n, size_t m, const char *name, const char *indent)
+{
+	u_pp(dg, "\n%s%s = ", indent, name);
+	u_pp_small_array2d_f64(dg, arr, n, m);
 }
 
 

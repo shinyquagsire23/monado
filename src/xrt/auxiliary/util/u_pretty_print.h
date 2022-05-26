@@ -98,6 +98,8 @@ u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret);
  * the other functions does. This is so that you can easily chain print
  * functions to print a struct.
  *
+ * @note xrt_matrix_* parameters assumed to be column major.
+ *
  * @ingroup aux_pretty
  * @{
  */
@@ -117,6 +119,12 @@ void
 u_pp_small_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m);
 
 void
+u_pp_small_array_f64(struct u_pp_delegate dg, const double *arr, size_t n);
+
+void
+u_pp_small_array2d_f64(struct u_pp_delegate dg, const double *arr, size_t n, size_t m);
+
+void
 u_pp_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec, const char *name, const char *indent);
 
 void
@@ -130,6 +138,15 @@ u_pp_matrix_4x4(u_pp_delegate_t dg, const struct xrt_matrix_4x4 *m, const char *
 
 void
 u_pp_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m, const char *name, const char *indent);
+
+//! Pretty prints `double arr[n]`
+void
+u_pp_array_f64(u_pp_delegate_t dg, const double *arr, size_t n, const char *name, const char *indent);
+
+//! Pretty prints `double arr[n][m]`
+void
+u_pp_array2d_f64(u_pp_delegate_t dg, const double *arr, size_t n, size_t m, const char *name, const char *indent);
+
 /*!
  * @}
  */
