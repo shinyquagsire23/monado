@@ -291,6 +291,147 @@ u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret)
 	}
 }
 
+
+/*
+ *
+ * Math structs printers.
+ *
+ */
+
+void
+u_pp_small_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec)
+{
+	u_pp(dg, "[%f, %f, %f]", vec->x, vec->y, vec->z);
+}
+
+void
+u_pp_small_pose(u_pp_delegate_t dg, const struct xrt_pose *pose)
+{
+	const struct xrt_vec3 *p = &pose->position;
+	const struct xrt_quat *q = &pose->orientation;
+
+	u_pp(dg, "[%f, %f, %f] [%f, %f, %f, %f]", p->x, p->y, p->z, q->x, q->y, q->z, q->w);
+}
+
+void
+u_pp_small_matrix_3x3(u_pp_delegate_t dg, const struct xrt_matrix_3x3 *m)
+{
+	u_pp(dg,
+	     "[\n"
+	     "\t%f, %f, %f,\n"
+	     "\t%f, %f, %f,\n"
+	     "\t%f, %f, %f \n"
+	     "]",
+	     m->v[0], m->v[3], m->v[6],  //
+	     m->v[1], m->v[4], m->v[7],  //
+	     m->v[2], m->v[5], m->v[8]); //
+}
+
+void
+u_pp_small_matrix_4x4(u_pp_delegate_t dg, const struct xrt_matrix_4x4 *m)
+{
+	u_pp(dg,
+	     "[\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f\n"
+	     "]",
+	     m->v[0], m->v[4], m->v[8], m->v[12],   //
+	     m->v[1], m->v[5], m->v[9], m->v[13],   //
+	     m->v[2], m->v[6], m->v[10], m->v[14],  //
+	     m->v[3], m->v[7], m->v[11], m->v[15]); //
+}
+
+void
+u_pp_small_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m)
+{
+	u_pp(dg,
+	     "[\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f,\n"
+	     "\t%f, %f, %f, %f\n"
+	     "]",
+	     m->v[0], m->v[4], m->v[8], m->v[12],   //
+	     m->v[1], m->v[5], m->v[9], m->v[13],   //
+	     m->v[2], m->v[6], m->v[10], m->v[14],  //
+	     m->v[3], m->v[7], m->v[11], m->v[15]); //
+}
+
+void
+u_pp_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec, const char *name, const char *indent)
+{
+	u_pp(dg, "\n%s%s = ", indent, name);
+	u_pp_small_vec3(dg, vec);
+}
+
+void
+u_pp_pose(u_pp_delegate_t dg, const struct xrt_pose *pose, const char *name, const char *indent)
+{
+	u_pp(dg, "\n%s%s = ", indent, name);
+	u_pp_small_pose(dg, pose);
+}
+
+void
+u_pp_matrix_3x3(u_pp_delegate_t dg, const struct xrt_matrix_3x3 *m, const char *name, const char *indent)
+{
+	u_pp(dg,
+	     "\n%s%s = ["
+	     "\n%s\t%f, %f, %f,"
+	     "\n%s\t%f, %f, %f,"
+	     "\n%s\t%f, %f, %f"
+	     "\n%s]",
+	     indent, name,                      //
+	     indent, m->v[0], m->v[3], m->v[6], //
+	     indent, m->v[1], m->v[4], m->v[7], //
+	     indent, m->v[2], m->v[5], m->v[8], //
+	     indent);                           //
+}
+
+void
+u_pp_matrix_4x4(u_pp_delegate_t dg, const struct xrt_matrix_4x4 *m, const char *name, const char *indent)
+{
+	u_pp(dg,
+	     "\n%s%s = ["
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f"
+	     "\n%s]",
+	     indent, name,                                 //
+	     indent, m->v[0], m->v[4], m->v[8], m->v[12],  //
+	     indent, m->v[1], m->v[5], m->v[9], m->v[13],  //
+	     indent, m->v[2], m->v[6], m->v[10], m->v[14], //
+	     indent, m->v[3], m->v[7], m->v[11], m->v[15], //
+	     indent);                                      //
+}
+
+void
+u_pp_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m, const char *name, const char *indent)
+{
+	u_pp(dg,
+	     "\n%s%s = ["
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f,"
+	     "\n%s\t%f, %f, %f, %f"
+	     "\n%s]",
+	     indent, name,                                 //
+	     indent, m->v[0], m->v[4], m->v[8], m->v[12],  //
+	     indent, m->v[1], m->v[5], m->v[9], m->v[13],  //
+	     indent, m->v[2], m->v[6], m->v[10], m->v[14], //
+	     indent, m->v[3], m->v[7], m->v[11], m->v[15], //
+	     indent);                                      //
+}
+
+
+/*
+ *
+ * Sink functions.
+ *
+ */
+
 u_pp_delegate_t
 u_pp_sink_stack_only_init(struct u_pp_sink_stack_only *sink)
 {

@@ -87,6 +87,56 @@ u_pp_xrt_result(struct u_pp_delegate dg, xrt_result_t xret);
 
 /*
  *
+ * Math struct printers.
+ *
+ */
+
+/*!
+ * Printers for math structs. None of these functions inserts trailing newlines
+ * because it's hard to remove a trailing newline but easy to add one if one
+ * should be needed. The small functions do not insert a starting newline while
+ * the other functions does. This is so that you can easily chain print
+ * functions to print a struct.
+ *
+ * @ingroup aux_pretty
+ * @{
+ */
+void
+u_pp_small_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec);
+
+void
+u_pp_small_pose(u_pp_delegate_t dg, const struct xrt_pose *pose);
+
+void
+u_pp_small_matrix_3x3(u_pp_delegate_t dg, const struct xrt_matrix_3x3 *m);
+
+void
+u_pp_small_matrix_4x4(u_pp_delegate_t dg, const struct xrt_matrix_4x4 *m);
+
+void
+u_pp_small_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m);
+
+void
+u_pp_vec3(u_pp_delegate_t dg, const struct xrt_vec3 *vec, const char *name, const char *indent);
+
+void
+u_pp_pose(u_pp_delegate_t dg, const struct xrt_pose *pose, const char *name, const char *indent);
+
+void
+u_pp_matrix_3x3(u_pp_delegate_t dg, const struct xrt_matrix_3x3 *m, const char *name, const char *indent);
+
+void
+u_pp_matrix_4x4(u_pp_delegate_t dg, const struct xrt_matrix_4x4 *m, const char *name, const char *indent);
+
+void
+u_pp_matrix_4x4_f64(u_pp_delegate_t dg, const struct xrt_matrix_4x4_f64 *m, const char *name, const char *indent);
+/*!
+ * @}
+ */
+
+
+/*
+ *
  * Sinks.
  *
  */
