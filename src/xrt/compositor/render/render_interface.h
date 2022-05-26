@@ -287,23 +287,32 @@ struct render_resources
 		//! Default sampler for null images.
 		VkSampler default_sampler;
 
-		//! Descriptor set layout for compute distortion.
-		VkDescriptorSetLayout descriptor_set_layout;
+		struct
+		{
+			//! Descriptor set layout for compute distortion.
+			VkDescriptorSetLayout descriptor_set_layout;
 
-		//! Pipeline layout used for compute distortion.
-		VkPipelineLayout pipeline_layout;
+			//! Pipeline layout used for compute distortion, shared with clear.
+			VkPipelineLayout pipeline_layout;
 
-		//! Doesn't depend on target so is static.
-		VkPipeline clear_pipeline;
+			//! Doesn't depend on target so is static.
+			VkPipeline pipeline;
 
-		//! Doesn't depend on target so is static.
-		VkPipeline distortion_pipeline;
+			//! Doesn't depend on target so is static.
+			VkPipeline timewarp_pipeline;
 
-		//! Doesn't depend on target so is static.
-		VkPipeline distortion_timewarp_pipeline;
+			//! Target info.
+			struct render_buffer ubo;
+		} distortion;
 
-		//! Target info.
-		struct render_buffer ubo;
+		struct
+		{
+			//! Doesn't depend on target so is static.
+			VkPipeline pipeline;
+
+			//! Target info.
+			struct render_buffer ubo;
+		} clear;
 	} compute;
 
 	struct
@@ -637,7 +646,7 @@ struct render_compute
 	struct render_resources *r;
 
 	//! Shared descriptor set between clear, projection and timewarp.
-	VkDescriptorSet descriptor_set;
+	VkDescriptorSet distortion_descriptor_set;
 };
 
 /*!

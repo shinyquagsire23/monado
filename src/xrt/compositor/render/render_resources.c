@@ -182,12 +182,12 @@ init_mesh_ubo_buffers(struct vk_bundle *vk, struct render_buffer *l_ubo, struct 
  */
 
 static VkResult
-create_compute_descriptor_set_layout(struct vk_bundle *vk,
-                                     uint32_t src_binding,
-                                     uint32_t distortion_binding,
-                                     uint32_t target_binding,
-                                     uint32_t ubo_binding,
-                                     VkDescriptorSetLayout *out_descriptor_set_layout)
+create_compute_distortion_descriptor_set_layout(struct vk_bundle *vk,
+                                                uint32_t src_binding,
+                                                uint32_t distortion_binding,
+                                                uint32_t target_binding,
+                                                uint32_t ubo_binding,
+                                                VkDescriptorSetLayout *out_descriptor_set_layout)
 {
 	VkResult ret;
 
@@ -702,6 +702,11 @@ render_resources_init(struct render_resources *r,
 	 * Compute static.
 	 */
 
+	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+	                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+	                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
 	C(vk_create_sampler(                       //
 	    vk,                                    // vk_bundle
 	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
@@ -721,39 +726,36 @@ render_resources_init(struct render_resources *r,
 	    &compute_pool_info,            // info
 	    &r->compute.descriptor_pool)); // out_descriptor_pool
 
-	C(create_compute_descriptor_set_layout(  //
-	    vk,                                  // vk_bundle
-	    r->compute.src_binding,              // src_binding,
-	    r->compute.distortion_binding,       // distortion_binding,
-	    r->compute.target_binding,           // target_binding,
-	    r->compute.ubo_binding,              // ubo_binding,
-	    &r->compute.descriptor_set_layout)); // out_descriptor_set_layout
 
-	C(vk_create_pipeline_layout(          //
-	    vk,                               // vk_bundle
-	    r->compute.descriptor_set_layout, // descriptor_set_layout
-	    &r->compute.pipeline_layout));    // out_pipeline_layout
+	/*
+	 * Distortion pipeline
+	 */
 
-	C(vk_create_compute_pipeline(     //
-	    vk,                           // vk_bundle
-	    r->pipeline_cache,            // pipeline_cache
-	    r->shaders->clear_comp,       // shader
-	    r->compute.pipeline_layout,   // pipeline_layout
-	    NULL,                         // specialization_info
-	    &r->compute.clear_pipeline)); // out_compute_pipeline
+	C(create_compute_distortion_descriptor_set_layout(  //
+	    vk,                                             // vk_bundle
+	    r->compute.src_binding,                         // src_binding,
+	    r->compute.distortion_binding,                  // distortion_binding,
+	    r->compute.target_binding,                      // target_binding,
+	    r->compute.ubo_binding,                         // ubo_binding,
+	    &r->compute.distortion.descriptor_set_layout)); // out_descriptor_set_layout
+
+	C(vk_create_pipeline_layout(                     //
+	    vk,                                          // vk_bundle
+	    r->compute.distortion.descriptor_set_layout, // descriptor_set_layout
+	    &r->compute.distortion.pipeline_layout));    // out_pipeline_layout
 
 	struct compute_distortion_params distortion_params = {
 	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
 	    .do_timewarp = false,
 	};
 
-	C(create_compute_distortion_pipeline(  //
-	    vk,                                // vk_bundle
-	    r->pipeline_cache,                 // pipeline_cache
-	    r->shaders->distortion_comp,       // shader
-	    r->compute.pipeline_layout,        // pipeline_layout
-	    &distortion_params,                // params
-	    &r->compute.distortion_pipeline)); // out_compute_pipeline
+	C(create_compute_distortion_pipeline(      //
+	    vk,                                    // vk_bundle
+	    r->pipeline_cache,                     // pipeline_cache
+	    r->shaders->distortion_comp,           // shader
+	    r->compute.distortion.pipeline_layout, // pipeline_layout
+	    &distortion_params,                    // params
+	    &r->compute.distortion.pipeline));     // out_compute_pipeline
 
 	struct compute_distortion_params distortion_timewarp_params = {
 	    .distortion_texel_count = COMP_DISTORTION_IMAGE_DIMENSIONS,
@@ -764,30 +766,52 @@ render_resources_init(struct render_resources *r,
 	    vk,                                         // vk_bundle
 	    r->pipeline_cache,                          // pipeline_cache
 	    r->shaders->distortion_comp,                // shader
-	    r->compute.pipeline_layout,                 // pipeline_layout
+	    r->compute.distortion.pipeline_layout,      // pipeline_layout
 	    &distortion_timewarp_params,                // params
-	    &r->compute.distortion_timewarp_pipeline)); // out_compute_pipeline
+	    &r->compute.distortion.timewarp_pipeline)); // out_compute_pipeline
 
+	size_t distortion_ubo_size = sizeof(struct render_compute_distortion_ubo_data);
 
-	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-	                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	size_t ubo_size = sizeof(struct render_compute_distortion_ubo_data);
+	C(render_buffer_init(             //
+	    vk,                           // vk_bundle
+	    &r->compute.distortion.ubo,   // buffer
+	    ubo_usage_flags,              // usage_flags
+	    memory_property_flags,        // memory_property_flags
+	    distortion_ubo_size));        // size
+	C(render_buffer_map(              //
+	    vk,                           // vk_bundle
+	    &r->compute.distortion.ubo)); // buffer
 
-	C(render_buffer_init(      //
-	    vk,                    // vk_bundle
-	    &r->compute.ubo,       // buffer
-	    ubo_usage_flags,       // usage_flags
-	    memory_property_flags, // memory_property_flags
-	    ubo_size));            // size
-	C(render_buffer_map(       //
-	    vk,                    // vk_bundle
-	    &r->compute.ubo));     // buffer
 
 	/*
-	 * Compute distortion textures are not created until later.
+	 * Clear pipeline.
 	 */
+
+	C(vk_create_compute_pipeline(              //
+	    vk,                                    // vk_bundle
+	    r->pipeline_cache,                     // pipeline_cache
+	    r->shaders->clear_comp,                // shader
+	    r->compute.distortion.pipeline_layout, // pipeline_layout
+	    NULL,                                  // specialization_info
+	    &r->compute.clear.pipeline));          // out_compute_pipeline
+
+	size_t clear_ubo_size = sizeof(struct render_compute_distortion_ubo_data);
+
+	C(render_buffer_init(        //
+	    vk,                      // vk_bundle
+	    &r->compute.clear.ubo,   // buffer
+	    ubo_usage_flags,         // usage_flags
+	    memory_property_flags,   // memory_property_flags
+	    clear_ubo_size));        // size
+	C(render_buffer_map(         //
+	    vk,                      // vk_bundle
+	    &r->compute.clear.ubo)); // buffer
+
+
+	/*
+	 * Compute distortion textures, not created until later.
+	 */
+
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {
 		r->distortion.image_views[i] = VK_NULL_HANDLE;
 	}
@@ -797,6 +821,7 @@ render_resources_init(struct render_resources *r,
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
 		r->distortion.device_memories[i] = VK_NULL_HANDLE;
 	}
+
 
 	/*
 	 * Timestamp pool.
@@ -924,14 +949,18 @@ render_resources_close(struct render_resources *r)
 	render_buffer_close(vk, &r->mesh.ubos[1]);
 
 	D(DescriptorPool, r->compute.descriptor_pool);
-	D(DescriptorSetLayout, r->compute.descriptor_set_layout);
-	D(Pipeline, r->compute.clear_pipeline);
-	D(Pipeline, r->compute.distortion_pipeline);
-	D(Pipeline, r->compute.distortion_timewarp_pipeline);
-	D(PipelineLayout, r->compute.pipeline_layout);
+	D(DescriptorSetLayout, r->compute.distortion.descriptor_set_layout);
+	D(Pipeline, r->compute.distortion.pipeline);
+	D(Pipeline, r->compute.distortion.timewarp_pipeline);
+	D(PipelineLayout, r->compute.distortion.pipeline_layout);
+
+	D(Pipeline, r->compute.clear.pipeline);
+
 	D(Sampler, r->compute.default_sampler);
+
 	render_distortion_buffer_close(r);
-	render_buffer_close(vk, &r->compute.ubo);
+	render_buffer_close(vk, &r->compute.clear.ubo);
+	render_buffer_close(vk, &r->compute.distortion.ubo);
 
 	// Finally forget about the vk bundle. We do not own it!
 	r->vk = NULL;
