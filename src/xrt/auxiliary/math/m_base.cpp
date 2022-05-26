@@ -552,6 +552,24 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
 }
 
 extern "C" void
+math_matrix_4x4_transform_vec3(const struct xrt_matrix_4x4 *left,
+                               const struct xrt_vec3 *right,
+                               struct xrt_vec3 *result_out)
+{
+	Eigen::Matrix4f m = copy(left);
+
+	Eigen::Vector4f v;
+	v << right->x, right->y, right->z, 1.0;
+
+	Eigen::Vector4f res;
+	res = m * v;
+
+	result_out->x = res.x();
+	result_out->y = res.y();
+	result_out->z = res.z();
+}
+
+extern "C" void
 math_matrix_3x3_multiply(const struct xrt_matrix_3x3 *left,
                          const struct xrt_matrix_3x3 *right,
                          struct xrt_matrix_3x3 *result_out)

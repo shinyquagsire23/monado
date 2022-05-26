@@ -478,6 +478,17 @@ math_matrix_3x3_transform_vec3(const struct xrt_matrix_3x3 *left,
                                struct xrt_vec3 *result_out);
 
 /*!
+ * Transform a vec3 by a 4x4 matrix, extending the vector with w = 1.0
+ *
+ * @see xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_transform_vec3(const struct xrt_matrix_4x4 *left,
+                               const struct xrt_vec3 *right,
+                               struct xrt_vec3 *result_out);
+
+/*!
  * Transform a double vec3 by a 3x3 double matrix
  *
  * @see xrt_matrix_3x3
