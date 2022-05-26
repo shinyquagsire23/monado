@@ -61,16 +61,18 @@ ht_async_mainloop(void *ptr)
 
 	os_thread_helper_lock(&hta->mainloop);
 
-	while (hta->mainloop.running) {
+	while (os_thread_helper_is_running_locked(&hta->mainloop)) {
 
 		// No new frame, wait.
 		if (hta->frames[0] == NULL && hta->frames[1] == NULL) {
 			os_thread_helper_wait_locked(&hta->mainloop);
-		}
 
-		// In this case, we were woken up because Monado is exiting and we need to exit too
-		if (!hta->mainloop.running) {
-			break;
+			/*
+			 * Loop back to the top to check if we should stop,
+			 * also handles spurious wakeups by re-checking the
+			 * condition in the if case. Essentially two loops.
+			 */
+			continue;
 		}
 
 		os_thread_helper_unlock(&hta->mainloop);
