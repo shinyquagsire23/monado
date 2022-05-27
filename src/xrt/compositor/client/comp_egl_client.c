@@ -284,7 +284,14 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	save_context(&old);
 
 	if (!eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context)) {
-		EGL_ERROR("eglMakeCurrent: %s\n\tFailed to make EGL context current", egl_error_str(eglGetError()));
+		EGL_ERROR(
+		    "eglMakeCurrent: %s"
+		    "\n\tFailed to make EGL context current"
+		    "\n\told - dpy: %p, ctx: %p, read: %p, draw: %p"
+		    "\n\tnew - dpy: %p, ctx: %p, read: %p, draw: %p",
+		    egl_error_str(eglGetError()),                                         //
+		    (void *)old.dpy, (void *)old.ctx, (void *)old.read, (void *)old.draw, //
+		    (void *)display, (void *)context, NULL, NULL);                        //
 		// No need to restore on failure.
 		return XRT_ERROR_OPENGL;
 	}
