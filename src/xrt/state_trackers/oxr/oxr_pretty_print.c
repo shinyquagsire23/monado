@@ -9,6 +9,7 @@
 
 #include "oxr_objects.h" // For now needs to come before oxr_logger.h
 #include "oxr_logger.h"
+#include "oxr_input_transform.h"
 #include "oxr_pretty_print.h"
 
 

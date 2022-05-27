@@ -1258,6 +1258,115 @@ oxr_action_populate_input_transform(struct oxr_logger *log,
 	return oxr_input_transform_create_chain(log, slog, t, act->data->action_type, act->data->name, str,
 	                                        &action_input->transforms, &action_input->transform_count);
 }
+/*!
+ * Find dpad settings in @p dpad_entry whose binding path
+ * is a prefix of @p bound_path_string.
+ *
+ * @returns true if settings were found and written to @p out_dpad_settings
+ */
+static bool
+find_matching_dpad(struct oxr_logger *log,
+                   struct oxr_instance *inst,
+                   struct oxr_dpad_entry *dpad_entry,
+                   const char *bound_path_string,
+                   struct oxr_dpad_binding_modification **out_dpad_binding)
+{
+	if (dpad_entry != NULL) {
+		for (uint32_t i = 0; i < dpad_entry->dpad_count; i++) {
+			const char *dpad_path_string;
+			size_t dpad_path_length;
+			oxr_path_get_string(log, inst, dpad_entry->dpads[i].binding, &dpad_path_string,
+			                    &dpad_path_length);
+			if (strncmp(bound_path_string, dpad_path_string, dpad_path_length) == 0) {
+				*out_dpad_binding = &dpad_entry->dpads[i];
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/*!
+ * Try to produce a transform chain to create a dpad button from the selected input
+ * (potentially using other inputs like `/force` in the process)
+ *
+ * Populates @p action_input->transforms and @p action_input->transform_count on
+ * success.
+ *
+ * @returns false if it could not, true if it could
+ */
+static bool
+oxr_action_populate_input_transform_dpad(struct oxr_logger *log,
+                                         struct oxr_sink_logger *slog,
+                                         struct oxr_session *sess,
+                                         struct oxr_action *act,
+                                         struct oxr_dpad_entry *dpad_entry,
+                                         enum oxr_dpad_region dpad_region,
+                                         struct oxr_interaction_profile *profile,
+                                         struct oxr_action_input *action_inputs,
+                                         uint32_t action_input_count,
+                                         uint32_t selected_input)
+{
+	struct oxr_action_input *action_input = &(action_inputs[selected_input]);
+	assert(action_input->transforms == NULL);
+	assert(action_input->transform_count == 0);
+
+	const char *bound_path_string;
+	size_t bound_path_length;
+	oxr_path_get_string(log, sess->sys->inst, action_input->bound_path, &bound_path_string, &bound_path_length);
+
+	// find correct dpad entry
+	struct oxr_dpad_binding_modification *dpad_binding_modification = NULL;
+	find_matching_dpad(log, sess->sys->inst, dpad_entry, bound_path_string, &dpad_binding_modification);
+
+	enum xrt_input_type t = XRT_GET_INPUT_TYPE(action_input->input->name);
+	enum xrt_input_type activate_t = XRT_GET_INPUT_TYPE(action_input->dpad_activate_name);
+
+	return oxr_input_transform_create_chain_dpad(
+	    log, slog, t, act->data->action_type, bound_path_string, dpad_binding_modification, dpad_region, activate_t,
+	    action_input->dpad_activate, &action_input->transforms, &action_input->transform_count);
+}
+
+// based on get_subaction_path_from_path
+static bool
+get_dpad_region_from_path(struct oxr_logger *log,
+                          struct oxr_instance *inst,
+                          XrPath path,
+                          enum oxr_dpad_region *out_dpad_region)
+{
+	const char *str = NULL;
+	size_t length = 0;
+	XrResult ret;
+
+	ret = oxr_path_get_string(log, inst, path, &str, &length);
+	if (ret != XR_SUCCESS) {
+		return false;
+	}
+
+	// TODO: surely there's a better way to do this?
+	if (length >= 10 && strncmp("/dpad_left", str + (length - 10), 10) == 0) {
+		*out_dpad_region = OXR_DPAD_REGION_LEFT;
+		return true;
+	}
+	if (length >= 11 && strncmp("/dpad_right", str + (length - 11), 11) == 0) {
+		*out_dpad_region = OXR_DPAD_REGION_RIGHT;
+		return true;
+	}
+	if (length >= 8 && strncmp("/dpad_up", str + (length - 8), 8) == 0) {
+		*out_dpad_region = OXR_DPAD_REGION_UP;
+		return true;
+	}
+	if (length >= 10 && strncmp("/dpad_down", str + (length - 10), 10) == 0) {
+		*out_dpad_region = OXR_DPAD_REGION_DOWN;
+		return true;
+	}
+	if (length >= 12 && strncmp("/dpad_center", str + (length - 12), 12) == 0) {
+		*out_dpad_region = OXR_DPAD_REGION_CENTER;
+		return true;
+	}
+
+	return false;
+}
 
 static void
 oxr_action_bind_io(struct oxr_logger *log,
@@ -1282,9 +1391,18 @@ oxr_action_bind_io(struct oxr_logger *log,
 		cache->current.active = true;
 		cache->inputs = U_TYPED_ARRAY_CALLOC(struct oxr_action_input, input_count);
 		for (uint32_t i = 0; i < input_count; i++) {
-
 			// Only add the input if we can find a transform.
-			if (oxr_action_populate_input_transform(log, slog, sess, act, &(inputs[i]))) {
+
+			enum oxr_dpad_region dpad_region;
+			if (get_dpad_region_from_path(log, sess->sys->inst, inputs[i].bound_path, &dpad_region)) {
+				struct oxr_dpad_entry *entry =
+				    oxr_dpad_state_get(&profile->dpad_state, act->act_set->act_set_key);
+				if (oxr_action_populate_input_transform_dpad(log, slog, sess, act, entry, dpad_region,
+				                                             profile, inputs, input_count, i)) {
+					cache->inputs[count++] = inputs[i];
+					continue;
+				}
+			} else if (oxr_action_populate_input_transform(log, slog, sess, act, &(inputs[i]))) {
 				cache->inputs[count++] = inputs[i];
 				continue;
 			}

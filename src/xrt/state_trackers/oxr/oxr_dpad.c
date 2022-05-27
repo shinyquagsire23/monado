@@ -63,7 +63,7 @@ oxr_dpad_state_get_or_add(struct oxr_dpad_state *state, uint64_t key)
 void
 oxr_dpad_state_deinit(struct oxr_dpad_state *state)
 {
-	if (state->uhi != NULL) {
+	if (state != NULL && state->uhi != NULL) {
 		u_hashmap_int_clear_and_call_for_each(state->uhi, destroy_callback, NULL);
 		u_hashmap_int_destroy(&state->uhi);
 	}

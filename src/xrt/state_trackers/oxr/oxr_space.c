@@ -20,6 +20,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_input_transform.h"
 #include "oxr_chain.h"
 #include "oxr_pretty_print.h"
 

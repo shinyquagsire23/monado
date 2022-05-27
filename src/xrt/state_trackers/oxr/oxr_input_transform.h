@@ -11,6 +11,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "oxr_objects.h"
 
 // we need no platform-specific defines from OpenXR.
 #include "openxr/openxr.h"
@@ -80,6 +81,15 @@ enum oxr_input_transform_type
 	 * @see oxr_input_transform_bool_to_vec1_data
 	 */
 	INPUT_TRANSFORM_BOOL_TO_VEC1,
+
+	/*!
+	 * Interpret a 2D joystick or trackpad as a dpad.
+	 *
+	 * This transform type has data:
+	 *
+	 * @see oxr_input_transform_dpad_data
+	 */
+	INPUT_TRANSFORM_DPAD,
 };
 
 struct oxr_input_transform;
@@ -111,6 +121,21 @@ struct oxr_input_transform_bool_to_vec1_data
 };
 
 /*!
+ * Data required for INPUT_TRANSFORM_DPAD
+ * @see oxr_input_transform
+ * @see INPUT_TRANSFORM_DPAD
+ */
+struct oxr_input_transform_dpad_data
+{
+	enum oxr_dpad_region bound_region;
+	enum oxr_dpad_region active_regions;
+	struct oxr_dpad_settings settings;
+	enum xrt_input_type activation_input_type;
+	struct xrt_input *activation_input;
+	bool already_active;
+};
+
+/*!
  * Variant type for input transforms.
  *
  * Some values for @p type do not have any additional data in the union
@@ -139,6 +164,11 @@ struct oxr_input_transform
 		 * INPUT_TRANSFORM_BOOL_TO_VEC1
 		 */
 		struct oxr_input_transform_bool_to_vec1_data bool_to_vec1;
+		/*!
+		 * Populated when oxr_input_transform::type is
+		 * INPUT_TRANSFORM_DPAD
+		 */
+		struct oxr_input_transform_dpad_data dpad_state;
 	} data;
 };
 
@@ -173,7 +203,7 @@ oxr_input_transform_destroy(struct oxr_input_transform **transform_ptr);
  * @public @memberof oxr_input_transform
  */
 bool
-oxr_input_transform_process(const struct oxr_input_transform *transforms,
+oxr_input_transform_process(struct oxr_input_transform *transforms,
                             size_t transform_count,
                             const struct oxr_input_value_tagged *input,
                             struct oxr_input_value_tagged *out);
@@ -299,6 +329,40 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
                                  const char *bound_path_string,
                                  struct oxr_input_transform **out_transforms,
                                  size_t *out_transform_count);
+
+/*!
+ * Create a transform array to process a 2D input plus activation input to a dpad.
+ *
+ * @param[in] log The logger
+ * @param[in] slog The sink logger
+ * @param[in] input_type The type of input received from the hardware
+ * @param[in] result_type The type of input the application requested
+ * @param[in] bound_path_string The path name string that has been bound.
+ * @param[in] dpad_settings The dpad settings provided by the application
+ * as a binding modification. NULL means use the defaults as per the spec.
+ * @param[in] dpad_region The dpad region associated with this binding
+ * @param[in] activation_input_type The type of the activation input
+ * @param[in] activation_input The activation input, i.e. the input used
+ * to determine when the emulated dpad buttons should activate
+ * @param[out] out_transforms A pointer that will be populated with the output
+ * array's address, or NULL.
+ * @param[out] out_transform_count Where to populate the array size
+ * @return false if not possible
+ *
+ * @relates oxr_input_transform
+ */
+bool
+oxr_input_transform_create_chain_dpad(struct oxr_logger *log,
+                                      struct oxr_sink_logger *slog,
+                                      enum xrt_input_type input_type,
+                                      XrActionType result_type,
+                                      const char *bound_path_string,
+                                      struct oxr_dpad_binding_modification *dpad_binding_modification,
+                                      enum oxr_dpad_region dpad_region,
+                                      enum xrt_input_type activation_input_type,
+                                      struct xrt_input *activation_input,
+                                      struct oxr_input_transform **out_transforms,
+                                      size_t *out_transform_count);
 
 /*!
  * @}

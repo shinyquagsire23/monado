@@ -174,6 +174,18 @@ enum oxr_subaction_path
 };
 
 /*!
+ * Region of a dpad binding that an input is mapped to
+ */
+enum oxr_dpad_region
+{
+	OXR_DPAD_REGION_CENTER = 0,
+	OXR_DPAD_REGION_UP = (1 << 0),
+	OXR_DPAD_REGION_DOWN = (1 << 1),
+	OXR_DPAD_REGION_LEFT = (1 << 2),
+	OXR_DPAD_REGION_RIGHT = (1 << 3),
+};
+
+/*!
  * Tracks the state of a image that belongs to a @ref oxr_swapchain.
  */
 enum oxr_image_state
@@ -1595,6 +1607,29 @@ oxr_session_success_focused_result(struct oxr_session *session)
 	default: return XR_SESSION_NOT_FOCUSED;
 	}
 }
+
+/*!
+ * dpad settings we need extracted from XrInteractionProfileDpadBindingEXT
+ *
+ * @ingroup oxr_input
+ */
+struct oxr_dpad_settings
+{
+	float forceThreshold;
+	float forceThresholdReleased;
+	float centerRegion;
+	float wedgeAngle;
+	bool isSticky;
+};
+
+/*!
+ * dpad binding extracted from XrInteractionProfileDpadBindingEXT
+ */
+struct oxr_dpad_binding_modification
+{
+	XrPath binding;
+	struct oxr_dpad_settings settings;
+};
 
 /*!
  * A entry in the dpad state for one action set.

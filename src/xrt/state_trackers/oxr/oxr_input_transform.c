@@ -8,6 +8,8 @@
  * @ingroup oxr_input_transform
  */
 
+#include "math/m_mathinclude.h"
+
 #include "oxr_input_transform.h"
 #include "oxr_logger.h"
 #include "oxr_objects.h"
@@ -106,6 +108,30 @@ oxr_input_transform_init_vec2_get_y(struct oxr_input_transform *transform, const
 }
 
 bool
+oxr_input_transform_init_vec2_dpad(struct oxr_input_transform *transform,
+                                   const struct oxr_input_transform *parent,
+                                   struct oxr_dpad_settings dpad_settings,
+                                   enum oxr_dpad_region dpad_region,
+                                   enum xrt_input_type activation_input_type,
+                                   struct xrt_input *activation_input)
+{
+	assert(transform != NULL);
+	assert(parent != NULL);
+	assert(parent->result_type == XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE);
+
+	U_ZERO(transform);
+	transform->type = INPUT_TRANSFORM_DPAD;
+	transform->result_type = XRT_INPUT_TYPE_BOOLEAN;
+	transform->data.dpad_state.settings = dpad_settings;
+	transform->data.dpad_state.bound_region = dpad_region;
+	transform->data.dpad_state.activation_input_type = activation_input_type;
+	transform->data.dpad_state.activation_input = activation_input;
+	transform->data.dpad_state.already_active = activation_input == NULL;
+
+	return true;
+}
+
+bool
 oxr_input_transform_init_threshold(struct oxr_input_transform *transform,
                                    const struct oxr_input_transform *parent,
                                    float threshold,
@@ -148,7 +174,7 @@ oxr_input_transform_init_bool_to_vec1(struct oxr_input_transform *transform,
 }
 
 bool
-oxr_input_transform_process(const struct oxr_input_transform *transform,
+oxr_input_transform_process(struct oxr_input_transform *transform,
                             size_t transform_count,
                             const struct oxr_input_value_tagged *input,
                             struct oxr_input_value_tagged *out)
@@ -158,7 +184,7 @@ oxr_input_transform_process(const struct oxr_input_transform *transform,
 	}
 	struct oxr_input_value_tagged data = *input;
 	for (size_t i = 0; i < transform_count; ++i) {
-		const struct oxr_input_transform *xform = &(transform[i]);
+		struct oxr_input_transform *xform = &(transform[i]);
 		switch (xform->type) {
 		case INPUT_TRANSFORM_IDENTITY:
 			// do nothing
@@ -176,6 +202,75 @@ oxr_input_transform_process(const struct oxr_input_transform *transform,
 		case INPUT_TRANSFORM_BOOL_TO_VEC1: {
 			data.value.vec1.x =
 			    data.value.boolean ? xform->data.bool_to_vec1.true_val : xform->data.bool_to_vec1.false_val;
+			break;
+		}
+		case INPUT_TRANSFORM_DPAD: {
+			struct oxr_input_transform_dpad_data *dpad_state = &xform->data.dpad_state;
+
+			if (dpad_state->activation_input != NULL) {
+				bool active = true;
+
+				switch (dpad_state->activation_input_type) {
+				case XRT_INPUT_TYPE_BOOLEAN: {
+					active = dpad_state->activation_input->value.boolean;
+					break;
+				}
+				case XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE: {
+					float force = dpad_state->activation_input->value.vec1.x;
+					active = (force >= dpad_state->settings.forceThreshold) ||
+					         (dpad_state->already_active &&
+					          force >= dpad_state->settings.forceThresholdReleased);
+					break;
+				}
+				default: active = false;
+				}
+
+				dpad_state->already_active = active;
+				if (!active) {
+					dpad_state->active_regions = OXR_DPAD_REGION_CENTER;
+					data.value.boolean = false;
+					break;
+				}
+			}
+
+			enum oxr_dpad_region bound_region = dpad_state->bound_region;
+			enum oxr_dpad_region active_regions = OXR_DPAD_REGION_CENTER;
+
+			for (int i = 0; i < 4; i++) {
+				enum oxr_dpad_region query_region = 1 << i;
+
+				bool rot90 =
+				    (query_region == OXR_DPAD_REGION_LEFT) || (query_region == OXR_DPAD_REGION_RIGHT);
+				bool rot180 =
+				    (query_region == OXR_DPAD_REGION_DOWN) || (query_region == OXR_DPAD_REGION_RIGHT);
+
+				float localX = rot90 ? data.value.vec2.y : data.value.vec2.x;
+				float localY = rot90 ? -data.value.vec2.x : data.value.vec2.y;
+				if (rot180) {
+					localX = -localX;
+					localY = -localY;
+				}
+
+				float centerRadius = dpad_state->settings.centerRegion;
+				if (localX * localX + localY * localY <= centerRadius * centerRadius) {
+					continue;
+				}
+
+				float tanXY = atan2f(localX, localY);
+				float halfAngle = dpad_state->settings.wedgeAngle / 2.0f;
+				if (-halfAngle < tanXY && tanXY <= halfAngle) {
+					active_regions |= query_region;
+				}
+			}
+
+			if (!dpad_state->already_active || !dpad_state->settings.isSticky ||
+			    (dpad_state->active_regions == OXR_DPAD_REGION_CENTER) ||
+			    (active_regions == OXR_DPAD_REGION_CENTER)) {
+				dpad_state->active_regions = active_regions;
+			}
+
+			data.value.boolean = (dpad_state->active_regions == bound_region) ||
+			                     ((dpad_state->active_regions & bound_region) != 0);
 			break;
 		}
 		case INPUT_TRANSFORM_INVALID:
@@ -340,6 +435,75 @@ oxr_input_transform_create_chain(struct oxr_logger *log,
 		transform_count++;
 		current_xform = new_xform;
 	}
+
+	*out_transform_count = transform_count;
+	*out_transforms = oxr_input_transform_clone_chain(chain, transform_count);
+
+	return true;
+}
+
+bool
+oxr_input_transform_create_chain_dpad(struct oxr_logger *log,
+                                      struct oxr_sink_logger *slog,
+                                      enum xrt_input_type input_type,
+                                      XrActionType result_type,
+                                      const char *bound_path_string,
+                                      struct oxr_dpad_binding_modification *dpad_binding_modification,
+                                      enum oxr_dpad_region dpad_region,
+                                      enum xrt_input_type activation_input_type,
+                                      struct xrt_input *activation_input,
+                                      struct oxr_input_transform **out_transforms,
+                                      size_t *out_transform_count)
+{
+	struct oxr_input_transform chain[OXR_MAX_INPUT_TRANSFORMS] = {0};
+
+	// these default settings are specified by OpenXR and thus must not be changed
+	struct oxr_dpad_settings dpad_settings = {
+	    .forceThreshold = 0.5f,
+	    .forceThresholdReleased = 0.4f,
+	    .centerRegion = 0.5f,
+	    .wedgeAngle = M_PI_2,
+	    .isSticky = false,
+	};
+
+	if (dpad_binding_modification != NULL) {
+		dpad_settings = dpad_binding_modification->settings;
+	}
+
+	oxr_slog(slog, "\t\tAdding dpad transform from '%s' to '%s'\n", xr_action_type_to_str(result_type),
+	         xrt_input_type_to_str(input_type));
+
+	struct oxr_input_transform *current_xform = &(chain[0]);
+	if (!oxr_input_transform_init_root(current_xform, input_type)) {
+		*out_transform_count = 0;
+		*out_transforms = NULL;
+		return false;
+	}
+
+	// We start over here.
+	size_t transform_count = 0;
+	input_type = current_xform->result_type;
+	if (input_type != XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE) {
+		oxr_slog(slog, "\t\t\tUnexpected input type for dpad binding %s\n", bound_path_string);
+		return false;
+	}
+	if (result_type != XR_ACTION_TYPE_BOOLEAN_INPUT) {
+		oxr_slog(slog, "\t\t\tUnexpected output type for dpad binding %s\n", bound_path_string);
+		return false;
+	}
+
+	struct oxr_input_transform *new_xform = &(chain[transform_count]);
+	if (!oxr_input_transform_init_vec2_dpad(new_xform, current_xform, dpad_settings, dpad_region,
+	                                        activation_input_type, activation_input)) {
+		// Error has already been logged.
+
+		*out_transform_count = 0;
+		*out_transforms = NULL;
+		return false;
+	}
+
+	current_xform = new_xform;
+	transform_count++;
 
 	*out_transform_count = transform_count;
 	*out_transforms = oxr_input_transform_clone_chain(chain, transform_count);

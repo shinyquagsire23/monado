@@ -6,6 +6,8 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  */
 
+#include "math/m_mathinclude.h"
+
 #include "catch/catch.hpp"
 
 #include <xrt/xrt_defines.h>
@@ -308,6 +310,239 @@ TEST_CASE("input_transform")
 			// not possible
 			CHECK(transform_count == 0);
 			CHECK(transforms == nullptr);
+		}
+	}
+
+	oxr_log_slog(&log, &slog);
+	oxr_input_transform_destroy(&transforms);
+	CHECK(NULL == transforms);
+}
+
+
+struct dpad_test_case
+{
+	float x;
+	float y;
+	enum oxr_dpad_region active_regions;
+};
+
+
+TEST_CASE("input_transform_dpad")
+{
+	struct oxr_logger log;
+	oxr_log_init(&log, "test");
+	struct oxr_sink_logger slog = {};
+
+	struct oxr_input_transform *transforms = NULL;
+	size_t transform_count = 0;
+
+	oxr_input_value_tagged input = {};
+	oxr_input_value_tagged output = {};
+
+	struct oxr_dpad_binding_modification *dpad_binding_modification = NULL;
+	enum xrt_input_type activation_input_type = XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE;
+	struct xrt_input activation_input = {};
+	enum oxr_dpad_region dpad_region = OXR_DPAD_REGION_UP;
+
+	SECTION("Default settings")
+	{
+		XrActionType action_type = XR_ACTION_TYPE_BOOLEAN_INPUT;
+
+		SECTION("without an activation input")
+		{
+			input.type = XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE;
+
+			CHECK(oxr_input_transform_create_chain_dpad(
+			    &log, &slog, input.type, action_type, "/dummy_vec2/dpad_up", dpad_binding_modification,
+			    dpad_region, activation_input_type, NULL, &transforms, &transform_count));
+			CHECK(transform_count == 1);
+			CHECK(transforms != nullptr);
+			CHECK(transforms[0].type == INPUT_TRANSFORM_DPAD);
+
+
+			SECTION("up region is off in center")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 0.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+
+			SECTION("up region is on when pointing up")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+			}
+
+			struct dpad_test_case cases[9] = {
+			    // obvious
+			    {0.0f, 0.0f, OXR_DPAD_REGION_CENTER},
+			    {0.0f, 1.0f, OXR_DPAD_REGION_UP},
+			    {0.0f, -1.0f, OXR_DPAD_REGION_DOWN},
+			    {-1.0f, 0.0f, OXR_DPAD_REGION_LEFT},
+			    {1.0f, 0.0f, OXR_DPAD_REGION_RIGHT},
+			    // boundary cases
+			    {1.0f, 1.0f, OXR_DPAD_REGION_UP},
+			    {-1.0f, -1.0f, OXR_DPAD_REGION_DOWN},
+			    {-1.0f, 1.0f, OXR_DPAD_REGION_LEFT},
+			    {1.0f, -1.0f, OXR_DPAD_REGION_RIGHT},
+			};
+
+			for (uint32_t i = 0; i < ARRAY_SIZE(cases); i++) {
+				DYNAMIC_SECTION("with (x, y) of (" << cases[i].x << ", " << cases[i].y << ")")
+				{
+					input.value.vec2.x = cases[i].x;
+					input.value.vec2.y = cases[i].y;
+					CHECK(
+					    oxr_input_transform_process(transforms, transform_count, &input, &output));
+					CHECK(cases[i].active_regions == transforms[0].data.dpad_state.active_regions);
+				}
+			}
+		}
+		SECTION("with a boolean activation input")
+		{
+			input.type = XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE;
+			input.value.vec2.x = 0.0f;
+			input.value.vec2.y = 1.0f;
+
+			activation_input_type = XRT_INPUT_TYPE_BOOLEAN;
+
+			CHECK(oxr_input_transform_create_chain_dpad(
+			    &log, &slog, input.type, action_type, "/dummy_vec2/dpad_up", dpad_binding_modification,
+			    dpad_region, activation_input_type, &activation_input, &transforms, &transform_count));
+			CHECK(transform_count == 1);
+			CHECK(transforms != nullptr);
+			CHECK(transforms[0].type == INPUT_TRANSFORM_DPAD);
+
+			SECTION("when activation input is set to true")
+			{
+				activation_input.value.boolean = true;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+			}
+			SECTION("when activation input is set to false")
+			{
+				activation_input.value.boolean = false;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+		}
+		SECTION("with a float activation input")
+		{
+			input.type = XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE;
+			input.value.vec2.x = 0.0f;
+			input.value.vec2.y = 1.0f;
+
+			activation_input_type = XRT_INPUT_TYPE_VEC1_ZERO_TO_ONE;
+
+			CHECK(oxr_input_transform_create_chain_dpad(
+			    &log, &slog, input.type, action_type, "/dummy_vec2/dpad_up", dpad_binding_modification,
+			    dpad_region, activation_input_type, &activation_input, &transforms, &transform_count));
+			CHECK(transform_count == 1);
+			CHECK(transforms != nullptr);
+			CHECK(transforms[0].type == INPUT_TRANSFORM_DPAD);
+
+			SECTION("when activation input is set to 1.0")
+			{
+				activation_input.value.vec1.x = 1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+			}
+			SECTION("when activation input is set to 0.0")
+			{
+				activation_input.value.vec1.x = 0.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+			SECTION("when activation input varies")
+			{
+				activation_input.value.vec1.x = 0.45f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+				activation_input.value.vec1.x = 0.6f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+				activation_input.value.vec1.x = 0.45f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+				activation_input.value.vec1.x = 0.35f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+		}
+	}
+	SECTION("Sticky enabled")
+	{
+		XrActionType action_type = XR_ACTION_TYPE_BOOLEAN_INPUT;
+
+		struct oxr_dpad_binding_modification dpad_binding_modification_val = {
+		    XR_NULL_PATH, // XrPath binding, unused at this stage
+		    {
+		        0.5f,   // float forceThreshold
+		        0.4f,   // float forceThresholdReleased
+		        0.5f,   // float centerRegion
+		        M_PI_2, // float wedgeAngle
+		        true,   // bool isSticky
+		    }};
+		dpad_binding_modification = &dpad_binding_modification_val;
+
+		SECTION("without an activation input")
+		{
+			input.type = XRT_INPUT_TYPE_VEC2_MINUS_ONE_TO_ONE;
+			input.value.vec2.x = 0.0f;
+			input.value.vec2.y = 1.0f;
+
+			CHECK(oxr_input_transform_create_chain_dpad(
+			    &log, &slog, input.type, action_type, "/dummy_vec2/dpad_up", dpad_binding_modification,
+			    dpad_region, activation_input_type, NULL, &transforms, &transform_count));
+			CHECK(transform_count == 1);
+			CHECK(transforms != nullptr);
+			CHECK(transforms[0].type == INPUT_TRANSFORM_DPAD);
+
+			SECTION("up region is off in center")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 0.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+
+			SECTION("up region is on when pointing up")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+			}
+			SECTION("up region is off when pointing down")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = -1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
+
+			SECTION("up region stays on when stick moves clockwise to down")
+			{
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+				input.value.vec2.x = 1.0f;
+				input.value.vec2.y = 0.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = -1.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(true == output.value.boolean);
+				input.value.vec2.x = 0.0f;
+				input.value.vec2.y = 0.0f;
+				CHECK(oxr_input_transform_process(transforms, transform_count, &input, &output));
+				CHECK(false == output.value.boolean);
+			}
 		}
 	}
 

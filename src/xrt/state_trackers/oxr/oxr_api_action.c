@@ -84,11 +84,16 @@ process_dpad(struct oxr_logger *log,
 	for (size_t i = 0; i < ARRAY_SIZE(entry->dpads); i++) {
 		// Have we found a empty slot, add it.
 		if (entry->dpads[i].binding == XR_NULL_PATH) {
-			entry->dpads[i] = *dpad;
-
-			// Don't leave potentially dangling pointers.
-			entry->dpads[i].next = NULL;
-			entry->dpads[i].actionSet = XR_NULL_HANDLE;
+			struct oxr_dpad_binding_modification dpad_binding = {
+			    .binding = dpad->binding,
+			    .settings = {
+			        .forceThreshold = dpad->forceThreshold,
+			        .forceThresholdReleased = dpad->forceThresholdReleased,
+			        .centerRegion = dpad->centerRegion,
+			        .wedgeAngle = dpad->wedgeAngle,
+			        .isSticky = dpad->isSticky,
+			    }};
+			entry->dpads[i] = dpad_binding;
 
 			entry->dpad_count++;
 			added = true;
