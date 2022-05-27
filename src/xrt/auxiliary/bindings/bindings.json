@@ -269,7 +269,6 @@
 					"components": ["click", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "click",
 						"center": false
 					},
 					"monado_bindings": {
@@ -429,7 +428,6 @@
 					"components": ["click", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "click",
 						"center": false
 					},
 					"monado_bindings": {
@@ -443,7 +441,6 @@
 					"components": ["click", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "click",
 						"center": false
 					},
 					"monado_bindings": {
@@ -659,7 +656,6 @@
 					"components": ["click", "touch", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "touch",
 						"center": false
 					},
 					"monado_bindings": {
@@ -764,7 +760,6 @@
 					"components": ["click", "touch", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "touch",
 						"center": false
 					},
 					"monado_bindings": {
@@ -1041,7 +1036,6 @@
 					"components": ["click", "position"],
 					"dpad_emulation": {
 						"position": "position",
-						"activate": "click",
 						"center": false
 					},
 					"monado_bindings": {

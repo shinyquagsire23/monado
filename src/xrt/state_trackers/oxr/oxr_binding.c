@@ -23,22 +23,23 @@
 static void
 setup_paths(struct oxr_logger *log,
             struct oxr_instance *inst,
-            struct binding_template *templ,
-            struct oxr_binding *binding)
+            const char **src_paths,
+            XrPath **dest_paths,
+            uint32_t *dest_path_count)
 {
 	uint32_t count = 0;
-	while (templ->paths[count] != NULL) {
+	while (src_paths[count] != NULL) {
 		assert(count != UINT32_MAX);
 		count++;
 	}
 
-	binding->path_count = count;
-	binding->paths = U_TYPED_ARRAY_CALLOC(XrPath, count);
+	*dest_path_count = count;
+	*dest_paths = U_TYPED_ARRAY_CALLOC(XrPath, count);
 
-	for (size_t x = 0; x < binding->path_count; x++) {
-		const char *str = templ->paths[x];
+	for (size_t x = 0; x < *dest_path_count; x++) {
+		const char *str = src_paths[x];
 		size_t len = strlen(str);
-		oxr_path_get_or_create(log, inst, str, len, &binding->paths[x]);
+		oxr_path_get_or_create(log, inst, str, len, &(*dest_paths)[x]);
 	}
 }
 
@@ -100,6 +101,8 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 	p->xname = templ->name;
 	p->binding_count = templ->binding_count;
 	p->bindings = U_TYPED_ARRAY_CALLOC(struct oxr_binding, p->binding_count);
+	p->dpad_count = templ->dpad_count;
+	p->dpads = U_TYPED_ARRAY_CALLOC(struct oxr_dpad_emulation, p->dpad_count);
 	p->path = path;
 	p->localized_name = templ->localized_name;
 
@@ -119,9 +122,30 @@ interaction_profile_find_or_create(struct oxr_logger *log,
 		}
 
 		b->localized_name = t->localized_name;
-		setup_paths(log, inst, t, b);
+		setup_paths(log, inst, t->paths, &b->paths, &b->path_count);
 		b->input = t->input;
+		b->dpad_activate = t->dpad_activate;
 		b->output = t->output;
+	}
+
+	for (size_t x = 0; x < templ->dpad_count; x++) {
+		struct dpad_emulation *t = &templ->dpads[x];
+		struct oxr_dpad_emulation *d = &p->dpads[x];
+
+		XrPath subaction_path;
+		XrResult r =
+		    oxr_path_get_or_create(log, inst, t->subaction_path, strlen(t->subaction_path), &subaction_path);
+		if (r != XR_SUCCESS) {
+			oxr_log(log, "Couldn't get subaction path %s\n", t->subaction_path);
+		}
+
+		if (!get_subaction_path_from_path(log, inst, subaction_path, &d->subaction_path)) {
+			oxr_log(log, "Invalid subaction path %s\n", t->subaction_path);
+		}
+
+		setup_paths(log, inst, t->paths, &d->paths, &d->path_count);
+		d->position = t->position;
+		d->activate = t->activate;
 	}
 
 	// Add to the list of currently created interaction profiles.
@@ -409,6 +433,8 @@ oxr_binding_destroy_all(struct oxr_logger *log, struct oxr_instance *inst)
 		p->bindings = NULL;
 		p->binding_count = 0;
 
+		oxr_dpad_state_deinit(&p->dpad_state);
+
 		free(p);
 	}
 
@@ -446,6 +472,10 @@ oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
 
 	// Everything is now valid, reset the keys.
 	reset_all_keys(bindings, binding_count);
+	// Transfer ownership of dpad state to profile
+	oxr_dpad_state_deinit(&p->dpad_state);
+	p->dpad_state = *dpad_state;
+	U_ZERO(dpad_state);
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
@@ -455,8 +485,7 @@ oxr_action_suggest_interaction_profile_bindings(struct oxr_logger *log,
 	}
 
 out:
-	// Teardown any remaining dpad state.
-	oxr_dpad_state_deinit(dpad_state);
+	oxr_dpad_state_deinit(dpad_state); // if it hasn't been moved
 
 	return XR_SUCCESS;
 }

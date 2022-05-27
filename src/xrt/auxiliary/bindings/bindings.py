@@ -8,10 +8,14 @@ import argparse
 import json
 
 
-def find_component_in_list_by_name(name, component_list):
+def find_component_in_list_by_name(name, component_list, subaction_path=None, identifier_json_path=None):
     """Find a component with the given name in a list of components."""
     for component in component_list:
         if component.component_name == name:
+            if subaction_path is not None and component.subaction_path != subaction_path:
+                continue
+            if identifier_json_path is not None and component.identifier_json_path != identifier_json_path:
+                continue
             return component
     return None
 
@@ -41,6 +45,19 @@ class PathsByLengthCollector:
             ret[length] = list(set_per_length)
         return ret
 
+def dpad_paths(identifier_path, center):
+    paths = [
+        identifier_path + "/dpad_up",
+        identifier_path + "/dpad_down",
+        identifier_path + "/dpad_left",
+        identifier_path + "/dpad_right",
+    ]
+
+    if center:
+        paths.append(identifier_path + "/dpad_center")
+
+    return paths
+
 class DPad:
     """Class holding per identifier information for dpad emulation."""
 
@@ -51,22 +68,14 @@ class DPad:
                    dpad_json):
         center = dpad_json["center"]
         position_str = dpad_json["position"]
-        activate_str = dpad_json["activate"]
+        activate_str = dpad_json.get("activate")
 
         position_component = find_component_in_list_by_name(position_str,
                                                             component_list)
         activate_component = find_component_in_list_by_name(activate_str,
                                                             component_list)
 
-        paths = [
-            identifier_path + "/dpad_up",
-            identifier_path + "/dpad_down",
-            identifier_path + "/dpad_left",
-            identifier_path + "/dpad_right",
-        ]
-
-        if center:
-            paths.append(identifier_path + "/dpad_center")
+        paths = dpad_paths(identifier_path, center)
 
         return DPad(center,
                     paths,
@@ -101,6 +110,11 @@ class Component:
         monado_bindings = json_subpath["monado_bindings"]
         component_list = []
         for component_name in json_subpath["components"]:  # click, touch, ...
+            matched_dpad_emulation = None
+            if ("dpad_emulation" in json_subpath and
+                    json_subpath["dpad_emulation"]["position"] == component_name):
+                matched_dpad_emulation = json_subpath["dpad_emulation"]
+
             monado_binding = None
             if component_name in monado_bindings:
                 monado_binding = monado_bindings[component_name]
@@ -110,6 +124,7 @@ class Component:
                           json_subpath["localized_name"],
                           json_subpath["type"],
                           component_name,
+                          matched_dpad_emulation,
                           monado_binding,
                           json_subpath["components"])
             component_list.append(c)
@@ -122,6 +137,7 @@ class Component:
                  subpath_localized_name,
                  subpath_type,
                  component_name,
+                 dpad_emulation,
                  monado_binding,
                  components_for_subpath):
         self.subaction_path = subaction_path
@@ -129,6 +145,7 @@ class Component:
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
+        self.dpad_emulation = dpad_emulation
         self.monado_binding = monado_binding
 
         # click, touch etc. components under the subpath of this component.
@@ -146,6 +163,8 @@ class Component:
         if self.component_name == "position":
             paths.append(basepath + "/" + "x")
             paths.append(basepath + "/" + "y")
+            if self.has_dpad_emulation():
+                paths += dpad_paths(basepath, self.dpad_emulation["center"])
             paths.append(basepath)
         else:
             paths.append(basepath + "/" + self.component_name)
@@ -156,6 +175,9 @@ class Component:
     def is_input(self):
         # only haptics is output so far, everything else is input
         return self.component_name != "haptic"
+
+    def has_dpad_emulation(self):
+        return self.dpad_emulation is not None
 
     def is_output(self):
         return not self.is_input()
@@ -390,6 +412,16 @@ def generate_bindings_c(file, p):
                 else:
                     f.write(f'\t\t\t\t.input = 0,\n')
 
+                if component.has_dpad_emulation() and "activate" in component.dpad_emulation:
+                    activate_component = find_component_in_list_by_name(
+                        component.dpad_emulation["activate"], profile.components,
+                        subaction_path=component.subaction_path,
+                        identifier_json_path=component.identifier_json_path)
+                    f.write(
+                        f'\t\t\t\t.dpad_activate = {activate_component.monado_binding},\n')
+                else:
+                    f.write(f'\t\t\t\t.dpad_activate = 0,\n')
+
                 if component.is_output() and monado_binding is not None:
                     f.write(f'\t\t\t\t.output = {monado_binding},\n')
                 else:
@@ -425,7 +457,7 @@ def generate_bindings_c(file, p):
                 if identifier.dpad.activate_component:
                     f.write(f'\t\t\t\t.activate = {identifier.dpad.activate_component.monado_binding},\n')
                 else:
-                    f.write(f'\t\t\t\t.actiavte = 0')
+                    f.write(f'\t\t\t\t.activate = 0')
 
                 f.write('\t\t\t},\n')
             f.write('\t\t}, // /array of dpad_emulation\n')
@@ -522,7 +554,7 @@ def generate_bindings_h(file, p):
                 "_dpad_emulator(const char *str, size_t length);\n")
 
     f.write(f'''
-#define PATHS_PER_BINDING_TEMPLATE 8
+#define PATHS_PER_BINDING_TEMPLATE 16
 
 enum oxr_dpad_binding_point
 {{
@@ -548,6 +580,7 @@ struct binding_template
 \tconst char *localized_name;
 \tconst char *paths[PATHS_PER_BINDING_TEMPLATE];
 \tenum xrt_input_name input;
+\tenum xrt_input_name dpad_activate;
 \tenum xrt_output_name output;
 }};
 

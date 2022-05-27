@@ -1597,6 +1597,43 @@ oxr_session_success_focused_result(struct oxr_session *session)
 }
 
 /*!
+ * A entry in the dpad state for one action set.
+ *
+ * @ingroup oxr_input
+ */
+struct oxr_dpad_entry
+{
+#ifdef XR_EXT_dpad_binding
+	struct oxr_dpad_binding_modification dpads[4];
+	uint32_t dpad_count;
+#endif
+
+	uint64_t key;
+};
+
+/*!
+ * Holds dpad binding state for a single interaction profile.
+ *
+ * @ingroup oxr_input
+ */
+struct oxr_dpad_state
+{
+	struct u_hashmap_int *uhi;
+};
+
+/*!
+ * dpad emulation settings from oxr_interaction_profile
+ */
+struct oxr_dpad_emulation
+{
+	enum oxr_subaction_path subaction_path;
+	XrPath *paths;
+	uint32_t path_count;
+	enum xrt_input_name position;
+	enum xrt_input_name activate; // Can be zero
+};
+
+/*!
  * A single interaction profile.
  */
 struct oxr_interaction_profile
@@ -1611,6 +1648,11 @@ struct oxr_interaction_profile
 
 	struct oxr_binding *bindings;
 	size_t binding_count;
+
+	struct oxr_dpad_emulation *dpads;
+	size_t dpad_count;
+
+	struct oxr_dpad_state dpad_state;
 };
 
 /*!
@@ -1632,6 +1674,7 @@ struct oxr_binding
 	uint32_t *preferred_binding_path_index;
 
 	enum xrt_input_name input;
+	enum xrt_input_name dpad_activate;
 
 	enum xrt_output_name output;
 };
@@ -1761,8 +1804,10 @@ struct oxr_action_state
  */
 struct oxr_action_input
 {
-	struct xrt_device *xdev;
-	struct xrt_input *input;
+	struct xrt_device *xdev;                // Used for poses and transform is null.
+	struct xrt_input *input;                // Ditto
+	enum xrt_input_name dpad_activate_name; // used to activate dpad emulation if present
+	struct xrt_input *dpad_activate;        // used to activate dpad emulation if present
 	struct oxr_input_transform *transforms;
 	size_t transform_count;
 	XrPath bound_path;
@@ -1850,31 +1895,6 @@ struct oxr_action_attachment
 #define OXR_CACHE_MEMBER(X) struct oxr_action_cache X;
 	OXR_FOR_EACH_SUBACTION_PATH(OXR_CACHE_MEMBER)
 #undef OXR_CACHE_MEMBER
-};
-
-/*!
- * A entry in the dpad state for one action set.
- *
- * @ingroup oxr_input
- */
-struct oxr_dpad_entry
-{
-#ifdef XR_EXT_dpad_binding
-	XrInteractionProfileDpadBindingEXT dpads[4];
-	uint32_t dpad_count;
-#endif
-
-	uint64_t key;
-};
-
-/*!
- * Holds dpad binding state for a single interaction profile.
- *
- * @ingroup oxr_input
- */
-struct oxr_dpad_state
-{
-	struct u_hashmap_int *uhi;
 };
 
 /*!

@@ -488,6 +488,14 @@ do_inputs(struct oxr_binding *binding_point,
 		inputs[index].input = input;
 		inputs[index].xdev = xdev;
 		inputs[index].bound_path = matched_path;
+		if (binding_point->dpad_activate != 0) {
+			struct xrt_input *dpad_activate = NULL;
+			if (!oxr_xdev_find_input(xdev, binding_point->dpad_activate, &dpad_activate)) {
+				return false;
+			}
+			inputs[index].dpad_activate_name = binding_point->dpad_activate;
+			inputs[index].dpad_activate = dpad_activate;
+		}
 		return true;
 	}
 
