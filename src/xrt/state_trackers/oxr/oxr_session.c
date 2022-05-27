@@ -615,6 +615,36 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	return ret;
 }
 
+static XrResult
+oxr_session_allocate_and_init(struct oxr_logger *log, struct oxr_system *sys, struct oxr_session **out_session)
+{
+	struct oxr_session *sess = NULL;
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, sess, OXR_XR_DEBUG_SESSION, oxr_session_destroy, &sys->inst->handle);
+
+	// What system is this session based on.
+	sess->sys = sys;
+
+	// Init the begin/wait frame semaphore and related fields.
+	os_semaphore_init(&sess->sem, 1);
+
+	sess->active_wait_frames = 0;
+	os_mutex_init(&sess->active_wait_frames_lock);
+
+	// Debug and user options.
+	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
+	sess->frame_timing_spew = debug_get_bool_option_frame_timing_spew();
+	sess->frame_timing_wait_sleep_ms = debug_get_num_option_wait_frame_sleep();
+
+	// Action system hashmaps.
+	u_hashmap_int_create(&sess->act_sets_attachments_by_key);
+	u_hashmap_int_create(&sess->act_attachments_by_key);
+
+	// Done with basic init, set out variable.
+	*out_session = sess;
+
+	return XR_SUCCESS;
+}
+
 
 #define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, XSI, SESS)                                                                 \
 	do {                                                                                                           \
@@ -631,16 +661,19 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 		}                                                                                                      \
 	} while (false)
 
-#define OXR_SESSION_ALLOCATE(LOG, SYS, OUT)                                                                            \
+#define OXR_SESSION_ALLOCATE_AND_INIT(LOG, SYS, OUT)                                                                   \
 	do {                                                                                                           \
-		OXR_ALLOCATE_HANDLE_OR_RETURN(LOG, OUT, OXR_XR_DEBUG_SESSION, oxr_session_destroy,                     \
-		                              &(SYS)->inst->handle);                                                   \
-		(OUT)->sys = (SYS);                                                                                    \
+		XrResult ret = oxr_session_allocate_and_init(LOG, SYS, &OUT);                                          \
+		if (ret != XR_SUCCESS) {                                                                               \
+			return ret;                                                                                    \
+		}                                                                                                      \
 	} while (0)
 
 
-/* Just the allocation and populate part, so we can use early-returns to
- * simplify code flow and avoid weird if/else */
+/*
+ * Does allocation, population and basic init, so we can use early-returns to
+ * simplify code flow and avoid weird if/else.
+ */
 static XrResult
 oxr_session_create_impl(struct oxr_logger *log,
                         struct oxr_system *sys,
@@ -658,7 +691,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
 
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_gl_xlib(log, sys, opengl_xlib, *out_session);
 	}
@@ -675,7 +708,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 			                 "xrGetOpenGLESGraphicsRequirementsKHR");
 		}
 
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_gles_android(log, sys, opengles_android, *out_session);
 	}
@@ -712,7 +745,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 			    (void *)vulkan->physicalDevice, (void *)sys->suggested_vulkan_physical_device, fn);
 		}
 
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_vk(log, sys, vulkan, *out_session);
 	}
@@ -728,7 +761,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
 		}
 
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_egl(log, sys, egl, *out_session);
 	}
@@ -751,7 +784,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		}
 
 
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
 		return oxr_session_populate_d3d11(log, sys, d3d11, *out_session);
 	}
@@ -765,7 +798,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 	 */
 
 	if (sys->inst->extensions.MND_headless) {
-		OXR_SESSION_ALLOCATE(log, sys, *out_session);
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
 		(*out_session)->compositor = NULL;
 		(*out_session)->create_swapchain = NULL;
 		return XR_SUCCESS;
@@ -804,21 +837,9 @@ oxr_session_create(struct oxr_logger *log,
 		return ret;
 	}
 
-	// Init the begin/wait frame semaphore.
-	os_semaphore_init(&sess->sem, 1);
-
-	sess->active_wait_frames = 0;
-	os_mutex_init(&sess->active_wait_frames_lock);
-
-	sess->ipd_meters = debug_get_num_option_ipd() / 1000.0f;
-	sess->frame_timing_spew = debug_get_bool_option_frame_timing_spew();
-	sess->frame_timing_wait_sleep_ms = debug_get_num_option_wait_frame_sleep();
-
+	// Everything is in order, start the state changes.
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
-
-	u_hashmap_int_create(&sess->act_sets_attachments_by_key);
-	u_hashmap_int_create(&sess->act_attachments_by_key);
 
 	*out_session = sess;
 
