@@ -330,6 +330,41 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		return XRT_ERROR_OPENGL;
 	}
 
+
+	/*
+	 * Some sanity checking.
+	 */
+
+	if (glGetString == NULL) {
+		EGL_ERROR("glGetString not loaded!");
+		restore_context(&old);
+		return XRT_ERROR_OPENGL;
+	}
+
+	EGL_DEBUG("EGL made context:\n\tGL_VERSION: %s\n\tGL_RENDERER: %s\n\tGL_VENDOR: %s", //
+	          glGetString(GL_VERSION), glGetString(GL_RENDERER), glGetString(GL_VENDOR));
+
+	/*
+	 * If a renderer is old enough to not support OpenGL(ES) 3 or above
+	 * it won't support Monado at all, it's not a hard requirement and
+	 * lets us detect weird errors early on some platforms.
+	 */
+	if (!GLAD_GL_VERSION_3_0 && !GLAD_GL_ES_VERSION_3_0) {
+		switch (egl_client_type) {
+		default: EGL_ERROR("Unknown OpenGL version!"); break;
+		case EGL_OPENGL_API: EGL_ERROR("OpenGL 3.0 or above!"); break;
+		case EGL_OPENGL_ES_API: EGL_ERROR("OpenGL ES 3.0 or above!"); break;
+		}
+
+		restore_context(&old);
+		return XRT_ERROR_OPENGL;
+	}
+
+
+	/*
+	 * Now do the allocation and init.
+	 */
+
 	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
 	ceglc->current.dpy = display;
 	ceglc->current.ctx = context;
