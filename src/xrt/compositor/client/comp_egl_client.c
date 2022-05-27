@@ -305,6 +305,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	switch (egl_client_type) {
 	case EGL_OPENGL_API:
 #if defined(XRT_HAVE_OPENGL)
+		EGL_DEBUG("Loading GL functions");
 		gladLoadGL(get_gl_procaddr);
 		break;
 #else
@@ -315,6 +316,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	case EGL_OPENGL_ES_API:
 #if defined(XRT_HAVE_OPENGLES)
+		EGL_DEBUG("Loading GLES2 functions");
 		gladLoadGLES2(get_gl_procaddr);
 		break;
 #else
@@ -322,7 +324,10 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		restore_context(&old);
 		return XRT_ERROR_OPENGL;
 #endif
-	default: EGL_ERROR("Unsupported EGL client type"); return XRT_ERROR_OPENGL;
+	default:
+		EGL_ERROR("Unsupported EGL client type: 0x%x", egl_client_type);
+		restore_context(&old);
+		return XRT_ERROR_OPENGL;
 	}
 
 	struct client_egl_compositor *ceglc = U_TYPED_CALLOC(struct client_egl_compositor);
