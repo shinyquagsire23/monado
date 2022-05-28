@@ -64,7 +64,7 @@ DEBUG_GET_ONCE_LOG_OPTION(remote_log, "REMOTE_LOG", U_LOGGING_INFO)
  *
  */
 
-int
+static int
 setup_accept_fd(struct r_hub *r)
 {
 	struct sockaddr_in server_address = {0};
@@ -133,7 +133,7 @@ wait_for_read_and_to_continue(struct r_hub *r, int socket)
 	}
 }
 
-int
+static int
 do_accept(struct r_hub *r)
 {
 	struct sockaddr_in addr = {0};
@@ -198,7 +198,7 @@ read_one(struct r_hub *r, struct r_remote_data *data)
 	return 0;
 }
 
-void *
+static void *
 run_thread(void *ptr)
 {
 	struct r_hub *r = (struct r_hub *)ptr;
@@ -239,7 +239,7 @@ run_thread(void *ptr)
 	return NULL;
 }
 
-void
+static void
 r_hub_destroy(struct xrt_system_devices *xsysd)
 {
 	struct r_hub *r = (struct r_hub *)xsysd;

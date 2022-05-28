@@ -19,6 +19,7 @@
 
 #include "r_interface.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +47,7 @@ struct r_hub
 	//! The latest data received.
 	struct r_remote_data latest;
 
-
+	//! Incoming connection socket.
 	int accept_fd;
 
 	uint16_t port;
