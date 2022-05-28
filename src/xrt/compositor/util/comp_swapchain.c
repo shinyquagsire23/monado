@@ -336,7 +336,9 @@ comp_swapchain_import(struct vk_bundle *vk,
 
 	struct comp_swapchain *sc = alloc_and_set_funcs(vk, cscgc, images_count);
 
-	VK_DEBUG(vk, "CREATE FROM NATIVE %p %dx%d", (void *)sc, info->width, info->height);
+	VK_DEBUG(vk, "IMPORT %p %dx%d %s (%ld)", (void *)sc, //
+	         info->width, info->height,                  //
+	         vk_format_string(info->format), info->format);
 
 	// Use the image helper to get the images.
 	ret = vk_ic_from_natives(vk, info, native_images, images_count, &sc->vkic);
