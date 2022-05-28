@@ -9,7 +9,7 @@
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
-#include "util/u_logging.h"
+#include "util/u_debug.h"
 
 #include "r_interface.h"
 #include "r_internal.h"
@@ -37,7 +37,30 @@
 
 /*
  *
- * Function.
+ * Small helpers.
+ *
+ */
+
+DEBUG_GET_ONCE_LOG_OPTION(remote_log, "REMOTE_LOG", U_LOGGING_INFO)
+
+// clang-format off
+#define R_TRACE(R, ...) U_LOG_IFL_T((R)->rc.log_level, __VA_ARGS__)
+#define R_DEBUG(R, ...) U_LOG_IFL_D((R)->rc.log_level, __VA_ARGS__)
+#define R_INFO(R, ...) U_LOG_IFL_I((R)->rc.log_level, __VA_ARGS__)
+#define R_WARN(R, ...) U_LOG_IFL_W((R)->rc.log_level, __VA_ARGS__)
+#define R_ERROR(R, ...) U_LOG_IFL_E((R)->rc.log_level, __VA_ARGS__)
+
+#define RC_TRACE(RC, ...) U_LOG_IFL_T((RC)->log_level, __VA_ARGS__)
+#define RC_DEBUG(RC, ...) U_LOG_IFL_D((RC)->log_level, __VA_ARGS__)
+#define RC_INFO(RC, ...) U_LOG_IFL_I((RC)->log_level, __VA_ARGS__)
+#define RC_WARN(RC, ...) U_LOG_IFL_W((RC)->log_level, __VA_ARGS__)
+#define RC_ERROR(RC, ...) U_LOG_IFL_E((RC)->log_level, __VA_ARGS__)
+// clang-format on
+
+
+/*
+ *
+ * Socket functions.
  *
  */
 
@@ -49,7 +72,7 @@ setup_accept_fd(struct r_hub *r)
 
 	ret = socket(AF_INET, SOCK_STREAM, 0);
 	if (ret < 0) {
-		U_LOG_E("socket failed: %i", ret);
+		R_ERROR(r, "socket: %i", ret);
 		return ret;
 	}
 
@@ -58,7 +81,7 @@ setup_accept_fd(struct r_hub *r)
 	int flag = 1;
 	ret = setsockopt(r->accept_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
 	if (ret < 0) {
-		U_LOG_E("setsockopt failed: %i", ret);
+		R_ERROR(r, "setsockopt: %i", ret);
 		close(r->accept_fd);
 		r->accept_fd = -1;
 		return ret;
@@ -70,7 +93,7 @@ setup_accept_fd(struct r_hub *r)
 
 	ret = bind(r->accept_fd, (struct sockaddr *)&server_address, sizeof(server_address));
 	if (ret < 0) {
-		U_LOG_E("bind failed: %i", ret);
+		R_ERROR(r, "bind: %i", ret);
 		close(r->accept_fd);
 		r->accept_fd = -1;
 		return ret;
@@ -103,14 +126,14 @@ do_accept(struct r_hub *r)
 	} while (ret == 0);
 
 	if (ret < 0) {
-		U_LOG_E("select failed: %i", ret);
+		R_ERROR(r, "select: %i", ret);
 		return ret;
 	}
 
 	socklen_t addr_length = (socklen_t)sizeof(addr);
 	ret = accept(r->accept_fd, (struct sockaddr *)&addr, &addr_length);
 	if (ret < 0) {
-		U_LOG_E("accept failed: %i", ret);
+		R_ERROR(r, "accept: %i", ret);
 		return ret;
 	}
 
@@ -119,14 +142,14 @@ do_accept(struct r_hub *r)
 	int flags = 1;
 	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
 	if (ret < 0) {
-		U_LOG_E("setsockopt failed: %i", ret);
+		R_ERROR(r, "setsockopt: %i", ret);
 		close(conn_fd);
 		return ret;
 	}
 
 	r->rc.fd = conn_fd;
 
-	U_LOG_I("Connection received! %i", r->rc.fd);
+	R_INFO(r, "Connection received! %i", r->rc.fd);
 
 	return 0;
 }
@@ -139,16 +162,16 @@ run_thread(void *ptr)
 
 	ret = setup_accept_fd(r);
 	if (ret < 0) {
-		U_LOG_I("Leaving thread");
+		R_INFO(r, "Leaving thread");
 		return NULL;
 	}
 
 	while (r->accept_fd >= 0) {
-		U_LOG_I("Listening on port '%i'.", r->port);
+		R_INFO(r, "Listening on port '%i'.", r->port);
 
 		ret = do_accept(r);
 		if (ret < 0) {
-			U_LOG_I("Leaving thread");
+			R_INFO(r, "Leaving thread");
 			return NULL;
 		}
 
@@ -167,7 +190,8 @@ run_thread(void *ptr)
 		}
 	}
 
-	U_LOG_I("Leaving thread");
+	R_INFO(r, "Leaving thread");
+
 	return NULL;
 }
 
@@ -241,6 +265,7 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 	r->reset.right.pose.position.z = -0.5f;
 	r->reset.right.pose.orientation.w = 1.0f;
 	r->latest = r->reset;
+	r->rc.log_level = debug_get_log_option_remote_log();
 	r->gui.hmd = true;
 	r->gui.left = true;
 	r->gui.right = true;
@@ -252,14 +277,14 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 
 	ret = os_thread_helper_init(&r->oth);
 	if (ret != 0) {
-		U_LOG_E("Failed to init threading!");
+		R_ERROR(r, "Failed to init threading!");
 		r_hub_destroy(&r->base);
 		return XRT_ERROR_ALLOCATION;
 	}
 
 	ret = os_thread_helper_start(&r->oth, run_thread, r);
 	if (ret != 0) {
-		U_LOG_E("Failed to start thread!");
+		R_ERROR(r, "Failed to start thread!");
 		r_hub_destroy(&r->base);
 		return XRT_ERROR_ALLOCATION;
 	}
@@ -326,18 +351,22 @@ r_remote_connection_init(struct r_remote_connection *rc, const char *ip_addr, ui
 	int conn_fd;
 	int ret;
 
+	// Set log level.
+	rc->log_level = debug_get_log_option_remote_log();
+
+	// Address
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 
 	ret = inet_pton(AF_INET, ip_addr, &addr.sin_addr);
 	if (ret < 0) {
-		U_LOG_E("socket failed: %i", ret);
+		RC_ERROR(rc, "inet_pton: %i", ret);
 		return ret;
 	}
 
 	ret = socket(AF_INET, SOCK_STREAM, 0);
 	if (ret < 0) {
-		U_LOG_E("socket failed: %i", ret);
+		RC_ERROR(rc, "socket: %i", ret);
 		return ret;
 	}
 
@@ -345,7 +374,7 @@ r_remote_connection_init(struct r_remote_connection *rc, const char *ip_addr, ui
 
 	ret = connect(conn_fd, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret < 0) {
-		U_LOG_E("connect failed: %i", ret);
+		RC_ERROR(rc, "connect: %i", ret);
 		close(conn_fd);
 		return ret;
 	}
@@ -353,7 +382,7 @@ r_remote_connection_init(struct r_remote_connection *rc, const char *ip_addr, ui
 	int flags = 1;
 	ret = setsockopt(conn_fd, SOL_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
 	if (ret < 0) {
-		U_LOG_E("setsockopt failed: %i", ret);
+		RC_ERROR(rc, "setsockopt: %i", ret);
 		close(conn_fd);
 		return ret;
 	}
@@ -374,12 +403,13 @@ r_remote_connection_read_one(struct r_remote_connection *rc, struct r_remote_dat
 
 		ssize_t ret = read(rc->fd, ptr, size - current);
 		if (ret < 0) {
+			RC_ERROR(rc, "read: %zi", ret);
 			return ret;
 		}
 		if (ret > 0) {
 			current += (size_t)ret;
 		} else {
-			U_LOG_I("Disconnected!");
+			RC_INFO(rc, "Disconnected!");
 			return -1;
 		}
 	}
@@ -398,12 +428,13 @@ r_remote_connection_write_one(struct r_remote_connection *rc, const struct r_rem
 
 		ssize_t ret = write(rc->fd, ptr, size - current);
 		if (ret < 0) {
+			RC_ERROR(rc, "write: %zi", ret);
 			return ret;
 		}
 		if (ret > 0) {
 			current += (size_t)ret;
 		} else {
-			U_LOG_I("Disconnected!");
+			RC_INFO(rc, "Disconnected!");
 			return -1;
 		}
 	}

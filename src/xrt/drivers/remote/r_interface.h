@@ -10,6 +10,8 @@
 #pragma once
 
 #include "xrt/xrt_defines.h"
+#include "util/u_logging.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,6 +83,10 @@ struct r_remote_data
  */
 struct r_remote_connection
 {
+	//! Logging level to be used.
+	enum u_logging_level log_level;
+
+	//! Socket.
 	int fd;
 };
 
