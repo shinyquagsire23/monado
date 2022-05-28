@@ -89,6 +89,7 @@ struct vk_bundle
 	// beginning of GENERATED device extension code - do not modify - used by scripts
 	bool has_KHR_external_fence_fd;
 	bool has_KHR_external_semaphore_fd;
+	bool has_KHR_image_format_list;
 	bool has_KHR_timeline_semaphore;
 	bool has_EXT_calibrated_timestamps;
 	bool has_EXT_display_control;
