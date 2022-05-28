@@ -106,6 +106,56 @@ handle_downable_button(const char *name)
 }
 
 static void
+handle_input(struct r_remote_controller_data *d)
+{
+	igText("Hover buttons and sliders to touch component.");
+	bool touched = false;
+
+	d->system_click = handle_downable_button("System");
+	d->system_touch = igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	igSameLine(0, 3);
+
+	d->a_click = handle_downable_button("A");
+	d->a_touch = igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	igSameLine(0, 3);
+
+	d->b_click = handle_downable_button("B");
+	d->b_touch = igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	igSameLine(0, 3);
+
+	igCheckbox("Active", &d->active);
+
+	// Squeeze
+	igSliderFloat("Squeeze Value", &d->squeeze_value.x, 0, 1, "%.2f", 0);
+	igSliderFloat("Squeeze Force", &d->squeeze_force.x, 0, 1, "%.2f", 0);
+
+	// Trigger
+	igText("Value > 0.0 causes touch, 0.7 > causes click");
+	igSliderFloat("Trigger", &d->trigger_value.x, 0, 1, "%.2f", 0);
+	touched |= igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	d->trigger_click = d->trigger_value.x > 0.7;
+	touched |= d->trigger_value.x > 0.0001;
+	d->trigger_touch = touched;
+
+	// Thumbstick
+	touched = false;
+	d->thumbstick_click = handle_downable_button("Thumbstick Click");
+	touched |= igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	igSliderFloat2("Thumbstick", &d->thumbstick.x, -1, 1, "%.2f", 0);
+	touched |= igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	d->thumbstick_touch = touched;
+
+	// Trackpad
+	touched = false;
+	igSliderFloat2("Trackpad", &d->trackpad.x, -1, 1, "%.2f", 0);
+	touched |= igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	igSliderFloat("Trackpad Force", &d->trackpad_force.x, 0, 1, "%.2f", 0);
+	touched |= igIsItemHovered(ImGuiHoveredFlags_RectOnly);
+	touched |= d->trackpad_force.x >= 0.0001f;
+	d->trackpad_touch = touched;
+}
+
+static void
 render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 {
 	struct r_remote_data *d = &gr->data;
@@ -264,11 +314,7 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 
 #define BUTTONS(prefix)                                                                                                \
 	do {                                                                                                           \
-		d->prefix.select = handle_downable_button("Select");                                                   \
-		igSameLine(0, 3);                                                                                      \
-		d->prefix.menu = handle_downable_button("Menu");                                                       \
-		igSameLine(0, 3);                                                                                      \
-		igCheckbox("Active", &d->prefix.active);                                                               \
+		handle_input(&d->prefix);                                                                              \
 	} while (false)
 
 #define CURL(prefix, name, index) igDragFloat(#prefix "." #name, &d->prefix.hand_curl[index], 0.01, 0.0, 1.0, "%f", 0);

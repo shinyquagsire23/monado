@@ -38,7 +38,7 @@ struct xrt_system_devices;
  *
  * @ingroup drv_remote
  */
-#define R_HEADER_VALUE (*(uint64_t *)"mndrmt1\0")
+#define R_HEADER_VALUE (*(uint64_t *)"mndrmt2\0")
 
 /*!
  * Data per controller.
@@ -51,12 +51,31 @@ struct r_remote_controller_data
 
 	float hand_curl[5];
 
-	bool hand_tracking_active;
+	struct xrt_vec1 trigger_value;
+	struct xrt_vec1 squeeze_value;
+	struct xrt_vec1 squeeze_force;
+	struct xrt_vec2 thumbstick;
+	struct xrt_vec1 trackpad_force;
+	struct xrt_vec2 trackpad;
 
+	bool hand_tracking_active;
 	bool active;
-	bool select;
-	bool menu;
-	bool _pad;
+
+	bool system_click;
+	bool system_touch;
+	bool a_click;
+	bool a_touch;
+	bool b_click;
+	bool b_touch;
+	bool trigger_click;
+	bool trigger_touch;
+	bool thumbstick_click;
+	bool thumbstick_touch;
+	bool trackpad_touch;
+	bool _pad0;
+	bool _pad1;
+	bool _pad2;
+	// active(2) + bools(11) + pad(3) = 16
 };
 
 /*!

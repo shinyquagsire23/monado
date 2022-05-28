@@ -353,13 +353,9 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 	u_var_add_pose(r, &r->latest.hmd.pose, "hmd.pose");
 	// u_var_add_gui_header(r, &r->gui.left, "Left");
 	u_var_add_bool(r, &r->latest.left.active, "left.active");
-	u_var_add_bool(r, &r->latest.left.select, "left.select");
-	u_var_add_bool(r, &r->latest.left.menu, "left.menu");
 	u_var_add_pose(r, &r->latest.left.pose, "left.pose");
 	// u_var_add_gui_header(r, &r->gui.right, "Right");
 	u_var_add_bool(r, &r->latest.right.active, "right.active");
-	u_var_add_bool(r, &r->latest.right.select, "right.select");
-	u_var_add_bool(r, &r->latest.right.menu, "right.menu");
 	u_var_add_pose(r, &r->latest.right.pose, "right.pose");
 
 
