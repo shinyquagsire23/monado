@@ -610,6 +610,9 @@ static const char *optional_device_extensions[] = {
 #error "Need port!"
 #endif
 
+#ifdef VK_KHR_image_format_list
+    VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
+#endif
 #ifdef VK_KHR_timeline_semaphore
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
 #endif
