@@ -264,7 +264,7 @@ renderer_build_rendering(struct comp_renderer *r,
 	bool pre_rotate = false;
 	if (r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR ||
 	    r->c->target->surface_transform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) {
-		COMP_DEBUG(c, "Swapping width and height, since we are pre rotating");
+		COMP_SPEW(c, "Swapping width and height, since we are pre rotating");
 		pre_rotate = true;
 	}
 
