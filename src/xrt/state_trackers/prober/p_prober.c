@@ -36,10 +36,6 @@
 #include "realsense/rs_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_REMOTE
-#include "remote/r_interface.h"
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -759,24 +755,6 @@ add_from_auto_probers(struct prober *p, struct xrt_device **xdevs, size_t xdev_c
 }
 
 static void
-add_from_remote(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, bool *have_hmd)
-{
-	if (xdev_count < 3) {
-		return;
-	}
-
-#ifdef XRT_BUILD_DRIVER_REMOTE
-	int port = 4242;
-	if (!u_config_json_get_remote_port(&p->json, &port)) {
-		port = 4242;
-	}
-
-	r_create_devices(port, &xdevs[0], &xdevs[1], &xdevs[2]);
-	*have_hmd = xdevs[0] != NULL;
-#endif
-}
-
-static void
 apply_tracking_override(struct prober *p, struct xrt_device **xdevs, size_t xdev_count, struct xrt_tracking_override *o)
 {
 	struct xrt_device *target_xdev = NULL;
@@ -1087,7 +1065,7 @@ p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_co
 		add_from_devices(p, xdevs, xdev_count, &have_hmd);
 		add_from_auto_probers(p, xdevs, xdev_count, &have_hmd);
 		break;
-	case U_ACTIVE_CONFIG_REMOTE: add_from_remote(p, xdevs, xdev_count, &have_hmd); break;
+	case U_ACTIVE_CONFIG_REMOTE: assert(false); // Should never get here.
 	default: assert(false);
 	}
 
