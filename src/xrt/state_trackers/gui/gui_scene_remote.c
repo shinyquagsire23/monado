@@ -40,6 +40,9 @@ struct gui_remote
 	struct r_remote_data data;
 
 	bool cheat_menu;
+
+	char address[1024];
+	int port;
 };
 
 const ImVec2 zero_dims = {0, 0};
@@ -314,11 +317,23 @@ on_connected(struct gui_remote *gr, struct gui_program *p)
 static void
 on_not_connected(struct gui_remote *gr, struct gui_program *p)
 {
-	if (!igButton("Connect", zero_dims)) {
+	igInputText("Address", gr->address, sizeof(gr->address), 0, NULL, NULL);
+	igSliderInt("Port", &gr->port, 0, UINT16_MAX, "%i", 0);
+
+	bool connect = igButton("Connect", zero_dims);
+
+	igSameLine(0, 4.0f);
+
+	if (igButton("Exit", zero_dims)) {
+		gui_scene_delete_me(p, &gr->base);
 		return;
 	}
 
-	r_remote_connection_init(&gr->rc, "127.0.0.1", 4242);
+	if (!connect) {
+		return;
+	}
+
+	r_remote_connection_init(&gr->rc, gr->address, gr->port);
 	r_remote_connection_read_one(&gr->rc, &gr->reset);
 	r_remote_connection_read_one(&gr->rc, &gr->data);
 }
@@ -379,6 +394,10 @@ gui_scene_remote(struct gui_program *p)
 	gr->base.render = scene_render;
 	gr->base.destroy = scene_destroy;
 	gr->rc.fd = -1;
+
+	// GUI input defaults.
+	snprintf(gr->address, sizeof(gr->address), "localhost");
+	gr->port = 4242;
 
 	gui_scene_push_front(p, &gr->base);
 }
