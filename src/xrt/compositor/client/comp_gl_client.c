@@ -66,7 +66,7 @@ gl_format_to_vk(int64_t format)
 	case GL_DEPTH_COMPONENT32F: return 126 /*VK_FORMAT_D32_SFLOAT*/;
 	case GL_DEPTH24_STENCIL8: return 129 /*VK_FORMAT_D24_UNORM_S8_UINT*/;
 	case GL_DEPTH32F_STENCIL8: return 130 /*VK_FORMAT_D32_SFLOAT_S8_UINT*/;
-	default: return 0;
+	default: U_LOG_W("Cannot convert GL format %" PRIu64 " to VK format!", format); return 0;
 	}
 }
 
