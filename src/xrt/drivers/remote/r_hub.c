@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -85,8 +85,27 @@ int
 do_accept(struct r_hub *r)
 {
 	struct sockaddr_in addr = {0};
+	struct timeval timeout = {.tv_sec = 1};
+	fd_set set;
 	int ret;
 	int conn_fd;
+
+	// Shutting down.
+	if (r->accept_fd < 0) {
+		return -1;
+	}
+
+	do {
+		FD_ZERO(&set);
+		FD_SET(r->accept_fd, &set);
+
+		ret = select(r->accept_fd + 1, &set, NULL, NULL, &timeout);
+	} while (ret == 0);
+
+	if (ret < 0) {
+		U_LOG_E("select failed: %i", ret);
+		return ret;
+	}
 
 	socklen_t addr_length = (socklen_t)sizeof(addr);
 	ret = accept(r->accept_fd, (struct sockaddr *)&addr, &addr_length);
@@ -120,13 +139,18 @@ run_thread(void *ptr)
 
 	ret = setup_accept_fd(r);
 	if (ret < 0) {
+		U_LOG_I("Leaving thread");
 		return NULL;
 	}
 
-	while (true) {
+	while (r->accept_fd >= 0) {
 		U_LOG_I("Listening on port '%i'.", r->port);
 
 		ret = do_accept(r);
+		if (ret < 0) {
+			U_LOG_I("Leaving thread");
+			return NULL;
+		}
 
 		r_remote_connection_write_one(&r->rc, &r->reset);
 		r_remote_connection_write_one(&r->rc, &r->latest);
@@ -143,33 +167,64 @@ run_thread(void *ptr)
 		}
 	}
 
+	U_LOG_I("Leaving thread");
 	return NULL;
 }
 
 void
-r_hub_destroy(struct r_hub *r)
+r_hub_destroy(struct xrt_system_devices *xsysd)
 {
+	struct r_hub *r = (struct r_hub *)xsysd;
+
+	/*
+	 * Destroy all of the devices first.
+	 */
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->base.xdevs); i++) {
+		xrt_device_destroy(&r->base.xdevs[i]);
+	}
+
+
+	/*
+	 * Harshly pull the plug on the sockets to wakeup the thread.
+	 */
+
+	if (r->accept_fd >= 0) {
+		close(r->accept_fd);
+		r->accept_fd = -1;
+	}
+
+	if (r->rc.fd >= 0) {
+		close(r->rc.fd);
+		r->rc.fd = -1;
+	}
+
+
+	/*
+	 * Should be safe to stop the thread now.
+	 */
+
+	os_thread_helper_stop_and_wait(&r->oth);
+
 	free(r);
 }
 
 
-/*!
+/*
  *
- *
+ * 'Exported' create function.
  *
  */
 
 int
-r_create_devices(uint16_t port,
-                 struct xrt_device **out_hmd,
-                 struct xrt_device **out_controller_left,
-                 struct xrt_device **out_controller_right)
+r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 {
 	struct r_hub *r = U_TYPED_CALLOC(struct r_hub);
 	int ret;
 
-	r->base.type = XRT_TRACKING_TYPE_RGB;
-	r->base.offset.orientation.w = 1.0f; // All other members are zero.
+	r->base.destroy = r_hub_destroy;
+	r->origin.type = XRT_TRACKING_TYPE_RGB;
+	r->origin.offset.orientation.w = 1.0f; // All other members are zero.
 	r->reset.hmd.pose.position.y = 1.6f;
 	r->reset.hmd.pose.orientation.w = 1.0f;
 	r->reset.left.active = true;
@@ -193,27 +248,46 @@ r_create_devices(uint16_t port,
 	r->accept_fd = -1;
 	r->rc.fd = -1;
 
-	snprintf(r->base.name, sizeof(r->base.name), "Remote Simulator");
+	snprintf(r->origin.name, sizeof(r->origin.name), "Remote Simulator");
 
 	ret = os_thread_helper_init(&r->oth);
 	if (ret != 0) {
 		U_LOG_E("Failed to init threading!");
-		r_hub_destroy(r);
-		return ret;
+		r_hub_destroy(&r->base);
+		return XRT_ERROR_ALLOCATION;
 	}
 
 	ret = os_thread_helper_start(&r->oth, run_thread, r);
 	if (ret != 0) {
 		U_LOG_E("Failed to start thread!");
-		r_hub_destroy(r);
-		return ret;
+		r_hub_destroy(&r->base);
+		return XRT_ERROR_ALLOCATION;
 	}
 
-	*out_hmd = r_hmd_create(r);
-	*out_controller_left = r_device_create(r, true);
-	*out_controller_right = r_device_create(r, false);
 
-	// Setup variable tracker.
+	/*
+	 * Setup system devices.
+	 */
+
+	struct xrt_device *head = r_hmd_create(r);
+	struct xrt_device *left = r_device_create(r, true);
+	struct xrt_device *right = r_device_create(r, false);
+
+	r->base.xdevs[r->base.xdev_count++] = head;
+	r->base.xdevs[r->base.xdev_count++] = left;
+	r->base.xdevs[r->base.xdev_count++] = right;
+
+	r->base.roles.head = head;
+	r->base.roles.left = left;
+	r->base.roles.right = right;
+	r->base.roles.hand_tracking.left = left;
+	r->base.roles.hand_tracking.right = right;
+
+
+	/*
+	 * Setup variable tracker.
+	 */
+
 	u_var_add_root(r, "Remote Hub", true);
 	// u_var_add_gui_header(r, &r->gui.hmd, "MHD");
 	u_var_add_pose(r, &r->latest.hmd.pose, "hmd.pose");
@@ -228,8 +302,22 @@ r_create_devices(uint16_t port,
 	u_var_add_bool(r, &r->latest.right.menu, "right.menu");
 	u_var_add_pose(r, &r->latest.right.pose, "right.pose");
 
-	return 0;
+
+	/*
+	 * Done now.
+	 */
+
+	*out_xsysd = &r->base;
+
+	return XRT_SUCCESS;
 }
+
+
+/*
+ *
+ * 'Exported' connection functions.
+ *
+ */
 
 int
 r_remote_connection_init(struct r_remote_connection *rc, const char *ip_addr, uint16_t port)

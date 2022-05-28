@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 
-struct xrt_device;
+struct xrt_system_devices;
 
 /*!
  * @defgroup drv_remote Remote debugging driver
@@ -85,15 +85,12 @@ struct r_remote_connection
 };
 
 /*!
- * Creates the remote devices.
+ * Creates the remote system devices.
  *
  * @ingroup drv_remote
  */
-int
-r_create_devices(uint16_t port,
-                 struct xrt_device **out_hmd,
-                 struct xrt_device **out_controller_left,
-                 struct xrt_device **out_controller_right);
+xrt_result_t
+r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd);
 
 /*!
  * Initializes and connects the connection.

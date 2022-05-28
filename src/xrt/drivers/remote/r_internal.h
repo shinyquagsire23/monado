@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_tracking.h"
 
 #include "os/os_threading.h"
@@ -30,7 +31,11 @@ extern "C" {
  */
 struct r_hub
 {
-	struct xrt_tracking_origin base;
+	// System devices wrapper.
+	struct xrt_system_devices base;
+
+	//! Origin for all locations.
+	struct xrt_tracking_origin origin;
 
 	//! Connection to the controller.
 	struct r_remote_connection rc;

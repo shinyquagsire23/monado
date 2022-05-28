@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -195,7 +195,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->base.get_view_poses = r_device_get_view_poses;
 	rd->base.set_output = r_device_set_output;
 	rd->base.destroy = r_device_destroy;
-	rd->base.tracking_origin = &r->base;
+	rd->base.tracking_origin = &r->origin;
 	rd->base.orientation_tracking_supported = true;
 	rd->base.position_tracking_supported = true;
 	rd->base.hand_tracking_supported = true;
