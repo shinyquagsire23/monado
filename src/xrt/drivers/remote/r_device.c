@@ -15,6 +15,8 @@
 #include "util/u_device.h"
 #include "util/u_hand_tracking.h"
 
+#include "vive/vive_bindings.h"
+
 #include "math/m_api.h"
 
 #include "r_internal.h"
@@ -212,6 +214,8 @@ r_device_create(struct r_hub *r, bool is_left)
 	rd->base.position_tracking_supported = true;
 	rd->base.hand_tracking_supported = true;
 	rd->base.name = XRT_DEVICE_INDEX_CONTROLLER;
+	rd->base.binding_profiles = vive_binding_profiles_index;
+	rd->base.binding_profile_count = vive_binding_profiles_index_count;
 	rd->r = r;
 	rd->is_left = is_left;
 

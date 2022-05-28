@@ -160,7 +160,7 @@ if(XRT_BUILD_DRIVER_REMOTE)
 		remote/r_interface.h
 		remote/r_internal.h
 		)
-	target_link_libraries(drv_remote PRIVATE xrt-interfaces aux_util)
+	target_link_libraries(drv_remote PRIVATE xrt-interfaces aux_util aux_vive)
 	list(APPEND ENABLED_HEADSET_DRIVERS remote)
 endif()
 
