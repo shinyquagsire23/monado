@@ -82,11 +82,16 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
     }
 
     private fun handleStart() {
+        var flags = 0
+        // From targeting S+, the PendingIntent needs one of FLAG_IMMUTABLE and FLAG_MUTABLE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags = PendingIntent.FLAG_IMMUTABLE
+        }
         val pendingShutdownIntent = PendingIntent.getForegroundService(
             this,
             0,
             Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
-            0
+            flags
         )
 
         val notification = serviceNotification.buildNotification(this, pendingShutdownIntent)
