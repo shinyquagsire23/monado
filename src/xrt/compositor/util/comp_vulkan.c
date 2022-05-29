@@ -437,6 +437,20 @@ comp_vulkan_formats_check(struct vk_bundle *vk, struct comp_vulkan_formats *form
 
 #undef CHECK_COLOR
 #undef CHECK_DS
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	/*
+	 * Some Vulkan drivers will natively support importing and exporting
+	 * SRGB formats (Qualcomm) even tho technically that's not intended
+	 * by the AHardwareBuffer since they don't support sRGB formats.
+	 * While others (Mail) does not support importing and exporting sRGB
+	 * formats.
+	 */
+	if (!formats->has_R8G8B8A8_SRGB && formats->has_R8G8B8A8_UNORM) {
+		formats->has_R8G8B8A8_SRGB = true;
+		formats->emulated_R8G8B8A8_SRGB = true;
+	}
+#endif
 }
 
 void
@@ -470,4 +484,11 @@ comp_vulkan_formats_log(enum u_logging_level log_level, const struct comp_vulkan
 
 #undef PRINT_NAME
 #undef PRINT_BOOLEAN
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	U_LOG_IFL_I(log_level,
+	            "Emulated formats:"
+	            "\n\tVK_FORMAT_R8G8B8A8_SRGB: %s",
+	            formats->emulated_R8G8B8A8_SRGB ? "emulated" : "native");
+#endif
 }

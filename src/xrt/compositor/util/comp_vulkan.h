@@ -109,6 +109,11 @@ struct comp_vulkan_formats
 #define FIELD(IDENT) bool has_##IDENT;
 	VK_CSCI_FORMATS(FIELD, FIELD, FIELD, FIELD)
 #undef FIELD
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	//! Is VK_FORMAT_R8G8B8A8_SRGB emulated with VK_FORMAT_R8G8B8A8_UNORM?
+	bool emulated_R8G8B8A8_SRGB;
+#endif
 };
 
 /*!
