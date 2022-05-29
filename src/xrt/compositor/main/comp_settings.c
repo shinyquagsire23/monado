@@ -46,7 +46,24 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	if (s->use_compute) {
 		s->color_format = VK_FORMAT_B8G8R8A8_UNORM;
 	} else {
+#if defined(XRT_OS_ANDROID)
+		/*
+		 * On Android the most ubiquitous sRGB format is R8G8B8A8_SRGB.
+		 * https://vulkan.gpuinfo.org/listsurfaceformats.php?platform=android
+		 */
+		s->color_format = VK_FORMAT_R8G8B8A8_SRGB;
+#elif defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS)
+		/*
+		 * On Linux the most ubiquitous sRGB format is B8G8R8A8_SRGB.
+		 * https://vulkan.gpuinfo.org/listsurfaceformats.php?platform=linux
+		 *
+		 * On Windows the most ubiquitous sRGB format is B8G8R8A8_SRGB.
+		 * https://vulkan.gpuinfo.org/listsurfaceformats.php?platform=windows
+		 */
 		s->color_format = VK_FORMAT_B8G8R8A8_SRGB;
+#else
+#error "Need to pick default swapchain format for this platform!"
+#endif
 	}
 
 	s->display = debug_get_num_option_xcb_display();
