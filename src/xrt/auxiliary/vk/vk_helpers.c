@@ -668,6 +668,23 @@ vk_create_image_from_native(struct vk_bundle *vk,
 
 	// This is the format we allocate the image in, can be changed further down.
 	VkFormat image_format = (VkFormat)info->format;
+
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+	/*
+	 * Some Vulkan drivers will natively support importing and exporting
+	 * SRGB formats (Qualcomm) even tho technically that's not intended
+	 * by the AHardwareBuffer since they don't support sRGB formats.
+	 * While others (Mail) does not support importing and exporting sRGB
+	 * formats. So we need to create the image without sRGB and then create
+	 * the image views with sRGB which is allowed by the Vulkan spec. It
+	 * seems to be safe to do with on all drivers, so to reduce the logic
+	 * do that instead.
+	 */
+	if (image_format == VK_FORMAT_R8G8B8A8_SRGB) {
+		image_format = VK_FORMAT_R8G8B8A8_UNORM;
+	}
+#endif
+
 	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags( //
 	    vk,                                                        //
 	    image_format,                                              //
