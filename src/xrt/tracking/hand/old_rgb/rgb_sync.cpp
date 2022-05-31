@@ -38,8 +38,10 @@ using namespace xrt::tracking::hand::old_rgb;
  * @ingroup drv_ht
  */
 
+#if defined(EXPERIMENTAL_DATASET_RECORDING)
 #include "gstreamer/gst_pipeline.h"
 #include "gstreamer/gst_sink.h"
+#endif
 
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"

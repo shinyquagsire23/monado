@@ -18,7 +18,6 @@ target_link_libraries(
 		aux_tracking
 		aux_os
 		aux_util
-		aux_gstreamer
 		ONNXRuntime::ONNXRuntime
 		t_ht_mercury_kine
 		# ncnn # Soon...
