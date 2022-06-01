@@ -190,7 +190,7 @@ qwerty_get_tracked_pose(struct xrt_device *xd,
 
 	// HMD Parenting
 
-	bool qd_is_ctrl = name == XRT_INPUT_SIMPLE_GRIP_POSE;
+	bool qd_is_ctrl = name == XRT_INPUT_SIMPLE_GRIP_POSE || name == XRT_INPUT_SIMPLE_AIM_POSE;
 	struct qwerty_controller *qc = qd_is_ctrl ? qwerty_controller(&qd->base) : NULL;
 	if (qd_is_ctrl && qc->follow_hmd) {
 		struct xrt_relation_chain relation_chain = {0};
