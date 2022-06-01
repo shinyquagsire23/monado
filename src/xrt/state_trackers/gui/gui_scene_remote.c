@@ -387,7 +387,7 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
  */
 
 void
-gui_scene_remote(struct gui_program *p)
+gui_scene_remote(struct gui_program *p, const char *address)
 {
 	struct gui_remote *gr = U_TYPED_CALLOC(struct gui_remote);
 
@@ -396,7 +396,11 @@ gui_scene_remote(struct gui_program *p)
 	gr->rc.fd = -1;
 
 	// GUI input defaults.
-	snprintf(gr->address, sizeof(gr->address), "localhost");
+	if (address != NULL) {
+		snprintf(gr->address, sizeof(gr->address), "%s", address);
+	} else {
+		snprintf(gr->address, sizeof(gr->address), "localhost");
+	}
 	gr->port = 4242;
 
 	gui_scene_push_front(p, &gr->base);

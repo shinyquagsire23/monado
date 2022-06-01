@@ -224,10 +224,11 @@ gui_scene_record(struct gui_program *p, const char *camera);
 /*!
  * Remote control debugging UI.
  *
+ * @param Optional address.
  * @ingroup gui
  */
 void
-gui_scene_remote(struct gui_program *p);
+gui_scene_remote(struct gui_program *p, const char *address);
 
 /*!
  * Given the frameserver runs the calibration code on it.
