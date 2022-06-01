@@ -685,7 +685,7 @@ math_pose_validate(const struct xrt_pose *pose)
 extern "C" void
 math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 {
-	Eigen::Isometry3f transform{orientation(*pose) * Eigen::Translation3f{position(*pose)}};
+	Eigen::Isometry3f transform{Eigen::Translation3f{position(*pose)} * orientation(*pose)};
 	Eigen::Isometry3f inverse = transform.inverse();
 	position(*outPose) = inverse.translation();
 	orientation(*outPose) = inverse.rotation();
