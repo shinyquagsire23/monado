@@ -102,7 +102,7 @@ r_device_get_tracked_pose(struct xrt_device *xdev,
 	struct r_hub *r = rd->r;
 
 	if (name != XRT_INPUT_INDEX_AIM_POSE && name != XRT_INPUT_INDEX_GRIP_POSE) {
-		U_LOG_E("Unknown input name");
+		U_LOG_E("Unknown input name: 0x%0x", name);
 		return;
 	}
 
@@ -141,7 +141,7 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 
 
 	if (name != XRT_INPUT_GENERIC_HAND_TRACKING_LEFT && name != XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
-		U_LOG_E("Unknown input name for hand tracker");
+		U_LOG_E("Unknown input name for hand tracker: 0x%0x", name);
 		return;
 	}
 
