@@ -375,7 +375,7 @@ ndk:arm64-v8a:
     - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
     - ninja -C build
 
-android:outOfProcess:
+android:outOfProcessDebug:
   stage: build
   extends:
     - .monado.image.debian:bullseye-ndk
@@ -398,7 +398,7 @@ android:outOfProcess:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
 
-android:inProcess:
+android:inProcessDebug:
   stage: build
   extends:
     - .monado.image.debian:bullseye-ndk
@@ -417,6 +417,52 @@ android:inProcess:
     - cp .gitlab-ci/local.properties .
     - ./gradlew clean
     - ./gradlew assembleInProcessDebug
+  artifacts:
+    paths:
+      - src/xrt/targets/openxr_android/build/outputs/apk/inProcess
+
+android:outOfProcessRelease:
+  stage: build
+  extends:
+    - .monado.image.debian:bullseye-ndk
+  before_script:
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+
+  script:
+    - cp .gitlab-ci/local.properties .
+    - ./gradlew clean
+    - ./gradlew assembleOutOfProcessRelease
+  artifacts:
+    paths:
+      - src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
+
+android:inProcessRelease:
+  stage: build
+  extends:
+    - .monado.image.debian:bullseye-ndk
+  before_script:
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+
+  script:
+    - cp .gitlab-ci/local.properties .
+    - ./gradlew clean
+    - ./gradlew assembleInProcessRelease
   artifacts:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/inProcess

@@ -142,12 +142,20 @@ distributions:
               BUILD_DOC: "OFF"
               ANDROID_ABI: arm64-v8a
 
-          - name: android:outOfProcess
+          - name: android:outOfProcessDebug
             target: assembleOutOfProcessDebug
             artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
 
-          - name: android:inProcess
+          - name: android:inProcessDebug
             target: assembleInProcessDebug
+            artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/inProcess
+
+          - name: android:outOfProcessRelease
+            target: assembleOutOfProcessRelease
+            artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
+
+          - name: android:inProcessRelease
+            target: assembleInProcessRelease
             artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/inProcess
 
   - name: ubuntu
