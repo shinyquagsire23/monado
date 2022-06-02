@@ -240,7 +240,7 @@ run_thread(void *ptr)
 }
 
 static void
-r_hub_destroy(struct xrt_system_devices *xsysd)
+r_hub_system_devices_destroy(struct xrt_system_devices *xsysd)
 {
 	struct r_hub *r = (struct r_hub *)xsysd;
 
@@ -281,7 +281,7 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 	struct r_hub *r = U_TYPED_CALLOC(struct r_hub);
 	int ret;
 
-	r->base.destroy = r_hub_destroy;
+	r->base.destroy = r_hub_system_devices_destroy;
 	r->origin.type = XRT_TRACKING_TYPE_RGB;
 	r->origin.offset.orientation.w = 1.0f; // All other members are zero.
 	r->reset.hmd.pose.position.y = 1.6f;
@@ -313,14 +313,14 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 	ret = os_thread_helper_init(&r->oth);
 	if (ret != 0) {
 		R_ERROR(r, "Failed to init threading!");
-		r_hub_destroy(&r->base);
+		r_hub_system_devices_destroy(&r->base);
 		return XRT_ERROR_ALLOCATION;
 	}
 
 	ret = os_thread_helper_start(&r->oth, run_thread, r);
 	if (ret != 0) {
 		R_ERROR(r, "Failed to start thread!");
-		r_hub_destroy(&r->base);
+		r_hub_system_devices_destroy(&r->base);
 		return XRT_ERROR_ALLOCATION;
 	}
 
