@@ -847,6 +847,27 @@ add_imu_calibration(const TrackerSlam &t, const t_imu_calibration *imu_calib, co
 	t.slam->use_feature(F_ADD_IMU_CALIBRATION, params, result);
 }
 
+static void
+send_calibration(const TrackerSlam &t, const t_slam_tracker_config &c)
+{
+	// Try to send camera calibration data to the SLAM system
+	if (c.stereo_calib && c.extra_calib && t.slam->supports_feature(F_ADD_CAMERA_CALIBRATION)) {
+		SLAM_INFO("Sending Camera calibration from Monado");
+		add_camera_calibration(t, c.stereo_calib, c.extra_calib);
+	} else {
+		SLAM_INFO("Cameras will use the calibration provided by the SLAM_CONFIG file");
+	}
+
+	// Try to send IMU calibration data to the SLAM system
+	if (c.imu_calib && c.extra_calib && t.slam->supports_feature(F_ADD_IMU_CALIBRATION)) {
+		SLAM_INFO("Sending IMU calibration from Monado");
+		add_imu_calibration(t, c.imu_calib, c.extra_calib);
+	} else {
+		SLAM_INFO("The IMU will use the calibration provided by the SLAM_CONFIG file");
+	}
+}
+
+
 } // namespace xrt::auxiliary::tracking::slam
 
 using namespace xrt::auxiliary::tracking::slam;
@@ -1066,13 +1087,8 @@ t_slam_create(struct xrt_frame_context *xfctx,
 	const char *config_file = config->slam_config;
 	bool some_calib = config->stereo_calib || config->imu_calib;
 	if (!config_file && !some_calib) {
-		U_LOG_IFL_W(log_level, "Unable to determine sensor calibration, did you forgot to set SLAM_CONFIG?");
+		U_LOG_IFL_W(log_level, "Unable to determine sensor calibration, did you forget to set SLAM_CONFIG?");
 		return -1;
-	}
-
-	if (!config_file) {
-		// Indicate the external system to use default (non-calibration) settings
-		config_file = "DEFAULT";
 	}
 
 	auto &t = *(new TrackerSlam{});
@@ -1081,23 +1097,14 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;
 
-	std::string config_file_string = std::string(config_file);
+	std::string config_file_string = std::string(config_file ? config_file : "DEFAULT");
 	t.slam = new slam_tracker{config_file_string};
 
-	// Try to send camera calibration data to the SLAM system
-	if (config->stereo_calib && config->extra_calib && t.slam->supports_feature(F_ADD_CAMERA_CALIBRATION)) {
-		SLAM_INFO("Sending Camera calibration from Monado");
-		add_camera_calibration(t, config->stereo_calib, config->extra_calib);
+	if (!config_file) {
+		SLAM_INFO("Using calibration from driver and default pipeline settings");
+		send_calibration(t, *config);
 	} else {
-		SLAM_INFO("Cameras will use the calibration provided by the SLAM_CONFIG file");
-	}
-
-	// Try to send IMU calibration data to the SLAM system
-	if (config->imu_calib && config->extra_calib && t.slam->supports_feature(F_ADD_IMU_CALIBRATION)) {
-		SLAM_INFO("Sending IMU calibration from Monado");
-		add_imu_calibration(t, config->imu_calib, config->extra_calib);
-	} else {
-		SLAM_INFO("The IMU will use the calibration provided by the SLAM_CONFIG file");
+		SLAM_INFO("Using sensor calibration provided by the SLAM_CONFIG file");
 	}
 
 	t.slam->initialize();
