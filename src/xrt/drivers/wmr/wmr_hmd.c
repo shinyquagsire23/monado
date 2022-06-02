@@ -969,6 +969,10 @@ wmr_hmd_get_3dof_tracked_pose(struct xrt_device *xdev,
 XRT_MAYBE_UNUSED static inline struct xrt_pose
 wmr_hmd_correct_pose_from_basalt(struct xrt_pose pose)
 {
+	struct xrt_quat q = {0.70710678, 0, 0, 0.70710678};
+	math_quat_rotate(&q, &pose.orientation, &pose.orientation);
+	math_quat_rotate_vec3(&q, &pose.position, &pose.position);
+
 	// Correct swapped axes
 	pose.position.y = -pose.position.y;
 	pose.position.z = -pose.position.z;
