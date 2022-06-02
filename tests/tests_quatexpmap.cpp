@@ -75,4 +75,21 @@ TEST_CASE("m_quatexpmap")
 			CHECK(m_vec3_len(expected_aa - aa) <= 0.001);
 		}
 	}
+
+//! @todo Fix quat_exp
+#if 0
+	SECTION("Test quat_exp(angle_axis) returns the appropriate quaternion")
+	{
+		float angle = M_PI_2;
+		xrt_vec3 axis = axis4;
+		xrt_vec3 aa = axis * angle;
+		xrt_quat q{};
+		math_quat_exp(&aa, &q);
+
+		CHECK(q.x == Approx(axis.x * sin(angle / 2)));
+		CHECK(q.y == Approx(axis.y * sin(angle / 2)));
+		CHECK(q.z == Approx(axis.z * sin(angle / 2)));
+		CHECK(q.w == Approx(cos(angle / 2)));
+	}
+#endif
 }

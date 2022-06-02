@@ -80,6 +80,9 @@ quat_exp(Eigen::MatrixBase<Derived> const &vec)
 	/// whose absence thus distinguishes this implementation. Without
 	/// that factor of 1/2, the exp and ln functions successfully
 	/// round-trip and match other implementations.
+	///
+	/// @todo That 1/2 term is important, fix it and enable disabled test on
+	/// tests_quatexpmap.cpp
 	Scalar theta = vec.norm();
 	Scalar vecscale = sinc(theta);
 	Eigen::Quaternion<Scalar> ret;
