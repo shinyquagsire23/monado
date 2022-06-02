@@ -148,7 +148,7 @@ distributions:
 
           - name: android:inProcess
             target: assembleInProcessDebug
-            artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/inProcess/
+            artifact_path: src/xrt/targets/openxr_android/build/outputs/apk/inProcess
 
   - name: ubuntu
     images:

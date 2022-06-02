@@ -419,7 +419,7 @@ android:inProcess:
     - ./gradlew assembleInProcessDebug
   artifacts:
     paths:
-      - src/xrt/targets/openxr_android/build/outputs/apk/inProcess/
+      - src/xrt/targets/openxr_android/build/outputs/apk/inProcess
 
 ubuntu:cmake:
   stage: build
