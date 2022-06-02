@@ -364,7 +364,7 @@ static void
 on_not_connected(struct gui_remote *gr, struct gui_program *p)
 {
 	igInputText("Address", gr->address, sizeof(gr->address), 0, NULL, NULL);
-	igSliderInt("Port", &gr->port, 0, UINT16_MAX, "%i", 0);
+	igInputInt("Port", &gr->port, 1, 1, 0);
 
 	bool connect = igButton("Connect", zero_dims);
 
