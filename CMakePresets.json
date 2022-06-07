@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "inherits": "service-debug",
+      "displayName": "Default (same as service-debug)"
+    },
+    {
+      "name": "service-debug",
+      "displayName": "Debug Monado service",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_DOC": "OFF",
+        "SANITIZE_ADDRESS": "ON",
+        "SANITIZE_UNDEFINED": "ON"
+      }
+    },
+    {
+      "name": "standalone-debug",
+      "inherits": "service-debug",
+      "displayName": "Debug Monado standalone",
+      "cacheVariables": {
+        "XRT_FEATURE_SERVICE": "OFF"
+      }
+    },
+    {
+      "name": "service-release",
+      "displayName": "Release Monado service",
+      "inherits": "service-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_DOC": "ON",
+        "BUILD_DOC_EXTRACT_ALL": "ON",
+        "SANITIZE_ADDRESS": "OFF",
+        "SANITIZE_UNDEFINED": "OFF"
+      }
+    },
+    {
+      "name": "standalone-release",
+      "displayName": "Release Monado standalone",
+      "inherits": "service-release",
+      "cacheVariables": {
+        "XRT_FEATURE_SERVICE": "OFF"
+      }
+    },
+    {
+      "name": "service-debug-optimized",
+      "displayName": "Debug Monado service with optimizations",
+      "inherits": "service-debug",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-g -march=native -O3 -fno-omit-frame-pointer",
+        "CMAKE_C_FLAGS": "-g -march=native -O3 -fno-omit-frame-pointer",
+        "SANITIZE_UNDEFINED": "OFF"
+      }
+    },
+    {
+      "name": "standalone-debug-optimized",
+      "displayName": "Debug Monado standalone with optimizations",
+      "inherits": "service-debug-optimized",
+      "cacheVariables": {
+        "XRT_FEATURE_SERVICE": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "displayName": "Build and install",
+      "configurePreset": "default",
+      "targets": "install"
+    }
+  ]
+}
