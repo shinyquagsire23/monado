@@ -69,6 +69,11 @@ ahardwarebuffer_image_allocate(const struct xrt_swapchain_create_info *xsci, xrt
 	if (0 != (xsci->bits & (XRT_SWAPCHAIN_USAGE_COLOR | XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL))) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
 	}
+
+	// The compositor always needs to sample the buffer, add the flag.
+	desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+
+	// Here if the above changes.
 	if (0 != (xsci->bits & XRT_SWAPCHAIN_USAGE_SAMPLED)) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 	}
@@ -116,9 +121,15 @@ ahardwarebuffer_images_allocate(struct xrt_image_native_allocator *xina,
 	if (0 != (xsci->bits & (XRT_SWAPCHAIN_USAGE_COLOR | XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL))) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER;
 	}
+
+	// The compositor always needs to sample the buffer, add the flag.
+	desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+
+	// Here if the above changes.
 	if (0 != (xsci->bits & XRT_SWAPCHAIN_USAGE_SAMPLED)) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 	}
+
 	if (0 != (xsci->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT)) {
 		desc.usage |= AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
 	}
