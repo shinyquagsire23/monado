@@ -32,6 +32,9 @@
 
 #include <inttypes.h>
 
+#ifdef XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER
+#include <android/hardware_buffer.h>
+#endif
 
 static enum u_logging_level log_level;
 
@@ -43,6 +46,7 @@ static enum u_logging_level log_level;
 
 DEBUG_GET_ONCE_LOG_OPTION(egl_swapchain_log, "EGL_SWAPCHAIN_LOG", U_LOGGING_WARN)
 
+#define EGL_PROTECTED_CONTENT_EXT 0x32C0
 
 /*!
  * Down-cast helper.
@@ -223,6 +227,9 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
 		// https://android.googlesource.com/platform/cts/+/master/tests/tests/nativehardware/jni/AHardwareBufferGLTest.cpp
 		native_buffer = eglGetNativeClientBufferANDROID(xscn->images[i].handle);
 
+		AHardwareBuffer_Desc desc;
+		AHardwareBuffer_describe(xscn->images[i].handle, &desc);
+
 		if (NULL == native_buffer) {
 			EGL_SC_ERROR("eglGetNativeClientBufferANDROID failed");
 			client_gl_eglimage_swapchain_teardown_storage(sc);
@@ -230,11 +237,19 @@ client_gl_eglimage_swapchain_create(struct xrt_compositor *xc,
 			return NULL;
 		}
 		EGLint attrs[] = {
-		    EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE, EGL_NONE, EGL_NONE,
+		    EGL_IMAGE_PRESERVED_KHR,
+		    EGL_TRUE,
+		    EGL_PROTECTED_CONTENT_EXT,
+		    (desc.usage & AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT) ? EGL_TRUE : EGL_FALSE,
+		    EGL_NONE,
+		    EGL_NONE,
+		    EGL_NONE,
 		};
+		EGL_SC_INFO("EGL_PROTECTED_CONTENT_EXT %s",
+		            (desc.usage & AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT) ? "TRUE" : "FALSE");
 		if (vk_format_to_srgb(info->format)) {
-			attrs[2] = EGL_GL_COLORSPACE_KHR;
-			attrs[3] = EGL_GL_COLORSPACE_SRGB_KHR;
+			attrs[4] = EGL_GL_COLORSPACE_KHR;
+			attrs[5] = EGL_GL_COLORSPACE_SRGB_KHR;
 		}
 		EGLenum source = EGL_NATIVE_BUFFER_ANDROID;
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
