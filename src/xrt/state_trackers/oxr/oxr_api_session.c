@@ -382,11 +382,6 @@ oxr_xrCreateHandTrackerEXT(XrSession session,
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "Invalid hand value %d\n", createInfo->hand);
 	}
 
-	if (createInfo->handJointSet != XR_HAND_JOINT_SET_DEFAULT_EXT) {
-		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "Invalid handJointSet value %d\n",
-		                 createInfo->handJointSet);
-	}
-
 	ret = oxr_hand_tracker_create(&log, sess, createInfo, &hand_tracker);
 	if (ret != XR_SUCCESS) {
 		return ret;
