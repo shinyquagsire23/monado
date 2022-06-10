@@ -277,7 +277,15 @@ render_compute_begin(struct render_compute *crc)
 	struct vk_bundle *vk = vk_from_crc(crc);
 
 	C(vk->vkResetCommandPool(vk->device, crc->r->cmd_pool, 0));
-	C(vk_begin_command_buffer(vk, crc->r->cmd));
+
+	VkCommandBufferBeginInfo begin_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+	    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+
+	C(vk->vkBeginCommandBuffer( //
+	    crc->r->cmd,            // commandBuffer
+	    &begin_info));          // pBeginInfo
 
 	vk->vkCmdResetQueryPool( //
 	    crc->r->cmd,         // commandBuffer
@@ -305,7 +313,7 @@ render_compute_end(struct render_compute *crc)
 	    crc->r->query_pool,                   // queryPool
 	    1);                                   // query
 
-	C(vk_end_command_buffer(vk, crc->r->cmd));
+	C(vk->vkEndCommandBuffer(crc->r->cmd));
 
 	return true;
 }

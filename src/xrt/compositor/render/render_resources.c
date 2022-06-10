@@ -618,7 +618,17 @@ render_resources_init(struct render_resources *r,
 
 	C(vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &r->cmd_pool));
 
-	C(vk_create_command_buffer(vk, r->cmd_pool, &r->cmd));
+	VkCommandBufferAllocateInfo cmd_buffer_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+	    .commandPool = r->cmd_pool,
+	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+	    .commandBufferCount = 1,
+	};
+
+	C(vk->vkAllocateCommandBuffers( //
+	    vk->device,                 // device
+	    &cmd_buffer_info,           // pAllocateInfo
+	    &r->cmd));                  // pCommandBuffers
 
 
 	/*

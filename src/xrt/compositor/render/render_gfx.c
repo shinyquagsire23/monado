@@ -523,7 +523,15 @@ render_gfx_begin(struct render_gfx *rr)
 	struct vk_bundle *vk = vk_from_rr(rr);
 
 	C(vk->vkResetCommandPool(vk->device, rr->r->cmd_pool, 0));
-	C(vk_begin_command_buffer(vk, rr->r->cmd));
+
+	VkCommandBufferBeginInfo begin_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+	    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+	};
+
+	C(vk->vkBeginCommandBuffer( //
+	    rr->r->cmd,             // commandBuffer
+	    &begin_info));          // pBeginInfo
 
 	vk->vkCmdResetQueryPool( //
 	    rr->r->cmd,          // commandBuffer
@@ -551,7 +559,7 @@ render_gfx_end(struct render_gfx *rr)
 	    rr->r->query_pool,                    // queryPool
 	    1);                                   // query
 
-	C(vk_end_command_buffer(vk, rr->r->cmd));
+	C(vk->vkEndCommandBuffer(rr->r->cmd));
 
 	return true;
 }

@@ -1005,45 +1005,6 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
 
 /*
  *
- * Command buffer helpers, in the vk_command_buffer.c file.
- *
- */
-
-/*!
- * Creates a new command buffer using a specified pool.
- *
- * Does error logging.
- */
-VkResult
-vk_create_command_buffer(struct vk_bundle *vk, VkCommandPool pool, VkCommandBuffer *out_command_buffer);
-
-/*!
- * Destroys a command buffer.
- *
- * Does error logging.
- */
-void
-vk_destroy_command_buffer(struct vk_bundle *vk, VkCommandPool pool, VkCommandBuffer command_buffer);
-
-/*!
- * Issues the vkBeginCommandBuffer function on the command buffer.
- *
- * Does error logging.
- */
-VkResult
-vk_begin_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
-
-/*!
- * Issues the vkEndCommandBuffer function on the command buffer.
- *
- * Does error logging.
- */
-VkResult
-vk_end_command_buffer(struct vk_bundle *vk, VkCommandBuffer command_buffer);
-
-
-/*
- *
  * Compositor swapchain image flags helpers, in the vk_compositor_flags.c file.
  *
  */

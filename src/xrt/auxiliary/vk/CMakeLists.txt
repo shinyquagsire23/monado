@@ -4,7 +4,6 @@
 add_library(
 	aux_vk STATIC
 	vk_bundle_init.c
-	vk_command_buffer.c
 	vk_compositor_flags.c
 	vk_documentation.h
 	vk_function_loaders.c
