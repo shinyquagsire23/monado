@@ -457,6 +457,17 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 }
 
 extern "C" void
+math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
+                               const struct xrt_vec2 *right,
+                               struct xrt_vec2 *result_out)
+{
+	const struct xrt_matrix_2x2 l = *left;
+	const struct xrt_vec2 r = *right;
+	struct xrt_vec2 result = {l.v[0] * r.x + l.v[1] * r.y, l.v[2] * r.x + l.v[3] * r.y};
+	*result_out = result;
+}
+
+extern "C" void
 math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat)
 {
 	map_matrix_3x3(*mat) = Eigen::Matrix3f::Identity();

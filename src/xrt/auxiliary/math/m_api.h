@@ -429,6 +429,17 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
                          struct xrt_matrix_2x2 *result_out);
 
 /*!
+ * Transform a vec2 by a 2x2 matrix
+ *
+ * @see xrt_matrix_2x2
+ * @ingroup aux_math
+ */
+void
+math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
+                               const struct xrt_vec2 *right,
+                               struct xrt_vec2 *result_out);
+
+/*!
  * Initialize a 3x3 matrix to the identity matrix
  *
  * @see xrt_matrix_3x3
