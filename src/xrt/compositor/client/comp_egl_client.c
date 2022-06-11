@@ -291,6 +291,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	EGLint egl_client_type;
 	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
+		EGL_ERROR("Could not query EGL client API type from context: %p", (void *)context);
 		return XRT_ERROR_OPENGL;
 	}
 
