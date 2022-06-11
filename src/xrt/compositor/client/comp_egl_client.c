@@ -269,6 +269,11 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 {
 	log_level = debug_get_log_option_egl_log();
 
+
+	/*
+	 * Init EGL functions
+	 */
+
 	gladLoadEGL(display, get_gl_procaddr);
 
 	if (config == EGL_NO_CONFIG_KHR && !EGL_KHR_no_config_context) {
@@ -278,6 +283,21 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 	// On Android this extension is 'hidden'.
 	ensure_native_fence_is_loaded(display, get_gl_procaddr);
+
+
+	/*
+	 * Get client type.
+	 */
+
+	EGLint egl_client_type;
+	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
+		return XRT_ERROR_OPENGL;
+	}
+
+
+	/*
+	 * Make current.
+	 */
 
 	// Save old EGL display, context and drawables.
 	struct client_egl_context old = {0};
@@ -296,11 +316,10 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		return XRT_ERROR_OPENGL;
 	}
 
-	EGLint egl_client_type;
-	if (!eglQueryContext(display, context, EGL_CONTEXT_CLIENT_TYPE, &egl_client_type)) {
-		restore_context(&old);
-		return XRT_ERROR_OPENGL;
-	}
+
+	/*
+	 * Load GL functions.
+	 */
 
 	switch (egl_client_type) {
 	case EGL_OPENGL_API:
