@@ -65,6 +65,9 @@ typedef const char *EGLAPIENTRY (*PFNEGLQUERYSTRINGIMPLEMENTATIONANDROIDPROC)(EG
 typedef EGLBoolean
     EGLAPIENTRY (*PFNEGLMAKECURRENTPROC)(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
 
+static xrt_result_t
+client_egl_insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle);
+
 
 /*
  *
@@ -100,6 +103,7 @@ restore_context(struct client_egl_context *ctx)
 
 	return eglMakeCurrent(dpy, ctx->draw, ctx->read, ctx->ctx);
 }
+
 
 /*
  *
@@ -154,6 +158,13 @@ has_extension(const char *extensions, const char *ext)
 	}
 }
 
+
+/*
+ *
+ * Creation helper functions.
+ *
+ */
+
 static void
 ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
 {
@@ -178,10 +189,145 @@ ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_pr
 #endif
 }
 
+static xrt_result_t
+load_gl_functions(EGLint egl_client_type, PFNEGLGETPROCADDRESSPROC get_gl_procaddr)
+{
+	switch (egl_client_type) {
+	case EGL_OPENGL_API:
+#if defined(XRT_HAVE_OPENGL)
+		EGL_DEBUG("Loading GL functions");
+		gladLoadGL(get_gl_procaddr);
+		break;
+#else
+		EGL_ERROR("OpenGL support not including in this runtime build");
+		return XRT_ERROR_OPENGL;
+#endif
+
+	case EGL_OPENGL_ES_API:
+#if defined(XRT_HAVE_OPENGLES)
+		EGL_DEBUG("Loading GLES2 functions");
+		gladLoadGLES2(get_gl_procaddr);
+		break;
+#else
+		EGL_ERROR("OpenGL|ES support not including in this runtime build");
+		return XRT_ERROR_OPENGL;
+#endif
+	default: EGL_ERROR("Unsupported EGL client type: 0x%x", egl_client_type); return XRT_ERROR_OPENGL;
+	}
+
+	if (glGetString == NULL) {
+		EGL_ERROR("glGetString not loaded!");
+		return XRT_ERROR_OPENGL;
+	}
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+check_context_and_debug_print(EGLint egl_client_type)
+{
+	EGL_DEBUG(                    //
+	    "OpenGL context:"         //
+	    "\n\tGL_VERSION: %s"      //
+	    "\n\tGL_RENDERER: %s"     //
+	    "\n\tGL_VENDOR: %s",      //
+	    glGetString(GL_VERSION),  //
+	    glGetString(GL_RENDERER), //
+	    glGetString(GL_VENDOR));  //
+
+
+	/*
+	 * If a renderer is old enough to not support OpenGL(ES) 3 or above
+	 * it won't support Monado at all, it's not a hard requirement and
+	 * lets us detect weird errors early on some platforms.
+	 */
+	if (!GLAD_GL_VERSION_3_0 && !GLAD_GL_ES_VERSION_3_0) {
+		switch (egl_client_type) {
+		default: EGL_ERROR("Unknown OpenGL version!"); break;
+		case EGL_OPENGL_API: EGL_ERROR("Must have OpenGL 3.0 or above!"); break;
+		case EGL_OPENGL_ES_API: EGL_ERROR("Must have OpenGL ES 3.0 or above!"); break;
+		}
+
+		return XRT_ERROR_OPENGL;
+	}
+
+
+	EGL_DEBUG("Extension availability:");
+#define DUMP_EXTENSION_STATUS(EXT) EGL_DEBUG("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
+
+	DUMP_EXTENSION_STATUS(GL_EXT_memory_object);
+	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_fd);
+	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_win32);
+	DUMP_EXTENSION_STATUS(GL_OES_EGL_image_external);
+
+	DUMP_EXTENSION_STATUS(EGL_ANDROID_get_native_client_buffer);
+	DUMP_EXTENSION_STATUS(EGL_ANDROID_native_fence_sync);
+	DUMP_EXTENSION_STATUS(EGL_EXT_image_dma_buf_import_modifiers);
+	DUMP_EXTENSION_STATUS(EGL_KHR_fence_sync);
+	DUMP_EXTENSION_STATUS(EGL_KHR_image);
+	DUMP_EXTENSION_STATUS(EGL_KHR_image_base);
+	DUMP_EXTENSION_STATUS(EGL_KHR_reusable_sync);
+	DUMP_EXTENSION_STATUS(EGL_KHR_wait_sync);
+
+#undef DUMP_EXTENSION_STATUS
+
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+get_client_gl_functions(client_gl_swapchain_create_func_t *out_sc_create_func,
+                        client_gl_insert_fence_func_t *out_insert_fence)
+{
+	client_gl_swapchain_create_func_t sc_create_func = NULL;
+	client_gl_insert_fence_func_t insert_fence_func = NULL;
+
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
+	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
+		EGL_DEBUG("Using GL memory object swapchain implementation");
+		sc_create_func = client_gl_memobj_swapchain_create;
+	}
+
+	if (sc_create_func == NULL && GLAD_EGL_EXT_image_dma_buf_import) {
+		EGL_DEBUG("Using EGL_Image swapchain implementation");
+		sc_create_func = client_gl_eglimage_swapchain_create;
+	}
+
+	if (sc_create_func == NULL) {
+		EGL_ERROR(
+		    "Could not find a required extension: need either EGL_EXT_image_dma_buf_import or "
+		    "GL_EXT_memory_object_fd");
+		return XRT_ERROR_OPENGL;
+	}
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+	EGL_DEBUG("Using EGL_Image swapchain implementation with AHardwareBuffer");
+	sc_create_func = client_gl_eglimage_swapchain_create;
+
+#endif
+
+	/*
+	 * For now, only use the insert_fence callback only if
+	 * EGL_ANDROID_native_fence_sync is available, revisit this when a more
+	 * generic synchronization mechanism is implemented.
+	 */
+	if (GLAD_EGL_ANDROID_native_fence_sync) {
+		insert_fence_func = client_egl_insert_fence;
+	}
+
+	*out_sc_create_func = sc_create_func;
+	*out_insert_fence = insert_fence_func;
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
- * Functions.
+ * GL callback functions.
  *
  */
 
@@ -268,6 +414,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
                                struct xrt_compositor_gl **out_xcgl)
 {
 	log_level = debug_get_log_option_egl_log();
+	xrt_result_t xret;
 
 
 	/*
@@ -319,65 +466,31 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 
 	/*
-	 * Load GL functions.
+	 * Use helpers to do all setup.
 	 */
 
-	switch (egl_client_type) {
-	case EGL_OPENGL_API:
-#if defined(XRT_HAVE_OPENGL)
-		EGL_DEBUG("Loading GL functions");
-		gladLoadGL(get_gl_procaddr);
-		break;
-#else
-		EGL_ERROR("OpenGL support not including in this runtime build");
+	// Load GL functions, only EGL functions where loaded above.
+	xret = load_gl_functions(egl_client_type, get_gl_procaddr);
+	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
-		return XRT_ERROR_OPENGL;
-#endif
-
-	case EGL_OPENGL_ES_API:
-#if defined(XRT_HAVE_OPENGLES)
-		EGL_DEBUG("Loading GLES2 functions");
-		gladLoadGLES2(get_gl_procaddr);
-		break;
-#else
-		EGL_ERROR("OpenGL|ES support not including in this runtime build");
-		restore_context(&old);
-		return XRT_ERROR_OPENGL;
-#endif
-	default:
-		EGL_ERROR("Unsupported EGL client type: 0x%x", egl_client_type);
-		restore_context(&old);
-		return XRT_ERROR_OPENGL;
+		return xret;
 	}
 
-
-	/*
-	 * Some sanity checking.
-	 */
-
-	if (glGetString == NULL) {
-		EGL_ERROR("glGetString not loaded!");
+	// Some consistency/extension availability checking.
+	xret = check_context_and_debug_print(egl_client_type);
+	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
-		return XRT_ERROR_OPENGL;
+		return xret;
 	}
 
-	EGL_DEBUG("EGL made context:\n\tGL_VERSION: %s\n\tGL_RENDERER: %s\n\tGL_VENDOR: %s", //
-	          glGetString(GL_VERSION), glGetString(GL_RENDERER), glGetString(GL_VENDOR));
+	// Get functions.
+	client_gl_swapchain_create_func_t sc_create_func = NULL;
+	client_gl_insert_fence_func_t insert_fence_func = NULL;
 
-	/*
-	 * If a renderer is old enough to not support OpenGL(ES) 3 or above
-	 * it won't support Monado at all, it's not a hard requirement and
-	 * lets us detect weird errors early on some platforms.
-	 */
-	if (!GLAD_GL_VERSION_3_0 && !GLAD_GL_ES_VERSION_3_0) {
-		switch (egl_client_type) {
-		default: EGL_ERROR("Unknown OpenGL version!"); break;
-		case EGL_OPENGL_API: EGL_ERROR("OpenGL 3.0 or above!"); break;
-		case EGL_OPENGL_ES_API: EGL_ERROR("OpenGL ES 3.0 or above!"); break;
-		}
-
+	xret = get_client_gl_functions(&sc_create_func, &insert_fence_func);
+	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
-		return XRT_ERROR_OPENGL;
+		return xret;
 	}
 
 
@@ -389,71 +502,12 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	ceglc->current.dpy = display;
 	ceglc->current.ctx = context;
 
-	client_gl_swapchain_create_func_t sc_create = NULL;
-
-	EGL_DEBUG("Extension availability:");
-#define DUMP_EXTENSION_STATUS(EXT) EGL_DEBUG("  - " #EXT ": %s", GLAD_##EXT ? "true" : "false")
-
-	DUMP_EXTENSION_STATUS(GL_EXT_memory_object);
-	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_fd);
-	DUMP_EXTENSION_STATUS(GL_EXT_memory_object_win32);
-	DUMP_EXTENSION_STATUS(GL_OES_EGL_image_external);
-
-	DUMP_EXTENSION_STATUS(EGL_ANDROID_get_native_client_buffer);
-	DUMP_EXTENSION_STATUS(EGL_ANDROID_native_fence_sync);
-	DUMP_EXTENSION_STATUS(EGL_EXT_image_dma_buf_import_modifiers);
-	DUMP_EXTENSION_STATUS(EGL_KHR_fence_sync);
-	DUMP_EXTENSION_STATUS(EGL_KHR_image);
-	DUMP_EXTENSION_STATUS(EGL_KHR_image_base);
-	DUMP_EXTENSION_STATUS(EGL_KHR_reusable_sync);
-	DUMP_EXTENSION_STATUS(EGL_KHR_wait_sync);
-
-#undef DUMP_EXTENSION_STATUS
-
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
-
-	if (GLAD_GL_EXT_memory_object && GLAD_GL_EXT_memory_object_fd) {
-		EGL_DEBUG("Using GL memory object swapchain implementation");
-		sc_create = client_gl_memobj_swapchain_create;
-	}
-
-	if (sc_create == NULL && GLAD_EGL_EXT_image_dma_buf_import) {
-		EGL_DEBUG("Using EGL_Image swapchain implementation");
-		sc_create = client_gl_eglimage_swapchain_create;
-	}
-
-	if (sc_create == NULL) {
-		free(ceglc);
-		EGL_ERROR(
-		    "Could not find a required extension: need either EGL_EXT_image_dma_buf_import or "
-		    "GL_EXT_memory_object_fd");
-		restore_context(&old);
-		return XRT_ERROR_OPENGL;
-	}
-
-#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
-
-	EGL_DEBUG("Using EGL_Image swapchain implementation with AHardwareBuffer");
-	sc_create = client_gl_eglimage_swapchain_create;
-
-#endif
-
-	/*
-	 * For now, only use the insert_fence callback only if
-	 * EGL_ANDROID_native_fence_sync is available, revisit this when a more
-	 * generic synchronization mechanism is implemented.
-	 */
-	client_gl_insert_fence_func_t insert_fence_func = NULL;
-	if (GLAD_EGL_ANDROID_native_fence_sync) {
-		insert_fence_func = client_egl_insert;
-	}
-
 	bool bret = client_gl_compositor_init( //
 	    &ceglc->base,                      // c
 	    xcn,                               // xcn
 	    client_egl_context_begin,          // context_begin
 	    client_egl_context_end,            // context_end
-	    sc_create,                         // create_swapchain
+	    sc_create_func,                    // create_swapchain
 	    insert_fence_func);                // insert_fence
 	if (!bret) {
 		free(ceglc);
