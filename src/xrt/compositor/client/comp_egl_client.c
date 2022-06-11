@@ -186,7 +186,7 @@ ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_pr
  */
 
 static xrt_result_t
-insert_fence_android_native(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
+client_egl_insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *out_handle)
 {
 	struct client_egl_compositor *ceglc = client_egl_compositor(xc);
 
@@ -444,7 +444,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	 */
 	client_gl_insert_fence_func_t insert_fence_func = NULL;
 	if (GLAD_EGL_ANDROID_native_fence_sync) {
-		insert_fence_func = insert_fence_android_native;
+		insert_fence_func = client_egl_insert;
 	}
 
 	bool bret = client_gl_compositor_init( //
