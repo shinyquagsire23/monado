@@ -53,10 +53,24 @@ gst_fmt_from_xf_format(enum xrt_format format_in)
 }
 
 static void
+complain_if_wrong_image_size(struct xrt_frame *xf)
+{
+	if (xf->width % 2 == 1) {
+		U_LOG_W("Image width needs to be divisible by 2!");
+	}
+	if (xf->height % 2 == 1) {
+		U_LOG_W("Image height needs to be divisible by 2!");
+	}
+}
+
+static void
 push_frame(struct xrt_frame_sink *xfs, struct xrt_frame *xf)
 {
 	SINK_TRACE_MARKER();
 	struct gstreamer_sink *gs = (struct gstreamer_sink *)xfs;
+
+	complain_if_wrong_image_size(xf);
+
 	GstBuffer *buffer;
 	GstFlowReturn ret;
 
