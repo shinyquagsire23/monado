@@ -569,10 +569,20 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	double orig_width = r->lr->extent.width;
 	double orig_height = r->lr->extent.height;
 
-	double mul = 1080.0 / orig_height;
+	double target_height = 1080;
 
-	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(orig_width * mul);
-	r->mirror_to_debug_gui.image_extent.height = (uint32_t)(orig_height * mul);
+	double mul = target_height / orig_height;
+
+	// Casts seem to always round down; we don't want that here.
+	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(round(orig_width * mul));
+	r->mirror_to_debug_gui.image_extent.height = (uint32_t)target_height;
+
+
+	// gui_window_record expects the images to have even widths/heights
+	if (r->mirror_to_debug_gui.image_extent.width % 2 == 1) {
+		r->mirror_to_debug_gui.image_extent.width += 1;
+	}
+
 	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
 
 	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
