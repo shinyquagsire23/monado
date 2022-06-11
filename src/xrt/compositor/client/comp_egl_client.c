@@ -134,6 +134,17 @@ egl_error_str(EGLint ret)
 	}
 }
 
+static inline void
+destroy_context_with_check(EGLDisplay display, EGLContext context, const char *func)
+{
+	EGLBoolean eret = eglDestroyContext(display, context);
+	if (eret == EGL_FALSE) {
+		U_LOG_E("eglDestroyContext: %s (%s)", egl_error_str(eglGetError()), func);
+	}
+}
+
+#define DESTROY_CONTEXT(DPY, CTX) destroy_context_with_check(DPY, CTX, __func__)
+
 XRT_MAYBE_UNUSED static bool
 has_extension(const char *extensions, const char *ext)
 {
@@ -187,6 +198,45 @@ ensure_native_fence_is_loaded(EGLDisplay dpy, PFNEGLGETPROCADDRESSPROC get_gl_pr
 	glad_eglDupNativeFenceFDANDROID =
 	    (PFNEGLDUPNATIVEFENCEFDANDROIDPROC)get_gl_procaddr("eglDupNativeFenceFDANDROID");
 #endif
+}
+
+static xrt_result_t
+create_context(
+    EGLDisplay display, EGLConfig config, EGLContext app_context, EGLint api_type, EGLContext *out_our_context)
+{
+	EGLint old_api_type = eglQueryAPI();
+
+	eglBindAPI(api_type);
+
+	// clang-format off
+	EGLint attrs[] = {
+	    EGL_CONTEXT_MAJOR_VERSION_KHR, 3,
+	    EGL_CONTEXT_MINOR_VERSION_KHR, 1, // Panfrost only supports 3.1
+	    EGL_NONE, EGL_NONE,
+	    EGL_NONE,
+	};
+	// clang-format on
+
+	if (api_type == EGL_OPENGL_API) {
+		attrs[4] = EGL_CONTEXT_OPENGL_PROFILE_MASK;
+		attrs[5] = EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT;
+	}
+
+	EGLContext our_context = eglCreateContext(display, config, app_context, attrs);
+
+	// Restore old API type.
+	if (old_api_type == EGL_NONE) {
+		eglBindAPI(old_api_type);
+	}
+
+	if (our_context == EGL_NO_CONTEXT) {
+		EGL_ERROR("eglCreateContext: %s", egl_error_str(eglGetError()));
+		return XRT_ERROR_OPENGL;
+	}
+
+	*out_our_context = our_context;
+
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
@@ -395,6 +445,10 @@ client_egl_compositor_destroy(struct xrt_compositor *xc)
 
 	client_gl_compositor_close(&ceglc->base);
 
+	DESTROY_CONTEXT(ceglc->current.dpy, ceglc->current.ctx);
+	ceglc->current.ctx = EGL_NO_CONTEXT;
+	ceglc->current.dpy = EGL_NO_DISPLAY;
+
 	free(ceglc);
 }
 
@@ -444,6 +498,16 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 
 
 	/*
+	 * Create context.
+	 */
+
+	xret = create_context(display, config, context, egl_client_type, &context);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+
+	/*
 	 * Make current.
 	 */
 
@@ -460,6 +524,9 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		    egl_error_str(eglGetError()),                                         //
 		    (void *)old.dpy, (void *)old.ctx, (void *)old.read, (void *)old.draw, //
 		    (void *)display, (void *)context, NULL, NULL);                        //
+
+		DESTROY_CONTEXT(display, context);
+
 		// No need to restore on failure.
 		return XRT_ERROR_OPENGL;
 	}
@@ -473,6 +540,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	xret = load_gl_functions(egl_client_type, get_gl_procaddr);
 	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
+		DESTROY_CONTEXT(display, context);
 		return xret;
 	}
 
@@ -480,6 +548,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	xret = check_context_and_debug_print(egl_client_type);
 	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
+		DESTROY_CONTEXT(display, context);
 		return xret;
 	}
 
@@ -490,6 +559,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 	xret = get_client_gl_functions(&sc_create_func, &insert_fence_func);
 	if (xret != XRT_SUCCESS) {
 		restore_context(&old);
+		DESTROY_CONTEXT(display, context);
 		return xret;
 	}
 
@@ -513,6 +583,7 @@ xrt_gfx_provider_create_gl_egl(struct xrt_compositor_native *xcn,
 		free(ceglc);
 		EGL_ERROR("Failed to initialize compositor");
 		restore_context(&old);
+		DESTROY_CONTEXT(display, context);
 		return XRT_ERROR_OPENGL;
 	}
 
