@@ -84,6 +84,7 @@ create_pipeline(struct gui_record_window *rw)
 		         "videoconvert ! "
 		         "queue ! "
 		         "x264enc bitrate=\"%s\" speed-preset=\"%s\" ! "
+		         "video/x-h264,profile=main ! "
 		         "h264parse ! "
 		         "queue ! "
 		         "mp4mux ! "
