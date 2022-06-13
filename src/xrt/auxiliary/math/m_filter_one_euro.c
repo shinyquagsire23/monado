@@ -282,8 +282,12 @@ m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct x
 
 	f->prev_dy = exp_smooth_quat(alpha_d, dy, f->prev_dy);
 
-	double dy_mag = math_quat_len(&f->prev_dy);
-	double alpha = filter_one_euro_compute_alpha(&f->base, dt, dy_mag);
+	// The magnitud of the smoothed dy (f->prev_dy) is its rotation angle in radians
+	struct xrt_vec3 smooth_dy_aa;
+	math_quat_ln(&f->prev_dy, &smooth_dy_aa);
+	double smooth_dy_mag = m_vec3_len(smooth_dy_aa);
+
+	double alpha = filter_one_euro_compute_alpha(&f->base, dt, smooth_dy_mag);
 
 	/* Smooth the dy values and use them to calculate the frequency cutoff for the main filter */
 	f->prev_y = exp_smooth_quat(alpha, *in_y, f->prev_y);
