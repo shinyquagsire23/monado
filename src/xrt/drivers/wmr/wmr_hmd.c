@@ -1323,24 +1323,20 @@ wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
 XRT_MAYBE_UNUSED static struct t_slam_calib_extras
 wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
 {
-	// Compute transform from IMU to HT0 (HT0 space into IMU space)
 	struct wmr_camera_config *ht0 = &wh->config.cameras[0];
-	struct xrt_matrix_3x3 rot_imu_ht0 = wh->config.sensors.accel.rotation;
-	math_matrix_3x3_transpose(&rot_imu_ht0, &rot_imu_ht0); // Row major to col major
-	struct xrt_vec3 tra_imu_ht0 = wh->config.sensors.accel.translation;
-	struct xrt_matrix_4x4 t_imu_ht0;
-	math_matrix_4x4_isometry_from_rt(&rot_imu_ht0, &tra_imu_ht0, &t_imu_ht0);
-
-	// Compute transform from IMU to HT1 (HT1 space into IMU space)
 	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
-	struct xrt_matrix_3x3 ht1_rotation_cm; // HT1 rotation but column major
-	math_matrix_3x3_transpose(&ht1->rotation, &ht1_rotation_cm);
-	struct xrt_matrix_4x4 t_ht1_ht0;
-	math_matrix_4x4_isometry_from_rt(&ht1_rotation_cm, &ht1->translation, &t_ht1_ht0);
-	struct xrt_matrix_4x4 t_ht0_ht1;
-	math_matrix_4x4_isometry_inverse(&t_ht1_ht0, &t_ht0_ht1);
-	struct xrt_matrix_4x4 t_imu_ht1;
-	math_matrix_4x4_multiply(&t_imu_ht0, &t_ht0_ht1, &t_imu_ht1);
+
+	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
+	struct xrt_pose P_ht1_ht0 = ht1->pose;
+	struct xrt_pose P_ht0_ht1;
+	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
+	struct xrt_pose P_imu_ht1;
+	math_pose_transform(&P_imu_ht0, &P_ht0_ht1, &P_imu_ht1);
+
+	struct xrt_matrix_4x4 T_imu_ht0;
+	struct xrt_matrix_4x4 T_imu_ht1;
+	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
+	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
 
 	struct t_slam_calib_extras calib = {
 	    .imu_frequency = SLAM_IMU_FREQUENCY,
@@ -1348,12 +1344,12 @@ wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
 	        {
 	            {
 	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = t_imu_ht0,
+	                .T_imu_cam = T_imu_ht0,
 	                .rpmax = ht0->distortion6KT.params.metric_radius,
 	            },
 	            {
 	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = t_imu_ht1,
+	                .T_imu_cam = T_imu_ht1,
 	                .rpmax = ht1->distortion6KT.params.metric_radius,
 	            },
 	        },
