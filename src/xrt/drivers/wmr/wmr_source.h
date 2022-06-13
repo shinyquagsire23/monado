@@ -12,6 +12,7 @@
 #include "wmr_config.h"
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_tracking.h"
 
 /*!
  * WMR video/IMU data sources
@@ -31,11 +32,10 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 
 //! @todo IMU data should be generated from within the data source, but right
 //! now we need this function because it is being generated from wmr_hmd
+//! @todo Should this method receive raw or calibrated samples? Currently
+//! receiving raw because Basalt can calibrate them, but other systems can't.
 void
-wmr_source_push_imu_packet(struct xrt_fs *xfs,
-                           const uint64_t ts[4],
-                           struct xrt_vec3 accels[4],
-                           struct xrt_vec3 gyros[4]);
+wmr_source_push_imu_packet(struct xrt_fs *xfs, timepoint_ns t, struct xrt_vec3 accel, struct xrt_vec3 gyro);
 
 /*!
  * @}

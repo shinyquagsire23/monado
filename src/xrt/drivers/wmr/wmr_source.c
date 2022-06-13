@@ -74,7 +74,6 @@ struct wmr_source
 
 	bool is_running;              //!< Whether the device is streaming
 	bool first_imu_received;      //!< Don't send frames until first IMU sample
-	bool average_imus;            //!< Average 4 IMU samples before sending them to the sinks
 	time_duration_ns hw2mono;     //!< Estimated offset from IMU to monotonic clock
 	time_duration_ns cam_hw2mono; //!< Cache for hw2mono used in last left frame
 };
@@ -308,7 +307,6 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 
 	struct wmr_source *ws = U_TYPED_CALLOC(struct wmr_source);
 	ws->log_level = debug_get_log_option_wmr_log();
-	ws->average_imus = true;
 
 	// Setup xrt_fs
 	struct xrt_fs *xfs = &ws->xfs;
@@ -341,7 +339,6 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 	m_ff_vec3_f32_alloc(&ws->accel_ff, 1000);
 	u_var_add_root(ws, WMR_SOURCE_STR, false);
 	u_var_add_log_level(ws, &ws->log_level, "Log Level");
-	u_var_add_bool(ws, &ws->average_imus, "Average IMU samples");
 	u_var_add_ro_ff_vec3_f32(ws, ws->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(ws, ws->accel_ff, "Accelerometer");
 	u_var_add_sink_debug(ws, &ws->ui_left_sink, "Left Camera");
@@ -359,37 +356,12 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 }
 
 void
-wmr_source_push_imu_packet(struct xrt_fs *xfs,
-                           const uint64_t ts[4],
-                           struct xrt_vec3 accels[4],
-                           struct xrt_vec3 gyros[4])
+wmr_source_push_imu_packet(struct xrt_fs *xfs, timepoint_ns t, struct xrt_vec3 accel, struct xrt_vec3 gyro)
 {
 	DRV_TRACE_MARKER();
-
 	struct wmr_source *ws = wmr_source_from_xfs(xfs);
-
-	if (ws->average_imus) {
-		struct xrt_vec3 a = {0, 0, 0};
-		struct xrt_vec3 g = {0, 0, 0};
-		for (int i = 0; i < 4; i++) {
-			math_vec3_accum(&accels[i], &a);
-			math_vec3_accum(&gyros[i], &g);
-		}
-		math_vec3_scalar_mul(1.0f / 4, &a);
-		math_vec3_scalar_mul(1.0f / 4, &g);
-
-		timepoint_ns t = (ts[3] + ts[0]) / 2 * WMR_MS_HOLOLENS_NS_PER_TICK;
-		struct xrt_vec3_f64 accel = {a.x, a.y, a.z};
-		struct xrt_vec3_f64 gyro = {g.x, g.y, g.z};
-		struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = accel, .gyro_rad_secs = gyro};
-		xrt_sink_push_imu(&ws->imu_sink, &sample);
-	} else {
-		for (int i = 0; i < 4; i++) {
-			timepoint_ns t = ts[i] * WMR_MS_HOLOLENS_NS_PER_TICK;
-			struct xrt_vec3_f64 accel = {accels[i].x, accels[i].y, accels[i].z};
-			struct xrt_vec3_f64 gyro = {gyros[i].x, gyros[i].y, gyros[i].z};
-			struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = accel, .gyro_rad_secs = gyro};
-			xrt_sink_push_imu(&ws->imu_sink, &sample);
-		}
-	}
+	struct xrt_vec3_f64 accel_f64 = {accel.x, accel.y, accel.z};
+	struct xrt_vec3_f64 gyro_f64 = {gyro.x, gyro.y, gyro.z};
+	struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = accel_f64, .gyro_rad_secs = gyro_f64};
+	xrt_sink_push_imu(&ws->imu_sink, &sample);
 }

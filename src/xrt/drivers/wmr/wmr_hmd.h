@@ -173,6 +173,9 @@ struct wmr_hmd
 	//! Additional offset to apply to `pose`
 	struct xrt_pose offset;
 
+	//! Average 4 IMU samples before sending them to the trackers
+	bool average_imus;
+
 	struct
 	{
 		struct u_var_button hmd_screen_enable_btn;

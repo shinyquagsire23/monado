@@ -1,6 +1,6 @@
 // Copyright 2018, Philipp Zabel.
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,6 +8,7 @@
  * @author Philipp Zabel <philipp.zabel@gmail.com>
  * @author nima01 <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Mateo de Mayo <mateo.demayo@collabora.com>
  * @ingroup drv_wmr
  */
 
@@ -61,7 +62,6 @@
 #define CAMERA_FREQUENCY 30      //!< Observed value (OV7251)
 #define IMU_FREQUENCY 1000       //!< Observed value (ICM20602)
 #define IMU_SAMPLES_PER_PACKET 4 //!< There are 4 samples for each USB IMU packet
-#define SLAM_IMU_FREQUENCY IMU_FREQUENCY / IMU_SAMPLES_PER_PACKET
 
 //! Specifies whether the user wants to use a SLAM tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
@@ -304,7 +304,7 @@ hololens_handle_debug(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 }
 
 static void
-hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+hololens_handle_sensors_avg(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
 	DRV_TRACE_MARKER();
 
@@ -313,12 +313,58 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 
 	hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
 
-	struct xrt_vec3 raw_gyro[4];
-	struct xrt_vec3 raw_accel[4];
-	struct xrt_vec3 calib_gyro[4];
-	struct xrt_vec3 calib_accel[4];
+	// Use a single averaged sample from all the samples in the packet
+	struct xrt_vec3 avg_raw_accel = XRT_VEC3_ZERO;
+	struct xrt_vec3 avg_raw_gyro = XRT_VEC3_ZERO;
+	for (int i = 0; i < IMU_SAMPLES_PER_PACKET; i++) {
+		struct xrt_vec3 a = XRT_VEC3_ZERO;
+		struct xrt_vec3 g = XRT_VEC3_ZERO;
+		vec3_from_hololens_accel(wh->packet.accel, i, &a);
+		vec3_from_hololens_gyro(wh->packet.gyro, i, &g);
+		math_vec3_accum(&a, &avg_raw_accel);
+		math_vec3_accum(&g, &avg_raw_gyro);
+	}
+	math_vec3_scalar_mul(1.0f / IMU_SAMPLES_PER_PACKET, &avg_raw_accel);
+	math_vec3_scalar_mul(1.0f / IMU_SAMPLES_PER_PACKET, &avg_raw_gyro);
 
-	for (int i = 0; i < 4; i++) {
+	// Calibrate averaged sample
+	struct xrt_vec3 avg_calib_accel = XRT_VEC3_ZERO;
+	struct xrt_vec3 avg_calib_gyro = XRT_VEC3_ZERO;
+	math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, &avg_raw_accel, &avg_calib_accel);
+	math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, &avg_raw_gyro, &avg_calib_gyro);
+	math_vec3_accum(&wh->config.sensors.accel.bias_offsets, &avg_calib_accel);
+	math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, &avg_calib_gyro);
+	math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, &avg_calib_accel, &avg_calib_accel);
+	math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, &avg_calib_gyro, &avg_calib_gyro);
+
+	// Fusion tracking
+	os_mutex_lock(&wh->fusion.mutex);
+	timepoint_ns t = wh->packet.gyro_timestamp[IMU_SAMPLES_PER_PACKET - 1] * WMR_MS_HOLOLENS_NS_PER_TICK;
+	m_imu_3dof_update(&wh->fusion.i3dof, t, &avg_calib_accel, &avg_calib_gyro);
+	wh->fusion.last_imu_timestamp_ns = now_ns;
+	wh->fusion.last_angular_velocity = avg_calib_gyro;
+	os_mutex_unlock(&wh->fusion.mutex);
+
+	// SLAM tracking
+	wmr_source_push_imu_packet(wh->tracking.source, t, avg_raw_accel, avg_raw_gyro);
+}
+
+static void
+hololens_handle_sensors_all(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+	DRV_TRACE_MARKER();
+
+	// Get the timing as close to reading the packet as possible.
+	uint64_t now_ns = os_monotonic_get_ns();
+
+	hololens_sensors_decode_packet(wh, &wh->packet, buffer, size);
+
+	struct xrt_vec3 raw_gyro[IMU_SAMPLES_PER_PACKET];
+	struct xrt_vec3 raw_accel[IMU_SAMPLES_PER_PACKET];
+	struct xrt_vec3 calib_gyro[IMU_SAMPLES_PER_PACKET];
+	struct xrt_vec3 calib_accel[IMU_SAMPLES_PER_PACKET];
+
+	for (int i = 0; i < IMU_SAMPLES_PER_PACKET; i++) {
 		struct xrt_vec3 *rg = &raw_gyro[i];
 		struct xrt_vec3 *cg = &calib_gyro[i];
 		vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
@@ -336,7 +382,7 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 
 	// Fusion tracking
 	os_mutex_lock(&wh->fusion.mutex);
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < IMU_SAMPLES_PER_PACKET; i++) {
 		m_imu_3dof_update(                                              //
 		    &wh->fusion.i3dof,                                          //
 		    wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK, //
@@ -348,10 +394,22 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 	os_mutex_unlock(&wh->fusion.mutex);
 
 	// SLAM tracking
-	//! @todo For now we are using raw_samples here because the centerline fix
-	//! in the calibrated samples breaks SLAM systems. Handling of coordinate
-	//! systems needs to be revisited.
-	wmr_source_push_imu_packet(wh->tracking.source, wh->packet.gyro_timestamp, raw_accel, raw_gyro);
+	for (int i = 0; i < IMU_SAMPLES_PER_PACKET; i++) {
+		timepoint_ns t = wh->packet.gyro_timestamp[i] * WMR_MS_HOLOLENS_NS_PER_TICK;
+		wmr_source_push_imu_packet(wh->tracking.source, t, raw_accel[i], raw_gyro[i]);
+	}
+}
+
+static void
+hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int size)
+{
+	if (wh->average_imus) {
+		// Less overhead and jitter.
+		hololens_handle_sensors_avg(wh, buffer, size);
+	} else {
+		// More sophisticated fusion algorithms might work better with raw data.
+		hololens_handle_sensors_all(wh, buffer, size);
+	}
 }
 
 static bool
@@ -1338,8 +1396,11 @@ wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
 	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
 	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
 
+	//! @note This might change during runtime but the calibration data will be already submitted
+	double imu_frequency = wh->average_imus ? IMU_FREQUENCY / IMU_SAMPLES_PER_PACKET : IMU_FREQUENCY;
+
 	struct t_slam_calib_extras calib = {
-	    .imu_frequency = SLAM_IMU_FREQUENCY,
+	    .imu_frequency = imu_frequency,
 	    .cams =
 	        {
 	            {
@@ -1461,6 +1522,7 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 	}
 	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
 	u_var_add_pose(wh, &wh->offset, "Pose Offset");
+	u_var_add_bool(wh, &wh->average_imus, "Average IMU samples");
 
 	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
@@ -1732,8 +1794,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		return;
 	}
 
-	wh->pose = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
-	wh->offset = (struct xrt_pose){{0, 0, 0, 1}, {0, 0, 0}};
+	wh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+	wh->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
+	wh->average_imus = true;
 
 	/* Now that we have the config loaded, iterate the map of known headsets and see if we have
 	 * an entry for this specific headset (otherwise the generic entry will be used)

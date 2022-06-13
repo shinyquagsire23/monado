@@ -397,7 +397,7 @@ dai_ts_to_monado_ts(dai::Timestamp &in)
 	    .count();
 }
 
-// Look at wmr_source_push_imu_packet - that's where these averaging shenanigans come from ;)
+// Look at the WMR driver - that's where these averaging shenanigans come from ;)
 static void
 depthai_do_one_imu_frame(struct depthai_fs *depthai)
 {
