@@ -116,12 +116,9 @@ struct wmr_hmd
 	//! Distortion related parameters
 	struct wmr_hmd_distortion_params distortion_params[2];
 
-	// Config-derived poses
-	struct xrt_pose centerline;
-	struct xrt_pose display_to_centerline[2];
-	struct xrt_pose accel_to_centerline;
-	struct xrt_pose gyro_to_centerline;
-	struct xrt_pose mag_to_centerline;
+	//! Precomputed transforms, @see precompute_sensor_transforms.
+	struct xrt_pose P_oxr_acc; //!< Converts accel samples into OpenXR coordinates
+	struct xrt_pose P_oxr_gyr; //!< Converts gyro samples into OpenXR coordinates
 
 	struct hololens_sensors_packet packet;
 

@@ -46,22 +46,19 @@ wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
 	math_matrix_3x3_identity(&c->sensors.mag.mix_matrix);
 }
 
-static void
-wmr_config_compute_pose(struct xrt_pose *out_pose, const struct xrt_vec3 *tx, const struct xrt_matrix_3x3 *rx)
+static struct xrt_pose
+pose_from_rt(const struct xrt_matrix_3x3 rotation_rm, const struct xrt_vec3 translation)
 {
-	// Adjust the coordinate system / conventions of the raw Tx and Rx config to yield a usable xrt_pose
-	// The config stores a 3x3 rotation matrix and a vec3 translation.
-	// Translation is applied after rotation, and the coordinate system is flipped in YZ.
+	struct xrt_matrix_3x3 rotation_cm;
+	math_matrix_3x3_transpose(&rotation_rm, &rotation_cm);
 
-	struct xrt_matrix_3x3 coordsys = {.v = {1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, -1.0}};
+	struct xrt_matrix_4x4 mat = {0};
+	math_matrix_4x4_isometry_from_rt(&rotation_cm, &translation, &mat);
 
-	struct xrt_matrix_3x3 rx_adj;
-	math_matrix_3x3_multiply(&coordsys, rx, &rx_adj);
-	math_quat_from_matrix_3x3(&rx_adj, &out_pose->orientation);
+	struct xrt_pose pose;
+	math_pose_from_isometry(&mat, &pose);
 
-	struct xrt_vec3 v;
-	math_matrix_3x3_transform_vec3(&coordsys, tx, &v);
-	math_matrix_3x3_transform_vec3(&rx_adj, &v, &out_pose->position);
+	return pose;
 }
 
 static bool
@@ -120,7 +117,9 @@ wmr_config_parse_display(struct wmr_hmd_config *c, cJSON *display, enum u_loggin
 	if (u_json_get_float_array(rx, rotation.v, 9) != 9)
 		return false;
 
-	wmr_config_compute_pose(&eye->pose, &translation, &rotation);
+	eye->pose = pose_from_rt(rotation, translation);
+	eye->translation = translation;
+	eye->rotation = rotation;
 
 	/* Parse color distortion channels */
 	const char *channel_names[] = {"DistortionRed", "DistortionGreen", "DistortionBlue"};
@@ -192,7 +191,7 @@ wmr_inertial_sensor_config_parse(struct wmr_inertial_sensor_config *c, cJSON *se
 		return false;
 	}
 
-	wmr_config_compute_pose(&c->pose, &translation, &rotation);
+	c->pose = pose_from_rt(rotation, translation);
 	c->translation = translation;
 	c->rotation = rotation;
 
@@ -339,7 +338,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 		return false;
 	}
 
-	wmr_config_compute_pose(&cam_config->pose, &translation, &rotation);
+	cam_config->pose = pose_from_rt(rotation, translation);
 	cam_config->translation = translation;
 	cam_config->rotation = rotation;
 

@@ -22,10 +22,10 @@
 #include "os/os_time.h"
 #include "os/os_hid.h"
 
-#include "math/m_mathinclude.h"
 #include "math/m_api.h"
-#include "math/m_vec2.h"
+#include "math/m_mathinclude.h"
 #include "math/m_predict.h"
+#include "math/m_vec2.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
@@ -323,14 +323,14 @@ hololens_handle_sensors(struct wmr_hmd *wh, const unsigned char *buffer, int siz
 		vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
 		math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
-		math_quat_rotate_vec3(&wh->gyro_to_centerline.orientation, cg, cg);
+		math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, cg, cg);
 
 		struct xrt_vec3 *ra = &raw_accel[i];
 		struct xrt_vec3 *ca = &calib_accel[i];
 		vec3_from_hololens_accel(wh->packet.accel, i, ra);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
 		math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
-		math_quat_rotate_vec3(&wh->accel_to_centerline.orientation, ca, ca);
+		math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, ca, ca);
 	}
 
 	// Fusion tracking
@@ -1600,6 +1600,59 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	return true;
 }
 
+/*!
+ * Precompute transforms to convert between OpenXR and WMR coordinate systems.
+ *
+ * OpenXR: X: Right, Y: Up, Z: Backward
+ * WMR: X: Right, Y: Down, Z: Forward
+ * ┌────────────────────┐
+ * │   OXR       WMR    │
+ * │                    │
+ * │ ▲ y                │
+ * │ │         ▲ z      │
+ * │ │    x    │    x   │
+ * │ ├──────►  ├──────► │
+ * │ │         │        │
+ * │ ▼ z       │        │
+ * │           ▼ y      │
+ * └────────────────────┘
+ */
+static void
+precompute_sensor_transforms(struct wmr_hmd *wh)
+{
+	// P_A_B is such that B = P_A_B * A. See conventions.md
+	struct xrt_pose P_oxr_wmr = {{.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0}, XRT_VEC3_ZERO};
+	struct xrt_pose P_wmr_oxr = {0};
+	struct xrt_pose P_acc_ht0 = wh->config.sensors.accel.pose;
+	struct xrt_pose P_gyr_ht0 = wh->config.sensors.gyro.pose;
+	struct xrt_pose P_ht0_acc = {0};
+	struct xrt_pose P_ht0_gyr = {0};
+	struct xrt_pose P_me_ht0 = {0}; // "me" == "middle of the eyes"
+	struct xrt_pose P_me_acc = {0};
+	struct xrt_pose P_me_gyr = {0};
+	struct xrt_pose P_ht0_me = {0};
+	struct xrt_pose P_acc_me = {0};
+
+	// All of the observed headsets have reported a zero translation for its gyro
+	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
+
+	// Initialize transforms
+
+	// All of these are in WMR coordinates.
+	math_pose_invert(&P_oxr_wmr, &P_wmr_oxr); // P_wmr_oxr == P_oxr_wmr
+	math_pose_invert(&P_acc_ht0, &P_ht0_acc);
+	math_pose_invert(&P_gyr_ht0, &P_ht0_gyr);
+	math_pose_interpolate(&wh->config.eye_params[0].pose, &wh->config.eye_params[1].pose, 0.5, &P_me_ht0);
+	math_pose_transform(&P_me_ht0, &P_ht0_acc, &P_me_acc);
+	math_pose_transform(&P_me_ht0, &P_ht0_gyr, &P_me_gyr);
+	math_pose_invert(&P_me_ht0, &P_ht0_me);
+	math_pose_invert(&P_me_acc, &P_acc_me);
+
+	// Save transforms
+	math_pose_transform(&P_oxr_wmr, &P_me_acc, &wh->P_oxr_acc);
+	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &wh->P_oxr_gyr);
+}
+
 void
 wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct os_hid_device *hid_holo,
@@ -1689,43 +1742,11 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
-	// Compute centerline in the HMD's calibration coordinate space as the average of the two display poses,
-	// then rotate around the X axis to convert coordinate system from WMR (X right, Y down, Z away)
-	// to OpenXR (X right, Y up, Z towards)
-	math_quat_slerp(&wh->config.eye_params[0].pose.orientation, &wh->config.eye_params[1].pose.orientation, 0.5f,
-	                &wh->centerline.orientation);
-	wh->centerline.position.x =
-	    (wh->config.eye_params[0].pose.position.x + wh->config.eye_params[1].pose.position.x) * 0.5f;
-	wh->centerline.position.y =
-	    (wh->config.eye_params[0].pose.position.y + wh->config.eye_params[1].pose.position.y) * 0.5f;
-	wh->centerline.position.z =
-	    (wh->config.eye_params[0].pose.position.z + wh->config.eye_params[1].pose.position.z) * 0.5f;
-
-	struct xrt_pose wmr_to_openxr_xform = {
-	    .position = {0.0, 0.0, 0.0},
-	    .orientation = {.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0},
-	};
-
-	math_pose_transform(&wmr_to_openxr_xform, &wh->centerline, &wh->centerline);
-
-	// Compute display and sensor offsets relative to the centerline
-	for (int dIdx = 0; dIdx < 2; ++dIdx) {
-		math_pose_invert(&wh->config.eye_params[dIdx].pose, &wh->display_to_centerline[dIdx]);
-		math_pose_transform(&wh->centerline, &wh->display_to_centerline[dIdx],
-		                    &wh->display_to_centerline[dIdx]);
-	}
-	math_pose_invert(&wh->config.sensors.accel.pose, &wh->accel_to_centerline);
-	math_pose_transform(&wh->centerline, &wh->accel_to_centerline, &wh->accel_to_centerline);
-	math_pose_invert(&wh->config.sensors.gyro.pose, &wh->gyro_to_centerline);
-	math_pose_transform(&wh->centerline, &wh->gyro_to_centerline, &wh->gyro_to_centerline);
-	math_pose_invert(&wh->config.sensors.mag.pose, &wh->mag_to_centerline);
-	math_pose_transform(&wh->centerline, &wh->mag_to_centerline, &wh->mag_to_centerline);
+	precompute_sensor_transforms(wh);
 
 	struct u_extents_2d exts;
-
 	exts.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;
 	exts.h_pixels = (uint32_t)wh->config.eye_params[0].display_size.y;
-
 	u_extents_2d_split_side_by_side(&wh->base, &exts);
 
 	// Fill in blend mode - just opqaue, unless we get Hololens support one day.

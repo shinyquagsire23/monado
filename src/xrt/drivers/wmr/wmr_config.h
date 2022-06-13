@@ -85,8 +85,11 @@ struct wmr_distortion_eye_config
 {
 	/* 3x3 camera matrix that moves from normalised camera coords (X/Z & Y/Z) to undistorted pixels */
 	struct xrt_matrix_3x3 affine_xform;
-	/* Eye pose in world space */
-	struct xrt_pose pose;
+
+	struct xrt_vec3 translation;    //!< Raw translation (to HT0)
+	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0), row major
+	struct xrt_pose pose;           //!< Pose from `translation` and `rotation`
+
 	/* Radius of the (undistorted) visible area from the center (pixels) (I think) */
 	double visible_radius;
 
@@ -108,7 +111,7 @@ struct wmr_camera_config
 
 	struct xrt_vec3 translation;    //!< Raw translation (to HT0)
 	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0), row major
-	struct xrt_pose pose;           //!< Corrected pose from translation and rotation fields
+	struct xrt_pose pose;           //!< Pose from `translation` and `rotation`
 
 	struct wmr_distortion_6KT distortion6KT;
 };
@@ -118,7 +121,7 @@ struct wmr_inertial_sensor_config
 {
 	struct xrt_vec3 translation;    //!< Raw translation (to HT0). Usually non-zero only on accelerometers.
 	struct xrt_matrix_3x3 rotation; //!< Raw rotation (to HT0), row major
-	struct xrt_pose pose;           //!< Corrected pose from translation and rotation fields
+	struct xrt_pose pose;           //!< Pose from `translation` and `rotation`
 
 	/* Current bias and mix matrix extracted from
 	 * the configuration, which provides coefficients

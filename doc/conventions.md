@@ -111,6 +111,14 @@ directed-acyclic-graph.
     - Constants/constexpr values: `kCamelCase`
     - If a header is only usable from C++ code, it should be named with the
       extension `.hpp` to signify this.
+- Math:
+  - For different types of transforms `T` between two entities `A` and `B`, try
+    to use variable names like `T_A_B` to express the transform such that `B =
+    T_A_B * A`. This is equivalent to "`B` expressed w.r.t. `A`" and "the
+    transform that converts a point in `B` coordinates into `A` coordinates".
+    `T` can be used for 4x4 isometry matrices, but you can use others like
+    `P` for poses, `R` for 3x3 rotations, `Q` for quaternion rotations, `t` for
+    translations, etc.
 
 ## Patterns and Idioms
 
