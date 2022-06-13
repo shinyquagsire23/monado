@@ -1003,6 +1003,10 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 #endif
 	}
 
+	if (wh->tracking.imu2me) {
+		math_pose_transform(&wh->pose, &wh->P_imu_me, &wh->pose);
+	}
+
 	out_relation->pose = wh->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
@@ -1463,6 +1467,7 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 
 	u_var_add_gui_header(wh, NULL, "SLAM Tracking");
 	u_var_add_ro_text(wh, wh->gui.slam_status, "Tracker status");
+	u_var_add_bool(wh, &wh->tracking.imu2me, "Correct IMU pose to middle of eyes");
 
 	u_var_add_gui_header(wh, NULL, "Hand Tracking");
 	u_var_add_ro_text(wh, wh->gui.hand_status, "Tracker status");
@@ -1524,6 +1529,7 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 
 	wh->tracking.slam_enabled = slam_enabled;
 	wh->tracking.hand_enabled = hand_enabled;
+	wh->tracking.imu2me = true;
 
 	wh->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
 
@@ -1632,6 +1638,7 @@ precompute_sensor_transforms(struct wmr_hmd *wh)
 	struct xrt_pose P_me_gyr = {0};
 	struct xrt_pose P_ht0_me = {0};
 	struct xrt_pose P_acc_me = {0};
+	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
 
 	// All of the observed headsets have reported a zero translation for its gyro
 	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
@@ -1648,9 +1655,14 @@ precompute_sensor_transforms(struct wmr_hmd *wh)
 	math_pose_invert(&P_me_ht0, &P_ht0_me);
 	math_pose_invert(&P_me_acc, &P_acc_me);
 
+	// Express P_*_me pose in OpenXR coordinates through sandwich products.
+	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
+
 	// Save transforms
 	math_pose_transform(&P_oxr_wmr, &P_me_acc, &wh->P_oxr_acc);
 	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &wh->P_oxr_gyr);
+	wh->P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
 }
 
 void

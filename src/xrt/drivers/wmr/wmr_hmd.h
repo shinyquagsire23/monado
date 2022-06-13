@@ -119,6 +119,7 @@ struct wmr_hmd
 	//! Precomputed transforms, @see precompute_sensor_transforms.
 	struct xrt_pose P_oxr_acc; //!< Converts accel samples into OpenXR coordinates
 	struct xrt_pose P_oxr_gyr; //!< Converts gyro samples into OpenXR coordinates
+	struct xrt_pose P_imu_me;  //!< IMU=accel. IMU-to-ME transform but in OpenXR coordinates
 
 	struct hololens_sensors_packet packet;
 
@@ -157,6 +158,9 @@ struct wmr_hmd
 
 		//! Set at start. Whether the hand tracker was initialized.
 		bool hand_enabled;
+
+		//! SLAM systems track the IMU pose, enabling this corrects it to middle of the eyes
+		bool imu2me;
 	} tracking;
 
 	//! Whether to track the HMD with 6dof SLAM or fallback to the `fusion` 3dof tracker
