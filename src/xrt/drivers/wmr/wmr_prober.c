@@ -216,11 +216,8 @@ wmr_found(struct xrt_prober *xp,
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	if (ht != NULL) { // Create hand-tracked controllers
-		struct xrt_pose pose = XRT_POSE_IDENTITY;
-		struct xrt_device *wrap = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht, hmd,
-		                                                         XRT_INPUT_GENERIC_HEAD_POSE, &pose);
 		struct xrt_device *two_hands[2];
-		cemu_devices_create(hmd, wrap, two_hands);
+		cemu_devices_create(hmd, ht, two_hands);
 
 		out_xdev[out_idx++] = two_hands[0];
 		out_xdev[out_idx++] = two_hands[1];

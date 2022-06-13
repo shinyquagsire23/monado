@@ -53,6 +53,7 @@
 #endif
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
+#include "../multi_wrapper/multi.h"
 #include "../drivers/ht/ht_interface.h"
 #endif
 
@@ -1429,15 +1430,18 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 
-	int create_status = ht_device_create(&wh->tracking.xfctx,                     //
-	                                     stereo_calib,                            //
-	                                     HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA, //
-	                                     HT_ALGORITHM_MERCURY,                    //
-	                                     &sinks,                                  //
+	int create_status = ht_device_create(&wh->tracking.xfctx,         //
+	                                     stereo_calib,                //
+	                                     HT_OUTPUT_SPACE_LEFT_CAMERA, //
+	                                     HT_ALGORITHM_MERCURY,        //
+	                                     &sinks,                      //
 	                                     &device);
 	if (create_status != 0) {
 		return create_status;
 	}
+
+	device = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, device, &wh->base,
+	                                        XRT_INPUT_GENERIC_HEAD_POSE, &wh->P_ht0_me);
 
 	WMR_DEBUG(wh, "WMR HMD hand tracker successfully created");
 #endif
@@ -1638,6 +1642,7 @@ precompute_sensor_transforms(struct wmr_hmd *wh)
 	struct xrt_pose P_me_gyr = {0};
 	struct xrt_pose P_ht0_me = {0};
 	struct xrt_pose P_acc_me = {0};
+	struct xrt_pose P_oxr_ht0_me = {0}; // P_ht0_me in OpenXR coordinates
 	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
 
 	// All of the observed headsets have reported a zero translation for its gyro
@@ -1658,10 +1663,13 @@ precompute_sensor_transforms(struct wmr_hmd *wh)
 	// Express P_*_me pose in OpenXR coordinates through sandwich products.
 	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
 	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
+	math_pose_transform(&P_ht0_me, &P_wmr_oxr, &P_oxr_ht0_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_ht0_me, &P_oxr_ht0_me);
 
 	// Save transforms
 	math_pose_transform(&P_oxr_wmr, &P_me_acc, &wh->P_oxr_acc);
 	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &wh->P_oxr_gyr);
+	wh->P_ht0_me = P_oxr_ht0_me;
 	wh->P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
 }
 
