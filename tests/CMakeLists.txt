@@ -22,7 +22,7 @@ set(tests
     tests_quatexpmap
     tests_rational
     tests_worker
-    tests_maths
+    tests_pose
 	)
 if(XRT_HAVE_D3D11)
 	list(APPEND tests tests_aux_d3d tests_comp_client_d3d11)
@@ -47,7 +47,7 @@ target_link_libraries(tests_lowpass_float PRIVATE aux_math)
 target_link_libraries(tests_lowpass_integer PRIVATE aux_math)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
-target_link_libraries(tests_maths PRIVATE aux_math)
+target_link_libraries(tests_pose PRIVATE aux_math)
 
 if(XRT_HAVE_D3D11)
 	target_link_libraries(tests_aux_d3d PRIVATE aux_d3d)
