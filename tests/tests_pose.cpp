@@ -1,21 +1,18 @@
 // Copyright 2022, Campbell Suter
+// Copyright 2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief Maths function tests.
+ * @brief Test xrt_pose functions.
  * @author Campbell Suter <znix@znix.xyz>
+ * @author Mateo de Mayo <mateo.demayo@collabora.com>
  */
 
-#include <util/u_worker.hpp>
-#include <math/m_space.h>
-#include <math/m_vec3.h>
-
 #include "catch/catch.hpp"
+#include "math/m_api.h"
+#include "math/m_vec3.h"
 
-#include <thread>
-#include <chrono>
-
-TEST_CASE("CorrectPoseInverse")
+TEST_CASE("Pose invert works")
 {
 	// Test that inverting a pose works correctly
 	// Pick an arbitrary and non-trivial original pose
@@ -39,4 +36,31 @@ TEST_CASE("CorrectPoseInverse")
 
 	CHECK(m_vec3_len(out_b.position) < 0.001);
 	CHECK(1 - abs(out_b.orientation.w) < 0.001);
+}
+
+TEST_CASE("Pose interpolation works")
+{
+	// A random pose
+	struct xrt_vec3 pos_a = {1, 2, 3};
+	struct xrt_quat ori_a = {1, 2, 3, 4};
+	math_quat_normalize(&ori_a);
+	struct xrt_pose a = {ori_a, pos_a};
+
+	// The inverse of that pose
+	struct xrt_vec3 pos_b = pos_a * -1;
+	struct xrt_quat ori_b = {};
+	math_quat_invert(&ori_a, &ori_b);
+	struct xrt_pose b = {ori_b, pos_b};
+
+	// The interpolation at 0.5 should be the identity
+	struct xrt_pose res = {};
+	math_pose_interpolate(&a, &b, 0.5, &res);
+
+	CHECK(res.position.x == Approx(0));
+	CHECK(res.position.y == Approx(0));
+	CHECK(res.position.z == Approx(0));
+	CHECK(res.orientation.x == Approx(0));
+	CHECK(res.orientation.x == Approx(0));
+	CHECK(res.orientation.y == Approx(0));
+	CHECK(res.orientation.w == Approx(1));
 }

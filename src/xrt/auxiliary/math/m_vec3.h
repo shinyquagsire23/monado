@@ -136,6 +136,12 @@ m_vec3_lerp(struct xrt_vec3 from, struct xrt_vec3 to, float amount)
 	return m_vec3_add(m_vec3_mul_scalar(from, 1.0f - amount), m_vec3_mul_scalar(to, amount));
 }
 
+static inline bool
+m_vec3_equal_exact(struct xrt_vec3 l, struct xrt_vec3 r)
+{
+	return l.x == r.x && l.y == r.y && l.z == r.z;
+}
+
 #ifdef __cplusplus
 }
 

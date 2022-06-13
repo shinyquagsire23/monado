@@ -12,6 +12,7 @@
 
 #include "math/m_api.h"
 #include "math/m_eigen_interop.hpp"
+#include "math/m_vec3.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -566,6 +567,13 @@ math_matrix_4x4_isometry_from_rt(const struct xrt_matrix_3x3 *rotation,
 }
 
 extern "C" void
+math_matrix_4x4_isometry_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result)
+{
+	Eigen::Isometry3f transform{Eigen::Translation3f{position(*pose)} * orientation(*pose)};
+	map_matrix_4x4(*result) = transform.matrix();
+}
+
+extern "C" void
 math_matrix_4x4_model(const struct xrt_pose *pose, const struct xrt_vec3 *size, struct xrt_matrix_4x4 *result)
 {
 	Eigen::Vector3f position = copy(&pose->position);
@@ -689,6 +697,21 @@ math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose)
 	Eigen::Isometry3f inverse = transform.inverse();
 	position(*outPose) = inverse.translation();
 	orientation(*outPose) = inverse.rotation();
+}
+
+extern "C" void
+math_pose_from_isometry(const struct xrt_matrix_4x4 *transform, struct xrt_pose *result)
+{
+	Eigen::Isometry3f isometry{map_matrix_4x4(*transform)};
+	position(*result) = isometry.translation();
+	orientation(*result) = isometry.rotation();
+}
+
+extern "C" void
+math_pose_interpolate(const struct xrt_pose *a, const struct xrt_pose *b, float t, struct xrt_pose *outPose)
+{
+	math_quat_slerp(&a->orientation, &b->orientation, t, &outPose->orientation);
+	outPose->position = m_vec3_lerp(a->position, b->position, t);
 }
 
 extern "C" void

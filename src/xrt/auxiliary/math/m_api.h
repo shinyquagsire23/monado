@@ -207,7 +207,7 @@ void
 math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, struct xrt_quat *result);
 
 /*!
- * Create a rotation from a 3x3 rotation matrix.
+ * Create a rotation from a 3x3 rotation (row major) matrix.
  *
  * @relates xrt_quat
  * @see xrt_matrix_3x3
@@ -570,6 +570,15 @@ math_matrix_4x4_isometry_from_rt(const struct xrt_matrix_3x3 *rotation,
                                  struct xrt_matrix_4x4 *result);
 
 /*!
+ * Get a col-major isometry matrix —in SE(3)— from a pose.
+ *
+ * @relates xrt_matrix_4x4
+ * @ingroup aux_math
+ */
+void
+math_matrix_4x4_isometry_from_pose(const struct xrt_pose *pose, struct xrt_matrix_4x4 *result);
+
+/*!
  * Compute quad layer model matrix from xrt_pose and xrt_vec2 size.
  *
  * @relates xrt_matrix_4x4
@@ -625,6 +634,25 @@ math_pose_validate(const struct xrt_pose *pose);
  */
 void
 math_pose_invert(const struct xrt_pose *pose, struct xrt_pose *outPose);
+
+/*!
+ * Converts a (col-major) isometry into a pose.
+ *
+ * @relates xrt_pose
+ * @ingroup aux_math
+ */
+void
+math_pose_from_isometry(const struct xrt_matrix_4x4 *transform, struct xrt_pose *result);
+
+/*!
+ * Interpolated pose between poses `a` and `b` by lerping position and slerping
+ * orientation by t.
+ *
+ * @relates xrt_pose
+ * @ingroup aux_math
+ */
+void
+math_pose_interpolate(const struct xrt_pose *a, const struct xrt_pose *b, float t, struct xrt_pose *outPose);
 
 /*!
  * Apply a rigid-body transformation to a pose.
