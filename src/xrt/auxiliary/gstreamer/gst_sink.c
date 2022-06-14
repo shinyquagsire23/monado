@@ -55,6 +55,9 @@ gst_fmt_from_xf_format(enum xrt_format format_in)
 static void
 complain_if_wrong_image_size(struct xrt_frame *xf)
 {
+	// libx264 is the actual source of this requirement; it refuses to handle odd widths/heights when encoding I420
+	// subsampled content. OpenH264 should work, but it's easy enough to just force all users of this code to
+	// provide normal-sized inputs.
 	if (xf->width % 2 == 1) {
 		U_LOG_W("Image width needs to be divisible by 2!");
 	}
