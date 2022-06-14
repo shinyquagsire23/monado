@@ -34,6 +34,7 @@ fi
                 src/xrt/ipc \
                 src/xrt/state_trackers \
                 src/xrt/targets \
+                src/xrt/tracking \
                 tests \
                 \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" \) \
                 -exec ${CLANGFORMAT} -i -style=file \{\} +
