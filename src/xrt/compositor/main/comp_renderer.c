@@ -578,7 +578,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->mirror_to_debug_gui.image_extent.height = (uint32_t)target_height;
 
 
-	// gui_window_record expects the images to have even widths/heights
+	// We want the images to have even widths/heights so that libx264 can encode them properly; no other reason.
 	if (r->mirror_to_debug_gui.image_extent.width % 2 == 1) {
 		r->mirror_to_debug_gui.image_extent.width += 1;
 	}
