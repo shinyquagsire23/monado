@@ -113,6 +113,9 @@ public:
 	size_t
 	back_inner_index() const noexcept;
 
+	void
+	clear();
+
 private:
 	// Would be const, but that would mess up our ability to copy/move containers using this.
 	size_t capacity_;
@@ -134,6 +137,13 @@ private:
 	front_impl_() const noexcept;
 };
 
+
+inline void
+RingBufferHelper::clear()
+{
+	this->latest_inner_idx_ = 0;
+	this->length_ = 0;
+}
 
 inline size_t
 RingBufferHelper::front_impl_() const noexcept

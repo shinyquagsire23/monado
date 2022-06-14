@@ -178,6 +178,9 @@ public:
 	const T &
 	back() const;
 
+	void
+	clear();
+
 private:
 	// Make sure all valid indices can be represented in a signed integer of the same size
 	static_assert(MaxSize < (std::numeric_limits<size_t>::max() >> 1), "Cannot use most significant bit");
@@ -186,6 +189,14 @@ private:
 	container_t internalBuffer{};
 	detail::RingBufferHelper helper_{MaxSize};
 };
+
+
+template <typename T, size_t MaxSize>
+void
+HistoryBuffer<T, MaxSize>::clear()
+{
+	helper_.clear();
+}
 
 template <typename T, size_t MaxSize>
 inline bool
