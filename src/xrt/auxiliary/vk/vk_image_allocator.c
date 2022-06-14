@@ -93,6 +93,10 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 		U_LOG_E("vkGetAndroidHardwareBufferPropertiesANDROID: %s", vk_result_string(ret));
 		return ret;
 	}
+
+	//! @todo Actually use this buffer for something other then getting the format.
+	// Does null-check, validity check and clears.
+	u_graphics_buffer_unref(&a_buffer);
 #endif
 
 	/*
