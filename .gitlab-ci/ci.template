@@ -158,11 +158,11 @@ reuse:
 {% endif %}
 
   script:
-    - rm -rf build
 
 {#- regular or NDK cmake builds -#}
 {%- if "cmake" in job.name or "ndk" in job.name %}
 
+    - rm -rf build
     - cmake -GNinja -B build -S . {{- make_cmake_args(job.cmake_defines) }}
     - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
     - ninja -C build
@@ -171,6 +171,7 @@ reuse:
 {%- elif "android" in job.name %}
 
     - cp .gitlab-ci/local.properties .
+    - ./gradlew clean
     - ./gradlew {{ job.target }}
 
 {%- else %}

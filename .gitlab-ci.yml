@@ -391,8 +391,8 @@ android:outOfProcess:
       - .gradlehome/caches
 
   script:
-    - rm -rf build
     - cp .gitlab-ci/local.properties .
+    - ./gradlew clean
     - ./gradlew assembleOutOfProcessDebug
   artifacts:
     paths:
@@ -414,8 +414,8 @@ android:inProcess:
       - .gradlehome/caches
 
   script:
-    - rm -rf build
     - cp .gitlab-ci/local.properties .
+    - ./gradlew clean
     - ./gradlew assembleInProcessDebug
   artifacts:
     paths:
