@@ -162,7 +162,10 @@ public class Client implements ServiceConnection {
         }
 
         boolean surfaceCreated = false;
-        Activity activity = (Activity) context_;
+        Activity activity = null;
+        if (context_ instanceof Activity) {
+            activity = (Activity) context_;
+        }
 
         try {
             // Determine whether runtime or client should create surface
@@ -170,10 +173,12 @@ public class Client implements ServiceConnection {
                 WindowManager wm = (WindowManager) context_.getSystemService(Context.WINDOW_SERVICE);
                 surfaceCreated = monado.createSurface(wm.getDefaultDisplay().getDisplayId(), false);
             } else {
-                Surface surface = attachViewAndGetSurface(activity);
-                surfaceCreated = (surface != null);
-                if (surfaceCreated) {
-                    monado.passAppSurface(surface);
+                if (activity != null) {
+                    Surface surface = attachViewAndGetSurface(activity);
+                    surfaceCreated = (surface != null);
+                    if (surfaceCreated) {
+                        monado.passAppSurface(surface);
+                    }
                 }
             }
         } catch (RemoteException e) {
@@ -186,8 +191,10 @@ public class Client implements ServiceConnection {
             return -1;
         }
 
-        systemUiController = new SystemUiController(activity);
-        systemUiController.hide();
+        if (activity != null) {
+            systemUiController = new SystemUiController(activity);
+            systemUiController.hide();
+        }
 
         // Create socket pair
         ParcelFileDescriptor theirs;
