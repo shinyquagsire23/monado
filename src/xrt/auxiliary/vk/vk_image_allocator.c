@@ -70,8 +70,8 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 
 	AHardwareBuffer *a_buffer = NULL;
 
-	xrt_result_t xrt_res = ahardwarebuffer_image_allocate(info, &a_buffer);
-	if (xrt_res != XRT_SUCCESS) {
+	xrt_result_t xret = ahardwarebuffer_image_allocate(info, &a_buffer);
+	if (xret != XRT_SUCCESS) {
 		U_LOG_E("Failed to ahardwarebuffer_image_allocate.");
 		// ahardwarebuffer_image_allocate only returns XRT_ERROR_ALLOCATION
 		return VK_ERROR_OUT_OF_DEVICE_MEMORY;
