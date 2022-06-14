@@ -752,7 +752,7 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 	         "Sleep until the HMD display is powered up, so the available displays can be enumerated by the host "
 	         "system.");
 
-	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
+	os_nanosleep(3L * U_TIME_1S_IN_NS);
 
 	return 0;
 }
