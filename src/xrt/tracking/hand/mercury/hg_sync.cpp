@@ -258,25 +258,27 @@ applyJointWidths(struct HandTracking *htd, struct xrt_hand_joint_set *set)
 	    .040f * .5f; // Measured my wrist thickness with calipers
 }
 
-static bool handle_changed_image_size(HandTracking *htd, xrt_size &new_one_view_size)
+static bool
+handle_changed_image_size(HandTracking *htd, xrt_size &new_one_view_size)
 {
 	int gcd_calib = std::gcd(htd->calibration_one_view_size_px.h, htd->calibration_one_view_size_px.w);
 	int gcd_new = std::gcd(new_one_view_size.h, new_one_view_size.w);
 
-	int lcm_h_calib = htd->calibration_one_view_size_px.h/gcd_calib;
-	int lcm_w_calib = htd->calibration_one_view_size_px.w/gcd_calib;
+	int lcm_h_calib = htd->calibration_one_view_size_px.h / gcd_calib;
+	int lcm_w_calib = htd->calibration_one_view_size_px.w / gcd_calib;
 
-	int lcm_h_new = new_one_view_size.h/gcd_new;
-	int lcm_w_new = new_one_view_size.w/gcd_new;
+	int lcm_h_new = new_one_view_size.h / gcd_new;
+	int lcm_w_new = new_one_view_size.w / gcd_new;
 
 	bool good = (lcm_h_calib == lcm_h_new) && (lcm_w_calib == lcm_w_new);
 
 	if (!good) {
-		HT_WARN(htd, "Can't process this frame, wrong aspect ratio. What we wanted: %dx%d, what we got: %dx%d", lcm_h_calib, lcm_w_calib, lcm_h_new, lcm_w_new);
+		HT_WARN(htd, "Can't process this frame, wrong aspect ratio. What we wanted: %dx%d, what we got: %dx%d",
+		        lcm_h_calib, lcm_w_calib, lcm_h_new, lcm_w_new);
 		return false;
 	}
 
-	htd->multiply_px_coord_for_undistort = (float)htd->calibration_one_view_size_px.h/(float)new_one_view_size.h;
+	htd->multiply_px_coord_for_undistort = (float)htd->calibration_one_view_size_px.h / (float)new_one_view_size.h;
 	htd->last_frame_one_view_size_px = new_one_view_size;
 	return true;
 }
@@ -343,10 +345,10 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	assert(left_frame->height == right_frame->height);
 
 	const int full_height = left_frame->height;
-	const int full_width = left_frame->width*2;
+	const int full_width = left_frame->width * 2;
 
-	if ((left_frame->width != (uint32_t)htd->last_frame_one_view_size_px.w) || (left_frame->height != (uint32_t)htd->last_frame_one_view_size_px.h))
-	{
+	if ((left_frame->width != (uint32_t)htd->last_frame_one_view_size_px.w) ||
+	    (left_frame->height != (uint32_t)htd->last_frame_one_view_size_px.h)) {
 		xrt_size new_one_view_size;
 		new_one_view_size.h = left_frame->height;
 		new_one_view_size.w = left_frame->width;

@@ -21,7 +21,7 @@ extern "C" {
  * @ingroup aux_tracking
  */
 struct t_hand_tracking_sync *
-t_hand_tracking_sync_old_rgb_create(struct t_stereo_camera_calibration * calib);
+t_hand_tracking_sync_old_rgb_create(struct t_stereo_camera_calibration *calib);
 
 
 #ifdef __cplusplus

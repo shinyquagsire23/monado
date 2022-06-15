@@ -150,7 +150,7 @@ struct ht_view
 	cv::Mat run_model_on_this;
 	cv::Mat debug_out_to_this;
 
-	struct det_output det_outputs[2];                // left, right
+	struct det_output det_outputs[2]; // left, right
 	struct keypoint_estimation_run_info run_info[2];
 
 	struct keypoint_output keypoint_outputs[2];

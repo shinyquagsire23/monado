@@ -458,8 +458,8 @@ getCalibration(struct HandTracking *htd, t_stereo_camera_calibration *calibratio
 	htd->one_view_size_px.w = wrap.view[0].image_size_pixels.w;
 	htd->one_view_size_px.h = wrap.view[0].image_size_pixels.h;
 
-	U_LOG_E("%d %d %p %p", htd->one_view_size_px.w, htd->one_view_size_px.h,
-	        (void *)&htd->one_view_size_px.w, (void *)&htd->one_view_size_px.h);
+	U_LOG_E("%d %d %p %p", htd->one_view_size_px.w, htd->one_view_size_px.h, (void *)&htd->one_view_size_px.w,
+	        (void *)&htd->one_view_size_px.h);
 
 
 
@@ -733,7 +733,7 @@ htExitFrame(struct HandTracking *htd,
             uint64_t timestamp,
             struct xrt_hand_joint_set *out_left,
             struct xrt_hand_joint_set *out_right,
-						uint64_t *out_timestamp_ns)
+            uint64_t *out_timestamp_ns)
 {
 
 	os_mutex_lock(&htd->openxr_hand_data_mediator);
@@ -805,7 +805,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
                                struct xrt_frame *right_frame,
                                struct xrt_hand_joint_set *out_left_hand,
                                struct xrt_hand_joint_set *out_right_hand,
-															 uint64_t *out_timestamp_ns)
+                               uint64_t *out_timestamp_ns)
 {
 	XRT_TRACE_MARKER();
 
@@ -827,7 +827,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	assert(left_frame->height == right_frame->height);
 
 	const int full_height = left_frame->height;
-	const int full_width = left_frame->width*2;
+	const int full_width = left_frame->width * 2;
 
 	const int view_width = htd->one_view_size_px.w;
 	const int view_height = htd->one_view_size_px.h;
@@ -1002,8 +1002,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		htd->histories_3d[past_indices[i]].last_hands_unfiltered.push_back(
 		    hands_unfiltered[present_indices[i]]);
 	}
-	// The preceding may not do anything, because we'll start out with no hand histories! All the numbers of elements
-	// should be zero.
+	// The preceding may not do anything, because we'll start out with no hand histories! All the numbers of
+	// elements should be zero.
 
 
 	for (size_t i = 0; i < present_hands_taken.size(); i++) {
@@ -1189,7 +1189,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		applyJointWidths(put_in_set);
 		applyJointOrientations(put_in_set, xr_indices[i]);
 	}
-	htExitFrame(htd, false, final_hands_ordered_by_handedness, filtered_hands[0].timestamp, out_left_hand, out_right_hand, out_timestamp_ns);
+	htExitFrame(htd, false, final_hands_ordered_by_handedness, filtered_hands[0].timestamp, out_left_hand,
+	            out_right_hand, out_timestamp_ns);
 }
 
 void
@@ -1216,7 +1217,7 @@ t_hand_tracking_sync_old_rgb_create(struct t_stereo_camera_calibration *calib)
 
 	auto htd = new HandTracking();
 
-	U_LOG_E("htd is at %p", (void*)htd);
+	U_LOG_E("htd is at %p", (void *)htd);
 
 	// Setup logging first. We like logging.
 	htd->log_level = debug_get_log_option_ht_log();

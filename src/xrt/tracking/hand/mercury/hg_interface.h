@@ -21,7 +21,8 @@ extern "C" {
  * @ingroup aux_tracking
  */
 struct t_hand_tracking_sync *
-t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib, enum hand_tracking_output_space output_space);
+t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
+                                    enum hand_tracking_output_space output_space);
 
 #ifdef __cplusplus
 } // extern "C"

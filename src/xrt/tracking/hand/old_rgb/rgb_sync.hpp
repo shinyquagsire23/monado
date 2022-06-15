@@ -295,7 +295,7 @@ public:
 	                 struct xrt_frame *right_frame,
 	                 struct xrt_hand_joint_set *out_left_hand,
 	                 struct xrt_hand_joint_set *out_right_hand,
-									 uint64_t *out_timestamp_ns);
+	                 uint64_t *out_timestamp_ns);
 
 	static void
 	cCallbackDestroy(t_hand_tracking_sync *ht_sync);
