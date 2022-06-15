@@ -51,11 +51,11 @@ using namespace xrt::auxiliary::util;
 DEBUG_GET_ONCE_LOG_OPTION(mercury_log, "MERCURY_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_BOOL_OPTION(mercury_use_simdr_keypoint, "MERCURY_USE_SIMDR_KEYPOINT", false)
 
-#define HT_TRACE(htd, ...) U_LOG_IFL_T(htd->log_level, __VA_ARGS__)
-#define HT_DEBUG(htd, ...) U_LOG_IFL_D(htd->log_level, __VA_ARGS__)
-#define HT_INFO(htd, ...) U_LOG_IFL_I(htd->log_level, __VA_ARGS__)
-#define HT_WARN(htd, ...) U_LOG_IFL_W(htd->log_level, __VA_ARGS__)
-#define HT_ERROR(htd, ...) U_LOG_IFL_E(htd->log_level, __VA_ARGS__)
+#define HG_TRACE(hgt, ...) U_LOG_IFL_T(hgt->log_level, __VA_ARGS__)
+#define HG_DEBUG(hgt, ...) U_LOG_IFL_D(hgt->log_level, __VA_ARGS__)
+#define HG_INFO(hgt, ...) U_LOG_IFL_I(hgt->log_level, __VA_ARGS__)
+#define HG_WARN(hgt, ...) U_LOG_IFL_W(hgt->log_level, __VA_ARGS__)
+#define HG_ERROR(hgt, ...) U_LOG_IFL_E(hgt->log_level, __VA_ARGS__)
 
 #undef USE_NCNN
 
@@ -138,7 +138,7 @@ struct keypoint_estimation_run_info
 
 struct ht_view
 {
-	HandTracking *htd;
+	HandTracking *hgt;
 	onnx_wrap detection;
 	onnx_wrap keypoint[2];
 	int view;

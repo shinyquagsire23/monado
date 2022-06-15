@@ -30,7 +30,7 @@ cv::Scalar colors[2] = {YELLOW, RED};
 		OrtStatus *status = wrap->api->expr;                                                                   \
 		if (status != nullptr) {                                                                               \
 			const char *msg = wrap->api->GetErrorMessage(status);                                          \
-			HT_ERROR(htd, "[%s:%d]: %s\n", __FILE__, __LINE__, msg);                                       \
+			HG_ERROR(hgt, "[%s:%d]: %s\n", __FILE__, __LINE__, msg);                                       \
 			wrap->api->ReleaseStatus(status);                                                              \
 			assert(false);                                                                                 \
 		}                                                                                                      \
@@ -148,9 +148,9 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 }
 
 static void
-init_hand_detection(HandTracking *htd, onnx_wrap *wrap)
+init_hand_detection(HandTracking *hgt, onnx_wrap *wrap)
 {
-	std::filesystem::path path = htd->models_folder;
+	std::filesystem::path path = hgt->models_folder;
 
 	path /= "grayscale_detection.onnx";
 
@@ -204,7 +204,7 @@ run_hand_detection(void *ptr)
 	XRT_TRACE_MARKER();
 
 	ht_view *view = (ht_view *)ptr;
-	HandTracking *htd = view->htd;
+	HandTracking *hgt = view->hgt;
 	onnx_wrap *wrap = &view->detection;
 	cv::Mat &data_400x640 = view->run_model_on_this;
 
@@ -264,7 +264,7 @@ run_hand_detection(void *ptr)
 			output->center = _pt;
 			output->size_px = size;
 
-			if (htd->debug_scribble) {
+			if (hgt->debug_scribble) {
 				cv::Point2i pt(_pt.x, _pt.y);
 				cv::rectangle(debug_frame,
 				              cv::Rect(pt - cv::Point2i(size / 2, size / 2), cv::Size(size, size)),
@@ -277,10 +277,10 @@ run_hand_detection(void *ptr)
 }
 
 static void
-init_keypoint_estimation(HandTracking *htd, onnx_wrap *wrap)
+init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap)
 {
 
-	std::filesystem::path path = htd->models_folder;
+	std::filesystem::path path = hgt->models_folder;
 
 	path /= "grayscale_keypoint_simdr.onnx";
 
@@ -337,7 +337,7 @@ run_keypoint_estimation(void *ptr)
 	keypoint_estimation_run_info *info = (keypoint_estimation_run_info *)ptr;
 
 	onnx_wrap *wrap = &info->view->keypoint[info->hand_idx];
-	struct HandTracking *htd = info->view->htd;
+	struct HandTracking *hgt = info->view->hgt;
 
 	cv::Mat &debug = info->view->debug_out_to_this;
 
@@ -415,7 +415,7 @@ run_keypoint_estimation(void *ptr)
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (htd->debug_scribble) {
+	if (hgt->debug_scribble) {
 		for (int finger = 0; finger < 5; finger++) {
 			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
 			for (int joint = 0; joint < 4; joint++) {
@@ -439,10 +439,10 @@ run_keypoint_estimation(void *ptr)
 
 
 static void
-init_keypoint_estimation_new(HandTracking *htd, onnx_wrap *wrap)
+init_keypoint_estimation_new(HandTracking *hgt, onnx_wrap *wrap)
 {
 
-	std::filesystem::path path = htd->models_folder;
+	std::filesystem::path path = hgt->models_folder;
 
 	path /= "grayscale_keypoint_new.onnx";
 
@@ -468,7 +468,7 @@ init_keypoint_estimation_new(HandTracking *htd, onnx_wrap *wrap)
 
 	ORT(CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &wrap->meminfo));
 
-	// HT_DEBUG(this->device, "Loading hand detection model from file '%s'", path.c_str());
+	// HG_DEBUG(this->device, "Loading hand detection model from file '%s'", path.c_str());
 	ORT(CreateSession(wrap->env, path.c_str(), opts, &wrap->session));
 	assert(wrap->session != NULL);
 
@@ -502,7 +502,7 @@ run_keypoint_estimation_new(void *ptr)
 	keypoint_estimation_run_info *info = (keypoint_estimation_run_info *)ptr;
 
 	onnx_wrap *wrap = &info->view->keypoint[info->hand_idx];
-	struct HandTracking *htd = info->view->htd;
+	struct HandTracking *hgt = info->view->hgt;
 
 	// Factor out starting here
 
@@ -594,7 +594,7 @@ run_keypoint_estimation_new(void *ptr)
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (htd->debug_scribble) {
+	if (hgt->debug_scribble) {
 		for (int finger = 0; finger < 5; finger++) {
 			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
 			for (int joint = 0; joint < 4; joint++) {
@@ -665,7 +665,7 @@ run_hand_detection_ncnn(void *ptr)
 {
 
 	ht_view *view = (ht_view *)ptr;
-	HandTracking *htd = view->htd;
+	HandTracking *hgt = view->hgt;
 	onnx_wrap *wrap = &view->detection;
 	cv::Mat &data_400x640 = view->run_model_on_this;
 
@@ -678,7 +678,7 @@ run_hand_detection_ncnn(void *ptr)
 	ncnn_option_t opt = ncnn_option_create();
 	ncnn_option_set_use_vulkan_compute(opt, 1);
 
-	ncnn_extractor_t ex = ncnn_extractor_create(htd->net);
+	ncnn_extractor_t ex = ncnn_extractor_create(hgt->net);
 
 	ncnn_extractor_set_option(ex, opt);
 
@@ -761,7 +761,7 @@ run_keypoint_estimation_new_ncnn(void *ptr)
 	XRT_TRACE_MARKER();
 	keypoint_estimation_run_info *info = (keypoint_estimation_run_info *)ptr;
 
-	struct HandTracking *htd = info->view->htd;
+	struct HandTracking *hgt = info->view->hgt;
 
 	// Factor out starting here
 
@@ -816,7 +816,7 @@ run_keypoint_estimation_new_ncnn(void *ptr)
 	ncnn_option_t opt = ncnn_option_create();
 	ncnn_option_set_use_vulkan_compute(opt, 1);
 
-	ncnn_extractor_t ex = ncnn_extractor_create(htd->net_keypoint);
+	ncnn_extractor_t ex = ncnn_extractor_create(hgt->net_keypoint);
 
 	ncnn_extractor_set_option(ex, opt);
 
@@ -860,7 +860,7 @@ run_keypoint_estimation_new_ncnn(void *ptr)
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (htd->debug_scribble) {
+	if (hgt->debug_scribble) {
 		for (int finger = 0; finger < 5; finger++) {
 			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
 			for (int joint = 0; joint < 4; joint++) {

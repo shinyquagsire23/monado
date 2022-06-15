@@ -75,8 +75,8 @@ hsv2rgb(float fH, float fS, float fV)
 struct xrt_vec2
 raycoord(ht_view *htv, struct xrt_vec2 model_out)
 {
-	model_out.x *= htv->htd->multiply_px_coord_for_undistort;
-	model_out.y *= htv->htd->multiply_px_coord_for_undistort;
+	model_out.x *= htv->hgt->multiply_px_coord_for_undistort;
+	model_out.y *= htv->hgt->multiply_px_coord_for_undistort;
 	cv::Mat in_px_coords(1, 1, CV_32FC2);
 	float *write_in;
 	write_in = in_px_coords.ptr<float>(0);
@@ -84,7 +84,7 @@ raycoord(ht_view *htv, struct xrt_vec2 model_out)
 	write_in[1] = model_out.y;
 	cv::Mat out_ray(1, 1, CV_32FC2);
 
-	if (htv->htd->use_fisheye) {
+	if (htv->hgt->use_fisheye) {
 		cv::fisheye::undistortPoints(in_px_coords, out_ray, htv->cameraMatrix, htv->distortion);
 	} else {
 		cv::undistortPoints(in_px_coords, out_ray, htv->cameraMatrix, htv->distortion);
