@@ -39,7 +39,7 @@
 #include <stdint.h>
 
 #include <opencv2/opencv.hpp>
-#include <core/session/onnxruntime_c_api.h>
+#include <onnxruntime_c_api.h>
 
 #include "kine/kinematic_interface.hpp"
 

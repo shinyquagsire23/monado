@@ -17,7 +17,7 @@
 #include "rgb_image_math.hpp"
 #include "rgb_nms.hpp"
 
-#include <core/session/onnxruntime_c_api.h>
+#include <onnxruntime_c_api.h>
 
 #include <filesystem>
 #include <array>
