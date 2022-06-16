@@ -221,9 +221,6 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 			aux_os
 			aux_util
 			aux_math
-			aux_gstreamer
-			ONNXRuntime::ONNXRuntime
-			${OpenCV_LIBRARIES}
 			t_ht_mercury
 			t_ht_old_rgb
 			hand_async
