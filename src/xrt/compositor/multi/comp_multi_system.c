@@ -353,6 +353,43 @@ wait_frame(struct xrt_compositor *xc, int64_t frame_id, uint64_t wake_up_time_ns
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 }
 
+static void
+update_session_state_locked(struct multi_system_compositor *msc)
+{
+	struct xrt_compositor *xc = &msc->xcn->base;
+
+	//! @todo Don't make this a hack.
+	enum xrt_view_type view_type = XRT_VIEW_TYPE_STEREO;
+
+	switch (msc->sessions.state) {
+	case MULTI_SYSTEM_STATE_STOPPED:
+		if (msc->sessions.active_count == 0) {
+			break;
+		}
+
+		U_LOG_I("Starting native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
+		msc->sessions.state = MULTI_SYSTEM_STATE_RUNNING;
+		xrt_comp_begin_session(xc, view_type);
+		break;
+
+	case MULTI_SYSTEM_STATE_RUNNING:
+		if (msc->sessions.active_count > 0) {
+			break;
+		}
+		U_LOG_I("Stopping main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
+		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
+		break;
+
+	case MULTI_SYSTEM_STATE_STOPPING:
+		U_LOG_I("Stopped main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
+		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPED;
+		xrt_comp_end_session(xc);
+		break;
+
+	default: assert(false);
+	}
+}
+
 static int
 multi_main_loop(struct multi_system_compositor *msc)
 {
@@ -362,13 +399,23 @@ multi_main_loop(struct multi_system_compositor *msc)
 
 	struct xrt_compositor *xc = &msc->xcn->base;
 
-	//! @todo Don't make this a hack.
-	enum xrt_view_type view_type = XRT_VIEW_TYPE_STEREO;
-
-	xrt_comp_begin_session(xc, view_type);
-
+	// Protect the thread state and the sessions state.
 	os_thread_helper_lock(&msc->oth);
+
 	while (os_thread_helper_is_running_locked(&msc->oth)) {
+
+		// Updates msc->sessions.active depending on active client sessions.
+		update_session_state_locked(msc);
+
+		if (msc->sessions.state == MULTI_SYSTEM_STATE_STOPPED) {
+			// Sleep and wait to be signaled.
+			os_thread_helper_wait_locked(&msc->oth);
+
+			// Loop back to running and session check.
+			continue;
+		}
+
+		// Unlock the thread after the checks has been done.
 		os_thread_helper_unlock(&msc->oth);
 
 		int64_t frame_id = -1;
@@ -412,7 +459,17 @@ multi_main_loop(struct multi_system_compositor *msc)
 		os_thread_helper_lock(&msc->oth);
 	}
 
-	xrt_comp_end_session(xc);
+	// Clean up the sessions state.
+	switch (msc->sessions.state) {
+	case MULTI_SYSTEM_STATE_RUNNING:
+	case MULTI_SYSTEM_STATE_STOPPING:
+		U_LOG_I("Stopped native session, shutting down.");
+		xrt_comp_end_session(xc);
+		break;
+	case MULTI_SYSTEM_STATE_STOPPED: break;
+	default: assert(false);
+	}
+
 	os_thread_helper_unlock(&msc->oth);
 
 	return 0;
@@ -524,6 +581,25 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
  *
  */
 
+void
+multi_system_compositor_update_session_status(struct multi_system_compositor *msc, bool active)
+{
+	os_thread_helper_lock(&msc->oth);
+
+	if (active) {
+		assert(msc->sessions.active_count < UINT32_MAX);
+		msc->sessions.active_count++;
+
+		// If the thread is sleeping wake it up.
+		os_thread_helper_signal_locked(&msc->oth);
+	} else {
+		assert(msc->sessions.active_count > 0);
+		msc->sessions.active_count--;
+	}
+
+	os_thread_helper_unlock(&msc->oth);
+}
+
 xrt_result_t
 comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
                                     struct u_pacing_app_factory *upaf,
@@ -540,6 +616,8 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->base.info = *xsci;
 	msc->upaf = upaf;
 	msc->xcn = xcn;
+	msc->sessions.state = MULTI_SYSTEM_STATE_STOPPED;
+	msc->sessions.active_count = 0;
 
 	os_mutex_init(&msc->list_and_timing_lock);
 

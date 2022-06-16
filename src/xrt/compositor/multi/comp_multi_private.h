@@ -124,6 +124,8 @@ struct multi_compositor
 		} current;
 
 		int64_t z_order;
+
+		bool session_active;
 	} state;
 
 	struct
@@ -225,6 +227,42 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
  */
 
 /*!
+ * State of the multi compositor system, use to track the calling of native
+ * compositor methods @ref xrt_comp_begin_session and @ref xrt_comp_end_session.
+ *
+ * It is driven by the number of active app sessions.
+ *
+ * @ingroup comp_multi
+ */
+enum multi_system_state
+{
+	/*!
+	 * Initial state and post stopping state.
+	 *
+	 * The multi system compositor have called @ref xrt_comp_end_session
+	 * on it's @ref xrt_compositor_native.
+	 */
+	MULTI_SYSTEM_STATE_STOPPED,
+
+	/*!
+	 * The main session is running.
+	 *
+	 * The multi system compositor have called @ref xrt_comp_begin_session
+	 * on it's @ref xrt_compositor_native.
+	 */
+	MULTI_SYSTEM_STATE_RUNNING,
+
+	/*!
+	 * There are no active sessions and the multi compositor system is
+	 * drawing on or more clear frames.
+	 *
+	 * The multi system compositor have not yet @ref xrt_comp_begin_session
+	 * on it's @ref xrt_compositor_native.
+	 */
+	MULTI_SYSTEM_STATE_STOPPING,
+};
+
+/*!
  * The multi compositor system, multiplexes access to the native compositors
  * and tracks some state needed.
  *
@@ -245,6 +283,19 @@ struct multi_system_compositor
 
 	//! Render loop thread.
 	struct os_thread_helper oth;
+
+	struct
+	{
+		/*!
+		 * The state of the multi compositor system, this is updated on
+		 * the oth thread, aka multi compositor system main thread.
+		 * It is driven by the active_count field.
+		 */
+		enum multi_system_state state;
+
+		//! Number of active sessions, protected by oth.
+		uint64_t active_count;
+	} sessions;
 
 	/*!
 	 * This mutex protects the list of client compositor
@@ -268,6 +319,14 @@ multi_system_compositor(struct xrt_system_compositor *xsc)
 	return (struct multi_system_compositor *)xsc;
 }
 
+/*!
+ * The client compositor calls this function to update when it's session is
+ * started or stopped.
+ *
+ * @ingroup comp_multi
+ */
+void
+multi_system_compositor_update_session_status(struct multi_system_compositor *msc, bool active);
 
 
 #ifdef __cplusplus

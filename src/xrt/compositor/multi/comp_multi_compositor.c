@@ -458,7 +458,12 @@ multi_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type typ
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
-	(void)mc;
+
+	assert(!mc->state.session_active);
+	if (!mc->state.session_active) {
+		multi_system_compositor_update_session_status(mc->msc, true);
+		mc->state.session_active = true;
+	}
 
 	return XRT_SUCCESS;
 }
@@ -469,7 +474,12 @@ multi_compositor_end_session(struct xrt_compositor *xc)
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
-	(void)mc;
+
+	assert(mc->state.session_active);
+	if (mc->state.session_active) {
+		multi_system_compositor_update_session_status(mc->msc, false);
+		mc->state.session_active = false;
+	}
 
 	return XRT_SUCCESS;
 }
@@ -828,6 +838,11 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	COMP_TRACE_MARKER();
 
 	struct multi_compositor *mc = multi_compositor(xc);
+
+	if (mc->state.session_active) {
+		multi_system_compositor_update_session_status(mc->msc, false);
+		mc->state.session_active = false;
+	}
 
 	os_mutex_lock(&mc->msc->list_and_timing_lock);
 
