@@ -585,6 +585,8 @@ teardown(struct prober *p)
 		xrt_builder_destroy(&p->builders[i]);
 	}
 	p->builder_count = 0;
+	free(p->builders);
+	p->builders = NULL;
 
 	// Clean up all auto_probers.
 	for (int i = 0; i < XRT_MAX_AUTO_PROBERS && p->auto_probers[i]; i++) {
