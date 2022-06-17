@@ -224,6 +224,12 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
  *
  */
 
+/*!
+ * The multi compositor system, multiplexes access to the native compositors
+ * and tracks some state needed.
+ *
+ * @ingroup comp_multi
+ */
 struct multi_system_compositor
 {
 	struct xrt_system_compositor base;
