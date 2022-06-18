@@ -11,7 +11,11 @@
 #include "util/u_misc.h"
 #include "util/u_trace_marker.h"
 #include "util/u_logging.h"
+#include "util/u_var.h"
 #include "os/os_threading.h"
+
+#include "math/m_space.h"
+#include "math/m_relation_history.h"
 
 
 //!@todo Definitely needs a destroy function, will leak a ton.
@@ -24,6 +28,9 @@ struct ht_async_impl
 
 	struct xrt_frame *frames[2];
 
+	bool use_prediction;
+	struct u_var_draggable_f32 prediction_offset_ms;
+
 	struct
 	{
 		struct xrt_hand_joint_set hands[2];
@@ -34,6 +41,7 @@ struct ht_async_impl
 	{
 		struct os_mutex mutex;
 		struct xrt_hand_joint_set hands[2];
+		struct m_relation_history *relation_hist[2];
 		uint64_t timestamp;
 	} present;
 
@@ -84,8 +92,18 @@ ht_async_mainloop(void *ptr)
 		xrt_frame_reference(&hta->frames[1], NULL);
 		os_mutex_lock(&hta->present.mutex);
 		hta->present.timestamp = hta->working.timestamp;
-		hta->present.hands[0] = hta->working.hands[0];
-		hta->present.hands[1] = hta->working.hands[1];
+		for (int i = 0; i < 2; i++) {
+			hta->present.hands[i] = hta->working.hands[i];
+
+			struct xrt_space_relation wrist_rel =
+			    hta->working.hands[i].values.hand_joint_set_default[XRT_HAND_JOINT_WRIST].relation;
+
+			m_relation_history_estimate_motion(hta->present.relation_hist[i], //
+			                                   &wrist_rel,                    //
+			                                   hta->working.timestamp,        //
+			                                   &wrist_rel);
+			m_relation_history_push(hta->present.relation_hist[i], &wrist_rel, hta->working.timestamp);
+		}
 		os_mutex_unlock(&hta->present.mutex);
 
 		hta->hand_tracking_work_active = false;
@@ -145,8 +163,46 @@ ht_async_get_hand(struct t_hand_tracking_async *ht_async,
 	if (name == XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
 		idx = 1;
 	}
-	*out_value = hta->present.hands[idx];
-	*out_timestamp_ns = hta->present.timestamp;
+
+	os_mutex_lock(&hta->present.mutex);
+
+	struct xrt_hand_joint_set latest_hand = hta->present.hands[idx];
+
+	if (!hta->use_prediction) {
+		*out_value = latest_hand;
+		*out_timestamp_ns = hta->present.timestamp;
+		os_mutex_unlock(&hta->present.mutex);
+		return;
+	}
+
+	double prediction_offset_ns = (double)hta->prediction_offset_ms.val * (double)U_TIME_1MS_IN_NS;
+
+	desired_timestamp_ns += (uint64_t)prediction_offset_ns;
+
+	struct xrt_space_relation predicted_wrist;
+	m_relation_history_get(hta->present.relation_hist[idx], desired_timestamp_ns, &predicted_wrist);
+
+	os_mutex_unlock(&hta->present.mutex);
+
+	struct xrt_space_relation latest_wrist =
+	    latest_hand.values.hand_joint_set_default[XRT_HAND_JOINT_WRIST].relation;
+
+	*out_value = latest_hand;
+
+	// apply the pose change from the latest wrist to the predicted wrist
+	// to all the joints on the hand.
+
+	//!@optimize We could slightly reduce the total number of transforms by putting some of this in
+	//! ht_async_mainloop
+	for (int i = 0; i < XRT_HAND_JOINT_COUNT; i++) {
+		struct xrt_relation_chain xrc = {0};
+		m_relation_chain_push_relation(&xrc, &latest_hand.values.hand_joint_set_default[i].relation);
+		m_relation_chain_push_inverted_relation(&xrc, &latest_wrist);
+		m_relation_chain_push_relation(&xrc, &predicted_wrist);
+		m_relation_chain_resolve(&xrc, &out_value->values.hand_joint_set_default[i].relation);
+	}
+
+	*out_timestamp_ns = desired_timestamp_ns;
 }
 
 void
@@ -165,6 +221,10 @@ ht_async_destroy(struct xrt_frame_node *node)
 
 	t_ht_sync_destroy(&hta->provider);
 
+	for (int i = 0; i < 2; i++) {
+		m_relation_history_destroy(&hta->present.relation_hist[i]);
+	}
+
 	free(hta);
 }
 
@@ -181,6 +241,32 @@ t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_h
 	hta->base.get_hand = ht_async_get_hand;
 
 	hta->provider = sync;
+
+	for (int i = 0; i < 2; i++) {
+		m_relation_history_create(&hta->present.relation_hist[i]);
+	}
+
+	u_var_add_root(hta, "Hand-tracking async shim!", 0);
+
+	//!@todo We came up with this value just by seeing what worked - with Index and WMR, we'd be around 40ms late by
+	//! the time the camera frames arrived and were processed.
+
+	// We _really_ need a way to calibrate this live - something like an exponential filter that looks at the
+	// typical maximum time between the time at which we were asked for a sample and most recent processed sample
+	// timestamp.
+
+	hta->prediction_offset_ms.val = -40;
+	hta->prediction_offset_ms.step = 0.5;
+
+	hta->use_prediction = true;
+
+	// No need to enforce limits, although generally around -40 is what you want.
+	hta->prediction_offset_ms.min = -1000000;
+	hta->prediction_offset_ms.max = 1000000;
+
+	u_var_add_bool(hta, &hta->use_prediction, "Predict wrist movement");
+	u_var_add_draggable_f32(hta, &hta->prediction_offset_ms, "Amount to time-travel (ms)");
+
 
 	os_mutex_init(&hta->present.mutex);
 	os_thread_helper_init(&hta->mainloop);
