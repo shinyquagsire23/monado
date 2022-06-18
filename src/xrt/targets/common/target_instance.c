@@ -8,6 +8,7 @@
 
 #include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_system.h"
+#include "xrt/xrt_config_build.h"
 
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
