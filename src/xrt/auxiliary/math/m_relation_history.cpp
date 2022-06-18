@@ -175,6 +175,53 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 }
 
 bool
+m_relation_history_estimate_motion(struct m_relation_history *rh,
+                                   const struct xrt_space_relation *in_relation,
+                                   uint64_t timestamp,
+                                   struct xrt_space_relation *out_relation)
+{
+
+	uint64_t last_time_ns;
+	struct xrt_space_relation last_relation;
+	if (!m_relation_history_get_latest(rh, &last_time_ns, &last_relation)) {
+		return false;
+	};
+
+	float dt = time_ns_to_s(timestamp - last_time_ns);
+
+	// Used to find out what values are valid in both the old relation and the new relation
+	enum xrt_space_relation_flags tmp_flags =
+	    (enum xrt_space_relation_flags)(last_relation.relation_flags & in_relation->relation_flags);
+
+	// Brevity
+	enum xrt_space_relation_flags &outf = out_relation->relation_flags;
+
+
+	if (tmp_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_POSITION_VALID_BIT);
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+
+		out_relation->linear_velocity = (in_relation->pose.position - last_relation.pose.position) / dt;
+	}
+
+	if (tmp_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_ORIENTATION_VALID_BIT);
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
+
+		outf = (enum xrt_space_relation_flags)(outf | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT);
+
+		math_quat_finite_difference(&last_relation.pose.orientation, &in_relation->pose.orientation, dt,
+		                            &out_relation->angular_velocity);
+	}
+
+	out_relation->pose = in_relation->pose;
+
+	return true;
+}
+
+bool
 m_relation_history_get_latest(struct m_relation_history *rh,
                               uint64_t *out_time_ns,
                               struct xrt_space_relation *out_relation)
