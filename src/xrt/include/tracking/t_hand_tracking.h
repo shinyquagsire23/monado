@@ -30,6 +30,37 @@ enum hand_tracking_algorithm
 	HT_ALGORITHM_OLD_RGB
 };
 
+enum hand_tracking_image_boundary_type
+{
+	HT_IMAGE_BOUNDARY_NONE,
+	HT_IMAGE_BOUNDARY_CIRCLE,
+};
+
+struct hand_tracking_image_boundary_circle
+{
+	// The center, in normalized 0-1 UV coordinates.
+	// Should probably be between 0 and 1 in pixel coordinates.
+	struct xrt_vec2 normalized_center;
+	// The radius, divided by the image width.
+	// For Index, should be around 0.5.
+	float normalized_radius;
+};
+
+struct hand_tracking_image_boundary_info_one_view
+{
+	enum hand_tracking_image_boundary_type type;
+	union {
+		struct hand_tracking_image_boundary_circle circle;
+	} boundary;
+};
+
+
+struct hand_tracking_image_boundary_info
+{
+	//!@todo Hardcoded to 2 - needs to increase as we support headsets with more cameras.
+	struct hand_tracking_image_boundary_info_one_view views[2];
+};
+
 /*!
  * Synchronously processes frames and returns two hands.
  */

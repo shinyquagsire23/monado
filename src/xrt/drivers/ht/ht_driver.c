@@ -286,7 +286,26 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 	if (use_old_rgb) {
 		sync = t_hand_tracking_sync_old_rgb_create(calib);
 	} else {
-		sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA);
+
+		struct hand_tracking_image_boundary_info info;
+		info.views[0].type = HT_IMAGE_BOUNDARY_CIRCLE;
+		info.views[1].type = HT_IMAGE_BOUNDARY_CIRCLE;
+
+
+		//!@todo This changes by like 50ish pixels from device to device. For now, the solution is simple: just
+		//! make the circle a bit bigger than we'd like.
+		// Maybe later we can do vignette calibration? Write a tiny optimizer that tries to fit Index's
+		// gradient? Unsure.
+		info.views[0].boundary.circle.normalized_center.x = 0.5f;
+		info.views[0].boundary.circle.normalized_center.y = 0.5f;
+
+		info.views[1].boundary.circle.normalized_center.x = 0.5f;
+		info.views[1].boundary.circle.normalized_center.y = 0.5f;
+
+		info.views[0].boundary.circle.normalized_radius = 0.55;
+		info.views[1].boundary.circle.normalized_radius = 0.55;
+
+		sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA, info);
 	}
 
 	struct ht_device *htd = ht_device_create_common(calib, true, &finder.xfctx, sync);
@@ -340,6 +359,7 @@ ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
                  enum hand_tracking_output_space output_space,
                  enum hand_tracking_algorithm algorithm_choice,
+                 struct hand_tracking_image_boundary_info boundary_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device)
 {
@@ -347,7 +367,7 @@ ht_device_create(struct xrt_frame_context *xfctx,
 	XRT_TRACE_MARKER();
 	assert(calib != NULL);
 
-	struct t_hand_tracking_sync *sync = t_hand_tracking_sync_mercury_create(calib, output_space);
+	struct t_hand_tracking_sync *sync = t_hand_tracking_sync_mercury_create(calib, output_space, boundary_info);
 
 	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
 
@@ -380,7 +400,11 @@ ht_device_create_depthai_ov9282()
 
 	struct t_hand_tracking_sync *sync;
 
-	sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA);
+	struct hand_tracking_image_boundary_info info;
+	info.views[0].type = HT_IMAGE_BOUNDARY_NONE;
+	info.views[1].type = HT_IMAGE_BOUNDARY_NONE;
+
+	sync = t_hand_tracking_sync_mercury_create(calib, HT_OUTPUT_SPACE_LEFT_CAMERA, info);
 
 	struct ht_device *htd = ht_device_create_common(calib, true, &xfctx, sync);
 

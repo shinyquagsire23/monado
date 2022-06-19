@@ -491,7 +491,9 @@ HandTracking::cCallbackDestroy(t_hand_tracking_sync *ht_sync)
  */
 
 extern "C" t_hand_tracking_sync *
-t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib, hand_tracking_output_space output_space)
+t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
+                                    enum hand_tracking_output_space output_space,
+                                    struct hand_tracking_image_boundary_info boundary_info)
 {
 	XRT_TRACE_MARKER();
 
