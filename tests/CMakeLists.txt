@@ -10,19 +10,19 @@ if(ANDROID)
 endif()
 
 set(tests
-    tests_cxx_wrappers
-    tests_generic_callbacks
-    tests_history_buf
-    tests_id_ringbuffer
-    tests_input_transform
-    tests_json
-    tests_lowpass_float
-    tests_lowpass_integer
-    tests_pacing
-    tests_quatexpmap
-    tests_rational
-    tests_worker
-    tests_pose
+	tests_cxx_wrappers
+	tests_generic_callbacks
+	tests_history_buf
+	tests_id_ringbuffer
+	tests_input_transform
+	tests_json
+	tests_lowpass_float
+	tests_lowpass_integer
+	tests_pacing
+	tests_quatexpmap
+	tests_rational
+	tests_worker
+	tests_pose
 	)
 if(XRT_HAVE_D3D11)
 	list(APPEND tests tests_aux_d3d tests_comp_client_d3d11)
@@ -30,8 +30,11 @@ endif()
 if(XRT_HAVE_VULKAN)
 	list(APPEND tests tests_comp_client_vulkan)
 endif()
-foreach(testname ${tests})
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	list(APPEND tests tests_levenbergmarquardt)
+endif()
 
+foreach(testname ${tests})
 	add_executable(${testname} ${testname}.cpp)
 	target_link_libraries(${testname} PRIVATE tests_main)
 	target_link_libraries(${testname} PRIVATE aux_util)
@@ -48,6 +51,10 @@ target_link_libraries(tests_lowpass_integer PRIVATE aux_math)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
+
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	target_link_libraries(tests_levenbergmarquardt PRIVATE aux_math t_ht_mercury_includes t_ht_mercury_kine_lm_includes  t_ht_mercury t_ht_mercury_kine_lm)
+endif()
 
 if(XRT_HAVE_D3D11)
 	target_link_libraries(tests_aux_d3d PRIVATE aux_d3d)
