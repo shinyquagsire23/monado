@@ -27,6 +27,9 @@
         "Compositor": {
             "directory": "compositor"
         },
+        "Tracking": {
+            "directory": "tracking"
+        },
         "Helper Libraries": {
             "directory": "auxiliary",
             "sort_by_prefix": true

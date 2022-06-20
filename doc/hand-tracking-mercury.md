@@ -31,6 +31,12 @@ We could very much use Eigen's spatial types - they template well (enough) with 
 
 This is definitely worth revisiting, and doing direct speed comparisons, but we need to do it later. Will be much easier once we have dataset playback
 
+# About how we deal with left and right hands
+Your hands are just about mirror images of each other. As such, it would be nice to come up with an abstraction for evaluating a model of a hand to oriented hand joints *once*, say for the left hand, then have our code magically make that work for the right hand, despite the right hand being different.
+
+One pretty normal way of doing this (and the way I did it with kine_ccdik) would be, if you get a right hand, mirror all the observations, do the optimization, then when you're done un-mirror the final result. But this introduces another "mirror world" coordinate space that's pretty hard to think of, and really hard to get in and out of if you are using Poses or Isometries to do space transforms instead of Affines. We're using Poses. Also, it makes things very annoying if you want to optimize two hands at once (ie. to try to stop self-collision or something, which we aren't doing yet.)
+
+Instead, in eval_hand_with_orientation, if we have a right hand, we mirror the X axis of each joint's *translation relative to its parent, in tracking space*. That's it. It seems too simple, but it works well. Then, after we're done optimizing, zldtt_ori_right does... something... to make the joints' tracking-relative orientations look correct. I don't perfectly understand why the change-of-basis operation is the correct operation, but it's not that surprising, as that transformation is the same one that you would do to get back from the "mirror world" to the regular world.
 # Some todos. Not an exhaustive list; I'd never be done if I wrote them all
 * Split out the "state tracker" bits from mercury::HandTracking into another struct - like, all the bits that it uses to remember if it saw the hand last frame, which views the hand was seen in, the hand size, whether it's calibrating the hand size, etc.
 * Check that the thumb metacarpal neutral pose makes sense, and that the limits make sense. It seems like it's pretty often not getting the curl axis right.
