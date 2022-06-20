@@ -9,21 +9,14 @@
 
 // Many C api things were stolen from here (MIT license):
 // https://github.com/microsoft/onnxruntime-inference-examples/blob/main/c_cxx/fns_candy_style_transfer/fns_candy_style_transfer.c
-#pragma once
-
 #include "hg_sync.hpp"
-#include "hg_image_math.hpp"
+#include "hg_image_math.inl"
 
 
 #include <filesystem>
 #include <array>
 
 namespace xrt::tracking::hand::mercury {
-
-cv::Scalar RED(255, 30, 30);
-cv::Scalar YELLOW(255, 255, 0);
-
-cv::Scalar colors[2] = {YELLOW, RED};
 
 #define ORT(expr)                                                                                                      \
 	do {                                                                                                           \
@@ -37,22 +30,80 @@ cv::Scalar colors[2] = {YELLOW, RED};
 	} while (0)
 
 
-static bool
-argmax(const float *data, int size, int *out_idx)
+static cv::Matx23f
+blackbar(const cv::Mat &in, cv::Mat &out, xrt_size out_size)
 {
-	float max_value = -1.0f;
-	bool found = false;
-	for (int i = 0; i < size; i++) {
-		if (data[i] > max_value) {
-			max_value = data[i];
-			*out_idx = i;
-			found = true;
-		}
+#if 1
+	// Easy to think about, always right, but pretty slow:
+	// Get a matrix from the original to the scaled down / blackbar'd image, then get one that goes back.
+	// Then just warpAffine() it.
+	// Easy in programmer time - never have to worry about off by one, special cases. We can come back and optimize
+	// later.
+
+	// Do the black bars need to be on top and bottom, or on left and right?
+	float scale_down_w = (float)out_size.w / (float)in.cols; // 128/1280 = 0.1
+	float scale_down_h = (float)out_size.h / (float)in.rows; // 128/800 =  0.16
+
+	float scale_down = fmin(scale_down_w, scale_down_h); // 0.1
+
+	float width_inside = (float)in.cols * scale_down;
+	float height_inside = (float)in.rows * scale_down;
+
+	float translate_x = (out_size.w - width_inside) / 2;  // should be 0 for 1280x800
+	float translate_y = (out_size.h - height_inside) / 2; // should be (1280-800)/2 = 240
+
+	cv::Matx23f go;
+	// clang-format off
+	go(0,0) = scale_down;  go(0,1) = 0.0f;                  go(0,2) = translate_x;
+	go(1,0) = 0.0f;                  go(1,1) = scale_down;  go(1,2) = translate_y;
+	// clang-format on
+
+	cv::warpAffine(in, out, go, cv::Size(out_size.w, out_size.h));
+
+	cv::Matx23f ret;
+
+	// clang-format off
+	ret(0,0) = 1.0f/scale_down;  ret(0,1) = 0.0f;             ret(0,2) = -translate_x/scale_down;
+	ret(1,0) = 0.0f;             ret(1,1) = 1.0f/scale_down;  ret(1,2) = -translate_y/scale_down;
+	// clang-format on
+
+	return ret;
+#else
+	// Fast, always wrong if the input isn't square. You'd end up using something like this, plus some
+	// copyMakeBorder if you want to optimize.
+	if (aspect_ratio_input == aspect_ratio_output) {
+		cv::resize(in, out, {out_size.w, out_size.h});
+		cv::Matx23f ret;
+		float scale_from_out_to_in = (float)in.cols / (float)out_size.w;
+		// clang-format off
+		ret(0,0) = scale_from_out_to_in;  ret(0,1) = 0.0f;                  ret(0,2) = 0.0f;
+		ret(1,0) = 0.0f;                  ret(1,1) = scale_from_out_to_in;  ret(1,2) = 0.0f;
+		// clang-format on
+		cv::imshow("hi", out);
+		cv::waitKey(1);
+		return ret;
 	}
-	return found;
+	assert(!"Uh oh! Unimplemented!");
+	return {};
+#endif
 }
 
-void
+static inline int
+argmax(const float *data, int size)
+{
+	float max_value = data[0];
+	int out_idx = 0;
+
+	for (int i = 1; i < size; i++) {
+		if (data[i] > max_value) {
+			max_value = data[i];
+			out_idx = i;
+		}
+	}
+	return out_idx;
+}
+
+static void
 refine_center_of_distribution(
     const float *data, int coarse_x, int coarse_y, int w, int h, float *out_refined_x, float *out_refined_y)
 {
@@ -139,6 +190,11 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 	cv::Mat stddev;
 	cv::meanStdDev(data_out, mean, stddev);
 
+	if (stddev.at<double>(0, 0) == 0) {
+		U_LOG_W("Got image with zero standard deviation!");
+		return;
+	}
+
 	data_out *= 0.25 / stddev.at<double>(0, 0);
 
 	// Calculate it again; mean has changed. Yes we don't need to but it's easy
@@ -147,7 +203,7 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 	data_out += (0.5 - mean.at<double>(0, 0));
 }
 
-static void
+void
 init_hand_detection(HandTracking *hgt, onnx_wrap *wrap)
 {
 	std::filesystem::path path = hgt->models_folder;
@@ -203,10 +259,15 @@ run_hand_detection(void *ptr)
 {
 	XRT_TRACE_MARKER();
 
-	ht_view *view = (ht_view *)ptr;
+	// ht_view *view = (ht_view *)ptr;
+
+	hand_detection_run_info *info = (hand_detection_run_info *)ptr;
+	ht_view *view = info->view;
+
 	HandTracking *hgt = view->hgt;
 	onnx_wrap *wrap = &view->detection;
 	cv::Mat &data_400x640 = view->run_model_on_this;
+
 
 	cv::Mat _240x320_uint8;
 
@@ -234,13 +295,14 @@ run_hand_detection(void *ptr)
 
 	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
 		const float *this_side_data = out_data + hand_idx * plane_size * 2;
-		int max_idx;
+		int max_idx = argmax(this_side_data, 4800);
 
-		det_output *output = &view->det_outputs[hand_idx];
+		hand_bounding_box *output = info->outputs[hand_idx];
 
-		output->found = argmax(this_side_data, 4800, &max_idx) && this_side_data[max_idx] > 0.3;
+		output->found = this_side_data[max_idx] > 0.3;
 
 		if (output->found) {
+			output->confidence = this_side_data[max_idx];
 
 			int row = max_idx / 80;
 			int col = max_idx % 80;
@@ -268,7 +330,7 @@ run_hand_detection(void *ptr)
 				cv::Point2i pt(_pt.x, _pt.y);
 				cv::rectangle(debug_frame,
 				              cv::Rect(pt - cv::Point2i(size / 2, size / 2), cv::Size(size, size)),
-				              colors[hand_idx], 1);
+				              PINK, 1);
 			}
 		}
 	}
@@ -276,7 +338,7 @@ run_hand_detection(void *ptr)
 	wrap->api->ReleaseValue(output_tensor);
 }
 
-static void
+void
 init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap)
 {
 
@@ -341,7 +403,7 @@ run_keypoint_estimation(void *ptr)
 
 	cv::Mat &debug = info->view->debug_out_to_this;
 
-	det_output *output = &info->view->det_outputs[info->hand_idx];
+	hand_bounding_box *output = &info->view->bboxes_this_frame[info->hand_idx];
 
 	cv::Point2f src_tri[3];
 	cv::Point2f dst_tri[3];
@@ -402,10 +464,8 @@ run_keypoint_estimation(void *ptr)
 	cv::Mat y(cv::Size(128, 21), CV_32FC1, out_data_y);
 
 	for (int i = 0; i < 21; i++) {
-		int loc_x;
-		int loc_y;
-		argmax(&out_data_x[i * 128], 128, &loc_x);
-		argmax(&out_data_y[i * 128], 128, &loc_y);
+		int loc_x = argmax(&out_data_x[i * 128], 128);
+		int loc_y = argmax(&out_data_y[i * 128], 128);
 		xrt_vec2 loc;
 		loc.x = loc_x;
 		loc.y = loc_y;
@@ -415,7 +475,7 @@ run_keypoint_estimation(void *ptr)
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (hgt->debug_scribble) {
+	if (hgt->debug_scribble && hgt->tuneable_values.scribble_keypoint_model_outputs) {
 		for (int finger = 0; finger < 5; finger++) {
 			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
 			for (int joint = 0; joint < 4; joint++) {
@@ -438,7 +498,7 @@ run_keypoint_estimation(void *ptr)
 }
 
 
-static void
+void
 init_keypoint_estimation_new(HandTracking *hgt, onnx_wrap *wrap)
 {
 
@@ -508,7 +568,7 @@ run_keypoint_estimation_new(void *ptr)
 
 	cv::Mat &debug = info->view->debug_out_to_this;
 
-	det_output *output = &info->view->det_outputs[info->hand_idx];
+	hand_bounding_box *output = &info->view->bboxes_this_frame[info->hand_idx];
 
 	cv::Point2f src_tri[3];
 	cv::Point2f dst_tri[3];
@@ -570,18 +630,19 @@ run_keypoint_estimation_new(void *ptr)
 
 	Hand2D &px_coord = info->view->keypoint_outputs[info->hand_idx].hand_px_coord;
 	Hand2D &tan_space = info->view->keypoint_outputs[info->hand_idx].hand_tan_space;
+	float *confidences = info->view->keypoint_outputs[info->hand_idx].hand_tan_space.confidences;
 	xrt_vec2 *keypoints_global = px_coord.kps;
 
 	size_t plane_size = 22 * 22;
 
 	for (int i = 0; i < 21; i++) {
 		float *data = &out_data[i * plane_size];
-		int out_idx = 0;
-		argmax(data, 22 * 22, &out_idx);
+		int out_idx = argmax(data, 22 * 22);
 		int row = out_idx / 22;
 		int col = out_idx % 22;
 
 		xrt_vec2 loc;
+
 
 		refine_center_of_distribution(data, col, row, 22, 22, &loc.x, &loc.y);
 
@@ -589,12 +650,14 @@ run_keypoint_estimation_new(void *ptr)
 		loc.y *= 128.0f / 22.0f;
 
 		loc = transformVecBy2x3(loc, go_back);
+
+		confidences[i] = data[out_idx];
 		px_coord.kps[i] = loc;
 
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (hgt->debug_scribble) {
+	if (hgt->debug_scribble && hgt->tuneable_values.scribble_keypoint_model_outputs) {
 		for (int finger = 0; finger < 5; finger++) {
 			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
 			for (int joint = 0; joint < 4; joint++) {

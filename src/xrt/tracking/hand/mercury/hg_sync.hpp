@@ -14,6 +14,7 @@
 
 #include "tracking/t_calibration_opencv.hpp"
 
+#include "tracking/t_hand_tracking.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 
@@ -32,6 +33,8 @@
 #include "util/u_frame.h"
 #include "util/u_var.h"
 
+#include "util/u_template_historybuf.hpp"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,15 +44,15 @@
 #include <opencv2/opencv.hpp>
 #include <onnxruntime_c_api.h>
 
-#include "kine/kinematic_interface.hpp"
+#include "kine_common.hpp"
+#include "kine_lm/lm_interface.hpp"
+#include "kine_ccdik/ccdik_interface.hpp"
+
 
 
 namespace xrt::tracking::hand::mercury {
 
 using namespace xrt::auxiliary::util;
-
-DEBUG_GET_ONCE_LOG_OPTION(mercury_log, "MERCURY_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(mercury_use_simdr_keypoint, "MERCURY_USE_SIMDR_KEYPOINT", false)
 
 #define HG_TRACE(hgt, ...) U_LOG_IFL_T(hgt->log_level, __VA_ARGS__)
 #define HG_DEBUG(hgt, ...) U_LOG_IFL_D(hgt->log_level, __VA_ARGS__)
@@ -57,46 +60,24 @@ DEBUG_GET_ONCE_BOOL_OPTION(mercury_use_simdr_keypoint, "MERCURY_USE_SIMDR_KEYPOI
 #define HG_WARN(hgt, ...) U_LOG_IFL_W(hgt->log_level, __VA_ARGS__)
 #define HG_ERROR(hgt, ...) U_LOG_IFL_E(hgt->log_level, __VA_ARGS__)
 
+
+static const cv::Scalar RED(255, 30, 30);
+static const cv::Scalar YELLOW(255, 255, 0);
+static const cv::Scalar PINK(255, 0, 255);
+
+static const cv::Scalar colors[2] = {YELLOW, RED};
+
 #undef USE_NCNN
 
 // Forward declaration for ht_view
 struct HandTracking;
 struct ht_view;
 
-enum Joint21
-{
-	WRIST = 0,
-
-	THMB_MCP = 1,
-	THMB_PXM = 2,
-	THMB_DST = 3,
-	THMB_TIP = 4,
-
-	INDX_PXM = 5,
-	INDX_INT = 6,
-	INDX_DST = 7,
-	INDX_TIP = 8,
-
-	MIDL_PXM = 9,
-	MIDL_INT = 10,
-	MIDL_DST = 11,
-	MIDL_TIP = 12,
-
-	RING_PXM = 13,
-	RING_INT = 14,
-	RING_DST = 15,
-	RING_TIP = 16,
-
-	LITL_PXM = 17,
-	LITL_INT = 18,
-	LITL_DST = 19,
-	LITL_TIP = 20
-};
-
 // Using the compiler to stop me from getting 2D space mixed up with 3D space.
 struct Hand2D
 {
 	struct xrt_vec2 kps[21];
+	float confidences[21];
 };
 
 struct Hand3D
@@ -117,17 +98,26 @@ struct onnx_wrap
 	const char *input_name;
 };
 
-struct det_output
+struct hand_bounding_box
 {
 	xrt_vec2 center;
 	float size_px;
 	bool found;
+	bool confidence;
 };
+
+struct hand_detection_run_info
+{
+	ht_view *view;
+	hand_bounding_box *outputs[2];
+};
+
 
 struct keypoint_output
 {
 	Hand2D hand_px_coord;
 	Hand2D hand_tan_space;
+	float confidences[21];
 };
 
 struct keypoint_estimation_run_info
@@ -150,10 +140,34 @@ struct ht_view
 	cv::Mat run_model_on_this;
 	cv::Mat debug_out_to_this;
 
-	struct det_output det_outputs[2]; // left, right
+	struct hand_bounding_box bboxes_this_frame[2]; // left, right
+
 	struct keypoint_estimation_run_info run_info[2];
 
 	struct keypoint_output keypoint_outputs[2];
+};
+
+struct hand_history
+{
+	HistoryBuffer<xrt_hand_joint_set, 5> hands;
+	HistoryBuffer<uint64_t, 5> timestamps;
+};
+
+struct output_struct_one_frame
+{
+	xrt_vec2 left[21];
+	float confidences_left[21];
+	xrt_vec2 right[21];
+	float confidences_right[21];
+};
+
+struct hand_size_refinement
+{
+	int num_hands;
+	float out_hand_size;
+	float out_hand_confidence;
+	float hand_size_refinement_schedule_x = 0;
+	float hand_size_refinement_schedule_y = 0;
 };
 
 /*!
@@ -193,10 +207,9 @@ public:
 
 	u_worker_group *group;
 
-	float hand_size;
 
 	float baseline = {};
-	struct xrt_quat stereo_camera_to_left_camera = {};
+	xrt_pose hand_pose_camera_offset = {};
 
 	uint64_t current_frame_timestamp = {};
 
@@ -207,14 +220,48 @@ public:
 
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
-	kine::kinematic_hand_4f *kinematic_hands[2];
+	lm::KinematicHandLM *kinematic_hands[2];
+	ccdik::KinematicHandCCDIK *kinematic_hands_ccdik[2];
+
+	// struct hand_detection_state_tracker st_det[2] = {};
+	bool hand_seen_before[2] = {false, false};
 	bool last_frame_hand_detected[2] = {false, false};
+	bool this_frame_hand_detected[2] = {false, false};
+
+	struct hand_history histories[2];
+
+	int detection_counter = 0;
+
+	struct hand_size_refinement refinement = {};
+	// Moses hand size is ~0.095; they has big-ish hands so let's do 0.09
+	float target_hand_size = 0.09;
+
 
 	xrt_frame *debug_frame;
 
 	void (*keypoint_estimation_run_func)(void *);
 
+
+
+	struct xrt_pose left_in_right = {};
+	struct hand_tracking_image_boundary_info image_boundary_info;
+
 	u_frame_times_widget ft_widget = {};
+
+	struct
+	{
+		bool new_user_event = false;
+		struct u_var_draggable_f32 dyn_radii_fac;
+		struct u_var_draggable_f32 dyn_joint_y_angle_error;
+		struct u_var_draggable_f32 amount_to_lerp_prediction;
+		bool scribble_predictions_into_this_frame = false;
+		bool scribble_keypoint_model_outputs = false;
+		bool scribble_optimizer_outputs = true;
+		bool always_run_detection_model = false;
+		bool use_ccdik = false;
+		int max_num_outside_view = 3;
+	} tuneable_values;
+
 
 public:
 	explicit HandTracking();
@@ -237,5 +284,29 @@ public:
 	static void
 	cCallbackDestroy(t_hand_tracking_sync *ht_sync);
 };
+
+
+void
+init_hand_detection(HandTracking *hgt, onnx_wrap *wrap);
+
+void
+run_hand_detection(void *ptr);
+
+void
+init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap);
+
+
+void
+run_keypoint_estimation(void *ptr);
+
+
+void
+init_keypoint_estimation_new(HandTracking *hgt, onnx_wrap *wrap);
+
+void
+run_keypoint_estimation_new(void *ptr);
+
+void
+release_onnx_wrap(onnx_wrap *wrap);
 
 } // namespace xrt::tracking::hand::mercury

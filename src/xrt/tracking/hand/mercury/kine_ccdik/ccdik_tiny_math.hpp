@@ -8,9 +8,9 @@
  */
 
 #pragma once
-#include "kinematic_defines.hpp"
+#include "ccdik_defines.hpp"
 
-namespace xrt::tracking::hand::mercury::kine {
+namespace xrt::tracking::hand::mercury::ccdik {
 // Waggle-curl-twist.
 static inline void
 wct_to_quat(wct_t wct, struct xrt_quat *out)
@@ -28,7 +28,9 @@ wct_to_quat(wct_t wct, struct xrt_quat *out)
 	xrt_quat just_twist;
 	math_quat_from_angle_vector(wct.twist, &twist_axis, &just_twist);
 
-	//! @todo: optimize This should be a matrix multiplication...
+	//! @optimize This should be a matrix multiplication...
+	// Are you sure about that, previous moses? Pretty sure that quat products are faster than 3x3 matrix
+	// products...
 	*out = just_waggle;
 	math_quat_rotate(out, &just_curl, out);
 	math_quat_rotate(out, &just_twist, out);
@@ -52,4 +54,4 @@ clamp_to_r(float *in, float c, float r)
 {
 	clamp(in, c - r, c + r);
 }
-} // namespace xrt::tracking::hand::mercury::kine
+} // namespace xrt::tracking::hand::mercury::ccdik

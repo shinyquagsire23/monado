@@ -7,9 +7,12 @@
  * @ingroup tracking
  */
 
-#include "kinematic_defines.hpp"
-#include "kinematic_tiny_math.hpp"
-#include "kinematic_hand_init.hpp"
+#include "ccdik_defines.hpp"
+#include "ccdik_tiny_math.hpp"
+#include "ccdik_hand_init.hpp"
+#include "lineline.hpp"
+#include "math/m_api.h"
+#include "util/u_logging.h"
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -18,17 +21,17 @@
 
 
 
-namespace xrt::tracking::hand::mercury::kine {
+namespace xrt::tracking::hand::mercury::ccdik {
 
 static void
-_two_set_ele(Eigen::Matrix<float, 3, 21> &thing, Eigen::Affine3f jt, int idx)
+_two_set_ele(Eigen::Matrix<float, 3, kNumNNJoints> &thing, Eigen::Affine3f jt, int idx)
 {
-	// slow
+	//! @optimize
 	thing.col(idx) = jt.translation();
 }
 
 static void
-two(struct kinematic_hand_4f *hand)
+two(struct KinematicHandCCDIK *hand)
 {
 	XRT_TRACE_MARKER();
 
@@ -105,7 +108,7 @@ moses_fast_simple_rotation(const Eigen::Vector3f &from_un, const Eigen::Vector3f
 
 
 static void
-do_it_for_bone(struct kinematic_hand_4f *hand, int finger_idx, int bone_idx, bool clamp_to_x_axis_rotation)
+do_it_for_bone(struct KinematicHandCCDIK *hand, int finger_idx, int bone_idx, bool clamp_to_x_axis_rotation)
 {
 	finger_t *of = &hand->fingers[finger_idx];
 	bone_t *bone = &hand->fingers[finger_idx].bones[bone_idx];
@@ -135,73 +138,8 @@ do_it_for_bone(struct kinematic_hand_4f *hand, int finger_idx, int bone_idx, boo
 	bone->bone_relation.linear() = bone->bone_relation.linear() * rot;
 }
 
-#if 1
 static void
-clamp_to_x_axis(struct kinematic_hand_4f *hand,
-                int finger_idx,
-                int bone_idx,
-                bool clamp_angle = false,
-                float min_angle = 0,
-                float max_angle = 0)
-{
-	bone_t &bone = hand->fingers[finger_idx].bones[bone_idx];
-	// U_LOG_E("before_anything");
-
-	// std::cout << bone->bone_relation.linear().matrix() << std::endl;
-	int axis = 0;
-	Eigen::Vector3f axes[3] = {Eigen::Vector3f::UnitX(), Eigen::Vector3f::UnitY(), Eigen::Vector3f::UnitZ()};
-
-
-	// The input rotation will very likely rotate a vector pointed in the direction of axis we want to lock to...
-	// somewhere else. So, we find the new direction
-	Eigen::Vector3f axis_rotated_by_input = bone.bone_relation.linear() * axes[axis];
-
-	// And find a correction rotation that rotates our input rotation such that it doesn't affect vectors pointing
-	// in the direction of our axis anymore.
-	Eigen::Matrix3f correction_rot =
-	    Eigen::Quaternionf().setFromTwoVectors(axis_rotated_by_input.normalized(), axes[axis]).matrix();
-	bone.bone_relation.linear() = correction_rot * bone.bone_relation.linear();
-
-
-	if (!clamp_angle) {
-		return;
-	}
-
-	Eigen::Vector3f axis_to_clamp_rotation = axes[(axis + 1) % 3];
-
-	Eigen::Vector3f new_ortho_direction = bone.bone_relation.linear() * axis_to_clamp_rotation;
-	float rotation_value = atan2(new_ortho_direction((axis + 2) % 3), new_ortho_direction((axis + 1) % 3));
-
-
-
-	if (rotation_value < max_angle && rotation_value > min_angle) {
-		return;
-	}
-
-	float positive_rotation_value, negative_rotation_value;
-
-
-	if (rotation_value < 0) {
-		positive_rotation_value = (M_PI * 2) - rotation_value;
-		negative_rotation_value = rotation_value;
-	} else {
-		negative_rotation_value = (-M_PI * 2) + rotation_value;
-		positive_rotation_value = rotation_value;
-	}
-
-	if ((positive_rotation_value - max_angle) > (min_angle - negative_rotation_value)) {
-		// Difference between max angle and positive value is higher, so we're closer to the minimum bound.
-		rotation_value = min_angle;
-	} else {
-		rotation_value = max_angle;
-	}
-
-	bone.bone_relation.linear() = Eigen::AngleAxisf(rotation_value, axes[axis]).toRotationMatrix();
-}
-
-#else
-static void
-clamp_to_x_axis(struct kinematic_hand_4f *hand,
+clamp_to_x_axis(struct KinematicHandCCDIK *hand,
                 int finger_idx,
                 int bone_idx,
                 bool clamp_angle = false,
@@ -242,7 +180,7 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 	// std::cout << bone->bone_relation.linear() * Eigen::Vector3f::UnitX() << "\n";
 
 	if (clamp_angle) {
-		//! @todo optimize: get rid of 1 and 2, we only need 0.
+		//! @optimize: get rid of 1 and 2, we only need 0.
 
 		// signed angle: asin(Cross product of -z and rot*-z X axis.
 		// U_LOG_E("before X clamp");
@@ -262,7 +200,7 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 
 
 
-		//! @todo optimize: Move the asin into constexpr land
+		//! @optimize: Move the asin into constexpr land
 		// No, the sine of the joint limit
 		float rotation_value = asin(cross(0));
 
@@ -282,12 +220,10 @@ clamp_to_x_axis(struct kinematic_hand_4f *hand,
 		// std::cout << n << "\n";
 	}
 }
-#endif
-
 
 // Is this not just swing-twist about the Z axis? Dunnoooo... Find out later.
 static void
-clamp_proximals(struct kinematic_hand_4f *hand,
+clamp_proximals(struct KinematicHandCCDIK *hand,
                 int finger_idx,
                 int bone_idx,
                 float max_swing_angle = 0,
@@ -343,7 +279,7 @@ clamp_proximals(struct kinematic_hand_4f *hand,
 
 
 	if (our_z.z() > 0) {
-		//!@bug We need smarter joint limiting, limiting using tanangles is not acceptable as joints can rotate
+		//!@bug We need smarter joint limiting, limiting via tanangles is not acceptable as joints can rotate
 		//! outside of the 180 degree hemisphere.
 		our_z.z() = -0.000001f;
 	}
@@ -361,7 +297,7 @@ clamp_proximals(struct kinematic_hand_4f *hand,
 
 
 static void
-do_it_for_finger(struct kinematic_hand_4f *hand, int finger_idx)
+do_it_for_finger(struct KinematicHandCCDIK *hand, int finger_idx)
 {
 	do_it_for_bone(hand, finger_idx, 0, false);
 	clamp_proximals(hand, finger_idx, 0, rad(4.0), tan(rad(-30)), tan(rad(30)), tan(rad(-10)), tan(rad(10)));
@@ -382,7 +318,7 @@ do_it_for_finger(struct kinematic_hand_4f *hand, int finger_idx)
 }
 
 static void
-optimize(kinematic_hand_4f *hand)
+optimize(KinematicHandCCDIK *hand)
 {
 	for (int i = 0; i < 15; i++) {
 		two(hand);
@@ -410,35 +346,35 @@ optimize(kinematic_hand_4f *hand)
 
 
 static void
-make_joint_at_matrix_left_hand(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set *hand)
+make_joint_at_matrix_left_hand(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set &hand)
 {
-	hand->values.hand_joint_set_default[idx].relation.relation_flags = (enum xrt_space_relation_flags)(
+	hand.values.hand_joint_set_default[idx].relation.relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 	Eigen::Vector3f v = pose.translation();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.x = v.x();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.y = v.y();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.z = v.z();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.x = v.x();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.y = v.y();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.z = v.z();
 
 	Eigen::Quaternionf q;
 	q = pose.rotation();
 
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.x = q.x();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.y = q.y();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.z = q.z();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.w = q.w();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.x = q.x();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.y = q.y();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.z = q.z();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.w = q.w();
 }
 
 static void
-make_joint_at_matrix_right_hand(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set *hand)
+make_joint_at_matrix_right_hand(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set &hand)
 {
-	hand->values.hand_joint_set_default[idx].relation.relation_flags = (enum xrt_space_relation_flags)(
+	hand.values.hand_joint_set_default[idx].relation.relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
 	    XRT_SPACE_RELATION_POSITION_VALID_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
 	Eigen::Vector3f v = pose.translation();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.x = -v.x();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.y = v.y();
-	hand->values.hand_joint_set_default[idx].relation.pose.position.z = v.z();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.x = -v.x();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.y = v.y();
+	hand.values.hand_joint_set_default[idx].relation.pose.position.z = v.z();
 
 	Eigen::Matrix3f rotation = pose.rotation();
 
@@ -455,16 +391,16 @@ make_joint_at_matrix_right_hand(int idx, Eigen::Affine3f &pose, struct xrt_hand_
 
 	q = rotation;
 
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.x = q.x();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.y = q.y();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.z = q.z();
-	hand->values.hand_joint_set_default[idx].relation.pose.orientation.w = q.w();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.x = q.x();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.y = q.y();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.z = q.z();
+	hand.values.hand_joint_set_default[idx].relation.pose.orientation.w = q.w();
 }
 
 static void
-make_joint_at_matrix(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set *hand, int hand_idx)
+make_joint_at_matrix(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set &hand, bool is_right)
 {
-	if (hand_idx == 0) {
+	if (!is_right) {
 		make_joint_at_matrix_left_hand(idx, pose, hand);
 	} else {
 		make_joint_at_matrix_right_hand(idx, pose, hand);
@@ -473,19 +409,40 @@ make_joint_at_matrix(int idx, Eigen::Affine3f &pose, struct xrt_hand_joint_set *
 
 // Exported:
 void
-optimize_new_frame(xrt_vec3 model_joints_3d[21],
-                   kinematic_hand_4f *hand,
-                   struct xrt_hand_joint_set *out_set,
-                   int hand_idx)
+optimize_new_frame(KinematicHandCCDIK *hand, one_frame_input &observation, struct xrt_hand_joint_set &out_set)
 {
+
 	// intake poses!
 	for (int i = 0; i < 21; i++) {
-		if (hand_idx == 0) {
-			hand->t_jts[i] = model_joints_3d[i];
+
+		xrt_vec3 p1 = {0, 0, 0};
+		xrt_vec3 p2 = observation.views[0].rays[i];
+
+		xrt_vec3 p3 = hand->right_in_left.position;
+
+		xrt_vec3 p4;
+		math_quat_rotate_vec3(&hand->right_in_left.orientation, &observation.views[1].rays[i], &p4);
+		p4 += hand->right_in_left.position;
+
+		xrt_vec3 pa;
+		xrt_vec3 pb;
+		float mua;
+		float mub;
+
+		LineLineIntersect(p1, p2, p3, p4, &pa, &pb, &mua, &mub);
+
+		xrt_vec3 p;
+		p = pa + pb;
+		math_vec3_scalar_mul(0.5, &p);
+
+
+		if (!hand->is_right) {
+
+			hand->t_jts[i] = p;
 		} else {
-			hand->t_jts[i].x = -model_joints_3d[i].x;
-			hand->t_jts[i].y = model_joints_3d[i].y;
-			hand->t_jts[i].z = model_joints_3d[i].z;
+			hand->t_jts[i].x = -p.x;
+			hand->t_jts[i].y = p.y;
+			hand->t_jts[i].z = p.z;
 		}
 
 		hand->t_jts_as_mat(0, i) = hand->t_jts[i].x;
@@ -498,7 +455,7 @@ optimize_new_frame(xrt_vec3 model_joints_3d[21],
 
 	// Convert it to xrt_hand_joint_set!
 
-	make_joint_at_matrix(XRT_HAND_JOINT_WRIST, hand->wrist_relation, out_set, hand_idx);
+	make_joint_at_matrix(XRT_HAND_JOINT_WRIST, hand->wrist_relation, out_set, hand->is_right);
 
 	Eigen::Affine3f palm_relation;
 
@@ -508,7 +465,7 @@ optimize_new_frame(xrt_vec3 model_joints_3d[21],
 	palm_relation.translation() += hand->fingers[2].bones[0].world_pose.translation() / 2;
 	palm_relation.translation() += hand->fingers[2].bones[1].world_pose.translation() / 2;
 
-	make_joint_at_matrix(XRT_HAND_JOINT_PALM, palm_relation, out_set, hand_idx);
+	make_joint_at_matrix(XRT_HAND_JOINT_PALM, palm_relation, out_set, hand->is_right);
 
 	int start = XRT_HAND_JOINT_THUMB_METACARPAL;
 
@@ -519,25 +476,34 @@ optimize_new_frame(xrt_vec3 model_joints_3d[21],
 
 			if (!(finger_idx == 0 && bone_idx == 0)) {
 				make_joint_at_matrix(start++, hand->fingers[finger_idx].bones[bone_idx].world_pose,
-				                     out_set, hand_idx);
+				                     out_set, hand->is_right);
 			}
 		}
 	}
 
-	out_set->is_active = true;
+	out_set.is_active = true;
 }
 
 void
-alloc_kinematic_hand(kinematic_hand_4f **out_kinematic_hand)
+alloc_kinematic_hand(xrt_pose left_in_right, bool is_right, KinematicHandCCDIK **out_kinematic_hand)
 {
-	kinematic_hand_4f *h = new kinematic_hand_4f;
+	KinematicHandCCDIK *h = new KinematicHandCCDIK();
+	h->is_right = is_right;
+
+	math_pose_invert(&left_in_right, &h->right_in_left);
+
+	// U_LOG_E("%f %f %f", h->right_in_left.position.x, h->right_in_left.position.y, h->right_in_left.position.z);
+
+	// Doesn't matter, should get overwritten later.
+	init_hardcoded_statics(h, 0.09f);
+
 	*out_kinematic_hand = h;
 }
 
 void
-free_kinematic_hand(kinematic_hand_4f **kinematic_hand)
+free_kinematic_hand(KinematicHandCCDIK **kinematic_hand)
 {
 	delete *kinematic_hand;
 }
 
-} // namespace xrt::tracking::hand::mercury::kine
+} // namespace xrt::tracking::hand::mercury::ccdik

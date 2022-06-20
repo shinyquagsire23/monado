@@ -10,11 +10,11 @@
 
 #pragma once
 
-#include "kinematic_defines.hpp"
-#include "kinematic_tiny_math.hpp"
+#include "ccdik_defines.hpp"
+#include "ccdik_tiny_math.hpp"
 
 
-namespace xrt::tracking::hand::mercury::kine {
+namespace xrt::tracking::hand::mercury::ccdik {
 
 void
 bone_update_quat_and_matrix(struct bone_t *bone)
@@ -39,7 +39,7 @@ eval_chain(std::vector<const Eigen::Affine3f *> &chain, Eigen::Affine3f &out)
 }
 
 void
-_statics_init_world_parents(kinematic_hand_4f *hand)
+_statics_init_world_parents(KinematicHandCCDIK *hand)
 {
 	for (int finger = 0; finger < 5; finger++) {
 		finger_t *of = &hand->fingers[finger];
@@ -56,7 +56,7 @@ _statics_init_world_parents(kinematic_hand_4f *hand)
 }
 
 void
-_statics_init_world_poses(kinematic_hand_4f *hand)
+_statics_init_world_poses(KinematicHandCCDIK *hand)
 {
 	XRT_TRACE_MARKER();
 	for (int finger = 0; finger < 5; finger++) {
@@ -70,7 +70,7 @@ _statics_init_world_poses(kinematic_hand_4f *hand)
 }
 
 void
-_statics_init_loc_ptrs(kinematic_hand_4f *hand)
+_statics_init_loc_ptrs(KinematicHandCCDIK *hand)
 {
 	hand->fingers[0].bones[1].keypoint_idx_21 = Joint21::THMB_MCP;
 	hand->fingers[0].bones[2].keypoint_idx_21 = Joint21::THMB_PXM;
@@ -99,7 +99,7 @@ _statics_init_loc_ptrs(kinematic_hand_4f *hand)
 }
 
 void
-_statics_joint_limits(kinematic_hand_4f *hand)
+_statics_joint_limits(KinematicHandCCDIK *hand)
 {
 	{
 		finger_t *t = &hand->fingers[0];
@@ -138,9 +138,8 @@ _statics_joint_limits(kinematic_hand_4f *hand)
 
 // Exported:
 void
-init_hardcoded_statics(kinematic_hand_4f *hand, float size)
+init_hardcoded_statics(KinematicHandCCDIK *hand, float size)
 {
-	memset(hand, 0, sizeof(kinematic_hand_4f));
 	hand->size = size;
 	hand->wrist_relation.setIdentity();
 	hand->wrist_relation.linear() *= hand->size;
@@ -202,9 +201,12 @@ init_hardcoded_statics(kinematic_hand_4f *hand, float size)
 
 		for (int i = 0; i < 3; i++) {
 			int bone = i + 2;
+			of->bones[bone].trans_from_last_joint.x() = 0;
+			of->bones[bone].trans_from_last_joint.y() = 0;
 			of->bones[bone].trans_from_last_joint.z() = finger_joints[finger - 1][i];
 		}
 	}
+
 
 	hand->fingers[1].bones[1].trans_from_last_joint.z() = -0.66;
 	hand->fingers[2].bones[1].trans_from_last_joint.z() = -0.645;
@@ -227,4 +229,4 @@ init_hardcoded_statics(kinematic_hand_4f *hand, float size)
 	_statics_init_loc_ptrs(hand);
 	_statics_joint_limits(hand);
 }
-} // namespace xrt::tracking::hand::mercury::kine
+} // namespace xrt::tracking::hand::mercury::ccdik
