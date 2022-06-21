@@ -18,25 +18,27 @@
 extern "C" {
 #endif
 
-enum hand_tracking_output_space
-{
-	HT_OUTPUT_SPACE_LEFT_CAMERA,
-	HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA,
-};
-
-enum hand_tracking_algorithm
-{
-	HT_ALGORITHM_MERCURY,
-	HT_ALGORITHM_OLD_RGB
-};
-
-enum hand_tracking_image_boundary_type
+/*!
+ * @brief Image boundary type.
+ *
+ * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
+ * of the camera's vignette.
+ * @ingroup xrt_iface
+ */
+enum t_image_boundary_type
 {
 	HT_IMAGE_BOUNDARY_NONE,
 	HT_IMAGE_BOUNDARY_CIRCLE,
 };
 
-struct hand_tracking_image_boundary_circle
+/*!
+ * @brief Circular image boundary.
+ *
+ * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
+ * of the camera's vignette.
+ * @ingroup xrt_iface
+ */
+struct t_image_boundary_circle
 {
 	// The center, in normalized 0-1 UV coordinates.
 	// Should probably be between 0 and 1 in pixel coordinates.
@@ -46,19 +48,58 @@ struct hand_tracking_image_boundary_circle
 	float normalized_radius;
 };
 
-struct hand_tracking_image_boundary_info_one_view
+/*!
+ * @brief Image boundary for one view.
+ *
+ * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
+ * of the camera's vignette.
+ * @ingroup xrt_iface
+ */
+struct t_image_boundary_info_one_view
 {
-	enum hand_tracking_image_boundary_type type;
+	enum t_image_boundary_type type;
 	union {
-		struct hand_tracking_image_boundary_circle circle;
+		struct t_image_boundary_circle circle;
 	} boundary;
 };
 
-
-struct hand_tracking_image_boundary_info
+/*!
+ * @brief Image boundaries for all the cameras used in a tracking system.
+ *
+ * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
+ * of the camera's vignette.
+ * @ingroup xrt_iface
+ */
+struct t_image_boundary_info
 {
 	//!@todo Hardcoded to 2 - needs to increase as we support headsets with more cameras.
-	struct hand_tracking_image_boundary_info_one_view views[2];
+	struct t_image_boundary_info_one_view views[2];
+};
+
+/*!
+ * @brief Output coordinate system of the hand-tracking system.
+ *
+ * In HT_OUTPUT_SPACE_LEFT_CAMERA, the origin is at the left camera.
+ * In HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA (which you should not be using, because it assumes that your camera is a
+ * parallel stereo camera), the origin is at the "centerline" between the two main cameras.
+ * @ingroup xrt_iface
+ */
+enum t_hand_tracking_output_space
+{
+	HT_OUTPUT_SPACE_LEFT_CAMERA,
+	HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA,
+};
+
+/*!
+ * @brief Which hand-tracking algorithm should we use?
+ *
+ * Never use HT_ALGORITHM_OLD_RGB. The tracking quality is extremely poor.
+ * @ingroup xrt_iface
+ */
+enum t_hand_tracking_algorithm
+{
+	HT_ALGORITHM_MERCURY,
+	HT_ALGORITHM_OLD_RGB
 };
 
 /*!

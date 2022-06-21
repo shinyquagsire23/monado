@@ -23,8 +23,8 @@ extern "C" {
  */
 struct t_hand_tracking_sync *
 t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
-                                    enum hand_tracking_output_space output_space,
-                                    struct hand_tracking_image_boundary_info boundary_info);
+                                    enum t_hand_tracking_output_space output_space,
+                                    struct t_image_boundary_info boundary_info);
 
 #ifdef __cplusplus
 } // extern "C"

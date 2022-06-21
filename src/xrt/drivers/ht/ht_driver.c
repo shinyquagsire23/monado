@@ -287,7 +287,7 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 		sync = t_hand_tracking_sync_old_rgb_create(calib);
 	} else {
 
-		struct hand_tracking_image_boundary_info info;
+		struct t_image_boundary_info info;
 		info.views[0].type = HT_IMAGE_BOUNDARY_CIRCLE;
 		info.views[1].type = HT_IMAGE_BOUNDARY_CIRCLE;
 
@@ -357,9 +357,9 @@ ht_device_create_index(struct xrt_prober *xp, struct t_stereo_camera_calibration
 int
 ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
-                 enum hand_tracking_output_space output_space,
-                 enum hand_tracking_algorithm algorithm_choice,
-                 struct hand_tracking_image_boundary_info boundary_info,
+                 enum t_hand_tracking_output_space output_space,
+                 enum t_hand_tracking_algorithm algorithm_choice,
+                 struct t_image_boundary_info boundary_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device)
 {
@@ -400,7 +400,7 @@ ht_device_create_depthai_ov9282()
 
 	struct t_hand_tracking_sync *sync;
 
-	struct hand_tracking_image_boundary_info info;
+	struct t_image_boundary_info info;
 	info.views[0].type = HT_IMAGE_BOUNDARY_NONE;
 	info.views[1].type = HT_IMAGE_BOUNDARY_NONE;
 

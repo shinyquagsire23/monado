@@ -187,7 +187,7 @@ public:
 
 	bool use_fisheye;
 
-	enum hand_tracking_output_space output_space;
+	enum t_hand_tracking_output_space output_space;
 
 	struct t_stereo_camera_calibration *calib;
 
@@ -244,7 +244,7 @@ public:
 
 
 	struct xrt_pose left_in_right = {};
-	struct hand_tracking_image_boundary_info image_boundary_info;
+	struct t_image_boundary_info image_boundary_info;
 
 	u_frame_times_widget ft_widget = {};
 

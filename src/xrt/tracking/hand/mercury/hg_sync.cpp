@@ -276,7 +276,9 @@ applyJointWidths(struct HandTracking *hgt, struct xrt_hand_joint_set *set)
 
 template <typename Vec>
 static inline bool
-check_outside_view(struct HandTracking *hgt, struct hand_tracking_image_boundary_info_one_view boundary, Vec &keypoint)
+check_outside_view(struct HandTracking *hgt,
+                   struct t_hand_tracking_image_boundary_info_one_view boundary,
+                   Vec &keypoint)
 {
 	// Regular case - the keypoint is literally outside the image
 	if (keypoint.y > hgt->calibration_one_view_size_px.h || //
@@ -679,7 +681,7 @@ scribble_image_boundary(struct HandTracking *hgt)
 		struct ht_view *view = &hgt->views[view_idx];
 
 		cv::Mat &debug_frame = view->debug_out_to_this;
-		hand_tracking_image_boundary_info_one_view &info = hgt->image_boundary_info.views[view_idx];
+		t_hand_tracking_image_boundary_info_one_view &info = hgt->image_boundary_info.views[view_idx];
 
 		if (info.type == HT_IMAGE_BOUNDARY_CIRCLE) {
 			int center_x = hgt->last_frame_one_view_size_px.w * info.boundary.circle.normalized_center.x;
@@ -1024,8 +1026,8 @@ using namespace xrt::tracking::hand::mercury;
 
 extern "C" t_hand_tracking_sync *
 t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
-                                    enum hand_tracking_output_space output_space,
-                                    struct hand_tracking_image_boundary_info boundary_info)
+                                    enum t_hand_tracking_output_space output_space,
+                                    struct t_hand_tracking_image_boundary_info boundary_info)
 {
 	XRT_TRACE_MARKER();
 
