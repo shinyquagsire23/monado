@@ -79,3 +79,25 @@ u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_syste
 
 	return xrt_prober_create_system(xp, out_xsysd);
 }
+
+struct xrt_device *
+u_system_devices_get_ht_device(struct u_system_devices *usysd, enum xrt_input_name name)
+{
+	for (uint32_t i = 0; i < usysd->base.xdev_count; i++) {
+		struct xrt_device *xdev = usysd->base.xdevs[i];
+
+		if (xdev == NULL || !xdev->hand_tracking_supported) {
+			continue;
+		}
+
+		for (uint32_t j = 0; j < xdev->input_count; j++) {
+			struct xrt_input *input = &xdev->inputs[j];
+
+			if (input->name == name) {
+				return xdev;
+			}
+		}
+	}
+
+	return NULL;
+}

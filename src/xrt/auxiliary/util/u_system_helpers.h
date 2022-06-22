@@ -71,6 +71,19 @@ xrt_result_t
 u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_system_devices **out_xsysd);
 
 /*!
+ * Helper function.
+ *
+ * Looks through @ref u_system_devices's devices and returns the first device that supports hand tracking and the
+ * supplied input name.
+ *
+ * Used by target_builder_lighthouse to find Knuckles controllers in the list of devices returned.
+ *
+ * @ingroup aux_util
+ */
+struct xrt_device *
+u_system_devices_get_ht_device(struct u_system_devices *usysd, enum xrt_input_name name);
+
+/*!
  * Destroy an u_system_devices_allocate and owned devices - helper function.
  *
  * @param[in,out] usysd_ptr A pointer to the u_system_devices_allocate struct pointer.
