@@ -18,35 +18,6 @@
 
 #include <assert.h>
 
-
-/*
- *
- * Helper functions.
- *
- */
-
-static struct xrt_device *
-get_ht_device(struct u_system_devices *usysd, enum xrt_input_name name)
-{
-	for (uint32_t i = 0; i < usysd->base.xdev_count; i++) {
-		struct xrt_device *xdev = usysd->base.xdevs[i];
-
-		if (xdev == NULL || !xdev->hand_tracking_supported) {
-			continue;
-		}
-
-		for (uint32_t j = 0; j < xdev->input_count; j++) {
-			struct xrt_input *input = &xdev->inputs[j];
-
-			if (input->name == name) {
-				return xdev;
-			}
-		}
-	}
-
-	return NULL;
-}
-
 static const char *driver_list[] = {
 #ifdef XRT_BUILD_DRIVER_HYDRA
     "hydra",
@@ -195,8 +166,10 @@ legacy_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 	}
 
 	// Find hand tracking devices.
-	usysd->base.roles.hand_tracking.left = get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_LEFT);
-	usysd->base.roles.hand_tracking.right = get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT);
+	usysd->base.roles.hand_tracking.left =
+	    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_LEFT);
+	usysd->base.roles.hand_tracking.right =
+	    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT);
 
 
 	/*
