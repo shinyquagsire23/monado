@@ -367,8 +367,17 @@ ht_device_create(struct xrt_frame_context *xfctx,
 	XRT_TRACE_MARKER();
 	assert(calib != NULL);
 
-	struct t_hand_tracking_sync *sync = t_hand_tracking_sync_mercury_create(calib, output_space, boundary_info);
+	struct t_hand_tracking_sync *sync = NULL;
 
+	switch (algorithm_choice) {
+	case HT_ALGORITHM_MERCURY: {
+		sync = t_hand_tracking_sync_mercury_create(calib, output_space, boundary_info);
+	} break;
+	case HT_ALGORITHM_OLD_RGB: {
+		//!@todo Either have this deal with the output space correctly, or have everything use LEFT_CAMERA
+		sync = t_hand_tracking_sync_old_rgb_create(calib);
+	}
+	}
 	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
 
 	HT_DEBUG(htd, "Hand Tracker initialized!");
