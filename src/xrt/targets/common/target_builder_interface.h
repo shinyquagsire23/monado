@@ -24,6 +24,10 @@
 #define T_BUILDER_REMOTE
 #endif
 
+#if defined(XRT_BUILD_DRIVER_SURVIVE) || defined(XRT_BUILD_DRIVER_VIVE) || defined(XRT_DOXYGEN)
+#define T_BUILDER_LIGHTHOUSE
+#endif
+
 // Always enabled.
 #define T_BUILDER_LEGACY
 
@@ -57,3 +61,10 @@ t_builder_remote_create(void);
 struct xrt_builder *
 t_builder_legacy_create(void);
 #endif
+
+
+/*!
+ * Builder used as a fallback for drivers not converted to builders yet.
+ */
+struct xrt_builder *
+t_builder_lighthouse_create(void);
