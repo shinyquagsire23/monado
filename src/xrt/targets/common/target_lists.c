@@ -44,14 +44,6 @@
 #include "hydra/hydra_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_SURVIVE
-#include "survive/survive_interface.h"
-#endif
-
-#ifdef XRT_BUILD_DRIVER_VIVE
-#include "vive/vive_prober.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
 #include "daydream/daydream_interface.h"
 #endif
@@ -147,13 +139,6 @@ struct xrt_prober_entry target_entry_list[] = {
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
-#ifdef XRT_BUILD_DRIVER_VIVE
-    {HTC_VID, VIVE_PID, vive_found, "HTC Vive", "vive"},
-    {HTC_VID, VIVE_PRO_MAINBOARD_PID, vive_found, "HTC Vive Pro", "vive"},
-    {VALVE_VID, VIVE_PRO_LHR_PID, vive_found, "Valve Index", "vive"},
-    {VALVE_VID, VIVE_WATCHMAN_DONGLE, vive_controller_found, "HTC Vive Watchman Wireless Device", "vive"},
-    {VALVE_VID, VIVE_WATCHMAN_DONGLE_GEN2, vive_controller_found, "Valve Watchman Wireless Device", "vive"},
-#endif
 
 #ifdef XRT_BUILD_DRIVER_ULV2
     {ULV2_VID, ULV2_PID, ulv2_found, "Leap Motion Controller", "ulv2"},
@@ -192,10 +177,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
     // Before OpenHMD
     daydream_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_SURVIVE
-    survive_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD

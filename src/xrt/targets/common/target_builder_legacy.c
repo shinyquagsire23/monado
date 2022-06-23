@@ -27,10 +27,6 @@ static const char *driver_list[] = {
     "hdk",
 #endif
 
-#ifdef XRT_BUILD_DRIVER_VIVE
-    "vive",
-#endif
-
 #ifdef XRT_BUILD_DRIVER_ULV2
     "ulv2",
 #endif
@@ -49,10 +45,6 @@ static const char *driver_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_DAYDREAM
     "daydream",
-#endif
-
-#ifdef XRT_BUILD_DRIVER_SURVIVE
-    "survive",
 #endif
 
 #ifdef XRT_BUILD_DRIVER_OHMD
