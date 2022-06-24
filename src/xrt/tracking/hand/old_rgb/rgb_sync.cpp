@@ -737,6 +737,8 @@ htExitFrame(struct HandTracking *htd,
 {
 
 	os_mutex_lock(&htd->openxr_hand_data_mediator);
+	*out_timestamp_ns = timestamp;
+
 	if (err) {
 		out_left->is_active = false;
 		out_right->is_active = false;
@@ -745,7 +747,6 @@ htExitFrame(struct HandTracking *htd,
 		*out_right = final_hands_ordered_by_handedness[1];
 
 
-		*out_timestamp_ns = timestamp;
 		HT_DEBUG(htd, "Adding ts %zu", htd->hands_for_openxr_timestamp);
 	}
 	os_mutex_unlock(&htd->openxr_hand_data_mediator);
@@ -1198,6 +1199,8 @@ HandTracking::cCallbackDestroy(t_hand_tracking_sync *ht_sync)
 {
 	auto ht_ptr = &HandTracking::fromC(ht_sync);
 
+	u_sink_debug_destroy(&ht_ptr->debug_sink);
+
 	delete ht_ptr->views[0].htm;
 	delete ht_ptr->views[1].htm;
 	delete ht_ptr;
@@ -1226,6 +1229,7 @@ t_hand_tracking_sync_old_rgb_create(struct t_stereo_camera_calibration *calib)
 	 * Get configuration
 	 */
 
+	u_sink_debug_init(&htd->debug_sink);
 	assert(calib != NULL);
 	getCalibration(htd, calib);
 	// Set defaults - most people won't have a config json and it won't get past here.
