@@ -448,15 +448,8 @@ pa_destroy(struct u_pacing_app *upa)
 	free(upa);
 }
 
-
-/*
- *
- * 'Exported' functions.
- *
- */
-
-xrt_result_t
-u_pa_create(struct u_pacing_app **out_upa)
+static xrt_result_t
+pa_create(struct u_pacing_app **out_upa)
 {
 	struct pacing_app *pa = U_TYPED_CALLOC(struct pacing_app);
 	pa->base.predict = pa_predict;
@@ -476,6 +469,44 @@ u_pa_create(struct u_pacing_app **out_upa)
 	}
 
 	*out_upa = &pa->base;
+
+	return XRT_SUCCESS;
+}
+
+
+/*
+ *
+ * Factory functions.
+ *
+ */
+
+static xrt_result_t
+paf_create(struct u_pacing_app_factory *upaf, struct u_pacing_app **out_upa)
+{
+	return pa_create(out_upa);
+}
+
+static void
+paf_destroy(struct u_pacing_app_factory *upaf)
+{
+	free(upaf);
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+xrt_result_t
+u_pa_factory_create(struct u_pacing_app_factory **out_upaf)
+{
+	struct u_pacing_app_factory *upaf = U_TYPED_CALLOC(struct u_pacing_app_factory);
+	upaf->create = paf_create;
+	upaf->destroy = paf_destroy;
+
+	*out_upaf = upaf;
 
 	return XRT_SUCCESS;
 }

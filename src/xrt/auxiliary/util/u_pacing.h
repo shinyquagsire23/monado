@@ -507,6 +507,69 @@ u_pa_destroy(struct u_pacing_app **upa_ptr)
 	*upa_ptr = NULL;
 }
 
+
+/*
+ *
+ * App pacing factory.
+ *
+ */
+
+/*!
+ * Small helper that creates a app pacers, allows timing information to be
+ * collected and controlled to a central place.
+ */
+struct u_pacing_app_factory
+{
+	/*!
+	 * Create a @ref u_pacing_app.
+	 *
+	 * @param      upaf    App pacing factory.
+	 * @param[out] out_upa Created app pacer.
+	 */
+	xrt_result_t (*create)(struct u_pacing_app_factory *upaf, struct u_pacing_app **out_upa);
+
+	/*!
+	 * Destroy this u_pacing_app_factory.
+	 */
+	void (*destroy)(struct u_pacing_app_factory *upaf);
+};
+
+/*!
+ * @copydoc u_pacing_app_factory::create
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_app_factory
+ * @ingroup aux_pacing
+ */
+static inline void
+u_paf_create(struct u_pacing_app_factory *upaf, struct u_pacing_app **out_upa)
+{
+	upaf->create(upaf, out_upa);
+}
+
+/*!
+ * @copydoc u_pacing_app_factory::destroy
+ *
+ * Helper for calling through the function pointer: does a null check and sets
+ * upa_ptr to null if freed.
+ *
+ * @public @memberof u_pacing_app_factory
+ * @ingroup aux_pacing
+ */
+static inline void
+u_paf_destroy(struct u_pacing_app_factory **upaf_ptr)
+{
+	struct u_pacing_app_factory *upaf = *upaf_ptr;
+	if (upaf == NULL) {
+		return;
+	}
+
+	upaf->destroy(upaf);
+	*upaf_ptr = NULL;
+}
+
+
 /*
  *
  * Configuration struct
@@ -585,13 +648,13 @@ xrt_result_t
 u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_pacing_compositor **out_upc);
 
 /*!
- * Creates a new application pacing helper.
+ * Creates a new application pacing factory helper.
  *
  * @ingroup aux_pacing
  * @see u_pacing_app
  */
 xrt_result_t
-u_pa_create(struct u_pacing_app **out_upa);
+u_pa_factory_create(struct u_pacing_app_factory **out_upaf);
 
 
 #ifdef __cplusplus

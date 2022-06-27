@@ -508,6 +508,8 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 	// Destroy the render thread first, destroy also stops the thread.
 	os_thread_helper_destroy(&msc->oth);
 
+	u_paf_destroy(&msc->upaf);
+
 	xrt_comp_native_destroy(&msc->xcn);
 
 	os_mutex_destroy(&msc->list_and_timing_lock);
@@ -524,6 +526,7 @@ system_compositor_destroy(struct xrt_system_compositor *xsc)
 
 xrt_result_t
 comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
+                                    struct u_pacing_app_factory *upaf,
                                     const struct xrt_system_compositor_info *xsci,
                                     struct xrt_system_compositor **out_xsysc)
 {
@@ -535,6 +538,7 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->xmcc.set_main_app_visibility = system_compositor_set_main_app_visibility;
 	msc->base.xmcc = &msc->xmcc;
 	msc->base.info = *xsci;
+	msc->upaf = upaf;
 	msc->xcn = xcn;
 
 	os_mutex_init(&msc->list_and_timing_lock);

@@ -240,6 +240,9 @@ struct multi_system_compositor
 	//! Real native compositor.
 	struct xrt_compositor_native *xcn;
 
+	//! App pacer factory.
+	struct u_pacing_app_factory *upaf;
+
 	//! Render loop thread.
 	struct os_thread_helper oth;
 

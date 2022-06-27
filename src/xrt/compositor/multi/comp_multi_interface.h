@@ -16,9 +16,17 @@
 extern "C" {
 #endif
 
+struct u_pacing_app_factory;
 
+
+/*!
+ * Create a system compositor that can handle multiple clients and that drives
+ * a single native compositor. Both the native compositor and the pacing factory
+ * is owned by the multi compositor and destroyed by it.
+ */
 xrt_result_t
 comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
+                                    struct u_pacing_app_factory *upaf,
                                     const struct xrt_system_compositor_info *xsci,
                                     struct xrt_system_compositor **out_xsysc);
 

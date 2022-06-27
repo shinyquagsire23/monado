@@ -925,7 +925,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	os_precise_sleeper_init(&mc->sleeper);
 
 	// This is safe to do without a lock since we are not on the list yet.
-	u_pa_create(&mc->upa);
+	u_paf_create(msc->upaf, &mc->upa);
 
 	os_mutex_lock(&msc->list_and_timing_lock);
 

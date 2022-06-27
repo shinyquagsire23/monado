@@ -51,6 +51,7 @@
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"
+#include "util/u_pacing.h"
 #include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
@@ -1268,5 +1269,10 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 
 	c->state = COMP_STATE_READY;
 
-	return comp_multi_create_system_compositor(&c->base.base, sys_info, out_xsysc);
+	// Standard app pacer.
+	struct u_pacing_app_factory *upaf = NULL;
+	xrt_result_t xret = u_pa_factory_create(&upaf);
+	assert(xret == XRT_SUCCESS && upaf != NULL);
+
+	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, out_xsysc);
 }

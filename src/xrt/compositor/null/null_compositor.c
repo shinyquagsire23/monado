@@ -578,5 +578,10 @@ null_compositor_create_system(struct xrt_device *xdev, struct xrt_system_composi
 
 	NULL_DEBUG(c, "Done %p", (void *)c);
 
-	return comp_multi_create_system_compositor(&c->base.base, &c->sys_info, out_xsysc);
+	// Standard app pacer.
+	struct u_pacing_app_factory *upaf = NULL;
+	xrt_result_t xret = u_pa_factory_create(&upaf);
+	assert(xret == XRT_SUCCESS && upaf != NULL);
+
+	return comp_multi_create_system_compositor(&c->base.base, upaf, &c->sys_info, out_xsysc);
 }
