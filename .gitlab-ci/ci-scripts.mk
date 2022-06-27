@@ -8,6 +8,7 @@
 FILES_IN_SUBDIR := \
     .gitlab-ci/distributions \
     .gitlab-ci/reprepro.sh \
+	.gitlab-ci/install-android-sdk.sh \
 
 CONFIG_FILE := .gitlab-ci/config.yml
 OUTPUTS := .gitlab-ci.yml \

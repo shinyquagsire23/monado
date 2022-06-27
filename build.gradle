@@ -21,6 +21,8 @@ buildscript {
 
         // This is the version to download if we can't find it locally.
         eigenFetchVersion = '3.4.0'
+
+        // If you update this, must also update .gitlab-ci/config.yml
         buildToolsVersion = "31.0.0"
     }
     repositories {
@@ -54,6 +56,7 @@ plugins {
 
 ext {
     ndk_version = '21.4.7075529'
+    // If you update this, must also update .gitlab-ci/config.yml
     sharedTargetSdk = 31
     sharedMinSdk = 26
 

@@ -116,6 +116,13 @@ distributions:
         repo_suffix: ndk
         script: android_container_prep.sh
         tag: "2022-06-27.0"
+        # This must match ext.sharedTargetSdk in build.gradle
+        android_compile_sdk: 31
+        # This must match buildscript.ext.buildToolsVersion in build.gradle
+        android_build_tools: 31.0.0
+        # look up on https://developer.android.com/studio/index.html#downloads when updating other versions
+        android_cli_tools: 8512546
+
         packages:
           git:
           wget:

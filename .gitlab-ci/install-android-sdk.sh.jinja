@@ -2,20 +2,24 @@
 # Copyright 2022, Collabora, Ltd. and the Monado contributors
 # SPDX-License-Identifier: BSL-1.0
 
-##
+#{# ignore the warning, this is actually the template to edit. #}#
 #######################################################
 #                GENERATED - DO NOT EDIT              #
 # see .gitlab-ci/install-android-sdk.sh.jinja instead #
 #######################################################
-##
+#{#
+Please run the following after editing:
+  make -f .gitlab-ci/ci-scripts.mk
+#}#
 
 # Partially inspired by https://about.gitlab.com/blog/2018/10/24/setting-up-gitlab-ci-for-android-projects/
+{% for distro in distributions -%} {%- for image in distro.images if "android_compile_sdk" in image %}
 
 set -eo pipefail
-VERSION=8512546
+VERSION={{image.android_cli_tools}}
 ROOT=${ROOT:-/opt/android-sdk}
-ANDROID_COMPILE_SDK=${ANDROID_COMPILE_SDK:-31}
-ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-31.0.0}
+ANDROID_COMPILE_SDK=${ANDROID_COMPILE_SDK:-{{image.android_compile_sdk}}}
+ANDROID_BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-{{image.android_build_tools}}}
 
 mkdir -p "$ROOT"
 FN=commandlinetools-linux-${VERSION}_latest.zip
@@ -40,3 +44,4 @@ set +o pipefail
 yes | $SDKMANAGER --licenses
 set -o pipefail
 
+{% endfor -%} {%- endfor %}
