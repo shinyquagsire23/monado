@@ -115,7 +115,7 @@ distributions:
         distro_version: bullseye
         repo_suffix: ndk
         script: android_container_prep.sh
-        tag: "2022-03-16.0"
+        tag: "2022-06-27.0"
         packages:
           git:
           wget:
