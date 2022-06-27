@@ -21,6 +21,7 @@
 #include "util/u_distortion_mesh.h"
 
 #include "multi/comp_multi_private.h"
+#include "multi/comp_multi_interface.h"
 
 #include <math.h>
 #include <stdio.h>
