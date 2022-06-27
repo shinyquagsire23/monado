@@ -285,7 +285,7 @@ u_pc_destroy(struct u_pacing_compositor **upc_ptr)
 
 /*
  *
- * Render timing helper.
+ * App pacer.
  *
  */
 
@@ -492,7 +492,7 @@ u_pa_info(struct u_pacing_app *upa,
  * Helper for calling through the function pointer: does a null check and sets
  * upa_ptr to null if freed.
  *
- * @public @memberof u_pacing_compositor
+ * @public @memberof u_pacing_app
  * @ingroup aux_pacing
  */
 static inline void
@@ -548,6 +548,7 @@ struct u_pc_display_timing_config
  * @see u_pc_display_timing_config, u_pc_display_timing_create
  */
 extern const struct u_pc_display_timing_config U_PC_DISPLAY_TIMING_CONFIG_DEFAULT;
+
 
 /*
  *
