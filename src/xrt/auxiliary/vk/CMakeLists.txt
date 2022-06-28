@@ -1,7 +1,6 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
 add_library(
 	aux_vk STATIC
 	vk_bundle_init.c
@@ -27,4 +26,14 @@ target_include_directories(aux_vk PUBLIC ${Vulkan_INCLUDE_DIR})
 if(ANDROID)
 	target_link_libraries(aux_vk PUBLIC aux_android)
 	target_link_libraries(aux_vk PUBLIC ${ANDROID_LIBRARY})
+endif()
+
+if(XRT_HAVE_WAYLAND)
+	target_include_directories(aux_vk PRIVATE ${WAYLAND_INCLUDE_DIR})
+endif()
+if(XRT_HAVE_XCB)
+	target_include_directories(aux_vk PRIVATE ${XCB_INCLUDE_DIR})
+endif()
+if(XRT_HAVE_XRANDR)
+	target_include_directories(aux_vk PRIVATE ${XRANDR_INCLUDE_DIR} ${X11_INCLUDE_DIR})
 endif()
