@@ -1,81 +1,107 @@
 {
-  "version": 2,
-  "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 20,
-    "patch": 0
-  },
-  "configurePresets": [
-    {
-      "name": "default",
-      "inherits": "service-debug",
-      "displayName": "Default (same as service-debug)"
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
     },
-    {
-      "name": "service-debug",
-      "displayName": "Debug Monado service",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "BUILD_DOC": "OFF",
-        "SANITIZE_ADDRESS": "ON",
-        "SANITIZE_UNDEFINED": "ON"
-      }
-    },
-    {
-      "name": "standalone-debug",
-      "inherits": "service-debug",
-      "displayName": "Debug Monado standalone",
-      "cacheVariables": {
-        "XRT_FEATURE_SERVICE": "OFF"
-      }
-    },
-    {
-      "name": "service-release",
-      "displayName": "Release Monado service",
-      "inherits": "service-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "BUILD_DOC": "ON",
-        "BUILD_DOC_EXTRACT_ALL": "ON",
-        "SANITIZE_ADDRESS": "OFF",
-        "SANITIZE_UNDEFINED": "OFF"
-      }
-    },
-    {
-      "name": "standalone-release",
-      "displayName": "Release Monado standalone",
-      "inherits": "service-release",
-      "cacheVariables": {
-        "XRT_FEATURE_SERVICE": "OFF"
-      }
-    },
-    {
-      "name": "service-debug-optimized",
-      "displayName": "Debug Monado service with optimizations",
-      "inherits": "service-debug",
-      "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "-g -march=native -O3 -fno-omit-frame-pointer",
-        "CMAKE_C_FLAGS": "-g -march=native -O3 -fno-omit-frame-pointer",
-        "SANITIZE_UNDEFINED": "OFF"
-      }
-    },
-    {
-      "name": "standalone-debug-optimized",
-      "displayName": "Debug Monado standalone with optimizations",
-      "inherits": "service-debug-optimized",
-      "cacheVariables": {
-        "XRT_FEATURE_SERVICE": "OFF"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "default",
-      "displayName": "Build and install",
-      "configurePreset": "default",
-      "targets": "install"
-    }
-  ]
+    "configurePresets": [
+        {
+            "name": "default",
+            "inherits": "service-debug",
+            "displayName": "Default (same as service-debug)"
+        },
+        {
+            "name": ".base-ninja",
+            "generator": "Ninja",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build"
+        },
+        {
+            "name": "service-debug",
+            "displayName": "Debug service",
+            "inherits": ".base-ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "XRT_FEATURE_SERVICE": "ON"
+            },
+            "condition": {
+                "lhs": "${hostSystemName}",
+                "type": "notEquals",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "service-debug-asan",
+            "displayName": "Debug service with sanitizers",
+            "inherits": "service-debug",
+            "cacheVariables": {
+                "SANITIZE_ADDRESS": "ON",
+                "SANITIZE_UNDEFINED": "ON"
+            }
+        },
+        {
+            "name": "inproc-debug",
+            "displayName": "Debug in-process",
+            "inherits": ".base-ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "XRT_FEATURE_SERVICE": "OFF"
+            }
+        },
+        {
+            "name": "service-release",
+            "displayName": "Release service",
+            "inherits": "service-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_DOC": "ON",
+                "BUILD_DOC_EXTRACT_ALL": "ON"
+            },
+            "condition": {
+                "lhs": "${hostSystemName}",
+                "type": "notEquals",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "inproc-release",
+            "displayName": "Release in-process",
+            "inherits": "inproc-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_DOC": "ON",
+                "BUILD_DOC_EXTRACT_ALL": "ON"
+            }
+        },
+        {
+            "name": "service-relwithdebinfo",
+            "displayName": "RelWithDebInfo service",
+            "inherits": "service-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            },
+            "condition": {
+                "lhs": "${hostSystemName}",
+                "type": "notEquals",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "inproc-relwithdebinfo",
+            "displayName": "RelWithDebInfo in-process",
+            "inherits": "inproc-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "displayName": "Build and install",
+            "configurePreset": "default",
+            "targets": "install"
+        }
+    ]
 }
