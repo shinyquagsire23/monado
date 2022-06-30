@@ -10,6 +10,7 @@
 
 #include "util/u_debug.h"
 #include "xrt/xrt_config_drivers.h"
+#include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 
 #include "util/u_builders.h"
@@ -118,7 +119,8 @@ create_index_optical_hand_tracker(struct u_system_devices *usysd,
 
 
 	if (finder.xfs == NULL) {
-		return NULL;
+		U_LOG_W("Couldn't find Index camera at all. Is it plugged in?");
+		return false;
 	}
 
 	bool old_rgb = debug_get_bool_option_ht_use_old_rgb();
@@ -168,10 +170,14 @@ create_index_optical_hand_tracker(struct u_system_devices *usysd,
 	u_sink_simple_queue_create(&usysd->xfctx, tmp, &tmp);
 
 	struct xrt_fs_mode *modes = NULL;
-	uint32_t count;
+	uint32_t count = 0;
 
 	xrt_fs_enumerate_modes(finder.xfs, &modes, &count);
 
+	if (count == 0) {
+		U_LOG_W("Index camera has no modes?");
+		goto error;
+	}
 
 	bool found_mode = false;
 	uint32_t selected_mode = 0;
@@ -189,10 +195,21 @@ create_index_optical_hand_tracker(struct u_system_devices *usysd,
 
 	free(modes);
 
-	xrt_fs_stream_start(finder.xfs, tmp, XRT_FS_CAPTURE_TYPE_TRACKING, selected_mode);
+	bool ret = xrt_fs_stream_start(finder.xfs, tmp, XRT_FS_CAPTURE_TYPE_TRACKING, selected_mode);
+
+	if (!ret) {
+		U_LOG_E("Couldn't start camera. Has something else claimed it?");
+		goto error;
+	}
 
 	*out_hand_tracker = hand_tracker_device;
 	return true;
+
+error:
+
+	xrt_frame_context_destroy_nodes(&usysd->xfctx);
+	xrt_device_destroy(&hand_tracker_device);
+	return false;
 }
 
 #endif
