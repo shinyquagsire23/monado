@@ -611,6 +611,36 @@ v4l2_update_controls(struct v4l2_fs *vid)
 }
 
 
+bool
+v4l2_fs_setup_format(struct v4l2_fs *vid)
+{
+	if (vid->fd == -1) {
+		V4L2_ERROR(vid, "error: Device not opened!");
+		return false;
+	}
+
+
+	struct v4l2_source_descriptor *desc = &vid->descriptors[vid->selected];
+
+	struct v4l2_format v_format;
+	U_ZERO(&v_format);
+	v_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	v_format.fmt.pix.width = desc->stream.width;
+	v_format.fmt.pix.height = desc->stream.height;
+	v_format.fmt.pix.pixelformat = desc->stream.format;
+	v_format.fmt.pix.field = V4L2_FIELD_ANY;
+	if (vid->has.extended_format) {
+		v_format.fmt.pix.priv = V4L2_PIX_FMT_PRIV_MAGIC;
+	}
+
+	if (ioctl(vid->fd, VIDIOC_S_FMT, &v_format) < 0) {
+		V4L2_ERROR(vid, "Could not set up format!");
+		return false;
+	}
+	return true;
+}
+
+
 /*
  *
  * Exported functions.
@@ -665,6 +695,12 @@ v4l2_fs_stream_start(struct xrt_fs *xfs,
 	vid->sink = xs;
 	vid->is_running = true;
 	vid->capture_type = capture_type;
+
+	if (!v4l2_fs_setup_format(vid)) {
+		vid->is_running = false;
+		return false;
+	}
+
 	if (pthread_create(&vid->stream_thread, NULL, v4l2_fs_mainloop, xfs)) {
 		vid->is_running = false;
 		V4L2_ERROR(vid, "error: Could not create thread");
@@ -818,25 +854,7 @@ v4l2_fs_mainloop(void *ptr)
 		return NULL;
 	}
 
-	// set up our capture format
-
 	struct v4l2_source_descriptor *desc = &vid->descriptors[vid->selected];
-
-	struct v4l2_format v_format;
-	U_ZERO(&v_format);
-	v_format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	v_format.fmt.pix.width = desc->stream.width;
-	v_format.fmt.pix.height = desc->stream.height;
-	v_format.fmt.pix.pixelformat = desc->stream.format;
-	v_format.fmt.pix.field = V4L2_FIELD_ANY;
-	if (vid->has.extended_format) {
-		v_format.fmt.pix.priv = V4L2_PIX_FMT_PRIV_MAGIC;
-	}
-
-	if (ioctl(vid->fd, VIDIOC_S_FMT, &v_format) < 0) {
-		V4L2_ERROR(vid, "could not set up format!");
-		return NULL;
-	}
 
 	// set up our buffers - prefer userptr (client alloc) vs mmap (kernel
 	// alloc)
