@@ -125,6 +125,7 @@ create_image_views(struct comp_target_swapchain *cts)
 		vk_create_view(                 //
 		    vk,                         // vk_bundle
 		    cts->base.images[i].handle, // image
+		    VK_IMAGE_VIEW_TYPE_2D,      // type
 		    cts->surface.format.format, // format
 		    subresource_range,          // subresource_range
 		    &cts->base.images[i].view); // out_view

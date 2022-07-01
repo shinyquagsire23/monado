@@ -216,6 +216,13 @@ verify_quad_layer(struct xrt_compositor *xc,
 		                 layer_index, quad->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
+	if (sc->face_count != 1) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 1, got %u)",
+		                 layer_index, sc->face_count);
+	}
+
 	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) swapchain has not been released!",
@@ -282,6 +289,13 @@ verify_depth_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->views[%i]->next<XrCompositionLayerDepthInfoKHR>.subImage."
 		                 "imageArrayIndex == %u) Invalid swapchain array index for projection layer (%u).",
 		                 layer_index, i, depth->subImage.imageArrayIndex, sc->array_layer_count);
+	}
+
+	if (sc->face_count != 1) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 1, got %u)",
+		                 layer_index, sc->face_count);
 	}
 
 	if (is_rect_neg(&depth->subImage.imageRect)) {
@@ -408,6 +422,13 @@ verify_projection_layer(struct xrt_compositor *xc,
 			                 layer_index, i, view->subImage.imageArrayIndex, sc->array_layer_count);
 		}
 
+		if (sc->face_count != 1) {
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+			                 "(frameEndInfo->layers[%u]->views[%i]->subImage.swapchain) Invalid swapchain "
+			                 "face count (expected 1, got %u)",
+			                 layer_index, i, sc->face_count);
+		}
+
 		if (is_rect_neg(&view->subImage.imageRect)) {
 			return oxr_error(log, XR_ERROR_SWAPCHAIN_RECT_INVALID,
 			                 "(frameEndInfo->layers[%u]->views[%i]-"
@@ -493,6 +514,13 @@ verify_cube_layer(struct xrt_compositor *xc,
 		                 layer_index, cube->imageArrayIndex, sc->array_layer_count);
 	}
 
+	if (sc->face_count != 6) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 6, got %u)",
+		                 layer_index, sc->face_count);
+	}
+
 	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers[%u]->swapchain) swapchain has not been released!", layer_index);
@@ -553,6 +581,13 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for cylinder layer (%u).",
 		                 layer_index, cylinder->subImage.imageArrayIndex, sc->array_layer_count);
+	}
+
+	if (sc->face_count != 1) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 1, got %u)",
+		                 layer_index, sc->face_count);
 	}
 
 	if (!sc->released.yes) {
@@ -652,6 +687,13 @@ verify_equirect1_layer(struct xrt_compositor *xc,
 		                 layer_index, equirect->subImage.imageArrayIndex, sc->array_layer_count);
 	}
 
+	if (sc->face_count != 1) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 1, got %u)",
+		                 layer_index, sc->face_count);
+	}
+
 	if (!sc->released.yes) {
 		return oxr_error(log, XR_ERROR_LAYER_INVALID,
 		                 "(frameEndInfo->layers[%u]->subImage.swapchain) swapchain has not been released!",
@@ -734,6 +776,13 @@ verify_equirect2_layer(struct xrt_compositor *xc,
 		                 "(frameEndInfo->layers[%u]->subImage.imageArrayIndex == %u) Invalid swapchain array "
 		                 "index for equirect layer (%u).",
 		                 layer_index, equirect->subImage.imageArrayIndex, sc->array_layer_count);
+	}
+
+	if (sc->face_count != 1) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
+		                 "(frameEndInfo->layers[%u]->subImage.swapchain) Invalid swapchain face count "
+		                 "(expected 1, got %u)",
+		                 layer_index, sc->face_count);
 	}
 
 	if (!sc->released.yes) {

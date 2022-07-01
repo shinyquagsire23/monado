@@ -782,6 +782,7 @@ vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampl
 VkResult
 vk_create_view(struct vk_bundle *vk,
                VkImage image,
+               VkImageViewType type,
                VkFormat format,
                VkImageSubresourceRange subresource_range,
                VkImageView *out_view);
@@ -792,6 +793,7 @@ vk_create_view(struct vk_bundle *vk,
 VkResult
 vk_create_view_swizzle(struct vk_bundle *vk,
                        VkImage image,
+                       VkImageViewType type,
                        VkFormat format,
                        VkImageSubresourceRange subresource_range,
                        VkComponentMapping components,

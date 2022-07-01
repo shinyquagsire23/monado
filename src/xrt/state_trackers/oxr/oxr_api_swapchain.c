@@ -61,6 +61,10 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	OXR_VERIFY_ARG_NOT_ZERO(&log, createInfo->width);
 	OXR_VERIFY_ARG_NOT_ZERO(&log, createInfo->height);
 
+	if (createInfo->faceCount != 1 && createInfo->faceCount != 6) {
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "faceCount must be 1 or 6");
+	}
+
 	// Short hand.
 	struct oxr_instance *inst = sess->sys->inst;
 

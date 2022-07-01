@@ -164,6 +164,10 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	}
 #endif
 
+	if (info->face_count == 6) {
+		image_create_flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
+
 	VkImageCreateInfo create_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 	    .pNext = next_chain,
@@ -172,7 +176,7 @@ create_image(struct vk_bundle *vk, const struct xrt_swapchain_create_info *info,
 	    .format = image_format,
 	    .extent = {.width = info->width, .height = info->height, .depth = 1},
 	    .mipLevels = info->mip_count,
-	    .arrayLayers = info->array_size,
+	    .arrayLayers = info->array_size * info->face_count,
 	    .samples = VK_SAMPLE_COUNT_1_BIT,
 	    .tiling = VK_IMAGE_TILING_OPTIMAL,
 	    .usage = image_usage,

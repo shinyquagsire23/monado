@@ -127,6 +127,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	VkFormat image_view_format = (VkFormat)info->format;
 	VkImageAspectFlagBits image_view_aspect = vk_csci_get_image_view_aspect(image_view_format, info->bits);
 
+	VkImageViewType image_view_type = info->face_count == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
 
 	for (uint32_t i = 0; i < image_count; i++) {
 		sc->images[i].views.alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
@@ -143,13 +144,14 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 			    .aspectMask = image_view_aspect,
 			    .baseMipLevel = 0,
 			    .levelCount = 1,
-			    .baseArrayLayer = layer,
-			    .layerCount = 1,
+			    .baseArrayLayer = layer * info->face_count,
+			    .layerCount = info->face_count,
 			};
 
 			vk_create_view(                         //
 			    vk,                                 // vk
 			    sc->vkic.images[i].handle,          // image
+			    image_view_type,                    // type
 			    image_view_format,                  // format
 			    subresource_range,                  // subresource_range
 			    &sc->images[i].views.alpha[layer]); // out_view
@@ -157,6 +159,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 			vk_create_view_swizzle(                    //
 			    vk,                                    // vk
 			    sc->vkic.images[i].handle,             // image
+			    image_view_type,                       // type
 			    image_view_format,                     // format
 			    subresource_range,                     // subresource_range
 			    components,                            // components
@@ -185,7 +188,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	    .baseMipLevel = 0,
 	    .levelCount = 1,
 	    .baseArrayLayer = 0,
-	    .layerCount = info->array_size,
+	    .layerCount = info->array_size * info->face_count,
 	};
 
 	for (uint32_t i = 0; i < image_count; i++) {

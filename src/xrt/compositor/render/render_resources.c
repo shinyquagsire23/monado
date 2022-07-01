@@ -293,6 +293,7 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 	VkImage image = VK_NULL_HANDLE;
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImageView image_view = VK_NULL_HANDLE;
+	VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_2D;
 
 	C(vk_create_image_simple(                                         //
 	    vk,                                                           // vk_bundle
@@ -313,6 +314,7 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 	C(vk_create_view(      //
 	    vk,                // vk_bundle
 	    image,             // image
+	    view_type,         // type
 	    format,            // format
 	    subresource_range, // subresource_range
 	    &image_view));     // out_image_view
@@ -595,6 +597,7 @@ render_resources_init(struct render_resources *r,
 		C(vk_create_view(                   //
 		    vk,                             // vk_bundle
 		    r->scratch.color.image,         // image
+		    VK_IMAGE_VIEW_TYPE_2D,          // type
 		    format,                         // format
 		    subresource_range,              // subresource_range
 		    &r->scratch.color.image_view)); // out_view

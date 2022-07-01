@@ -936,6 +936,7 @@ vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampl
 VkResult
 vk_create_view(struct vk_bundle *vk,
                VkImage image,
+               VkImageViewType type,
                VkFormat format,
                VkImageSubresourceRange subresource_range,
                VkImageView *out_view)
@@ -947,12 +948,13 @@ vk_create_view(struct vk_bundle *vk,
 	    .a = VK_COMPONENT_SWIZZLE_A,
 	};
 
-	return vk_create_view_swizzle(vk, image, format, subresource_range, components, out_view);
+	return vk_create_view_swizzle(vk, image, type, format, subresource_range, components, out_view);
 }
 
 VkResult
 vk_create_view_swizzle(struct vk_bundle *vk,
                        VkImage image,
+                       VkImageViewType type,
                        VkFormat format,
                        VkImageSubresourceRange subresource_range,
                        VkComponentMapping components,
@@ -964,7 +966,7 @@ vk_create_view_swizzle(struct vk_bundle *vk,
 	VkImageViewCreateInfo imageView = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 	    .image = image,
-	    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+	    .viewType = type,
 	    .format = format,
 	    .components = components,
 	    .subresourceRange = subresource_range,

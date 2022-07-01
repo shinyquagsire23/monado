@@ -2071,6 +2071,9 @@ struct oxr_swapchain
 	//! For 1 is 2D texture, greater then 1 2D array texture.
 	uint32_t array_layer_count;
 
+	//! The number of cubemap faces.  6 for cubemaps, 1 otherwise.
+	uint32_t face_count;
+
 	struct
 	{
 		enum oxr_image_state state;

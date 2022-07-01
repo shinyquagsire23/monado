@@ -421,8 +421,8 @@ _init_frame_buffer(struct comp_layer_renderer *self, VkFormat format, VkRenderPa
 	    .layerCount = 1,
 	};
 
-	res =
-	    vk_create_view(vk, self->framebuffers[eye].image, format, subresource_range, &self->framebuffers[eye].view);
+	res = vk_create_view(vk, self->framebuffers[eye].image, VK_IMAGE_VIEW_TYPE_2D, format, subresource_range,
+	                     &self->framebuffers[eye].view);
 
 	vk_check_error("vk_create_view", res, false);
 
