@@ -35,7 +35,7 @@ else()
 		)
 endif()
 
-if(NOT MSVC)
+if(NOT WIN32)
 	# Force the main "negotiate" symbol's inclusion
 	# and use a version script to ensure that's the only one we expose.
 	set_property(
