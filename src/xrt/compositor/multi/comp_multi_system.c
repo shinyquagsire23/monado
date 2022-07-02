@@ -227,7 +227,7 @@ log_frame_time_diff(uint64_t frame_time_ns, uint64_t display_time_ns)
 }
 
 static void
-transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_time_ns)
+transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_time_ns, int64_t system_frame_id)
 {
 	COMP_TRACE_MARKER();
 
@@ -235,27 +235,20 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 
 	struct multi_compositor *array[MULTI_MAX_CLIENTS] = {0};
 
+	// To mark latching.
+	uint64_t now_ns = os_monotonic_get_ns();
+
 	size_t count = 0;
 	for (size_t k = 0; k < ARRAY_SIZE(array); k++) {
-		if (msc->clients[k] == NULL) {
-			continue;
-		}
+		struct multi_compositor *mc = msc->clients[k];
 
-		array[count++] = msc->clients[k];
-
-		// Even if it's not shown, make sure that frames are delivered.
-		multi_compositor_deliver_any_frames(msc->clients[k], display_time_ns);
-	}
-
-	// Sort the stack array
-	qsort(array, count, sizeof(struct multi_compositor *), overlay_sort_func);
-
-	for (size_t k = 0; k < count; k++) {
-		struct multi_compositor *mc = array[k];
-
+		// Array can be empty
 		if (mc == NULL) {
 			continue;
 		}
+
+		// Even if it's not shown, make sure that frames are delivered.
+		multi_compositor_deliver_any_frames(mc, display_time_ns);
 
 		// None of the data in this slot is valid, don't check access it.
 		if (!mc->delivered.active) {
@@ -272,6 +265,20 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 			U_LOG_W("Session is visible but not active.");
 			continue;
 		}
+
+		// The list_and_timing_lock is held when callign this function.
+		multi_compositor_latch_frame_locked(mc, now_ns, system_frame_id);
+
+		array[count++] = msc->clients[k];
+	}
+
+	// Sort the stack array
+	qsort(array, count, sizeof(struct multi_compositor *), overlay_sort_func);
+
+	// Copy all active layers.
+	for (size_t k = 0; k < count; k++) {
+		struct multi_compositor *mc = array[k];
+		assert(mc != NULL);
 
 		uint64_t frame_time_ns = mc->delivered.display_time_ns;
 		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
@@ -486,7 +493,7 @@ multi_main_loop(struct multi_system_compositor *msc)
 
 		// Make sure that the clients doesn't go away while we transfer layers.
 		os_mutex_lock(&msc->list_and_timing_lock);
-		transfer_layers_locked(msc, predicted_display_time_ns);
+		transfer_layers_locked(msc, predicted_display_time_ns, frame_id);
 		os_mutex_unlock(&msc->list_and_timing_lock);
 
 		xrt_comp_layer_commit(xc, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);

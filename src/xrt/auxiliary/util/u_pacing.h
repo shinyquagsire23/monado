@@ -365,6 +365,30 @@ struct u_pacing_app
 	void (*mark_gpu_done)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns);
 
 	/*!
+	 * Latch a frame for rendering for delivery to the native compositor,
+	 * may be called multiple times for the same frame should the app be on
+	 * a frame cadence that is lower then the native compositor.
+	 *
+	 * @param     upa             App pacer struct.
+	 * @param[in] frame_id        The frame ID of the latched frame.
+	 * @param[in] when_ns         Time when the latching happened.
+	 * @param[in] system_frame_id The ID of the system frame that is
+	 *                            latching the app's frame.
+	 */
+	void (*latched)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, int64_t system_frame_id);
+
+	/*!
+	 * Mark a frame as completely retired, will never be latched (used by
+	 * the native compositor again) as a new frame has been latched or a
+	 * shutdown condition has been met.
+	 *
+	 * @param     upa                 App pacer struct.
+	 * @param[in] frame_id            The frame ID of the latched frame.
+	 * @param[in] when_ns             Time when the latching happened.
+	 */
+	void (*retired)(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns);
+
+	/*!
 	 * Add a new sample point from the main render loop.
 	 *
 	 * This is called in the main renderer loop that tightly submits frames to the
@@ -484,6 +508,34 @@ u_pa_info(struct u_pacing_app *upa,
           uint64_t extra_ns)
 {
 	upa->info(upa, predicted_display_time_ns, predicted_display_period_ns, extra_ns);
+}
+
+/*!
+ * @copydoc u_pacing_app::latched
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pa_latched(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, int64_t system_frame_id)
+{
+	upa->latched(upa, frame_id, when_ns, system_frame_id);
+}
+
+/*!
+ * @copydoc u_pacing_app::retired
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_app
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pa_retired(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+{
+	upa->retired(upa, frame_id, when_ns);
 }
 
 /*!

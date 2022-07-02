@@ -68,6 +68,7 @@ struct multi_layer_entry
  */
 struct multi_layer_slot
 {
+	int64_t frame_id;
 	uint64_t display_time_ns; //!< When should this be shown, @see XrFrameEndInfo::displayTime.
 	enum xrt_blend_mode env_blend_mode;
 	uint32_t layer_count;
@@ -216,6 +217,16 @@ multi_compositor_push_event(struct multi_compositor *mc, const union xrt_composi
  */
 void
 multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t display_time_ns);
+
+/*!
+ * Makes the current delivered frame as latched, called by the render thread.
+ * The list_and_timing_lock is held when this function is called.
+ *
+ * @ingroup comp_multi
+ * @private @memberof multi_compositor
+ */
+void
+multi_compositor_latch_frame_locked(struct multi_compositor *mc, uint64_t when_ns, int64_t system_frame_id);
 
 
 /*

@@ -44,6 +44,7 @@ enum u_pa_state
 	U_RT_PREDICTED,
 	U_RT_BEGUN,
 	U_RT_DELIVERED,
+	U_RT_GPU_DONE,
 };
 
 struct u_pa_frame
@@ -414,6 +415,7 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 
 	// Update all data.
 	f->when.gpu_done_ns = when_ns;
+	f->state = U_RT_GPU_DONE;
 
 
 	/*
@@ -449,6 +451,25 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 
 	// Write out tracing data.
 	do_tracing(pa, f);
+}
+
+static void
+pa_latched(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, int64_t system_frame_id)
+{
+	struct pacing_app *pa = pacing_app(upa);
+
+	(void)pa;
+}
+
+static void
+pa_retired(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
+{
+	struct pacing_app *pa = pacing_app(upa);
+
+	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == frame_id);
+	assert(f->state == U_RT_GPU_DONE || f->state == U_RT_DELIVERED);
 
 	// Reset the frame.
 	f->state = U_PA_READY;
@@ -483,6 +504,8 @@ pa_create(int64_t session_id, struct u_pacing_app **out_upa)
 	pa->base.mark_discarded = pa_mark_discarded;
 	pa->base.mark_delivered = pa_mark_delivered;
 	pa->base.mark_gpu_done = pa_mark_gpu_done;
+	pa->base.latched = pa_latched;
+	pa->base.retired = pa_retired;
 	pa->base.info = pa_info;
 	pa->base.destroy = pa_destroy;
 	pa->session_id = session_id;

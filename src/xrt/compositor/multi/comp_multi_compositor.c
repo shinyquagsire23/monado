@@ -42,9 +42,18 @@
  *
  */
 
+
+/*!
+ * Clear a slot, need to have the list_and_timing_lock held.
+ */
 static void
-slot_clear(struct multi_layer_slot *slot)
+slot_clear_locked(struct multi_compositor *mc, struct multi_layer_slot *slot)
 {
+	if (slot->active) {
+		uint64_t now_ns = os_monotonic_get_ns();
+		u_pa_retired(mc->upa, slot->frame_id, now_ns);
+	}
+
 	for (size_t i = 0; i < slot->layer_count; i++) {
 		for (size_t k = 0; k < ARRAY_SIZE(slot->layers[i].xscs); k++) {
 			xrt_swapchain_reference(&slot->layers[i].xscs[k], NULL);
@@ -54,15 +63,28 @@ slot_clear(struct multi_layer_slot *slot)
 	U_ZERO(slot);
 }
 
+/*!
+ * Clear a slot, need to have the list_and_timing_lock held.
+ */
 static void
-slot_move_and_clear(struct multi_layer_slot *dst, struct multi_layer_slot *src)
+slot_move_into_cleared(struct multi_layer_slot *dst, struct multi_layer_slot *src)
 {
-	slot_clear(dst);
+	assert(!dst->active);
 
 	// All references are kept.
 	*dst = *src;
 
 	U_ZERO(src);
+}
+
+/*!
+ * Move a slot into a cleared slot, must be cleared before.
+ */
+static void
+slot_move_and_clear_locked(struct multi_compositor *mc, struct multi_layer_slot *dst, struct multi_layer_slot *src)
+{
+	slot_clear_locked(mc, dst);
+	slot_move_into_cleared(dst, src);
 }
 
 
@@ -224,9 +246,18 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 		os_mutex_lock(&mc->slot_lock);
 	}
 
-	slot_move_and_clear(&mc->scheduled, &mc->progress);
-
 	os_mutex_unlock(&mc->slot_lock);
+
+	/*
+	 * Need to take list_and_timing_lock before slot_lock because slot_lock
+	 * is taken in multi_compositor_deliver_any_frames with list_and_timing_lock
+	 * held to stop clients from going away.
+	 */
+	os_mutex_lock(&mc->msc->list_and_timing_lock);
+	os_mutex_lock(&mc->slot_lock);
+	slot_move_and_clear_locked(mc, &mc->scheduled, &mc->progress);
+	os_mutex_unlock(&mc->slot_lock);
+	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 }
 
 static void *
@@ -638,6 +669,7 @@ multi_compositor_layer_begin(struct xrt_compositor *xc,
 	U_ZERO(&mc->progress);
 
 	mc->progress.active = true;
+	mc->progress.frame_id = frame_id;
 	mc->progress.display_time_ns = display_time_ns;
 	mc->progress.env_blend_mode = env_blend_mode;
 
@@ -866,9 +898,11 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	os_thread_helper_destroy(&mc->wait_thread.oth);
 
 	// We are now off the rendering list, clear slots for any swapchains.
-	slot_clear(&mc->progress);
-	slot_clear(&mc->scheduled);
-	slot_clear(&mc->delivered);
+	os_mutex_lock(&mc->msc->list_and_timing_lock);
+	slot_clear_locked(mc, &mc->progress);
+	slot_clear_locked(mc, &mc->scheduled);
+	slot_clear_locked(mc, &mc->delivered);
+	os_mutex_unlock(&mc->msc->list_and_timing_lock);
 
 	// Does null checking.
 	u_pa_destroy(&mc->upa);
@@ -893,10 +927,16 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
 	}
 
 	if (time_is_greater_then_or_within_half_ms(display_time_ns, mc->scheduled.display_time_ns)) {
-		slot_move_and_clear(&mc->delivered, &mc->scheduled);
+		slot_move_and_clear_locked(mc, &mc->delivered, &mc->scheduled);
 	}
 
 	os_mutex_unlock(&mc->slot_lock);
+}
+
+void
+multi_compositor_latch_frame_locked(struct multi_compositor *mc, uint64_t when_ns, int64_t system_frame_id)
+{
+	u_pa_latched(mc->upa, mc->delivered.frame_id, when_ns, system_frame_id);
 }
 
 xrt_result_t
