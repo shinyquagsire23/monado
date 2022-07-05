@@ -56,11 +56,12 @@ TEST_CASE("Pose interpolation works")
 	struct xrt_pose res = {};
 	math_pose_interpolate(&a, &b, 0.5, &res);
 
-	CHECK(res.position.x == Approx(0));
-	CHECK(res.position.y == Approx(0));
-	CHECK(res.position.z == Approx(0));
-	CHECK(res.orientation.x == Approx(0));
-	CHECK(res.orientation.x == Approx(0));
-	CHECK(res.orientation.y == Approx(0));
-	CHECK(res.orientation.w == Approx(1));
+	float e = std::numeric_limits<float>::epsilon();
+	CHECK(res.position.x == Approx(0).margin(e));
+	CHECK(res.position.y == Approx(0).margin(e));
+	CHECK(res.position.z == Approx(0).margin(e));
+	CHECK(res.orientation.x == Approx(0).margin(e));
+	CHECK(res.orientation.x == Approx(0).margin(e));
+	CHECK(res.orientation.y == Approx(0).margin(e));
+	CHECK(res.orientation.w == Approx(1).margin(e));
 }
