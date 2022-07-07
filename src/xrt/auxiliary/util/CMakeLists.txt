@@ -80,6 +80,8 @@ add_library(
 	u_trace_marker.h
 	u_var.cpp
 	u_var.h
+	u_vector.cpp
+	u_vector.h
 	u_config_json.c
 	u_config_json.h
 	u_verify.h

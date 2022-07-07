@@ -21,6 +21,7 @@ set(tests
 	tests_pacing
 	tests_quatexpmap
 	tests_rational
+	tests_vector
 	tests_worker
 	tests_pose
 	)
