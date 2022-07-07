@@ -29,6 +29,7 @@
 #include "main/comp_settings.h"
 #include "main/comp_renderer.h"
 
+struct comp_window_peek;
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,6 +105,9 @@ struct comp_compositor
 
 	//! Are we mirroring any of the views to the debug gui? If so, turn off the fast path.
 	bool mirroring_to_debug_gui;
+
+	//! On screen window to display the content of the HMD.
+	struct comp_window_peek *peek;
 
 	/*!
 	 * @brief Data exclusive to the begin_frame/end_frame for computing an

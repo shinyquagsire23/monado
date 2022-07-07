@@ -60,6 +60,10 @@
 #include "util/comp_vulkan.h"
 #include "main/comp_compositor.h"
 
+#ifdef XRT_FEATURE_WINDOW_PEEK
+#include "main/comp_window_peek.h"
+#endif
+
 #include "multi/comp_multi_interface.h"
 
 #include <math.h>
@@ -344,7 +348,7 @@ compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphic
 	 * We have a fast path for single projection layer that goes directly
 	 * to the distortion shader, so no need to use the layer renderer.
 	 */
-	bool fast_path = can_do_one_projection_layer_fast_path(c) && !c->mirroring_to_debug_gui;
+	bool fast_path = can_do_one_projection_layer_fast_path(c) && !c->mirroring_to_debug_gui && !c->peek;
 	c->base.slot.one_projection_layer_fast_path = fast_path;
 
 
@@ -419,6 +423,10 @@ compositor_destroy(struct xrt_compositor *xc)
 	comp_swapchain_garbage_collect(&c->base.cscgc);
 
 	comp_renderer_destroy(&c->r);
+
+#ifdef XRT_FEATURE_WINDOW_PEEK
+	comp_window_peek_destroy(&c->peek);
+#endif
 
 	render_resources_close(&c->nr);
 
@@ -1124,10 +1132,15 @@ compositor_init_renderer(struct comp_compositor *c)
 	}
 
 	c->r = comp_renderer_create(c);
+
+#ifdef XRT_FEATURE_WINDOW_PEEK
+	c->peek = comp_window_peek_create(c);
+#else
+	c->peek = NULL;
+#endif
+
 	return c->r != NULL;
 }
-
-
 
 xrt_result_t
 xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)

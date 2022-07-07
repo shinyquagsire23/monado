@@ -27,3 +27,4 @@
 #cmakedefine XRT_FEATURE_SLAM
 #cmakedefine XRT_FEATURE_TRACING
 #cmakedefine XRT_FEATURE_CLIENT_DEBUG_GUI
+#cmakedefine XRT_FEATURE_WINDOW_PEEK

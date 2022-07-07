@@ -31,6 +31,9 @@
 
 #include "main/comp_layer_renderer.h"
 
+#ifdef XRT_FEATURE_WINDOW_PEEK
+#include "main/comp_window_peek.h"
+#endif
 
 #include "vk/vk_helpers.h"
 #include "vk/vk_image_readback_to_xf_pool.h"
@@ -518,9 +521,13 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 
 	VkImageUsageFlags image_usage = 0;
 	if (r->settings->use_compute) {
-		image_usage = VK_IMAGE_USAGE_STORAGE_BIT;
+		image_usage |= VK_IMAGE_USAGE_STORAGE_BIT;
 	} else {
-		image_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	}
+
+	if (c->peek) {
+		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
 
 	comp_target_create_images(           //
@@ -1537,6 +1544,26 @@ comp_renderer_draw(struct comp_renderer *r)
 	} else {
 		dispatch_graphics(r, &rr);
 	}
+
+#ifdef XRT_FEATURE_WINDOW_PEEK
+	if (c->peek) {
+		switch (c->peek->eye) {
+		case COMP_WINDOW_PEEK_EYE_LEFT:
+			comp_window_peek_blit(c->peek, r->lr->framebuffers[0].image, r->lr->extent.width,
+			                      r->lr->extent.height);
+			break;
+		case COMP_WINDOW_PEEK_EYE_RIGHT:
+			comp_window_peek_blit(c->peek, r->lr->framebuffers[1].image, r->lr->extent.width,
+			                      r->lr->extent.height);
+			break;
+		case COMP_WINDOW_PEEK_EYE_BOTH:
+			/* TODO: display the undistorted image */
+			comp_window_peek_blit(c->peek, c->target->images[r->acquired_buffer].handle, c->target->width,
+			                      c->target->height);
+			break;
+		}
+	}
+#endif
 
 	renderer_present_swapchain_image(r, c->frame.rendering.desired_present_time_ns,
 	                                 c->frame.rendering.present_slop_ns);
