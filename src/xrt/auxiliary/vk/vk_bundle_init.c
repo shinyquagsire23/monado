@@ -433,34 +433,34 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 }
 
 static VkResult
-find_graphics_queue(struct vk_bundle *vk, uint32_t *out_graphics_queue)
+find_graphics_queue_family(struct vk_bundle *vk, uint32_t *out_graphics_queue_family)
 {
 	/* Find the first graphics queue */
-	uint32_t queue_count = 0;
+	uint32_t queue_family_count = 0;
 	uint32_t i = 0;
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, NULL);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_family_count, NULL);
 
-	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_count);
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_family_count);
 
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, queue_family_props);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_family_count, queue_family_props);
 
-	if (queue_count == 0) {
+	if (queue_family_count == 0) {
 		VK_DEBUG(vk, "Failed to get queue properties");
 		goto err_free;
 	}
 
-	for (i = 0; i < queue_count; i++) {
+	for (i = 0; i < queue_family_count; i++) {
 		if (queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			break;
 		}
 	}
 
-	if (i >= queue_count) {
+	if (i >= queue_family_count) {
 		VK_DEBUG(vk, "No graphics queue found");
 		goto err_free;
 	}
 
-	*out_graphics_queue = i;
+	*out_graphics_queue_family = i;
 
 	free(queue_family_props);
 
@@ -472,38 +472,47 @@ err_free:
 }
 
 static VkResult
-find_compute_only_queue(struct vk_bundle *vk, uint32_t *out_compute_queue)
+find_compute_queue_family(struct vk_bundle *vk, uint32_t *out_compute_queue_family)
 {
-	/* Find the first graphics queue */
-	uint32_t queue_count = 0;
+	/* Find the "best" compute queue (prefer compute-only queues) */
+	uint32_t queue_family_count = 0;
 	uint32_t i = 0;
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, NULL);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_family_count, NULL);
 
-	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_count);
+	VkQueueFamilyProperties *queue_family_props = U_TYPED_ARRAY_CALLOC(VkQueueFamilyProperties, queue_family_count);
 
-	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_count, queue_family_props);
+	vk->vkGetPhysicalDeviceQueueFamilyProperties(vk->physical_device, &queue_family_count, queue_family_props);
 
-	if (queue_count == 0) {
+	if (queue_family_count == 0) {
 		VK_DEBUG(vk, "Failed to get queue properties");
 		goto err_free;
 	}
 
-	for (i = 0; i < queue_count; i++) {
-		if (queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+	for (i = 0; i < queue_family_count; i++) {
+		if (~queue_family_props[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
 			continue;
 		}
 
-		if (queue_family_props[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+		if (~queue_family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			break;
 		}
 	}
 
-	if (i >= queue_count) {
-		VK_DEBUG(vk, "No compute only queue found");
-		goto err_free;
+	if (i >= queue_family_count) {
+		/* If there's no compute-only queue, just find any queue that supports compute */
+		for (i = 0; i < queue_family_count; i++) {
+			if (queue_family_props[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+				break;
+			}
+		}
+
+		if (i >= queue_family_count) {
+			VK_DEBUG(vk, "No compatible compute queue family found");
+			goto err_free;
+		}
 	}
 
-	*out_compute_queue = i;
+	*out_compute_queue_family = i;
 
 	free(queue_family_props);
 
@@ -853,9 +862,9 @@ vk_create_device(struct vk_bundle *vk,
 	 */
 
 	if (only_compute) {
-		ret = find_compute_only_queue(vk, &vk->queue_family_index);
+		ret = find_compute_queue_family(vk, &vk->queue_family_index);
 	} else {
-		ret = find_graphics_queue(vk, &vk->queue_family_index);
+		ret = find_graphics_queue_family(vk, &vk->queue_family_index);
 	}
 
 	if (ret != VK_SUCCESS) {
