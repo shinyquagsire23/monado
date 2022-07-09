@@ -144,6 +144,7 @@ enum u_var_kind
 	U_VAR_KIND_SINK_DEBUG,
 	U_VAR_KIND_LOG_LEVEL,
 	U_VAR_KIND_RO_TEXT,
+	U_VAR_KIND_RO_FTEXT,
 	U_VAR_KIND_RO_I32,
 	U_VAR_KIND_RO_U32,
 	U_VAR_KIND_RO_F32,
@@ -251,6 +252,7 @@ u_var_force_on(void);
 	ADD_FUNC(sink_debug, struct u_sink_debug, SINK_DEBUG)                                                          \
 	ADD_FUNC(log_level, enum u_logging_level, LOG_LEVEL)                                                           \
 	ADD_FUNC(ro_text, const char, RO_TEXT)                                                                         \
+	ADD_FUNC(ro_ftext, const char, RO_FTEXT)                                                                       \
 	ADD_FUNC(ro_i32, int32_t, RO_I32)                                                                              \
 	ADD_FUNC(ro_u32, uint32_t, RO_I32)                                                                             \
 	ADD_FUNC(ro_f32, float, RO_F32)                                                                                \
