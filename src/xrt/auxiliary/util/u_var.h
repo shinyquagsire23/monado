@@ -140,6 +140,16 @@ struct u_var_curve
 	const char *ylabel;        //!< Label of the Y axis
 };
 
+struct u_var_curves
+{
+	struct u_var_curve curves[16];
+	int curve_count;
+
+	// These override individual curve axis labels
+	const char *xlabel; //!< Label of the X axis
+	const char *ylabel; //!< Label of the Y axis
+};
+
 /*!
  * What kind of variable is this tracking.
  */
@@ -181,6 +191,7 @@ enum u_var_kind
 	U_VAR_KIND_HISTOGRAM_F32,
 	U_VAR_KIND_DRAGGABLE_U16,
 	U_VAR_KIND_CURVE,
+	U_VAR_KIND_CURVES,
 };
 
 #define U_VAR_NAME_STRING_SIZE 256
@@ -290,7 +301,8 @@ u_var_force_on(void);
 	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)                                             \
 	ADD_FUNC(draggable_u16, struct u_var_draggable_u16, DRAGGABLE_U16)                                             \
 	ADD_FUNC(histogram_f32, struct u_var_histogram_f32, HISTOGRAM_F32)                                             \
-	ADD_FUNC(curve, struct u_var_curve, CURVE)
+	ADD_FUNC(curve, struct u_var_curve, CURVE)                                                                     \
+	ADD_FUNC(curves, struct u_var_curves, CURVES)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM) void u_var_add_##SUFFIX(void *, TYPE *, const char *);
 

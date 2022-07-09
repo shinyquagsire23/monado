@@ -271,6 +271,24 @@ on_curve_var(const char *name, void *ptr)
 }
 
 static void
+on_curves_var(const char *name, void *ptr)
+{
+	struct u_var_curves *cs = (struct u_var_curves *)ptr;
+	ImVec2 size = {igGetWindowContentRegionWidth(), 256};
+
+	bool shown = ImPlot_BeginPlot(name, cs->xlabel, cs->ylabel, size, 0, 0, 0, 0, 0);
+	if (!shown) {
+		return;
+	}
+
+	for (int i = 0; i < cs->curve_count; i++) {
+		struct u_var_curve *c = &cs->curves[i];
+		ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+	}
+	ImPlot_EndPlot();
+}
+
+static void
 on_draggable_f32_var(const char *name, void *ptr)
 {
 	struct u_var_draggable_f32 *d = (struct u_var_draggable_f32 *)ptr;
@@ -420,6 +438,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_DRAGGABLE_U16: on_draggable_u16_var(name, ptr); break;
 	case U_VAR_KIND_HISTOGRAM_F32: on_histogram_f32_var(name, ptr); break;
 	case U_VAR_KIND_CURVE: on_curve_var(name, ptr); break;
+	case U_VAR_KIND_CURVES: on_curves_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }
