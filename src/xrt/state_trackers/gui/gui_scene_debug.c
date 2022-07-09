@@ -175,16 +175,16 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 	ImPlotAxisFlags y2_flags = 0;
 	ImPlotAxisFlags y3_flags = 0;
 
-	ImVec2 size = {1024, 256};
+	ImVec2 size = {igGetWindowContentRegionWidth(), 256};
 	bool shown = ImPlot_BeginPlot(name, "time", "value", size, flags, x_flags, y_flags, y2_flags, y3_flags);
 	if (!shown) {
 		return;
 	}
 
 	size_t num = m_ff_vec3_f32_get_num(ff);
+	ImPlot_PlotLineG("z", plot_z, &state, num, 0); // ZXY order to match RGB colors with default color map
 	ImPlot_PlotLineG("x", plot_x, &state, num, 0);
 	ImPlot_PlotLineG("y", plot_y, &state, num, 0);
-	ImPlot_PlotLineG("z", plot_z, &state, num, 0);
 
 	ImPlot_EndPlot();
 }
