@@ -42,7 +42,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(max_speed, "EUROC_MAX_SPEED", false)
 DEBUG_GET_ONCE_FLOAT_OPTION(speed, "EUROC_SPEED", 1.0f)
 DEBUG_GET_ONCE_BOOL_OPTION(paused, "EUROC_PAUSED", false)
 DEBUG_GET_ONCE_BOOL_OPTION(send_all_imus_first, "EUROC_SEND_ALL_IMUS_FIRST", false)
-DEBUG_GET_ONCE_BOOL_OPTION(user_source_ts, "EUROC_USER_SOURCE_TS", false)
+DEBUG_GET_ONCE_BOOL_OPTION(use_source_ts, "EUROC_USE_SOURCE_TS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(play_from_start, "EUROC_PLAY_FROM_START", false)
 DEBUG_GET_ONCE_BOOL_OPTION(print_progress, "EUROC_PRINT_PROGRESS", false)
 
@@ -917,7 +917,7 @@ euroc_player_fill_default_config_for(struct euroc_player_config *config, const c
 	playback.speed = debug_get_float_option_speed();
 	playback.paused = debug_get_bool_option_paused();
 	playback.send_all_imus_first = debug_get_bool_option_send_all_imus_first();
-	playback.use_source_ts = debug_get_bool_option_user_source_ts();
+	playback.use_source_ts = debug_get_bool_option_use_source_ts();
 	playback.play_from_start = debug_get_bool_option_play_from_start();
 	playback.print_progress = debug_get_bool_option_print_progress();
 
