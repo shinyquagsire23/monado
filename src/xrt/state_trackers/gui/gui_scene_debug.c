@@ -245,6 +245,31 @@ on_histogram_f32_var(const char *name, void *ptr)
 	igPlotHistogramFloatPtr(name, h->values, h->count, 0, NULL, FLT_MAX, FLT_MAX, zero, sizeof(float));
 }
 
+
+static ImPlotPoint
+curve_var_implot_getter(void *ptr, int i)
+{
+	struct u_var_curve *c = (struct u_var_curve *)ptr;
+	struct u_var_curve_point point = c->getter(c->data, i);
+	ImPlotPoint implot_point = {point.x, point.y};
+	return implot_point;
+}
+
+static void
+on_curve_var(const char *name, void *ptr)
+{
+	struct u_var_curve *c = (struct u_var_curve *)ptr;
+	ImVec2 size = {igGetWindowContentRegionWidth(), 256};
+
+	bool shown = ImPlot_BeginPlot(name, c->xlabel, c->ylabel, size, 0, 0, 0, 0, 0);
+	if (!shown) {
+		return;
+	}
+
+	ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+	ImPlot_EndPlot();
+}
+
 static void
 on_draggable_f32_var(const char *name, void *ptr)
 {
@@ -394,6 +419,7 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_COMBO: on_combo_var(name, ptr); break;
 	case U_VAR_KIND_DRAGGABLE_U16: on_draggable_u16_var(name, ptr); break;
 	case U_VAR_KIND_HISTOGRAM_F32: on_histogram_f32_var(name, ptr); break;
+	case U_VAR_KIND_CURVE: on_curve_var(name, ptr); break;
 	default: igLabelText(name, "Unknown tag '%i'", kind); break;
 	}
 }

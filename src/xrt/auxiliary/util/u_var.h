@@ -121,6 +121,25 @@ struct u_var_histogram_f32
 	float height;  //!< Widget height or 0 for auto
 };
 
+struct u_var_curve_point
+{
+	// Using doubles like ImPlotPoint
+	double x;
+	double y;
+};
+
+typedef struct u_var_curve_point (*u_var_curve_getter)(void *data, int i);
+
+struct u_var_curve
+{
+	u_var_curve_getter getter; //!< Getter of 2D points for the curve
+	void *data;                //!< User data for `getter`
+	int count;                 //!< Number of points to draw; param i < count
+	const char *label;         //!< Curve name
+	const char *xlabel;        //!< Label of the X axis
+	const char *ylabel;        //!< Label of the Y axis
+};
+
 /*!
  * What kind of variable is this tracking.
  */
@@ -161,6 +180,7 @@ enum u_var_kind
 	U_VAR_KIND_COMBO,
 	U_VAR_KIND_HISTOGRAM_F32,
 	U_VAR_KIND_DRAGGABLE_U16,
+	U_VAR_KIND_CURVE,
 };
 
 #define U_VAR_NAME_STRING_SIZE 256
@@ -269,7 +289,8 @@ u_var_force_on(void);
 	ADD_FUNC(combo, struct u_var_combo, COMBO)                                                                     \
 	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)                                             \
 	ADD_FUNC(draggable_u16, struct u_var_draggable_u16, DRAGGABLE_U16)                                             \
-	ADD_FUNC(histogram_f32, struct u_var_histogram_f32, HISTOGRAM_F32)
+	ADD_FUNC(histogram_f32, struct u_var_histogram_f32, HISTOGRAM_F32)                                             \
+	ADD_FUNC(curve, struct u_var_curve, CURVE)
 
 #define ADD_FUNC(SUFFIX, TYPE, ENUM) void u_var_add_##SUFFIX(void *, TYPE *, const char *);
 
