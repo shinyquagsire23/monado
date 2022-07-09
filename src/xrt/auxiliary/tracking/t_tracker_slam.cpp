@@ -30,6 +30,7 @@
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/version.hpp>
 
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -69,17 +70,21 @@ DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLA
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
 DEBUG_GET_ONCE_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
 DEBUG_GET_ONCE_BOOL_OPTION(slam_timing_stat, "SLAM_TIMING_STAT", true)
+DEBUG_GET_ONCE_BOOL_OPTION(slam_features_stat, "SLAM_FEATURES_STAT", true)
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
 constexpr int UI_TIMING_POSE_COUNT = 192;
+constexpr int UI_FEATURES_POSE_COUNT = 192;
 constexpr int UI_GTDIFF_POSE_COUNT = 192;
 constexpr int NUM_CAMS = 2; //!< This should be used as little as possible to allow setups that are not stereo
 
+using std::deque;
 using std::ifstream;
 using std::make_shared;
 using std::map;
 using std::ofstream;
+using std::pair;
 using std::shared_ptr;
 using std::string;
 using std::to_string;
@@ -279,6 +284,50 @@ public:
 	}
 };
 
+//! Writes feature information specific to a particular estimated pose
+class FeaturesWriter
+{
+public:
+	bool enabled; // Modified through UI
+
+private:
+	string directory;
+	string filename;
+	ofstream file;
+	bool created = false;
+
+	void
+	create()
+	{
+		create_directories(directory);
+		file = ofstream{directory + "/" + filename};
+		file << "#timestamp, cam0 feature count, cam1 feature count" CSV_EOL;
+		file << std::fixed << std::setprecision(CSV_PRECISION);
+	}
+
+
+public:
+	FeaturesWriter(const string &dir, const string &fn, bool e) : enabled(e), directory(dir), filename(fn) {}
+
+	void
+	push(timepoint_ns ts, const vector<int> &counts)
+	{
+		if (!enabled) {
+			return;
+		}
+
+		if (!created) {
+			created = true;
+			create();
+		}
+
+		file << ts;
+		for (int count : counts) {
+			file << "," << count;
+		}
+		file << CSV_EOL;
+	}
+};
 /*!
  * Main implementation of @ref xrt_tracked_slam. This is an adapter class for
  * SLAM tracking that wraps an external SLAM implementation.
@@ -359,10 +408,11 @@ struct TrackerSlam
 	// Stats and metrics
 
 	// CSV writers for offline analysis (using pointers because of container_of)
-	TimingWriter *slam_times_writer;    //!< Timestamps of the pipeline for performance analysis
-	TrajectoryWriter *slam_traj_writer; //!< Estimated poses from the SLAM system
-	TrajectoryWriter *pred_traj_writer; //!< Predicted poses
-	TrajectoryWriter *filt_traj_writer; //!< Predicted and filtered poses
+	TimingWriter *slam_times_writer;      //!< Timestamps of the pipeline for performance analysis
+	FeaturesWriter *slam_features_writer; //!< Feature tracking information for analysis
+	TrajectoryWriter *slam_traj_writer;   //!< Estimated poses from the SLAM system
+	TrajectoryWriter *pred_traj_writer;   //!< Predicted poses
+	TrajectoryWriter *filt_traj_writer;   //!< Predicted and filtered poses
 
 	//! Tracker timing info for performance evaluation
 	struct
@@ -380,6 +430,36 @@ struct TrackerSlam
 		string joined_columns;              //!< Column names as a null separated string
 		struct u_var_button enable_btn;     //!< Toggle tracker timing reports
 	} timing;
+
+	//! Tracker feature tracking info
+	struct Features
+	{
+		struct FeatureCounter
+		{
+			//! Feature count for each frame timestamp for this camera.
+			//! @note Harmless race condition over this as the UI might read this while it's being written
+			deque<pair<timepoint_ns, int>> entries{};
+
+			//! Persitently stored camera name for display in the UI
+			string cam_name;
+
+			void
+			addFeatureCount(timepoint_ns ts, int count)
+			{
+				entries.emplace_back(ts, count);
+				if (entries.size() > UI_FEATURES_POSE_COUNT) {
+					entries.pop_front();
+				}
+			}
+		};
+
+		vector<FeatureCounter> fcs; //!< Store feature count info for each camera
+		u_var_curves fcs_ui;        //!< Display of `fcs` in UI
+
+		bool ext_available = false;     //!< Whether the SLAM system supports the features extension
+		bool ext_enabled = false;       //!< Whether the features extension is enabled
+		struct u_var_button enable_btn; //!< Toggle extension
+	} features;
 
 	//! Ground truth related fields
 	struct
@@ -403,6 +483,8 @@ struct TrackerSlam
 static void
 timing_ui_setup(TrackerSlam &t)
 {
+	u_var_add_ro_ftext(&t, "\n%s", "Tracker timing");
+
 	// Setup toggle button
 	static const char *msg[2] = {"[OFF] Enable timing", "[ON] Disable timing"};
 	u_var_button_cb cb = [](void *t_ptr) {
@@ -484,6 +566,103 @@ timing_ui_push(TrackerSlam &t, const pose &p)
 
 /*
  *
+ * Feature information functionality
+ *
+ */
+
+static void
+features_ui_setup(TrackerSlam &t)
+{
+	// We can't do anything useful if the system doesn't implement the feature
+	if (!t.features.ext_available) {
+		return;
+	}
+
+	u_var_add_ro_ftext(&t, "\n%s", "Tracker features");
+
+	// Setup toggle button
+	static const char *msg[2] = {"[OFF] Enable features info", "[ON] Disable features info"};
+	u_var_button_cb cb = [](void *t_ptr) {
+		TrackerSlam *t = (TrackerSlam *)t_ptr;
+		u_var_button &btn = t->features.enable_btn;
+		bool &e = t->features.ext_enabled;
+		e = !e;
+		snprintf(btn.label, sizeof(btn.label), "%s", msg[e]);
+		const auto params = make_shared<FPARAMS_EPEF>(e);
+		shared_ptr<void> _;
+		t->slam->use_feature(F_ENABLE_POSE_EXT_FEATURES, params, _);
+	};
+	t.features.enable_btn.cb = cb;
+	t.features.enable_btn.disabled = !t.features.ext_available;
+	t.features.enable_btn.ptr = &t;
+	u_var_add_button(&t, &t.features.enable_btn, msg[t.features.ext_enabled]);
+
+	// Setup graph
+
+	u_var_curve_getter getter = [](void *fs_ptr, int i) -> u_var_curve_point {
+		auto *fs = (TrackerSlam::Features::FeatureCounter *)fs_ptr;
+		timepoint_ns now = os_monotonic_get_ns();
+
+		size_t size = fs->entries.size();
+		if (size == 0) {
+			return {0, 0};
+		}
+
+		int last_idx = size - 1;
+		if (i > last_idx) {
+			i = last_idx;
+		}
+
+		auto [ts, count] = fs->entries.at(last_idx - i);
+		return {time_ns_to_s(now - ts), double(count)};
+	};
+
+	t.features.fcs_ui.curve_count = NUM_CAMS;
+	t.features.fcs_ui.xlabel = "Last seconds";
+	t.features.fcs_ui.ylabel = "Number of features";
+
+	t.features.fcs.resize(NUM_CAMS);
+	for (int i = 0; i < NUM_CAMS; i++) {
+		auto &fc = t.features.fcs[i];
+		fc.cam_name = "Cam" + to_string(i);
+
+		auto &fc_ui = t.features.fcs_ui.curves[i];
+		fc_ui.count = UI_FEATURES_POSE_COUNT;
+		fc_ui.data = &fc;
+		fc_ui.getter = getter;
+		fc_ui.label = fc.cam_name.c_str();
+	}
+
+	u_var_add_curves(&t, &t.features.fcs_ui, "Feature count");
+}
+
+static vector<int>
+features_ui_push(TrackerSlam &t, const pose &ppp)
+{
+	if (!t.features.ext_available) {
+		return {};
+	}
+
+	shared_ptr<pose_extension> ext = ppp.find_pose_extension(pose_ext_type::FEATURES);
+	if (!ext) {
+		return {};
+	}
+
+	pose_ext_features pef = *std::static_pointer_cast<pose_ext_features>(ext);
+
+	// Push to the UI graph
+	vector<int> fcs{};
+	for (size_t i = 0; i < pef.features_per_cam.size(); i++) {
+		int count = pef.features_per_cam.at(i).size();
+		t.features.fcs.at(i).addFeatureCount(ppp.timestamp, count);
+		fcs.push_back(count);
+	}
+
+	return fcs;
+}
+
+/*
+ *
  * Ground truth functionality
  *
  */
@@ -562,6 +741,7 @@ gt2xr_pose(const xrt_pose &gt_origin, const xrt_pose &gt_pose)
 static void
 gt_ui_setup(TrackerSlam &t)
 {
+	u_var_add_ro_ftext(&t, "\n%s", "Tracker groundtruth");
 	t.gt.diff_ui.values.data = t.gt.diffs_mm;
 	t.gt.diff_ui.values.length = UI_GTDIFF_POSE_COUNT;
 	t.gt.diff_ui.values.index_ptr = &t.gt.diff_idx;
@@ -638,6 +818,11 @@ flush_poses(TrackerSlam &t)
 		if (t.timing.ext_enabled) {
 			auto tss = timing_ui_push(t, np);
 			t.slam_times_writer->push(tss);
+		}
+
+		if (t.features.ext_enabled) {
+			vector feat_count = features_ui_push(t, np);
+			t.slam_features_writer->push(nts, feat_count);
 		}
 
 		dequeued = t.slam->try_dequeue_pose(tracked_pose);
@@ -797,11 +982,14 @@ setup_ui(TrackerSlam &t)
 	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
 
 	u_var_add_gui_header(&t, NULL, "Stats");
+	u_var_add_ro_ftext(&t, "\n%s", "Record to CSV files");
 	u_var_add_bool(&t, &t.slam_traj_writer->enabled, "Record tracked trajectory");
 	u_var_add_bool(&t, &t.pred_traj_writer->enabled, "Record predicted trajectory");
 	u_var_add_bool(&t, &t.filt_traj_writer->enabled, "Record filtered trajectory");
 	u_var_add_bool(&t, &t.slam_times_writer->enabled, "Record tracker times");
+	u_var_add_bool(&t, &t.slam_features_writer->enabled, "Record feature count");
 	timing_ui_setup(t);
+	features_ui_setup(t);
 	// Later, gt_ui_setup will setup the tracking error UI if ground truth becomes available
 }
 
@@ -1029,6 +1217,7 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	os_thread_helper_destroy(&t_ptr->oth);
 	delete t.gt.trajectory;
 	delete t.slam_times_writer;
+	delete t.slam_features_writer;
 	delete t.slam_traj_writer;
 	delete t.pred_traj_writer;
 	delete t.filt_traj_writer;
@@ -1073,6 +1262,7 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 	config->write_csvs = debug_get_bool_option_slam_write_csvs();
 	config->csv_path = debug_get_option_slam_csv_path();
 	config->timing_stat = debug_get_bool_option_slam_timing_stat();
+	config->features_stat = debug_get_bool_option_slam_features_stat();
 	config->stereo_calib = NULL;
 	config->imu_calib = NULL;
 	config->extra_calib = NULL;
@@ -1182,10 +1372,24 @@ t_slam_create(struct xrt_frame_context *xfctx,
 		t.timing.ext_enabled = enable_timing_extension;
 	}
 
+	// Setup features extension
+	bool has_features_extension = t.slam->supports_feature(F_ENABLE_POSE_EXT_FEATURES);
+	t.features.ext_available = has_features_extension;
+	if (has_features_extension) {
+		bool enable_features_extension = config->features_stat;
+
+		const auto params = make_shared<FPARAMS_EPET>(enable_features_extension);
+		shared_ptr<void> _;
+		t.slam->use_feature(F_ENABLE_POSE_EXT_FEATURES, params, _);
+
+		t.features.ext_enabled = enable_features_extension;
+	}
+
 	// Setup CSV files
 	bool write_csvs = config->write_csvs;
 	string dir = config->csv_path;
 	t.slam_times_writer = new TimingWriter{dir, "timing.csv", write_csvs, t.timing.columns};
+	t.slam_features_writer = new FeaturesWriter{dir, "features.csv", write_csvs};
 	t.slam_traj_writer = new TrajectoryWriter{dir, "tracking.csv", write_csvs};
 	t.pred_traj_writer = new TrajectoryWriter{dir, "prediction.csv", write_csvs};
 	t.filt_traj_writer = new TrajectoryWriter{dir, "filtering.csv", write_csvs};
