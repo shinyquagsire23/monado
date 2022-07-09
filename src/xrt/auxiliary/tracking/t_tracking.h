@@ -469,6 +469,7 @@ struct t_slam_tracker_config
 	enum t_slam_prediction_type prediction; //!< Which level of prediction to use
 	bool write_csvs;                        //!< Whether to enable CSV writers from the start for later analysis
 	const char *csv_path;                   //!< Path to write CSVs to
+	bool timing_stat;                       //!< Enable timing metric in external system
 
 	// Instead of a slam_config file you can set custom calibration data
 	const struct t_stereo_camera_calibration *stereo_calib; //!< Camera calibration data

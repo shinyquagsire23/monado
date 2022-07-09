@@ -68,21 +68,21 @@ DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", fal
 DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_SL))
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
 DEBUG_GET_ONCE_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
+DEBUG_GET_ONCE_BOOL_OPTION(slam_timing_stat, "SLAM_TIMING_STAT", true)
 
 //! Namespace for the interface to the external SLAM tracking system
 namespace xrt::auxiliary::tracking::slam {
 constexpr int UI_TIMING_POSE_COUNT = 192;
 constexpr int UI_GTDIFF_POSE_COUNT = 192;
+constexpr int NUM_CAMS = 2; //!< This should be used as little as possible to allow setups that are not stereo
 
 using std::ifstream;
 using std::make_shared;
-using std::make_unique;
 using std::map;
 using std::ofstream;
 using std::shared_ptr;
 using std::string;
 using std::to_string;
-using std::unique_ptr;
 using std::vector;
 using std::filesystem::create_directories;
 using Trajectory = map<timepoint_ns, xrt_pose>;
@@ -367,6 +367,8 @@ struct TrackerSlam
 	//! Tracker timing info for performance evaluation
 	struct
 	{
+		bool ext_available = false;         //!< Whether the SLAM system supports the timing extension
+		bool ext_enabled = false;           //!< Whether the timing extension is enabled
 		float dur_ms[UI_TIMING_POSE_COUNT]; //!< Timing durations in ms
 		int idx = 0;                        //!< Index of latest entry in @ref dur_ms
 		u_var_combo start_ts;               //!< UI combo box to select initial timing measurement
@@ -374,9 +376,9 @@ struct TrackerSlam
 		int start_ts_idx;                   //!< Selected initial timing measurement in @ref start_ts
 		int end_ts_idx;                     //!< Selected final timing measurement in @ref end_ts
 		struct u_var_timing ui;             //!< Realtime UI for tracker durations
-		bool ext_enabled = false;           //!< Whether the SLAM system supports the timing extension
 		vector<string> columns;             //!< Column names of the measured timestamps
 		string joined_columns;              //!< Column names as a null separated string
+		struct u_var_button enable_btn;     //!< Toggle tracker timing reports
 	} timing;
 
 	//! Ground truth related fields
@@ -401,6 +403,25 @@ struct TrackerSlam
 static void
 timing_ui_setup(TrackerSlam &t)
 {
+	// Setup toggle button
+	static const char *msg[2] = {"[OFF] Enable timing", "[ON] Disable timing"};
+	u_var_button_cb cb = [](void *t_ptr) {
+		TrackerSlam *t = (TrackerSlam *)t_ptr;
+		u_var_button &btn = t->timing.enable_btn;
+		bool &e = t->timing.ext_enabled;
+		e = !e;
+		snprintf(btn.label, sizeof(btn.label), "%s", msg[e]);
+		const auto params = make_shared<FPARAMS_EPET>(e);
+		shared_ptr<void> _;
+		t->slam->use_feature(F_ENABLE_POSE_EXT_TIMING, params, _);
+	};
+	t.timing.enable_btn.cb = cb;
+	t.timing.enable_btn.disabled = !t.timing.ext_available;
+	t.timing.enable_btn.ptr = &t;
+	u_var_add_button(&t, &t.timing.enable_btn, msg[t.timing.ext_enabled]);
+
+	// Setup graph
+
 	// Construct null-separated array of options for the combo box
 	using namespace std::string_literals;
 	t.timing.joined_columns = "";
@@ -440,9 +461,8 @@ timing_ui_push(TrackerSlam &t, const pose &p)
 	vector<timepoint_ns> tss = {p.timestamp, now};
 
 	// Add extra timestamps if the SLAM tracker provides them
-	if (t.timing.ext_enabled) {
-		shared_ptr<pose_extension> ext = p.find_pose_extension(pose_ext_type::TIMING);
-		SLAM_DASSERT(ext != nullptr, "An enabled extension was null");
+	shared_ptr<pose_extension> ext = p.find_pose_extension(pose_ext_type::TIMING);
+	if (ext) {
 		pose_ext_timing pet = *std::static_pointer_cast<pose_ext_timing>(ext);
 		tss.insert(tss.begin() + 1, pet.timing.begin(), pet.timing.end());
 	}
@@ -615,8 +635,10 @@ flush_poses(TrackerSlam &t)
 		gt_ui_push(t, nts, rel.pose);
 		t.slam_traj_writer->push(nts, rel.pose);
 
-		auto tss = timing_ui_push(t, np);
-		t.slam_times_writer->push(tss);
+		if (t.timing.ext_enabled) {
+			auto tss = timing_ui_push(t, np);
+			t.slam_times_writer->push(tss);
+		}
 
 		dequeued = t.slam->try_dequeue_pose(tracked_pose);
 	}
@@ -788,7 +810,7 @@ add_camera_calibration(const TrackerSlam &t,
                        const t_stereo_camera_calibration *stereo_calib,
                        const t_slam_calib_extras *extra_calib)
 {
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < NUM_CAMS; i++) {
 		const t_camera_calibration &view = stereo_calib->view[i];
 		const auto &extra = extra_calib->cams[i];
 		const auto params = make_shared<FPARAMS_ACC>();
@@ -1050,6 +1072,7 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 	config->prediction = t_slam_prediction_type(debug_get_num_option_slam_prediction_type());
 	config->write_csvs = debug_get_bool_option_slam_write_csvs();
 	config->csv_path = debug_get_option_slam_csv_path();
+	config->timing_stat = debug_get_bool_option_slam_timing_stat();
 	config->stereo_calib = NULL;
 	config->imu_calib = NULL;
 	config->extra_calib = NULL;
@@ -1138,19 +1161,25 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	t.gt.trajectory = new Trajectory{};
 
-	// Probe for timing extension.
-	// We provide two timing columns by default, even if the external system does
-	// not support the timing extension for reporting internal timestamps.
-	t.timing.columns = {"sampled", "received_by_monado"};
-	bool has_timing_extension = t.slam->supports_feature(F_ENABLE_POSE_EXT_TIMING);
-	if (has_timing_extension) {
-		const auto params = make_shared<FPARAMS_EPET>(true);
-		shared_ptr<void> result;
-		t.slam->use_feature(FID_EPET, params, result);
-		t.timing.ext_enabled = true;
+	// Setup timing extension
 
+	// Probe for timing extension.
+	bool has_timing_extension = t.slam->supports_feature(F_ENABLE_POSE_EXT_TIMING);
+	t.timing.ext_available = has_timing_extension;
+
+	// We provide two timing columns by default, even if there is no extension support
+	t.timing.columns = {"sampled", "received_by_monado"};
+
+	if (has_timing_extension) {
+		bool enable_timing_extension = config->timing_stat;
+
+		const auto params = make_shared<FPARAMS_EPET>(enable_timing_extension);
+		shared_ptr<void> result;
+		t.slam->use_feature(F_ENABLE_POSE_EXT_TIMING, params, result);
 		vector<string> cols = *std::static_pointer_cast<FRESULT_EPET>(result);
+
 		t.timing.columns.insert(t.timing.columns.begin() + 1, cols.begin(), cols.end());
+		t.timing.ext_enabled = enable_timing_extension;
 	}
 
 	// Setup CSV files
