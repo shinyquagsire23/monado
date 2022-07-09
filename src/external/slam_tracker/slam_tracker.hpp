@@ -19,15 +19,17 @@
 #include <opencv2/core/mat.hpp>
 
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 
 namespace xrt::auxiliary::tracking::slam {
 
 // For implementation: same as IMPLEMENTATION_VERSION_*
 // For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
-constexpr int HEADER_VERSION_MAJOR = 3; //!< API Breakages
+constexpr int HEADER_VERSION_MAJOR = 4; //!< API Breakages
 constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
 constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
 
@@ -199,7 +201,7 @@ struct cam_calibration {
   double fx, fy;                    //<! Focal point
   double cx, cy;                    //<! Principal point
   std::string distortion_model;     //!< Models like: none, rt4, rt5, rt8, kb4
-  std::vector<double> distortion;   //!< Parameters for the distortion_model
+  std::vector<double> distortion{}; //!< Parameters for the distortion_model
   cv::Matx<double, 4, 4> t_imu_cam; //!< Transformation from IMU to camera
 };
 
@@ -254,10 +256,17 @@ DEFINE_FEATURE(ADD_IMU_CALIBRATION, AIC, 2, imu_calibration, void)
 /*!
  * Feature ENABLE_POSE_EXT_TIMING
  *
- * Use it after constructor but before `start()`.
+ * Enable/disable adding internal timestamps to the estimated poses.
  * Returns a vector with names for the timestamps in `pose_ext_timing`.
  */
-DEFINE_FEATURE(ENABLE_POSE_EXT_TIMING, EPET, 3, void, std::vector<std::string>)
+DEFINE_FEATURE(ENABLE_POSE_EXT_TIMING, EPET, 3, bool, std::vector<std::string>)
+
+/*!
+ * Feature ENABLE_POSE_EXT_FEATURES
+ *
+ * Enable/disable adding feature information to the estimated poses.
+ */
+DEFINE_FEATURE(ENABLE_POSE_EXT_FEATURES, EPEF, 4, bool, void)
 
 /*
  * Pose extensions
@@ -272,6 +281,7 @@ DEFINE_FEATURE(ENABLE_POSE_EXT_TIMING, EPET, 3, void, std::vector<std::string>)
 enum class pose_ext_type : int {
   UNDEFINED = 0,
   TIMING = 1,
+  FEATURES = 2,
 };
 
 struct pose_extension {
@@ -290,12 +300,79 @@ pose::find_pose_extension(pose_ext_type required_type) const {
   return pe;
 }
 
-struct pose_ext_timing : pose_extension {
-  //! Internal pipeline timestamps of interest when generating the pose. In
-  //! steady clock ns. Must have the same number of elements in the same run.
-  std::vector<std::int64_t> timestamps{};
+// Timing pose extension
+struct pose_ext_timing_data {
+  //! Internal pipeline stage timestamps of interest when generating the pose.
+  //! In steady clock ns. Must have the same number of elements in the same run.
+  std::vector<std::int64_t> timing{};
 
+  //! Names of each timing stage. Should point to static memory.
+  const std::vector<std::string> *timing_titles = nullptr;
+};
+
+struct pose_ext_timing : pose_extension, pose_ext_timing_data {
   pose_ext_timing() : pose_extension{pose_ext_type::TIMING} {}
+  pose_ext_timing(const pose_ext_timing_data &petd)
+      : pose_extension{pose_ext_type::TIMING}, pose_ext_timing_data{petd} {}
+};
+
+// Features pose extension
+struct pose_ext_features_data {
+  struct feature {
+    std::int64_t id;
+    float u;
+    float v;
+    float depth;
+  };
+
+  std::vector<std::vector<feature>> features_per_cam{};
+};
+
+struct pose_ext_features : pose_extension, pose_ext_features_data {
+  pose_ext_features() : pose_extension{pose_ext_type::FEATURES} {}
+  pose_ext_features(const pose_ext_features_data &pefd)
+      : pose_extension{pose_ext_type::FEATURES}, pose_ext_features_data{pefd} {}
+};
+
+/*!
+ * Utility object to keep track of different stats for a particular timestamp.
+ * Stats usually correspond with a particular pose extension.
+ */
+struct timestats : pose_ext_timing_data, pose_ext_features_data {
+  using ptr = std::shared_ptr<timestats>;
+
+  std::int64_t ts = -1;
+  bool timing_enabled = false;
+  bool features_enabled = false;
+
+  void addTime(const char *name, int64_t ts = INT64_MIN) {
+    if (!timing_enabled) {
+      return;
+    }
+    if (timing_titles) {
+      std::string expected = timing_titles->at(timing.size());
+      if (expected != name) {
+        std::cout << "Invalid timing stage\n";
+        std::cout << "expected: " << expected;
+        std::cout << ", got: " << name << std::endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+    if (ts == INT64_MIN) {
+      ts = std::chrono::steady_clock::now().time_since_epoch().count();
+    }
+    timing.push_back(ts);
+  }
+
+  void addFeature(size_t cam, const feature &f) {
+    if (!features_enabled) {
+      return;
+    }
+    if (cam >= features_per_cam.size()) {
+      features_per_cam.resize(cam + 1);
+    }
+    features_per_cam.at(cam).push_back(f);
+  }
 };
 
 } // namespace xrt::auxiliary::tracking::slam

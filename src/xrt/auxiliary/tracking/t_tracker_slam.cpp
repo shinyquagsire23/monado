@@ -444,7 +444,7 @@ timing_ui_push(TrackerSlam &t, const pose &p)
 		shared_ptr<pose_extension> ext = p.find_pose_extension(pose_ext_type::TIMING);
 		SLAM_DASSERT(ext != nullptr, "An enabled extension was null");
 		pose_ext_timing pet = *std::static_pointer_cast<pose_ext_timing>(ext);
-		tss.insert(tss.begin() + 1, pet.timestamps.begin(), pet.timestamps.end());
+		tss.insert(tss.begin() + 1, pet.timing.begin(), pet.timing.end());
 	}
 
 	// The two timestamps to compare in the graph
@@ -1144,8 +1144,9 @@ t_slam_create(struct xrt_frame_context *xfctx,
 	t.timing.columns = {"sampled", "received_by_monado"};
 	bool has_timing_extension = t.slam->supports_feature(F_ENABLE_POSE_EXT_TIMING);
 	if (has_timing_extension) {
+		const auto params = make_shared<FPARAMS_EPET>(true);
 		shared_ptr<void> result;
-		t.slam->use_feature(FID_EPET, nullptr, result);
+		t.slam->use_feature(FID_EPET, params, result);
 		t.timing.ext_enabled = true;
 
 		vector<string> cols = *std::static_pointer_cast<FRESULT_EPET>(result);
