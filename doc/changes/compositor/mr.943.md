@@ -5,6 +5,7 @@
 - mr.1326
 - mr.1302
 - mr.1337
+- mr.1340
 ---
 
 Full support for D3D11 client applications on Windows.

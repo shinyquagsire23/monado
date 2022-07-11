@@ -58,6 +58,14 @@ if(XRT_HAVE_EGL)
 	target_sources(comp_client PRIVATE client/comp_egl_client.c client/comp_egl_client.h)
 endif()
 
+if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
+	target_link_libraries(comp_client PRIVATE aux_d3d)
+endif()
+
+if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
+	target_sources(comp_client PRIVATE client/comp_d3d_common.cpp client/comp_d3d_common.hpp)
+endif()
+
 if(XRT_HAVE_D3D11)
 	target_sources(
 		comp_client PRIVATE client/comp_d3d11_client.cpp client/comp_d3d11_client.h
@@ -65,6 +73,7 @@ if(XRT_HAVE_D3D11)
 		)
 	target_link_libraries(comp_client PRIVATE aux_d3d)
 endif()
+
 ##
 # Util library
 #
@@ -259,7 +268,6 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	endif()
 endif()
 
-
 ###
 # Null compositor
 #
@@ -267,7 +275,6 @@ endif()
 if(XRT_FEATURE_COMPOSITOR_NULL)
 	add_subdirectory(null)
 endif()
-
 
 ###
 # Multi client compositor library

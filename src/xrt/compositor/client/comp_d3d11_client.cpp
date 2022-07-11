@@ -10,6 +10,8 @@
 
 #include "comp_d3d11_client.h"
 
+#include "comp_d3d_common.hpp"
+
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_handles.h"
@@ -44,6 +46,8 @@
 
 using namespace std::chrono_literals;
 using namespace std::chrono;
+
+using xrt::compositor::client::unique_swapchain_ref;
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
 
@@ -85,10 +89,6 @@ DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
 using unique_compositor_semaphore_ref = std::unique_ptr<
     struct xrt_compositor_semaphore,
     xrt::deleters::reference_deleter<struct xrt_compositor_semaphore, xrt_compositor_semaphore_reference>>;
-
-using unique_swapchain_ref =
-    std::unique_ptr<struct xrt_swapchain,
-                    xrt::deleters::reference_deleter<struct xrt_swapchain, xrt_swapchain_reference>>;
 
 // 0 is special
 static constexpr uint64_t kKeyedMutexKey = 0;
@@ -182,6 +182,10 @@ convertTimeoutToWindowsMilliseconds(uint64_t timeout_ns)
  */
 struct client_d3d11_swapchain_data
 {
+	explicit client_d3d11_swapchain_data(enum u_logging_level log_level) : keyed_mutex_collection(log_level) {}
+
+	xrt::compositor::client::KeyedMutexCollection keyed_mutex_collection;
+
 	//! The shared handles for all our images
 	std::vector<wil::unique_handle> handles;
 
@@ -190,16 +194,6 @@ struct client_d3d11_swapchain_data
 
 	//! Images associated with client_d3d11_compositor::comp_device
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> comp_images;
-
-	//! Keyed mutex per image associated with client_d3d11_compositor::app_device
-	std::vector<wil::com_ptr<IDXGIKeyedMutex>> app_keyed_mutex_collection;
-
-	std::vector<bool> keyed_mutex_acquired;
-
-	xrt_result_t
-	waitImage(client_d3d11_swapchain *sc, uint32_t index, uint64_t timeout_ns);
-	xrt_result_t
-	releaseImage(client_d3d11_swapchain *sc, uint32_t index);
 };
 
 /*!
@@ -267,63 +261,6 @@ formatMessage(DWORD err, char (&buf)[N])
 
 /*
  *
- * Helpers for Swapchain
- *
- */
-
-inline xrt_result_t
-client_d3d11_swapchain_data::waitImage(client_d3d11_swapchain *sc, uint32_t index, uint64_t timeout_ns)
-{
-	if (keyed_mutex_acquired[index]) {
-
-		D3D_WARN(sc->c, "Will not acquire the keyed mutex for image %" PRId32 " - it was already acquired!",
-		         index);
-		return XRT_ERROR_NO_IMAGE_AVAILABLE;
-	}
-
-	auto hr = app_keyed_mutex_collection[index]->AcquireSync(kKeyedMutexKey,
-	                                                         convertTimeoutToWindowsMilliseconds(timeout_ns));
-	if (hr == WAIT_ABANDONED) {
-		D3D_ERROR(sc->c,
-		          "Could not acquire the keyed mutex for image %" PRId32
-		          " due to it being in an inconsistent state",
-		          index);
-		return XRT_ERROR_D3D11;
-	}
-	if (hr == WAIT_TIMEOUT) {
-		return XRT_TIMEOUT;
-	}
-	if (FAILED(hr)) {
-		D3D_ERROR(sc->c, "Could not acquire the keyed mutex for image %" PRId32, index);
-		return XRT_ERROR_D3D11;
-	}
-	keyed_mutex_acquired[index] = true;
-	sc->c->app_context->Flush();
-	//! @todo this causes an error in the debug layer
-	// Discard old contents
-	// sc->c->app_context->DiscardResource(wil::com_raw_ptr(app_images[index]));
-	return XRT_SUCCESS;
-}
-
-inline xrt_result_t
-client_d3d11_swapchain_data::releaseImage(client_d3d11_swapchain *sc, uint32_t index)
-{
-	if (!keyed_mutex_acquired[index]) {
-
-		D3D_WARN(sc->c, "Will not release the keyed mutex for image %" PRId32 " - it was not acquired!", index);
-		return XRT_ERROR_D3D11;
-	}
-	auto hr = LOG_IF_FAILED(app_keyed_mutex_collection[index]->ReleaseSync(kKeyedMutexKey));
-	if (FAILED(hr)) {
-		D3D_ERROR(sc->c, "Could not release the keyed mutex for image %" PRId32, index);
-		return XRT_ERROR_D3D11;
-	}
-	sc->data->keyed_mutex_acquired[index] = false;
-	return XRT_SUCCESS;
-}
-
-/*
- *
  * Swapchain functions.
  *
  */
@@ -347,8 +284,10 @@ client_d3d11_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns
 
 	if (xret == XRT_SUCCESS) {
 		// OK, we got the image in the native compositor, now need the keyed mutex in d3d11.
-		return sc->data->waitImage(sc, index, timeout_ns);
+		xret = sc->data->keyed_mutex_collection.waitKeyedMutex(index, timeout_ns);
 	}
+
+	//! @todo discard old contents?
 	return xret;
 }
 
@@ -361,7 +300,8 @@ client_d3d11_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	xrt_result_t xret = xrt_swapchain_release_image(sc->xsc.get(), index);
 
 	if (xret == XRT_SUCCESS) {
-		return sc->data->releaseImage(sc, index);
+		// Release the keyed mutex
+		xret = sc->data->keyed_mutex_collection.releaseKeyedMutex(index);
 	}
 	return xret;
 }
@@ -439,15 +379,13 @@ try {
 	vkinfo.format = vk_format;
 
 	std::unique_ptr<struct client_d3d11_swapchain> sc = std::make_unique<struct client_d3d11_swapchain>();
-	sc->data = std::make_unique<client_d3d11_swapchain_data>();
+	sc->data = std::make_unique<client_d3d11_swapchain_data>(c->log_level);
 	auto &data = sc->data;
 	xret = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(c->comp_device), xinfo, image_count, true,
 	                                                        data->comp_images, data->handles);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
-	data->keyed_mutex_acquired.resize(image_count);
-	sc->data->app_keyed_mutex_collection.reserve(image_count);
 	data->app_images.reserve(image_count);
 
 	// Import from the handle for the app.
@@ -458,45 +396,24 @@ try {
 		// Put the image where the OpenXR state tracker can get it
 		sc->base.images[i] = image.get();
 
-		// Cache the keyed mutex interface too
-		sc->data->app_keyed_mutex_collection.emplace_back(image.query<IDXGIKeyedMutex>());
-
 		// Store the owning pointer for lifetime management
 		data->app_images.emplace_back(std::move(image));
 	}
 
-	// Populate for import
-	std::vector<xrt_image_native> xins;
-	xins.reserve(data->handles.size());
-	// Keep this around until after successful import, then detach all.
-	std::vector<wil::unique_handle> handlesForImport;
-	handlesForImport.reserve(data->handles.size());
-
-	for (const wil::unique_handle &handle : data->handles) {
-		wil::unique_handle duped{u_graphics_buffer_ref(handle.get())};
-		xrt_image_native xin;
-		xin.handle = duped.get();
-		xin.size = 0;
-		xin.use_dedicated_allocation = false; //! @todo not sure
-
-		handlesForImport.emplace_back(std::move(duped));
-		xins.emplace_back(xin);
+	// Cache the keyed mutex interface
+	xret = data->keyed_mutex_collection.init(data->app_images);
+	if (xret != XRT_SUCCESS) {
+		D3D_ERROR(c, "Error retrieving keyex mutex interfaces");
+		return xret;
 	}
 
 	// Import into the native compositor, to create the corresponding swapchain which we wrap.
-	xrt_swapchain *xsc = nullptr;
-	xret = xrt_comp_import_swapchain(&(c->xcn->base), &vkinfo, xins.data(), image_count, &xsc);
+	xret = xrt::compositor::client::importFromHandleDuplicates(
+	    *(c->xcn), data->handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
 	if (xret != XRT_SUCCESS) {
 		D3D_ERROR(c, "Error importing D3D11 swapchain into native compositor");
 		return xret;
 	}
-	// The imported swapchain took ownership of them now, release them from ownership here.
-	for (auto &h : handlesForImport) {
-		h.release();
-	}
-
-	// Let unique_ptr manage the lifetime of xsc now
-	sc->xsc.reset(xsc);
 
 	sc->base.base.destroy = client_d3d11_swapchain_destroy;
 	sc->base.base.acquire_image = client_d3d11_swapchain_acquire_image;
