@@ -145,6 +145,7 @@ _lease_finished(void *data, struct wp_drm_lease_v1 *wp_drm_lease_v1)
 
 	COMP_DEBUG(lease->w->base.base.c, "Lease has been closed");
 	lease->finished = true;
+	/* TODO handle graceful shutdown if lease is currently used */
 }
 
 static const struct wp_drm_lease_v1_listener lease_listener = {
@@ -321,9 +322,7 @@ static void
 _lease_connector_withdrawn(void *data, struct wp_drm_lease_connector_v1 *wp_drm_lease_connector_v1)
 {
 	struct direct_wayland_lease_connector *conn = data;
-	COMP_ERROR(conn->w->base.base.c, "Connector %s has been withdrawn by the compositor", conn->name);
-
-	/* TODO: handle graceful shutdown, remove the connector from the device */
+	COMP_DEBUG(conn->w->base.base.c, "Connector %s has been withdrawn by the compositor", conn->name);
 }
 
 static const struct wp_drm_lease_connector_v1_listener lease_connector_listener = {
