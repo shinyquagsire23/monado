@@ -245,6 +245,16 @@ option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAV
 option_with_deps(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" DEPENDS "NOT ANDROID")
 option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS XRT_HAVE_PERCETTO)
 
+if (XRT_FEATURE_SERVICE)
+	# Disable the client debug gui by default for out-of-proc -
+	# too many clients have problems with depending on SDL/GStreamer/etc and we rarely use it in this configuration
+	option(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" OFF)
+else()
+	# Enable the client debug gui by default for in-proc -
+	# In in-proc, the client debug gui is the same as the server debug gui, and we use it a lot in this configuration
+	option(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" ON)
+endif()
+
 # systemd detailed config
 option_with_deps(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for systemd socket activation on installation" DEPENDS XRT_HAVE_SYSTEMD)
 option_with_deps(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" DEPENDS XRT_HAVE_SYSTEMD)
@@ -475,6 +485,7 @@ message(STATUS "#    FEATURE_RENDERDOC:                    ${XRT_FEATURE_RENDERD
 message(STATUS "#    FEATURE_SERVICE:                      ${XRT_FEATURE_SERVICE}")
 message(STATUS "#    FEATURE_STEAMVR_PLUGIN:               ${XRT_FEATURE_STEAMVR_PLUGIN}")
 message(STATUS "#    FEATURE_TRACING:                      ${XRT_FEATURE_TRACING}")
+message(STATUS "#    FEATURE_CLIENT_DEBUG_GUI:             ${XRT_FEATURE_CLIENT_DEBUG_GUI}")
 message(STATUS "#")
 message(STATUS "#    DRIVER_ANDROID:      ${XRT_BUILD_DRIVER_ANDROID}")
 message(STATUS "#    DRIVER_ARDUINO:      ${XRT_BUILD_DRIVER_ARDUINO}")

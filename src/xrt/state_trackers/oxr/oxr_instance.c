@@ -48,6 +48,7 @@ DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x, "OXR_TRACKING_ORIGIN_OFFSE
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y, "OXR_TRACKING_ORIGIN_OFFSET_Y", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z, "OXR_TRACKING_ORIGIN_OFFSET_Z", 0.0f)
 
+#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
 /* ---- HACK ---- */
 extern int
 oxr_sdl2_hack_create(void **out_hack);
@@ -58,6 +59,7 @@ oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_de
 extern void
 oxr_sdl2_hack_stop(void **hack_ptr);
 /* ---- HACK ---- */
+#endif
 
 static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
@@ -78,9 +80,11 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 
 	xrt_system_devices_destroy(&inst->system.xsysd);
 
+#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_stop(&inst->hack);
 	/* ---- HACK ---- */
+#endif
 
 	xrt_instance_destroy(&inst->xinst);
 
@@ -189,9 +193,11 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
+#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_create(&inst->hack);
 	/* ---- HACK ---- */
+#endif
 
 	ret = oxr_path_init(log, inst);
 	if (ret != XR_SUCCESS) {
@@ -323,9 +329,11 @@ oxr_instance_create(struct oxr_logger *log,
 
 	u_var_add_root((void *)inst, "XrInstance", true);
 
+#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
 	/* ---- HACK ---- */
 	oxr_sdl2_hack_start(inst->hack, inst->xinst, sys->xsysd);
 	/* ---- HACK ---- */
+#endif
 
 	oxr_log(log,
 	        "Instance created\n"

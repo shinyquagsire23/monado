@@ -145,4 +145,7 @@ if(XRT_HAVE_SDL2)
 		target_link_libraries(oxr_sdl2 PRIVATE drv_qwerty drv_qwerty_includes)
 	endif()
 endif()
-target_link_libraries(${RUNTIME_TARGET} PRIVATE oxr_sdl2)
+
+if(XRT_FEATURE_CLIENT_DEBUG_GUI)
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE oxr_sdl2)
+endif()
