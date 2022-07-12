@@ -1294,6 +1294,33 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 }
 #endif
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+void
+comp_renderer_set_cube_layer(struct comp_renderer *r,
+                             uint32_t layer,
+                             struct comp_swapchain_image *image,
+                             struct xrt_layer_data *data)
+{
+
+	struct xrt_vec3 s = {1.0f, 1.0f, 1.0f};
+	struct xrt_matrix_4x4 model_matrix;
+	math_matrix_4x4_model(&data->cube.pose, &s, &model_matrix);
+
+	comp_layer_set_flip_y(r->lr->layers[layer], data->flip_y);
+
+	struct comp_render_layer *l = r->lr->layers[layer];
+	l->type = XRT_LAYER_CUBE;
+	l->visibility = data->cube.visibility;
+	l->flags = data->flags;
+	l->view_space = (data->flags & XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT) != 0;
+	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
+	l->texture_binding = r->lr->texture_binding;
+
+	comp_layer_update_descriptors(l, image->repeat_sampler,
+	                              get_image_view(image, data->flags, data->cube.sub.array_index));
+}
+#endif
+
 static void
 mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
 {

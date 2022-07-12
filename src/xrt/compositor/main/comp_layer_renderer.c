@@ -335,6 +335,7 @@ static float plane_vertices[PLANE_VERTICES * 5] = {
 	-0.5,  0.5, 0, 0, 0,
 	-0.5, -0.5, 0, 0, 1,
 };
+
 // clang-format on
 
 static bool
@@ -390,6 +391,12 @@ _render_eye(struct comp_layer_renderer *self,
 			pipeline = self->pipeline_equirect1;
 			comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout, cmd_buffer, vertex_buffer,
 			                &vp_inv, &vp_inv);
+#if defined(XRT_FEATURE_OPENXR_LAYER_CUBE)
+		} else if (self->layers[i]->type == XRT_LAYER_CUBE) {
+			pipeline = self->pipeline_cube;
+			comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout, cmd_buffer, vertex_buffer,
+			                &vp_inv, &vp_inv);
+#endif
 		} else {
 			comp_layer_draw(self->layers[i], eye, pipeline, pipeline_layout, cmd_buffer, vertex_buffer,
 			                &vp_world, &vp_eye);
@@ -527,6 +534,12 @@ _init(struct comp_layer_renderer *self,
 	if (!_init_graphics_pipeline(self, s->equirect2_vert, s->equirect2_frag, true, &self->pipeline_equirect2)) {
 		return false;
 	}
+
+#if defined(XRT_FEATURE_OPENXR_LAYER_CUBE)
+	if (!_init_graphics_pipeline(self, s->cube_vert, s->cube_frag, true, &self->pipeline_cube)) {
+		return false;
+	}
+#endif
 
 	if (!_init_vertex_buffer(self))
 		return false;
@@ -676,6 +689,9 @@ comp_layer_renderer_destroy(struct comp_layer_renderer **ptr_clr)
 	vk->vkDestroyPipeline(vk->device, self->pipeline_unpremultiplied_alpha, NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect1, NULL);
 	vk->vkDestroyPipeline(vk->device, self->pipeline_equirect2, NULL);
+#if defined(XRT_FEATURE_OPENXR_LAYER_CUBE)
+	vk->vkDestroyPipeline(vk->device, self->pipeline_cube, NULL);
+#endif
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(self->shader_modules); i++)
 		vk->vkDestroyShaderModule(vk->device, self->shader_modules[i], NULL);

@@ -21,6 +21,8 @@
 #pragma GCC diagnostic ignored "-Wnewline-eof"
 #endif
 
+#include "xrt/xrt_config_build.h"
+
 #include "shaders/clear.comp.h"
 #include "shaders/distortion.comp.h"
 #include "shaders/layer.frag.h"
@@ -31,6 +33,11 @@
 #include "shaders/equirect2.vert.h"
 #include "shaders/mesh.frag.h"
 #include "shaders/mesh.vert.h"
+
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+#include "shaders/cube.frag.h"
+#include "shaders/cube.vert.h"
+#endif
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
@@ -118,6 +125,17 @@ render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 	              sizeof(shaders_equirect2_frag), // size
 	              &s->equirect2_frag));           // out
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+	C(shader_load(vk,                        // vk_bundle
+	              shaders_cube_vert,         // data
+	              sizeof(shaders_cube_vert), // size
+	              &s->cube_vert));           // out
+	C(shader_load(vk,                        // vk_bundle
+	              shaders_cube_frag,         // data
+	              sizeof(shaders_cube_frag), // size
+	              &s->cube_frag));           // out
+#endif
+
 	C(shader_load(vk,                         // vk_bundle
 	              shaders_layer_vert,         // data
 	              sizeof(shaders_layer_vert), // size
@@ -149,6 +167,10 @@ render_shaders_close(struct render_shaders *s, struct vk_bundle *vk)
 	D(equirect1_frag);
 	D(equirect2_vert);
 	D(equirect2_frag);
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+	D(cube_vert);
+	D(cube_frag);
+#endif
 	D(layer_vert);
 	D(layer_frag);
 

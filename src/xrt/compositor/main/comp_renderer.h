@@ -110,6 +110,18 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
                                   struct xrt_layer_data *data);
 #endif
 
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+/*!
+ * @public @memberof comp_renderer
+ * @ingroup comp_main
+ */
+void
+comp_renderer_set_cube_layer(struct comp_renderer *r,
+                             uint32_t layer,
+                             struct comp_swapchain_image *image,
+                             struct xrt_layer_data *data);
+#endif
+
 /*!
  * Allocate an internal array of per-layer data with the given number of elements.
  *

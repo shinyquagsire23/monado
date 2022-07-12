@@ -283,13 +283,23 @@ do_graphics_layers(struct comp_compositor *c)
 			comp_renderer_set_equirect2_layer(c->r, i, image, data);
 		} break;
 #endif
+		case XRT_LAYER_CUBE: {
+#ifdef XRT_FEATURE_OPENXR_LAYER_CUBE
+			struct xrt_layer_cube_data *cu = &layer->data.cube;
+			struct comp_swapchain_image *image;
+			image = &layer->sc_array[0]->images[cu->sub.image_index];
+			comp_renderer_set_cube_layer(c->r, i, image, data);
+#else
+			COMP_WARN(c, "XR_KHR_composition_layer_cube support not enabled");
+#endif
+		} break;
 #ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT1
 		case XRT_LAYER_EQUIRECT1:
 #endif
 #ifndef XRT_FEATURE_OPENXR_LAYER_EQUIRECT2
 		case XRT_LAYER_EQUIRECT2:
 #endif
-		case XRT_LAYER_CUBE:
+		default:
 			// Should never end up here.
 			assert(false);
 		}

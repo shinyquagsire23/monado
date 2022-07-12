@@ -86,6 +86,9 @@ struct render_shaders
 	VkShaderModule equirect2_vert;
 	VkShaderModule equirect2_frag;
 
+	VkShaderModule cube_vert;
+	VkShaderModule cube_frag;
+
 	VkShaderModule layer_vert;
 	VkShaderModule layer_frag;
 };

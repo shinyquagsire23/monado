@@ -1034,7 +1034,7 @@ submit_projection_layer(struct oxr_session *sess,
 	return XR_SUCCESS;
 }
 
-static void
+static XrResult
 submit_cube_layer(struct oxr_session *sess,
                   struct xrt_compositor *xc,
                   struct oxr_logger *log,
@@ -1044,7 +1044,43 @@ submit_cube_layer(struct oxr_session *sess,
                   uint64_t oxr_timestamp,
                   uint64_t xrt_timestamp)
 {
-	// Not implemented
+	struct oxr_swapchain *sc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_swapchain *, cube->swapchain);
+	struct oxr_space *spc = XRT_CAST_OXR_HANDLE_TO_PTR(struct oxr_space *, cube->space);
+
+	struct xrt_layer_data data = {0};
+
+	data.type = XRT_LAYER_CUBE;
+	data.name = XRT_INPUT_GENERIC_HEAD_POSE;
+	data.timestamp = xrt_timestamp;
+	data.flags = convert_layer_flags(cube->layerFlags);
+
+	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
+		data.flags |= XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT;
+	}
+
+	data.cube.visibility = convert_eye_visibility(cube->eyeVisibility);
+
+	data.cube.sub.image_index = sc->released.index;
+	data.cube.sub.array_index = cube->imageArrayIndex;
+
+	struct xrt_pose pose = {
+	    .orientation =
+	        {
+	            .x = cube->orientation.x,
+	            .y = cube->orientation.y,
+	            .z = cube->orientation.z,
+	            .w = cube->orientation.w,
+	        },
+	    .position = XRT_VEC3_ZERO,
+	};
+
+	if (!handle_space(log, sess, spc, &pose, inv_offset, oxr_timestamp, &data.cube.pose)) {
+		return XR_SUCCESS;
+	}
+
+	CALL_CHK(xrt_comp_layer_cube(xc, head, sc->swapchain, &data));
+
+	return XR_SUCCESS;
 }
 
 static XrResult

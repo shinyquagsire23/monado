@@ -250,7 +250,6 @@ struct xrt_layer_cube_data
 	struct xrt_sub_image sub;
 
 	struct xrt_pose pose;
-	uint32_t image_array_index;
 };
 
 /*!

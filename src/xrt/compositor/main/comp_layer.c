@@ -340,9 +340,9 @@ comp_layer_draw(struct comp_render_layer *self,
 	case XRT_LAYER_QUAD:
 	case XRT_LAYER_CYLINDER:
 	case XRT_LAYER_EQUIRECT1:
-	case XRT_LAYER_EQUIRECT2: _update_mvp_matrix(self, eye, vp); break;
+	case XRT_LAYER_EQUIRECT2:
+	case XRT_LAYER_CUBE: _update_mvp_matrix(self, eye, vp); break;
 	case XRT_LAYER_STEREO_PROJECTION_DEPTH:
-	case XRT_LAYER_CUBE:
 		// Should never end up here.
 		assert(false);
 	}

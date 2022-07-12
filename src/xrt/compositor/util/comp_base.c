@@ -177,11 +177,7 @@ base_layer_cube(struct xrt_compositor *xc,
                 struct xrt_swapchain *xsc,
                 const struct xrt_layer_data *data)
 {
-#if 0
 	return do_single_layer(xc, xdev, xsc, data);
-#else
-	return XRT_SUCCESS; //! @todo Implement
-#endif
 }
 
 static xrt_result_t
