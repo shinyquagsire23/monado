@@ -175,7 +175,7 @@ get_hand_tracking(struct xrt_device *xdev,
 }
 
 static void
-set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *target = d->tracking_override.target;

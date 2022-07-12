@@ -133,7 +133,7 @@ ipc_client_device_get_view_poses(struct xrt_device *xdev,
 }
 
 static void
-ipc_client_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+ipc_client_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	struct ipc_client_device *icd = ipc_client_device(xdev);
 

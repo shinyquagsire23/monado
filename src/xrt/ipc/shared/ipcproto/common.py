@@ -69,7 +69,7 @@ class Arg:
     def get_func_argument_in(self):
         """Get the type and name of this argument as an input parameter."""
         if self.is_aggregate:
-            return self.typename + " *" + self.name
+            return "const " + self.typename + " *" + self.name
         else:
             return self.typename + " " + self.name
 

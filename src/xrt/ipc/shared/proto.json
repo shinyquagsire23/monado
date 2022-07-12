@@ -58,7 +58,7 @@
 
 	"session_create": {
 		"in": [
-			{"name": "overlay_info", "type": "const struct xrt_session_info"}
+			{"name": "overlay_info", "type": "struct xrt_session_info"}
 		]
 	},
 
@@ -132,7 +132,7 @@
 
 	"swapchain_get_properties": {
 		"in": [
-			{"name": "info", "type": "const struct xrt_swapchain_create_info"}
+			{"name": "info", "type": "struct xrt_swapchain_create_info"}
 		],
 		"out": [
 			{"name": "xsccp", "type": "struct xrt_swapchain_create_properties"}
@@ -141,7 +141,7 @@
 
 	"swapchain_create": {
 		"in": [
-			{"name": "info", "type": "const struct xrt_swapchain_create_info"}
+			{"name": "info", "type": "struct xrt_swapchain_create_info"}
 		],
 		"out": [
 			{"name": "id", "type": "uint32_t"},
@@ -154,7 +154,7 @@
 
 	"swapchain_import": {
 		"in": [
-			{"name": "info", "type": "const struct xrt_swapchain_create_info"},
+			{"name": "info", "type": "struct xrt_swapchain_create_info"},
 			{"name": "args", "type": "struct ipc_arg_swapchain_from_native"}
 		],
 		"out": [
@@ -238,7 +238,7 @@
 	"device_get_view_poses_2": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},
-			{"name": "fallback_eye_relation", "type": "const struct xrt_vec3"},
+			{"name": "fallback_eye_relation", "type": "struct xrt_vec3"},
 			{"name": "at_timestamp_ns", "type": "uint64_t"}
 		],
 		"out": [

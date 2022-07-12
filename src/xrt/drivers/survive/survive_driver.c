@@ -365,7 +365,9 @@ survive_controller_haptic_pulse(struct survive_device *survive, union xrt_output
 }
 
 static void
-survive_controller_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+survive_controller_device_set_output(struct xrt_device *xdev,
+                                     enum xrt_output_name name,
+                                     const union xrt_output_value *value)
 {
 	struct survive_device *survive = (struct survive_device *)xdev;
 

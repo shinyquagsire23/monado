@@ -125,7 +125,7 @@ qwerty_update_inputs(struct xrt_device *xd)
 }
 
 static void
-qwerty_set_output(struct xrt_device *xd, enum xrt_output_name name, union xrt_output_value *value)
+qwerty_set_output(struct xrt_device *xd, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	struct qwerty_device *qd = qwerty_device(xd);
 	float frequency = value->vibration.frequency;

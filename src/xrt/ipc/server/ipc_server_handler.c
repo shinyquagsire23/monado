@@ -654,7 +654,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 }
 
 xrt_result_t
-ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, struct ipc_app_state *client_desc)
+ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, const struct ipc_app_state *client_desc)
 {
 	ics->client_state.info = client_desc->info;
 	ics->client_state.pid = client_desc->pid;
@@ -815,7 +815,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 xrt_result_t
 ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
                             const struct xrt_swapchain_create_info *info,
-                            struct ipc_arg_swapchain_from_native *args,
+                            const struct ipc_arg_swapchain_from_native *args,
                             uint32_t *out_id,
                             const xrt_graphics_buffer_handle_t *handles,
                             uint32_t handle_count)
@@ -1135,7 +1135,7 @@ xrt_result_t
 ipc_handle_device_set_output(volatile struct ipc_client_state *ics,
                              uint32_t id,
                              enum xrt_output_name name,
-                             union xrt_output_value *value)
+                             const union xrt_output_value *value)
 {
 	// To make the code a bit more readable.
 	uint32_t device_id = id;

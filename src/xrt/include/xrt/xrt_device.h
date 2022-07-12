@@ -328,10 +328,9 @@ struct xrt_device
 	 * @param[in] xdev           The device.
 	 * @param[in] name           The output component name to set.
 	 * @param[in] value          The value to set the output to.
-	 *                           @todo make this param a pointer to const.
 	 * @see xrt_output_name
 	 */
-	void (*set_output)(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value);
+	void (*set_output)(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value);
 
 	/*!
 	 * @brief Get the per-view pose in relation to the view space.
@@ -454,7 +453,7 @@ xrt_device_get_hand_tracking(struct xrt_device *xdev,
  * @public @memberof xrt_device
  */
 static inline void
-xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+xrt_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	xdev->set_output(xdev, name, value);
 }

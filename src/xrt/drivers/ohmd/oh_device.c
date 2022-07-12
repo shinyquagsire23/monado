@@ -314,7 +314,7 @@ oh_device_update_inputs(struct xrt_device *xdev)
 }
 
 static void
-oh_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+oh_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	struct oh_device *ohd = oh_device(xdev);
 	(void)ohd;

@@ -296,7 +296,7 @@ read_controller_config(struct wmr_bt_controller *d)
 }
 
 static void
-wmr_bt_controller_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+wmr_bt_controller_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	DRV_TRACE_MARKER();
 

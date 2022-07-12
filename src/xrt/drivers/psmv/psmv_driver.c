@@ -931,7 +931,7 @@ amp_scale(struct psmv_device *psmv, float amp)
 }
 
 static void
-psmv_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, union xrt_output_value *value)
+psmv_device_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
 	struct psmv_device *psmv = psmv_device(xdev);
 
