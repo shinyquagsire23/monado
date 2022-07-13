@@ -88,8 +88,6 @@ struct comp_renderer
 		VkSemaphore present_complete;
 		VkSemaphore render_complete;
 	} semaphores;
-
-	VkQueue queue;
 	//! @}
 
 	//! @name Image-dependent members
@@ -553,14 +551,10 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	r->acquired_buffer = -1;
 	r->fenced_buffer = -1;
-	r->queue = VK_NULL_HANDLE;
 	r->semaphores.present_complete = VK_NULL_HANDLE;
 	r->semaphores.render_complete = VK_NULL_HANDLE;
 	r->rtr_array = NULL;
 
-	struct vk_bundle *vk = &r->c->base.vk;
-
-	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, 0, &r->queue);
 	renderer_init_semaphores(r);
 
 	// Try to early-allocate these, in case we can.
@@ -584,6 +578,8 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	}
 
 	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
+
+	struct vk_bundle *vk = &r->c->base.vk;
 
 	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
 	                                    XRT_FORMAT_R8G8B8X8);
@@ -643,7 +639,7 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	    .pSignalSemaphores = &r->semaphores.render_complete,
 	};
 
-	ret = vk_locked_submit(vk, r->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
+	ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
@@ -756,7 +752,7 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 
 	ret = comp_target_present(         //
 	    r->c->target,                  //
-	    r->queue,                      //
+	    r->c->base.vk.queue,           //
 	    r->acquired_buffer,            //
 	    r->semaphores.render_complete, //
 	    desired_present_time_ns,       //
