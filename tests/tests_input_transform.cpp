@@ -480,11 +480,11 @@ TEST_CASE("input_transform_dpad")
 		struct oxr_dpad_binding_modification dpad_binding_modification_val = {
 		    XR_NULL_PATH, // XrPath binding, unused at this stage
 		    {
-		        0.5f,   // float forceThreshold
-		        0.4f,   // float forceThresholdReleased
-		        0.5f,   // float centerRegion
-		        M_PI_2, // float wedgeAngle
-		        true,   // bool isSticky
+		        0.5f,          // float forceThreshold
+		        0.4f,          // float forceThresholdReleased
+		        0.5f,          // float centerRegion
+		        (float)M_PI_2, // float wedgeAngle
+		        true,          // bool isSticky
 		    }};
 		dpad_binding_modification = &dpad_binding_modification_val;
 
