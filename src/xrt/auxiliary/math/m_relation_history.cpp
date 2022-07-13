@@ -132,8 +132,8 @@ m_relation_history_get(struct m_relation_history *rh, uint64_t at_timestamp_ns, 
 
 		// We precede *it and follow *(it - 1) (which we know exists because we already handled
 		// the it = begin() case)
-		auto predecessor = *(it - 1);
-		auto successor = *it;
+		const auto &predecessor = *(it - 1);
+		const auto &successor = *it;
 
 		// Do the thing.
 		int64_t diff_before = static_cast<int64_t>(at_timestamp_ns) - predecessor.timestamp;
@@ -187,7 +187,7 @@ m_relation_history_estimate_motion(struct m_relation_history *rh,
 		return false;
 	};
 
-	float dt = time_ns_to_s(timestamp - last_time_ns);
+	float dt = (float)time_ns_to_s(timestamp - last_time_ns);
 
 	// Used to find out what values are valid in both the old relation and the new relation
 	enum xrt_space_relation_flags tmp_flags =
@@ -245,7 +245,7 @@ void
 m_relation_history_clear(struct m_relation_history *rh)
 {
 	std::unique_lock<os::Mutex> lock(rh->mutex);
-	rh->impl = {};
+	rh->impl.clear();
 }
 
 void

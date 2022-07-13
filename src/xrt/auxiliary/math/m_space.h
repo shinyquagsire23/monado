@@ -36,18 +36,14 @@ m_pose_is_identity(struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 
-	if ((p.position.x == 0.0f || p.position.x == -0.0f) &&       // x
-	    (p.position.y == 0.0f || p.position.y == -0.0f) &&       // y
-	    (p.position.z == 0.0f || p.position.z == -0.0f) &&       // z
-	    (p.orientation.x == 0.0f || p.orientation.x == -0.0f) && // x
-	    (p.orientation.y == 0.0f || p.orientation.y == -0.0f) && // y
-	    (p.orientation.z == 0.0f || p.orientation.z == -0.0f) && // z
-	    (p.orientation.w == 1.0f || p.orientation.w == -1.0f)    // w
-	) {
-		return true;
-	}
-
-	return false;
+	return ((p.position.x == 0.0f || p.position.x == -0.0f) &&       // x
+	        (p.position.y == 0.0f || p.position.y == -0.0f) &&       // y
+	        (p.position.z == 0.0f || p.position.z == -0.0f) &&       // z
+	        (p.orientation.x == 0.0f || p.orientation.x == -0.0f) && // x
+	        (p.orientation.y == 0.0f || p.orientation.y == -0.0f) && // y
+	        (p.orientation.z == 0.0f || p.orientation.z == -0.0f) && // z
+	        (p.orientation.w == 1.0f || p.orientation.w == -1.0f)    // w
+	);
 }
 
 
