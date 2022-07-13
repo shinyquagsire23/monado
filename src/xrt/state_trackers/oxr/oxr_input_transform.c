@@ -462,7 +462,7 @@ oxr_input_transform_create_chain_dpad(struct oxr_logger *log,
 	    .forceThreshold = 0.5f,
 	    .forceThresholdReleased = 0.4f,
 	    .centerRegion = 0.5f,
-	    .wedgeAngle = M_PI_2,
+	    .wedgeAngle = (float)M_PI_2,
 	    .isSticky = false,
 	};
 
