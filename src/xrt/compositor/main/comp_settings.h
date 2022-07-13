@@ -86,12 +86,6 @@ struct comp_settings
 		uint32_t height;
 	} preferred;
 
-	struct
-	{
-		//! Display wireframe instead of solid triangles.
-		bool wireframe;
-	} debug;
-
 	//! Percentage to scale the viewport by.
 	double viewport_scale;
 

@@ -20,7 +20,6 @@ DEBUG_GET_ONCE_OPTION(nvidia_display, "XRT_COMPOSITOR_FORCE_NVIDIA_DISPLAY", NUL
 DEBUG_GET_ONCE_NUM_OPTION(vk_display, "XRT_COMPOSITOR_FORCE_VK_DISPLAY", -1)
 DEBUG_GET_ONCE_BOOL_OPTION(force_xcb, "XRT_COMPOSITOR_FORCE_XCB", false)
 DEBUG_GET_ONCE_BOOL_OPTION(force_wayland, "XRT_COMPOSITOR_FORCE_WAYLAND", false)
-DEBUG_GET_ONCE_BOOL_OPTION(wireframe, "XRT_COMPOSITOR_WIREFRAME", false)
 DEBUG_GET_ONCE_NUM_OPTION(force_gpu_index, "XRT_COMPOSITOR_FORCE_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(force_client_gpu_index, "XRT_COMPOSITOR_FORCE_CLIENT_GPU_INDEX", -1)
 DEBUG_GET_ONCE_NUM_OPTION(desired_mode, "XRT_COMPOSITOR_DESIRED_MODE", -1)
@@ -78,7 +77,6 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->print_modes = debug_get_bool_option_print_modes();
 	s->selected_gpu_index = debug_get_num_option_force_gpu_index();
 	s->client_gpu_index = debug_get_num_option_force_client_gpu_index();
-	s->debug.wireframe = debug_get_bool_option_wireframe();
 	s->desired_mode = debug_get_num_option_desired_mode();
 	s->viewport_scale = debug_get_num_option_scale_percentage() / 100.0;
 
