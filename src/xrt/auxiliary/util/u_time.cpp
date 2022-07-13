@@ -42,6 +42,9 @@ extern "C" struct time_state *
 time_state_create()
 {
 	time_state *state = new (std::nothrow) time_state;
+	if (!state) {
+		return state;
+	}
 	state->offset = os_monotonic_get_ns();
 	return state;
 }

@@ -55,8 +55,8 @@ class Tracker
 public:
 	std::unordered_map<std::string, size_t> counters = {};
 	std::unordered_map<ptrdiff_t, Obj> map = {};
-	bool on;
-	bool tested;
+	bool on = false;
+	bool tested = false;
 
 public:
 	int

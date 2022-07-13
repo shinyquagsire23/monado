@@ -135,12 +135,6 @@ u_hand_joint_is_distal(enum xrt_hand_joint joint);
  * @ingroup aux_util
  */
 bool
-u_hand_joint_is_tip(enum xrt_hand_joint joint);
-
-/*!
- * @ingroup aux_util
- */
-bool
 u_hand_joint_is_thumb(enum xrt_hand_joint joint);
 
 /*!
