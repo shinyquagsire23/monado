@@ -106,16 +106,16 @@ static constexpr auto kFenceTimeout = 500ms;
  */
 struct client_d3d11_compositor
 {
-	struct xrt_compositor_d3d11 base;
+	struct xrt_compositor_d3d11 base = {};
 
 	//! Owning reference to the backing native compositor
-	struct xrt_compositor_native *xcn;
+	struct xrt_compositor_native *xcn{nullptr};
 
 	//! Just keeps COM alive while we keep references to COM things.
 	xrt::auxiliary::util::ComGuard com_guard;
 
 	//! Logging level.
-	enum u_logging_level log_level;
+	enum u_logging_level log_level = U_LOGGING_INFO;
 
 	//! Device we got from the app
 	wil::com_ptr<ID3D11Device5> app_device;
@@ -163,7 +163,7 @@ struct client_d3d11_compositor
 	/*!
 	 * The value most recently signaled on the timeline semaphore
 	 */
-	uint64_t timeline_semaphore_value;
+	uint64_t timeline_semaphore_value = 0;
 };
 
 static_assert(std::is_standard_layout<client_d3d11_compositor>::value);
