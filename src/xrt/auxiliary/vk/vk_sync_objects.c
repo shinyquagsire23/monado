@@ -73,7 +73,7 @@ vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
  *
  */
 
-bool
+XRT_CHECK_RESULT bool
 vk_can_import_and_export_timeline_semaphore(struct vk_bundle *vk)
 {
 #ifdef VK_KHR_timeline_semaphore
@@ -101,7 +101,7 @@ vk_can_import_and_export_timeline_semaphore(struct vk_bundle *vk)
  *
  */
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t *out_native)
 {
 	xrt_graphics_sync_handle_t native = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
@@ -276,7 +276,7 @@ create_semaphore_and_native(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_semaphore_and_native(struct vk_bundle *vk, VkSemaphore *out_sem, xrt_graphics_sync_handle_t *out_native)
 {
 	VkExternalSemaphoreHandleTypeFlagBits handle_type = 0;
@@ -296,7 +296,7 @@ vk_create_semaphore_and_native(struct vk_bundle *vk, VkSemaphore *out_sem, xrt_g
 }
 
 #ifdef VK_KHR_timeline_semaphore
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_timeline_semaphore_and_native(struct vk_bundle *vk,
                                         VkSemaphore *out_sem,
                                         xrt_graphics_sync_handle_t *out_native)
@@ -332,7 +332,7 @@ vk_create_timeline_semaphore_and_native(struct vk_bundle *vk,
  *
  */
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkFence *out_fence)
 {
 	VkFence fence = VK_NULL_HANDLE;
@@ -450,7 +450,7 @@ create_semaphore_from_native(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
 {
 	VkExternalSemaphoreHandleTypeFlagBits handle_type = 0;
@@ -472,7 +472,7 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
 }
 
 #ifdef VK_KHR_timeline_semaphore
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t native, VkSemaphore *out_sem)
 {
 	VkExternalSemaphoreHandleTypeFlagBits handle_type = 0;

@@ -38,7 +38,7 @@
 #define ENUM_TO_STR(r)                                                                                                 \
 	case r: return #r
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_result_string(VkResult code)
 {
 	switch (code) {
@@ -72,7 +72,7 @@ vk_result_string(VkResult code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_format_string(VkFormat code)
 {
 	switch (code) {
@@ -331,7 +331,7 @@ vk_format_string(VkFormat code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_format_feature_string(VkFormatFeatureFlagBits code)
 {
 	switch (code) {
@@ -345,7 +345,7 @@ vk_format_feature_string(VkFormatFeatureFlagBits code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code)
 {
 	switch (code) {
@@ -361,7 +361,7 @@ xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_present_mode_string(VkPresentModeKHR code)
 {
 	switch (code) {
@@ -375,7 +375,7 @@ vk_present_mode_string(VkPresentModeKHR code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_power_state_string(VkDisplayPowerStateEXT code)
 {
 	switch (code) {
@@ -386,7 +386,7 @@ vk_power_state_string(VkDisplayPowerStateEXT code)
 	}
 }
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_color_space_string(VkColorSpaceKHR code)
 {
 	switch (code) {
@@ -395,7 +395,7 @@ vk_color_space_string(VkColorSpaceKHR code)
 	}
 }
 
-bool
+XRT_CHECK_RESULT bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line)
 {
 	if (res != VK_SUCCESS) {
@@ -446,7 +446,7 @@ vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFla
 	return false;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkImage image,
                                size_t max_size,
@@ -657,7 +657,7 @@ err_image:
 	return ret;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_image_from_native(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
                             struct xrt_image_native *image_native,
@@ -896,7 +896,7 @@ get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt
 #error "Needs port"
 #endif
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_get_native_handle_from_device_memory(struct vk_bundle *vk,
                                         VkDeviceMemory device_memory,
                                         xrt_graphics_buffer_handle_t *out_handle)
@@ -1175,7 +1175,7 @@ err_buffer:
 	return ret;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 {
 	VkResult ret = VK_SUCCESS;
@@ -1231,7 +1231,7 @@ out:
 	return ret;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence)
 {
 	VkResult ret;

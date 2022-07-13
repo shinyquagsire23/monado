@@ -54,7 +54,7 @@ from_host_ticks_to_host_ns(uint64_t ticks)
  *
  */
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t *in_out_timestamps)
 {
 	VkResult ret;

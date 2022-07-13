@@ -826,7 +826,7 @@ filter_device_features(struct vk_bundle *vk,
  *
  */
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
                  bool only_compute,
@@ -992,7 +992,7 @@ vk_deinit_mutex(struct vk_bundle *vk)
 	return VK_SUCCESS;
 }
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_init_cmd_pool(struct vk_bundle *vk)
 {
 	VkCommandPoolCreateInfo cmd_pool_info = {
@@ -1017,7 +1017,7 @@ vk_init_cmd_pool(struct vk_bundle *vk)
  *
  */
 
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_init_from_given(struct vk_bundle *vk,
                    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr,
                    VkInstance instance,

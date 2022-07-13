@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "xrt/xrt_handles.h"
@@ -384,25 +385,25 @@ struct vk_buffer
  *
  */
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_result_string(VkResult code);
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_format_string(VkFormat code);
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_present_mode_string(VkPresentModeKHR code);
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_power_state_string(VkDisplayPowerStateEXT code);
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_color_space_string(VkColorSpaceKHR code);
 
-const char *
+XRT_CHECK_RESULT const char *
 vk_format_feature_string(VkFormatFeatureFlagBits code);
 
-const char *
+XRT_CHECK_RESULT const char *
 xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code);
 
 
@@ -430,7 +431,7 @@ xrt_swapchain_usage_string(enum xrt_swapchain_usage_bits code);
  *
  * @ingroup aux_vk
  */
-bool
+XRT_CHECK_RESULT bool
 vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
 /*!
@@ -587,7 +588,7 @@ struct vk_device_features
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,
                  bool only_compute,
@@ -619,7 +620,7 @@ vk_deinit_mutex(struct vk_bundle *vk);
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_init_cmd_pool(struct vk_bundle *vk);
 
 /*!
@@ -628,7 +629,7 @@ vk_init_cmd_pool(struct vk_bundle *vk);
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_init_from_given(struct vk_bundle *vk,
                    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr,
                    VkInstance instance,
@@ -690,7 +691,7 @@ vk_get_memory_type(struct vk_bundle *vk, uint32_t type_bits, VkMemoryPropertyFla
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
                                VkImage image,
                                size_t max_size,
@@ -720,7 +721,7 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_create_image_from_native(struct vk_bundle *vk,
                             const struct xrt_swapchain_create_info *info,
                             struct xrt_image_native *image_native,
@@ -740,7 +741,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_get_native_handle_from_device_memory(struct vk_bundle *vk,
                                         VkDeviceMemory device_memory,
                                         xrt_graphics_buffer_handle_t *out_handle);
@@ -863,7 +864,7 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 
 /*!
@@ -873,7 +874,7 @@ vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
  *
  * @ingroup aux_vk
  */
-VkResult
+XRT_CHECK_RESULT VkResult
 vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
 
 /*!
