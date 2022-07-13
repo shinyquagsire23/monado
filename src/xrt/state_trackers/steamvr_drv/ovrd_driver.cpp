@@ -628,7 +628,7 @@ public:
 		m_xdev->update_inputs(m_xdev);
 
 
-		for (auto in : m_input_controls) {
+		for (const auto &in : m_input_controls) {
 
 			// ovrd_log("Update %d: %s\n", i,
 			// m_controls[i].steamvr_control_path);
@@ -688,7 +688,7 @@ public:
 	GetControllerState()
 	{
 		// deprecated API
-		vr::VRControllerState_t controllerstate;
+		vr::VRControllerState_t controllerstate{};
 		return controllerstate;
 	}
 
@@ -745,20 +745,20 @@ public:
 	CDeviceDriver_Monado(struct xrt_instance *xinst, struct xrt_device *xdev) : m_xdev(xdev)
 	{
 		//! @todo latency
-		m_flSecondsFromVsyncToPhotons = 0.011;
+		m_flSecondsFromVsyncToPhotons = 0.011f;
 
 		float ns = (float)m_xdev->hmd->screens->nominal_frame_interval_ns;
-		m_flDisplayFrequency = 1. / ns * 1000. * 1000. * 1000.;
+		m_flDisplayFrequency = 1.f / ns * 1000.f * 1000.f * 1000.f;
 		ovrd_log("display frequency from device: %f\n", m_flDisplayFrequency);
 
 		// steamvr can really misbehave when freq is inf or so
 		if (m_flDisplayFrequency < 0 || m_flDisplayFrequency > 1000) {
 			ovrd_log("Setting display frequency to 60 Hz!\n");
-			m_flDisplayFrequency = 60.;
+			m_flDisplayFrequency = 60.f;
 		}
 
 		//! @todo get ipd user setting from monado session
-		float ipd_meters = 0.063;
+		float ipd_meters = 0.063f;
 		struct xrt_vec3 ipd_vec = {ipd_meters, 0, 0};
 
 		timepoint_ns now_ns = os_monotonic_get_ns();
