@@ -166,9 +166,9 @@ struct ipc_layer_slot
  *
  * ```C++
  * struct xrt_input *
- * helper(struct ipc_shared_memory *ism, uin32_t device_id, size_t input)
+ * helper(struct ipc_shared_memory *ism, uint32_t device_id, uint32_t input)
  * {
- * 	size_t index = ism->isdevs[device_id]->first_input_index + input;
+ * 	uint32_t index = ism->isdevs[device_id]->first_input_index + input;
  * 	return &ism->inputs[index];
  * }
  * ```
@@ -185,7 +185,7 @@ struct ipc_shared_memory
 	/*!
 	 * Number of elements in @ref itracks that are populated/valid.
 	 */
-	size_t itrack_count;
+	uint32_t itrack_count;
 
 	/*!
 	 * @brief Array of shared tracking origin data.
@@ -197,7 +197,7 @@ struct ipc_shared_memory
 	/*!
 	 * Number of elements in @ref isdevs that are populated/valid.
 	 */
-	size_t isdev_count;
+	uint32_t isdev_count;
 
 	/*!
 	 * @brief Array of shared data per device.
@@ -247,7 +247,7 @@ struct ipc_shared_memory
 		} views[2];
 
 		enum xrt_blend_mode blend_modes[XRT_MAX_DEVICE_BLEND_MODES];
-		size_t blend_mode_count;
+		uint32_t blend_mode_count;
 	} hmd;
 
 	struct xrt_input inputs[IPC_SHARED_MAX_INPUTS];
@@ -290,7 +290,7 @@ struct ipc_app_state
  */
 struct ipc_arg_swapchain_from_native
 {
-	size_t sizes[IPC_MAX_SWAPCHAIN_HANDLES];
+	uint32_t sizes[IPC_MAX_SWAPCHAIN_HANDLES];
 };
 
 /*!
