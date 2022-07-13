@@ -139,7 +139,7 @@ set_up_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time
 	return true;
 }
 
-bool
+XRT_CHECK_RESULT bool
 is_local_space_set_up(struct oxr_session *sess)
 {
 	return (sess->local_space_pure_relation.relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
@@ -191,7 +191,7 @@ oxr_space_ref_get_pure_relation(struct oxr_logger *log,
 	return true;
 }
 
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_relation_in_space(struct oxr_logger *log,
                                  XrTime time,
                                  struct xrt_space_relation *relation,
@@ -218,7 +218,7 @@ oxr_space_pure_relation_in_space(struct oxr_logger *log,
 	return true;
 }
 
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_pose_in_space(struct oxr_logger *log,
                              XrTime time,
                              struct xrt_pose *pose,
@@ -231,7 +231,7 @@ oxr_space_pure_pose_in_space(struct oxr_logger *log,
 	return oxr_space_pure_relation_in_space(log, time, &rel, spc, apply_space_pose, out_relation);
 }
 
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_relation_from_space(struct oxr_logger *log,
                                    XrTime time,
                                    struct xrt_space_relation *relation,
@@ -252,7 +252,7 @@ oxr_space_pure_relation_from_space(struct oxr_logger *log,
 	return true;
 }
 
-bool
+XRT_CHECK_RESULT bool
 oxr_space_pure_pose_from_space(struct oxr_logger *log,
                                XrTime time,
                                struct xrt_pose *pose,
@@ -264,7 +264,7 @@ oxr_space_pure_pose_from_space(struct oxr_logger *log,
 	return oxr_space_pure_relation_from_space(log, time, &rel, spc, out_relation);
 }
 
-bool
+XRT_CHECK_RESULT bool
 oxr_space_get_pure_relation(struct oxr_logger *log,
                             struct oxr_space *spc,
                             XrTime time,
@@ -296,7 +296,7 @@ oxr_space_get_pure_relation(struct oxr_logger *log,
 	return oxr_error(log, false, "Unknown space type");
 }
 
-bool
+XRT_CHECK_RESULT bool
 global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel)
 {
 	if (!is_local_space_set_up(sess)) {

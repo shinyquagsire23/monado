@@ -231,14 +231,15 @@ vk_get_device_ext_props(struct oxr_logger *log,
 	                                                                  "vkEnumerateDeviceExtensionProperties");
 
 	if (!EnumerateDeviceExtensionProperties) {
-		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to get vkEnumerateDeviceExtensionProperties fp");
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to get vkEnumerateDeviceExtensionProperties fp");
 	}
 
 	uint32_t prop_count = 0;
 	VkResult res = EnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, NULL);
 	if (res != VK_SUCCESS) {
-		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties count (%d)",
-		          res);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Failed to enumerate device extension properties count (%d)", res);
 	}
 
 
@@ -247,7 +248,8 @@ vk_get_device_ext_props(struct oxr_logger *log,
 	res = EnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
 	if (res != VK_SUCCESS) {
 		free(props);
-		oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties (%d)", res);
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to enumerate device extension properties (%d)",
+		                 res);
 	}
 
 	*out_props = props;
