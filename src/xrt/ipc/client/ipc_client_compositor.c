@@ -346,7 +346,7 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	ics->icc = icc;
 	ics->id = id;
 
-	// The handles where copied in the IPC call so we can reuse them here.
+	// The handles were copied in the IPC call so we can reuse them here.
 	for (uint32_t i = 0; i < image_count; i++) {
 		ics->base.images[i] = native_images[i];
 	}
