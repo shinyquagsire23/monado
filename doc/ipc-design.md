@@ -1,11 +1,11 @@
-# IPC Design {#ipc-design}
+# IPC Design and Implementation {#ipc-design}
 
 <!--
-Copyright 2021, Collabora, Ltd. and the Monado contributors
+Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-- Last updated: 8-December-2021
+- Last updated: 15-July-2022
 
 When the service starts, an `xrt_instance` is created and selected, a native
 system compositor is initialized, a shared memory segment for device data is
@@ -16,9 +16,13 @@ There are three main communication needs:
 - The client shared library needs to be able to **locate** a running service, if
   any, to start communication. (Auto-starting, where available, is handled by
   platform-specific mechanisms: the client currently has no code to explicitly
-  start up the service.)
+  start up the service.) This location mechanism must be able to establish or
+  share the RPC channel and shared memory access, often by passing a socket,
+  handle, or file descriptor.
 - The client and service must share a dedicated channel for IPC calls (also
-  known as **RPC** - remote procedure call), typically a socket.
+  known as **RPC** - remote procedure call), typically a socket. Importantly,
+  the channel must be able to carry both data messages and native graphics
+  buffer/sync handles (file descriptors, HANDLEs, AHardwareBuffers)
 - The service must share device data updating at various rates, shared by all
   clients. This is typically done with a form of **shared memory**.
 
@@ -36,7 +40,7 @@ This socket is polled in the service mainloop, using epoll, to detect any new
 client connections.
 
 Upon a client connection to this "locating" socket, the service will [accept][]
-the connection, returning an FD, which is passed to
+the connection, returning a file descriptor (FD), which is passed to
 `start_client_listener_thread()` to start a thread specific to that client. The
 FD produced this way is now also used for the IPC calls - the **RPC** function -
 since it is specific to that client-server communication channel. One of the
@@ -180,3 +184,43 @@ However, it is undesirable for the clients to be able to block the
 compositor/server, so this wait was considered not acceptable. Instead, the
 `ipc_server_mainloop::client_push_mutex` is used so that at most one
 un-acknowledged client may have written to the pipe at any given time.
+
+## A Note on Graphics IPC
+
+The IPC mechanisms described previously are used solely for small data. Graphics
+data communication between application/client and server is done through sharing
+of buffers and synchronization primitives, without any copying or serialization
+of buffers within a frame loop.
+
+We use the system and graphics API provided mechanisms of sharing graphics
+buffers and sync primitives, which all result in some cross-API-usable handle
+type (generically processed as the types @ref xrt_graphics_buffer_handle_t and
+@ref xrt_graphics_sync_handle_t). On all supported platforms, there exist ways
+to share these handle types both within and between processes:
+
+- Linux and Android can send these handles, uniformly represented as file
+  descriptors, through a domain socket with a [SCM_RIGHTS][] message.
+- It is anticipated that Windows will use DuplicateHandle and send handle
+  numbers to achieve an equivalent result. ([reference][win32handles]) While
+  recent versions of Windows have added `AF_UNIX` domain socket support,
+  [`SCM_RIGHTS` is not supported][WinSCM_RIGHTS].
+
+The @ref xrt_compositor_native and @ref xrt_swapchain_native interfaces conceal
+the compositor's own graphics API choice, interacting with a client compositor
+solely through these generic handles. As such, even in single-process mode,
+buffers and sync primitives are generally exported to handles and imported back
+into another graphics API. (There is a small exception to this general statement
+to allow in-process execution on a software Vulkan implementation for CI
+purposes.)
+
+Generally, when possible, we allocate buffers on the server side in Vulkan, and
+import into the client compositor and API. On Android, to support application
+quotas and limits on allocation, etc, the client side allocates the buffer using
+a @ref xrt_image_native_allocator (aka XINA) and shares it to the server. When
+using D3D11 or D3D12 on Windows, buffers are allocated by the client compositor
+and imported into the native compositor, because Vulkan can import buffers from
+D3D, but D3D cannot import buffers allocated by Vulkan.
+
+[SCM_RIGHTS]: https://man7.org/linux/man-pages/man3/cmsg.3.html
+[win32handles]: https://lackingrhoticity.blogspot.com/2015/05/passing-fds-handles-between-processes.html
+[WinSCM_RIGHTS]: https://devblogs.microsoft.com/commandline/af_unix-comes-to-windows/#unsupportedunavailable
