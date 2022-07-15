@@ -4,7 +4,7 @@
  * @file
  * @brief  Provides a utility macro for dealing with subaction paths
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
- * @ingroup oxr_main
+ * @ingroup oxr_input
  */
 
 #pragma once
