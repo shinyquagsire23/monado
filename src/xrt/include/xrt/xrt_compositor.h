@@ -1831,6 +1831,7 @@ struct xrt_system_compositor_info
 struct xrt_system_compositor;
 
 /*!
+ * @interface xrt_multi_compositor_control
  * Special functions to control multi session/clients.
  */
 struct xrt_multi_compositor_control
@@ -1881,8 +1882,8 @@ struct xrt_system_compositor
 	 * This signals that you want to start XR, and as such implicitly brings
 	 * up a new session. Does not "call" `xrBeginSession`.
 	 *
-	 * Some system compositors might only support that one  `xrt_compositor`
-	 * is always at a time, will return `XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED`
+	 * Some system compositors might only support that one `xrt_compositor`
+	 * is active at a time, will return `XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED`
 	 * if this is the case.
 	 */
 	xrt_result_t (*create_native_compositor)(struct xrt_system_compositor *xsc,
