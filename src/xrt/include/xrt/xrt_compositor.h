@@ -1,9 +1,12 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Header defining a XRT graphics provider.
+ * @brief  Header declaring XRT graphics interfaces.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
+ * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Christoph Haag <christoph.haag@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -15,7 +18,7 @@
 
 #if defined(XRT_OS_WINDOWS)
 #include "xrt/xrt_windows.h"
-#include "d3d11.h"
+#include <d3d11.h>
 #elif defined(XRT_DOXYGEN)
 struct ID3D11Texture2D;
 #endif
@@ -759,6 +762,10 @@ struct xrt_compositor
 	                                                struct xrt_swapchain_create_properties *xsccp);
 
 	/*!
+	 * @name Function pointers for swapchain and sync creation and import
+	 * @{
+	 */
+	/*!
 	 * Create a swapchain with a set of images.
 	 *
 	 * The pointer pointed to by @p out_xsc has to either be NULL or a valid
@@ -795,6 +802,8 @@ struct xrt_compositor
 	xrt_result_t (*create_semaphore)(struct xrt_compositor *xc,
 	                                 xrt_graphics_sync_handle_t *out_handle,
 	                                 struct xrt_compositor_semaphore **out_xcsem);
+	/*! @} */
+
 
 	/*!
 	 * Poll events from this compositor.
@@ -803,6 +812,10 @@ struct xrt_compositor
 	 */
 	xrt_result_t (*poll_events)(struct xrt_compositor *xc, union xrt_compositor_event *out_xce);
 
+	/*!
+	 * @name Function pointers for session functions
+	 * @{
+	 */
 	/*!
 	 * See xrBeginSession.
 	 */
@@ -814,6 +827,13 @@ struct xrt_compositor
 	 * discard_frame.
 	 */
 	xrt_result_t (*end_session)(struct xrt_compositor *xc);
+
+	/*! @} */
+
+	/*!
+	 * @name Function pointers for frame functions
+	 * @{
+	 */
 
 	/*!
 	 * This function and @ref mark_frame function calls are a alternative to
@@ -914,6 +934,13 @@ struct xrt_compositor
 	 */
 	xrt_result_t (*discard_frame)(struct xrt_compositor *xc, int64_t frame_id);
 
+	/*! @} */
+
+
+	/*!
+	 * @name Function pointers for layer submission
+	 * @{
+	 */
 	/*!
 	 * @brief Begins layer submission.
 	 *
@@ -1077,6 +1104,8 @@ struct xrt_compositor
 	                                            struct xrt_compositor_semaphore *xcsem,
 	                                            uint64_t value);
 
+	/*! @} */
+
 	/*!
 	 * Teardown the compositor.
 	 *
@@ -1103,6 +1132,11 @@ xrt_comp_get_swapchain_create_properties(struct xrt_compositor *xc,
 {
 	return xc->get_swapchain_create_properties(xc, info, xsccp);
 }
+
+/*!
+ * @name Swapchain and sync creation and import methods
+ * @{
+ */
 
 /*!
  * @copydoc xrt_compositor::create_swapchain
@@ -1166,6 +1200,9 @@ xrt_comp_create_semaphore(struct xrt_compositor *xc,
 	return xc->create_semaphore(xc, out_handle, out_xcsem);
 }
 
+/*! @} */
+
+
 /*!
  * @copydoc xrt_compositor::poll_events
  *
@@ -1178,6 +1215,11 @@ xrt_comp_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_
 {
 	return xc->poll_events(xc, out_xce);
 }
+
+/*!
+ * @name Session methods
+ * @{
+ */
 
 /*!
  * @copydoc xrt_compositor::begin_session
@@ -1204,6 +1246,15 @@ xrt_comp_end_session(struct xrt_compositor *xc)
 {
 	return xc->end_session(xc);
 }
+
+/*! @} */
+
+
+/*!
+ * @name Frame-related methods
+ * @brief Related to the OpenXR `xr*Frame` functions
+ * @{
+ */
 
 /*!
  * @copydoc xrt_compositor::predict_frame
@@ -1286,6 +1337,15 @@ xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 {
 	return xc->discard_frame(xc, frame_id);
 }
+
+/*! @} */
+
+
+/*!
+ * @name Layer submission methods
+ * @brief Equivalent to `xrEndFrame`, but split across multiple calls.
+ * @{
+ */
 
 /*!
  * @copydoc xrt_compositor::layer_begin
@@ -1448,6 +1508,8 @@ xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc,
 {
 	return xc->layer_commit_with_semaphore(xc, frame_id, xcsem, value);
 }
+
+/*! @} */
 
 /*!
  * @copydoc xrt_compositor::destroy
@@ -1649,7 +1711,7 @@ struct xrt_d3d_requirements
  * A single image of a swapchain based on native buffer handles.
  *
  * @ingroup xrt_iface comp
- * @see xrt_swapchain_native
+ * @see xrt_swapchain_native, xrt_graphics_buffer_handle_t
  */
 struct xrt_image_native
 {
