@@ -63,6 +63,7 @@ Truly optional dependencies, useful for some drivers, app support, etc.:
 * libuvc
 * ffmpeg
 * libjpeg
+* libbluetooth
 
 Experimental Windows support requires the Vulkan SDK and also needs or works
 best with the following vcpkg packages installed:
