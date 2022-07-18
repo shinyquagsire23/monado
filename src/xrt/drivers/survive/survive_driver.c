@@ -337,7 +337,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 }
 
 static int
-survive_controller_haptic_pulse(struct survive_device *survive, union xrt_output_value *value)
+survive_controller_haptic_pulse(struct survive_device *survive, const union xrt_output_value *value)
 {
 	float duration_seconds;
 	if (value->vibration.duration_ns == XRT_MIN_HAPTIC_DURATION) {
