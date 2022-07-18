@@ -12,6 +12,7 @@
 /* keep sorted */
 
 #cmakedefine XRT_HAVE_BASALT_SLAM
+#cmakedefine XRT_HAVE_BLUETOOTH
 #cmakedefine XRT_HAVE_D3D11
 #cmakedefine XRT_HAVE_DBUS
 #cmakedefine XRT_HAVE_DXGI
