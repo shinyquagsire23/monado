@@ -50,6 +50,7 @@ using namespace std::chrono;
 using xrt::compositor::client::unique_swapchain_ref;
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
+DEBUG_GET_ONCE_BOOL_OPTION(allow_depth, "D3D_COMPOSITOR_ALLOW_DEPTH", false);
 
 /*!
  * Spew level logging.
@@ -824,8 +825,24 @@ try {
 	// Passthrough our formats from the native compositor to the client.
 	uint32_t count = 0;
 	for (uint32_t i = 0; i < xcn->base.info.format_count; i++) {
+		// Can we turn this format into DXGI?
 		DXGI_FORMAT f = d3d_vk_format_to_dxgi(xcn->base.info.formats[i]);
 		if (f == 0) {
+			continue;
+		}
+		// And back to Vulkan?
+		auto v = d3d_dxgi_format_to_vk(f);
+		if (v == 0) {
+			continue;
+		}
+		// Do we have a typeless version of it?
+		DXGI_FORMAT typeless = d3d_dxgi_format_to_typeless_dxgi(f);
+		if (typeless == f) {
+			continue;
+		}
+		// Sometimes we have to forbid depth formats to avoid errors in Vulkan.
+		if (!debug_get_bool_option_allow_depth() &&
+		    (f == DXGI_FORMAT_D32_FLOAT || f == DXGI_FORMAT_D16_UNORM || f == DXGI_FORMAT_D24_UNORM_S8_UINT)) {
 			continue;
 		}
 
