@@ -21,22 +21,15 @@
 #include "util/u_string_list.h"
 #include "vk/vk_helpers.h"
 #include "xrt/xrt_compositor.h"
+#include <xrt/xrt_deleters.hpp>
 
 #include <memory>
 #include <iostream>
 
-namespace {
-struct Deleter
-{
-	void
-	operator()(struct xrt_compositor_native *xcn) const
-	{
-		xrt_comp_native_destroy(&xcn);
-	}
-};
-} // namespace
+using unique_native_compositor =
+    std::unique_ptr<xrt_compositor_native,
+                    xrt::deleters::ptr_ptr_deleter<xrt_compositor_native, &xrt_comp_native_destroy>>;
 
-using unique_native_compositor = std::unique_ptr<xrt_compositor_native, Deleter>;
 // clang-format off
 #define COMP_INSTANCE_EXTENSIONS_COMMON                         \
 	VK_EXT_DEBUG_REPORT_EXTENSION_NAME,                     \
@@ -84,33 +77,23 @@ static const char *required_device_extensions[] = {
 #endif
 };
 
-struct StringListDeleter
+
+using unique_string_list =
+    std::unique_ptr<u_string_list, xrt::deleters::ptr_ptr_deleter<u_string_list, &u_string_list_destroy>>;
+
+static void
+xrt_comp_vk_destroy(struct xrt_compositor_vk **ptr_xcvk)
 {
-	void
-	operator()(u_string_list *usl) const
-	{
-		u_string_list_destroy(&usl);
+	if (!ptr_xcvk) {
+		return;
 	}
-};
+	xrt_compositor *xc = &(*ptr_xcvk)->base;
+	xrt_comp_destroy(&xc);
+}
 
-using unique_string_list = std::unique_ptr<u_string_list, StringListDeleter>;
-struct CompDeleter
-{
-	void
-	operator()(struct xrt_compositor *xc) const
-	{
-		xrt_comp_destroy(&xc);
-	}
-
-	void
-	operator()(struct xrt_compositor_vk *xcvk) const
-	{
-		xrt_compositor *xc = &xcvk->base;
-		xrt_comp_destroy(&xc);
-	}
-};
-
-using unique_compositor_vulkan = std::unique_ptr<struct xrt_compositor_vk, CompDeleter>;
+using unique_compositor_vk =
+    std::unique_ptr<struct xrt_compositor_vk,
+                    xrt::deleters::ptr_ptr_deleter<struct xrt_compositor_vk, &xrt_comp_vk_destroy>>;
 
 TEST_CASE("client_compositor", "[.][needgpu]")
 {
