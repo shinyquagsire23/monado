@@ -36,6 +36,8 @@
 #include <memory>
 #include <sstream>
 
+// Disable it for now, unsure if everything has been upstreamed.
+#undef DEPTHAI_ILLUMINATED_IR
 
 /*
  *
@@ -131,6 +133,10 @@ struct depthai_fs
 	dai::DataOutputQueue *image_queue;
 	dai::DataOutputQueue *imu_queue;
 
+#ifdef DEPTHAI_ILLUMINATED_IR
+	dai::DataInputQueue *control_queue;
+#endif
+
 	dai::ColorCameraProperties::SensorResolution color_sensor_resolution;
 	dai::ColorCameraProperties::ColorOrder color_order;
 
@@ -138,6 +144,8 @@ struct depthai_fs
 	dai::CameraBoardSocket camera_board_socket;
 
 	dai::CameraImageOrientation image_orientation;
+
+
 	uint32_t fps;
 	bool interleaved;
 	bool oak_d_lite;
@@ -636,6 +644,11 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	const char *name_images = "image_frames";
 	const char *name_imu = "imu_samples";
 
+#ifdef DEPTHAI_ILLUMINATED_IR
+	auto controlIn = p.create<dai::node::XLinkIn>();
+	controlIn->setStreamName("control");
+#endif
+
 	if (depthai->want_cameras) {
 
 		std::shared_ptr<dai::node::XLinkOut> xlinkOut = p.create<dai::node::XLinkOut>();
@@ -657,6 +670,10 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 			// Link plugins CAM -> XLINK
 			grayCam->out.link(xlinkOut->input);
+#ifdef DEPTHAI_ILLUMINATED_IR
+			// Link control to camera
+			controlIn->out.link(grayCam->inputControl);
+#endif
 		}
 	}
 
@@ -680,6 +697,18 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	if (depthai->want_imu) {
 		depthai->imu_queue = depthai->device->getOutputQueue(name_imu, 4, false).get(); // out of shared pointer
 	}
+
+#ifdef DEPTHAI_ILLUMINATED_IR
+	depthai->control_queue = depthai->device->getInputQueue("control").get();
+
+
+	depthai->device->setIrFloodLightBrightness(15000);
+
+	dai::CameraControl ctrl;
+	ctrl.setManualExposure(500, 700);
+	depthai->control_queue->send(ctrl);
+	depthai->device->setIrFloodLightBrightness(15000);
+#endif
 }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
