@@ -160,7 +160,7 @@ draw_gst(struct gui_record_window *rw)
 {
 	static ImVec2 button_dims = {0, 0};
 
-	if (!igCollapsingHeaderBoolPtr("Record", NULL, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (!igCollapsingHeaderBoolPtr("Record", NULL, ImGuiTreeNodeFlags_None)) {
 		return;
 	}
 
@@ -196,7 +196,7 @@ draw_gst(struct gui_record_window *rw)
 static void
 window_draw_misc(struct gui_record_window *rw)
 {
-	if (!igCollapsingHeaderBoolPtr("Misc", NULL, ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (!igCollapsingHeaderBoolPtr("Misc", NULL, ImGuiTreeNodeFlags_None)) {
 		return;
 	}
 
@@ -278,7 +278,7 @@ gui_window_record_init(struct gui_record_window *rw)
 
 
 	// Setup the preview texture.
-	rw->texture.scale = 1;
+	rw->texture.scale = 2;
 	struct xrt_frame_sink *tmp = NULL;
 	rw->texture.ogl = gui_ogl_sink_create("View", &rw->texture.xfctx, &tmp);
 	u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(&rw->texture.xfctx, tmp, &tmp);
