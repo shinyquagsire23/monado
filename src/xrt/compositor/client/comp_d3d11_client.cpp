@@ -502,7 +502,6 @@ try {
 	sc->base.base.acquire_image = client_d3d11_swapchain_acquire_image;
 	sc->base.base.wait_image = client_d3d11_swapchain_wait_image;
 	sc->base.base.release_image = client_d3d11_swapchain_release_image;
-	sc->base.base.reference.count = 1;
 	sc->c = c;
 	sc->base.base.image_count = image_count;
 
