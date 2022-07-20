@@ -844,7 +844,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		return VK_ERROR_FEATURE_NOT_PRESENT;
 	}
 
-	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk, image_native);
 
 	bool importable = false;
 	vk_csci_get_image_external_support(vk, image_format, info->bits, handle_type, &importable, NULL);
@@ -903,7 +903,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	VkImportMemoryWin32HandleInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
 	    .pNext = NULL,
-	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	    .handleType = handle_type,
 	    .handle = image_native->handle,
 	};
 #else

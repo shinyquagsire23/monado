@@ -835,6 +835,14 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 	for (uint32_t i = 0; i < handle_count; i++) {
 		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+		// DXGI handles need to be dealt with differently, they are identified
+		// by having their lower bit set to 1 during transfer
+		if ((size_t)xins[i].handle & 1) {
+			xins[i].handle = (HANDLE)((size_t)xins[i].handle - 1);
+			xins[i].is_dxgi_handle = true;
+		}
+#endif
 	}
 
 	// create the swapchain

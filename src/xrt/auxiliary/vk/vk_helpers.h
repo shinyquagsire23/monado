@@ -1238,7 +1238,7 @@ vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bit
  * CSCI = Compositor SwapChain Images.
  */
 VkExternalMemoryHandleTypeFlags
-vk_csci_get_image_external_handle_type(struct vk_bundle *vk);
+vk_csci_get_image_external_handle_type(struct vk_bundle *vk, struct xrt_image_native *xin);
 
 /*!
  * Get whether a given image can be imported/exported for a handle type.

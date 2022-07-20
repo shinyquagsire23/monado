@@ -329,7 +329,7 @@ is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_us
 	 * Check exportability.
 	 */
 
-	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk, NULL);
 	VkResult ret;
 
 	VkImageUsageFlags usage = vk_csci_get_image_usage_flags(vk, format, xbits);

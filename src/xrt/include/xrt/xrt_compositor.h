@@ -1766,6 +1766,11 @@ struct xrt_image_native
 	 * Is the image created with a dedicated allocation or not.
 	 */
 	bool use_dedicated_allocation;
+
+	/*!
+	 * Is the native buffer handle a DXGI handle?
+	 */
+	bool is_dxgi_handle;
 };
 
 /*!

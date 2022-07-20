@@ -5,6 +5,7 @@
  * @brief  D3D12 client side glue to compositor implementation.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Fernando Velazquez Innella <finnella@magicleap.com>
  * @ingroup comp_client
  */
 
@@ -50,7 +51,6 @@ using namespace std::chrono_literals;
 using namespace std::chrono;
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
-DEBUG_GET_ONCE_BOOL_OPTION(allow_depth, "D3D_COMPOSITOR_ALLOW_DEPTH", false);
 
 DEBUG_GET_ONCE_BOOL_OPTION(barriers, "D3D12_COMPOSITOR_BARRIERS", false);
 DEBUG_GET_ONCE_BOOL_OPTION(initial_transition, "D3D12_COMPOSITOR_INITIAL_TRANSITION", true);
@@ -189,8 +189,8 @@ struct client_d3d12_swapchain_data
 
 	xrt::compositor::client::KeyedMutexCollection keyed_mutex_collection;
 
-	//! The shared handles for all our images
-	std::vector<wil::unique_handle> handles;
+	//! The shared DXGI handles for our images
+	std::vector<HANDLE> dxgi_handles;
 
 	//! D3D11 Images
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> d3d11_images;
@@ -433,7 +433,7 @@ try {
 
 	// Make images with D3D11
 	xret = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(c->d3d11_device), xinfo, image_count, true,
-	                                                        data->d3d11_images, data->handles);
+	                                                        data->d3d11_images, data->dxgi_handles);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -442,9 +442,9 @@ try {
 
 	// Import to D3D12 from the handle.
 	for (uint32_t i = 0; i < image_count; ++i) {
-		const auto &handle = data->handles[i];
-		wil::unique_handle dupedForD3D12{u_graphics_buffer_ref(handle.get())};
-		auto d3d12Image = xrt::auxiliary::d3d::d3d12::importImage(*(c->device), dupedForD3D12.get());
+		wil::com_ptr<ID3D12Resource> d3d12Image =
+		    xrt::auxiliary::d3d::d3d12::importImage(*(c->device), data->dxgi_handles[i]);
+
 		// Put the image where the OpenXR state tracker can get it
 		sc->base.images[i] = d3d12Image.get();
 
@@ -523,8 +523,8 @@ try {
 	}
 
 	// Import into the native compositor, to create the corresponding swapchain which we wrap.
-	xret = xrt::compositor::client::importFromHandleDuplicates(
-	    *(c->xcn), data->handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
+	xret = xrt::compositor::client::importFromDxgiHandles(
+	    *(c->xcn), data->dxgi_handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
 	if (xret != XRT_SUCCESS) {
 		D3D_ERROR(c, "Error importing D3D swapchain into native compositor");
 		return xret;
@@ -967,12 +967,6 @@ try {
 		if (typeless == f) {
 			continue;
 		}
-		// Sometimes we have to forbid depth formats to avoid errors in Vulkan.
-		if (!debug_get_bool_option_allow_depth() &&
-		    (f == DXGI_FORMAT_D32_FLOAT || f == DXGI_FORMAT_D16_UNORM || f == DXGI_FORMAT_D24_UNORM_S8_UINT)) {
-			continue;
-		}
-
 		c->base.base.info.formats[count++] = f;
 	}
 	c->base.base.info.format_count = count;

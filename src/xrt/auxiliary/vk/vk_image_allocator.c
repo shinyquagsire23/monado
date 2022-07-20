@@ -349,7 +349,9 @@ vk_ic_from_natives(struct vk_bundle *vk,
 	size_t i = 0;
 	for (; i < image_count; i++) {
 		// Ensure that all handles are consumed or none are.
-		xrt_graphics_buffer_handle_t buf = u_graphics_buffer_ref(native_images[i].handle);
+		xrt_graphics_buffer_handle_t buf = native_images[i].is_dxgi_handle
+		                                       ? native_images[i].handle
+		                                       : u_graphics_buffer_ref(native_images[i].handle);
 
 		if (!xrt_graphics_buffer_is_valid(buf)) {
 			U_LOG_E("Could not ref/duplicate graphics buffer handle");
@@ -364,7 +366,9 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		    &out_vkic->images[i].handle,   // out_image
 		    &out_vkic->images[i].memory);  // out_mem
 		if (ret != VK_SUCCESS) {
-			u_graphics_buffer_unref(&buf);
+			if (!native_images[i].is_dxgi_handle) {
+				u_graphics_buffer_unref(&buf);
+			}
 			break;
 		}
 		native_images[i].handle = buf;
@@ -377,7 +381,9 @@ vk_ic_from_natives(struct vk_bundle *vk,
 		// We have consumed all handles now, close all of the copies we
 		// made, all this to make sure we do all or nothing.
 		for (size_t k = 0; k < image_count; k++) {
-			u_graphics_buffer_unref(&native_images[k].handle);
+			if (!native_images[k].is_dxgi_handle) {
+				u_graphics_buffer_unref(&native_images[k].handle);
+			}
 			native_images[k].size = 0;
 		}
 		return ret;

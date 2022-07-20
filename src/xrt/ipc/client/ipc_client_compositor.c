@@ -334,6 +334,14 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	for (uint32_t i = 0; i < image_count; i++) {
 		handles[i] = native_images[i].handle;
 		args.sizes[i] = native_images[i].size;
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+		// DXGI handles need to be dealt with differently, they are identified
+		// by having their lower bit set to 1 during transfer
+		if (native_images[i].is_dxgi_handle) {
+			(size_t) handles[i] |= 1;
+		}
+#endif
 	}
 
 	// This does not consume the handles, it copies them.

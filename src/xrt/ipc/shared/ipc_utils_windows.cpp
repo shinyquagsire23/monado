@@ -146,8 +146,11 @@ ipc_send_fds(
 	v.reserve(handle_count);
 	for (uint32_t i = 0; i < handle_count; i++) {
 		HANDLE handle;
-		if (!DuplicateHandle(current_process, handles[i], target_process, &handle, 0, false,
-		                     DUPLICATE_SAME_ACCESS)) {
+		if ((size_t)handles[i] & 1) {
+			// This handle cannot be duplicated.
+			handle = handles[i];
+		} else if (!DuplicateHandle(current_process, handles[i], target_process, &handle, 0, false,
+		                            DUPLICATE_SAME_ACCESS)) {
 			DWORD err = GetLastError();
 			IPC_ERROR(imc, "DuplicateHandle(%p) failed: %d %s", handles[i], err, ipc_winerror(err));
 			CloseHandle(target_process);

@@ -68,9 +68,7 @@ TEST_CASE("d3d11_device", "[.][needgpu]")
 #ifdef XRT_HAVE_VULKAN
 
 static inline bool
-tryImport(struct vk_bundle *vk,
-          std::vector<wil::unique_handle> const &handles,
-          const struct xrt_swapchain_create_info &xsci)
+tryImport(struct vk_bundle *vk, std::vector<HANDLE> const &handles, const struct xrt_swapchain_create_info &xsci)
 {
 
 	INFO("Testing import into Vulkan");
@@ -94,8 +92,8 @@ tryImport(struct vk_bundle *vk,
 	std::vector<wil::unique_handle> handlesForImport;
 	handlesForImport.reserve(image_count);
 
-	for (const wil::unique_handle &handle : handles) {
-		wil::unique_handle duped{u_graphics_buffer_ref(handle.get())};
+	for (HANDLE handle : handles) {
+		wil::unique_handle duped{u_graphics_buffer_ref(handle)};
 		xrt_image_native xin;
 		xin.handle = duped.get();
 		xin.size = 0;
@@ -142,7 +140,7 @@ TEST_CASE("d3d11_allocate", "[.][needgpu]")
 	std::tie(device, context) = createDevice();
 	auto device5 = device.query<ID3D11Device5>();
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> images;
-	std::vector<wil::unique_handle> handles;
+	std::vector<HANDLE> handles;
 
 	static constexpr bool kKeyedMutex = true;
 	size_t imageCount = 3;
@@ -164,7 +162,6 @@ TEST_CASE("d3d11_allocate", "[.][needgpu]")
 			CAPTURE(isDepthStencilFormat(format));
 			xsci.format = format;
 			if (isDepthStencilFormat(format)) {
-
 				xsci.bits = XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL;
 			} else {
 				xsci.bits = XRT_SWAPCHAIN_USAGE_COLOR;

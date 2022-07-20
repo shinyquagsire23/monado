@@ -5,6 +5,7 @@
  * @brief  D3D11 client side glue to compositor implementation.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Fernando Velazquez Innella <finnella@magicleap.com>
  * @ingroup comp_client
  */
 
@@ -50,7 +51,6 @@ using namespace std::chrono;
 using xrt::compositor::client::unique_swapchain_ref;
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
-DEBUG_GET_ONCE_BOOL_OPTION(allow_depth, "D3D_COMPOSITOR_ALLOW_DEPTH", false);
 
 /*!
  * Spew level logging.
@@ -187,8 +187,8 @@ struct client_d3d11_swapchain_data
 
 	xrt::compositor::client::KeyedMutexCollection keyed_mutex_collection;
 
-	//! The shared handles for all our images
-	std::vector<wil::unique_handle> handles;
+	//! The shared DXGI handles for our images
+	std::vector<HANDLE> dxgi_handles;
 
 	//! Images associated with client_d3d11_compositor::app_device
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> app_images;
@@ -332,6 +332,18 @@ import_image(ID3D11Device1 &device, HANDLE h)
 	return tex;
 }
 
+static wil::com_ptr<ID3D11Texture2D1>
+import_image_dxgi(ID3D11Device1 &device, HANDLE h)
+{
+	wil::com_ptr<ID3D11Texture2D1> tex;
+
+	if (h == nullptr) {
+		return {};
+	}
+	THROW_IF_FAILED(device.OpenSharedResource(h, __uuidof(ID3D11Texture2D1), tex.put_void()));
+	return tex;
+}
+
 static wil::com_ptr<ID3D11Fence>
 import_fence(ID3D11Device5 &device, HANDLE h)
 {
@@ -383,17 +395,17 @@ try {
 	sc->data = std::make_unique<client_d3d11_swapchain_data>(c->log_level);
 	auto &data = sc->data;
 	xret = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(c->comp_device), xinfo, image_count, true,
-	                                                        data->comp_images, data->handles);
+	                                                        data->comp_images, data->dxgi_handles);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
+
 	data->app_images.reserve(image_count);
 
 	// Import from the handle for the app.
 	for (uint32_t i = 0; i < image_count; ++i) {
-		const auto &handle = data->handles[i];
-		wil::unique_handle dupedForApp{u_graphics_buffer_ref(handle.get())};
-		auto image = import_image(*(c->app_device), dupedForApp.get());
+		wil::com_ptr<ID3D11Texture2D1> image = import_image_dxgi(*(c->app_device), data->dxgi_handles[i]);
+
 		// Put the image where the OpenXR state tracker can get it
 		sc->base.images[i] = image.get();
 
@@ -409,8 +421,9 @@ try {
 	}
 
 	// Import into the native compositor, to create the corresponding swapchain which we wrap.
-	xret = xrt::compositor::client::importFromHandleDuplicates(
-	    *(c->xcn), data->handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
+	xret = xrt::compositor::client::importFromDxgiHandles(
+	    *(c->xcn), data->dxgi_handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
+
 	if (xret != XRT_SUCCESS) {
 		D3D_ERROR(c, "Error importing D3D11 swapchain into native compositor");
 		return xret;
@@ -838,11 +851,6 @@ try {
 		// Do we have a typeless version of it?
 		DXGI_FORMAT typeless = d3d_dxgi_format_to_typeless_dxgi(f);
 		if (typeless == f) {
-			continue;
-		}
-		// Sometimes we have to forbid depth formats to avoid errors in Vulkan.
-		if (!debug_get_bool_option_allow_depth() &&
-		    (f == DXGI_FORMAT_D32_FLOAT || f == DXGI_FORMAT_D16_UNORM || f == DXGI_FORMAT_D24_UNORM_S8_UINT)) {
 			continue;
 		}
 
