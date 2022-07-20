@@ -88,7 +88,7 @@ if(XRT_HAVE_VULKAN)
 		PUBLIC xrt-interfaces
 		PRIVATE aux_util aux_os aux_vk
 		)
-	target_include_directories(comp_util PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(comp_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 ##
