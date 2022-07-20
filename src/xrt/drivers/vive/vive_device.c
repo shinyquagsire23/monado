@@ -59,7 +59,9 @@ vive_device_destroy(struct xrt_device *xdev)
 
 	// Now that the thread is not running we can destroy the lock.
 
-	m_imu_3dof_close(&d->fusion);
+	m_imu_3dof_close(&d->fusion.i3dof);
+
+	os_mutex_destroy(&d->fusion.mutex);
 
 	if (d->mainboard_dev != NULL) {
 		os_hid_destroy(d->mainboard_dev);
@@ -78,7 +80,7 @@ vive_device_destroy(struct xrt_device *xdev)
 
 	vive_config_teardown(&d->config);
 
-	m_relation_history_destroy(&d->relation_hist);
+	m_relation_history_destroy(&d->fusion.relation_hist);
 
 	// Remove the variable tracking.
 	u_var_remove_root(d);
@@ -110,10 +112,14 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	// Clear out the relation.
-	U_ZERO(out_relation);
+	struct xrt_space_relation relation = {0};
+	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
 
-	m_relation_history_get(d->relation_hist, at_timestamp_ns, out_relation);
+	os_mutex_lock(&d->fusion.mutex);
+	m_relation_history_get(d->fusion.relation_hist, at_timestamp_ns, &relation);
+	os_mutex_unlock(&d->fusion.mutex);
+
+	*out_relation = relation;
 }
 
 static void
@@ -221,7 +227,6 @@ vive_mainboard_decode_message(struct vive_device *d, struct vive_mainboard_statu
 	if (d->board.button != report->button) {
 		d->board.button = report->button;
 		VIVE_TRACE(d, "Button %d.", report->button);
-		d->rot_filtered = (struct xrt_quat)XRT_QUAT_IDENTITY;
 	}
 }
 
@@ -369,23 +374,15 @@ update_imu(struct vive_device *d, const void *buffer)
 		d->imu.time_ns += dt_ns;
 		d->imu.sequence = seq;
 
-		m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
-
-		d->rot_filtered = d->fusion.rot;
-
 		struct xrt_space_relation rel = {0};
 		rel.relation_flags =
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
-		rel.pose.orientation = d->rot_filtered;
 
-		// Use d->imu.ts_received_ns instead of d->imu.time_ns.
-		// d->imu.time_ns is offset by an arbitrary value (I think so we get more floating-point precision in
-		// the 3dof fusion) - so it's not what we want in the global "time-space".
-
-		// In contrast, d->imu.ts_received_ns is just "when we got the IMU timestamp" in the normal
-		// os_monotonic_get_ns() "time-space". Which is what we want. So we use it.
-
-		m_relation_history_push(d->relation_hist, &rel, d->imu.ts_received_ns);
+		os_mutex_lock(&d->fusion.mutex);
+		m_imu_3dof_update(&d->fusion.i3dof, d->imu.time_ns, &acceleration, &angular_velocity);
+		rel.pose.orientation = d->fusion.i3dof.rot;
+		m_relation_history_push(d->fusion.relation_hist, &rel, d->imu.ts_received_ns);
+		os_mutex_unlock(&d->fusion.mutex);
 	}
 }
 
@@ -754,7 +751,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 	struct vive_device *d = U_DEVICE_ALLOCATE(struct vive_device, flags, 1, 0);
 
-	m_relation_history_create(&d->relation_hist);
+	m_relation_history_create(&d->fusion.relation_hist);
 
 	size_t idx = 0;
 	d->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
@@ -869,11 +866,11 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	os_thread_helper_init(&d->watchman_thread);
 
 	// Init here.
-	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	u_var_add_root(d, "Vive Device", true);
 	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Fusion");
-	m_imu_3dof_add_vars(&d->fusion, d, "");
+	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
 	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");

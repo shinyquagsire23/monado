@@ -48,8 +48,6 @@ struct vive_device
 		timepoint_ns ts_received_ns;
 	} imu;
 
-	struct m_imu_3dof fusion;
-
 	struct
 	{
 		uint16_t ipd;
@@ -58,8 +56,6 @@ struct vive_device
 		uint8_t button;
 	} board;
 
-	struct xrt_quat rot_filtered;
-	struct m_relation_history *relation_hist;
 
 	enum u_logging_level log_level;
 	bool disconnect_notified;
@@ -71,6 +67,18 @@ struct vive_device
 	} gui;
 
 	struct vive_config config;
+
+	struct
+	{
+		//! Protects all members of the `fusion` substruct.
+		struct os_mutex mutex;
+
+		//! Main fusion calculator.
+		struct m_imu_3dof i3dof;
+
+		//! Prediction
+		struct m_relation_history *relation_hist;
+	} fusion;
 };
 
 struct vive_device *
