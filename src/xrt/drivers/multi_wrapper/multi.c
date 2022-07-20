@@ -149,11 +149,7 @@ get_hand_tracking(struct xrt_device *xdev,
 
 
 	switch (d->override_type) {
-	case XRT_TRACKING_OVERRIDE_DIRECT: {
-		// XXX: Codepath not tested. Probably doesn't do what you want.
-		direct_override(d, &out_value->hand_pose, &out_value->hand_pose);
-
-	} break;
+	case XRT_TRACKING_OVERRIDE_DIRECT: direct_override(d, &tracker_relation, &out_value->hand_pose); break;
 	case XRT_TRACKING_OVERRIDE_ATTACHED: {
 
 		// struct xrt_space_relation target_relation;
