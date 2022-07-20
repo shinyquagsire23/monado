@@ -117,7 +117,12 @@ vive_device_get_3dof_tracked_pose(struct xrt_device *xdev,
 	m_relation_history_get(d->fusion.relation_hist, at_timestamp_ns, &relation);
 	os_mutex_unlock(&d->fusion.mutex);
 
+	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL; // Needed after history_get
+	relation.pose.position = d->pose.position;
+	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
+
 	*out_relation = relation;
+	d->pose = out_relation->pose;
 }
 
 //! Specific pose corrections for Basalt and a Valve Index headset
@@ -174,6 +179,7 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	} else {
 		vive_device_get_3dof_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
 	}
+	math_pose_transform(&d->offset, &out_relation->pose, &out_relation->pose);
 }
 
 static void
@@ -758,9 +764,38 @@ vive_sensors_run_thread(void *ptr)
 }
 
 static void
+vive_device_switch_hmd_tracker(void *d_ptr)
+{
+	DRV_TRACE_MARKER();
+
+	struct vive_device *d = (struct vive_device *)d_ptr;
+	d->slam_over_3dof = !d->slam_over_3dof;
+	struct u_var_button *btn = &d->gui.switch_tracker_btn;
+
+	if (d->slam_over_3dof) { // Use SLAM
+		snprintf(btn->label, sizeof(btn->label), "Switch to 3DoF Tracking");
+	} else { // Use 3DoF
+		snprintf(btn->label, sizeof(btn->label), "Switch to SLAM Tracking");
+		os_mutex_lock(&d->fusion.mutex);
+		m_imu_3dof_reset(&d->fusion.i3dof);
+		d->fusion.i3dof.rot = d->pose.orientation;
+		os_mutex_unlock(&d->fusion.mutex);
+	}
+}
+
+static void
 vive_device_setup_ui(struct vive_device *d)
 {
 	u_var_add_root(d, "Vive Device", true);
+
+	u_var_add_gui_header(d, NULL, "Tracking");
+	if (d->tracking.slam_enabled) {
+		d->gui.switch_tracker_btn.cb = vive_device_switch_hmd_tracker;
+		d->gui.switch_tracker_btn.ptr = d;
+		u_var_add_button(d, &d->gui.switch_tracker_btn, "Switch to 3DoF Tracking");
+	}
+	u_var_add_pose(d, &d->pose, "Tracked Pose");
+	u_var_add_pose(d, &d->offset, "Pose Offset");
 
 	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Tracking");
 	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
@@ -964,6 +999,9 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	os_thread_helper_init(&d->mainboard_thread);
 	os_thread_helper_init(&d->sensors_thread);
 	os_thread_helper_init(&d->watchman_thread);
+
+	d->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+	d->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 
 	int ret;
 

@@ -12,7 +12,8 @@
 #include "xrt/xrt_device.h"
 #include "os/os_threading.h"
 #include "util/u_logging.h"
-#include "util/u_distortion_mesh.h"
+#include "util/u_time.h"
+#include "util/u_var.h"
 #include "math/m_imu_3dof.h"
 #include "math/m_relation_history.h"
 
@@ -63,6 +64,7 @@ struct vive_device
 	{
 		bool calibration;
 		bool fusion;
+		struct u_var_button switch_tracker_btn;
 		char hand_status[128];
 		char slam_status[128];
 	} gui;
@@ -98,7 +100,11 @@ struct vive_device
 	//! Whether to track the HMD with 6dof SLAM or fallback to the 3dof tracker
 	bool slam_over_3dof;
 
+	//! Last tracked pose
 	struct xrt_pose pose;
+
+	//! Additional offset to apply to `pose`
+	struct xrt_pose offset;
 };
 
 
