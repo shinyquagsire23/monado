@@ -8,56 +8,72 @@
  * @ingroup xrt_iface
  */
 
-#include "util/u_debug.h"
+#include "tracking/t_hand_tracking.h"
+
 #include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
 
 #include "util/u_builders.h"
 #include "util/u_config_json.h"
-#include "util/u_system_helpers.h"
+#include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_sink.h"
+#include "util/u_system_helpers.h"
 
 #include "target_builder_interface.h"
 
 #include "vive/vive_config.h"
-#include "xrt/xrt_results.h"
 
-// We compute things using have_{vive,survive} in lighthouse_estimate_system.
+#include "xrt/xrt_frameserver.h"
+#include "xrt/xrt_results.h"
+#include "xrt/xrt_tracking.h"
+
+#include <assert.h>
+
+//! @todo This should not be in static storage. Maybe make this inherit and replace usysd.
+static struct lighthouse_system
+{
+	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
+	bool hand_enabled;   //!< Whether hand tracking is enabled
+} lhs;
 
 #ifdef XRT_BUILD_DRIVER_VIVE
 #include "vive/vive_prober.h"
-static const bool have_vive = true;
-#else
-static const bool have_vive = false;
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SURVIVE
 #include "survive/survive_interface.h"
-static const bool have_survive = true;
-#else
-static const bool have_survive = false;
 #endif
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-#include "xrt/xrt_frameserver.h"
-#include "util/u_sink.h"
 #include "ht/ht_interface.h"
 #include "ht_ctrl_emu/ht_ctrl_emu_interface.h"
 #include "multi_wrapper/multi.h"
 #include "../../tracking/hand/mercury/hg_interface.h"
 #endif
 
-
-
-#include <assert.h>
-
-
-DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "SETUP_VIVE_OVER_SURVIVE", false)
+DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
+DEBUG_GET_ONCE_BOOL_OPTION(lh_handtracking, "LH_HANDTRACKING", true)
 DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
+#define LH_TRACE(...) U_LOG_IFL_T(debug_get_log_option_lh_log(), __VA_ARGS__)
+#define LH_DEBUG(...) U_LOG_IFL_D(debug_get_log_option_lh_log(), __VA_ARGS__)
+#define LH_INFO(...) U_LOG_IFL_I(debug_get_log_option_lh_log(), __VA_ARGS__)
+#define LH_WARN(...) U_LOG_IFL_W(debug_get_log_option_lh_log(), __VA_ARGS__)
+#define LH_ERROR(...) U_LOG_IFL_E(debug_get_log_option_lh_log(), __VA_ARGS__)
+#define LH_ASSERT(predicate, ...)                                                                                      \
+	do {                                                                                                           \
+		bool p = predicate;                                                                                    \
+		if (!p) {                                                                                              \
+			U_LOG(U_LOGGING_ERROR, __VA_ARGS__);                                                           \
+			assert(false && "LH_ASSERT failed: " #predicate);                                              \
+			exit(EXIT_FAILURE);                                                                            \
+		}                                                                                                      \
+	} while (false);
+#define LH_ASSERT_(predicate) LH_ASSERT(predicate, "Assertion failed " #predicate)
 
-static bool use_libsurvive = false;
 
 static const char *driver_list[] = {
 #ifdef XRT_BUILD_DRIVER_SURVIVE
@@ -69,7 +85,6 @@ static const char *driver_list[] = {
 #endif
 };
 
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 struct index_camera_finder
 {
 	struct xrt_fs *xfs;
@@ -79,9 +94,30 @@ struct index_camera_finder
 
 /*
  *
- * Helper hand-tracking setup functions.
+ * Helper tracking setup functions.
  *
  */
+
+static uint32_t
+get_selected_mode(struct xrt_fs *xfs)
+{
+	struct xrt_fs_mode *modes = NULL;
+	uint32_t count = 0;
+	xrt_fs_enumerate_modes(xfs, &modes, &count);
+
+	LH_ASSERT(count != 0, "No stream modes found in Index camera");
+
+	uint32_t selected_mode = 0;
+	for (uint32_t i = 0; i < count; i++) {
+		if (modes[i].format == XRT_FORMAT_YUYV422) {
+			selected_mode = i;
+			break;
+		}
+	}
+
+	free(modes);
+	return selected_mode;
+}
 
 static void
 on_video_device(struct xrt_prober *xp,
@@ -102,33 +138,19 @@ on_video_device(struct xrt_prober *xp,
 	}
 }
 
-
 static bool
-create_index_optical_hand_tracker(struct u_system_devices *usysd,
-                                  struct xrt_prober *xp,
-                                  struct t_stereo_camera_calibration *calib,
-                                  struct xrt_device **out_hand_tracker)
+lighthouse_hand_track(struct u_system_devices *usysd,
+                      struct xrt_prober *xp,
+                      struct xrt_pose head_in_left_cam,
+                      struct t_stereo_camera_calibration *stereo_calib,
+                      struct xrt_slam_sinks **out_sinks,
+                      struct xrt_device **out_devices)
 {
-	assert(calib != NULL);
-
-
-	struct index_camera_finder finder = {0};
-	finder.xfctx = &usysd->xfctx;
-
-	xrt_prober_list_video_devices(xp, on_video_device, &finder);
-
-
-	if (finder.xfs == NULL) {
-		U_LOG_W("Couldn't find Index camera at all. Is it plugged in?");
-		return false;
-	}
-
-	bool old_rgb = debug_get_bool_option_ht_use_old_rgb();
-
-
-
+	struct xrt_device *two_hands[2] = {NULL};
 	struct xrt_slam_sinks *sinks = NULL;
-	struct xrt_device *hand_tracker_device = NULL;
+
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	LH_ASSERT_(stereo_calib != NULL);
 
 	struct t_image_boundary_info info;
 	info.views[0].type = HT_IMAGE_BOUNDARY_CIRCLE;
@@ -148,72 +170,40 @@ create_index_optical_hand_tracker(struct u_system_devices *usysd,
 	info.views[0].boundary.circle.normalized_radius = 0.55;
 	info.views[1].boundary.circle.normalized_radius = 0.55;
 
-	ht_device_create(&usysd->xfctx,                                         //
-	                 calib,                                                 //
-	                 HT_OUTPUT_SPACE_LEFT_CAMERA,                           //
-	                 old_rgb ? HT_ALGORITHM_OLD_RGB : HT_ALGORITHM_MERCURY, //
-	                 info,                                                  //
-	                 &sinks,                                                //
-	                 &hand_tracker_device);
+	bool old_rgb = debug_get_bool_option_ht_use_old_rgb();
+	enum t_hand_tracking_algorithm ht_algorithm = old_rgb ? HT_ALGORITHM_OLD_RGB : HT_ALGORITHM_MERCURY;
 
-
-	struct xrt_frame_sink *tmp = NULL;
-
-	u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, sinks->left, sinks->right, &tmp);
-
-	enum xrt_format fmt = old_rgb ? XRT_FORMAT_R8G8B8 : XRT_FORMAT_L8;
-
-	u_sink_create_format_converter(&usysd->xfctx, fmt, tmp, &tmp);
-
-	// This puts the format converter on its own thread, so that nothing gets backed up if it runs slower
-	// than the native camera framerate.
-	u_sink_simple_queue_create(&usysd->xfctx, tmp, &tmp);
-
-	struct xrt_fs_mode *modes = NULL;
-	uint32_t count = 0;
-
-	xrt_fs_enumerate_modes(finder.xfs, &modes, &count);
-
-	if (count == 0) {
-		U_LOG_W("Index camera has no modes?");
-		goto error;
+	struct xrt_device *ht_device = NULL;
+	int create_status = ht_device_create(&usysd->xfctx,               //
+	                                     stereo_calib,                //
+	                                     HT_OUTPUT_SPACE_LEFT_CAMERA, //
+	                                     ht_algorithm,                //
+	                                     info,                        //
+	                                     &sinks,                      //
+	                                     &ht_device);
+	if (create_status != 0) {
+		LH_WARN("Failed to create hand tracking device\n");
+		return false;
 	}
 
-	bool found_mode = false;
-	uint32_t selected_mode = 0;
+	ht_device = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, ht_device, usysd->base.roles.head,
+	                                           XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
 
-	for (; selected_mode < count; selected_mode++) {
-		if (modes[selected_mode].format == XRT_FORMAT_YUYV422) {
-			found_mode = true;
-			break;
-		}
+	int created_devices = cemu_devices_create(usysd->base.roles.head, ht_device, two_hands);
+	if (created_devices != 2) {
+		LH_WARN("Unexpected amount of hand devices created (%d)\n", create_status);
+		xrt_device_destroy(&ht_device);
+		return false;
 	}
 
-	if (!found_mode) {
-		selected_mode = 0;
-	}
-
-	free(modes);
-
-	bool ret = xrt_fs_stream_start(finder.xfs, tmp, XRT_FS_CAPTURE_TYPE_TRACKING, selected_mode);
-
-	if (!ret) {
-		U_LOG_E("Couldn't start camera. Has something else claimed it?");
-		goto error;
-	}
-
-	*out_hand_tracker = hand_tracker_device;
-	return true;
-
-error:
-
-	xrt_frame_context_destroy_nodes(&usysd->xfctx);
-	xrt_device_destroy(&hand_tracker_device);
-	return false;
-}
-
+	LH_INFO("Hand tracker successfully created\n");
 #endif
 
+	*out_sinks = sinks;
+	out_devices[0] = two_hands[0];
+	out_devices[1] = two_hands[1];
+	return true;
+}
 
 /*
  *
@@ -227,21 +217,34 @@ lighthouse_estimate_system(struct xrt_builder *xb,
                            struct xrt_prober *xp,
                            struct xrt_builder_estimate *estimate)
 {
+#ifdef XRT_BUILD_DRIVER_VIVE
+	bool have_vive_drv = true;
+#else
+	bool have_vive_drv = false;
+#endif
+
+#ifdef XRT_BUILD_DRIVER_SURVIVE
+	bool have_survive_drv = true;
+#else
+	bool have_survive_drv = false;
+#endif
 
 	bool vive_over_survive = debug_get_bool_option_vive_over_survive();
-	if (have_survive && have_vive) {
+	if (have_survive_drv && have_vive_drv) {
 		// We have both drivers - default to libsurvive, but if the user asks specifically for vive we'll give
 		// it to them
-		use_libsurvive = !vive_over_survive;
-	} else if (have_survive) {
+		lhs.use_libsurvive = !vive_over_survive;
+	} else if (have_survive_drv) {
 		// We only have libsurvive - don't listen to the env var
 		if (vive_over_survive) {
-			U_LOG_W("Asked for vive, but vive isn't built. Using libsurvive.");
+			LH_WARN("Asked for vive driver, but it isn't built. Using libsurvive.");
 		}
-		use_libsurvive = true;
-	} else {
+		lhs.use_libsurvive = true;
+	} else if (have_vive_drv) {
 		// We only have vive
-		use_libsurvive = false;
+		lhs.use_libsurvive = false;
+	} else {
+		LH_ASSERT_(false);
 	}
 
 	U_ZERO(estimate);
@@ -266,7 +269,7 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 
 	if (have_vive || have_vive_pro || have_index) {
 		estimate->certain.head = true;
-		if (use_libsurvive) {
+		if (lhs.use_libsurvive) {
 			estimate->maybe.dof6 = true;
 			estimate->certain.dof6 = true;
 		}
@@ -305,9 +308,101 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 	estimate->priority = 0;
 
 	xret = xrt_prober_unlock_list(xp, &xpdevs);
-	assert(xret == XRT_SUCCESS);
+	LH_ASSERT_(xret == XRT_SUCCESS);
 
 	return XRT_SUCCESS;
+}
+
+
+static bool
+setup_visual_trackers(struct u_system_devices *usysd,
+                      struct xrt_prober *xp,
+                      struct vive_config *hmd_config,
+                      struct xrt_slam_sinks *out_sinks,
+                      struct xrt_device **out_devices)
+{
+	bool hand_enabled = lhs.hand_enabled;
+
+	struct t_stereo_camera_calibration *stereo_calib = NULL;
+	struct xrt_pose head_in_left_cam;
+	vive_get_stereo_camera_calibration(hmd_config, &stereo_calib, &head_in_left_cam);
+
+	// Initialize hand tracker
+	struct xrt_slam_sinks *hand_sinks = NULL;
+	struct xrt_device *hand_devices[2] = {NULL};
+	if (hand_enabled) {
+		bool success =
+		    lighthouse_hand_track(usysd, xp, head_in_left_cam, stereo_calib, &hand_sinks, hand_devices);
+		if (!success) {
+			LH_WARN("Unable to setup the hand tracker");
+			return false;
+		}
+	}
+
+	t_stereo_camera_calibration_reference(&stereo_calib, NULL);
+
+	// Setup frame graph
+
+	struct xrt_frame_sink *entry_left_sink = NULL;
+	struct xrt_frame_sink *entry_right_sink = NULL;
+	struct xrt_frame_sink *entry_sbs_sink = NULL;
+	bool old_rgb_ht = debug_get_bool_option_ht_use_old_rgb();
+
+	if (hand_enabled) {
+		enum xrt_format fmt = old_rgb_ht ? XRT_FORMAT_R8G8B8 : XRT_FORMAT_L8;
+		entry_left_sink = hand_sinks->left;
+		entry_right_sink = hand_sinks->right;
+		u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, entry_left_sink, entry_right_sink, &entry_sbs_sink);
+		u_sink_create_format_converter(&usysd->xfctx, fmt, entry_sbs_sink, &entry_sbs_sink);
+	} else {
+		LH_WARN("No visual trackers were set");
+		return false;
+	}
+	//! @todo Using a single slot queue is wrong for SLAM
+	u_sink_simple_queue_create(&usysd->xfctx, entry_sbs_sink, &entry_sbs_sink);
+
+	struct xrt_slam_sinks entry_sinks = {
+	    .left = entry_sbs_sink,
+	    .right = NULL, // v4l2 streams a single SBS frame so we ignore the right sink
+	    .imu = NULL,
+	    .gt = NULL,
+	};
+
+	*out_sinks = entry_sinks;
+	if (hand_enabled) {
+		out_devices[0] = hand_devices[0];
+		out_devices[1] = hand_devices[1];
+	}
+	return true;
+}
+
+
+
+static bool
+stream_data_sources(struct u_system_devices *usysd, struct xrt_prober *xp, struct xrt_slam_sinks sinks)
+{
+	// Open frame server
+	struct index_camera_finder finder = {0};
+	finder.xfctx = &usysd->xfctx;
+	xrt_prober_list_video_devices(xp, on_video_device, &finder);
+	if (finder.xfs == NULL) {
+		LH_WARN("Couldn't find Index camera at all. Is it plugged in?");
+		xrt_frame_context_destroy_nodes(&usysd->xfctx);
+		return false;
+	}
+
+	bool success = false;
+
+	uint32_t mode = get_selected_mode(finder.xfs);
+	success = xrt_fs_stream_start(finder.xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
+
+
+	if (!success) {
+		LH_ERROR("Unable to start data streaming");
+		xrt_frame_context_destroy_nodes(&usysd->xfctx);
+	}
+
+	return success;
 }
 
 static xrt_result_t
@@ -317,14 +412,29 @@ lighthouse_open_system(struct xrt_builder *xb,
                        struct xrt_system_devices **out_xsysd)
 {
 	struct u_system_devices *usysd = u_system_devices_allocate();
+	xrt_result_t result = XRT_SUCCESS;
 
-	assert(out_xsysd != NULL);
-	assert(*out_xsysd == NULL);
+	if (out_xsysd == NULL || *out_xsysd != NULL) {
+		LH_ERROR("Invalid output system pointer");
+		result = XRT_ERROR_DEVICE_CREATION_FAILED;
+		goto end;
+	}
+
+	// Decide whether to initialize the hand tracker
+	bool hand_wanted = debug_get_bool_option_lh_handtracking();
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+	bool hand_supported = true;
+#else
+	bool hand_supported = false;
+#endif
+	bool hand_enabled = hand_supported && hand_wanted;
+
+	lhs.hand_enabled = hand_enabled;
 
 
 	struct vive_config *hmd_config = NULL;
 
-	if (use_libsurvive) {
+	if (lhs.use_libsurvive) {
 #ifdef XRT_BUILD_DRIVER_SURVIVE
 		usysd->base.xdev_count += survive_get_devices(&usysd->base.xdevs[usysd->base.xdev_count], &hmd_config);
 #endif
@@ -332,11 +442,11 @@ lighthouse_open_system(struct xrt_builder *xb,
 #ifdef XRT_BUILD_DRIVER_VIVE
 		struct xrt_prober_device **xpdevs = NULL;
 		size_t xpdev_count = 0;
-		xrt_result_t xret = XRT_SUCCESS;
 
-		xret = xrt_prober_lock_list(xp, &xpdevs, &xpdev_count);
-		if (xret != XRT_SUCCESS) {
-			return xret;
+		result = xrt_prober_lock_list(xp, &xpdevs, &xpdev_count);
+		if (result != XRT_SUCCESS) {
+			LH_ERROR("Unable to lock the prober dev list");
+			goto end;
 		}
 		for (size_t i = 0; i < xpdev_count; i++) {
 			struct xrt_prober_device *device = xpdevs[i];
@@ -373,8 +483,9 @@ lighthouse_open_system(struct xrt_builder *xb,
 	u_device_assign_xdev_roles(usysd->base.xdevs, usysd->base.xdev_count, &head_idx, &left_idx, &right_idx);
 
 	if (head_idx < 0) {
-		// We need to at least create a HMD
-		return XRT_ERROR_DEVICE_CREATION_FAILED;
+		LH_ERROR("Unable to find HMD");
+		result = XRT_ERROR_DEVICE_CREATION_FAILED;
+		goto end;
 	}
 	usysd->base.roles.head = usysd->base.xdevs[head_idx];
 
@@ -390,44 +501,43 @@ lighthouse_open_system(struct xrt_builder *xb,
 		    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT);
 	}
 
+	bool success = true;
 
-
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	// If we have the camera calibration (in hmd_config), and we have a HMD but no controllers, then try to make a
-	// hand-tracker device.
-	if ((hmd_config != NULL) &&             //
-	    (usysd->base.roles.head != NULL) && //
-	    (usysd->base.roles.left == NULL) && //
-	    (usysd->base.roles.right == NULL)) {
-		struct t_stereo_camera_calibration *cal = NULL;
-
-		struct xrt_pose head_in_left_cam;
-		if (vive_get_stereo_camera_calibration(hmd_config, &cal, &head_in_left_cam)) {
-			struct xrt_device *ht = NULL;
-			create_index_optical_hand_tracker(usysd, xp, cal, &ht);
-			// It's also okay if we couldn't open the hand tracker
-			if (ht != NULL) {
-				struct xrt_device *wrap = multi_create_tracking_override(
-				    XRT_TRACKING_OVERRIDE_ATTACHED, ht, usysd->base.roles.head,
-				    XRT_INPUT_GENERIC_HEAD_POSE, &head_in_left_cam);
-				struct xrt_device *two_hands[2];
-				cemu_devices_create(usysd->base.roles.head, wrap, two_hands);
-
-				usysd->base.roles.left = two_hands[0];
-				usysd->base.roles.right = two_hands[1];
-				usysd->base.roles.hand_tracking.left = two_hands[0];
-				usysd->base.roles.hand_tracking.right = two_hands[1];
-				usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[0];
-				usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[1];
-			}
-			t_stereo_camera_calibration_reference(&cal, NULL);
-		}
+	struct xrt_slam_sinks sinks = {0};
+	struct xrt_device *hand_devices[2] = {NULL};
+	success = setup_visual_trackers(usysd, xp, hmd_config, &sinks, hand_devices);
+	if (!success) {
+		result = XRT_SUCCESS; // We won't have trackers, but creation was otherwise ok
+		goto end;
 	}
-#endif
 
-	*out_xsysd = &usysd->base;
+	if (hand_devices[0] != NULL) {
+		usysd->base.roles.left = hand_devices[0];
+		usysd->base.roles.hand_tracking.left = hand_devices[0];
+		usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[0];
+	}
 
-	return XRT_SUCCESS;
+	if (hand_devices[1] != NULL) {
+		usysd->base.roles.right = hand_devices[1];
+		usysd->base.roles.hand_tracking.right = hand_devices[1];
+		usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[1];
+	}
+
+	success = stream_data_sources(usysd, xp, sinks);
+	if (!success) {
+		result = XRT_SUCCESS; // We can continue after freeing trackers
+		goto end;
+	}
+
+end:
+
+	if (result == XRT_SUCCESS) {
+		*out_xsysd = &usysd->base;
+	} else {
+		u_system_devices_destroy(&usysd);
+	}
+
+	return result;
 }
 
 static void
