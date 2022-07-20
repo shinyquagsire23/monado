@@ -88,7 +88,7 @@ public:
 	push_back(const char *str)
 	{
 
-		if (vec.size() > std::numeric_limits<uint32_t>::max() - 1) {
+		if (vec.size() > (std::numeric_limits<uint32_t>::max)() - 1) {
 			throw std::out_of_range("Size limit reached");
 		}
 		if (str == nullptr) {
@@ -146,7 +146,7 @@ public:
 	bool
 	push_back_unique(const char *str)
 	{
-		if (vec.size() > std::numeric_limits<uint32_t>::max() - 1) {
+		if (vec.size() > (std::numeric_limits<uint32_t>::max)() - 1) {
 			throw std::out_of_range("Size limit reached");
 		}
 		if (str == nullptr) {
