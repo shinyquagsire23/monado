@@ -14,6 +14,7 @@
 #include "util/u_debug.h"
 #include "util/u_logging.h"
 #include "util/u_misc.h"
+#include "util/u_sink.h"
 #include "util/u_var.h"
 #include "os/os_threading.h"
 #include "math/m_api.h"
@@ -366,10 +367,12 @@ struct TrackerSlam
 
 	//! Type of prediction to use
 	t_slam_prediction_type pred_type;
-	u_var_combo pred_combo;         //!< UI combo box to select @ref pred_type
-	RelationHistory slam_rels{};    //!< A history of relations produced purely from external SLAM tracker data
-	struct m_ff_vec3_f32 *gyro_ff;  //!< Last gyroscope samples
-	struct m_ff_vec3_f32 *accel_ff; //!< Last accelerometer samples
+	u_var_combo pred_combo;            //!< UI combo box to select @ref pred_type
+	RelationHistory slam_rels{};       //!< A history of relations produced purely from external SLAM tracker data
+	struct m_ff_vec3_f32 *gyro_ff;     //!< Last gyroscope samples
+	struct m_ff_vec3_f32 *accel_ff;    //!< Last accelerometer samples
+	struct u_sink_debug ui_left_sink;  //!< Sink to display left frames in UI
+	struct u_sink_debug ui_right_sink; //!< Sink to display right frames in UI
 
 	//! Used to correct accelerometer measurements when integrating into the prediction.
 	//! @todo Should be automatically computed instead of required to be filled manually through the UI.
@@ -951,6 +954,8 @@ setup_ui(TrackerSlam &t)
 	t.pred_combo.count = SLAM_PRED_COUNT;
 	t.pred_combo.options = "None\0Interpolate SLAM poses\0Also gyro\0Also accel (needs gravity correction)\0\0";
 	t.pred_combo.value = (int *)&t.pred_type;
+	u_sink_debug_init(&t.ui_left_sink);
+	u_sink_debug_init(&t.ui_right_sink);
 	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&t.accel_ff, 1000);
 	m_ff_vec3_f32_alloc(&t.filter.pos_ff, 1000);
@@ -980,6 +985,8 @@ setup_ui(TrackerSlam &t)
 	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
 	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
+	u_var_add_sink_debug(&t, &t.ui_left_sink, "Left Camera");
+	u_var_add_sink_debug(&t, &t.ui_right_sink, "Right Camera");
 
 	u_var_add_gui_header(&t, NULL, "Stats");
 	u_var_add_ro_ftext(&t, "\n%s", "Record to CSV files");
@@ -1149,16 +1156,16 @@ t_slam_imu_sink_push(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	}
 	SLAM_TRACE("imu t=%ld a=[%f,%f,%f] w=[%f,%f,%f]", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
+	// Check monotonically increasing timestamps
+	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts);
+	t.last_imu_ts = ts;
+
 	xrt_sink_push_imu(t.euroc_recorder->imu, s);
 
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
 	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
 	m_ff_vec3_f32_push(t.gyro_ff, &gyro, ts);
 	m_ff_vec3_f32_push(t.accel_ff, &accel, ts);
-
-	// Check monotonically increasing timestamps
-	SLAM_DASSERT(ts > t.last_imu_ts, "Sample (%ld) is older than last (%ld)", ts, t.last_imu_ts);
-	t.last_imu_ts = ts;
 }
 
 //! Push the frame to the external SLAM system
@@ -1187,6 +1194,7 @@ t_slam_frame_sink_push_left(struct xrt_frame_sink *sink, struct xrt_frame *frame
 {
 	auto &t = *container_of(sink, TrackerSlam, left_sink);
 	push_frame(t, frame, true);
+	u_sink_debug_push_frame(&t.ui_left_sink, frame);
 	xrt_sink_push_frame(t.euroc_recorder->left, frame);
 }
 
@@ -1195,6 +1203,7 @@ t_slam_frame_sink_push_right(struct xrt_frame_sink *sink, struct xrt_frame *fram
 {
 	auto &t = *container_of(sink, TrackerSlam, right_sink);
 	push_frame(t, frame, false);
+	u_sink_debug_push_frame(&t.ui_right_sink, frame);
 	xrt_sink_push_frame(t.euroc_recorder->right, frame);
 }
 
@@ -1222,6 +1231,8 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	delete t.pred_traj_writer;
 	delete t.filt_traj_writer;
 	u_var_remove_root(t_ptr);
+	u_sink_debug_destroy(&t.ui_left_sink);
+	u_sink_debug_destroy(&t.ui_right_sink);
 	m_ff_vec3_f32_free(&t.gyro_ff);
 	m_ff_vec3_f32_free(&t.accel_ff);
 	m_ff_vec3_f32_free(&t.filter.pos_ff);
