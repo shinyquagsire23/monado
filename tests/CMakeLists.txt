@@ -107,3 +107,7 @@ if(_have_opengl_test)
 		)
 	target_include_directories(tests_comp_client_opengl PRIVATE ${SDL2_INCLUDE_DIRS})
 endif()
+
+if(XRT_HAVE_VULKAN AND XRT_HAVE_D3D11)
+	target_link_libraries(tests_aux_d3d_d3d11 PRIVATE comp_util aux_vk)
+endif()
