@@ -182,6 +182,46 @@ fill_in_device_features(struct vk_bundle *vk)
 }
 
 static bool
+is_buffer_bit_supported(struct vk_bundle *vk,
+                        VkExternalMemoryHandleTypeFlagBits handle_type,
+                        VkExternalMemoryFeatureFlagBits bits)
+{
+	VkPhysicalDeviceExternalBufferInfo external_buffer_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
+	    .handleType = handle_type,
+	};
+	VkExternalBufferProperties external_buffer_props = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
+	};
+
+	vk->vkGetPhysicalDeviceExternalBufferPropertiesKHR( //
+	    vk->physical_device,                            // physicalDevice
+	    &external_buffer_info,                          // pExternalBufferInfo
+	    &external_buffer_props);                        // pExternalBufferProperties
+
+	// const VkExternalMemoryFeatureFlagBits bits =    //
+	//     VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | //
+	//     VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;  //
+
+	VkExternalFenceFeatureFlagBits masked =
+	    bits & external_buffer_props.externalMemoryProperties.externalMemoryFeatures;
+	// All must be supported.
+	return masked == bits;
+}
+
+static bool
+is_buffer_bit_supported_for_import(struct vk_bundle *vk, VkExternalMemoryHandleTypeFlagBits handle_type)
+{
+	return is_buffer_bit_supported(vk, handle_type, VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT);
+}
+
+static bool
+is_buffer_bit_supported_for_export(struct vk_bundle *vk, VkExternalMemoryHandleTypeFlagBits handle_type)
+{
+	return is_buffer_bit_supported(vk, handle_type, VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT);
+}
+
+static bool
 is_fence_bit_supported(struct vk_bundle *vk, VkExternalFenceHandleTypeFlagBits handle_type)
 {
 	VkPhysicalDeviceExternalFenceInfo external_fence_info = {
@@ -313,7 +353,17 @@ fill_in_external_object_properties(struct vk_bundle *vk)
 		VK_WARN(vk, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR not supported, should always be.");
 		return;
 	}
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	vk->external.buffer_import_opaque_win32 =
+	    is_buffer_bit_supported_for_import(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+	vk->external.buffer_export_opaque_win32 =
+	    is_buffer_bit_supported_for_export(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
+	vk->external.buffer_import_d3d11 =
+	    is_buffer_bit_supported_for_import(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT);
+	vk->external.buffer_export_d3d11 =
+	    is_buffer_bit_supported_for_export(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT);
+#endif
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 
 	vk->external.fence_sync_fd = is_fence_bit_supported( //

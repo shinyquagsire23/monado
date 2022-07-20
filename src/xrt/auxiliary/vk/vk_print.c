@@ -63,6 +63,18 @@ vk_print_features_info(struct vk_bundle *vk, enum u_logging_level log_level)
 void
 vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_level)
 {
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	U_LOG_IFL(log_level, vk->log_level,                                                   //
+	          "Supported buffers:\n\t%s: import=%s export=%s\n\t%s: import=%s export=%s", //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT",                          //
+	          vk->external.buffer_import_opaque_win32 ? "true" : "false",                 //
+	          vk->external.buffer_export_opaque_win32 ? "true" : "false",                 //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT",                         //
+	          vk->external.buffer_import_d3d11 ? "true" : "false",                        //
+	          vk->external.buffer_export_d3d11 ? "true" : "false");                       //
+#endif
+
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 
 	U_LOG_IFL(log_level, vk->log_level,                         //

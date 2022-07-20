@@ -61,6 +61,14 @@ struct vk_bundle
 
 	struct
 	{
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+		bool buffer_import_opaque_win32;
+		bool buffer_export_opaque_win32;
+
+		bool buffer_import_d3d11;
+		bool buffer_export_d3d11;
+#endif
+
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 		bool fence_sync_fd;
 		bool fence_opaque_fd;
