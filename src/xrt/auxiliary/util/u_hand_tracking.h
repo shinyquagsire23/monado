@@ -21,15 +21,32 @@ extern "C" {
 /*!
  * The hand tracking model being used.
  *
- * XRT_HAND_TRACKING_MODEL_FINGERL_CURL uses one curl value per finger to
- * synthesize hand joint positions.
+ * XRT_HAND_TRACKING_MODEL_INTRINSIC for devices that measure hand tracking through sensors, ie gloves and knuckles
+ * XRT_HAND_TRACKING_MODEL_EXTRINSIC for devices that measure hand tracking through external factors like cameras
  *
  * @ingroup aux_util
  */
 enum u_hand_tracking_model
 {
-	XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
-	XRT_HAND_TRACKING_MODEL_CAMERA,
+	XRT_HAND_TRACKING_MODEL_INTRINSIC,
+	XRT_HAND_TRACKING_MODEL_EXTRINSIC,
+};
+
+struct u_hand_tracking_finger_value
+{
+	float splay;
+
+	float joint_curls[5];
+	int joint_count;
+};
+
+struct u_hand_tracking_values
+{
+	struct u_hand_tracking_finger_value little;
+	struct u_hand_tracking_finger_value ring;
+	struct u_hand_tracking_finger_value middle;
+	struct u_hand_tracking_finger_value index;
+	struct u_hand_tracking_finger_value thumb;
 };
 
 /*!
@@ -93,7 +110,7 @@ struct u_hand_tracking
 
 	enum u_hand_tracking_model model;
 	union {
-		struct u_hand_tracking_curl_values curl_values;
+		struct u_hand_tracking_values finger_values;
 	} model_data;
 
 	struct u_hand_joint_default_set joints;
@@ -189,6 +206,11 @@ u_hand_joints_update_curl(struct u_hand_tracking *set,
                           uint64_t at_timestamp_ns,
                           struct u_hand_tracking_curl_values *curl_values);
 
+void
+u_hand_joints_update(struct u_hand_tracking *set,
+                     enum xrt_hand hand,
+                     uint64_t at_timestamp_ns,
+                     const struct u_hand_tracking_values *values);
 /*!
  * Simple helper function for positioning hands on Valve Index controllers.
  *

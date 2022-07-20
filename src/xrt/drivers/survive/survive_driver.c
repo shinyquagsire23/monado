@@ -1050,7 +1050,7 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
 
 		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER_INDEX ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-		u_hand_joints_init_default_set(&survive->ctrl.hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL,
+		u_hand_joints_init_default_set(&survive->ctrl.hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC,
 		                               1.0);
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;

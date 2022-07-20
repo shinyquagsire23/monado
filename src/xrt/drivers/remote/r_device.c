@@ -259,7 +259,7 @@ r_device_create(struct r_hub *r, bool is_left)
 	}
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_init_default_set(&rd->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_FINGERL_CURL, 1.0);
+	u_hand_joints_init_default_set(&rd->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC, 1.0);
 
 	// Setup variable tracker.
 	u_var_add_root(rd, rd->base.str, true);
