@@ -17,6 +17,8 @@ add_library(
 	u_builders.h
 	u_debug.c
 	u_debug.h
+	u_deque.cpp
+	u_deque.h
 	u_device.c
 	u_device.h
 	u_distortion.c

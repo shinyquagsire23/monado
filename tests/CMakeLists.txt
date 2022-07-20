@@ -11,6 +11,7 @@ endif()
 
 set(tests
 	tests_cxx_wrappers
+	tests_deque
 	tests_generic_callbacks
 	tests_history_buf
 	tests_id_ringbuffer
