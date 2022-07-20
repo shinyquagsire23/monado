@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -19,9 +19,9 @@
 #include "util/u_trace_marker.h"
 
 #include "v4l2_interface.h"
+#include "v4l2_driver.h"
 
 #include <stdio.h>
-#include <assert.h>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -38,17 +38,6 @@
  *
  */
 
-/*
- *
- * Printing functions.
- *
- */
-
-#define V4L2_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
-#define V4L2_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
-#define V4L2_INFO(d, ...) U_LOG_IFL_I(d->log_level, __VA_ARGS__)
-#define V4L2_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
-#define V4L2_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 #define V_CONTROL_GET(VID, CONTROL)                                                                                    \
 	do {                                                                                                           \
@@ -70,118 +59,11 @@
 DEBUG_GET_ONCE_LOG_OPTION(v4l2_log, "V4L2_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_NUM_OPTION(v4l2_exposure_absolute, "V4L2_EXPOSURE_ABSOLUTE", 10)
 
-#define NUM_V4L2_BUFFERS 32
-
-
-/*
- *
- * Structs
- *
- */
-
-/*!
- * @extends xrt_frame
- * @ingroup drv_v4l2
- */
-struct v4l2_frame
-{
-	struct xrt_frame base;
-
-	void *mem; //!< Data might be at an offset, so we need base memory.
-
-	struct v4l2_buffer v_buf;
-};
-
-struct v4l2_state_want
-{
-	bool active;
-	int value;
-};
-
-/*!
- * @ingroup drv_v4l2
- */
-struct v4l2_control_state
-{
-	int id;
-	int force;
-
-	struct v4l2_state_want want[2];
-
-	int value;
-
-	const char *name;
-};
-
-/*!
- * A single open v4l2 capture device, starts its own thread and waits on it.
- *
- * @implements xrt_frame_node
- * @implements xrt_fs
- */
-struct v4l2_fs
-{
-	struct xrt_fs base;
-
-	struct xrt_frame_node node;
-
-	struct u_sink_debug usd;
-
-	int fd;
-
-	struct
-	{
-		bool extended_format;
-		bool timeperframe;
-	} has;
-
-	enum xrt_fs_capture_type capture_type;
-	struct v4l2_control_state states[256];
-	size_t num_states;
-
-	struct
-	{
-		bool ps4_cam;
-	} quirks;
-
-	struct v4l2_frame frames[NUM_V4L2_BUFFERS];
-	uint32_t used_frames;
-
-	struct
-	{
-		bool mmap;
-		bool userptr;
-	} capture;
-
-	struct xrt_frame_sink *sink;
-
-	pthread_t stream_thread;
-
-	struct v4l2_source_descriptor *descriptors;
-	uint32_t num_descriptors;
-	uint32_t selected;
-
-	struct xrt_fs_capture_parameters capture_params;
-
-	bool is_configured;
-	bool is_running;
-	enum u_logging_level log_level;
-};
-
 /*!
  * Streaming thread entrypoint
  */
 static void *
 v4l2_fs_mainloop(void *ptr);
-
-/*!
- * Cast to derived type.
- */
-static inline struct v4l2_fs *
-v4l2_fs(struct xrt_fs *xfs)
-{
-	return (struct v4l2_fs *)xfs;
-}
 
 static void
 dump_controls(struct v4l2_fs *vid);
@@ -956,6 +838,7 @@ v4l2_fs_mainloop(void *ptr)
 
 		if ((v_buf.flags & V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC) != 0) {
 			xf->timestamp = os_timeval_to_ns(&v_buf.timestamp);
+			xf->source_timestamp = xf->timestamp;
 		}
 
 		vid->sink->push_frame(vid->sink, xf);

@@ -199,7 +199,7 @@ if(XRT_BUILD_DRIVER_VIVE)
 endif()
 
 if(XRT_HAVE_V4L2)
-	add_library(drv_v4l2 STATIC v4l2/v4l2_driver.c)
+	add_library(drv_v4l2 STATIC v4l2/v4l2_driver.h v4l2/v4l2_driver.c)
 	target_link_libraries(drv_v4l2 PRIVATE xrt-interfaces aux_os aux_util)
 	list(APPEND ENABLED_DRIVERS v4l2)
 endif()
@@ -240,8 +240,8 @@ endif()
 
 if(XRT_BUILD_DRIVER_SURVIVE)
 	add_library(
-		drv_survive STATIC survive/survive_driver.c 
-				   survive/survive_interface.h 
+		drv_survive STATIC survive/survive_driver.c
+				   survive/survive_interface.h
 		)
 	target_link_libraries(
 		drv_survive
