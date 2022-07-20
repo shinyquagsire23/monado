@@ -92,8 +92,6 @@ enum vive_controller_input_index
 
 
 
-#define VIVE_CLOCK_FREQ 48000000.0f // Hz = 48 MHz
-
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
@@ -529,29 +527,6 @@ controller_handle_analog_trigger(struct vive_controller_device *d, struct vive_c
 	VIVE_TRACE(d, "Trigger %f\n", d->state.trigger);
 }
 
-static inline uint32_t
-calc_dt_raw_and_handle_overflow(struct vive_controller_device *d, uint32_t sample_time)
-{
-	uint64_t dt_raw = (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
-	d->imu.last_sample_time_raw = sample_time;
-
-	// The 32-bit tick counter has rolled over,
-	// adjust the "negative" value to be positive.
-	// It's easiest to do this with 64-bits.
-	if (dt_raw > 0xFFFFFFFF) {
-		dt_raw += 0x100000000;
-	}
-
-	return (uint32_t)dt_raw;
-}
-
-static inline uint64_t
-cald_dt_ns(uint32_t dt_raw)
-{
-	double f = (double)(dt_raw) / VIVE_CLOCK_FREQ;
-	uint64_t diff_ns = (uint64_t)(f * 1000.0 * 1000.0 * 1000.0);
-	return diff_ns;
-}
 
 static void
 vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watchman_imu_sample *sample)
@@ -560,8 +535,7 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 
 	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
 	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
-	uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
-	uint64_t dt_ns = cald_dt_ns(dt_raw);
+	ticks_to_ns(time_raw, &d->imu.last_sample_ticks, &d->imu.last_sample_ts_ns);
 
 	d->imu.ts_received_ns = os_monotonic_get_ns();
 
@@ -619,11 +593,10 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 		angular_velocity = fixed_angular_velocity;
 	}
 
-	d->imu.time_ns += dt_ns;
 	d->last.acc = acceleration;
 	d->last.gyro = angular_velocity;
 
-	m_imu_3dof_update(&d->fusion, d->imu.time_ns, &acceleration, &angular_velocity);
+	m_imu_3dof_update(&d->fusion, d->imu.last_sample_ts_ns, &acceleration, &angular_velocity);
 
 	d->rot_filtered = d->fusion.rot;
 

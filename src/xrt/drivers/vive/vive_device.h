@@ -10,10 +10,10 @@
 #pragma once
 
 #include "xrt/xrt_device.h"
-#include "math/m_imu_3dof.h"
 #include "os/os_threading.h"
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+#include "math/m_imu_3dof.h"
 #include "math/m_relation_history.h"
 
 #include "vive/vive_config.h"
@@ -42,10 +42,9 @@ struct vive_device
 
 	struct
 	{
-		uint64_t time_ns;
+		timepoint_ns last_sample_ts_ns;
+		uint32_t last_sample_ticks;
 		uint8_t sequence;
-		uint32_t last_sample_time_raw;
-		timepoint_ns ts_received_ns;
 	} imu;
 
 	struct
@@ -55,7 +54,6 @@ struct vive_device
 		uint16_t proximity;
 		uint8_t button;
 	} board;
-
 
 	enum u_logging_level log_level;
 	bool disconnect_notified;

@@ -53,8 +53,8 @@ struct vive_controller_device
 
 	struct
 	{
-		uint64_t time_ns;
-		uint32_t last_sample_time_raw;
+		timepoint_ns last_sample_ts_ns;
+		uint32_t last_sample_ticks;
 		timepoint_ns ts_received_ns;
 	} imu;
 

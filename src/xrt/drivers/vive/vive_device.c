@@ -30,7 +30,6 @@
 #include "vive_protocol.h"
 
 
-#define VIVE_CLOCK_FREQ 48e6 // 48 MHz
 
 DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
@@ -241,39 +240,16 @@ oldest_sequence_index(uint8_t a, uint8_t b, uint8_t c)
 	return 0;
 }
 
-static inline uint32_t
-calc_dt_raw_and_handle_overflow(struct vive_device *d, uint32_t sample_time)
-{
-	uint64_t dt_raw = (uint64_t)sample_time - (uint64_t)d->imu.last_sample_time_raw;
-	d->imu.last_sample_time_raw = sample_time;
-
-	// The 32-bit tick counter has rolled over,
-	// adjust the "negative" value to be positive.
-	// It's easiest to do this with 64-bits.
-	if (dt_raw > 0xFFFFFFFF) {
-		dt_raw += 0x100000000;
-	}
-
-	return (uint32_t)dt_raw;
-}
-
-static inline uint64_t
-cald_dt_ns(uint32_t dt_raw)
-{
-	double f = (double)(dt_raw) / VIVE_CLOCK_FREQ;
-	uint64_t diff_ns = (uint64_t)(f * 1000.0 * 1000.0 * 1000.0);
-	return diff_ns;
-}
-
 static void
 update_imu(struct vive_device *d, const void *buffer)
 {
 	XRT_TRACE_MARKER();
 
+	uint64_t now_ns = os_monotonic_get_ns();
+
 	const struct vive_imu_report *report = buffer;
 	const struct vive_imu_sample *sample = report->sample;
 	uint8_t last_seq = d->imu.sequence;
-	d->imu.ts_received_ns = os_monotonic_get_ns();
 	int i;
 	int j;
 
@@ -298,10 +274,7 @@ update_imu(struct vive_device *d, const void *buffer)
 			continue;
 		}
 
-		uint32_t time_raw = __le32_to_cpu(sample->time);
-		uint32_t dt_raw = calc_dt_raw_and_handle_overflow(d, time_raw);
-		uint64_t dt_ns = cald_dt_ns(dt_raw);
-
+		ticks_to_ns(sample->time, &d->imu.last_sample_ticks, &d->imu.last_sample_ts_ns);
 
 		int16_t acc[3] = {
 		    (int16_t)__le16_to_cpu(sample->acc[0]),
@@ -371,7 +344,6 @@ update_imu(struct vive_device *d, const void *buffer)
 		default: VIVE_ERROR(d, "Unhandled Vive variant"); return;
 		}
 
-		d->imu.time_ns += dt_ns;
 		d->imu.sequence = seq;
 
 		struct xrt_space_relation rel = {0};
@@ -379,9 +351,9 @@ update_imu(struct vive_device *d, const void *buffer)
 		    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
 
 		os_mutex_lock(&d->fusion.mutex);
-		m_imu_3dof_update(&d->fusion.i3dof, d->imu.time_ns, &acceleration, &angular_velocity);
+		m_imu_3dof_update(&d->fusion.i3dof, d->imu.last_sample_ts_ns, &acceleration, &angular_velocity);
 		rel.pose.orientation = d->fusion.i3dof.rot;
-		m_relation_history_push(d->fusion.relation_hist, &rel, d->imu.ts_received_ns);
+		m_relation_history_push(d->fusion.relation_hist, &rel, now_ns);
 		os_mutex_unlock(&d->fusion.mutex);
 	}
 }
