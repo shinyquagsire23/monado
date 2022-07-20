@@ -14,6 +14,8 @@
 
 #include "xrt/xrt_prober.h"
 
+#include "vive_device.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,6 +53,7 @@ vive_found(struct xrt_prober *xp,
            size_t device_count,
            size_t index,
            cJSON *attached_data,
+           struct vive_tracking_status tstatus,
            struct vive_config **out_vive_config,
            struct xrt_device **out_xdev);
 

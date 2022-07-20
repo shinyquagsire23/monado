@@ -62,6 +62,8 @@ struct vive_device
 	{
 		bool calibration;
 		bool fusion;
+		char hand_status[128];
+		char slam_status[128];
 	} gui;
 
 	struct vive_config config;
@@ -77,13 +79,46 @@ struct vive_device
 		//! Prediction
 		struct m_relation_history *relation_hist;
 	} fusion;
+
+	//! Fields related to camera-based tracking (SLAM and hand tracking)
+	struct
+	{
+		//! Set at start. Whether the SLAM tracker was initialized.
+		bool slam_enabled;
+
+		//! Set at start. Whether the hand tracker was initialized.
+		bool hand_enabled;
+
+	} tracking;
+
+	//! Whether to track the HMD with 6dof SLAM or fallback to the 3dof tracker
+	bool slam_over_3dof;
+};
+
+
+/*!
+ * Summary of the status of various trackers.
+ *
+ * @todo Creation flow is a bit broken for now, in the future this info should be closer
+ * to the tracker creation code, thus avoiding the need to pass it around like this.
+ */
+struct vive_tracking_status
+{
+	bool slam_wanted;
+	bool slam_supported;
+	bool slam_enabled;
+	bool hand_wanted;
+	bool hand_supported;
+	bool hand_enabled;
 };
 
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
                    struct os_hid_device *watchman_dev,
-                   enum VIVE_VARIANT variant);
+                   enum VIVE_VARIANT variant,
+                   struct vive_tracking_status tstatus);
+
 
 #ifdef __cplusplus
 }

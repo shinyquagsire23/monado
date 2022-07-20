@@ -9,7 +9,9 @@
  */
 
 #include "tracking/t_hand_tracking.h"
-
+// #include "tracking/t_tracking.h"
+// #include "util/u_debug.h"
+// #include "v4l2/v4l2_interface.h"
 #include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
@@ -31,15 +33,9 @@
 
 #include <assert.h>
 
-//! @todo This should not be in static storage. Maybe make this inherit and replace usysd.
-static struct lighthouse_system
-{
-	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
-	bool hand_enabled;   //!< Whether hand tracking is enabled
-} lhs;
-
 #ifdef XRT_BUILD_DRIVER_VIVE
 #include "vive/vive_prober.h"
+#include "vive/vive_device.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SURVIVE
@@ -53,8 +49,17 @@ static struct lighthouse_system
 #include "../../tracking/hand/mercury/hg_interface.h"
 #endif
 
+//! @todo This should not be in static storage. Maybe make this inherit and replace usysd.
+static struct lighthouse_system
+{
+	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
+	bool slam_enabled;   //!< Whether SLAM tracking is enabled
+	bool hand_enabled;   //!< Whether hand tracking is enabled
+} lhs;
+
 DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
+DEBUG_GET_ONCE_BOOL_OPTION(vive_slam, "VIVE_SLAM", true)
 DEBUG_GET_ONCE_BOOL_OPTION(lh_handtracking, "LH_HANDTRACKING", true)
 DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
@@ -321,11 +326,17 @@ setup_visual_trackers(struct u_system_devices *usysd,
                       struct xrt_slam_sinks *out_sinks,
                       struct xrt_device **out_devices)
 {
+	bool slam_enabled = lhs.slam_enabled;
 	bool hand_enabled = lhs.hand_enabled;
 
 	struct t_stereo_camera_calibration *stereo_calib = NULL;
 	struct xrt_pose head_in_left_cam;
 	vive_get_stereo_camera_calibration(hmd_config, &stereo_calib, &head_in_left_cam);
+
+	// Initialize SLAM tracker
+	if (slam_enabled) {
+		LH_ASSERT(false, "Not implemented");
+	}
 
 	// Initialize hand tracker
 	struct xrt_slam_sinks *hand_sinks = NULL;
@@ -392,10 +403,12 @@ stream_data_sources(struct u_system_devices *usysd, struct xrt_prober *xp, struc
 	}
 
 	bool success = false;
-
-	uint32_t mode = get_selected_mode(finder.xfs);
-	success = xrt_fs_stream_start(finder.xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
-
+	if (lhs.slam_enabled) {
+		LH_ASSERT(false, "Not implemented");
+	} else {
+		uint32_t mode = get_selected_mode(finder.xfs);
+		success = xrt_fs_stream_start(finder.xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
+	}
 
 	if (!success) {
 		LH_ERROR("Unable to start data streaming");
@@ -420,6 +433,15 @@ lighthouse_open_system(struct xrt_builder *xb,
 		goto end;
 	}
 
+	// Decide whether to initialize the SLAM tracker
+	bool slam_wanted = debug_get_bool_option_vive_slam();
+#ifdef XRT_FEATURE_SLAM
+	bool slam_supported = !lhs.use_libsurvive; // Only with vive driver
+#else
+	bool slam_supported = false;
+#endif
+	bool slam_enabled = slam_supported && slam_wanted;
+
 	// Decide whether to initialize the hand tracker
 	bool hand_wanted = debug_get_bool_option_lh_handtracking();
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
@@ -429,6 +451,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 #endif
 	bool hand_enabled = hand_supported && hand_wanted;
 
+	lhs.slam_enabled = slam_enabled;
 	lhs.hand_enabled = hand_enabled;
 
 
@@ -440,6 +463,15 @@ lighthouse_open_system(struct xrt_builder *xb,
 #endif
 	} else {
 #ifdef XRT_BUILD_DRIVER_VIVE
+		struct vive_tracking_status tstatus = {
+		    .slam_wanted = slam_wanted,
+		    .slam_supported = slam_supported,
+		    .slam_enabled = slam_enabled,
+		    .hand_wanted = hand_wanted,
+		    .hand_supported = hand_supported,
+		    .hand_enabled = hand_enabled,
+		};
+
 		struct xrt_prober_device **xpdevs = NULL;
 		size_t xpdev_count = 0;
 
@@ -460,7 +492,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 			case VIVE_PID:
 			case VIVE_PRO_MAINBOARD_PID:
 			case VIVE_PRO_LHR_PID: {
-				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, &hmd_config,
+				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, tstatus, &hmd_config,
 				                             &usysd->base.xdevs[usysd->base.xdev_count]);
 				usysd->base.xdev_count += num_devices;
 

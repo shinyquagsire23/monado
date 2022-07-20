@@ -1594,7 +1594,7 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 #endif
 	bool hand_enabled = hand_supported && hand_wanted;
 
-	wh->base.orientation_tracking_supported = dof3_enabled;
+	wh->base.orientation_tracking_supported = dof3_enabled || slam_enabled;
 	wh->base.position_tracking_supported = slam_enabled;
 	wh->base.hand_tracking_supported = false; // out_handtracker will handle it
 

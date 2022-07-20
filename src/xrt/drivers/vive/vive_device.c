@@ -30,7 +30,6 @@
 #include "vive_protocol.h"
 
 
-
 DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
 static bool
@@ -702,6 +701,26 @@ vive_sensors_run_thread(void *ptr)
 	return NULL;
 }
 
+static void
+vive_device_setup_ui(struct vive_device *d)
+{
+	u_var_add_root(d, "Vive Device", true);
+
+	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Tracking");
+	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
+	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_bias, "gyro_bias");
+
+	u_var_add_gui_header(d, NULL, "SLAM Tracking");
+	u_var_add_ro_text(d, d->gui.slam_status, "Tracker status");
+
+	u_var_add_gui_header(d, NULL, "Hand Tracking");
+	u_var_add_ro_text(d, d->gui.hand_status, "Tracker status");
+}
+
 static bool
 compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
 {
@@ -711,11 +730,61 @@ compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct x
 	return u_compute_distortion_vive(&d->config.distortion[view], u, v, result);
 }
 
+static bool
+vive_setup_trackers(struct vive_device *d, struct vive_tracking_status status)
+{
+	// Tracking status setup
+	bool dof3_enabled = true; // We always have at least 3dof HMD tracking
+	bool slam_wanted = status.slam_wanted;
+	bool slam_supported = status.slam_supported;
+	bool slam_enabled = status.slam_enabled;
+	bool hand_wanted = status.hand_wanted;
+	bool hand_supported = status.hand_supported;
+	bool hand_enabled = status.hand_enabled;
+
+	d->base.orientation_tracking_supported = dof3_enabled || slam_enabled;
+	d->base.position_tracking_supported = slam_enabled;
+	d->base.hand_tracking_supported = false; // this is handled by a separate hand device
+	d->base.device_type = XRT_DEVICE_TYPE_HMD;
+
+	d->tracking.slam_enabled = slam_enabled;
+	d->tracking.hand_enabled = hand_enabled;
+
+	d->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
+
+	const char *slam_status = d->tracking.slam_enabled ? "Enabled"
+	                          : !slam_wanted           ? "Disabled by the user (envvar set to false)"
+	                          : !slam_supported        ? "Unavailable (not built)"
+	                                                   : NULL;
+
+	const char *hand_status = d->tracking.hand_enabled ? "Enabled"
+	                          : !hand_wanted           ? "Disabled by the user (envvar set to false)"
+	                          : !hand_supported        ? "Unavailable (not built)"
+	                                                   : NULL;
+
+	assert(slam_status != NULL && hand_status != NULL);
+
+	snprintf(d->gui.slam_status, sizeof(d->gui.slam_status), "%s", slam_status);
+	snprintf(d->gui.hand_status, sizeof(d->gui.hand_status), "%s", hand_status);
+
+	// Initialize 3DoF tracker
+	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+
+	int ret = os_mutex_init(&d->fusion.mutex);
+	if (ret != 0) {
+		VIVE_ERROR(d, "Failed to init 3dof mutex");
+		return false;
+	}
+
+	return true;
+}
+
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
                    struct os_hid_device *watchman_dev,
-                   enum VIVE_VARIANT variant)
+                   enum VIVE_VARIANT variant,
+                   struct vive_tracking_status tstatus)
 {
 	XRT_TRACE_MARKER();
 
@@ -837,18 +906,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	os_thread_helper_init(&d->sensors_thread);
 	os_thread_helper_init(&d->watchman_thread);
 
-	// Init here.
-	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
-
-	u_var_add_root(d, "Vive Device", true);
-	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Fusion");
-	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
-	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
-	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
-	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
-	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
-	u_var_add_vec3_f32(d, &d->config.imu.gyro_bias, "gyro_bias");
-
 	int ret;
 
 	if (watchman_dev != NULL) {
@@ -870,9 +927,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		}
 	}
 
-	d->base.orientation_tracking_supported = true;
-	d->base.position_tracking_supported = false;
-	d->base.device_type = XRT_DEVICE_TYPE_HMD;
+	vive_setup_trackers(d, tstatus);
 
 	switch (d->config.variant) {
 	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (vive)"); break;
@@ -895,6 +950,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		vive_device_destroy((struct xrt_device *)d);
 		return NULL;
 	}
+
+	vive_device_setup_ui(d);
 
 	return d;
 }
