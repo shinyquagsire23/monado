@@ -113,6 +113,21 @@ if(XRT_BUILD_DRIVER_OHMD)
 	list(APPEND ENABLED_HEADSET_DRIVERS openhmd)
 endif()
 
+if(XRT_BUILD_DRIVER_OPENGLOVES)
+	add_library(
+			drv_opengloves STATIC
+			opengloves/opengloves_interface.h opengloves/opengloves_device.c opengloves/opengloves_prober.c opengloves/opengloves_device.h opengloves/communication/serial/opengloves_serial.h opengloves/communication/serial/opengloves_serial.c opengloves/encoding/alpha_encoding.h opengloves/encoding/alpha_encoding.cpp opengloves/encoding/encoding.h opengloves/communication/bluetooth/opengloves_bt_serial.h opengloves/communication/bluetooth/opengloves_bt_serial.c opengloves/communication/opengloves_communication.h opengloves/communication/serial/opengloves_prober_serial.h opengloves/communication/serial/opengloves_prober_serial.c opengloves/communication/bluetooth/opengloves_prober_bt.h opengloves/communication/bluetooth/opengloves_prober_bt.c)
+	target_link_libraries(drv_opengloves
+			PRIVATE
+			xrt-interfaces
+			aux_util
+			aux_os
+			bluetooth
+			)
+	list(APPEND ENABLED_DRIVERS opengloves)
+
+endif()
+
 if(XRT_BUILD_DRIVER_PSMV)
 	add_library(drv_psmv STATIC psmv/psmv_driver.c psmv/psmv_interface.h)
 	target_link_libraries(
