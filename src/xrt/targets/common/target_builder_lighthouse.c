@@ -53,9 +53,8 @@
 //! @todo This should not be in static storage. Maybe make this inherit and replace usysd.
 static struct lighthouse_system
 {
-	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
-	bool slam_enabled;   //!< Whether SLAM tracking is enabled
-	bool hand_enabled;   //!< Whether hand tracking is enabled
+	bool use_libsurvive;                      //!< Whether we are using survive driver or vive driver
+	struct vive_tracking_status vive_tstatus; //!< Status of tracking features for vive driver
 } lhs;
 
 DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
@@ -350,8 +349,8 @@ setup_visual_trackers(struct u_system_devices *usysd,
                       struct xrt_slam_sinks *out_sinks,
                       struct xrt_device **out_devices)
 {
-	bool slam_enabled = lhs.slam_enabled;
-	bool hand_enabled = lhs.hand_enabled;
+	bool slam_enabled = lhs.vive_tstatus.slam_enabled;
+	bool hand_enabled = lhs.vive_tstatus.hand_enabled;
 
 	struct t_stereo_camera_calibration *stereo_calib = NULL;
 	struct xrt_pose head_in_left_cam;
@@ -362,8 +361,9 @@ setup_visual_trackers(struct u_system_devices *usysd,
 	if (slam_enabled) {
 		slam_sinks = lighthouse_slam_track(usysd);
 		if (slam_sinks == NULL) {
+			lhs.vive_tstatus.slam_enabled = false;
+			slam_enabled = false;
 			LH_WARN("Unable to setup the SLAM tracker");
-			return false;
 		}
 	}
 
@@ -374,12 +374,18 @@ setup_visual_trackers(struct u_system_devices *usysd,
 		bool success =
 		    lighthouse_hand_track(usysd, xp, head_in_left_cam, stereo_calib, &hand_sinks, hand_devices);
 		if (!success) {
+			lhs.vive_tstatus.hand_enabled = false;
+			hand_enabled = false;
 			LH_WARN("Unable to setup the hand tracker");
-			return false;
 		}
 	}
 
 	t_stereo_camera_calibration_reference(&stereo_calib, NULL);
+
+	if (!lhs.use_libsurvive) { // Refresh trackers status in vive driver
+		struct vive_device *d = (struct vive_device *)usysd->base.roles.head;
+		vive_set_trackers_status(d, lhs.vive_tstatus);
+	}
 
 	// Setup frame graph
 
@@ -452,7 +458,7 @@ stream_data_sources(struct u_system_devices *usysd, struct xrt_prober *xp, struc
 	uint32_t mode = get_selected_mode(finder.xfs);
 
 	// If SLAM is enabled (only on vive driver) we intercept the data sink
-	if (lhs.slam_enabled) {
+	if (lhs.vive_tstatus.slam_enabled) {
 		struct vive_device *d = (struct vive_device *)usysd->base.roles.head;
 		LH_ASSERT_(d != NULL && d->source != NULL);
 		struct vive_source *vs = d->source;
@@ -502,9 +508,15 @@ lighthouse_open_system(struct xrt_builder *xb,
 #endif
 	bool hand_enabled = hand_supported && hand_wanted;
 
-	lhs.slam_enabled = slam_enabled;
-	lhs.hand_enabled = hand_enabled;
-
+	struct vive_tracking_status tstatus = {
+	    .slam_wanted = slam_wanted,
+	    .slam_supported = slam_supported,
+	    .slam_enabled = slam_enabled,
+	    .hand_wanted = hand_wanted,
+	    .hand_supported = hand_supported,
+	    .hand_enabled = hand_enabled,
+	};
+	lhs.vive_tstatus = tstatus;
 
 	struct vive_config *hmd_config = NULL;
 
@@ -514,15 +526,6 @@ lighthouse_open_system(struct xrt_builder *xb,
 #endif
 	} else {
 #ifdef XRT_BUILD_DRIVER_VIVE
-		struct vive_tracking_status tstatus = {
-		    .slam_wanted = slam_wanted,
-		    .slam_supported = slam_supported,
-		    .slam_enabled = slam_enabled,
-		    .hand_wanted = hand_wanted,
-		    .hand_supported = hand_supported,
-		    .hand_enabled = hand_enabled,
-		};
-
 		struct xrt_prober_device **xpdevs = NULL;
 		size_t xpdev_count = 0;
 
@@ -544,8 +547,8 @@ lighthouse_open_system(struct xrt_builder *xb,
 			case VIVE_PRO_MAINBOARD_PID:
 			case VIVE_PRO_LHR_PID: {
 				struct vive_source *vs = vive_source_create(&usysd->xfctx);
-				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, tstatus, vs, &hmd_config,
-				                             &usysd->base.xdevs[usysd->base.xdev_count]);
+				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, lhs.vive_tstatus, vs,
+				                             &hmd_config, &usysd->base.xdevs[usysd->base.xdev_count]);
 				usysd->base.xdev_count += num_devices;
 
 			} break;

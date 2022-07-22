@@ -824,10 +824,9 @@ compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct x
 	return u_compute_distortion_vive(&d->config.distortion[view], u, v, result);
 }
 
-static bool
-vive_setup_trackers(struct vive_device *d, struct vive_tracking_status status)
+void
+vive_set_trackers_status(struct vive_device *d, struct vive_tracking_status status)
 {
-	// Tracking status setup
 	bool dof3_enabled = true; // We always have at least 3dof HMD tracking
 	bool slam_wanted = status.slam_wanted;
 	bool slam_supported = status.slam_supported;
@@ -849,31 +848,15 @@ vive_setup_trackers(struct vive_device *d, struct vive_tracking_status status)
 	const char *slam_status = d->tracking.slam_enabled ? "Enabled"
 	                          : !slam_wanted           ? "Disabled by the user (envvar set to false)"
 	                          : !slam_supported        ? "Unavailable (not built)"
-	                                                   : NULL;
+	                                                   : "Failed to initialize";
 
 	const char *hand_status = d->tracking.hand_enabled ? "Enabled"
 	                          : !hand_wanted           ? "Disabled by the user (envvar set to false)"
 	                          : !hand_supported        ? "Unavailable (not built)"
-	                                                   : NULL;
-
-	assert(slam_status != NULL && hand_status != NULL);
+	                                                   : "Failed to initialize";
 
 	snprintf(d->gui.slam_status, sizeof(d->gui.slam_status), "%s", slam_status);
 	snprintf(d->gui.hand_status, sizeof(d->gui.hand_status), "%s", hand_status);
-
-	// Initialize 3DoF tracker
-	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
-
-	int ret = os_mutex_init(&d->fusion.mutex);
-	if (ret != 0) {
-		VIVE_ERROR(d, "Failed to init 3dof mutex");
-		return false;
-	}
-
-	// SLAM tracker and hand tracker, if enabled, should've been initialized in
-	// the lighthouse builder. The out_sinks fields will be set there as well.
-
-	return true;
 }
 
 struct vive_device *
@@ -1037,11 +1020,15 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	}
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
 
-	bool trackers_set = vive_setup_trackers(d, tstatus);
-	if (!trackers_set) {
-		VIVE_ERROR(d, "Failed to setup trackers");
-		vive_device_destroy((struct xrt_device *)d);
-		return NULL;
+	vive_set_trackers_status(d, tstatus);
+
+	// Initialize 3DoF tracker
+	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+
+	ret = os_mutex_init(&d->fusion.mutex);
+	if (ret != 0) {
+		VIVE_ERROR(d, "Failed to init 3dof mutex");
+		return false;
 	}
 
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);

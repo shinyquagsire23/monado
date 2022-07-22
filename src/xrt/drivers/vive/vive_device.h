@@ -127,6 +127,9 @@ struct vive_tracking_status
 	bool hand_enabled;
 };
 
+void
+vive_set_trackers_status(struct vive_device *d, struct vive_tracking_status status);
+
 struct vive_device *
 vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
