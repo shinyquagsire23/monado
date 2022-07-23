@@ -75,6 +75,7 @@ endif()
 find_package(Eigen3 3 REQUIRED)
 find_package(Vulkan MODULE)
 find_package(HIDAPI MODULE)
+find_package(bluetooth MODULE)
 find_package(OpenHMD MODULE)
 find_package(
 	OpenCV
@@ -262,6 +263,7 @@ option_with_deps(XRT_INSTALL_SYSTEMD_UNIT_FILES "Install user unit files for sys
 option_with_deps(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path to monado-system in installed user unit files for systemd socket activation" DEPENDS XRT_HAVE_SYSTEMD)
 
 # Driver deps to use (sorted, though there are some internal dependencies)
+option_with_deps(XRT_HAVE_BLUETOOTH "Enable Bluetooth (legacy, non-ble)" DEPENDS BLUETOOTH_FOUND)
 option_with_deps(XRT_HAVE_FFMPEG "Enable ffmpeg testing video driver" DEPENDS FFMPEG_FOUND)
 option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
@@ -443,6 +445,7 @@ endif()
 message(STATUS "#####----- Config -----#####")
 message(STATUS "#    GIT_DESC:        ${GIT_DESC}")
 message(STATUS "#")
+message(STATUS "#    BLUETOOTH:       ${XRT_HAVE_BLUETOOTH}")
 message(STATUS "#    BASALT:          ${XRT_HAVE_BASALT_SLAM}")
 message(STATUS "#    D3D11:           ${XRT_HAVE_D3D11}")
 message(STATUS "#    DBUS:            ${XRT_HAVE_DBUS}")

@@ -30,26 +30,26 @@ include:
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
+    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
 
 # Variables for build and usage of Debian bullseye-ndk image
 .monado.variables.debian:bullseye-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-06-27.0"
+    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Ubuntu focal image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2022-07-24.0"
+    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
 
 # Variables for build and usage of Arch rolling image
 .monado.variables.arch:rolling:
   variables:
     FDO_DISTRIBUTION_VERSION: "rolling"
-    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
+    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
 
 stages:
   - container_prep
@@ -71,7 +71,7 @@ debian:bullseye:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
     FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
 
 # Make Debian bullseye-ndk image
@@ -97,7 +97,7 @@ ubuntu:focal:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
 
 # Make Arch rolling image
 arch:rolling:container_prep:
@@ -109,7 +109,7 @@ arch:rolling:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'check clang cmake diffutils doxygen eigen ffmpeg gcc git glfw-x11 glslang graphviz gtk3 hidapi libusb libxrandr mesa ninja opencv patch pkgconfig python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader'
+    FDO_DISTRIBUTION_PACKAGES: 'bluez-libs check clang cmake diffutils doxygen eigen ffmpeg gcc git glfw-x11 glslang graphviz gtk3 hidapi libusb libxrandr mesa ninja opencv patch pkgconfig python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader'
 
 ###
 # Container usage base jobs

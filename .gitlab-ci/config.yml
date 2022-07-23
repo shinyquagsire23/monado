@@ -47,6 +47,7 @@ fdo_ci_templates_sha: 34039cd573a2df832d465bc9e4c5f543571f5241
   libgstreamer-plugins-base1.0-dev:
   libsystemd-dev:
   libbsd-dev:
+  libbluetooth-dev:
   # Only used for building packages
   devscripts:
   debhelper:
@@ -68,7 +69,7 @@ distributions:
       # This image does some extra work.
       - codename: bullseye
         script: i386_and_proclamation_container_prep.sh
-        tag: "2022-04-22.0"
+        tag: "2022-07-25.0"
         deb_version_suffix: bpo11
         packages:
           <<: *default_debian_packages
@@ -115,7 +116,7 @@ distributions:
         distro_version: bullseye
         repo_suffix: ndk
         script: android_container_prep.sh
-        tag: "2022-06-27.0"
+        tag: "2022-07-25.0"
         # This must match ext.sharedTargetSdk in build.gradle
         android_compile_sdk: 31
         # This must match buildscript.ext.buildToolsVersion in build.gradle
@@ -170,7 +171,7 @@ distributions:
       # LTS
       - codename: focal
         distro_version: "20.04"
-        tag: "2022-07-24.0"
+        tag: "2022-07-25.0"
         deb_version_suffix: ubuntu2004
         packages:
           <<: *default_debian_packages
@@ -183,7 +184,7 @@ distributions:
   - name: arch
     images:
       - codename: rolling
-        tag: "2022-04-22.0"
+        tag: "2022-07-25.0"
         packages:
           git:
           gcc:
@@ -211,6 +212,7 @@ distributions:
           ffmpeg:
           v4l-utils:
           qt5-base:
+          bluez-libs:
         build_jobs:
           - name: "arch:cmake"
 
