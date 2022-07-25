@@ -50,6 +50,10 @@
 #include "../../tracking/hand/mercury/hg_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_OPENGLOVES
+#include "opengloves/opengloves_interface.h"
+#endif
+
 //! @todo This should not be in static storage. Maybe make this inherit and replace usysd.
 static struct lighthouse_system
 {
@@ -87,6 +91,10 @@ static const char *driver_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_VIVE
     "vive",
+#endif
+
+#ifdef XRT_BUILD_DRIVER_OPENGLOVES
+    "opengloves",
 #endif
 };
 
@@ -582,6 +590,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 		usysd->base.roles.hand_tracking.left =
 		    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_LEFT);
 	}
+
 	if (right_idx >= 0) {
 		usysd->base.roles.right = usysd->base.xdevs[right_idx];
 		usysd->base.roles.hand_tracking.right =
@@ -616,6 +625,33 @@ lighthouse_open_system(struct xrt_builder *xb,
 		goto end;
 	}
 
+#ifdef XRT_BUILD_DRIVER_OPENGLOVES
+	size_t openglove_device_count =
+	    opengloves_create_devices(&usysd->base.xdevs[usysd->base.xdev_count], &usysd->base);
+	for (size_t i = usysd->base.xdev_count; i < usysd->base.xdev_count + openglove_device_count; i++) {
+		struct xrt_device *xdev = usysd->base.xdevs[i];
+
+		for (uint32_t j = 0; j < xdev->input_count; j++) {
+			struct xrt_input *input = &xdev->inputs[j];
+
+			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_LEFT) {
+				usysd->base.roles.hand_tracking.left = xdev;
+
+				break;
+			}
+			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
+				usysd->base.roles.hand_tracking.right = xdev;
+
+				break;
+			}
+		}
+	}
+
+	usysd->base.xdev_count += openglove_device_count;
+
+#endif
+
+	*out_xsysd = &usysd->base;
 end:
 
 	if (result == XRT_SUCCESS) {
