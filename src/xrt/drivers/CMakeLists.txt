@@ -177,6 +177,8 @@ if(XRT_BUILD_DRIVER_VIVE)
 		vive/vive_controller.c
 		vive/vive_lighthouse.h
 		vive/vive_lighthouse.c
+		vive/vive_source.h
+		vive/vive_source.c
 		)
 	target_link_libraries(
 		drv_vive

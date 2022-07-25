@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <asm/byteorder.h>
 
+#include "util/u_debug.h"
 #include "util/u_time.h"
 
 /*
@@ -27,7 +28,11 @@
 #define VIVE_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
 #define VIVE_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
+DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
+
 #define VIVE_CLOCK_FREQ 48e6 // 48 MHz
+#define CAMERA_FREQUENCY 54
+#define IMU_FREQUENCY 1000
 
 /*!
  * Helper function to convert raw device ticks to nanosecond timestamps.
@@ -45,12 +50,10 @@ ticks_to_ns(uint32_t sample_ticks_raw, uint32_t *inout_prev_ticks, timepoint_ns 
 	uint32_t sample_ticks = __le32_to_cpu(sample_ticks_raw);
 	uint32_t prev_ticks = *inout_prev_ticks;
 
-	uint32_t delta_ticks = 0;
-	if (prev_ticks < sample_ticks) {
-		delta_ticks = sample_ticks - prev_ticks;
-	} else { // Handle overflow
-		delta_ticks = (UINT32_MAX - prev_ticks) + sample_ticks;
-	}
+	// From the C standard https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2912.pdf
+	// "A computation involving unsigned operands can never produce an overflow,
+	// because arithmetic for the unsigned type is performed modulo 2^N"
+	uint32_t delta_ticks = sample_ticks - prev_ticks;
 
 	const double one_tick_in_s = (1 / VIVE_CLOCK_FREQ);
 	const double one_tick_in_ns = one_tick_in_s * U_TIME_1S_IN_NS;

@@ -53,8 +53,6 @@
  *
  */
 
-DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
-
 enum vive_controller_input_index
 {
 	// common inputs

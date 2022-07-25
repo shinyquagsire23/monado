@@ -36,6 +36,7 @@
 #ifdef XRT_BUILD_DRIVER_VIVE
 #include "vive/vive_prober.h"
 #include "vive/vive_device.h"
+#include "vive/vive_source.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SURVIVE
@@ -94,7 +95,6 @@ struct index_camera_finder
 {
 	struct xrt_fs *xfs;
 	struct xrt_frame_context *xfctx;
-	bool found;
 };
 
 /*
@@ -122,19 +122,6 @@ get_selected_mode(struct xrt_fs *xfs)
 
 	free(modes);
 	return selected_mode;
-}
-
-static bool
-visual_inertial_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
-{
-	// Stream frames
-	struct xrt_frame_sink *sbs_sink = sinks->left;
-	bool success = xrt_fs_stream_start(xfs, sbs_sink, XRT_FS_CAPTURE_TYPE_TRACKING, get_selected_mode(xfs));
-	if (!success) {
-		return false;
-	}
-
-	return true;
 }
 
 static void
@@ -462,12 +449,17 @@ stream_data_sources(struct u_system_devices *usysd, struct xrt_prober *xp, struc
 	}
 
 	bool success = false;
+	uint32_t mode = get_selected_mode(finder.xfs);
+
+	// If SLAM is enabled (only on vive driver) we intercept the data sink
 	if (lhs.slam_enabled) {
-		LH_ASSERT(false, "Not implemented");
-	} else {
-		uint32_t mode = get_selected_mode(finder.xfs);
-		success = xrt_fs_stream_start(finder.xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
+		struct vive_device *d = (struct vive_device *)usysd->base.roles.head;
+		LH_ASSERT_(d != NULL && d->source != NULL);
+		struct vive_source *vs = d->source;
+		vive_source_hook_into_sinks(vs, &sinks);
 	}
+
+	success = xrt_fs_stream_start(finder.xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
 
 	if (!success) {
 		LH_ERROR("Unable to start data streaming");
@@ -551,7 +543,8 @@ lighthouse_open_system(struct xrt_builder *xb,
 			case VIVE_PID:
 			case VIVE_PRO_MAINBOARD_PID:
 			case VIVE_PRO_LHR_PID: {
-				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, tstatus, &hmd_config,
+				struct vive_source *vs = vive_source_create(&usysd->xfctx);
+				int num_devices = vive_found(xp, xpdevs, xpdev_count, i, NULL, tstatus, vs, &hmd_config,
 				                             &usysd->base.xdevs[usysd->base.xdev_count]);
 				usysd->base.xdev_count += num_devices;
 

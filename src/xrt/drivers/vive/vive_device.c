@@ -28,9 +28,9 @@
 #include "vive.h"
 #include "vive_device.h"
 #include "vive_protocol.h"
+#include "vive_source.h"
+#include "xrt/xrt_tracking.h"
 
-
-DEBUG_GET_ONCE_LOG_OPTION(vive_log, "VIVE_LOG", U_LOGGING_WARN)
 
 static bool
 vive_mainboard_power_off(struct vive_device *d);
@@ -416,6 +416,8 @@ update_imu(struct vive_device *d, const void *buffer)
 		rel.pose.orientation = d->fusion.i3dof.rot;
 		m_relation_history_push(d->fusion.relation_hist, &rel, now_ns);
 		os_mutex_unlock(&d->fusion.mutex);
+
+		vive_source_push_imu_packet(d->source, d->imu.last_sample_ts_ns, acceleration, angular_velocity);
 	}
 }
 
@@ -537,13 +539,14 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 			continue;
 		}
 
-		if (sensor_id == 0xfd) {
-			/* TODO: handle camera sync timestamp */
+		if (sensor_id == 0xfd) { // Camera frame timestamp
+			vive_source_push_frame_ticks(d->source, pulse->timestamp);
 			continue;
 		}
 
 		if (sensor_id == 0xfb) {
-			/* TODO: Only turns on when the camera is running but not every frame. */
+			/* TODO: Only turns on when the camera is running but not every frame. It
+			 * seems to come with every 16h frame on an Index (~3.37hz) */
 			continue;
 		}
 
@@ -868,7 +871,7 @@ vive_setup_trackers(struct vive_device *d, struct vive_tracking_status status)
 	}
 
 	// SLAM tracker and hand tracker, if enabled, should've been initialized in
-	// the lighthouse builder.
+	// the lighthouse builder. The out_sinks fields will be set there as well.
 
 	return true;
 }
@@ -878,7 +881,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
                    struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant,
-                   struct vive_tracking_status tstatus)
+                   struct vive_tracking_status tstatus,
+                   struct vive_source *vs)
 {
 	XRT_TRACE_MARKER();
 
@@ -1000,6 +1004,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	os_thread_helper_init(&d->sensors_thread);
 	os_thread_helper_init(&d->watchman_thread);
 
+	d->source = vs;
 	d->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
 	d->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 
@@ -1024,8 +1029,6 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		}
 	}
 
-	vive_setup_trackers(d, tstatus);
-
 	switch (d->config.variant) {
 	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (vive)"); break;
 	case VIVE_VARIANT_PRO: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro (vive)"); break;
@@ -1033,6 +1036,13 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	case VIVE_UNKNOWN: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (vive)"); break;
 	}
 	snprintf(d->base.serial, XRT_DEVICE_NAME_LEN, "%s", d->config.firmware.device_serial_number);
+
+	bool trackers_set = vive_setup_trackers(d, tstatus);
+	if (!trackers_set) {
+		VIVE_ERROR(d, "Failed to setup trackers");
+		vive_device_destroy((struct xrt_device *)d);
+		return NULL;
+	}
 
 	ret = os_thread_helper_start(&d->sensors_thread, vive_sensors_run_thread, d);
 	if (ret != 0) {

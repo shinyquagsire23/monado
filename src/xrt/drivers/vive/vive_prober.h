@@ -54,6 +54,7 @@ vive_found(struct xrt_prober *xp,
            size_t index,
            cJSON *attached_data,
            struct vive_tracking_status tstatus,
+           struct vive_source *vs,
            struct vive_config **out_vive_config,
            struct xrt_device **out_xdev);
 

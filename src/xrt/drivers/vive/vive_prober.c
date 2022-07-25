@@ -66,6 +66,7 @@ init_vive1(struct xrt_prober *xp,
            size_t device_count,
            enum u_logging_level log_level,
            struct vive_tracking_status tstatus,
+           struct vive_source *vs,
            struct xrt_device **out_xdev)
 {
 	log_vive_device(log_level, xp, dev);
@@ -120,7 +121,7 @@ init_vive1(struct xrt_prober *xp,
 		return 0;
 	}
 	struct vive_device *d =
-	    vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_VIVE, tstatus);
+	    vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_VIVE, tstatus, vs);
 	if (d == NULL) {
 		free(sensors_dev);
 		free(mainboard_dev);
@@ -139,6 +140,7 @@ init_vive_pro(struct xrt_prober *xp,
               size_t device_count,
               enum u_logging_level log_level,
               struct vive_tracking_status tstatus,
+              struct vive_source *vs,
               struct xrt_device **out_xdev)
 {
 	XRT_TRACE_MARKER();
@@ -195,7 +197,8 @@ init_vive_pro(struct xrt_prober *xp,
 		free(sensors_dev);
 		return 0;
 	}
-	struct vive_device *d = vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_PRO, tstatus);
+	struct vive_device *d =
+	    vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_PRO, tstatus, vs);
 	if (d == NULL) {
 		free(sensors_dev);
 		free(mainboard_dev);
@@ -214,6 +217,7 @@ init_valve_index(struct xrt_prober *xp,
                  size_t device_count,
                  enum u_logging_level log_level,
                  struct vive_tracking_status tstatus,
+                 struct vive_source *vs,
                  struct vive_config **out_vive_config,
                  struct xrt_device **out_xdevs)
 {
@@ -252,7 +256,7 @@ init_valve_index(struct xrt_prober *xp,
 		return 0;
 	}
 
-	struct vive_device *d = vive_device_create(NULL, sensors_dev, watchman_dev, VIVE_VARIANT_INDEX, tstatus);
+	struct vive_device *d = vive_device_create(NULL, sensors_dev, watchman_dev, VIVE_VARIANT_INDEX, tstatus, vs);
 	if (d == NULL) {
 		return 0;
 	}
@@ -272,6 +276,7 @@ vive_found(struct xrt_prober *xp,
            size_t index,
            cJSON *attached_data,
            struct vive_tracking_status tstatus,
+           struct vive_source *vs,
            struct vive_config **out_vive_config,
            struct xrt_device **out_xdev)
 {
@@ -289,10 +294,12 @@ vive_found(struct xrt_prober *xp,
 	}
 
 	switch (dev->product_id) {
-	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, log_level, tstatus, out_xdev);
-	case VIVE_PRO_MAINBOARD_PID: return init_vive_pro(xp, dev, devices, device_count, log_level, tstatus, out_xdev);
+	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, log_level, tstatus, vs, out_xdev);
+	case VIVE_PRO_MAINBOARD_PID:
+		return init_vive_pro(xp, dev, devices, device_count, log_level, tstatus, vs, out_xdev);
 	case VIVE_PRO_LHR_PID:
-		return init_valve_index(xp, dev, devices, device_count, log_level, tstatus, out_vive_config, out_xdev);
+		return init_valve_index(xp, dev, devices, device_count, log_level, tstatus, vs, out_vive_config,
+		                        out_xdev);
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return 0;
 	}
 

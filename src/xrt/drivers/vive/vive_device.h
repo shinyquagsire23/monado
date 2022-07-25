@@ -100,6 +100,9 @@ struct vive_device
 	//! Whether to track the HMD with 6dof SLAM or fallback to the 3dof tracker
 	bool slam_over_3dof;
 
+	//! In charge of managing raw samples, redirects them for tracking
+	struct vive_source *source;
+
 	//! Last tracked pose
 	struct xrt_pose pose;
 
@@ -129,8 +132,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
                    struct os_hid_device *sensors_dev,
                    struct os_hid_device *watchman_dev,
                    enum VIVE_VARIANT variant,
-                   struct vive_tracking_status tstatus);
-
+                   struct vive_tracking_status tstatus,
+                   struct vive_source *vs);
 
 #ifdef __cplusplus
 }
