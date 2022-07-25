@@ -174,27 +174,9 @@ distributions:
         deb_version_suffix: ubuntu2004
         packages:
           <<: *default_debian_packages
-        build_jobs:
-          - name: "ubuntu:cmake"
-            cmake_defines:
-              BUILD_DOC: "OFF"
-
-      - codename: hirsute
-        distro_version: "21.04"
-        tag: "2022-04-22.0"
-        deb_version_suffix: ubuntu2104
-        packages:
-          <<: *default_debian_packages
-
-      - codename: impish
-        distro_version: "21.10"
-        tag: "2022-04-22.0"
-        deb_version_suffix: ubuntu2110
-        packages:
-          <<: *default_debian_packages
           reprepro:
         build_jobs:
-          - name: "ubuntu:latest:cmake"
+          - name: "ubuntu:cmake"
             cmake_defines:
               BUILD_DOC: "OFF"
 

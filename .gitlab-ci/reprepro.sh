@@ -49,23 +49,3 @@ if [ -f "incoming/focal.distro" ]; then
 else
     echo "Skipping focal - no artifact found"
 fi
-
-# hirsute
-if [ -f "incoming/hirsute.distro" ]; then
-    VERSION=$(cat incoming/hirsute.distro)
-    echo "Signing and processing hirsute: ${VERSION}"
-    debsign -k "${MONADO_GPG_FINGERPRINT}" -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" "incoming/monado_${VERSION}_amd64.changes"
-    reprepro -V --ignore=wrongdistribution -b repo include hirsute "incoming/monado_${VERSION}_amd64.changes"
-else
-    echo "Skipping hirsute - no artifact found"
-fi
-
-# impish
-if [ -f "incoming/impish.distro" ]; then
-    VERSION=$(cat incoming/impish.distro)
-    echo "Signing and processing impish: ${VERSION}"
-    debsign -k "${MONADO_GPG_FINGERPRINT}" -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" "incoming/monado_${VERSION}_amd64.changes"
-    reprepro -V --ignore=wrongdistribution -b repo include impish "incoming/monado_${VERSION}_amd64.changes"
-else
-    echo "Skipping impish - no artifact found"
-fi

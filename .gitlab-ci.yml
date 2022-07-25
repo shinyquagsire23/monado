@@ -45,18 +45,6 @@ include:
     FDO_DISTRIBUTION_VERSION: "20.04"
     FDO_DISTRIBUTION_TAG: "2022-04-22.0"
 
-# Variables for build and usage of Ubuntu hirsute image
-.monado.variables.ubuntu:hirsute:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "21.04"
-    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
-
-# Variables for build and usage of Ubuntu impish image
-.monado.variables.ubuntu:impish:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "21.10"
-    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
-
 # Variables for build and usage of Arch rolling image
 .monado.variables.arch:rolling:
   variables:
@@ -109,30 +97,6 @@ ubuntu:focal:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 unzip wget'
-
-# Make Ubuntu hirsute image
-ubuntu:hirsute:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.ubuntu:hirsute
-    - .fdo.container-build@ubuntu # from ci-templates
-  only:
-    changes:
-      - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 unzip wget'
-
-# Make Ubuntu impish image
-ubuntu:impish:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.ubuntu:impish
-    - .fdo.container-build@ubuntu # from ci-templates
-  only:
-    changes:
-      - .gitlab-ci/**/*
-  variables:
     FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
 
 # Make Arch rolling image
@@ -168,20 +132,6 @@ arch:rolling:container_prep:
 .monado.image.ubuntu:focal:
   extends:
     - .monado.variables.ubuntu:focal
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Ubuntu hirsute image
-.monado.image.ubuntu:hirsute:
-  extends:
-    - .monado.variables.ubuntu:hirsute
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Ubuntu impish image
-.monado.image.ubuntu:impish:
-  extends:
-    - .monado.variables.ubuntu:impish
     - .fdo.distribution-image@ubuntu # from ci-templates
 
 
@@ -478,17 +428,6 @@ ubuntu:cmake:
     - ninja -C build
     - cd build && ctest --output-on-failure
 
-ubuntu:latest:cmake:
-  stage: build
-  extends:
-    - .monado.image.ubuntu:impish
-  script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
-    - cd build && ctest --output-on-failure
-
 arch:cmake:
   stage: build
   extends:
@@ -587,69 +526,15 @@ ubuntu:focal:package:
       - "incoming/"
     expire_in: 2 days
 
-ubuntu:hirsute:package:
-  extends:
-    - .monado.image.ubuntu:hirsute
-    - .monado.packaging.conditions
-  variables:
-    GIT_STRATEGY: clone
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: ubuntu
-    CODENAME: hirsute
-    DEB_VERSION_SUFFIX: ubuntu2104
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
-
-ubuntu:impish:package:
-  extends:
-    - .monado.image.ubuntu:impish
-    - .monado.packaging.conditions
-  variables:
-    GIT_STRATEGY: clone
-    DEBFULLNAME: "Monado CI"
-    DEBEMAIL: "ryan.pavlik@collabora.com"
-    DISTRO: ubuntu
-    CODENAME: impish
-    DEB_VERSION_SUFFIX: ubuntu2110
-  stage: package
-  before_script:
-    - git config --global user.name Monado CI
-    - git config --global user.email ryan.pavlik@collabora.com
-  script:
-    # Prep the source tree
-    - git clean -dfx
-    # Call this script to build binary and source packages.
-    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
-    - .gitlab-ci/build-and-submit-package.sh
-  artifacts:
-    paths:
-      - "incoming/"
-    expire_in: 2 days
-
 reprepro:package:
   stage: reprepro
   extends:
-    - .monado.image.ubuntu:impish
+    - .monado.image.ubuntu:focal
 
     - .monado.packaging.conditions
   needs:
     - debian:bullseye:package
     - ubuntu:focal:package
-    - ubuntu:hirsute:package
-    - ubuntu:impish:package
   script:
     - bash .gitlab-ci/reprepro.sh
   artifacts:
