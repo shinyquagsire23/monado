@@ -19,6 +19,7 @@
 #include "vive/vive_config.h"
 
 #include "vive_lighthouse.h"
+#include "xrt/xrt_tracking.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,6 +84,9 @@ struct vive_device
 	//! Fields related to camera-based tracking (SLAM and hand tracking)
 	struct
 	{
+		//! SLAM tracker.
+		struct xrt_tracked_slam *slam;
+
 		//! Set at start. Whether the SLAM tracker was initialized.
 		bool slam_enabled;
 
@@ -93,6 +97,8 @@ struct vive_device
 
 	//! Whether to track the HMD with 6dof SLAM or fallback to the 3dof tracker
 	bool slam_over_3dof;
+
+	struct xrt_pose pose;
 };
 
 

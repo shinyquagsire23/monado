@@ -9,9 +9,8 @@
  */
 
 #include "tracking/t_hand_tracking.h"
-// #include "tracking/t_tracking.h"
-// #include "util/u_debug.h"
-// #include "v4l2/v4l2_interface.h"
+#include "tracking/t_tracking.h"
+
 #include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_prober.h"
@@ -26,6 +25,7 @@
 #include "target_builder_interface.h"
 
 #include "vive/vive_config.h"
+#include "v4l2/v4l2_interface.h"
 
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_results.h"
@@ -124,6 +124,19 @@ get_selected_mode(struct xrt_fs *xfs)
 	return selected_mode;
 }
 
+static bool
+visual_inertial_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
+{
+	// Stream frames
+	struct xrt_frame_sink *sbs_sink = sinks->left;
+	bool success = xrt_fs_stream_start(xfs, sbs_sink, XRT_FS_CAPTURE_TYPE_TRACKING, get_selected_mode(xfs));
+	if (!success) {
+		return false;
+	}
+
+	return true;
+}
+
 static void
 on_video_device(struct xrt_prober *xp,
                 struct xrt_prober_device *pdev,
@@ -141,6 +154,30 @@ on_video_device(struct xrt_prober *xp,
 			return;
 		}
 	}
+}
+
+static struct xrt_slam_sinks *
+lighthouse_slam_track(struct u_system_devices *usysd)
+{
+	struct xrt_slam_sinks *sinks = NULL;
+
+	struct vive_device *d = (struct vive_device *)usysd->base.roles.head;
+
+#ifdef XRT_FEATURE_SLAM
+	int create_status = t_slam_create(&usysd->xfctx, NULL, &d->tracking.slam, &sinks);
+	if (create_status != 0) {
+		return NULL;
+	}
+
+	int start_status = t_slam_start(d->tracking.slam);
+	if (start_status != 0) {
+		return NULL;
+	}
+
+	LH_INFO("Lighthouse HMD SLAM tracker successfully started");
+#endif
+
+	return sinks;
 }
 
 static bool
@@ -334,8 +371,13 @@ setup_visual_trackers(struct u_system_devices *usysd,
 	vive_get_stereo_camera_calibration(hmd_config, &stereo_calib, &head_in_left_cam);
 
 	// Initialize SLAM tracker
+	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (slam_enabled) {
-		LH_ASSERT(false, "Not implemented");
+		slam_sinks = lighthouse_slam_track(usysd);
+		if (slam_sinks == NULL) {
+			LH_WARN("Unable to setup the SLAM tracker");
+			return false;
+		}
 	}
 
 	// Initialize hand tracker
@@ -359,7 +401,24 @@ setup_visual_trackers(struct u_system_devices *usysd,
 	struct xrt_frame_sink *entry_sbs_sink = NULL;
 	bool old_rgb_ht = debug_get_bool_option_ht_use_old_rgb();
 
-	if (hand_enabled) {
+	if (slam_enabled && hand_enabled && !old_rgb_ht) {
+		u_sink_split_create(&usysd->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
+		u_sink_split_create(&usysd->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+		u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, entry_left_sink, entry_right_sink, &entry_sbs_sink);
+		u_sink_create_format_converter(&usysd->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
+	} else if (slam_enabled && hand_enabled && old_rgb_ht) {
+		struct xrt_frame_sink *hand_sbs = NULL;
+		struct xrt_frame_sink *slam_sbs = NULL;
+		u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, hand_sinks->left, hand_sinks->right, &hand_sbs);
+		u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, slam_sinks->left, slam_sinks->right, &slam_sbs);
+		u_sink_create_format_converter(&usysd->xfctx, XRT_FORMAT_L8, slam_sbs, &slam_sbs);
+		u_sink_split_create(&usysd->xfctx, slam_sbs, hand_sbs, &entry_sbs_sink);
+	} else if (slam_enabled) {
+		entry_left_sink = slam_sinks->left;
+		entry_right_sink = slam_sinks->right;
+		u_sink_stereo_sbs_to_slam_sbs_create(&usysd->xfctx, entry_left_sink, entry_right_sink, &entry_sbs_sink);
+		u_sink_create_format_converter(&usysd->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
+	} else if (hand_enabled) {
 		enum xrt_format fmt = old_rgb_ht ? XRT_FORMAT_R8G8B8 : XRT_FORMAT_L8;
 		entry_left_sink = hand_sinks->left;
 		entry_right_sink = hand_sinks->right;
@@ -375,8 +434,8 @@ setup_visual_trackers(struct u_system_devices *usysd,
 	struct xrt_slam_sinks entry_sinks = {
 	    .left = entry_sbs_sink,
 	    .right = NULL, // v4l2 streams a single SBS frame so we ignore the right sink
-	    .imu = NULL,
-	    .gt = NULL,
+	    .imu = slam_enabled ? slam_sinks->imu : NULL,
+	    .gt = slam_enabled ? slam_sinks->gt : NULL,
 	};
 
 	*out_sinks = entry_sinks;

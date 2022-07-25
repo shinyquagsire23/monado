@@ -96,10 +96,10 @@ vive_device_update_inputs(struct xrt_device *xdev)
 }
 
 static void
-vive_device_get_tracked_pose(struct xrt_device *xdev,
-                             enum xrt_input_name name,
-                             uint64_t at_timestamp_ns,
-                             struct xrt_space_relation *out_relation)
+vive_device_get_3dof_tracked_pose(struct xrt_device *xdev,
+                                  enum xrt_input_name name,
+                                  uint64_t at_timestamp_ns,
+                                  struct xrt_space_relation *out_relation)
 {
 	XRT_TRACE_MARKER();
 
@@ -118,6 +118,62 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	os_mutex_unlock(&d->fusion.mutex);
 
 	*out_relation = relation;
+}
+
+//! Specific pose corrections for Basalt and a Valve Index headset
+//! @todo Test and fix for other headsets (vive/vivepro)
+XRT_MAYBE_UNUSED static inline struct xrt_pose
+vive_device_correct_pose_from_basalt(struct xrt_pose pose)
+{
+	struct xrt_quat q = {-0.70710678, 0, 0, 0.70710678};
+	math_quat_rotate(&q, &pose.orientation, &pose.orientation);
+	math_quat_rotate_vec3(&q, &pose.position, &pose.position);
+
+	return pose;
+}
+
+static void
+vive_device_get_slam_tracked_pose(struct xrt_device *xdev,
+                                  enum xrt_input_name name,
+                                  uint64_t at_timestamp_ns,
+                                  struct xrt_space_relation *out_relation)
+{
+	XRT_TRACE_MARKER();
+
+	struct vive_device *d = vive_device(xdev);
+	xrt_tracked_slam_get_tracked_pose(d->tracking.slam, at_timestamp_ns, out_relation);
+
+	int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
+	bool pose_tracked = out_relation->relation_flags & pose_bits;
+
+	if (pose_tracked) {
+#if defined(XRT_HAVE_BASALT_SLAM)
+		d->pose = vive_device_correct_pose_from_basalt(out_relation->pose);
+#else
+		d->pose = out_relation->pose;
+#endif
+	}
+
+	out_relation->pose = d->pose;
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+}
+
+static void
+vive_device_get_tracked_pose(struct xrt_device *xdev,
+                             enum xrt_input_name name,
+                             uint64_t at_timestamp_ns,
+                             struct xrt_space_relation *out_relation)
+{
+	XRT_TRACE_MARKER();
+
+	struct vive_device *d = vive_device(xdev);
+	if (d->tracking.slam_enabled && d->slam_over_3dof) {
+		vive_device_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
+	} else {
+		vive_device_get_3dof_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
+	}
 }
 
 static void
@@ -775,6 +831,9 @@ vive_setup_trackers(struct vive_device *d, struct vive_tracking_status status)
 		VIVE_ERROR(d, "Failed to init 3dof mutex");
 		return false;
 	}
+
+	// SLAM tracker and hand tracker, if enabled, should've been initialized in
+	// the lighthouse builder.
 
 	return true;
 }
