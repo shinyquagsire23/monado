@@ -49,7 +49,10 @@ DEBUG_GET_ONCE_LOG_OPTION(wmr_log, "WMR_LOG", U_LOGGING_INFO)
  */
 
 static bool
-check_and_get_interface(struct xrt_prober_device *device, enum wmr_headset_type *out_hmd_type, int *out_interface)
+check_and_get_interface(struct xrt_prober_device *device,
+                        enum u_logging_level log_level,
+                        enum wmr_headset_type *out_hmd_type,
+                        int *out_interface)
 {
 	switch (device->vendor_id) {
 	case HP_VID:
@@ -75,16 +78,18 @@ check_and_get_interface(struct xrt_prober_device *device, enum wmr_headset_type 
 		return true;
 
 	case SAMSUNG_VID:
-		if (device->product_id != ODYSSEY_PID && device->product_id != ODYSSEY_PLUS_PID) {
+		if (device->product_id == ODYSSEY_PLUS_PID) {
+			*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
+			*out_interface = 0;
+			return true;
+		} else if (device->product_id == ODYSSEY_PID) {
+			U_LOG_IFL_W(log_level, "Original Odyssey may not be well-supported - continuing anyway.");
+			*out_hmd_type = WMR_HEADSET_SAMSUNG_XE700X3AI;
+			*out_interface = 0;
+			return true;
+		} else {
 			return false;
 		}
-
-		if (device->product_id == ODYSSEY_PID)
-			*out_hmd_type = WMR_HEADSET_SAMSUNG_XE700X3AI;
-		else
-			*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
-		*out_interface = 0;
-		return true;
 
 	case QUANTA_VID:
 		if (device->product_id != MEDION_ERAZER_X1000_PID) {
@@ -118,7 +123,7 @@ find_companion_device(struct xrt_prober *xp,
 			continue;
 		}
 
-		match = check_and_get_interface(devices[i], out_hmd_type, &interface);
+		match = check_and_get_interface(devices[i], log_level, out_hmd_type, &interface);
 
 		if (!match) {
 			continue;
