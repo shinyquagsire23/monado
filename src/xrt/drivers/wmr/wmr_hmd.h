@@ -8,6 +8,7 @@
  * @author Philipp Zabel <philipp.zabel@gmail.com>
  * @author nima01 <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Nova King <technobaboo@proton.me>
  * @ingroup drv_wmr
  */
 
@@ -35,6 +36,7 @@ enum wmr_headset_type
 	WMR_HEADSET_GENERIC,
 	WMR_HEADSET_REVERB_G1,
 	WMR_HEADSET_REVERB_G2,
+	WMR_HEADSET_SAMSUNG_XE700X3AI,
 	WMR_HEADSET_SAMSUNG_800ZAA,
 	WMR_HEADSET_LENOVO_EXPLORER,
 	WMR_HEADSET_MEDION_ERAZER_X1000,

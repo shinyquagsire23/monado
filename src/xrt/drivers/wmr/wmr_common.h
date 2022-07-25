@@ -6,6 +6,7 @@
  * @brief  Defines and constants related to WMR driver code.
  * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Nova King <technobaboo@proton.me>
  * @ingroup drv_wmr
  */
 
@@ -42,7 +43,8 @@ extern "C" {
 #define EXPLORER_PID 0xb801
 
 #define SAMSUNG_VID 0x04e8
-#define ODYSSEY_PID 0x7312
+#define ODYSSEY_PID 0x7310
+#define ODYSSEY_PLUS_PID 0x7312
 #define ODYSSEY_CONTROLLER_PID 0x065d
 
 #define QUANTA_VID 0x0408 /* Medion? */

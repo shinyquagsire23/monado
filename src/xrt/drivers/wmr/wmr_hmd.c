@@ -9,6 +9,7 @@
  * @author nima01 <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
+ * @author Nova King <technobaboo@proton.me>
  * @ingroup drv_wmr
  */
 
@@ -91,6 +92,8 @@ const struct wmr_headset_descriptor headset_map[] = {
      wmr_hmd_deactivate_reverb, wmr_hmd_screen_enable_reverb},
     {WMR_HEADSET_REVERB_G2, "HP Reverb Virtual Reality Headset G2", "HP Reverb G2", wmr_hmd_activate_reverb,
      wmr_hmd_deactivate_reverb, wmr_hmd_screen_enable_reverb},
+    {WMR_HEADSET_SAMSUNG_XE700X3AI, "Samsung Windows Mixed Reality XE700X3AI", "Samsung Odyssey",
+     wmr_hmd_activate_odyssey_plus, wmr_hmd_deactivate_odyssey_plus, wmr_hmd_screen_enable_odyssey_plus},
     {WMR_HEADSET_SAMSUNG_800ZAA, "Samsung Windows Mixed Reality 800ZAA", "Samsung Odyssey+",
      wmr_hmd_activate_odyssey_plus, wmr_hmd_deactivate_odyssey_plus, wmr_hmd_screen_enable_odyssey_plus},
     {WMR_HEADSET_LENOVO_EXPLORER, "Lenovo VR-2511N", "Lenovo Explorer", NULL, NULL, NULL},

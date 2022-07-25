@@ -6,6 +6,7 @@
  * @brief  WMR prober code.
  * @author Nis Madsen <nima_zero_one@protonmail.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Nova King <technobaboo@proton.me>
  * @ingroup drv_wmr
  */
 
@@ -74,11 +75,14 @@ check_and_get_interface(struct xrt_prober_device *device, enum wmr_headset_type 
 		return true;
 
 	case SAMSUNG_VID:
-		if (device->product_id != ODYSSEY_PID) {
+		if (device->product_id != ODYSSEY_PID && device->product_id != ODYSSEY_PLUS_PID) {
 			return false;
 		}
 
-		*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
+		if (device->product_id == ODYSSEY_PID)
+			*out_hmd_type = WMR_HEADSET_SAMSUNG_XE700X3AI;
+		else
+			*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
 		*out_interface = 0;
 		return true;
 
