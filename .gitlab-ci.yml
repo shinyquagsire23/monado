@@ -43,7 +43,7 @@ include:
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2022-04-22.0"
+    FDO_DISTRIBUTION_TAG: "2022-07-24.0"
 
 # Variables for build and usage of Arch rolling image
 .monado.variables.arch:rolling:

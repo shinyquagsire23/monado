@@ -170,7 +170,7 @@ distributions:
       # LTS
       - codename: focal
         distro_version: "20.04"
-        tag: "2022-04-22.0"
+        tag: "2022-07-24.0"
         deb_version_suffix: ubuntu2004
         packages:
           <<: *default_debian_packages
