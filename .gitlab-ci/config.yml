@@ -171,13 +171,24 @@ distributions:
       # LTS
       - codename: focal
         distro_version: "20.04"
-        tag: "2022-07-25.0"
+        tag: "2022-07-25.1"
         deb_version_suffix: ubuntu2004
+        packages:
+          <<: *default_debian_packages
+        build_jobs:
+          - name: "ubuntu:focal:cmake"
+            cmake_defines:
+              BUILD_DOC: "OFF"
+
+      - codename: jammy
+        distro_version: "22.04"
+        tag: "2022-07-25.0"
+        deb_version_suffix: ubuntu2204
         packages:
           <<: *default_debian_packages
           reprepro:
         build_jobs:
-          - name: "ubuntu:cmake"
+          - name: "ubuntu:jammy:cmake"
             cmake_defines:
               BUILD_DOC: "OFF"
 

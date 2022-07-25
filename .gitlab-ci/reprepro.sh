@@ -49,3 +49,13 @@ if [ -f "incoming/focal.distro" ]; then
 else
     echo "Skipping focal - no artifact found"
 fi
+
+# jammy
+if [ -f "incoming/jammy.distro" ]; then
+    VERSION=$(cat incoming/jammy.distro)
+    echo "Signing and processing jammy: ${VERSION}"
+    debsign -k "${MONADO_GPG_FINGERPRINT}" -p "gpg --batch --no-tty --yes --pinentry-mode loopback --passphrase ${MONADO_GPG_PASSPHRASE}" "incoming/monado_${VERSION}_amd64.changes"
+    reprepro -V --ignore=wrongdistribution -b repo include jammy "incoming/monado_${VERSION}_amd64.changes"
+else
+    echo "Skipping jammy - no artifact found"
+fi

@@ -43,6 +43,12 @@ include:
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
+    FDO_DISTRIBUTION_TAG: "2022-07-25.1"
+
+# Variables for build and usage of Ubuntu jammy image
+.monado.variables.ubuntu:jammy:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "22.04"
     FDO_DISTRIBUTION_TAG: "2022-07-25.0"
 
 # Variables for build and usage of Arch rolling image
@@ -97,6 +103,18 @@ ubuntu:focal:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 unzip wget'
+
+# Make Ubuntu jammy image
+ubuntu:jammy:container_prep:
+  stage: container_prep
+  extends:
+    - .monado.variables.ubuntu:jammy
+    - .fdo.container-build@ubuntu # from ci-templates
+  only:
+    changes:
+      - .gitlab-ci/**/*
+  variables:
     FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
 
 # Make Arch rolling image
@@ -132,6 +150,13 @@ arch:rolling:container_prep:
 .monado.image.ubuntu:focal:
   extends:
     - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+
+
+# Base for using Ubuntu jammy image
+.monado.image.ubuntu:jammy:
+  extends:
+    - .monado.variables.ubuntu:jammy
     - .fdo.distribution-image@ubuntu # from ci-templates
 
 
@@ -417,10 +442,21 @@ android:inProcessRelease:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/inProcess
 
-ubuntu:cmake:
+ubuntu:focal:cmake:
   stage: build
   extends:
     - .monado.image.ubuntu:focal
+  script:
+    - rm -rf build
+    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
+    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
+    - ninja -C build
+    - cd build && ctest --output-on-failure
+
+ubuntu:jammy:cmake:
+  stage: build
+  extends:
+    - .monado.image.ubuntu:jammy
   script:
     - rm -rf build
     - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
@@ -526,15 +562,42 @@ ubuntu:focal:package:
       - "incoming/"
     expire_in: 2 days
 
+ubuntu:jammy:package:
+  extends:
+    - .monado.image.ubuntu:jammy
+    - .monado.packaging.conditions
+  variables:
+    GIT_STRATEGY: clone
+    DEBFULLNAME: "Monado CI"
+    DEBEMAIL: "ryan.pavlik@collabora.com"
+    DISTRO: ubuntu
+    CODENAME: jammy
+    DEB_VERSION_SUFFIX: ubuntu2204
+  stage: package
+  before_script:
+    - git config --global user.name Monado CI
+    - git config --global user.email ryan.pavlik@collabora.com
+  script:
+    # Prep the source tree
+    - git clean -dfx
+    # Call this script to build binary and source packages.
+    # Can try locally by exporting the right variables and passing -B to get only a binary package to avoid complaints.
+    - .gitlab-ci/build-and-submit-package.sh
+  artifacts:
+    paths:
+      - "incoming/"
+    expire_in: 2 days
+
 reprepro:package:
   stage: reprepro
   extends:
-    - .monado.image.ubuntu:focal
+    - .monado.image.ubuntu:jammy
 
     - .monado.packaging.conditions
   needs:
     - debian:bullseye:package
     - ubuntu:focal:package
+    - ubuntu:jammy:package
   script:
     - bash .gitlab-ci/reprepro.sh
   artifacts:
