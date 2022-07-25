@@ -70,8 +70,10 @@ DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 //! Specifies whether the user wants to use the hand tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 
+#ifdef XRT_FEATURE_SLAM
 //! Whether to submit samples to the SLAM tracker from the start.
 DEBUG_GET_ONCE_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", NULL)
+#endif
 
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
