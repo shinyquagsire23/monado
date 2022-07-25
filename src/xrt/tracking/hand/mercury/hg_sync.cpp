@@ -162,9 +162,10 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibratio
 
 		hgt->left_in_right = left_in_right;
 
-		U_LOG_E("OpenXR: %f %f %f   %f %f %f %f", left_in_right.position.x, left_in_right.position.z,
-		        left_in_right.position.z, left_in_right.orientation.x, left_in_right.orientation.y,
-		        left_in_right.orientation.z, left_in_right.orientation.w);
+		HG_DEBUG(hgt, "left_in_right pose: %f %f %f   %f %f %f %f",                            //
+		         left_in_right.position.x, left_in_right.position.y, left_in_right.position.z, //
+		         left_in_right.orientation.x, left_in_right.orientation.y, left_in_right.orientation.z,
+		         left_in_right.orientation.w);
 	}
 
 
