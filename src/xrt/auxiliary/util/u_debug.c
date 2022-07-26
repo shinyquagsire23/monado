@@ -96,6 +96,61 @@ debug_get_bool_option(const char *name, bool _default)
 	return ret;
 }
 
+
+enum debug_tristate_option
+debug_string_to_tristate(const char *raw)
+{
+	enum debug_tristate_option ret;
+	if (raw == NULL) {
+		ret = DEBUG_TRISTATE_AUTO;
+	} else if (!strcmp(raw, "AUTO")) {
+		ret = DEBUG_TRISTATE_AUTO;
+	} else if (!strcmp(raw, "auto")) {
+		ret = DEBUG_TRISTATE_AUTO;
+	} else if (!strcmp(raw, "a")) {
+		ret = DEBUG_TRISTATE_AUTO;
+	} else if (!strcmp(raw, "A")) {
+		ret = DEBUG_TRISTATE_AUTO;
+	} else {
+		bool bool_ret = debug_string_to_bool(raw);
+		if (bool_ret) {
+			ret = DEBUG_TRISTATE_ON;
+		} else {
+			ret = DEBUG_TRISTATE_OFF;
+		}
+	}
+	return ret;
+}
+
+enum debug_tristate_option
+debug_get_tristate_option(const char *name)
+{
+	const char *raw = os_getenv(name);
+	enum debug_tristate_option ret = debug_string_to_tristate(raw);
+
+	if (debug_get_bool_option_print()) {
+		const char *pretty_val;
+		switch (ret) {
+		case DEBUG_TRISTATE_OFF: {
+			pretty_val = "OFF";
+			break;
+		}
+		case DEBUG_TRISTATE_AUTO: {
+			pretty_val = "AUTO";
+			break;
+		}
+		case DEBUG_TRISTATE_ON: {
+			pretty_val = "ON";
+			break;
+		}
+		default: pretty_val = "invalid";
+		}
+		U_LOG_RAW("%s=%s (%s)", name, pretty_val, raw == NULL ? "nil" : raw);
+	}
+
+	return ret;
+}
+
 long
 debug_get_num_option(const char *name, long _default)
 {

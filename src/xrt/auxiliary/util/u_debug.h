@@ -19,12 +19,21 @@
 extern "C" {
 #endif
 
+enum debug_tristate_option
+{
+	DEBUG_TRISTATE_OFF,
+	DEBUG_TRISTATE_AUTO,
+	DEBUG_TRISTATE_ON
+};
 
 const char *
 debug_get_option(const char *name, const char *_default);
 
 bool
 debug_string_to_bool(const char *string);
+
+enum debug_tristate_option
+debug_get_tristate_option(const char *name);
 
 bool
 debug_get_bool_option(const char *name, bool _default);
@@ -46,6 +55,18 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 		if (!gotten) {                                                                                         \
 			gotten = true;                                                                                 \
 			stored = debug_get_option(name, _default);                                                     \
+		}                                                                                                      \
+		return stored;                                                                                         \
+	}
+
+#define DEBUG_GET_ONCE_TRISTATE_OPTION(suffix, name)                                                                   \
+	static enum debug_tristate_option debug_get_tristate_option_##suffix()                                         \
+	{                                                                                                              \
+		static bool gotten = false;                                                                            \
+		static enum debug_tristate_option stored;                                                              \
+		if (!gotten) {                                                                                         \
+			gotten = true;                                                                                 \
+			stored = debug_get_tristate_option(name);                                                      \
 		}                                                                                                      \
 		return stored;                                                                                         \
 	}
