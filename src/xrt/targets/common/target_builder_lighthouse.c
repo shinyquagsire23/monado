@@ -64,7 +64,7 @@ static struct lighthouse_system
 DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_slam, "VIVE_SLAM", true)
-DEBUG_GET_ONCE_BOOL_OPTION(lh_handtracking, "LH_HANDTRACKING", true)
+DEBUG_GET_ONCE_TRISTATE_OPTION(lh_handtracking, "LH_HANDTRACKING")
 DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
 #define LH_TRACE(...) U_LOG_IFL_T(debug_get_log_option_lh_log(), __VA_ARGS__)
@@ -482,6 +482,36 @@ stream_data_sources(struct u_system_devices *usysd, struct xrt_prober *xp, struc
 	return success;
 }
 
+static void
+try_add_opengloves(struct u_system_devices *usysd)
+{
+#ifdef XRT_BUILD_DRIVER_OPENGLOVES
+	size_t openglove_device_count =
+	    opengloves_create_devices(&usysd->base.xdevs[usysd->base.xdev_count], &usysd->base);
+	for (size_t i = usysd->base.xdev_count; i < usysd->base.xdev_count + openglove_device_count; i++) {
+		struct xrt_device *xdev = usysd->base.xdevs[i];
+
+		for (uint32_t j = 0; j < xdev->input_count; j++) {
+			struct xrt_input *input = &xdev->inputs[j];
+
+			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_LEFT) {
+				usysd->base.roles.hand_tracking.left = xdev;
+
+				break;
+			}
+			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
+				usysd->base.roles.hand_tracking.right = xdev;
+
+				break;
+			}
+		}
+	}
+
+	usysd->base.xdev_count += openglove_device_count;
+
+#endif
+}
+
 static xrt_result_t
 lighthouse_open_system(struct xrt_builder *xb,
                        cJSON *config,
@@ -507,22 +537,18 @@ lighthouse_open_system(struct xrt_builder *xb,
 	bool slam_enabled = slam_supported && slam_wanted;
 
 	// Decide whether to initialize the hand tracker
-	bool hand_wanted = debug_get_bool_option_lh_handtracking();
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	bool hand_supported = true;
 #else
 	bool hand_supported = false;
 #endif
-	bool hand_enabled = hand_supported && hand_wanted;
 
-	struct vive_tracking_status tstatus = {
-	    .slam_wanted = slam_wanted,
-	    .slam_supported = slam_supported,
-	    .slam_enabled = slam_enabled,
-	    .hand_wanted = hand_wanted,
-	    .hand_supported = hand_supported,
-	    .hand_enabled = hand_enabled,
-	};
+	struct vive_tracking_status tstatus = {.slam_wanted = slam_wanted,
+	                                       .slam_supported = slam_supported,
+	                                       .slam_enabled = slam_enabled,
+	                                       .controllers_found = false,
+	                                       .hand_supported = hand_supported,
+	                                       .hand_wanted = debug_get_tristate_option_lh_handtracking()};
 	lhs.vive_tstatus = tstatus;
 
 	struct vive_config *hmd_config = NULL;
@@ -585,15 +611,29 @@ lighthouse_open_system(struct xrt_builder *xb,
 
 	// It's okay if we didn't find controllers
 	if (left_idx >= 0) {
+		lhs.vive_tstatus.controllers_found = true;
 		usysd->base.roles.left = usysd->base.xdevs[left_idx];
 		usysd->base.roles.hand_tracking.left =
 		    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_LEFT);
 	}
 
 	if (right_idx >= 0) {
+		lhs.vive_tstatus.controllers_found = true;
 		usysd->base.roles.right = usysd->base.xdevs[right_idx];
 		usysd->base.roles.hand_tracking.right =
 		    u_system_devices_get_ht_device(usysd, XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT);
+	}
+
+	if (lhs.vive_tstatus.hand_wanted == DEBUG_TRISTATE_ON) {
+		lhs.vive_tstatus.hand_enabled = true;
+	} else if (lhs.vive_tstatus.hand_wanted == DEBUG_TRISTATE_AUTO) {
+		if (lhs.vive_tstatus.controllers_found) {
+			lhs.vive_tstatus.hand_enabled = false;
+		} else {
+			lhs.vive_tstatus.hand_enabled = true;
+		}
+	} else if (lhs.vive_tstatus.hand_wanted == DEBUG_TRISTATE_OFF) {
+		lhs.vive_tstatus.hand_enabled = false;
 	}
 
 	bool success = true;
@@ -606,16 +646,18 @@ lighthouse_open_system(struct xrt_builder *xb,
 		goto end;
 	}
 
-	if (hand_devices[0] != NULL) {
-		usysd->base.roles.left = hand_devices[0];
-		usysd->base.roles.hand_tracking.left = hand_devices[0];
-		usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[0];
-	}
+	if (lhs.vive_tstatus.hand_enabled) {
+		if (hand_devices[0] != NULL) {
+			usysd->base.roles.left = hand_devices[0];
+			usysd->base.roles.hand_tracking.left = hand_devices[0];
+			usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[0];
+		}
 
-	if (hand_devices[1] != NULL) {
-		usysd->base.roles.right = hand_devices[1];
-		usysd->base.roles.hand_tracking.right = hand_devices[1];
-		usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[1];
+		if (hand_devices[1] != NULL) {
+			usysd->base.roles.right = hand_devices[1];
+			usysd->base.roles.hand_tracking.right = hand_devices[1];
+			usysd->base.xdevs[usysd->base.xdev_count++] = hand_devices[1];
+		}
 	}
 
 	success = stream_data_sources(usysd, xp, sinks);
@@ -624,34 +666,12 @@ lighthouse_open_system(struct xrt_builder *xb,
 		goto end;
 	}
 
-#ifdef XRT_BUILD_DRIVER_OPENGLOVES
-	size_t openglove_device_count =
-	    opengloves_create_devices(&usysd->base.xdevs[usysd->base.xdev_count], &usysd->base);
-	for (size_t i = usysd->base.xdev_count; i < usysd->base.xdev_count + openglove_device_count; i++) {
-		struct xrt_device *xdev = usysd->base.xdevs[i];
 
-		for (uint32_t j = 0; j < xdev->input_count; j++) {
-			struct xrt_input *input = &xdev->inputs[j];
-
-			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_LEFT) {
-				usysd->base.roles.hand_tracking.left = xdev;
-
-				break;
-			}
-			if (input->name == XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT) {
-				usysd->base.roles.hand_tracking.right = xdev;
-
-				break;
-			}
-		}
-	}
-
-	usysd->base.xdev_count += openglove_device_count;
-
-#endif
-
-	*out_xsysd = &usysd->base;
 end:
+	if (!lhs.vive_tstatus.hand_enabled) {
+		// We only want to try to add opengloves if we aren't optically tracking hands
+		try_add_opengloves(usysd);
+	}
 
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;

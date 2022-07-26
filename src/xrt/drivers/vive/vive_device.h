@@ -12,6 +12,7 @@
 #include "xrt/xrt_device.h"
 #include "os/os_threading.h"
 #include "util/u_logging.h"
+#include "util/u_debug.h"
 #include "util/u_time.h"
 #include "util/u_var.h"
 #include "math/m_imu_3dof.h"
@@ -122,8 +123,19 @@ struct vive_tracking_status
 	bool slam_wanted;
 	bool slam_supported;
 	bool slam_enabled;
-	bool hand_wanted;
+
+	//! Has Monado been built with the correct libraries to do optical hand tracking?
 	bool hand_supported;
+
+	//! Did we find controllers?
+	bool controllers_found;
+
+	//! If this is set to ON, we always do optical hand tracking even if controllers were found.
+	//! If this is set to AUTO, we do optical hand tracking only if no controllers were found.
+	//! If this is set to OFF, we don't do optical hand tracking.
+	enum debug_tristate_option hand_wanted;
+
+	//! Computed in target_builder_lighthouse.c based on the past three
 	bool hand_enabled;
 };
 
