@@ -9,6 +9,7 @@
  */
 
 #include "xrt/xrt_device.h"
+#include "math/m_api.h"
 #include "math/m_vec2.h"
 #include "render/render_interface.h"
 
@@ -481,11 +482,25 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
                                               struct render_buffer *r_buffer,
                                               struct render_buffer *g_buffer,
                                               struct render_buffer *b_buffer,
-                                              uint32_t view)
+                                              uint32_t view,
+                                              bool pre_rotate)
 {
 	VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
+	struct xrt_matrix_2x2 rot = xdev->hmd->views[view].rot;
+
+	const struct xrt_matrix_2x2 rotation_90_cw = {{
+	    .vecs =
+	        {
+	            {0, 1},
+	            {-1, 0},
+	        },
+	}};
+
+	if (pre_rotate) {
+		math_matrix_2x2_multiply(&rot, &rotation_90_cw, &rot);
+	}
 
 	VkDeviceSize size = sizeof(struct texture);
 
@@ -511,9 +526,14 @@ create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
 			// This goes from 0 to 1.0 inclusive.
 			float u = (float)(col / dim_minus_one_f64);
 
-			struct xrt_uv_triplet result;
-			xrt_device_compute_distortion(xdev, view, u, v, &result);
+			// These need to go from -0.5 to 0.5 for the rotation
+			struct xrt_vec2 uv = {u - 0.5f, v - 0.5f};
+			math_matrix_2x2_transform_vec2(&rot, &uv, &uv);
+			uv.x += 0.5f;
+			uv.y += 0.5f;
 
+			struct xrt_uv_triplet result;
+			xrt_device_compute_distortion(xdev, view, uv.x, uv.y, &result);
 
 			r->pixels[row][col] = result.r;
 			g->pixels[row][col] = result.g;
@@ -765,38 +785,18 @@ render_resources_init(struct render_resources *r,
 	    vk,                    // vk_bundle
 	    &r->compute.ubo));     // buffer
 
-
-	struct render_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
-
-	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
-	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
-
-	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0);
-	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1);
-
-	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
-	C(vk_init_cmd_buffer(vk, &upload_buffer));
-
-	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
-		C(create_and_queue_upload(             //
-		    vk,                                // vk_bundle
-		    upload_buffer,                     // cmd
-		    buffers[i].buffer,                 // src_buffer
-		    &r->distortion.device_memories[i], // out_image_device_memory
-		    &r->distortion.images[i],          // out_image
-		    &r->distortion.image_views[i]));   // out_image_view
+	/*
+	 * Compute distortion textures are not created until later.
+	 */
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {
+		r->distortion.image_views[i] = VK_NULL_HANDLE;
 	}
-
-	C(vk_submit_cmd_buffer(vk, upload_buffer));
-
-	os_mutex_lock(&vk->queue_mutex);
-	vk->vkDeviceWaitIdle(vk->device);
-	os_mutex_unlock(&vk->queue_mutex);
-
-	for (uint32_t i = 0; i < ARRAY_SIZE(buffers); i++) {
-		render_buffer_close(vk, &buffers[i]);
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+		r->distortion.images[i] = VK_NULL_HANDLE;
 	}
-
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+		r->distortion.device_memories[i] = VK_NULL_HANDLE;
+	}
 
 	/*
 	 * Timestamp pool.
@@ -823,6 +823,78 @@ render_resources_init(struct render_resources *r,
 	 */
 
 	U_LOG_I("New renderer initialized!");
+
+	return true;
+}
+
+static bool
+render_distortion_buffer_init(struct render_resources *r,
+                              struct vk_bundle *vk,
+                              struct xrt_device *xdev,
+                              bool pre_rotate)
+{
+	struct render_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
+
+	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
+	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
+
+	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0, pre_rotate);
+	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1, pre_rotate);
+
+	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
+	C(vk_init_cmd_buffer(vk, &upload_buffer));
+
+	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
+		C(create_and_queue_upload(             //
+		    vk,                                // vk_bundle
+		    upload_buffer,                     // cmd
+		    buffers[i].buffer,                 // src_buffer
+		    &r->distortion.device_memories[i], // out_image_device_memory
+		    &r->distortion.images[i],          // out_image
+		    &r->distortion.image_views[i]));   // out_image_view
+	}
+
+	C(vk_submit_cmd_buffer(vk, upload_buffer));
+
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(buffers); i++) {
+		render_buffer_close(vk, &buffers[i]);
+	}
+
+	r->distortion.pre_rotated = pre_rotate;
+
+	return true;
+}
+
+static void
+render_distortion_buffer_close(struct render_resources *r)
+{
+	struct vk_bundle *vk = r->vk;
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {
+		D(ImageView, r->distortion.image_views[i]);
+	}
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+		D(Image, r->distortion.images[i]);
+	}
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+		DF(Memory, r->distortion.device_memories[i]);
+	}
+}
+
+bool
+render_ensure_distortion_buffer(struct render_resources *r,
+                                struct vk_bundle *vk,
+                                struct xrt_device *xdev,
+                                bool pre_rotate)
+{
+	if (r->distortion.image_views[0] == VK_NULL_HANDLE || pre_rotate != r->distortion.pre_rotated) {
+		render_distortion_buffer_close(r);
+		return render_distortion_buffer_init(r, vk, xdev, pre_rotate);
+	}
 
 	return true;
 }
@@ -858,15 +930,7 @@ render_resources_close(struct render_resources *r)
 	D(Pipeline, r->compute.distortion_timewarp_pipeline);
 	D(PipelineLayout, r->compute.pipeline_layout);
 	D(Sampler, r->compute.default_sampler);
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {
-		D(ImageView, r->distortion.image_views[i]);
-	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
-		D(Image, r->distortion.images[i]);
-	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
-		DF(Memory, r->distortion.device_memories[i]);
-	}
+	render_distortion_buffer_close(r);
 	render_buffer_close(vk, &r->compute.ubo);
 
 	// Finally forget about the vk bundle. We do not own it!

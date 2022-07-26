@@ -316,6 +316,9 @@ struct render_resources
 
 		//! The views into the distortion images.
 		VkImageView image_views[COMP_DISTORTION_NUM_IMAGES];
+
+		//! Whether distortion images have been pre-rotated 90 degrees.
+		bool pre_rotated;
 	} distortion;
 };
 
@@ -339,6 +342,15 @@ render_resources_init(struct render_resources *r,
  */
 void
 render_resources_close(struct render_resources *r);
+
+/*!
+ * Creates or recreates the compute distortion textures if necessary.
+ */
+bool
+render_ensure_distortion_buffer(struct render_resources *r,
+                                struct vk_bundle *vk,
+                                struct xrt_device *xdev,
+                                bool pre_rotate);
 
 /*!
  * Returns the timestamps for when the latest GPU work started and stopped that
