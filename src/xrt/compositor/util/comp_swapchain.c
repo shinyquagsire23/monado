@@ -115,6 +115,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 {
 	uint32_t image_count = sc->vkic.image_count;
 	VkCommandBuffer cmd_buffer;
+	VkResult ret;
 
 	VkComponentMapping components = {
 	    .r = VK_COMPONENT_SWIZZLE_R,
@@ -203,7 +204,11 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		    subresource_range);                       //
 	}
 
-	vk_submit_cmd_buffer(vk, cmd_buffer);
+	ret = vk_submit_cmd_buffer(vk, cmd_buffer);
+	if (ret != VK_SUCCESS) {
+		//! @todo Propegate error
+		VK_ERROR(vk, "Failed to barrier images");
+	}
 }
 
 static void
