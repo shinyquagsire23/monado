@@ -1497,12 +1497,11 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 	boundary_info.views[0].type = HT_IMAGE_BOUNDARY_NONE;
 	boundary_info.views[1].type = HT_IMAGE_BOUNDARY_NONE;
 
-	int create_status = ht_device_create(&wh->tracking.xfctx,         //
-	                                     stereo_calib,                //
-	                                     HT_OUTPUT_SPACE_LEFT_CAMERA, //
-	                                     HT_ALGORITHM_MERCURY,        //
-	                                     boundary_info,               //
-	                                     &sinks,                      //
+	int create_status = ht_device_create(&wh->tracking.xfctx,  //
+	                                     stereo_calib,         //
+	                                     HT_ALGORITHM_MERCURY, //
+	                                     boundary_info,        //
+	                                     &sinks,               //
 	                                     &device);
 	if (create_status != 0) {
 		return create_status;

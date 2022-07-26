@@ -210,12 +210,11 @@ lighthouse_hand_track(struct u_system_devices *usysd,
 	enum t_hand_tracking_algorithm ht_algorithm = old_rgb ? HT_ALGORITHM_OLD_RGB : HT_ALGORITHM_MERCURY;
 
 	struct xrt_device *ht_device = NULL;
-	int create_status = ht_device_create(&usysd->xfctx,               //
-	                                     stereo_calib,                //
-	                                     HT_OUTPUT_SPACE_LEFT_CAMERA, //
-	                                     ht_algorithm,                //
-	                                     info,                        //
-	                                     &sinks,                      //
+	int create_status = ht_device_create(&usysd->xfctx, //
+	                                     stereo_calib,  //
+	                                     ht_algorithm,  //
+	                                     info,          //
+	                                     &sinks,        //
 	                                     &ht_device);
 	if (create_status != 0) {
 		LH_WARN("Failed to create hand tracking device\n");

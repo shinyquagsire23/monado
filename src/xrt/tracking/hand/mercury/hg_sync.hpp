@@ -187,8 +187,6 @@ public:
 
 	bool use_fisheye;
 
-	enum t_hand_tracking_output_space output_space;
-
 	struct t_stereo_camera_calibration *calib;
 
 	struct xrt_size calibration_one_view_size_px = {};

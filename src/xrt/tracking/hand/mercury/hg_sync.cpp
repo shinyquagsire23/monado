@@ -34,83 +34,6 @@ static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_rela
  * Setup helper functions.
  */
 
-
-//!@todo
-// This is cruft, necessary because some users still use HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA.
-// WMR especially should *not* be using it, and for custom North Star/
-static void
-get_left_camera_to_center(struct HandTracking *hgt, xrt::auxiliary::tracking::StereoCameraCalibrationWrapper &wrap)
-{
-	cv::Matx33d R1;
-	cv::Matx33d R2;
-
-	cv::Matx34d P1;
-	cv::Matx34d P2;
-
-	cv::Matx44d Q;
-
-	// We only want R1 and R2, we don't care about anything else
-	if (hgt->use_fisheye) {
-		cv::fisheye::stereoRectify(wrap.view[0].intrinsics_mat,                  // cameraMatrix1
-		                           wrap.view[0].distortion_fisheye_mat,          // distCoeffs1
-		                           wrap.view[1].intrinsics_mat,                  // cameraMatrix2
-		                           wrap.view[1].distortion_fisheye_mat,          // distCoeffs2
-		                           wrap.view[0].image_size_pixels_cv,            // imageSize*
-		                           wrap.camera_rotation_mat,                     // R
-		                           wrap.camera_translation_mat,                  // T
-		                           hgt->views[0].rotate_camera_to_stereo_camera, // R1
-		                           hgt->views[1].rotate_camera_to_stereo_camera, // R2
-		                           P1,                                           // P1
-		                           P2,                                           // P2
-		                           Q,                                            // Q
-		                           0,                                            // flags
-		                           cv::Size());                                  // newImageSize
-	} else {
-		cv::stereoRectify(wrap.view[0].intrinsics_mat,                  // cameraMatrix1
-		                  wrap.view[0].distortion_mat,                  // distCoeffs1
-		                  wrap.view[1].intrinsics_mat,                  // cameraMatrix2
-		                  wrap.view[1].distortion_mat,                  // distCoeffs2
-		                  wrap.view[0].image_size_pixels_cv,            // imageSize*
-		                  wrap.camera_rotation_mat,                     // R
-		                  wrap.camera_translation_mat,                  // T
-		                  hgt->views[0].rotate_camera_to_stereo_camera, // R1
-		                  hgt->views[1].rotate_camera_to_stereo_camera, // R2
-		                  P1,                                           // P1
-		                  P2,                                           // P2
-		                  Q,                                            // Q
-		                  0,                                            // flags
-		                  -1.0f,                                        // alpha
-		                  cv::Size(),                                   // newImageSize
-		                  NULL,                                         // validPixROI1
-		                  NULL);                                        // validPixROI2
-	}
-
-	// HG_DEBUG(hgt, "R%d ->", i);
-	// std::cout << hgt->views[i].rotate_camera_to_stereo_camera << std::endl;
-
-
-	// Untested, so far.
-	//!@todo Definitely this or getCalibration are doing a transpose and I don't know which.
-	cv::Matx33d rotate_stereo_camera_to_left_camera = hgt->views[0].rotate_camera_to_stereo_camera.inv();
-
-	xrt_matrix_3x3 s;
-	s.v[0] = rotate_stereo_camera_to_left_camera(0, 0);
-	s.v[1] = rotate_stereo_camera_to_left_camera(0, 1);
-	s.v[2] = rotate_stereo_camera_to_left_camera(0, 2);
-
-	s.v[3] = rotate_stereo_camera_to_left_camera(1, 0);
-	s.v[4] = rotate_stereo_camera_to_left_camera(1, 1);
-	s.v[5] = rotate_stereo_camera_to_left_camera(1, 2);
-
-	s.v[6] = rotate_stereo_camera_to_left_camera(2, 0);
-	s.v[7] = rotate_stereo_camera_to_left_camera(2, 1);
-	s.v[8] = rotate_stereo_camera_to_left_camera(2, 2);
-
-
-	math_quat_from_matrix_3x3(&s, &hgt->hand_pose_camera_offset.orientation);
-	hgt->hand_pose_camera_offset.position.x = -hgt->baseline / 2;
-}
-
 static bool
 getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibration)
 {
@@ -195,10 +118,7 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibratio
 	hgt->last_frame_one_view_size_px = hgt->calibration_one_view_size_px;
 	hgt->multiply_px_coord_for_undistort = 1.0f;
 
-	switch (hgt->output_space) {
-	case HT_OUTPUT_SPACE_LEFT_CAMERA: hgt->hand_pose_camera_offset = XRT_POSE_IDENTITY; break;
-	case HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA: get_left_camera_to_center(hgt, wrap); break;
-	}
+	hgt->hand_pose_camera_offset = XRT_POSE_IDENTITY;
 
 
 
@@ -1025,7 +945,6 @@ using namespace xrt::tracking::hand::mercury;
 
 extern "C" t_hand_tracking_sync *
 t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
-                                    enum t_hand_tracking_output_space output_space,
                                     struct t_image_boundary_info boundary_info)
 {
 	XRT_TRACE_MARKER();
@@ -1035,8 +954,6 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	// Setup logging first. We like logging.
 	hgt->log_level = xrt::tracking::hand::mercury::debug_get_log_option_mercury_log();
 	bool use_simdr = xrt::tracking::hand::mercury::debug_get_bool_option_mercury_use_simdr_keypoint();
-
-	hgt->output_space = output_space;
 
 	/*
 	 * Get configuration

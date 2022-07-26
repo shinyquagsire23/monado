@@ -77,20 +77,6 @@ struct t_image_boundary_info
 };
 
 /*!
- * @brief Output coordinate system of the hand-tracking system.
- *
- * In HT_OUTPUT_SPACE_LEFT_CAMERA, the origin is at the left camera.
- * In HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA (which you should not be using, because it assumes that your camera is a
- * parallel stereo camera), the origin is at the "centerline" between the two main cameras.
- * @ingroup xrt_iface
- */
-enum t_hand_tracking_output_space
-{
-	HT_OUTPUT_SPACE_LEFT_CAMERA,
-	HT_OUTPUT_SPACE_CENTER_OF_STEREO_CAMERA,
-};
-
-/*!
  * @brief Which hand-tracking algorithm should we use?
  *
  * Never use HT_ALGORITHM_OLD_RGB. The tracking quality is extremely poor.
