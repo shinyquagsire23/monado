@@ -155,9 +155,9 @@ lighthouse_slam_track(struct u_system_devices *usysd)
 {
 	struct xrt_slam_sinks *sinks = NULL;
 
+#ifdef XRT_FEATURE_SLAM
 	struct vive_device *d = (struct vive_device *)usysd->base.roles.head;
 
-#ifdef XRT_FEATURE_SLAM
 	int create_status = t_slam_create(&usysd->xfctx, NULL, &d->tracking.slam, &sinks);
 	if (create_status != 0) {
 		return NULL;
