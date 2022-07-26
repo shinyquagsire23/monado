@@ -1327,6 +1327,7 @@ static void
 mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
+	VkResult ret;
 
 	struct vk_image_readback_to_xf *wrap = NULL;
 
@@ -1436,7 +1437,11 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	// Waits for command to finish.
-	vk_submit_cmd_buffer(vk, cmd);
+	ret = vk_submit_cmd_buffer(vk, cmd);
+	if (ret != VK_SUCCESS) {
+		//! @todo Better handling of error?
+		COMP_ERROR(r->c, "Failed to mirror image");
+	}
 
 	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp =
 	    r->c->frame.rendering.predicted_display_time_ns;
