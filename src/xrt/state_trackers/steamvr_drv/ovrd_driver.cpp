@@ -885,7 +885,8 @@ CDeviceDriver_Monado::Activate(vr::TrackedDeviceIndex_t unObjectId)
 	create_translation_rotation_matrix(&m_view_pose[0], &left);
 	vr::HmdMatrix34_t right;
 	create_translation_rotation_matrix(&m_view_pose[1], &right);
-	vr::VRServerDriverHost()->TrackedDeviceDisplayTransformUpdated(m_trackedDeviceIndex, left, right);
+
+	vr::VRServerDriverHost()->SetDisplayEyeToHead(m_trackedDeviceIndex, left, right);
 
 
 	m_poseUpdateThread = new std::thread(&CDeviceDriver_Monado::PoseUpdateThreadFunction, this);
@@ -1304,7 +1305,7 @@ CServerDriver_Monado::RunFrame()
 
 /*
  *
- * Whatchdog code
+ * Watchdog code
  *
  */
 
@@ -1338,14 +1339,14 @@ WatchdogThreadFunction()
 		// on windows send the event when the Y key is pressed.
 		if ((0x01 & GetAsyncKeyState('Y')) != 0) {
 			// Y key was pressed.
-			vr::VRWatchdogHost()->WatchdogWakeUp();
+			vr::VRWatchdogHost()->WatchdogWakeUp(vr::TrackedDeviceClass_HMD);
 		}
 		std::this_thread::sleep_for(std::chrono::microseconds(500));
 #else
 		ovrd_log("Watchdog wakeup\n");
 		// for the other platforms, just send one every five seconds
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		vr::VRWatchdogHost()->WatchdogWakeUp();
+		vr::VRWatchdogHost()->WatchdogWakeUp(vr::ETrackedDeviceClass::TrackedDeviceClass_HMD);
 #endif
 	}
 
