@@ -15,10 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 
 #ifdef XRT_OS_LINUX
+#include <sys/stat.h>
 #include <linux/limits.h>
 
 static int
@@ -104,6 +104,10 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	return fopen(file_str, mode);
 }
 
+#else if defined(XRT_OS_WINDOWS)
+#define PATH_MAX MAX_PATH
+#endif
+
 ssize_t
 u_file_get_runtime_dir(char *out_path, size_t out_path_size)
 {
@@ -127,8 +131,6 @@ u_file_get_path_in_runtime_dir(const char *suffix, char *out_path, size_t out_pa
 
 	return snprintf(out_path, out_path_size, "%s/%s", tmp, suffix);
 }
-
-#endif
 
 char *
 u_file_read_content(FILE *file)
