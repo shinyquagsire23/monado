@@ -55,7 +55,7 @@ choose_best_vk_mode_auto(struct comp_target *ct, VkDisplayModePropertiesKHR *mod
 	}
 	VkDisplayModeParametersKHR best = mode_properties[best_index].parameters;
 	COMP_DEBUG(ct->c, "Auto choosing Vk direct mode %d: %dx%d@%.2f", best_index, best.visibleRegion.width,
-	           best.visibleRegion.width, (float)best.refreshRate / 1000.f);
+	           best.visibleRegion.height, (float)best.refreshRate / 1000.f);
 	return best_index;
 }
 
