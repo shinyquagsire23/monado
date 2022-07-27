@@ -9,10 +9,10 @@
   inherit:
     default: false
   variables:
-    MONADO_WIN_BASE_TAG: "20220518.0"
-    MONADO_WIN_MAIN_TAG: "20220520.0"
-    MONADO_BASE_IMAGE_PATH: "win2019/vs2022_base"
-    MONADO_MAIN_IMAGE_PATH: "win2019/vs2022"
+    MONADO_WIN_BASE_TAG: "20220727.0"
+    MONADO_WIN_MAIN_TAG: "20220727.0"
+    MONADO_BASE_IMAGE_PATH: "win2022/vs2022_base"
+    MONADO_MAIN_IMAGE_PATH: "win2022/vs2022"
 
 .monado.variables.windows:vs2022:
   inherit:
@@ -31,7 +31,7 @@
     default: false
   tags:
     - windows
-    - "1909"
+    - "2022"
     - shell
   variables:
     GIT_STRATEGY: fetch
@@ -72,7 +72,7 @@ win:container_prep:
 .monado.image.windows:
   tags:
     - windows
-    - "1909"
+    - "2022"
     - docker
   extends:
     - .monado.variables.windows:vs2022
