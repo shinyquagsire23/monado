@@ -27,7 +27,7 @@ extern "C" {
  */
 struct ipc_message_channel
 {
-	int socket_fd;
+	xrt_ipc_handle_t ipc_handle;
 	enum u_logging_level log_level;
 };
 
@@ -111,6 +111,57 @@ ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, in
  */
 xrt_result_t
 ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, const int *handles, uint32_t handle_count);
+#elif defined(XRT_OS_WINDOWS)
+/*!
+ * Receive a message along with a known number of file HANDLEs over the IPC
+ * channel.
+ *
+ * @param imc Message channel to use
+ * @param[out] out_data Pointer to the buffer to fill with data. Must not be
+ * null.
+ * @param[in] size Maximum size to read, must be greater than 0
+ * @param[out] out_handles Array of file HANDLEs to populate.  Must not be
+ * null.
+ * @param[in] handle_count Number of elements to receive into @p out_handles,
+ * must be greater than 0 and must match the value provided at the other end.
+ *
+ * @public @memberof ipc_message_channel
+ */
+xrt_result_t
+ipc_receive_fds(
+    struct ipc_message_channel *imc, void *out_data, size_t size, HANDLE *out_handles, uint32_t handle_count);
+
+/*!
+ * Send a message along with file HANDLEs over the IPC channel.
+ *
+ * @param imc Message channel to use
+ * @param[in] data Pointer to the data buffer to send. Must not be
+ * null: use a filler message if necessary.
+ * @param[in] size Size of data pointed-to by @p data, must be greater than 0
+ * @param[out] handles Array of file HANDLEs to send.  Must not be
+ * null.
+ * @param[in] handle_count Number of elements in @p handles, must be greater
+ * than 0. If this is variable, it must also be separately transmitted ahead of
+ * time, because the receiver must have the same value in its receive call.
+ *
+ * @public @memberof ipc_message_channel
+ */
+xrt_result_t
+ipc_send_fds(
+    struct ipc_message_channel *imc, const void *data, size_t size, const HANDLE *handles, uint32_t handle_count);
+
+/*!
+ * Helper to convert windows error codes to human readable strings for logging
+ * N.B. This routine is not thread safe
+ *
+ * @param err windows error code
+ * @return human readable string corresponding to the error code
+ *
+ * @public @memberof ipc_message_channel
+ */
+const char *
+ipc_winerror(DWORD err);
+
 #endif // XRT_OS_UNIX
 /*!
  * @}

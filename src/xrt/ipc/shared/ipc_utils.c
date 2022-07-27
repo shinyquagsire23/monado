@@ -15,8 +15,10 @@
 #include "shared/ipc_protocol.h"
 
 #include <errno.h>
+#if !defined(XRT_OS_WINDOWS)
 #include <sys/socket.h>
 #include <unistd.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -37,14 +39,15 @@
 #define IPC_WARN(d, ...) U_LOG_IFL_W(d->log_level, __VA_ARGS__)
 #define IPC_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
+#if !defined(XRT_OS_WINDOWS)
 void
 ipc_message_channel_close(struct ipc_message_channel *imc)
 {
-	if (imc->socket_fd < 0) {
+	if (imc->ipc_handle < 0) {
 		return;
 	}
-	close(imc->socket_fd);
-	imc->socket_fd = -1;
+	close(imc->ipc_handle);
+	imc->ipc_handle = -1;
 }
 
 xrt_result_t
@@ -62,11 +65,11 @@ ipc_send(struct ipc_message_channel *imc, const void *data, size_t size)
 	msg.msg_iovlen = 1;
 	msg.msg_flags = 0;
 
-	ssize_t ret = sendmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
+	ssize_t ret = sendmsg(imc->ipc_handle, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
 		int code = errno;
 		IPC_ERROR(imc, "ERROR: Sending plain message on socket %d failed with error: '%i' '%s'!",
-		          (int)imc->socket_fd, code, strerror(code));
+		          (int)imc->ipc_handle, code, strerror(code));
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -90,12 +93,12 @@ ipc_receive(struct ipc_message_channel *imc, void *out_data, size_t size)
 	msg.msg_iovlen = 1;
 	msg.msg_flags = 0;
 
-	ssize_t len = recvmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
+	ssize_t len = recvmsg(imc->ipc_handle, &msg, MSG_NOSIGNAL);
 
 	if (len < 0) {
 		int code = errno;
 		IPC_ERROR(imc, "ERROR: Receiving plain message on socket '%d' failed with error: '%i' '%s'!",
-		          (int)imc->socket_fd, code, strerror(code));
+		          (int)imc->ipc_handle, code, strerror(code));
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -135,7 +138,7 @@ ipc_receive_fds(struct ipc_message_channel *imc, void *out_data, size_t size, in
 	msg.msg_control = u.buf;
 	msg.msg_controllen = cmsg_size;
 
-	ssize_t len = recvmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
+	ssize_t len = recvmsg(imc->ipc_handle, &msg, MSG_NOSIGNAL);
 	if (len < 0) {
 		IPC_ERROR(imc, "recvmsg failed with error: '%s'!", strerror(errno));
 		return XRT_ERROR_IPC_FAILURE;
@@ -187,10 +190,10 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 
 	memcpy(CMSG_DATA(cmsg), handles, fds_size);
 
-	ssize_t ret = sendmsg(imc->socket_fd, &msg, MSG_NOSIGNAL);
+	ssize_t ret = sendmsg(imc->ipc_handle, &msg, MSG_NOSIGNAL);
 	if (ret < 0) {
 		IPC_ERROR(imc, "ERROR: sending %d FDs on socket %d failed with error: '%i' '%s'!", (int)handle_count,
-		          imc->socket_fd, errno, strerror(errno));
+		          imc->ipc_handle, errno, strerror(errno));
 		for (uint32_t i = 0; i < handle_count; i++) {
 			IPC_ERROR(imc, "\tfd #%i: %i", i, handles[i]);
 		}
@@ -198,6 +201,8 @@ ipc_send_fds(struct ipc_message_channel *imc, const void *data, size_t size, con
 	}
 	return XRT_SUCCESS;
 }
+
+#endif
 
 xrt_result_t
 ipc_receive_handles_shmem(struct ipc_message_channel *imc,
@@ -244,7 +249,7 @@ ipc_receive_handles_graphics_buffer(struct ipc_message_channel *imc,
 	}
 	bool failed = false;
 	for (uint32_t i = 0; i < handle_count; ++i) {
-		int err = AHardwareBuffer_recvHandleFromUnixSocket(imc->socket_fd, &(out_handles[i]));
+		int err = AHardwareBuffer_recvHandleFromUnixSocket(imc->ipc_handle, &(out_handles[i]));
 		if (err != 0) {
 			failed = true;
 		}
@@ -266,7 +271,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 	}
 	bool failed = false;
 	for (uint32_t i = 0; i < handle_count; ++i) {
-		int err = AHardwareBuffer_sendHandleToUnixSocket(handles[i], imc->socket_fd);
+		int err = AHardwareBuffer_sendHandleToUnixSocket(handles[i], imc->ipc_handle);
 		if (err != 0) {
 			failed = true;
 		}
@@ -303,6 +308,7 @@ ipc_send_handles_graphics_buffer(struct ipc_message_channel *imc,
 	return ipc_send_fds(imc, data, size, handles, handle_count);
 }
 
+#elif defined(XRT_OS_WINDOWS)
 #else
 #error "Need port to transport these graphics buffers"
 #endif
@@ -344,6 +350,7 @@ ipc_send_handles_graphics_sync(struct ipc_message_channel *imc,
 	return ipc_send_fds(imc, data, size, handles, handle_count);
 }
 
+#elif defined(XRT_OS_WINDOWS)
 #else
 #error "Need port to transport these graphics buffers"
 #endif

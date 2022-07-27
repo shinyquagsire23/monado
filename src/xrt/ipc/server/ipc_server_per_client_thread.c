@@ -15,6 +15,8 @@
 #include "server/ipc_server.h"
 #include "ipc_server_generated.h"
 
+#ifndef XRT_OS_WINDOWS
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -34,7 +36,7 @@
 static int
 setup_epoll(volatile struct ipc_client_state *ics)
 {
-	int listen_socket = ics->imc.socket_fd;
+	int listen_socket = ics->imc.ipc_handle;
 	assert(listen_socket >= 0);
 
 	int ret = epoll_create1(EPOLL_CLOEXEC);
@@ -101,7 +103,7 @@ client_loop(volatile struct ipc_client_state *ics)
 
 		// Finally get the data that is waiting for us.
 		//! @todo replace this call
-		ssize_t len = recv(ics->imc.socket_fd, &buf, IPC_BUF_SIZE, 0);
+		ssize_t len = recv(ics->imc.ipc_handle, &buf, IPC_BUF_SIZE, 0);
 		if (len < 4) {
 			IPC_ERROR(ics->server, "Invalid packet received, disconnecting client.");
 			break;
@@ -140,6 +142,62 @@ client_loop(volatile struct ipc_client_state *ics)
 	ipc_server_deactivate_session(ics);
 }
 
+#else // XRT_OS_WINDOWS
+
+static void
+client_loop(volatile struct ipc_client_state *ics)
+{
+	IPC_INFO(ics->server, "Client connected");
+
+	uint8_t buf[IPC_BUF_SIZE];
+
+	while (ics->server->running) {
+		DWORD len;
+		if (!ReadFile(ics->imc.ipc_handle, buf, sizeof(buf), &len, NULL)) {
+			DWORD err = GetLastError();
+			if (err == ERROR_BROKEN_PIPE) {
+				IPC_INFO(ics->server, "ReadFile from pipe: %d %s", err, ipc_winerror(err));
+			} else {
+				IPC_ERROR(ics->server, "ReadFile from pipe failed: %d %s", err, ipc_winerror(err));
+			}
+			break;
+		}
+		if (len < sizeof(ipc_command_t)) {
+			IPC_ERROR(ics->server, "Invalid packet received, disconnecting client.");
+			break;
+		} else {
+			// Check the first 4 bytes of the message and dispatch.
+			ipc_command_t *ipc_command = (ipc_command_t *)buf;
+			xrt_result_t result = ipc_dispatch(ics, ipc_command);
+			if (result != XRT_SUCCESS) {
+				IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
+				break;
+			}
+		}
+	}
+
+	// Multiple threads might be looking at these fields.
+	os_mutex_lock(&ics->server->global_state.lock);
+
+	ipc_message_channel_close((struct ipc_message_channel *)&ics->imc);
+
+	ics->server->threads[ics->server_thread_index].state = IPC_THREAD_STOPPING;
+	ics->server_thread_index = -1;
+	memset((void *)&ics->client_state, 0, sizeof(struct ipc_app_state));
+
+	os_mutex_unlock(&ics->server->global_state.lock);
+
+	ipc_server_client_destroy_compositor(ics);
+
+	// Should we stop the server when a client disconnects?
+	if (ics->server->exit_on_disconnect) {
+		ics->server->running = false;
+	}
+
+	ipc_server_deactivate_session(ics);
+}
+
+#endif // XRT_OS_WINDOWS
 
 /*
  *

@@ -39,6 +39,11 @@ add_library(ipc_shared STATIC ${IPC_COMMON_SOURCES})
 target_include_directories(
 	ipc_shared PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
+
+if(WIN32)
+	target_sources(ipc_shared PRIVATE shared/ipc_utils_windows.cpp)
+endif()
+
 target_link_libraries(ipc_shared PRIVATE aux_util)
 
 if(RT_LIBRARY)
@@ -61,6 +66,13 @@ add_library(
 target_include_directories(
 	ipc_client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 	)
+if(WIN32)
+	if(XRT_SERVICE_EXECUTABLE)
+		target_compile_definitions(
+			ipc_client PUBLIC XRT_SERVICE_EXECUTABLE="${XRT_SERVICE_EXECUTABLE}.exe"
+			)
+	endif()
+endif()
 target_link_libraries(ipc_client PRIVATE aux_util ipc_shared)
 
 ###
@@ -110,5 +122,10 @@ if(ANDROID)
 elseif(XRT_HAVE_LINUX)
 	target_sources(
 		ipc_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server/ipc_server_mainloop_linux.c
+		)
+elseif(WIN32)
+	target_sources(
+		ipc_server
+		PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server/ipc_server_mainloop_windows.cpp
 		)
 endif()

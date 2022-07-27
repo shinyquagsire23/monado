@@ -78,6 +78,28 @@ ipc_shmem_create(size_t size, xrt_shmem_handle_t *out_handle, void **out_map)
 	return XRT_SUCCESS;
 }
 
+#elif defined(XRT_OS_WINDOWS)
+
+xrt_result_t
+ipc_shmem_create(size_t size, xrt_shmem_handle_t *out_handle, void **out_map)
+{
+	*out_handle = NULL;
+	LARGE_INTEGER sz = {.QuadPart = size};
+	HANDLE handle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, sz.HighPart, sz.LowPart, NULL);
+	if (handle == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	xrt_result_t result = ipc_shmem_map(handle, size, out_map);
+	if (result != XRT_SUCCESS) {
+		CloseHandle(handle);
+		return result;
+	}
+
+	*out_handle = handle;
+	return XRT_SUCCESS;
+}
+
 #else
 #error "OS not yet supported"
 #endif
@@ -110,6 +132,30 @@ ipc_shmem_map(xrt_shmem_handle_t handle, size_t size, void **out_map)
 	*out_map = ptr;
 	return XRT_SUCCESS;
 }
+#elif defined(XRT_OS_WINDOWS)
+void
+ipc_shmem_destroy(xrt_shmem_handle_t *handle_ptr)
+{
+	if (handle_ptr == NULL) {
+		return;
+	}
+	xrt_shmem_handle_t handle = *handle_ptr;
+	CloseHandle(handle);
+	*handle_ptr = NULL;
+}
+
+xrt_result_t
+ipc_shmem_map(xrt_shmem_handle_t handle, size_t size, void **out_map)
+{
+	void *ptr = MapViewOfFile(handle, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, size);
+	if (ptr == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+	*out_map = ptr;
+	return XRT_SUCCESS;
+}
+
+// BUGBUG: unmap?
 #else
 #error "OS not yet supported"
 #endif

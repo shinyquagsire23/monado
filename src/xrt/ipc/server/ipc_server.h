@@ -236,6 +236,23 @@ struct ipc_server_mainloop
 #define XRT_IPC_GOT_IMPL
 #endif
 
+#if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
+	/*!
+	 * @name Desktop Windows Mainloop Members
+	 * @{
+	 */
+
+	//! Named Pipe that we accept connections on.
+	HANDLE pipe_handle;
+
+	//! Name of the Pipe that we accept connections on.
+	char *pipe_name;
+
+	/*! @} */
+
+#define XRT_IPC_GOT_IMPL
+#endif
+
 #ifndef XRT_IPC_GOT_IMPL
 #error "Need port"
 #endif
@@ -397,11 +414,11 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics);
  * @{
  */
 /*!
- * Start a thread for a client connected at the other end of the file descriptor @p fd.
+ * Start a thread for a client connected at the other end of the ipc handle @p ipc_handle.
  * @memberof ipc_server
  */
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd);
+ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle);
 
 /*!
  * Perform whatever needs to be done when the mainloop polling encounters a failure.

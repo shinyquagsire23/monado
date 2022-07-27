@@ -216,9 +216,9 @@ do_connect(struct ipc_connection *ipc_c)
 	 * Connenct.
 	 */
 
-	ipc_c->imc.socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-	if (ipc_c->imc.socket_fd < 0) {
-		ret = ipc_c->imc.socket_fd;
+	ipc_c->imc.ipc_handle = socket(PF_UNIX, SOCK_STREAM, 0);
+	if (ipc_c->imc.ipc_handle < 0) {
+		ret = ipc_c->imc.ipc_handle;
 		PE("Socket create error '%i'!\n", ret);
 		return -1;
 	}
@@ -235,7 +235,7 @@ do_connect(struct ipc_connection *ipc_c)
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, sock_file);
 
-	ret = connect(ipc_c->imc.socket_fd,     // socket
+	ret = connect(ipc_c->imc.ipc_handle,    // socket
 	              (struct sockaddr *)&addr, // address
 	              sizeof(addr));            // size
 	if (ret < 0) {

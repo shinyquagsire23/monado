@@ -30,14 +30,10 @@
 #include "server/ipc_server.h"
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
@@ -196,7 +192,7 @@ handle_binding(struct ipc_shared_memory *ism,
 	isbp->name = xbp->name;
 
 	// Copy the initial state and also count the number in input_pairs.
-	size_t input_pair_start = input_pair_index;
+	uint32_t input_pair_start = input_pair_index;
 	for (size_t k = 0; k < xbp->input_count; k++) {
 		ism->input_pairs[input_pair_index++] = xbp->inputs[k];
 	}
@@ -208,7 +204,7 @@ handle_binding(struct ipc_shared_memory *ism,
 	}
 
 	// Copy the initial state and also count the number in outputs.
-	size_t output_pair_start = output_pair_index;
+	uint32_t output_pair_start = output_pair_index;
 	for (size_t k = 0; k < xbp->output_count; k++) {
 		ism->output_pairs[output_pair_index++] = xbp->outputs[k];
 	}
@@ -309,7 +305,7 @@ init_shm(struct ipc_server *s)
 
 		// Setup the tracking origin.
 		isdev->tracking_origin_index = (uint32_t)-1;
-		for (size_t k = 0; k < XRT_SYSTEM_MAX_DEVICES; k++) {
+		for (uint32_t k = 0; k < XRT_SYSTEM_MAX_DEVICES; k++) {
 			if (xdev->tracking_origin != s->xtracks[k]) {
 				continue;
 			}
@@ -324,7 +320,7 @@ init_shm(struct ipc_server *s)
 		xrt_device_update_inputs(xdev);
 
 		// Bindings
-		size_t binding_start = binding_index;
+		uint32_t binding_start = binding_index;
 		for (size_t k = 0; k < xdev->binding_profile_count; k++) {
 			handle_binding(ism, &xdev->binding_profiles[k], &ism->binding_profiles[binding_index++],
 			               &input_pair_index, &output_pair_index);
@@ -337,7 +333,7 @@ init_shm(struct ipc_server *s)
 		}
 
 		// Copy the initial state and also count the number in inputs.
-		size_t input_start = input_index;
+		uint32_t input_start = input_index;
 		for (size_t k = 0; k < xdev->input_count; k++) {
 			ism->inputs[input_index++] = xdev->inputs[k];
 		}
@@ -349,7 +345,7 @@ init_shm(struct ipc_server *s)
 		}
 
 		// Copy the initial state and also count the number in outputs.
-		size_t output_start = output_index;
+		uint32_t output_start = output_index;
 		for (size_t k = 0; k < xdev->output_count; k++) {
 			ism->outputs[output_index++] = xdev->outputs[k];
 		}
@@ -392,7 +388,7 @@ ipc_server_handle_shutdown_signal(struct ipc_server *vs)
 }
 
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
+ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle)
 {
 	volatile struct ipc_client_state *ics = NULL;
 	int32_t cs_index = -1;
@@ -410,7 +406,7 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 		}
 	}
 	if (ics == NULL) {
-		close(fd);
+		xrt_ipc_handle_close(ipc_handle);
 
 		// Unlock when we are done.
 		os_mutex_unlock(&vs->global_state.lock);
@@ -422,7 +418,7 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 	struct ipc_thread *it = &vs->threads[cs_index];
 	if (it->state != IPC_THREAD_READY && it->state != IPC_THREAD_STOPPING) {
 		// we should not get here
-		close(fd);
+		xrt_ipc_handle_close(ipc_handle);
 
 		// Unlock when we are done.
 		os_mutex_unlock(&vs->global_state.lock);
@@ -438,7 +434,7 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, int fd)
 	}
 
 	it->state = IPC_THREAD_STARTING;
-	ics->imc.socket_fd = fd;
+	ics->imc.ipc_handle = ipc_handle;
 	ics->server = vs;
 	ics->server_thread_index = cs_index;
 	ics->io_active = true;

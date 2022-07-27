@@ -637,7 +637,7 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 	}
 	volatile struct ipc_client_state *ics = &_ics->server->threads[id].ics;
 
-	if (ics->imc.socket_fd <= 0) {
+	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
 		return XRT_ERROR_IPC_FAILURE;
 	}
 
@@ -707,7 +707,7 @@ ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics, uint3
 
 	ics = &_ics->server->threads[client_id].ics;
 
-	if (ics->imc.socket_fd <= 0) {
+	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
 		return XRT_ERROR_IPC_FAILURE;
 	}
 

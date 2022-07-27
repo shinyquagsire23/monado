@@ -13,6 +13,10 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_config_os.h"
 
+#include "util/u_misc.h"
+#include "util/u_handles.h"
+#include "util/u_trace_marker.h"
+
 #include "os/os_time.h"
 
 #include "util/u_wait.h"
@@ -25,9 +29,11 @@
 
 #include <string.h>
 #include <stdio.h>
+#if !defined(XRT_OS_WINDOWS)
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#endif
 #include <errno.h>
 #include <assert.h>
 
@@ -711,15 +717,10 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 	// Reset.
 	icc->layers.layer_count = 0;
 
-#ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 	// Need to consume this handle.
 	if (valid_sync) {
-		close(sync_handle);
-		sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
+		u_graphics_sync_unref(&sync_handle);
 	}
-#else
-#error "Not yet implemented for this platform"
-#endif
 
 	return res;
 }
