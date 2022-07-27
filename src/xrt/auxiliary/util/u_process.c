@@ -22,18 +22,8 @@
 
 #include <errno.h>
 #include <stdbool.h>
-#include "u_misc.h"
 #include "u_file.h"
 #include "u_logging.h"
-
-struct u_process
-{
-#ifdef XRT_HAVE_LIBBSD
-	struct pidfh *pfh;
-#else
-	int pid;
-#endif
-};
 
 XRT_MAYBE_UNUSED static inline int
 get_pidfile_path(char *buf)
@@ -45,6 +35,19 @@ get_pidfile_path(char *buf)
 	}
 	return 0;
 }
+
+#endif
+
+#include "u_misc.h"
+
+struct u_process
+{
+#ifdef XRT_HAVE_LIBBSD
+	struct pidfh *pfh;
+#else
+	int pid;
+#endif
+};
 
 struct u_process *
 u_process_create_if_not_running()
@@ -101,5 +104,3 @@ u_process_destroy(struct u_process *proc)
 #endif
 	free(proc);
 }
-
-#endif
