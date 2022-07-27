@@ -17,7 +17,7 @@ if(XRT_HAVE_SDL2)
 	add_subdirectory(gui)
 endif()
 
-if(XRT_FEATURE_SERVICE)
+if(XRT_FEATURE_SERVICE AND NOT WIN32)
 	add_subdirectory(ctl)
 endif()
 
