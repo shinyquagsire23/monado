@@ -15,19 +15,134 @@
 
 #ifdef XRT_OS_WINDOWS
 #include "xrt_windows.h"
-#endif // XRT_OS_WINDOWS
+#else // !XRT_OS_WINDOWS
+#include "unistd.h"
+#endif // !XRT_OS_WINDOWS
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#if defined(XRT_OS_WINDOWS)
+/*!
+ * The type for an IPC handle.
+ *
+ * On Windows, this is HANDLE.
+ */
+typedef HANDLE xrt_ipc_handle_t;
+
+/*!
+ * An invalid value for an IPC handle.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * @ref xrt_ipc_handle_is_valid instead of comparing against this!
+ *
+ * @relates xrt_ipc_handle_t
+ */
+#define XRT_IPC_HANDLE_INVALID INVALID_HANDLE_VALUE
+
+/*!
+ * Check whether an IPC handle is valid.
+ *
+ * @public @memberof xrt_ipc_handle_t
+ */
+static inline bool
+xrt_ipc_handle_is_valid(xrt_ipc_handle_t handle)
+{
+	return handle != INVALID_HANDLE_VALUE;
+}
+
+/*!
+ * Close an IPC handle.
+ *
+ * @public @memberof xrt_ipc_handle_t
+ */
+static inline void
+xrt_ipc_handle_close(xrt_ipc_handle_t handle)
+{
+	CloseHandle(handle);
+}
+
+#else // !XRT_OS_WINDOWS
+
+/*!
+ * The type for an IPC handle.
+ *
+ * On non-Windows, this is a file descriptor.
+ */
+typedef int xrt_ipc_handle_t;
+
+/*!
+ * An invalid value for an IPC handle.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * @ref xrt_ipc_handle_is_valid instead of comparing against this!
+ *
+ * @relates xrt_ipc_handle_t
+ */
+#define XRT_IPC_HANDLE_INVALID (-1)
+
+/*!
+ * Check whether an IPC handle is valid.
+ *
+ * @public @memberof xrt_ipc_handle_t
+ */
+static inline bool
+xrt_ipc_handle_is_valid(xrt_ipc_handle_t handle)
+{
+	return handle >= 0;
+}
+
+/*!
+ * Close an IPC handle.
+ *
+ * @public @memberof xrt_ipc_handle_t
+ */
+static inline void
+xrt_ipc_handle_close(xrt_ipc_handle_t handle)
+{
+	close(handle);
+}
+
+#endif // !XRT_OS_WINDOWS
 
 /*
  *
  * xrt_shmem_handle_t
  *
  */
+
+#if defined(XRT_OS_WINDOWS)
+/*!
+ * The type for shared memory blocks shared over IPC.
+ *
+ * On Windows, this is a HANDLE.
+ */
+typedef HANDLE xrt_shmem_handle_t;
+
+/*!
+ * Check whether a shared memory handle is valid.
+ *
+ * @public @memberof xrt_shmem_handle_t
+ */
+static inline bool
+xrt_shmem_is_valid(xrt_shmem_handle_t handle)
+{
+	return handle != NULL;
+}
+
+/*!
+ * An invalid value for a shared memory block.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * @ref xrt_shmem_is_valid instead of comparing against this!
+ *
+ * @relates xrt_shmem_handle_t
+ */
+#define XRT_SHMEM_HANDLE_INVALID (NULL)
+
+#else // !XRT_OS_WINDOWS
 
 /*!
  * The type for shared memory blocks shared over IPC.
@@ -64,6 +179,7 @@ xrt_shmem_is_valid(xrt_shmem_handle_t handle)
  */
 #define XRT_SHMEM_HANDLE_INVALID (-1)
 
+#endif // !XRT_OS_WINDOWS
 
 /*
  *
