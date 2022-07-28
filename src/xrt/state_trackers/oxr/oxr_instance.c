@@ -317,7 +317,7 @@ oxr_instance_create(struct oxr_logger *log,
 		return ret;
 	}
 
-	inst->timekeeping = time_state_create();
+	inst->timekeeping = time_state_create(inst->xinst->startup_timestamp);
 
 	//! @todo check if this (and other creates) failed?
 

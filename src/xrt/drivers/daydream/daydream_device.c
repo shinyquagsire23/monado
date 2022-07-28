@@ -185,7 +185,7 @@ daydream_run_thread(void *ptr)
 {
 	struct daydream_device *daydream = (struct daydream_device *)ptr;
 	//! @todo this should be injected at construction time
-	struct time_state *time = time_state_create();
+	struct time_state *time = time_state_create(os_monotonic_get_ns());
 
 	uint8_t buffer[20];
 	struct daydream_parsed_input input; // = {0};

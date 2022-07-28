@@ -10,6 +10,8 @@
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
 
+#include "os/os_time.h"
+
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
@@ -123,6 +125,8 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 	tinst->base.get_prober = t_instance_get_prober;
 	tinst->base.destroy = t_instance_destroy;
 	tinst->xp = xp;
+
+	tinst->base.startup_timestamp = os_monotonic_get_ns();
 
 	*out_xinst = &tinst->base;
 

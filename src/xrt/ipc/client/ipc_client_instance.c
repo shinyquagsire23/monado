@@ -398,6 +398,8 @@ ipc_instance_create(struct xrt_instance_info *i_info, struct xrt_instance **out_
 
 	ii->xdev_count = count;
 
+	ii->base.startup_timestamp = ii->ipc_c.ism->startup_timestamp;
+
 	*out_xinst = &ii->base;
 
 	return XRT_SUCCESS;

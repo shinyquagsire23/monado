@@ -246,6 +246,8 @@ init_shm(struct ipc_server *s)
 	uint32_t count = 0;
 	struct ipc_shared_memory *ism = s->ism;
 
+	ism->startup_timestamp = os_monotonic_get_ns();
+
 	// Setup the tracking origins.
 	count = 0;
 	for (size_t i = 0; i < XRT_SYSTEM_MAX_DEVICES; i++) {

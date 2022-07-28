@@ -199,7 +199,7 @@ struct time_state;
  * @ingroup aux_util
  */
 struct time_state *
-time_state_create();
+time_state_create(uint64_t offset);
 
 
 /*!

@@ -259,6 +259,8 @@ struct ipc_shared_memory
 	struct xrt_binding_output_pair output_pairs[IPC_SHARED_MAX_OUTPUTS];
 
 	struct ipc_layer_slot slots[IPC_MAX_SLOTS];
+
+	uint64_t startup_timestamp;
 };
 
 struct ipc_client_list

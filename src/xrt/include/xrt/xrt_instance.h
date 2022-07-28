@@ -120,6 +120,8 @@ struct xrt_instance
 	 * @}
 	 */
 	struct xrt_instance_info instance_info;
+
+	uint64_t startup_timestamp;
 };
 
 /*!
