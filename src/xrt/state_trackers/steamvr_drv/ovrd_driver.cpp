@@ -5,13 +5,15 @@
  * @brief  Main driver code for @ref st_ovrd.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Christoph Haag <christoph.haag@collabora.com>
+ * @author Daniel Willmott <web@dan-w.com>
+ * @author Moses Turner <moses@collabora.com>
  * @ingroup st_ovrd
  */
 
 #include <cstring>
 #include <thread>
-#include <sstream>
 
+#include "math/m_api.h"
 #include "ovrd_log.hpp"
 #include "openvr_driver.h"
 
@@ -24,6 +26,7 @@ extern "C" {
 #include "os/os_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_hand_tracking.h"
 
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_defines.h"
@@ -32,6 +35,7 @@ extern "C" {
 
 #include "bindings/b_generated_bindings.h"
 }
+#include "math/m_vec3.h"
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -46,6 +50,8 @@ DEBUG_GET_ONCE_BOOL_OPTION(emulate_index_controller, "STEAMVR_EMULATE_INDEX_CONT
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "XRT_COMPOSITOR_SCALE_PERCENTAGE", 140)
 
 #define MODELNUM_LEN (XRT_DEVICE_NAME_LEN + 9) // "[Monado] "
+
+#define OPENVR_BONE_COUNT 31
 
 //#define DUMP_POSE
 //#define DUMP_POSE_CONTROLLERS
@@ -130,6 +136,227 @@ apply_pose(struct xrt_space_relation *rel, vr::DriverPose_t *m_pose)
 
 		copy_vec3(&vel, m_pose->vecAngularVelocity);
 	}
+}
+
+#define OPENVR_BONE_COUNT 31
+
+// these are currently only used for the root and wrist transforms, but are kept here as they are useful for debugging.
+vr::VRBoneTransform_t rightOpenPose[OPENVR_BONE_COUNT] = {
+    {{0.000000f, 0.000000f, 0.000000f, 1.000000f}, {1.000000f, -0.000000f, -0.000000f, 0.000000f}}, // Root
+    {{0.034038f, 0.036503f, 0.164722f, 1.000000f}, {-0.055147f, -0.078608f, 0.920279f, -0.379296f}},
+    //
+    {{0.012083f, 0.028070f, 0.025050f, 1.000000f}, {0.567418f, -0.464112f, 0.623374f, -0.272106f}}, // Thumb
+    {{-0.040406f, -0.000000f, 0.000000f, 1.000000f}, {0.994838f, 0.082939f, 0.019454f, 0.055130f}},
+    {{-0.032517f, -0.000000f, -0.000000f, 1.000000f}, {0.974793f, -0.003213f, 0.021867f, -0.222015f}},
+    {{-0.030464f, 0.000000f, 0.000000f, 1.000000f}, {1.000000f, -0.000000f, -0.000000f, 0.000000f}},
+    //
+    {{-0.000632f, 0.026866f, 0.015002f, 1.000000f}, {0.421979f, -0.644251f, 0.422133f, 0.478202f}}, // Index
+    {{-0.074204f, 0.005002f, -0.000234f, 1.000000f}, {0.995332f, 0.007007f, -0.039124f, 0.087949f}},
+    {{-0.043930f, 0.000000f, 0.000000f, 1.000000f}, {0.997891f, 0.045808f, 0.002142f, -0.045943f}},
+    {{-0.028695f, -0.000000f, -0.000000f, 1.000000f}, {0.999649f, 0.001850f, -0.022782f, -0.013409f}},
+    {{-0.022821f, -0.000000f, 0.000000f, 1.000000f}, {1.000000f, -0.000000f, 0.000000f, -0.000000f}},
+    //
+    {{-0.002177f, 0.007120f, 0.016319f, 1.000000f}, {0.541276f, -0.546723f, 0.460749f, 0.442520f}}, // Middle
+    {{-0.070953f, -0.000779f, -0.000997f, 1.000000f}, {0.980294f, -0.167261f, -0.078959f, 0.069368f}},
+    {{-0.043108f, -0.000000f, -0.000000f, 1.000000f}, {0.997947f, 0.018493f, 0.013192f, 0.059886f}},
+    {{-0.033266f, -0.000000f, -0.000000f, 1.000000f}, {0.997394f, -0.003328f, -0.028225f, -0.066315f}},
+    {{-0.025892f, 0.000000f, -0.000000f, 1.000000f}, {0.999195f, -0.000000f, 0.000000f, 0.040126f}},
+    //
+    {{-0.000513f, -0.006545f, 0.016348f, 1.000000f}, {0.550143f, -0.516692f, 0.429888f, 0.495548f}}, // Ring
+    {{-0.065876f, -0.001786f, -0.000693f, 1.000000f}, {0.990420f, -0.058696f, -0.101820f, 0.072495f}},
+    {{-0.040697f, -0.000000f, -0.000000f, 1.000000f}, {0.999545f, -0.002240f, 0.000004f, 0.030081f}},
+    {{-0.028747f, 0.000000f, 0.000000f, 1.000000f}, {0.999102f, -0.000721f, -0.012693f, 0.040420f}},
+    {{-0.022430f, 0.000000f, -0.000000f, 1.000000f}, {1.000000f, 0.000000f, 0.000000f, 0.000000f}},
+
+    {{0.002478f, -0.018981f, 0.015214f, 1.000000f}, {0.523940f, -0.526918f, 0.326740f, 0.584025f}}, // Pinky
+    {{-0.062878f, -0.002844f, -0.000332f, 1.000000f}, {0.986609f, -0.059615f, -0.135163f, 0.069132f}},
+    {{-0.030220f, -0.000000f, -0.000000f, 1.000000f}, {0.994317f, 0.001896f, -0.000132f, 0.106446f}},
+    {{-0.018187f, -0.000000f, -0.000000f, 1.000000f}, {0.995931f, -0.002010f, -0.052079f, -0.073526f}},
+    {{-0.018018f, -0.000000f, 0.000000f, 1.000000f}, {1.000000f, 0.000000f, 0.000000f, 0.000000f}},
+
+    {{0.006059f, 0.056285f, 0.060064f, 1.000000f}, {0.737238f, 0.202745f, -0.594267f, -0.249441f}}, // Aux
+    {{0.040416f, -0.043018f, 0.019345f, 1.000000f}, {-0.290331f, 0.623527f, 0.663809f, 0.293734f}},
+    {{0.039354f, -0.075674f, 0.047048f, 1.000000f}, {-0.187047f, 0.678062f, 0.659285f, 0.265683f}},
+    {{0.038340f, -0.090987f, 0.082579f, 1.000000f}, {-0.183037f, 0.736793f, 0.634757f, 0.143936f}},
+    {{0.031806f, -0.087214f, 0.121015f, 1.000000f}, {-0.003659f, 0.758407f, 0.639342f, 0.126678f}},
+};
+
+vr::VRBoneTransform_t leftOpenPose[OPENVR_BONE_COUNT] = {
+    {{0.000000f, 0.000000f, 0.000000f, 1.000000f}, {1.000000f, -0.000000f, -0.000000f, 0.000000f}},   // Root
+                                                                                                      //
+    {{-0.034038f, 0.036503f, 0.164722f, 1.000000f}, {-0.055147f, -0.078608f, -0.920279f, 0.379296f}}, // Thumb
+    {{-0.012083f, 0.028070f, 0.025050f, 1.000000f}, {0.464112f, 0.567418f, 0.272106f, 0.623374f}},
+    {{0.040406f, 0.000000f, -0.000000f, 1.000000f}, {0.994838f, 0.082939f, 0.019454f, 0.055130f}},
+    {{0.032517f, 0.000000f, 0.000000f, 1.000000f}, {0.974793f, -0.003213f, 0.021867f, -0.222015f}},
+    {{0.030464f, -0.000000f, -0.000000f, 1.000000f}, {1.000000f, -0.000000f, -0.000000f, 0.000000f}},
+    //
+    {{0.000632f, 0.026866f, 0.015002f, 1.000000f}, {0.644251f, 0.421979f, -0.478202f, 0.422133f}}, // Index
+    {{0.074204f, -0.005002f, 0.000234f, 1.000000f}, {0.995332f, 0.007007f, -0.039124f, 0.087949f}},
+    {{0.043930f, -0.000000f, -0.000000f, 1.000000f}, {0.997891f, 0.045808f, 0.002142f, -0.045943f}},
+    {{0.028695f, 0.000000f, 0.000000f, 1.000000f}, {0.999649f, 0.001850f, -0.022782f, -0.013409f}},
+    {{0.022821f, 0.000000f, -0.000000f, 1.000000f}, {1.000000f, -0.000000f, 0.000000f, -0.000000f}},
+    //
+    {{0.002177f, 0.007120f, 0.016319f, 1.000000f}, {0.546723f, 0.541276f, -0.442520f, 0.460749f}}, // Middle
+    {{0.070953f, 0.000779f, 0.000997f, 1.000000f}, {0.980294f, -0.167261f, -0.078959f, 0.069368f}},
+    {{0.043108f, 0.000000f, 0.000000f, 1.000000f}, {0.997947f, 0.018493f, 0.013192f, 0.059886f}},
+    {{0.033266f, 0.000000f, 0.000000f, 1.000000f}, {0.997394f, -0.003328f, -0.028225f, -0.066315f}},
+    {{0.025892f, -0.000000f, 0.000000f, 1.000000f}, {0.999195f, -0.000000f, 0.000000f, 0.040126f}},
+
+    {{0.000513f, -0.006545f, 0.016348f, 1.000000f}, {0.516692f, 0.550143f, -0.495548f, 0.429888f}}, // Ring
+    {{0.065876f, 0.001786f, 0.000693f, 1.000000f}, {0.990420f, -0.058696f, -0.101820f, 0.072495f}},
+    {{0.040697f, 0.000000f, 0.000000f, 1.000000f}, {0.999545f, -0.002240f, 0.000004f, 0.030081f}},
+    {{0.028747f, -0.000000f, -0.000000f, 1.000000f}, {0.999102f, -0.000721f, -0.012693f, 0.040420f}},
+    {{0.022430f, -0.000000f, 0.000000f, 1.000000f}, {1.000000f, 0.000000f, 0.000000f, 0.000000f}},
+
+    {{-0.002478f, -0.018981f, 0.015214f, 1.000000f}, {0.526918f, 0.523940f, -0.584025f, 0.326740f}}, // Pinky
+    {{0.062878f, 0.002844f, 0.000332f, 1.000000f}, {0.986609f, -0.059615f, -0.135163f, 0.069132f}},
+    {{0.030220f, 0.000000f, 0.000000f, 1.000000f}, {0.994317f, 0.001896f, -0.000132f, 0.106446f}},
+    {{0.018187f, 0.000000f, 0.000000f, 1.000000f}, {0.995931f, -0.002010f, -0.052079f, -0.073526f}},
+    {{0.018018f, 0.000000f, -0.000000f, 1.000000f}, {1.000000f, 0.000000f, 0.000000f, 0.000000f}},
+
+    {{-0.006059f, 0.056285f, 0.060064f, 1.000000f}, {0.737238f, 0.202745f, 0.594267f, 0.249441f}}, // Aux
+    {{-0.040416f, -0.043018f, 0.019345f, 1.000000f}, {-0.290331f, 0.623527f, -0.663809f, -0.293734f}},
+    {{-0.039354f, -0.075674f, 0.047048f, 1.000000f}, {-0.187047f, 0.678062f, -0.659285f, -0.265683f}},
+    {{-0.038340f, -0.090987f, 0.082579f, 1.000000f}, {-0.183037f, 0.736793f, -0.634757f, -0.143936f}},
+    {{-0.031806f, -0.087214f, 0.121015f, 1.000000f}, {-0.003659f, 0.758407f, -0.639342f, -0.126678f}},
+};
+
+template <class T, class U>
+void
+convert_quaternion(const T &p_quatA, U &p_quatB)
+{
+	p_quatB.x = p_quatA.x;
+	p_quatB.y = p_quatA.y;
+	p_quatB.z = p_quatA.z;
+	p_quatB.w = p_quatA.w;
+}
+
+xrt_quat
+apply_bone_hand_transform(xrt_quat p_rot, xrt_hand hand)
+{
+	std::swap(p_rot.x, p_rot.z);
+	p_rot.z *= -1.f;
+	if (hand == XRT_HAND_RIGHT)
+		return p_rot;
+
+	p_rot.x *= -1.f;
+	p_rot.y *= -1.f;
+	return p_rot;
+}
+
+void
+metacarpal_joints_to_bone_transform(struct xrt_hand_joint_set *hand_joint_set,
+                                    vr::VRBoneTransform_t *out_bone_transforms,
+                                    xrt_hand hand)
+{
+	struct xrt_hand_joint_value *joint_values = hand_joint_set->values.hand_joint_set_default;
+
+	// Apply orientations for four-finger metacarpals.
+	for (int joint :
+	     {XRT_HAND_JOINT_THUMB_METACARPAL, XRT_HAND_JOINT_INDEX_METACARPAL, XRT_HAND_JOINT_MIDDLE_METACARPAL,
+	      XRT_HAND_JOINT_RING_METACARPAL, XRT_HAND_JOINT_LITTLE_METACARPAL}) {
+		struct xrt_hand_joint_value *current_joint = &joint_values[joint];
+		struct xrt_hand_joint_value *parent_joint = &joint_values[XRT_HAND_JOINT_WRIST];
+
+		xrt_quat diff_openxr;
+		// These should do the exact same things.
+		xrt_quat parent_inv;
+		math_quat_invert(&parent_joint->relation.pose.orientation, &parent_inv);
+		math_quat_rotate(&parent_inv, &current_joint->relation.pose.orientation, &diff_openxr);
+		xrt_quat diff_openvr = apply_bone_hand_transform(diff_openxr, hand);
+
+
+		/**
+		 * * if you try applying the metacarpal transforms without the magic quaternion, everything from the
+		 * metacarpals onwards is rotated 90 degrees.
+		 * In the neutral pose sample, all the metacarpals have a
+		 * rotation relatively close to {w=0.5, x=0.5, y=-0.5, z=0.5} which is an Important Quaternion because
+		 * it probably represents some 90 degree rotation. Maybe, and this was just a random guess, if I took
+		 * the regular metacarpal orientations and rotated them by that quat, everything would work.
+		 */
+		xrt_quat magic_prerotate = XRT_QUAT_IDENTITY;
+		magic_prerotate.w = 0.5;
+		magic_prerotate.x = 0.5;
+		magic_prerotate.y = -0.5;
+		magic_prerotate.z = 0.5;
+
+		if (hand == XRT_HAND_RIGHT) {
+			magic_prerotate.y *= -1.f;
+			magic_prerotate.x *= -1.f;
+		}
+
+		xrt_quat final_diff;
+		math_quat_rotate(&magic_prerotate, &diff_openvr, &final_diff);
+		convert_quaternion(final_diff, out_bone_transforms[joint].orientation);
+
+		xrt_vec3 global_diff_from_this_to_parent =
+		    m_vec3_sub(current_joint->relation.pose.position, parent_joint->relation.pose.position);
+
+		xrt_vec3 translation_wrist_rel;
+		math_quat_rotate_vec3(&parent_inv, &global_diff_from_this_to_parent, &translation_wrist_rel);
+
+		// Y = X?
+		out_bone_transforms[joint].position.v[0] = translation_wrist_rel.y;
+		out_bone_transforms[joint].position.v[1] = translation_wrist_rel.x;
+		out_bone_transforms[joint].position.v[2] = -translation_wrist_rel.z;
+		out_bone_transforms[joint].position.v[3] = 1.f;
+
+		if (hand == XRT_HAND_RIGHT)
+			out_bone_transforms[joint].position.v[1] *= -1.f;
+	}
+}
+
+void
+flexion_joints_to_bone_transform(struct xrt_hand_joint_set *hand_joint_set,
+                                 vr::VRBoneTransform_t *out_bone_transforms,
+                                 xrt_hand hand)
+{
+	struct xrt_hand_joint_value *joint_values = hand_joint_set->values.hand_joint_set_default;
+
+	// Apply orientations for four-finger pxm and onward
+	int parent;
+	for (int joint = XRT_HAND_JOINT_THUMB_METACARPAL; joint < XRT_HAND_JOINT_COUNT; joint++) {
+		if (u_hand_joint_is_metacarpal((xrt_hand_joint)joint)) {
+			parent = joint;
+			continue;
+		}
+		struct xrt_hand_joint_value *current_joint = &joint_values[joint];
+		struct xrt_hand_joint_value *parent_joint = &joint_values[parent];
+
+
+		xrt_quat diff_openxr;
+		math_quat_unrotate(&parent_joint->relation.pose.orientation, &current_joint->relation.pose.orientation,
+		                   &diff_openxr);
+
+		xrt_quat diff_openvr = apply_bone_hand_transform(diff_openxr, hand);
+		convert_quaternion(diff_openvr, out_bone_transforms[joint].orientation);
+		xrt_vec3 global_diff_from_this_to_parent =
+		    m_vec3_sub(current_joint->relation.pose.position, parent_joint->relation.pose.position);
+
+
+		float bone_length = m_vec3_len(global_diff_from_this_to_parent);
+		// OpenVR left hand has +X forward. Weird, huh?
+		out_bone_transforms[joint].position = {bone_length, 0, 0, 1};
+
+		if (hand == XRT_HAND_RIGHT)
+			out_bone_transforms[joint].position.v[0] *= -1.f;
+
+		parent = joint;
+	}
+}
+
+void
+hand_joint_set_to_bone_transform(struct xrt_hand_joint_set hand_joint_set,
+                                 vr::VRBoneTransform_t *out_bone_transforms,
+                                 xrt_hand hand)
+{
+	// fill bone transforms with a default open pose to manipulate later
+	for (int i : {XRT_HAND_JOINT_WRIST, XRT_HAND_JOINT_PALM}) {
+		out_bone_transforms[i] = hand == XRT_HAND_LEFT ? leftOpenPose[i] : rightOpenPose[i];
+	}
+
+	metacarpal_joints_to_bone_transform(&hand_joint_set, out_bone_transforms, hand);
+	flexion_joints_to_bone_transform(&hand_joint_set, out_bone_transforms, hand);
 }
 
 class CDeviceDriver_Monado_Controller : public vr::ITrackedDeviceServerDriver
@@ -256,6 +483,34 @@ public:
 		m_output_controls.push_back(out);
 		ovrd_log("Added output %s\n", steamvr_control_path);
 	}
+
+	void
+	AddSkeletonControl(const char *steamvr_skeleton_name,
+	                   const char *steamvr_control_path,
+	                   enum xrt_input_name monado_input_name)
+	{
+		enum xrt_input_type monado_input_type = XRT_GET_INPUT_TYPE(monado_input_name);
+
+		SteamVRDriverControlInput in;
+
+		in.monado_input_type = monado_input_type;
+		in.steamvr_control_path = steamvr_control_path;
+		in.monado_input_name = monado_input_name;
+		in.component.has_component = false;
+
+		vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(
+		    m_ulPropertyContainer, steamvr_skeleton_name, steamvr_control_path, "/pose/raw",
+		    vr::VRSkeletalTracking_Full, NULL, OPENVR_BONE_COUNT, &in.control_handle);
+		if (err) {
+			ovrd_log("Error adding skeletal input: %i", err);
+			return;
+		}
+
+
+		m_skeletal_input_control = in;
+		ovrd_log("Added skeleton input %s\n", steamvr_control_path);
+	}
+
 	void
 	AddEmulatedIndexControls()
 	{
@@ -300,6 +555,22 @@ public:
 			AddControl("/input/trackpad/x", XRT_INPUT_INDEX_TRACKPAD, &x);
 
 			AddControl("/input/trackpad/y", XRT_INPUT_INDEX_TRACKPAD, &y);
+
+			if (m_xdev->hand_tracking_supported) {
+				ovrd_log("Enabling skeletal input as this device supports it");
+
+				// skeletal input compatibility with games is a bit funky with any controllers
+				// other than the index controller, so only do skeletal input with index
+				// emulation
+				const std::string str_hand = m_hand == XRT_HAND_LEFT ? "left" : "right";
+
+
+				AddSkeletonControl(("/input/skeleton/" + str_hand).c_str(),
+				                   ("/skeleton/hand/" + str_hand).c_str(),
+				                   XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT);
+				RunFrame();
+			} else
+				ovrd_log("Not enabling skeletal input as this device does not support it");
 
 
 			AddOutputControl(XRT_OUTPUT_NAME_INDEX_HAPTIC, "/output/haptic");
@@ -611,7 +882,6 @@ public:
 		         m_pose.qRotation.y, m_pose.qRotation.z, m_pose.qRotation.w, m_pose.vecPosition[0],
 		         m_pose.vecPosition[1], m_pose.vecPosition[2]);
 #endif
-
 		vr::HmdQuaternion_t identityquat{1, 0, 0, 0};
 		m_pose.qWorldFromDriverRotation = identityquat;
 		m_pose.qDriverFromHeadRotation = identityquat;
@@ -681,6 +951,36 @@ public:
 				//       value);
 			}
 		}
+
+		if (m_xdev->hand_tracking_supported && m_skeletal_input_control.control_handle) {
+			vr::VRBoneTransform_t bone_transforms[OPENVR_BONE_COUNT];
+
+			timepoint_ns now_ns = os_monotonic_get_ns();
+			struct xrt_hand_joint_set out_joint_set_value;
+			uint64_t out_timestamp_ns;
+
+			m_xdev->get_hand_tracking(m_xdev,
+			                          m_hand == XRT_HAND_LEFT ? XRT_INPUT_GENERIC_HAND_TRACKING_LEFT
+			                                                  : XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT,
+			                          now_ns, &out_joint_set_value, &out_timestamp_ns);
+
+			hand_joint_set_to_bone_transform(out_joint_set_value, bone_transforms, m_hand);
+			// hand_joint_set_to_bone_transforms(out_joint_set_value, bone_transforms);
+
+			vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(
+			    m_skeletal_input_control.control_handle, vr::VRSkeletalMotionRange_WithoutController,
+			    bone_transforms, OPENVR_BONE_COUNT);
+			if (err != vr::VRInputError_None) {
+				ovrd_log("error updating skeleton: %i ", err);
+			}
+
+			err = vr::VRDriverInput()->UpdateSkeletonComponent(m_skeletal_input_control.control_handle,
+			                                                   vr::VRSkeletalMotionRange_WithController,
+			                                                   bone_transforms, OPENVR_BONE_COUNT);
+			if (err != vr::VRInputError_None) {
+				ovrd_log("error updating skeleton: %i ", err);
+			}
+		}
 	}
 
 
@@ -715,6 +1015,8 @@ public:
 	bool m_emulate_index_controller = false;
 
 	std::vector<struct SteamVRDriverControlInput> m_input_controls;
+	struct SteamVRDriverControlInput m_skeletal_input_control;
+
 	std::vector<struct SteamVRDriverControlOutput> m_output_controls;
 
 private:
