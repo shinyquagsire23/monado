@@ -1282,7 +1282,9 @@ CServerDriver_Monado::RunFrame()
 			ovrd_log("Device interaction started %d\n", event.trackedDeviceIndex);
 			break;
 		case vr::VREvent_IpdChanged: ovrd_log("ipd changed to %fm\n", event.data.ipd.ipdMeters); break;
-		case vr::VREvent_ActionBindingReloaded: ovrd_log("action binding reloaded\n"); break;
+		// This event currently spams the console, so is currently commented out. see
+		// https://github.com/ValveSoftware/SteamVR-for-Linux/issues/307
+		// case vr::VREvent_ActionBindingReloaded: ovrd_log("action binding reloaded\n"); break;
 		case vr::VREvent_StatusUpdate: ovrd_log("EVRState: %d\n", event.data.status.statusState); break;
 
 		case vr::VREvent_TrackedDeviceRoleChanged:
