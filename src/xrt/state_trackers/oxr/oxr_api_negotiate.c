@@ -55,7 +55,7 @@ xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo, XrNeg
 
 	// Make sure that we understand the structs passed to this function.
 	if (runtimeRequest->structType != XR_LOADER_INTERFACE_STRUCT_RUNTIME_REQUEST ||
-	    runtimeRequest->structVersion != XR_CURRENT_LOADER_RUNTIME_VERSION ||
+	    runtimeRequest->structVersion != XR_RUNTIME_INFO_STRUCT_VERSION ||
 	    runtimeRequest->structSize != sizeof(XrNegotiateRuntimeRequest)) {
 		PRINT_NEGOTIATE("\truntimeRequest bad!\n");
 		return XR_ERROR_INITIALIZATION_FAILED;
