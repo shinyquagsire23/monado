@@ -232,12 +232,14 @@ lighthouse_hand_track(struct u_system_devices *usysd,
 	}
 
 	LH_INFO("Hand tracker successfully created\n");
-#endif
 
 	*out_sinks = sinks;
 	out_devices[0] = two_hands[0];
 	out_devices[1] = two_hands[1];
 	return true;
+#endif
+
+	return false;
 }
 
 /*
