@@ -36,7 +36,7 @@ struct u_hand_tracking_finger_value
 {
 	float splay;
 
-	float joint_curls[5];
+	float joint_curls[4];
 	int joint_count;
 };
 
