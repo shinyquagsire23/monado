@@ -155,63 +155,6 @@ bool
 u_hand_joint_is_thumb(enum xrt_hand_joint joint);
 
 /*!
- * Initializes a hand tracking set with default data.
- *
- * @ingroup aux_util
- */
-void
-u_hand_joints_init_default_set(struct u_hand_tracking *set,
-                               enum xrt_hand hand,
-                               enum u_hand_tracking_model model,
-                               float scale);
-
-/*!
- * Helper function using hand_relation and hand_offset to transform joint
- * locations from an xrt_hand_tracking data in hand space
- * to an xrt_hand_joint_set in global space.
- *
- * @ingroup aux_util
- */
-void
-u_hand_joints_set_out_data(struct u_hand_tracking *set,
-                           enum xrt_hand hand,
-                           const struct xrt_space_relation *hand_relation,
-                           const struct xrt_pose *hand_offset,
-                           struct xrt_hand_joint_set *out_value);
-
-
-/*
- *
- * Curl model specific functions
- *
- */
-
-/*!
- * @ingroup aux_util
- */
-void
-u_hand_joint_compute_next_by_curl(const struct u_hand_tracking *set,
-                                  const struct u_joint_space_relation *prev,
-                                  enum xrt_hand hand,
-                                  uint64_t at_timestamp_ns,
-                                  struct u_joint_space_relation *out_joint,
-                                  float curl_value);
-
-/*!
- * @ingroup aux_util
- */
-void
-u_hand_joints_update_curl(struct u_hand_tracking *set,
-                          enum xrt_hand hand,
-                          uint64_t at_timestamp_ns,
-                          struct u_hand_tracking_curl_values *curl_values);
-
-void
-u_hand_joints_update(struct u_hand_tracking *set,
-                     enum xrt_hand hand,
-                     uint64_t at_timestamp_ns,
-                     const struct u_hand_tracking_values *values);
-/*!
  * Simple helper function for positioning hands on Valve Index controllers.
  *
  * @ingroup aux_util
