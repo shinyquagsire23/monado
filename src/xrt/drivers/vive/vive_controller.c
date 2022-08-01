@@ -35,6 +35,7 @@
 #include "vive.h"
 #include "vive_protocol.h"
 #include "vive_controller.h"
+#include "util/u_hand_simulation.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -336,7 +337,7 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	                                             .index = (float)d->state.index_finger_trigger / UINT8_MAX,
 	                                             .thumb = thumb_curl};
 
-	u_hand_joints_update_curl(&d->hand_tracking, hand, requested_timestamp_ns, &values);
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &out_value->hand_pose, out_value);
 
 
 	/* Because IMU is at the very -z end of the controller, the rotation
@@ -357,8 +358,6 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	struct xrt_pose hand_on_handle_pose;
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
-
-	u_hand_joints_set_out_data(&d->hand_tracking, hand, &controller_relation, &hand_on_handle_pose, out_value);
 
 	// This is a lie: currently, no pose-prediction or history is implemented for this driver.
 	*out_timestamp_ns = requested_timestamp_ns;
@@ -1104,8 +1103,6 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		d->base.get_hand_tracking = vive_controller_get_hand_tracking;
 
 		enum xrt_hand hand = d->config.variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-
-		u_hand_joints_init_default_set(&d->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC, 1.0);
 
 		d->base.binding_profiles = vive_binding_profiles_index;
 		d->base.binding_profile_count = vive_binding_profiles_index_count;

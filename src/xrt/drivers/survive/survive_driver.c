@@ -18,6 +18,7 @@
 #include <inttypes.h>
 
 #include "math/m_api.h"
+#include "math/m_space.h"
 #include "tracking/t_tracking.h"
 #include "xrt/xrt_device.h"
 #include "util/u_debug.h"
@@ -40,6 +41,7 @@
 #include "util/u_json.h"
 
 #include "util/u_hand_tracking.h"
+#include "util/u_hand_simulation.h"
 #include "util/u_logging.h"
 #include "math/m_relation_history.h"
 
@@ -388,6 +390,34 @@ survive_controller_device_set_output(struct xrt_device *xdev,
 	}
 }
 
+struct Button
+{
+	enum input_index click;
+	enum input_index touch;
+};
+
+struct Button buttons[255] = {
+    [SURVIVE_BUTTON_A] = {.click = VIVE_CONTROLLER_A_CLICK, .touch = VIVE_CONTROLLER_A_TOUCH},
+    [SURVIVE_BUTTON_B] = {.click = VIVE_CONTROLLER_B_CLICK, .touch = VIVE_CONTROLLER_B_TOUCH},
+
+    [SURVIVE_BUTTON_TRACKPAD] = {.click = VIVE_CONTROLLER_TRACKPAD_CLICK, .touch = VIVE_CONTROLLER_TRACKPAD_TOUCH},
+
+    [SURVIVE_BUTTON_THUMBSTICK] = {.click = VIVE_CONTROLLER_THUMBSTICK_CLICK,
+                                   .touch = VIVE_CONTROLLER_THUMBSTICK_TOUCH},
+
+    [SURVIVE_BUTTON_SYSTEM] = {.click = VIVE_CONTROLLER_SYSTEM_CLICK, .touch = VIVE_CONTROLLER_SYSTEM_TOUCH},
+
+    [SURVIVE_BUTTON_MENU] = {.click = VIVE_CONTROLLER_MENU_CLICK,
+                             // only on vive wand without touch
+                             .touch = 0},
+
+    [SURVIVE_BUTTON_GRIP] = {.click = VIVE_CONTROLLER_SQUEEZE_CLICK,
+                             // only on vive wand without touch
+                             .touch = 0},
+
+    [SURVIVE_BUTTON_TRIGGER] = {.click = VIVE_CONTROLLER_TRIGGER_CLICK, .touch = VIVE_CONTROLLER_TRIGGER_TOUCH},
+};
+
 static void
 survive_controller_get_hand_tracking(struct xrt_device *xdev,
                                      enum xrt_input_name name,
@@ -415,27 +445,45 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 		thumb_curl = 1.0;
 	}
 
+	if (survive->last_inputs[buttons[SURVIVE_BUTTON_TRIGGER].click].value.boolean) {
+		survive->ctrl.curl[XRT_FINGER_INDEX] = 1.0;
+		thumb_curl = 1.0;
+	}
+
 	struct u_hand_tracking_curl_values values = {.little = survive->ctrl.curl[XRT_FINGER_LITTLE],
 	                                             .ring = survive->ctrl.curl[XRT_FINGER_RING],
 	                                             .middle = survive->ctrl.curl[XRT_FINGER_MIDDLE],
 	                                             .index = survive->ctrl.curl[XRT_FINGER_INDEX],
 	                                             .thumb = thumb_curl};
 
+
 	/* The tracked controller position is at the very -z end of the
 	 * controller. Move the hand back offset_z meter to the handle center.
 	 */
-	struct xrt_vec3 static_offset = {.x = 0, .y = 0, .z = 0.11};
+	struct xrt_vec3 static_offset = {.x = 0, .y = 0.05, .z = 0.11};
 
-	u_hand_joints_update_curl(&survive->ctrl.hand_tracking, hand, at_timestamp_ns, &values);
 
-	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
 	struct xrt_space_relation hand_relation;
 
 	m_relation_history_get(survive->relation_hist, at_timestamp_ns, &hand_relation);
 
-	u_hand_joints_set_out_data(&survive->ctrl.hand_tracking, hand, &hand_relation, &hand_on_handle_pose, out_value);
+
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &hand_relation, out_value);
+
+	struct xrt_pose hand_on_handle_pose;
+	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
+
+
+	struct xrt_relation_chain chain = {0};
+
+	// out_value->hand_pose = hand_relation;
+
+	m_relation_chain_push_pose(&chain, &hand_on_handle_pose);
+	m_relation_chain_push_relation(&chain, &hand_relation);
+	m_relation_chain_resolve(&chain, &out_value->hand_pose);
+
+
 
 	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
 	*out_timestamp_ns = at_timestamp_ns;
@@ -544,33 +592,7 @@ update_axis(struct survive_device *survive, struct Axis *axis, const SurviveSimp
 	return true;
 }
 
-struct Button
-{
-	enum input_index click;
-	enum input_index touch;
-};
 
-struct Button buttons[255] = {
-    [SURVIVE_BUTTON_A] = {.click = VIVE_CONTROLLER_A_CLICK, .touch = VIVE_CONTROLLER_A_TOUCH},
-    [SURVIVE_BUTTON_B] = {.click = VIVE_CONTROLLER_B_CLICK, .touch = VIVE_CONTROLLER_B_TOUCH},
-
-    [SURVIVE_BUTTON_TRACKPAD] = {.click = VIVE_CONTROLLER_TRACKPAD_CLICK, .touch = VIVE_CONTROLLER_TRACKPAD_TOUCH},
-
-    [SURVIVE_BUTTON_THUMBSTICK] = {.click = VIVE_CONTROLLER_THUMBSTICK_CLICK,
-                                   .touch = VIVE_CONTROLLER_THUMBSTICK_TOUCH},
-
-    [SURVIVE_BUTTON_SYSTEM] = {.click = VIVE_CONTROLLER_SYSTEM_CLICK, .touch = VIVE_CONTROLLER_SYSTEM_TOUCH},
-
-    [SURVIVE_BUTTON_MENU] = {.click = VIVE_CONTROLLER_MENU_CLICK,
-                             // only on vive wand without touch
-                             .touch = 0},
-
-    [SURVIVE_BUTTON_GRIP] = {.click = VIVE_CONTROLLER_SQUEEZE_CLICK,
-                             // only on vive wand without touch
-                             .touch = 0},
-
-    [SURVIVE_BUTTON_TRIGGER] = {.click = VIVE_CONTROLLER_TRIGGER_CLICK, .touch = VIVE_CONTROLLER_TRIGGER_TOUCH},
-};
 
 static bool
 update_button(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e, timepoint_ns ts)
@@ -1050,8 +1072,6 @@ _create_controller_device(struct survive_system *sys,
 		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
 
 		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER_INDEX ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-		u_hand_joints_init_default_set(&survive->ctrl.hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC,
-		                               1.0);
 
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 

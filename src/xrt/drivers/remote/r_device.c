@@ -20,6 +20,7 @@
 #include "math/m_api.h"
 
 #include "r_internal.h"
+#include "util/u_hand_simulation.h"
 
 #include <stdio.h>
 
@@ -156,14 +157,11 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_update_curl(&rd->hand_tracking, hand, requested_timestamp_ns, &values);
-
-	struct xrt_pose hand_on_handle_pose = XRT_POSE_IDENTITY;
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &out_value->hand_pose, out_value);
 
 	struct xrt_space_relation relation;
 	xrt_device_get_tracked_pose(xdev, XRT_INPUT_INDEX_GRIP_POSE, requested_timestamp_ns, &relation);
 
-	u_hand_joints_set_out_data(&rd->hand_tracking, hand, &relation, &hand_on_handle_pose, out_value);
 	out_value->is_active = latest->hand_tracking_active;
 
 	// This is a lie
@@ -257,9 +255,6 @@ r_device_create(struct r_hub *r, bool is_left)
 	} else {
 		rd->base.device_type = XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
 	}
-
-	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	u_hand_joints_init_default_set(&rd->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC, 1.0);
 
 	// Setup variable tracker.
 	u_var_add_root(rd, rd->base.str, true);

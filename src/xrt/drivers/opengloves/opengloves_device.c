@@ -28,6 +28,7 @@ DEBUG_GET_ONCE_LOG_OPTION(opengloves_log, "OPENGLOVES_LOG", U_LOGGING_INFO)
 
 
 #include "os/os_threading.h"
+#include "util/u_hand_simulation.h"
 
 #define OPENGLOVES_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
 #define OPENGLOVES_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
@@ -120,7 +121,7 @@ opengloves_device_get_hand_tracking(struct xrt_device *xdev,
 	memcpy(values.index.joint_curls, od->last_input->flexion[1], sizeof(od->last_input->flexion[1]));
 	memcpy(values.thumb.joint_curls, od->last_input->flexion[0], sizeof(od->last_input->flexion[0]));
 
-	u_hand_joints_update(&od->hand_tracking, hand, requested_timestamp_ns, &values);
+	u_hand_sim_simulate_generic(&values, hand, &out_joint_set->hand_pose, out_joint_set);
 
 	struct xrt_space_relation controller_relation = {.pose = {.orientation.w = 1.0f, .position = {0, 0, 0}}};
 	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
@@ -129,8 +130,6 @@ opengloves_device_get_hand_tracking(struct xrt_device *xdev,
 
 	struct xrt_pose hand_on_handle_pose;
 	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
-	u_hand_joints_set_out_data(&od->hand_tracking, hand, &controller_relation, &hand_on_handle_pose, out_joint_set);
-
 
 	*out_timestamp_ns = requested_timestamp_ns;
 	out_joint_set->is_active = true;
@@ -247,7 +246,6 @@ opengloves_device_create(struct opengloves_communication_device *ocd, enum xrt_h
 	od->base.inputs[OPENGLOVES_INDEX_HAND_TRACKING].name =
 	    od->hand == XRT_HAND_LEFT ? XRT_INPUT_GENERIC_HAND_TRACKING_LEFT : XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 
-	u_hand_joints_init_default_set(&od->hand_tracking, hand, XRT_HAND_TRACKING_MODEL_INTRINSIC, 1.0);
 	od->base.hand_tracking_supported = true;
 
 	// inputs
