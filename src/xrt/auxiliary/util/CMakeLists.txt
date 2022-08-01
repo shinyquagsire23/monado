@@ -1,7 +1,6 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
 	@ONLY
@@ -37,6 +36,8 @@ add_library(
 	u_git_tag.h
 	u_hand_tracking.c
 	u_hand_tracking.h
+	u_hand_simulation.c
+	u_hand_simulation.h
 	u_handles.c
 	u_handles.h
 	u_hashmap.cpp
@@ -99,7 +100,6 @@ add_library(
 	)
 target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads aux_generated_bindings aux_math)
 
-
 if(XRT_HAVE_JPEG)
 	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
 	target_include_directories(aux_util PRIVATE ${JPEG_INCLUDE_DIRS})
@@ -124,3 +124,5 @@ endif()
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
 endif()
+
+target_include_directories(aux_util PRIVATE ${EIGEN3_INCLUDE_DIR})

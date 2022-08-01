@@ -382,6 +382,55 @@ math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float
 	map_quat(*result) = l.slerp(t, r);
 }
 
+extern "C" void
+math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result)
+{
+	assert(swing != NULL);
+	assert(result != NULL);
+	const float *a0 = &swing->x;
+	const float *a1 = &swing->y;
+	const float theta_squared = *a0 * *a0 + *a1 * *a1;
+
+	if (theta_squared > 0.f) {
+		const float theta = sqrt(theta_squared);
+		const float half_theta = theta * 0.5f;
+		const float k = sin(half_theta) / theta;
+		result->w = cos(half_theta);
+		result->x = *a0 * k;
+		result->y = *a1 * k;
+		result->z = 0.f;
+	} else {
+		// lim(x->0) (sin(x/2)/x) = 0.5, but sin(0)/0 is undefined, so we need to catch this with a conditional.
+		const float k(0.5);
+		result->w = float(1.0);
+		result->x = *a0 * k;
+		result->y = *a1 * k;
+		result->z = float(0);
+	}
+}
+
+extern "C" void
+math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result)
+{
+	assert(swing != NULL);
+	assert(result != NULL);
+
+	struct xrt_quat swing_quat;
+	struct xrt_quat twist_quat;
+
+	struct xrt_vec3 aax_twist;
+
+	aax_twist.x = 0.f;
+	aax_twist.y = 0.f;
+	aax_twist.z = twist;
+
+	math_quat_from_swing(swing, &swing_quat);
+
+	math_quat_exp(&aax_twist, &twist_quat);
+
+	math_quat_rotate(&swing_quat, &twist_quat, result);
+}
+
 /*
  *
  * Exported matrix functions.

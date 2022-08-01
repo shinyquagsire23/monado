@@ -391,6 +391,26 @@ math_quat_rotate_derivative(const struct xrt_quat *quat, const struct xrt_vec3 *
 void
 math_quat_slerp(const struct xrt_quat *left, const struct xrt_quat *right, float t, struct xrt_quat *result);
 
+
+/*!
+ * Converts a 2D vector to a quaternion
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result);
+
+
+/*!
+ * Converts a 2D vector and a float to a quaternion
+ *
+ * @relates xrt_quat
+ * @ingorup aux_math
+ */
+void
+math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result);
+
 /*
  *
  * Matrix functions
