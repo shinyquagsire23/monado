@@ -119,6 +119,13 @@ struct u_hand_tracking
 };
 
 /*!
+ * Applies joint width to set.
+ * @ingroup aux_util
+ */
+void
+u_hand_joints_apply_joint_width(struct xrt_hand_joint_set *set);
+
+/*!
  * @ingroup aux_util
  */
 bool

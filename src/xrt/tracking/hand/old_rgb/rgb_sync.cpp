@@ -55,6 +55,7 @@ using namespace xrt::tracking::hand::old_rgb;
 
 #include "util/u_device.h"
 #include "util/u_frame.h"
+#include "util/u_hand_tracking.h"
 #include "util/u_sink.h"
 #include "util/u_format.h"
 #include "util/u_logging.h"
@@ -1187,7 +1188,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 
 		put_in_set->hand_pose.relation_flags = valid_flags_ht;
 
-		applyJointWidths(put_in_set);
+		u_hand_joints_apply_joint_width(put_in_set);
 		applyJointOrientations(put_in_set, xr_indices[i]);
 	}
 	htExitFrame(htd, false, final_hands_ordered_by_handedness, filtered_hands[0].timestamp, out_left_hand,
