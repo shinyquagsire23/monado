@@ -44,6 +44,7 @@ createDevice(const wil::com_ptr<IDXGIAdapter> &adapter = nullptr, u_logging_leve
  * @param device D3D12 device
  * @param command_allocator
  * @param resource image
+ * @param bits Swapchain usage bits
  * @param[out] out_acquire_command_list Command list to populate for xrAcquireSwapchainImage
  * @param[out] out_release_command_list Command list to populate for xrReleaseSwapchainImage
  * @return HRESULT
