@@ -104,9 +104,9 @@ public:
 	explicit KeyedMutexCollection(u_logging_level log_level) noexcept;
 
 	/**
-	 * Take the keyed mutex vector before starting to use the images.
+	 * Make the keyed mutex vector before starting to use the images.
 	 *
-	 * @param keyedMutexVector Your vector of objects to move from
+	 * @param images Your vector of textures to acquire keyed mutexes from.
 	 */
 	xrt_result_t
 	init(const std::vector<wil::com_ptr<ID3D11Texture2D1>> &images) noexcept;
