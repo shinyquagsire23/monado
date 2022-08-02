@@ -237,3 +237,64 @@ vk_csci_get_image_external_handle_type(struct vk_bundle *vk)
 #error "need port"
 #endif
 }
+
+void
+vk_csci_get_image_external_support(struct vk_bundle *vk,
+                                   VkFormat image_format,
+                                   enum xrt_swapchain_usage_bits bits,
+                                   VkExternalMemoryHandleTypeFlags handle_type,
+                                   bool *out_importable,
+                                   bool *out_exportable)
+{
+	VkImageUsageFlags image_usage = vk_csci_get_image_usage_flags(vk, image_format, bits);
+
+	// In->pNext
+	VkPhysicalDeviceExternalImageFormatInfo external_image_format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+	    .handleType = handle_type,
+	};
+
+	// In
+	VkPhysicalDeviceImageFormatInfo2 format_info = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+	    .pNext = &external_image_format_info,
+	    .format = image_format,
+	    .type = VK_IMAGE_TYPE_2D,
+	    .tiling = VK_IMAGE_TILING_OPTIMAL,
+	    .usage = image_usage,
+	};
+
+	// Out->pNext
+	VkExternalImageFormatProperties external_format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+	};
+
+	// Out
+	VkImageFormatProperties2 format_properties = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+	    .pNext = &external_format_properties,
+	};
+
+	VkResult ret =
+	    vk->vkGetPhysicalDeviceImageFormatProperties2(vk->physical_device, &format_info, &format_properties);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vkGetPhysicalDeviceImageFormatProperties2: %s", vk_result_string(ret));
+		if (out_importable) {
+			*out_importable = false;
+		}
+		if (out_exportable) {
+			*out_exportable = false;
+		}
+		return;
+	}
+
+	VkExternalMemoryFeatureFlags features =
+	    external_format_properties.externalMemoryProperties.externalMemoryFeatures;
+
+	if (out_importable) {
+		*out_importable = (features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) != 0;
+	}
+	if (out_exportable) {
+		*out_exportable = (features & VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) != 0;
+	}
+}

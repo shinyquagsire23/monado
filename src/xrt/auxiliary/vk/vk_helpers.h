@@ -62,11 +62,32 @@ struct vk_bundle
 	struct
 	{
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-		bool buffer_import_opaque_win32;
-		bool buffer_export_opaque_win32;
+		bool color_image_import_opaque_win32;
+		bool color_image_export_opaque_win32;
+		bool depth_image_import_opaque_win32;
+		bool depth_image_export_opaque_win32;
 
-		bool buffer_import_d3d11;
-		bool buffer_export_d3d11;
+		bool color_image_import_d3d11;
+		bool color_image_export_d3d11;
+		bool depth_image_import_d3d11;
+		bool depth_image_export_d3d11;
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+		bool color_image_import_opaque_fd;
+		bool color_image_export_opaque_fd;
+		bool depth_image_import_opaque_fd;
+		bool depth_image_export_opaque_fd;
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+		bool color_image_import_opaque_fd;
+		bool color_image_export_opaque_fd;
+		bool depth_image_import_opaque_fd;
+		bool depth_image_export_opaque_fd;
+
+		bool color_image_import_ahardwarebuffer;
+		bool color_image_export_ahardwarebuffer;
+		bool depth_image_import_ahardwarebuffer;
+		bool depth_image_export_ahardwarebuffer;
 #endif
 
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
@@ -1131,6 +1152,18 @@ vk_csci_get_image_view_aspect(VkFormat format, enum xrt_swapchain_usage_bits bit
 VkExternalMemoryHandleTypeFlags
 vk_csci_get_image_external_handle_type(struct vk_bundle *vk);
 
+/*!
+ * Get whether a given image can be imported/exported for a handle type.
+ *
+ * CSCI = Compositor SwapChain Images.
+ */
+void
+vk_csci_get_image_external_support(struct vk_bundle *vk,
+                                   VkFormat image_format,
+                                   enum xrt_swapchain_usage_bits bits,
+                                   VkExternalMemoryHandleTypeFlags handle_type,
+                                   bool *out_importable,
+                                   bool *out_exportable);
 
 /*
  *

@@ -696,45 +696,11 @@ vk_create_image_from_native(struct vk_bundle *vk,
 
 	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
 
-	// In->pNext
-	VkPhysicalDeviceExternalImageFormatInfo external_image_format_info = {
-	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
-	    .handleType = handle_type,
-	};
+	bool importable = false;
+	vk_csci_get_image_external_support(vk, image_format, info->bits, handle_type, &importable, NULL);
 
-	// In
-	VkPhysicalDeviceImageFormatInfo2 format_info = {
-	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-	    .pNext = &external_image_format_info,
-	    .format = image_format,
-	    .type = VK_IMAGE_TYPE_2D,
-	    .tiling = VK_IMAGE_TILING_OPTIMAL,
-	    .usage = image_usage,
-	};
-
-	// Out->pNext
-	VkExternalImageFormatProperties external_format_properties = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
-	};
-
-	// Out
-	VkImageFormatProperties2 format_properties = {
-	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
-	    .pNext = &external_format_properties,
-	};
-
-	ret = vk->vkGetPhysicalDeviceImageFormatProperties2(vk->physical_device, &format_info, &format_properties);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkGetPhysicalDeviceImageFormatProperties2: %s", vk_result_string(ret));
-		// Nothing to cleanup
-		return ret;
-	}
-
-	VkExternalMemoryFeatureFlags features =
-	    external_format_properties.externalMemoryProperties.externalMemoryFeatures;
-
-	if ((features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0) {
-		VK_ERROR(vk, "External memory handle is not importable (has features: %d)", features);
+	if (!importable) {
+		VK_ERROR(vk, "External memory handle is not importable");
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
 

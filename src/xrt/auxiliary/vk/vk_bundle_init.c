@@ -181,44 +181,22 @@ fill_in_device_features(struct vk_bundle *vk)
 	free(props);
 }
 
-static bool
-is_buffer_bit_supported(struct vk_bundle *vk,
-                        VkExternalMemoryHandleTypeFlagBits handle_type,
-                        VkExternalMemoryFeatureFlagBits bits)
+static void
+get_external_image_support(struct vk_bundle *vk,
+                           bool depth,
+                           VkExternalMemoryHandleTypeFlagBits handle_type,
+                           bool *out_importable,
+                           bool *out_exportable)
 {
-	VkPhysicalDeviceExternalBufferInfo external_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
-	    .handleType = handle_type,
-	};
-	VkExternalBufferProperties external_buffer_props = {
-	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
-	};
-
-	vk->vkGetPhysicalDeviceExternalBufferPropertiesKHR( //
-	    vk->physical_device,                            // physicalDevice
-	    &external_buffer_info,                          // pExternalBufferInfo
-	    &external_buffer_props);                        // pExternalBufferProperties
-
-	// const VkExternalMemoryFeatureFlagBits bits =    //
-	//     VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | //
-	//     VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT;  //
-
-	VkExternalFenceFeatureFlagBits masked =
-	    bits & external_buffer_props.externalMemoryProperties.externalMemoryFeatures;
-	// All must be supported.
-	return masked == bits;
-}
-
-static bool
-is_buffer_bit_supported_for_import(struct vk_bundle *vk, VkExternalMemoryHandleTypeFlagBits handle_type)
-{
-	return is_buffer_bit_supported(vk, handle_type, VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT);
-}
-
-static bool
-is_buffer_bit_supported_for_export(struct vk_bundle *vk, VkExternalMemoryHandleTypeFlagBits handle_type)
-{
-	return is_buffer_bit_supported(vk, handle_type, VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT);
+	// Note that this is a heuristic: just picked two somewhat-random formats to test with here.
+	// Before creating an actual swapchain we check the desired format for real.
+	// Not using R16G16B16A16_UNORM because 8bpx linear is discouraged, and not using
+	// the SRGB version because Android's AHardwareBuffer is weird with SRGB (no internal support)
+	VkFormat image_format = depth ? VK_FORMAT_D16_UNORM : VK_FORMAT_R16G16B16A16_UNORM;
+	enum xrt_swapchain_usage_bits bits =
+	    depth ? (enum xrt_swapchain_usage_bits)(XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL | XRT_SWAPCHAIN_USAGE_SAMPLED)
+	          : (enum xrt_swapchain_usage_bits)(XRT_SWAPCHAIN_USAGE_COLOR | XRT_SWAPCHAIN_USAGE_SAMPLED);
+	vk_csci_get_image_external_support(vk, image_format, bits, handle_type, out_importable, out_exportable);
 }
 
 static bool
@@ -353,16 +331,48 @@ fill_in_external_object_properties(struct vk_bundle *vk)
 		VK_WARN(vk, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR not supported, should always be.");
 		return;
 	}
-#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-	vk->external.buffer_import_opaque_win32 =
-	    is_buffer_bit_supported_for_import(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-	vk->external.buffer_export_opaque_win32 =
-	    is_buffer_bit_supported_for_export(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+	if (vk->vkGetPhysicalDeviceImageFormatProperties2 == NULL) {
+		VK_WARN(vk, "vkGetPhysicalDeviceImageFormatProperties2 not supported, should always be.");
+		return;
+	}
 
-	vk->external.buffer_import_d3d11 =
-	    is_buffer_bit_supported_for_import(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT);
-	vk->external.buffer_export_d3d11 =
-	    is_buffer_bit_supported_for_export(vk, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT);
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	get_external_image_support(vk, false, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	                           &vk->external.color_image_import_opaque_win32,
+	                           &vk->external.color_image_export_opaque_win32);
+	get_external_image_support(vk, true, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	                           &vk->external.depth_image_import_opaque_win32,
+	                           &vk->external.depth_image_export_opaque_win32);
+
+
+	get_external_image_support(vk, false, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT,
+	                           &vk->external.color_image_import_d3d11, &vk->external.color_image_export_d3d11);
+	get_external_image_support(vk, true, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT,
+	                           &vk->external.depth_image_import_d3d11, &vk->external.depth_image_export_d3d11);
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+	get_external_image_support(vk, false, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+	                           &vk->external.color_image_import_opaque_fd,
+	                           &vk->external.color_image_export_opaque_fd);
+	get_external_image_support(vk, true, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+	                           &vk->external.depth_image_import_opaque_fd,
+	                           &vk->external.depth_image_export_opaque_fd);
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	get_external_image_support(vk, false, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+	                           &vk->external.color_image_import_opaque_fd,
+	                           &vk->external.color_image_export_opaque_fd);
+	get_external_image_support(vk, true, VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+	                           &vk->external.depth_image_import_opaque_fd,
+	                           &vk->external.depth_image_export_opaque_fd);
+
+
+	get_external_image_support(vk, false, VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	                           &vk->external.color_image_import_ahardwarebuffer,
+	                           &vk->external.color_image_export_ahardwarebuffer);
+	get_external_image_support(vk, true, VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+	                           &vk->external.depth_image_import_ahardwarebuffer,
+	                           &vk->external.depth_image_export_ahardwarebuffer);
 #endif
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 

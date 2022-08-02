@@ -65,14 +65,57 @@ vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_le
 {
 
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
-	U_LOG_IFL(log_level, vk->log_level,                                                   //
-	          "Supported buffers:\n\t%s: import=%s export=%s\n\t%s: import=%s export=%s", //
-	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT",                          //
-	          vk->external.buffer_import_opaque_win32 ? "true" : "false",                 //
-	          vk->external.buffer_export_opaque_win32 ? "true" : "false",                 //
-	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT",                         //
-	          vk->external.buffer_import_d3d11 ? "true" : "false",                        //
-	          vk->external.buffer_export_d3d11 ? "true" : "false");                       //
+
+	U_LOG_IFL(log_level, vk->log_level,                                               //
+	          "Supported images:"                                                     //
+	          "\n\t%s:\n\t\tcolor import=%s export=%s\n\t\tdepth import=%s export=%s" //
+	          "\n\t%s:\n\t\tcolor import=%s export=%s\n\t\tdepth import=%s export=%s" //
+	          ,                                                                       //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT",                      //
+	          vk->external.color_image_import_opaque_win32 ? "true" : "false",        //
+	          vk->external.color_image_export_opaque_win32 ? "true" : "false",        //
+	          vk->external.depth_image_import_opaque_win32 ? "true" : "false",        //
+	          vk->external.depth_image_export_opaque_win32 ? "true" : "false",        //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT",                     //
+	          vk->external.color_image_import_d3d11 ? "true" : "false",               //
+	          vk->external.color_image_export_d3d11 ? "true" : "false",               //
+	          vk->external.depth_image_import_d3d11 ? "true" : "false",               //
+	          vk->external.depth_image_export_d3d11 ? "true" : "false"                //
+	);                                                                                //
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+
+	U_LOG_IFL(log_level, vk->log_level,                                               //
+	          "Supported images:"                                                     //
+	          "\n\t%s:\n\t\tcolor import=%s export=%s\n\t\tdepth import=%s export=%s" //
+	          ,                                                                       //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT",                         //
+	          vk->external.color_image_import_opaque_fd ? "true" : "false",           //
+	          vk->external.color_image_export_opaque_fd ? "true" : "false",           //
+	          vk->external.depth_image_import_opaque_fd ? "true" : "false",           //
+	          vk->external.depth_image_export_opaque_fd ? "true" : "false"            //
+	);                                                                                //
+
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+
+	U_LOG_IFL(log_level, vk->log_level,                                               //
+	          "Supported images:"                                                     //
+	          "\n\t%s:\n\t\tcolor import=%s export=%s\n\t\tdepth import=%s export=%s" //
+	          "\n\t%s:\n\t\tcolor import=%s export=%s\n\t\tdepth import=%s export=%s" //
+	          ,                                                                       //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT",                         //
+	          vk->external.color_image_import_opaque_fd ? "true" : "false",           //
+	          vk->external.color_image_export_opaque_fd ? "true" : "false",           //
+	          vk->external.depth_image_import_opaque_fd ? "true" : "false",           //
+	          vk->external.depth_image_export_opaque_fd ? "true" : "false",           //
+	          "VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID",   //
+	          vk->external.color_image_import_ahardwarebuffer ? "true" : "false",     //
+	          vk->external.color_image_export_ahardwarebuffer ? "true" : "false",     //
+	          vk->external.depth_image_import_ahardwarebuffer ? "true" : "false",     //
+	          vk->external.depth_image_export_ahardwarebuffer ? "true" : "false"      //
+	);                                                                                //
+
 #endif
 
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
