@@ -261,6 +261,14 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 	if (sess->state == XR_SESSION_STATE_VISIBLE && sess->compositor_focused) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
 	}
+
+	if (sess->state == XR_SESSION_STATE_FOCUSED && !sess->compositor_focused) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+	}
+
+	if (sess->state == XR_SESSION_STATE_VISIBLE && !sess->compositor_visible) {
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+	}
 }
 
 static inline XrViewStateFlags
