@@ -195,11 +195,23 @@ oxr_xrLocateViews(XrSession session,
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewLocateInfo, XR_TYPE_VIEW_LOCATE_INFO);
 	OXR_VERIFY_SPACE_NOT_NULL(&log, viewLocateInfo->space, spc);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewState, XR_TYPE_VIEW_STATE);
+	OXR_VERIFY_VIEW_CONFIG_TYPE(&log, sess->sys->inst, viewLocateInfo->viewConfigurationType);
 
 	if (viewCapacityInput == 0) {
 		OXR_VERIFY_ARG_NOT_NULL(&log, viewCountOutput);
 	} else {
 		OXR_VERIFY_ARG_NOT_NULL(&log, views);
+	}
+
+	if (viewLocateInfo->displayTime <= (XrTime)0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
+	}
+
+	if (viewLocateInfo->viewConfigurationType != sess->sys->view_config_type) {
+		return oxr_error(&log, XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED,
+		                 "(viewConfigurationType == 0x%08x) "
+		                 "unsupported view configuration type",
+		                 viewLocateInfo->viewConfigurationType);
 	}
 
 	return oxr_session_locate_views( //
