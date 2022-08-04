@@ -701,6 +701,13 @@ update_server_state_locked(struct ipc_server *s)
 	s->global_state.last_active_client_index = s->global_state.active_client_index;
 }
 
+static void
+set_active_client_locked(struct ipc_server *s, int client_id)
+{
+	if (client_id != s->global_state.active_client_index) {
+		s->global_state.active_client_index = client_id;
+	}
+}
 
 /*
  *
@@ -712,14 +719,7 @@ void
 ipc_server_set_active_client(struct ipc_server *s, int client_id)
 {
 	os_mutex_lock(&s->global_state.lock);
-
-	if (client_id == s->global_state.active_client_index) {
-		os_mutex_unlock(&s->global_state.lock);
-		return;
-	}
-
-
-
+	set_active_client_locked(s, client_id);
 	os_mutex_unlock(&s->global_state.lock);
 }
 
@@ -747,6 +747,8 @@ ipc_server_activate_session(volatile struct ipc_client_state *ics)
 		handle_overlay_client_events(ics, s->global_state.active_client_index,
 		                             s->global_state.last_active_client_index);
 	} else {
+		// Update active client
+		set_active_client_locked(s, ics->server_thread_index);
 		// For new active regular sessions update all clients.
 		update_server_state_locked(s);
 	}
