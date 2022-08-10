@@ -26,6 +26,7 @@
 #include "oxr_handle.h"
 #include "oxr_chain.h"
 
+
 XrResult
 oxr_xrCreateSession(XrInstance instance, const XrSessionCreateInfo *createInfo, XrSession *out_session)
 {
@@ -204,7 +205,8 @@ oxr_xrLocateViews(XrSession session,
 	}
 
 	if (viewLocateInfo->displayTime <= (XrTime)0) {
-		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
+		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.",
+		                 viewLocateInfo->displayTime);
 	}
 
 	if (viewLocateInfo->viewConfigurationType != sess->sys->view_config_type) {
