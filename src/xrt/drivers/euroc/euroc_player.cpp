@@ -434,7 +434,7 @@ euroc_player_load_next_frame(struct euroc_player *ep, bool is_left, struct xrt_f
 
 	// Create xrt_frame, it will be freed by FrameMat destructor
 	EUROC_ASSERT(xf == NULL || xf->reference.count > 0, "Must be given a valid or NULL frame ptr");
-	EUROC_ASSERT(timestamp > 0, "Unexpected negative timestamp");
+	EUROC_ASSERT(timestamp >= 0, "Unexpected negative timestamp");
 	//! @todo Not using xrt_stereo_format because we use two sinks. It would
 	//! probably be better to refactor everything to use stereo frames instead.
 	FrameMat::Params params{XRT_STEREO_FORMAT_NONE, static_cast<uint64_t>(timestamp)};
