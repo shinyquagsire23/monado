@@ -182,10 +182,10 @@ lighthouse_hand_track(struct u_system_devices *usysd,
                       struct xrt_slam_sinks **out_sinks,
                       struct xrt_device **out_devices)
 {
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	struct xrt_device *two_hands[2] = {NULL};
 	struct xrt_slam_sinks *sinks = NULL;
 
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	LH_ASSERT_(stereo_calib != NULL);
 
 	struct t_image_boundary_info info;
