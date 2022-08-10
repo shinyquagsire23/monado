@@ -43,7 +43,7 @@ opengloves_bt_read(struct opengloves_communication_device *ocdev, char *data, si
 static int
 opengloves_bt_write(struct opengloves_communication_device *ocdev, const uint8_t *data, size_t length)
 {
-	struct opengloves_bt_device *obdev = (struct opengloves_bt_device *)obdev;
+	struct opengloves_bt_device *obdev = (struct opengloves_bt_device *)ocdev;
 
 	return write(obdev->sock, data, length);
 }
@@ -51,13 +51,11 @@ opengloves_bt_write(struct opengloves_communication_device *ocdev, const uint8_t
 static void
 opengloves_bt_destroy(struct opengloves_communication_device *ocdev)
 {
-	struct opengloves_bt_device *obdev = (struct opengloves_bt_device *)obdev;
+	struct opengloves_bt_device *obdev = (struct opengloves_bt_device *)ocdev;
 
 	opengloves_bt_close(obdev);
 	free(obdev);
 }
-
-
 
 int
 opengloves_bt_open(const char *btaddr, struct opengloves_communication_device **out_comm_dev)
