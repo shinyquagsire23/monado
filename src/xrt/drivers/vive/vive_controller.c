@@ -1102,8 +1102,6 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 
 		d->base.get_hand_tracking = vive_controller_get_hand_tracking;
 
-		enum xrt_hand hand = d->config.variant == CONTROLLER_INDEX_LEFT ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-
 		d->base.binding_profiles = vive_binding_profiles_index;
 		d->base.binding_profile_count = vive_binding_profiles_index_count;
 
