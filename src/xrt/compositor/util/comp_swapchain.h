@@ -105,7 +105,7 @@ comp_swapchain(struct xrt_swapchain *xsc)
 
 /*
  *
- * 'Exported' functions.
+ * 'Exported' garbage collection functions.
  *
  */
 
@@ -117,6 +117,13 @@ comp_swapchain(struct xrt_swapchain *xsc)
  */
 void
 comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc);
+
+
+/*
+ *
+ * 'Exported' default implementation.
+ *
+ */
 
 /*!
  * A compositor function that is implemented in the swapchain code.
@@ -151,16 +158,6 @@ comp_swapchain_import(struct vk_bundle *vk,
                       struct xrt_image_native *native_images,
                       uint32_t image_count,
                       struct xrt_swapchain **out_xsc);
-
-/*!
- * Swapchain destruct is delayed until it is safe to destroy them, this function
- * does the actual destruction and is called from @ref
- * comp_swapchain_garbage_collect.
- *
- * @ingroup comp_util
- */
-void
-comp_swapchain_really_destroy(struct comp_swapchain *sc);
 
 
 #ifdef __cplusplus

@@ -362,7 +362,14 @@ comp_swapchain_import(struct vk_bundle *vk,
 	return XRT_SUCCESS;
 }
 
-void
+/*!
+ * Swapchain destruct is delayed until it is safe to destroy them, this function
+ * does the actual destruction and is called from @ref
+ * comp_swapchain_garbage_collect.
+ *
+ * @ingroup comp_util
+ */
+static void
 comp_swapchain_really_destroy(struct comp_swapchain *sc)
 {
 	struct vk_bundle *vk = sc->vk;
