@@ -23,6 +23,9 @@ extern "C" {
  *
  * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
  * of the camera's vignette.
+ *
+ * Feel free to move this out of t_hand_tracking if this becomes more generally applicable.
+ *
  * @ingroup xrt_iface
  */
 enum t_image_boundary_type
@@ -36,6 +39,9 @@ enum t_image_boundary_type
  *
  * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
  * of the camera's vignette.
+ *
+ * Feel free to move this out of t_hand_tracking if this becomes more generally applicable.
+ *
  * @ingroup xrt_iface
  */
 struct t_image_boundary_circle
@@ -49,31 +55,53 @@ struct t_image_boundary_circle
 };
 
 /*!
- * @brief Image boundary for one view.
+ * @brief Logical orientation of the camera image, relative to the user's head.
+ * For example, Rift S uses CAMERA_ORIENTATION_90 for the two front cameras.
  *
- * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
- * of the camera's vignette.
+ * Feel free to move this out of t_hand_tracking if this becomes more generally applicable.
+ *
+ */
+enum t_camera_orientation
+{
+	CAMERA_ORIENTATION_0 = 0,     // Normal "horizontal" orientation
+	CAMERA_ORIENTATION_90 = 90,   // Camera rotated 90° to the right
+	CAMERA_ORIENTATION_180 = 180, // Camera rotated 180° upside down
+	CAMERA_ORIENTATION_270 = 270, // Camera rotated 270° to the left
+};
+
+
+/*!
+ * @brief Information about image boundary and camera orientation for one view.
+ *
+ * Currently used by hand-tracking to determine if parts of the hand are not
+ * visible to the camera, ie. they are outside of the camera's vignette.
+ *
  * @ingroup xrt_iface
  */
-struct t_image_boundary_info_one_view
+struct t_camera_extra_info_one_view
 {
-	enum t_image_boundary_type type;
+	enum t_image_boundary_type boundary_type;
+
 	union {
 		struct t_image_boundary_circle circle;
 	} boundary;
+
+	enum t_camera_orientation camera_orientation;
 };
 
 /*!
- * @brief Image boundaries for all the cameras used in a tracking system.
+ * @brief Information about image boundaries and camera orientations for all the
+ * cameras used in a tracking system.
  *
- * Currently used by hand-tracking to determine if parts of the hand are not visible to the camera, ie. they are outside
- * of the camera's vignette.
+ * Currently used by hand-tracking to determine if parts of the hand are not
+ * visible to the camera, ie. they are outside of the camera's vignette.
+ *
  * @ingroup xrt_iface
  */
-struct t_image_boundary_info
+struct t_camera_extra_info
 {
 	//!@todo Hardcoded to 2 - needs to increase as we support headsets with more cameras.
-	struct t_image_boundary_info_one_view views[2];
+	struct t_camera_extra_info_one_view views[2];
 };
 
 /*!

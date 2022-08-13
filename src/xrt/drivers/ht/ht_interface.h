@@ -55,7 +55,7 @@ int
 ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
                  enum t_hand_tracking_algorithm algorithm_choice,
-                 struct t_image_boundary_info boundary_info,
+                 struct t_camera_extra_info extra_camera_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device);
 

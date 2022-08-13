@@ -165,7 +165,7 @@ getModelsFolder(struct HandTracking *hgt)
 
 template <typename Vec>
 static inline bool
-check_outside_view(struct HandTracking *hgt, struct t_image_boundary_info_one_view boundary, Vec &keypoint)
+check_outside_view(struct HandTracking *hgt, struct t_camera_extra_info_one_view boundary, Vec &keypoint)
 {
 	// Regular case - the keypoint is literally outside the image
 	if (keypoint.y > hgt->calibration_one_view_size_px.h || //
@@ -175,7 +175,7 @@ check_outside_view(struct HandTracking *hgt, struct t_image_boundary_info_one_vi
 		return true;
 	}
 
-	switch (boundary.type) {
+	switch (boundary.boundary_type) {
 	// No boundary, and we passed the previous check. Not outside the view.
 	case HT_IMAGE_BOUNDARY_NONE: return false; break;
 	case HT_IMAGE_BOUNDARY_CIRCLE: {
@@ -254,7 +254,7 @@ back_project(struct HandTracking *hgt,
 		xrt_vec2 keypoints_global[26];
 		bool outside_view[26] = {};
 		for (int i = 0; i < 26; i++) {
-			if (check_outside_view(hgt, hgt->image_boundary_info.views[view_idx], out[i]) ||
+			if (check_outside_view(hgt, hgt->views[view_idx].camera_info, out[i]) ||
 			    any_joint_behind_camera) {
 				outside_view[i] = true;
 				if (num_outside != NULL) {
@@ -568,9 +568,9 @@ scribble_image_boundary(struct HandTracking *hgt)
 		struct ht_view *view = &hgt->views[view_idx];
 
 		cv::Mat &debug_frame = view->debug_out_to_this;
-		t_image_boundary_info_one_view &info = hgt->image_boundary_info.views[view_idx];
+		t_camera_extra_info_one_view &info = hgt->views[view_idx].camera_info;
 
-		if (info.type == HT_IMAGE_BOUNDARY_CIRCLE) {
+		if (info.boundary_type == HT_IMAGE_BOUNDARY_CIRCLE) {
 			int center_x = hgt->last_frame_one_view_size_px.w * info.boundary.circle.normalized_center.x;
 			int center_y = hgt->last_frame_one_view_size_px.h * info.boundary.circle.normalized_center.y;
 			cv::circle(debug_frame, {center_x, center_y},
@@ -913,7 +913,7 @@ using namespace xrt::tracking::hand::mercury;
 
 extern "C" t_hand_tracking_sync *
 t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
-                                    struct t_image_boundary_info boundary_info)
+                                    struct t_camera_extra_info extra_camera_info)
 {
 	XRT_TRACE_MARKER();
 
@@ -964,7 +964,8 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	hgt->views[0].hgt = hgt;
 	hgt->views[1].hgt = hgt; // :)
 
-	hgt->image_boundary_info = boundary_info;
+	hgt->views[0].camera_info = extra_camera_info.views[0];
+	hgt->views[1].camera_info = extra_camera_info.views[1];
 
 	init_hand_detection(hgt, &hgt->views[0].detection);
 	init_hand_detection(hgt, &hgt->views[1].detection);

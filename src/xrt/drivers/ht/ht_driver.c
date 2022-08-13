@@ -241,7 +241,7 @@ int
 ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
                  enum t_hand_tracking_algorithm algorithm_choice,
-                 struct t_image_boundary_info boundary_info,
+                 struct t_camera_extra_info extra_camera_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device)
 {
@@ -253,7 +253,7 @@ ht_device_create(struct xrt_frame_context *xfctx,
 
 	switch (algorithm_choice) {
 	case HT_ALGORITHM_MERCURY: {
-		sync = t_hand_tracking_sync_mercury_create(calib, boundary_info);
+		sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info);
 	} break;
 	case HT_ALGORITHM_OLD_RGB: {
 		//!@todo Either have this deal with the output space correctly, or have everything use LEFT_CAMERA
@@ -291,9 +291,9 @@ ht_device_create_depthai_ov9282()
 
 	struct t_hand_tracking_sync *sync;
 
-	struct t_image_boundary_info info;
-	info.views[0].type = HT_IMAGE_BOUNDARY_NONE;
-	info.views[1].type = HT_IMAGE_BOUNDARY_NONE;
+	struct t_camera_extra_info info;
+	info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
+	info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
 	sync = t_hand_tracking_sync_mercury_create(calib, info);
 

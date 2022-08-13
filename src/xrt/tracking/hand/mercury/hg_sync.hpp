@@ -133,6 +133,8 @@ struct ht_view
 	onnx_wrap keypoint[2];
 	int view;
 
+	struct t_camera_extra_info_one_view camera_info;
+
 	cv::Mat distortion;
 	cv::Matx<double, 3, 3> cameraMatrix;
 	cv::Matx33d rotate_camera_to_stereo_camera; // R1 or R2
@@ -242,7 +244,6 @@ public:
 
 
 	struct xrt_pose left_in_right = {};
-	struct t_image_boundary_info image_boundary_info;
 
 	u_frame_times_widget ft_widget = {};
 
