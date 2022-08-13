@@ -401,11 +401,11 @@ math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result)
 		result->z = 0.f;
 	} else {
 		// lim(x->0) (sin(x/2)/x) = 0.5, but sin(0)/0 is undefined, so we need to catch this with a conditional.
-		const float k(0.5);
-		result->w = float(1.0);
+		const float k = 0.5f;
+		result->w = 1.0f;
 		result->x = *a0 * k;
 		result->y = *a1 * k;
-		result->z = float(0);
+		result->z = 0.f;
 	}
 }
 
