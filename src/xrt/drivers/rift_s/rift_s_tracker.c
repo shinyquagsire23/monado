@@ -246,14 +246,17 @@ rift_s_create_hand_tracker(struct rift_s_tracker *t,
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 
 	//!@todo What's a sensible boundary for Rift S?
-	struct t_image_boundary_info boundary_info;
-	boundary_info.views[0].type = HT_IMAGE_BOUNDARY_NONE;
-	boundary_info.views[1].type = HT_IMAGE_BOUNDARY_NONE;
+	struct t_camera_extra_info extra_camera_info;
+	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
+	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
+
+	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_90;
+	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_90;
 
 	int create_status = ht_device_create(xfctx,                //
 	                                     t->stereo_calib,      //
 	                                     HT_ALGORITHM_MERCURY, //
-	                                     boundary_info,
+	                                     extra_camera_info,
 	                                     &sinks, //
 	                                     &device);
 	if (create_status != 0) {
