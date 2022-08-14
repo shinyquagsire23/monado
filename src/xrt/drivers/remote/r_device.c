@@ -162,8 +162,7 @@ r_device_get_hand_tracking(struct xrt_device *xdev,
 
 	// Simulate the hand.
 	enum xrt_hand hand = rd->is_left ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-	bool is_right = hand == XRT_HAND_RIGHT;
-	u_hand_sim_simulate_for_valve_index_knuckles(&values, is_right, &relation, out_value);
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &relation, out_value);
 
 	out_value->is_active = latest->hand_tracking_active;
 

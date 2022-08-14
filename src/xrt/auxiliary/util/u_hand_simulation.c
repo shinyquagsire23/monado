@@ -391,12 +391,12 @@ u_hand_sim_simulate(struct u_hand_sim_hand *hand_ptr, struct xrt_hand_joint_set 
 
 void
 u_hand_sim_simulate_for_valve_index_knuckles(const struct u_hand_tracking_curl_values *values,
-                                             bool is_right,
+                                             enum xrt_hand xhand,
                                              const struct xrt_space_relation *root_pose,
                                              struct xrt_hand_joint_set *out_set)
 {
 	struct u_hand_sim_hand hand;
-	hand.is_right = is_right;
+	hand.is_right = xhand == XRT_HAND_RIGHT;
 
 	hand_sim_hand_init(&hand);
 	hand.wrist_pose.pose.position.x = 0.f;
@@ -450,12 +450,12 @@ u_hand_sim_apply_generic_finger_transform(const struct u_hand_tracking_finger_va
 
 void
 u_hand_sim_simulate_generic(const struct u_hand_tracking_values *values,
-                            bool is_right,
+                            enum xrt_hand xhand,
                             const struct xrt_space_relation *root_pose,
                             struct xrt_hand_joint_set *out_set)
 {
 	struct u_hand_sim_hand hand;
-	hand.is_right = is_right;
+	hand.is_right = xhand == XRT_HAND_RIGHT;
 
 	hand_sim_hand_init(&hand);
 	hand.wrist_pose.pose.position.x = 0.f;
