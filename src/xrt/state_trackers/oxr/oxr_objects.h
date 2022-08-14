@@ -1350,14 +1350,6 @@ struct oxr_system
 	//! System compositor, used to create session compositors.
 	struct xrt_system_compositor *xsysc;
 
-	/* index for xdevs array */
-	struct
-	{
-#define OXR_ROLE_FIELD(X) int X;
-		OXR_FOR_EACH_VALID_SUBACTION_PATH(OXR_ROLE_FIELD)
-#undef OXR_ROLE_FIELD
-	} role;
-
 	XrSystemId systemId;
 
 	//! Have the client application called the gfx api requirements func?
