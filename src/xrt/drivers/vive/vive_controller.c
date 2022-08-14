@@ -20,6 +20,7 @@
 #include "os/os_time.h"
 
 #include "math/m_api.h"
+#include "math/m_space.h"
 #include "math/m_predict.h"
 
 #include "util/u_json.h"
@@ -339,7 +340,9 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	    .thumb = thumb_curl,
 	};
 
-	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &out_value->hand_pose, out_value);
+	struct xrt_space_relation ident;
+	m_space_relation_ident(&ident);
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &ident, out_value);
 
 
 	/* Because IMU is at the very -z end of the controller, the rotation
