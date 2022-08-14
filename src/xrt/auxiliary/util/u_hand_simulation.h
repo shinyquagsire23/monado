@@ -70,9 +70,9 @@ void
 u_hand_sim_simulate(struct u_hand_sim_hand *hand, struct xrt_hand_joint_set *out_set);
 
 void
-u_hand_sim_simulate_for_valve_index_knuckles(struct u_hand_tracking_curl_values *values,
+u_hand_sim_simulate_for_valve_index_knuckles(const struct u_hand_tracking_curl_values *values,
                                              bool is_right,
-                                             struct xrt_space_relation *root_pose,
+                                             const struct xrt_space_relation *root_pose,
                                              struct xrt_hand_joint_set *out_set);
 
 void
