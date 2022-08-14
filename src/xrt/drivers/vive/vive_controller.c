@@ -331,11 +331,13 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 		thumb_curl = 1.0;
 	}
 
-	struct u_hand_tracking_curl_values values = {.little = (float)d->state.pinky_finger_handle / UINT8_MAX,
-	                                             .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
-	                                             .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
-	                                             .index = (float)d->state.index_finger_trigger / UINT8_MAX,
-	                                             .thumb = thumb_curl};
+	struct u_hand_tracking_curl_values values = {
+	    .little = (float)d->state.pinky_finger_handle / UINT8_MAX,
+	    .ring = (float)d->state.ring_finger_handle / UINT8_MAX,
+	    .middle = (float)d->state.middle_finger_handle / UINT8_MAX,
+	    .index = (float)d->state.index_finger_trigger / UINT8_MAX,
+	    .thumb = thumb_curl,
+	};
 
 	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &out_value->hand_pose, out_value);
 
@@ -349,7 +351,8 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	float pivot_offset_z = 0.15;
 
 	struct xrt_space_relation controller_relation = {
-	    .pose = {.orientation = d->rot_filtered, .position = {0, 0, pivot_offset_z}}};
+	    .pose = {.orientation = d->rot_filtered, .position = {0, 0, pivot_offset_z}},
+	};
 	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
