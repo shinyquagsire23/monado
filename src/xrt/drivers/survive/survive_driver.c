@@ -1069,15 +1069,12 @@ _create_controller_device(struct survive_system *sys,
 			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Valve Index Right Controller (libsurvive)");
 		}
 
-		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
-
-		enum xrt_hand hand = idx == SURVIVE_LEFT_CONTROLLER_INDEX ? XRT_HAND_LEFT : XRT_HAND_RIGHT;
-
 		survive->base.outputs[0].name = XRT_OUTPUT_NAME_INDEX_HAPTIC;
 
 		survive->base.binding_profiles = vive_binding_profiles_index;
 		survive->base.binding_profile_count = vive_binding_profiles_index_count;
 
+		survive->base.get_hand_tracking = survive_controller_get_hand_tracking;
 		survive->base.hand_tracking_supported = !debug_get_bool_option_survive_disable_hand_emulation();
 
 	} else if (survive->ctrl.config.variant == CONTROLLER_VIVE_WAND) {
