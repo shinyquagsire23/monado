@@ -12,6 +12,8 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_defines.h"
 
+#include "math/m_space.h"
+
 #include "util/u_device.h"
 #include "util/u_debug.h"
 #include "util/u_hand_tracking.h"
@@ -121,7 +123,9 @@ opengloves_device_get_hand_tracking(struct xrt_device *xdev,
 	memcpy(values.index.joint_curls, od->last_input->flexion[1], sizeof(od->last_input->flexion[1]));
 	memcpy(values.thumb.joint_curls, od->last_input->flexion[0], sizeof(od->last_input->flexion[0]));
 
-	u_hand_sim_simulate_generic(&values, hand, &out_joint_set->hand_pose, out_joint_set);
+	struct xrt_space_relation ident;
+	m_space_relation_ident(&ident);
+	u_hand_sim_simulate_generic(&values, hand, &ident, out_joint_set);
 
 	struct xrt_space_relation controller_relation = {.pose = {.orientation.w = 1.0f, .position = {0, 0, 0}}};
 	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
