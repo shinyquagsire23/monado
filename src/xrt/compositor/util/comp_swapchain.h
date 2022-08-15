@@ -21,6 +21,16 @@ extern "C" {
 #endif
 
 
+struct comp_swapchain;
+
+/*!
+ * Callback for implementing own destroy function, should call
+ * @ref comp_swapchain_teardown and is responsible for memory.
+ *
+ * @ingroup comp_util
+ */
+typedef void (*comp_swapchain_destroy_func_t)(struct comp_swapchain *sc);
+
 /*!
  * A garbage collector that collects swapchains to be safely destroyed.
  *
@@ -81,6 +91,9 @@ struct comp_swapchain
 	 * image, this should probably be made even smarter.
 	 */
 	struct u_index_fifo fifo;
+
+	//! Virtual real destroy function.
+	comp_swapchain_destroy_func_t real_destroy;
 };
 
 
@@ -101,6 +114,52 @@ comp_swapchain(struct xrt_swapchain *xsc)
 {
 	return (struct comp_swapchain *)xsc;
 }
+
+
+/*
+ *
+ * 'Exported' parent-class functions.
+ *
+ */
+
+/*!
+ * Helper to init a comp_swachain struct as if it was a create operation,
+ * useful for wrapping comp_swapchain within another struct. Ref-count is
+ * set to zero so the caller need to init it correctly.
+ *
+ * @ingroup comp_util
+ */
+xrt_result_t
+comp_swapchain_create_init(struct comp_swapchain *sc,
+                           comp_swapchain_destroy_func_t destroy_func,
+                           struct vk_bundle *vk,
+                           struct comp_swapchain_gc *cscgc,
+                           const struct xrt_swapchain_create_info *info,
+                           const struct xrt_swapchain_create_properties *xsccp);
+
+/*!
+ * Helper to init a comp_swachain struct as if it was a import operation,
+ * useful for wrapping comp_swapchain within another struct. Ref-count is
+ * set to zero so the caller need to init it correctly.
+ *
+ * @ingroup comp_util
+ */
+xrt_result_t
+comp_swapchain_import_init(struct comp_swapchain *sc,
+                           comp_swapchain_destroy_func_t destroy_func,
+                           struct vk_bundle *vk,
+                           struct comp_swapchain_gc *cscgc,
+                           const struct xrt_swapchain_create_info *info,
+                           struct xrt_image_native *native_images,
+                           uint32_t native_image_count);
+
+/*!
+ * De-inits a comp_swapchain, usable for classes sub-classing comp_swapchain.
+ *
+ * @ingroup comp_util
+ */
+void
+comp_swapchain_teardown(struct comp_swapchain *sc);
 
 
 /*
