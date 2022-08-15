@@ -202,7 +202,6 @@ endif()
 if(XRT_BUILD_DRIVER_RIFT_S)
 	add_library(
 		drv_rift_s STATIC
-		rift_s/rift_s_builder.c
 		rift_s/rift_s_interface.h
 		rift_s/rift_s_camera.c
 		rift_s/rift_s_camera.h

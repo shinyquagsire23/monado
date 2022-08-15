@@ -28,9 +28,8 @@
 #include "ht_ctrl_emu/ht_ctrl_emu_interface.h"
 #endif
 
-#include "rift_s_interface.h"
-#include "rift_s.h"
-#include "rift_s_hmd.h"
+#include "rift_s/rift_s_interface.h"
+#include "rift_s/rift_s.h"
 
 enum u_logging_level rift_s_log_level;
 
