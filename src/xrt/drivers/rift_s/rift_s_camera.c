@@ -201,8 +201,7 @@ rift_s_camera_create(struct xrt_prober *xp,
 	cam->in_sink.push_frame = receive_cam_frame;
 
 	bool enable_aeg = debug_get_bool_option_rift_s_autoexposure();
-	int frame_delay =
-	    3; // WMR takes about three frames until the cmd changes the image. TODO: Confirm this for Rift S
+	int frame_delay = 2; // Exposure updates take effect on the 2nd frame after sending
 	cam->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
 
 	u_sink_debug_init(&cam->debug_sinks[0]);
@@ -475,6 +474,7 @@ rift_s_camera_update(struct rift_s_camera *cam, struct os_hid_device *hid)
 	os_mutex_unlock(&cam->lock);
 
 	if (need_update) {
+		RIFT_S_DEBUG("Updating AEG exposure to %u gain %u", cam->target_exposure, cam->target_gain);
 		if (rift_s_protocol_send_camera_report(hid, &cam->camera_report) < 0) {
 			RIFT_S_WARN("Failed to update camera settings");
 		}
