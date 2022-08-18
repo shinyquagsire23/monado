@@ -123,13 +123,18 @@ sample_hmd_create(void)
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
 
 	struct sample_hmd *sh = U_DEVICE_ALLOCATE(struct sample_hmd, flags, 1, 0);
+
+	// This list should be ordered, most preferred first.
+	size_t idx = 0;
+	sh->base.hmd->blend_modes[idx++] = XRT_BLEND_MODE_OPAQUE;
+	sh->base.hmd->blend_mode_count = idx;
+
 	sh->base.update_inputs = sample_hmd_update_inputs;
 	sh->base.get_tracked_pose = sample_hmd_get_tracked_pose;
 	sh->base.get_view_poses = sample_hmd_get_view_poses;
 	sh->base.destroy = sample_hmd_destroy;
-	sh->base.name = XRT_DEVICE_GENERIC_HMD;
-	sh->base.device_type = XRT_DEVICE_TYPE_HMD;
-	sh->pose.orientation.w = 1.0f; // All other values set to zero by U_DEVICE_ALLOCATE (which calls U_CALLOC)
+
+	sh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
 	sh->log_level = debug_get_log_option_sample_log();
 
 	// Print name.
@@ -137,7 +142,11 @@ sample_hmd_create(void)
 	snprintf(sh->base.serial, XRT_DEVICE_NAME_LEN, "Sample HMD S/N");
 
 	// Setup input.
+	sh->base.name = XRT_DEVICE_GENERIC_HMD;
+	sh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	sh->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
+	sh->base.orientation_tracking_supported = true;
+	sh->base.position_tracking_supported = false;
 
 	// Set up display details
 	// refresh rate
@@ -182,13 +191,14 @@ sample_hmd_create(void)
 	sh->base.hmd->views[0].viewport.x_pixels = 0;
 	sh->base.hmd->views[1].viewport.x_pixels = panel_w;
 
+	// Distortion information, fills in xdev->compute_distortion().
+	u_distortion_mesh_set_none(&sh->base);
+
 	// Setup variable tracker: Optional but useful for debugging
 	u_var_add_root(sh, "Sample HMD", true);
 	u_var_add_pose(sh, &sh->pose, "pose");
 	u_var_add_log_level(sh, &sh->log_level, "log_level");
 
-	// Distortion information, fills in xdev->compute_distortion().
-	u_distortion_mesh_set_none(&sh->base);
 
 	return &sh->base;
 }
