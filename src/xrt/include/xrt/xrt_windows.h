@@ -20,10 +20,6 @@
 #define NODRAWTEXT
 #endif // !NODRAWTEXT
 
-#ifndef NOGDI
-#define NOGDI
-#endif // !NOGDI
-
 #ifndef NOHELP
 #define NOHELP
 #endif // !NOHELP
