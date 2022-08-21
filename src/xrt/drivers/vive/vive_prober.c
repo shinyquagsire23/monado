@@ -59,7 +59,7 @@ log_vive_device(enum u_logging_level log_level, struct xrt_prober *xp, struct xr
 	log_vive_string(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER);
 }
 
-static int
+static void
 init_vive1(struct xrt_prober *xp,
            struct xrt_prober_device *dev,
            struct xrt_prober_device **devices,
@@ -67,13 +67,13 @@ init_vive1(struct xrt_prober *xp,
            enum u_logging_level log_level,
            struct vive_tracking_status tstatus,
            struct vive_source *vs,
-           struct xrt_device **out_xdev)
+           struct vive_device **out_vdev)
 {
 	log_vive_device(log_level, xp, dev);
 
 	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
 	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRODUCT_STRING)) {
-		return 0;
+		return;
 	}
 
 	struct os_hid_device *sensors_dev = NULL;
@@ -90,13 +90,13 @@ init_vive1(struct xrt_prober *xp,
 		int result = xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
 		if (result != 0) {
 			U_LOG_E("Could not open Vive sensors device.");
-			return 0;
+			return;
 		}
 
 		result = xrt_prober_open_hid_interface(xp, d, 1, &watchman_dev);
 		if (result != 0) {
 			U_LOG_E("Could not open headset watchman device.");
-			return 0;
+			return;
 		}
 
 		break;
@@ -104,12 +104,12 @@ init_vive1(struct xrt_prober *xp,
 
 	if (sensors_dev == NULL) {
 		U_LOG_E("Could not find Vive sensors device.");
-		return 0;
+		return;
 	}
 
 	if (watchman_dev == NULL) {
 		U_LOG_E("Could not find headset watchman device.");
-		return 0;
+		return;
 	}
 
 	struct os_hid_device *mainboard_dev = NULL;
@@ -118,22 +118,22 @@ init_vive1(struct xrt_prober *xp,
 	if (result != 0) {
 		U_LOG_E("Could not open Vive mainboard device.");
 		free(sensors_dev);
-		return 0;
+		return;
 	}
 	struct vive_device *d =
 	    vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_VIVE, tstatus, vs);
 	if (d == NULL) {
 		free(sensors_dev);
 		free(mainboard_dev);
-		return 0;
+		return;
 	}
 
-	*out_xdev = &d->base;
+	*out_vdev = d;
 
-	return 1;
+	return;
 }
 
-static int
+static void
 init_vive_pro(struct xrt_prober *xp,
               struct xrt_prober_device *dev,
               struct xrt_prober_device **devices,
@@ -141,7 +141,7 @@ init_vive_pro(struct xrt_prober *xp,
               enum u_logging_level log_level,
               struct vive_tracking_status tstatus,
               struct vive_source *vs,
-              struct xrt_device **out_xdev)
+              struct vive_device **out_vdev)
 {
 	XRT_TRACE_MARKER();
 
@@ -150,7 +150,7 @@ init_vive_pro(struct xrt_prober *xp,
 	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VIVE_MANUFACTURER_STRING) ||
 	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VIVE_PRO_PRODUCT_STRING)) {
 		U_LOG_D("Vive Pro manufacturer string did not match.");
-		return 0;
+		return;
 	}
 
 	struct os_hid_device *sensors_dev = NULL;
@@ -167,13 +167,13 @@ init_vive_pro(struct xrt_prober *xp,
 		int result = xrt_prober_open_hid_interface(xp, d, 0, &sensors_dev);
 		if (result != 0) {
 			U_LOG_E("Could not open Vive sensors device.");
-			return 0;
+			return;
 		}
 
 		result = xrt_prober_open_hid_interface(xp, d, 1, &watchman_dev);
 		if (result != 0) {
 			U_LOG_E("Could not open headset watchman device.");
-			return 0;
+			return;
 		}
 
 		break;
@@ -181,12 +181,12 @@ init_vive_pro(struct xrt_prober *xp,
 
 	if (sensors_dev == NULL) {
 		U_LOG_E("Could not find Vive Pro sensors device.");
-		return 0;
+		return;
 	}
 
 	if (watchman_dev == NULL) {
 		U_LOG_E("Could not find headset watchman device.");
-		return 0;
+		return;
 	}
 
 	struct os_hid_device *mainboard_dev = NULL;
@@ -195,22 +195,22 @@ init_vive_pro(struct xrt_prober *xp,
 	if (result != 0) {
 		U_LOG_E("Could not open Vive mainboard device.");
 		free(sensors_dev);
-		return 0;
+		return;
 	}
 	struct vive_device *d =
 	    vive_device_create(mainboard_dev, sensors_dev, watchman_dev, VIVE_VARIANT_PRO, tstatus, vs);
 	if (d == NULL) {
 		free(sensors_dev);
 		free(mainboard_dev);
-		return 0;
+		return;
 	}
 
-	*out_xdev = &d->base;
+	*out_vdev = d;
 
-	return 1;
+	return;
 }
 
-static int
+static void
 init_valve_index(struct xrt_prober *xp,
                  struct xrt_prober_device *dev,
                  struct xrt_prober_device **devices,
@@ -218,8 +218,7 @@ init_valve_index(struct xrt_prober *xp,
                  enum u_logging_level log_level,
                  struct vive_tracking_status tstatus,
                  struct vive_source *vs,
-                 struct vive_config **out_vive_config,
-                 struct xrt_device **out_xdevs)
+                 struct vive_device **out_vdev)
 {
 	XRT_TRACE_MARKER();
 
@@ -228,7 +227,7 @@ init_valve_index(struct xrt_prober *xp,
 	if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, VALVE_INDEX_MANUFACTURER_STRING) ||
 	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, VALVE_INDEX_PRODUCT_STRING)) {
 		U_LOG_E("Valve Index manufacturer string did not match.");
-		return 0;
+		return;
 	}
 
 	struct os_hid_device *sensors_dev = NULL;
@@ -237,36 +236,31 @@ init_valve_index(struct xrt_prober *xp,
 	int result = xrt_prober_open_hid_interface(xp, dev, 0, &sensors_dev);
 	if (result != 0) {
 		U_LOG_E("Could not open Index sensors device.");
-		return 0;
+		return;
 	}
 
 	result = xrt_prober_open_hid_interface(xp, dev, 1, &watchman_dev);
 	if (result != 0) {
 		U_LOG_E("Could not open headset watchman device.");
-		return 0;
+		return;
 	}
 
 	if (sensors_dev == NULL) {
 		U_LOG_E("Could not find Index sensors device.");
-		return 0;
+		return;
 	}
 
 	if (watchman_dev == NULL) {
 		U_LOG_E("Could not find headset watchman device.");
-		return 0;
+		return;
 	}
 
 	struct vive_device *d = vive_device_create(NULL, sensors_dev, watchman_dev, VIVE_VARIANT_INDEX, tstatus, vs);
 	if (d == NULL) {
-		return 0;
+		return;
 	}
 
-	int out_idx = 0;
-
-	out_xdevs[out_idx++] = &d->base;
-	*out_vive_config = &d->config;
-
-	return out_idx;
+	*out_vdev = d;
 }
 
 int
@@ -293,17 +287,33 @@ vive_found(struct xrt_prober *xp,
 		return 0;
 	}
 
+	struct vive_device *vdev = NULL;
+
 	switch (dev->product_id) {
-	case VIVE_PID: return init_vive1(xp, dev, devices, device_count, log_level, tstatus, vs, out_xdev);
-	case VIVE_PRO_MAINBOARD_PID:
-		return init_vive_pro(xp, dev, devices, device_count, log_level, tstatus, vs, out_xdev);
-	case VIVE_PRO_LHR_PID:
-		return init_valve_index(xp, dev, devices, device_count, log_level, tstatus, vs, out_vive_config,
-		                        out_xdev);
+	case VIVE_PID: {
+		init_vive1(xp, dev, devices, device_count, log_level, tstatus, vs, &vdev);
+		break;
+	}
+	case VIVE_PRO_MAINBOARD_PID: {
+		init_vive_pro(xp, dev, devices, device_count, log_level, tstatus, vs, &vdev);
+		break;
+	}
+	case VIVE_PRO_LHR_PID: {
+		init_valve_index(xp, dev, devices, device_count, log_level, tstatus, vs, &vdev);
+		break;
+	}
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return 0;
 	}
 
-	return 0;
+	if (vdev == NULL) {
+		U_LOG_E("Failed after opening Vive device?");
+		return 0;
+	}
+
+	*out_vive_config = &vdev->config;
+	*out_xdev = &vdev->base;
+
+	return 1;
 }
 
 int
