@@ -638,7 +638,20 @@ lighthouse_open_system(struct xrt_builder *xb,
 		lhs.vive_tstatus.hand_enabled = false;
 	}
 
+
+
 	bool success = true;
+
+	if (hmd_config == NULL) {
+		// This should NEVER happen, but we're not writing Rust.
+		U_LOG_E("Didn't get a vive config? Not creating visual trackers.");
+		goto end;
+	}
+	if (!hmd_config->cameras.valid) {
+		U_LOG_I(
+		    "HMD didn't have cameras or didn't have a valid camera calibration. Not creating visual trackers.");
+		goto end;
+	}
 
 	struct xrt_slam_sinks sinks = {0};
 	struct xrt_device *hand_devices[2] = {NULL};
