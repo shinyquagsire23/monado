@@ -415,7 +415,7 @@ u_hand_sim_simulate_for_valve_index_knuckles(const struct u_hand_tracking_curl_v
 	hand.thumb.rotations[1] += values->thumb * -1.f;
 
 	// Index finger - this is treated differently on Valve Knuckles controllers so the pinch gesture feels good
-	float finger_values[4] = {values->index, values->middle, values->little, values->ring};
+	float finger_values[4] = {values->index, values->middle, values->ring, values->little};
 
 	{
 		int finger = 0;
