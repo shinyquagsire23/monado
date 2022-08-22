@@ -35,6 +35,13 @@ endif()
 if(XRT_HAVE_VULKAN)
 	list(APPEND tests tests_comp_client_vulkan)
 endif()
+if(XRT_HAVE_OPENGL
+   AND XRT_HAVE_SDL2
+   AND (WIN32 OR VK_USE_PLATFORM_XLIB_XRANDR_EXT)
+	)
+	set(_have_opengl_test ON)
+	list(APPEND tests tests_comp_client_opengl)
+endif()
 if(XRT_BUILD_DRIVER_HANDTRACKING)
 	list(APPEND tests tests_levenbergmarquardt)
 endif()
@@ -58,7 +65,15 @@ target_link_libraries(tests_rational PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
 
 if(XRT_BUILD_DRIVER_HANDTRACKING)
-	target_link_libraries(tests_levenbergmarquardt PRIVATE aux_math t_ht_mercury_includes t_ht_mercury_kine_lm_includes  t_ht_mercury t_ht_mercury_kine_lm)
+	target_link_libraries(
+		tests_levenbergmarquardt
+		PRIVATE
+			aux_math
+			t_ht_mercury_includes
+			t_ht_mercury_kine_lm_includes
+			t_ht_mercury
+			t_ht_mercury_kine_lm
+		)
 endif()
 
 if(XRT_HAVE_D3D11)
@@ -71,5 +86,13 @@ if(XRT_HAVE_D3D12)
 endif()
 
 if(XRT_HAVE_VULKAN)
-	target_link_libraries(tests_comp_client_vulkan PRIVATE comp_client comp_mock comp_util aux_vk)
+	target_link_libraries(
+		tests_comp_client_vulkan PRIVATE comp_client comp_mock comp_util aux_vk
+		)
+endif()
+
+if(_have_opengl_test)
+	target_link_libraries(
+		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl ${SDL2_LIBRARIES}
+		)
 endif()
