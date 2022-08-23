@@ -36,6 +36,7 @@ if(XRT_HAVE_VULKAN)
 	list(APPEND tests tests_comp_client_vulkan)
 endif()
 if(XRT_HAVE_OPENGL
+   AND XRT_HAVE_OPENGL_GLX
    AND XRT_HAVE_SDL2
    AND (WIN32 OR VK_USE_PLATFORM_XLIB_XRANDR_EXT)
 	)
