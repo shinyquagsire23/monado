@@ -107,7 +107,6 @@ setup_accept_fd(struct r_hub *r)
 static bool
 wait_for_read_and_to_continue(struct r_hub *r, int socket)
 {
-	struct timeval timeout = {.tv_sec = 1};
 	fd_set set;
 	int ret = 0;
 
@@ -117,6 +116,10 @@ wait_for_read_and_to_continue(struct r_hub *r, int socket)
 	}
 
 	while (os_thread_helper_is_running(&r->oth) && ret == 0) {
+		// Select can modify timeout, reset each loop.
+		struct timeval timeout = {.tv_sec = 1, .tv_usec = 0};
+
+		// Reset each loop.
 		FD_ZERO(&set);
 		FD_SET(socket, &set);
 
