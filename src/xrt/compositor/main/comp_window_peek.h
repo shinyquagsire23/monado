@@ -51,6 +51,7 @@ struct comp_window_peek
 	VkSurfaceKHR surface;
 	VkSemaphore acquire;
 	VkSemaphore submit;
+	VkCommandBuffer cmd;
 
 	struct os_thread_helper oth;
 };

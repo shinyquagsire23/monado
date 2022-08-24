@@ -169,6 +169,11 @@ comp_window_peek_create(struct comp_compositor *c)
 		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
 
+	ret = vk_init_cmd_buffer(vk, &w->cmd);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_init_cmd_buffer: %s", vk_result_string(ret));
+	}
+
 	os_thread_helper_init(&w->oth);
 	os_thread_helper_start(&w->oth, window_peek_run_thread, w);
 
@@ -186,6 +191,9 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 	w->running = false;
 
 	SDL_DestroyWindow(w->window);
+
+	struct vk_bundle *vk = get_vk(w);
+	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &w->cmd);
 
 	comp_target_swapchain_cleanup(&w->base);
 	os_thread_helper_destroy(&w->oth);
@@ -222,11 +230,14 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 
 	struct vk_bundle *vk = get_vk(w);
 
-	VkCommandBuffer cmd;
-	vk_init_cmd_buffer(vk, &cmd);
-
 	// For submitting commands.
 	os_mutex_lock(&vk->cmd_pool_mutex);
+
+	VkCommandBufferBeginInfo begin_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+	};
+
+	ret = vk->vkBeginCommandBuffer(w->cmd, &begin_info);
 
 	VkImageSubresourceRange range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -239,7 +250,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	// Barrier to make source a source
 	vk_cmd_image_barrier_locked(                       //
 	    vk,                                            // vk_bundle
-	    cmd,                                           // cmdbuffer
+	    w->cmd,                                        // cmdbuffer
 	    src,                                           // image
 	    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccessMask
 	    VK_ACCESS_TRANSFER_READ_BIT,                   // dstAccessMask
@@ -252,7 +263,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	// Barrier to make destination a destination
 	vk_cmd_image_barrier_locked(              //
 	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
+	    w->cmd,                               // cmdbuffer
 	    dst,                                  // image
 	    0,                                    // srcAccessMask
 	    VK_ACCESS_TRANSFER_WRITE_BIT,         // dstAccessMask
@@ -281,7 +292,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	blit.dstOffsets[1].z = 1;
 
 	vk->vkCmdBlitImage(                       //
-	    cmd,                                  // commandBuffer
+	    w->cmd,                               // commandBuffer
 	    src,                                  // srcImage
 	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // srcImageLayout
 	    dst,                                  // dstImage
@@ -294,7 +305,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	// Reset destination
 	vk_cmd_image_barrier_locked(              //
 	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
+	    w->cmd,                               // cmdbuffer
 	    dst,                                  // image
 	    VK_ACCESS_TRANSFER_WRITE_BIT,         // srcAccessMask
 	    0,                                    // dstAccessMask
@@ -307,7 +318,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	// Reset src
 	vk_cmd_image_barrier_locked(                  //
 	    vk,                                       // vk_bundle
-	    cmd,                                      // cmdbuffer
+	    w->cmd,                                   // cmdbuffer
 	    src,                                      // image
 	    VK_ACCESS_TRANSFER_READ_BIT,              // srcAccessMask
 	    0,                                        // dstAccessMask
@@ -317,16 +328,14 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,        // dstStageMask
 	    range);                                   // subresourceRange
 
-	ret = vk->vkEndCommandBuffer(cmd);
+	ret = vk->vkEndCommandBuffer(w->cmd);
+
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Error: Could not end command buffer.\n");
-		vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd);
-		os_mutex_unlock(&vk->cmd_pool_mutex);
 		return;
 	}
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	VkPipelineStageFlags submit_flags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
@@ -338,7 +347,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .pWaitSemaphores = &w->acquire,
 	    .pWaitDstStageMask = &submit_flags,
 	    .commandBufferCount = 1,
-	    .pCommandBuffers = &cmd,
+	    .pCommandBuffers = &w->cmd,
 	    .signalSemaphoreCount = 1,
 	    .pSignalSemaphores = &w->submit,
 	};
