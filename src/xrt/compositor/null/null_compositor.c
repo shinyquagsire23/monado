@@ -114,6 +114,12 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_KHR_image_format_list
     VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
 #endif
+#ifdef VK_KHR_maintenance1
+    VK_KHR_MAINTENANCE_1_EXTENSION_NAME,
+#endif
+#ifdef VK_KHR_maintenance2
+    VK_KHR_MAINTENANCE_2_EXTENSION_NAME,
+#endif
 #ifdef VK_KHR_timeline_semaphore
     VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME,
 #endif
