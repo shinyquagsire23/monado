@@ -477,7 +477,7 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 }
 
 static XRT_MAYBE_UNUSED VkResult
-create_and_file_in_distortion_buffer_for_view(struct vk_bundle *vk,
+create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
                                               struct xrt_device *xdev,
                                               struct render_buffer *r_buffer,
                                               struct render_buffer *g_buffer,
@@ -838,8 +838,8 @@ render_distortion_buffer_init(struct render_resources *r,
 	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
 	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
 
-	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0, pre_rotate);
-	create_and_file_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1, pre_rotate);
+	create_and_fill_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0, pre_rotate);
+	create_and_fill_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1, pre_rotate);
 
 	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
 	C(vk_init_cmd_buffer(vk, &upload_buffer));
