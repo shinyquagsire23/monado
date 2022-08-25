@@ -163,6 +163,8 @@ fill_in_device_features(struct vk_bundle *vk)
 
 	vk->features.timestamp_compute_and_graphics = pdp.limits.timestampComputeAndGraphics;
 	vk->features.timestamp_period = pdp.limits.timestampPeriod;
+	vk->features.max_per_stage_descriptor_sampled_images = pdp.limits.maxPerStageDescriptorSampledImages;
+	vk->features.max_per_stage_descriptor_storage_images = pdp.limits.maxPerStageDescriptorStorageImages;
 
 
 	/*

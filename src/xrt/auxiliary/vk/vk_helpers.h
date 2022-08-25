@@ -145,6 +145,12 @@ struct vk_bundle
 
 		//! Were timeline semaphore requested, available, and enabled?
 		bool timeline_semaphore;
+
+		//! Per stage limit on sampled images (includes combined).
+		uint32_t max_per_stage_descriptor_sampled_images;
+
+		//! Per stage limit on storage images.
+		uint32_t max_per_stage_descriptor_storage_images;
 	} features;
 
 	//! Is the GPU a tegra device.
