@@ -646,7 +646,6 @@ struct render_compute
  * Used in @ref render_compute
  */
 struct render_compute_distortion_ubo_data
-
 {
 	struct render_viewport_data views[2];
 	struct xrt_normalized_rect pre_transforms[2];
