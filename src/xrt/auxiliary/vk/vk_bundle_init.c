@@ -604,6 +604,10 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_KHR_external_fence_fd = false;
 	vk->has_KHR_external_semaphore_fd = false;
 	vk->has_KHR_image_format_list = false;
+	vk->has_KHR_maintenance1 = false;
+	vk->has_KHR_maintenance2 = false;
+	vk->has_KHR_maintenance3 = false;
+	vk->has_KHR_maintenance4 = false;
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_calibrated_timestamps = false;
 	vk->has_EXT_display_control = false;
@@ -637,6 +641,34 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_KHR_image_format_list)
+
+#if defined(VK_KHR_maintenance1)
+		if (strcmp(ext, VK_KHR_MAINTENANCE_1_EXTENSION_NAME) == 0) {
+			vk->has_KHR_maintenance1 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_maintenance1)
+
+#if defined(VK_KHR_maintenance2)
+		if (strcmp(ext, VK_KHR_MAINTENANCE_2_EXTENSION_NAME) == 0) {
+			vk->has_KHR_maintenance2 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_maintenance2)
+
+#if defined(VK_KHR_maintenance3)
+		if (strcmp(ext, VK_KHR_MAINTENANCE_3_EXTENSION_NAME) == 0) {
+			vk->has_KHR_maintenance3 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_maintenance3)
+
+#if defined(VK_KHR_maintenance4)
+		if (strcmp(ext, VK_KHR_MAINTENANCE_4_EXTENSION_NAME) == 0) {
+			vk->has_KHR_maintenance4 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_maintenance4)
 
 #if defined(VK_KHR_timeline_semaphore)
 		if (strcmp(ext, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME) == 0) {

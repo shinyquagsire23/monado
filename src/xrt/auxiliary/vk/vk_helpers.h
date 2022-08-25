@@ -120,6 +120,10 @@ struct vk_bundle
 	bool has_KHR_external_fence_fd;
 	bool has_KHR_external_semaphore_fd;
 	bool has_KHR_image_format_list;
+	bool has_KHR_maintenance1;
+	bool has_KHR_maintenance2;
+	bool has_KHR_maintenance3;
+	bool has_KHR_maintenance4;
 	bool has_KHR_timeline_semaphore;
 	bool has_EXT_calibrated_timestamps;
 	bool has_EXT_display_control;
