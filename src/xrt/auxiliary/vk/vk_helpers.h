@@ -844,6 +844,12 @@ VkAccessFlags
 vk_get_access_flags(VkImageLayout layout);
 
 
+/*
+ *
+ * Helpers for creating descriptor pools and sets.
+ *
+ */
+
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
                         const VkDescriptorPoolSize *pool_sizes,
@@ -857,6 +863,13 @@ vk_allocate_descriptor_sets(struct vk_bundle *vk,
                             uint32_t count,
                             const VkDescriptorSetLayout *set_layout,
                             VkDescriptorSet *sets);
+
+
+/*
+ *
+ * Helpers for creating buffers.
+ *
+ */
 
 bool
 vk_buffer_init(struct vk_bundle *vk,

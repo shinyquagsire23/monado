@@ -966,6 +966,13 @@ vk_get_access_flags(VkImageLayout layout)
 	return 0;
 }
 
+
+/*
+ *
+ * Descriptor pool code.
+ *
+ */
+
 bool
 vk_init_descriptor_pool(struct vk_bundle *vk,
                         const VkDescriptorPoolSize *pool_sizes,
@@ -1005,6 +1012,13 @@ vk_allocate_descriptor_sets(struct vk_bundle *vk,
 
 	return true;
 }
+
+
+/*
+ *
+ * Buffer code.
+ *
+ */
 
 bool
 vk_buffer_init(struct vk_bundle *vk,
