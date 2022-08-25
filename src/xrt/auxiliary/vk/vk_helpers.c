@@ -31,6 +31,19 @@
 
 /*
  *
+ * Small internal helpers.
+ *
+ */
+
+#define CHAIN(STRUCT, NEXT)                                                                                            \
+	do {                                                                                                           \
+		(STRUCT).pNext = NEXT;                                                                                 \
+		NEXT = (VkBaseInStructure *)&(STRUCT);                                                                 \
+	} while (false)
+
+
+/*
+ *
  * String helper functions.
  *
  */
