@@ -840,9 +840,6 @@ vk_create_view_swizzle(struct vk_bundle *vk,
                        VkComponentMapping components,
                        VkImageView *out_view);
 
-VkAccessFlags
-vk_get_access_flags(VkImageLayout layout);
-
 
 /*
  *
