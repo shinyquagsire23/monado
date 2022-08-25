@@ -827,6 +827,13 @@ vk_create_image_advanced(struct vk_bundle *vk,
 VkResult
 vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampler *out_sampler);
 
+
+/*
+ *
+ * Helpers for creating ímage views.
+ *
+ */
+
 /*!
  * @ingroup aux_vk
  */
@@ -849,6 +856,21 @@ vk_create_view_swizzle(struct vk_bundle *vk,
                        VkImageSubresourceRange subresource_range,
                        VkComponentMapping components,
                        VkImageView *out_view);
+
+/*!
+ * Creates a image with a specific subset of usage, useful for a mutable images
+ * where one format might not support all usages defined by the image.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_create_view_usage(struct vk_bundle *vk,
+                     VkImage image,
+                     VkImageViewType type,
+                     VkFormat format,
+                     VkImageUsageFlags image_usage,
+                     VkImageSubresourceRange subresource_range,
+                     VkImageView *out_view);
 
 
 /*

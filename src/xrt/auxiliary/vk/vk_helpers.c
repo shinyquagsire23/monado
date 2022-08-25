@@ -974,38 +974,29 @@ vk_create_sampler(struct vk_bundle *vk, VkSamplerAddressMode clamp_mode, VkSampl
 	return VK_SUCCESS;
 }
 
-VkResult
-vk_create_view(struct vk_bundle *vk,
-               VkImage image,
-               VkImageViewType type,
-               VkFormat format,
-               VkImageSubresourceRange subresource_range,
-               VkImageView *out_view)
-{
-	VkComponentMapping components = {
-	    .r = VK_COMPONENT_SWIZZLE_R,
-	    .g = VK_COMPONENT_SWIZZLE_G,
-	    .b = VK_COMPONENT_SWIZZLE_B,
-	    .a = VK_COMPONENT_SWIZZLE_A,
-	};
 
-	return vk_create_view_swizzle(vk, image, type, format, subresource_range, components, out_view);
-}
+/*
+ *
+ * Image view code.
+ *
+ */
 
-VkResult
-vk_create_view_swizzle(struct vk_bundle *vk,
-                       VkImage image,
-                       VkImageViewType type,
-                       VkFormat format,
-                       VkImageSubresourceRange subresource_range,
-                       VkComponentMapping components,
-                       VkImageView *out_view)
+static VkResult
+create_view(struct vk_bundle *vk,
+            VkImage image,
+            VkImageViewType type,
+            VkFormat format,
+            VkImageSubresourceRange subresource_range,
+            VkComponentMapping components,
+            VkBaseInStructure *next_chain,
+            VkImageView *out_view)
 {
 	VkImageView view;
 	VkResult ret;
 
 	VkImageViewCreateInfo imageView = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+	    .pNext = next_chain,
 	    .image = image,
 	    .viewType = type,
 	    .format = format,
@@ -1022,6 +1013,106 @@ vk_create_view_swizzle(struct vk_bundle *vk,
 	*out_view = view;
 
 	return VK_SUCCESS;
+}
+
+static VkResult
+create_view_default_swizzle(struct vk_bundle *vk,
+                            VkImage image,
+                            VkImageViewType type,
+                            VkFormat format,
+                            VkImageSubresourceRange subresource_range,
+                            VkBaseInStructure *next_chain,
+                            VkImageView *out_view)
+{
+	VkComponentMapping components = {
+	    .r = VK_COMPONENT_SWIZZLE_R,
+	    .g = VK_COMPONENT_SWIZZLE_G,
+	    .b = VK_COMPONENT_SWIZZLE_B,
+	    .a = VK_COMPONENT_SWIZZLE_A,
+	};
+
+	return create_view(    //
+	    vk,                // vk_bundle
+	    image,             // image
+	    type,              // type
+	    format,            // format
+	    subresource_range, // subresource_range
+	    components,        // components
+	    next_chain,        // next_chain
+	    out_view);         // out_view
+}
+
+VkResult
+vk_create_view(struct vk_bundle *vk,
+               VkImage image,
+               VkImageViewType type,
+               VkFormat format,
+               VkImageSubresourceRange subresource_range,
+               VkImageView *out_view)
+{
+	return create_view_default_swizzle( //
+	    vk,                             // vk_bundle
+	    image,                          // image
+	    type,                           // type
+	    format,                         // format
+	    subresource_range,              // subresource_range
+	    NULL,                           // next_chain
+	    out_view);                      // out_view
+}
+
+VkResult
+vk_create_view_swizzle(struct vk_bundle *vk,
+                       VkImage image,
+                       VkImageViewType type,
+                       VkFormat format,
+                       VkImageSubresourceRange subresource_range,
+                       VkComponentMapping components,
+                       VkImageView *out_view)
+{
+	return create_view(    //
+	    vk,                // vk_bundle
+	    image,             // image
+	    type,              // type
+	    format,            // format
+	    subresource_range, // subresource_range
+	    components,        // components
+	    NULL,              // next_chain
+	    out_view);         // out_view
+}
+
+VkResult
+vk_create_view_usage(struct vk_bundle *vk,
+                     VkImage image,
+                     VkImageViewType type,
+                     VkFormat format,
+                     VkImageUsageFlags image_usage,
+                     VkImageSubresourceRange subresource_range,
+                     VkImageView *out_view)
+{
+	VkBaseInStructure *next_chain = NULL;
+
+#ifdef VK_KHR_maintenance2
+	VkImageViewUsageCreateInfo image_view_usage_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
+	    .pNext = next_chain,
+	    .usage = image_usage,
+	};
+
+	if (vk->has_KHR_maintenance2) {
+		CHAIN(image_view_usage_create_info, next_chain);
+	} else {
+		VK_WARN(vk, "VK_KHR_maintenance2 not supported can't use usage image view");
+	}
+#endif
+
+	return create_view_default_swizzle( //
+	    vk,                             // vk_bundle
+	    image,                          // image
+	    type,                           // type
+	    format,                         // format
+	    subresource_range,              // subresource_range
+	    next_chain,                     // next_chain
+	    out_view);                      // out_view
 }
 
 
