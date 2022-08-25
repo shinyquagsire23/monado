@@ -389,7 +389,13 @@ def make_ext_member_name(ext: str):
 
 
 def make_ext_name_define(ext: str):
-    return "{}_EXTENSION_NAME".format(ext.upper()).replace("2", "_2")
+    str = ext.upper()
+    str = str.replace("1", "_1")
+    str = str.replace("2", "_2")
+    str = str.replace("3", "_3")
+    str = str.replace("4", "_4")
+
+    return "{}_EXTENSION_NAME".format(str)
 
 
 def generate_ext_members(exts):
