@@ -590,7 +590,7 @@ render_resources_init(struct render_resources *r,
 
 
 	/*
-	 * Simulated
+	 * Mock, used as a default image empty image.
 	 */
 
 	{
@@ -606,21 +606,21 @@ render_resources_init(struct render_resources *r,
 		    .layerCount = 1,
 		};
 
-		C(vk_create_image_simple(      //
-		    vk,                        // vk_bundle
-		    extent,                    // extent
-		    format,                    // format
-		    usage,                     // usage
-		    &r->scratch.color.memory,  // out_mem
-		    &r->scratch.color.image)); // out_image
+		C(vk_create_image_simple(   //
+		    vk,                     // vk_bundle
+		    extent,                 // extent
+		    format,                 // format
+		    usage,                  // usage
+		    &r->mock.color.memory,  // out_mem
+		    &r->mock.color.image)); // out_image
 
-		C(vk_create_view(                   //
-		    vk,                             // vk_bundle
-		    r->scratch.color.image,         // image
-		    VK_IMAGE_VIEW_TYPE_2D,          // type
-		    format,                         // format
-		    subresource_range,              // subresource_range
-		    &r->scratch.color.image_view)); // out_view
+		C(vk_create_view(                //
+		    vk,                          // vk_bundle
+		    r->mock.color.image,         // image
+		    VK_IMAGE_VIEW_TYPE_2D,       // type
+		    format,                      // format
+		    subresource_range,           // subresource_range
+		    &r->mock.color.image_view)); // out_view
 	}
 
 
@@ -934,9 +934,9 @@ render_resources_close(struct render_resources *r)
 
 	struct vk_bundle *vk = r->vk;
 
-	D(ImageView, r->scratch.color.image_view);
-	D(Image, r->scratch.color.image);
-	DF(Memory, r->scratch.color.memory);
+	D(ImageView, r->mock.color.image_view);
+	D(Image, r->mock.color.image);
+	DF(Memory, r->mock.color.memory);
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);

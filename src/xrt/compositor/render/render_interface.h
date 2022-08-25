@@ -257,6 +257,10 @@ struct render_resources
 		struct render_buffer ubos[2];
 	} mesh;
 
+	/*!
+	 * Used as a default image empty image when none is given or to pad
+	 * out fixed sized descriptor sets.
+	 */
 	struct
 	{
 		struct
@@ -265,7 +269,7 @@ struct render_resources
 			VkImageView image_view;
 			VkDeviceMemory memory;
 		} color;
-	} scratch;
+	} mock;
 
 	struct
 	{
