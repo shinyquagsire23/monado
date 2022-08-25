@@ -518,18 +518,22 @@ vk_alloc_and_bind_image_memory(struct vk_bundle *vk,
 	return ret;
 }
 
-VkResult
-vk_create_image_simple(struct vk_bundle *vk,
-                       VkExtent2D extent,
-                       VkFormat format,
-                       VkImageUsageFlags usage,
-                       VkDeviceMemory *out_mem,
-                       VkImage *out_image)
+static VkResult
+create_image_simple(struct vk_bundle *vk,
+                    VkExtent2D extent,
+                    VkFormat format,
+                    VkImageCreateFlags create,
+                    VkImageUsageFlags usage,
+                    VkBaseInStructure *next_chain,
+                    VkDeviceMemory *out_mem,
+                    VkImage *out_image)
 {
 	VkImageCreateInfo image_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+	    .pNext = next_chain,
 	    .imageType = VK_IMAGE_TYPE_2D,
 	    .format = format,
+	    .flags = create,
 	    .extent =
 	        {
 	            .width = extent.width,
@@ -572,6 +576,64 @@ vk_create_image_simple(struct vk_bundle *vk,
 	*out_image = image;
 
 	return ret;
+}
+
+VkResult
+vk_create_image_simple(struct vk_bundle *vk,
+                       VkExtent2D extent,
+                       VkFormat format,
+                       VkImageUsageFlags usage,
+                       VkDeviceMemory *out_mem,
+                       VkImage *out_image)
+{
+	VkImageCreateFlags create = 0;
+
+	return create_image_simple( //
+	    vk,                     //
+	    extent,                 // extent
+	    format,                 // format
+	    create,                 // create
+	    usage,                  // usage
+	    NULL,                   // next_chain
+	    out_mem,                // out_mem
+	    out_image);             // out_image
+}
+
+VkResult
+vk_create_image_mutable_rgba(
+    struct vk_bundle *vk, VkExtent2D extent, VkImageUsageFlags usage, VkDeviceMemory *out_mem, VkImage *out_image)
+{
+	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	VkImageCreateFlags create = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+	VkBaseInStructure *next_chain = NULL;
+
+#ifdef VK_KHR_image_format_list
+	VkFormat formats[2] = {
+	    VK_FORMAT_R8G8B8A8_UNORM,
+	    VK_FORMAT_R8G8B8A8_SRGB,
+	};
+
+	VkImageFormatListCreateInfoKHR image_format_list_create_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,
+	    .pNext = next_chain,
+	    .viewFormatCount = ARRAY_SIZE(formats),
+	    .pViewFormats = formats,
+	};
+
+	if (vk->has_KHR_image_format_list) {
+		CHAIN(image_format_list_create_info, next_chain);
+	}
+#endif
+
+	return create_image_simple( //
+	    vk,                     //
+	    extent,                 // extent
+	    format,                 // format
+	    create,                 // create
+	    usage,                  // usage
+	    next_chain,             // next_chain
+	    out_mem,                // out_mem
+	    out_image);             // out_image
 }
 
 VkResult
