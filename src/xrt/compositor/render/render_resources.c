@@ -581,6 +581,92 @@ prepare_mock_image(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
 
 /*
  *
+ * Scratch image.
+ *
+ */
+
+static bool
+create_scratch_image_and_view(struct vk_bundle *vk,
+                              VkExtent2D extent,
+                              VkDeviceMemory *out_device_memory,
+                              VkImage *out_image,
+                              VkImageView *out_srgb_view,
+                              VkImageView *out_unorm_view)
+{
+	VkFormat srgb_format = VK_FORMAT_R8G8B8A8_SRGB;
+	VkFormat unorm_format = VK_FORMAT_R8G8B8A8_UNORM;
+	VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_2D;
+
+	VkDeviceMemory device_memory = VK_NULL_HANDLE;
+	VkImage image = VK_NULL_HANDLE;
+	VkImageView srgb_view = VK_NULL_HANDLE;
+	VkImageView unorm_view = VK_NULL_HANDLE;
+
+	// Both usages are common.
+	VkImageUsageFlags unorm_usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	// Very few cards support SRGB storage.
+	VkImageUsageFlags srgb_usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	// Combination of both.
+	VkImageUsageFlags image_usage = unorm_usage | srgb_usage;
+
+	C(vk_create_image_mutable_rgba( //
+	    vk,                         // vk_bundle
+	    extent,                     // extent
+	    image_usage,                // usage
+	    &device_memory,             // out_device_memory
+	    &image));                   // out_image
+
+	VkImageSubresourceRange subresource_range = {
+	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	    .baseMipLevel = 0,
+	    .levelCount = VK_REMAINING_MIP_LEVELS,
+	    .baseArrayLayer = 0,
+	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+
+	C(vk_create_view_usage( //
+	    vk,                 // vk_bundle
+	    image,              // image
+	    view_type,          // type
+	    srgb_format,        // format
+	    srgb_usage,         // image_usage
+	    subresource_range,  // subresource_range
+	    &srgb_view));       // out_image_view
+
+	C(vk_create_view_usage( //
+	    vk,                 // vk_bundle
+	    image,              // image
+	    view_type,          // type
+	    unorm_format,       // format
+	    unorm_usage,        // image_usage
+	    subresource_range,  // subresource_range
+	    &unorm_view));      // out_image_view
+
+	*out_device_memory = device_memory;
+	*out_image = image;
+	*out_srgb_view = srgb_view;
+	*out_unorm_view = unorm_view;
+
+	return true;
+}
+
+static void
+teardown_scratch_image(struct render_resources *r)
+{
+	struct vk_bundle *vk = r->vk;
+
+	D(ImageView, r->scratch.color.unorm_view);
+	D(ImageView, r->scratch.color.srgb_view);
+	D(Image, r->scratch.color.image);
+	DF(Memory, r->scratch.color.memory);
+	U_ZERO(&r->scratch.extent);
+}
+
+
+/*
+ *
  * 'Exported' renderer functions.
  *
  */
@@ -968,6 +1054,36 @@ render_ensure_distortion_buffer(struct render_resources *r,
 	return true;
 }
 
+bool
+render_ensure_scratch_image(struct render_resources *r, VkExtent2D extent)
+{
+	bool bret;
+
+	if (r->scratch.extent.width == extent.width &&      //
+	    r->scratch.extent.height == extent.height &&    //
+	    r->scratch.color.srgb_view != VK_NULL_HANDLE && //
+	    r->scratch.color.unorm_view != VK_NULL_HANDLE) {
+		return true;
+	}
+
+	teardown_scratch_image(r);
+
+	bret = create_scratch_image_and_view( //
+	    r->vk,                            //
+	    extent,                           //
+	    &r->scratch.color.memory,         //
+	    &r->scratch.color.image,          //
+	    &r->scratch.color.srgb_view,      //
+	    &r->scratch.color.unorm_view);    //
+	if (!bret) {
+		return false;
+	}
+
+	r->scratch.extent = extent;
+
+	return true;
+}
+
 void
 render_resources_close(struct render_resources *r)
 {
@@ -1005,6 +1121,8 @@ render_resources_close(struct render_resources *r)
 	render_distortion_buffer_close(r);
 	render_buffer_close(vk, &r->compute.clear.ubo);
 	render_buffer_close(vk, &r->compute.distortion.ubo);
+
+	teardown_scratch_image(r);
 
 	// Finally forget about the vk bundle. We do not own it!
 	r->vk = NULL;

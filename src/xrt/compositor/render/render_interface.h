@@ -258,6 +258,22 @@ struct render_resources
 	} mesh;
 
 	/*!
+	 * Used as a scratch buffer by the compute layer renderer.
+	 */
+	struct
+	{
+		VkExtent2D extent;
+
+		struct
+		{
+			VkDeviceMemory memory;
+			VkImage image;
+			VkImageView srgb_view;
+			VkImageView unorm_view;
+		} color;
+	} scratch;
+
+	/*!
 	 * Used as a default image empty image when none is given or to pad
 	 * out fixed sized descriptor sets.
 	 */
@@ -367,6 +383,12 @@ render_ensure_distortion_buffer(struct render_resources *r,
                                 struct vk_bundle *vk,
                                 struct xrt_device *xdev,
                                 bool pre_rotate);
+
+/*!
+ * Ensure that the scratch image is created and has the given extent.
+ */
+bool
+render_ensure_scratch_image(struct render_resources *r, VkExtent2D extent);
 
 /*!
  * Returns the timestamps for when the latest GPU work started and stopped that
