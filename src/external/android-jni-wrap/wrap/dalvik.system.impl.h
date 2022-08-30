@@ -19,5 +19,11 @@ DexClassLoader::construct(std::string const &searchPath,
                                          nativeSearchPath, parentClassLoader)};
 }
 
+inline java::lang::Class
+DexClassLoader::loadClass(const std::string &name) {
+    assert(!isNull());
+    return java::lang::Class{object().call<jni::Object>(Meta::data().loadClass, name)};
+}
+
 } // namespace dalvik::system
 } // namespace wrap

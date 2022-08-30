@@ -24,8 +24,7 @@
 using wrap::android::app::Activity;
 using wrap::android::view::SurfaceHolder;
 using wrap::org::freedesktop::monado::auxiliary::MonadoView;
-using xrt::auxiliary::android::getAppInfo;
-using xrt::auxiliary::android::loadClassFromPackage;
+using xrt::auxiliary::android::loadClassFromRuntimeApk;
 
 
 struct android_custom_surface
@@ -53,24 +52,14 @@ android_custom_surface::~android_custom_surface()
 	}
 }
 
-constexpr auto FULLY_QUALIFIED_CLASSNAME = "org.freedesktop.monado.auxiliary.MonadoView";
-
 struct android_custom_surface *
 android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 {
 	jni::init(vm);
 	try {
-		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
-		if (info.isNull()) {
-			U_LOG_E("Could not get application info for package '%s'",
-			        "org.freedesktop.monado.openxr_runtime");
-			return nullptr;
-		}
-
-		auto clazz = loadClassFromPackage(info, (jobject)activity, FULLY_QUALIFIED_CLASSNAME);
-
+		auto clazz = loadClassFromRuntimeApk((jobject)activity, MonadoView::getFullyQualifiedTypeName());
 		if (clazz.isNull()) {
-			U_LOG_E("Could not load class '%s' from package '%s'", FULLY_QUALIFIED_CLASSNAME,
+			U_LOG_E("Could not load class '%s' from package '%s'", MonadoView::getFullyQualifiedTypeName(),
 			        XRT_ANDROID_PACKAGE);
 			return nullptr;
 		}
@@ -90,7 +79,7 @@ android_custom_surface_async_start(struct _JavaVM *vm, void *activity)
 		}
 
 		std::string clazz_name = ret->monadoViewClass.getName();
-		if (clazz_name != FULLY_QUALIFIED_CLASSNAME) {
+		if (clazz_name != MonadoView::getFullyQualifiedTypeName()) {
 			U_LOG_E("Unexpected class name: %s", clazz_name.c_str());
 			return nullptr;
 		}
@@ -156,17 +145,9 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 {
 	jni::init(vm);
 	try {
-		auto info = getAppInfo(XRT_ANDROID_PACKAGE, (jobject)activity);
-		if (info.isNull()) {
-			U_LOG_E("Could not get application info for package '%s'",
-			        "org.freedesktop.monado.openxr_runtime");
-			return false;
-		}
-
-		auto clazz = loadClassFromPackage(info, (jobject)activity, FULLY_QUALIFIED_CLASSNAME);
-
+		auto clazz = loadClassFromRuntimeApk((jobject)activity, MonadoView::getFullyQualifiedTypeName());
 		if (clazz.isNull()) {
-			U_LOG_E("Could not load class '%s' from package '%s'", FULLY_QUALIFIED_CLASSNAME,
+			U_LOG_E("Could not load class '%s' from package '%s'", MonadoView::getFullyQualifiedTypeName(),
 			        XRT_ANDROID_PACKAGE);
 			return false;
 		}
