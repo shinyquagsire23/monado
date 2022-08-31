@@ -13,31 +13,32 @@
 #include <wrap/android.app.h>
 
 /*!
- * @todo Do we need locking here? Do we need to create global refs for the
- * supplied jobjects?
+ * @todo Do we need locking here?
  */
 static struct
 {
 	struct _JavaVM *vm = nullptr;
-	void *activity = nullptr;
-	void *context = nullptr;
+	jni::Object activity = {};
+	jni::Object context = {};
 	struct _ANativeWindow *window = nullptr;
 } android_globals;
 
 void
 android_globals_store_vm_and_activity(struct _JavaVM *vm, void *activity)
 {
+	jni::init(vm);
 	android_globals.vm = vm;
-	android_globals.activity = activity;
+	android_globals.activity = jni::Object((jobject)activity);
 }
 
 void
 android_globals_store_vm_and_context(struct _JavaVM *vm, void *context)
 {
+	jni::init(vm);
 	android_globals.vm = vm;
-	android_globals.context = context;
+	android_globals.context = jni::Object((jobject)context);
 	if (android_globals_is_instance_of_activity(vm, context)) {
-		android_globals.activity = context;
+		android_globals.activity = jni::Object((jobject)context);
 	}
 }
 
@@ -49,6 +50,7 @@ android_globals_is_instance_of_activity(struct _JavaVM *vm, void *obj)
 	auto activity_cls = jni::Class(wrap::android::app::Activity::getTypeName());
 	return JNI_TRUE == jni::env()->IsInstanceOf((jobject)obj, activity_cls.getHandle());
 }
+
 void
 android_globals_store_window(struct _ANativeWindow *window)
 {
@@ -70,15 +72,12 @@ android_globals_get_vm()
 void *
 android_globals_get_activity()
 {
-	return android_globals.activity;
+	return android_globals.activity.getHandle();
 }
 
 void *
 android_globals_get_context()
 {
-	void *ret = android_globals.context;
-	if (ret == NULL) {
-		ret = android_globals.activity;
-	}
-	return ret;
+	return android_globals.context.isNull() ? android_globals.activity.getHandle()
+	                                        : android_globals.context.getHandle();
 }

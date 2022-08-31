@@ -8,6 +8,9 @@
 package org.freedesktop.monado.openxr_runtime;
 
 import android.app.Application;
+import android.content.Context;
+
+import androidx.annotation.NonNull;
 
 import dagger.hilt.android.HiltAndroidApp;
 
@@ -16,4 +19,16 @@ import dagger.hilt.android.HiltAndroidApp;
  */
 @HiltAndroidApp
 public class MonadoOpenXrApplication extends Application {
+    static {
+        System.loadLibrary("monado-service");
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        nativeStoreContext(getApplicationContext());
+    }
+
+    private native void nativeStoreContext(@NonNull Context context);
 }

@@ -169,3 +169,17 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeShutdownServer(JNIEnv *env, job
 
 	return IpcServerHelper::instance().shutdownServer();
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_freedesktop_monado_openxr_1runtime_MonadoOpenXrApplication_nativeStoreContext(JNIEnv *env,
+                                                                                       jobject thiz,
+                                                                                       jobject context)
+{
+	JavaVM *jvm = nullptr;
+	jint result = env->GetJavaVM(&jvm);
+	assert(result == JNI_OK);
+	assert(jvm);
+
+	jni::init(env);
+	android_globals_store_vm_and_context(jvm, context);
+}
