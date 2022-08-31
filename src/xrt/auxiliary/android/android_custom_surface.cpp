@@ -15,6 +15,7 @@
 #include "util/u_logging.h"
 
 #include "wrap/android.app.h"
+#include "wrap/android.content.h"
 #include "wrap/android.view.h"
 #include "org.freedesktop.monado.auxiliary.hpp"
 
@@ -22,6 +23,7 @@
 
 
 using wrap::android::app::Activity;
+using wrap::android::content::Context;
 using wrap::android::view::SurfaceHolder;
 using wrap::org::freedesktop::monado::auxiliary::MonadoView;
 using xrt::auxiliary::android::loadClassFromRuntimeApk;
@@ -140,12 +142,13 @@ android_custom_surface_wait_get_surface(struct android_custom_surface *custom_su
 
 bool
 android_custom_surface_get_display_metrics(struct _JavaVM *vm,
-                                           void *activity,
+                                           void *context,
                                            struct xrt_android_display_metrics *out_metrics)
 {
 	jni::init(vm);
+
 	try {
-		auto clazz = loadClassFromRuntimeApk((jobject)activity, MonadoView::getFullyQualifiedTypeName());
+		auto clazz = loadClassFromRuntimeApk((jobject)context, MonadoView::getFullyQualifiedTypeName());
 		if (clazz.isNull()) {
 			U_LOG_E("Could not load class '%s' from package '%s'", MonadoView::getFullyQualifiedTypeName(),
 			        XRT_ANDROID_PACKAGE);
@@ -155,9 +158,9 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		// Teach the wrapper our class before we start to use it.
 		MonadoView::staticInitClass((jclass)clazz.object().getHandle());
 
-		jni::Object displayMetrics = MonadoView::getDisplayMetrics(Activity((jobject)activity));
+		jni::Object displayMetrics = MonadoView::getDisplayMetrics(Context((jobject)context));
 		//! @todo implement non-deprecated codepath for api 30+
-		float displayRefreshRate = MonadoView::getDisplayRefreshRate(Activity((jobject)activity));
+		float displayRefreshRate = MonadoView::getDisplayRefreshRate(Context((jobject)context));
 		if (displayRefreshRate == 0.0) {
 			displayRefreshRate = 60.0f;
 		}
@@ -171,7 +174,6 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		                .ydpi = displayMetrics.get<float>("scaledDensity"),
 		                .refresh_rate = displayRefreshRate};
 		return true;
-
 	} catch (std::exception const &e) {
 		U_LOG_E("Could not get display metrics: %s", e.what());
 		return false;

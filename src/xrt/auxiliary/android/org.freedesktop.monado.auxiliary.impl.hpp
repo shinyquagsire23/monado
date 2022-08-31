@@ -11,6 +11,7 @@
 #pragma once
 
 #include "wrap/android.app.h"
+#include "wrap/android.content.h"
 #include "wrap/android.view.h"
 
 
@@ -32,15 +33,15 @@ namespace org::freedesktop::monado::auxiliary {
 	}
 
 	inline jni::Object
-	MonadoView::getDisplayMetrics(android::app::Activity const &activity)
+	MonadoView::getDisplayMetrics(android::content::Context const &context)
 	{
-		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, activity.object());
+		return Meta::data().clazz().call<jni::Object>(Meta::data().getDisplayMetrics, context.object());
 	}
 
 	inline float
-	MonadoView::getDisplayRefreshRate(android::app::Activity const &activity)
+	MonadoView::getDisplayRefreshRate(android::content::Context const &context)
 	{
-		return Meta::data().clazz().call<float>(Meta::data().getDisplayRefreshRate, activity.object());
+		return Meta::data().clazz().call<float>(Meta::data().getDisplayRefreshRate, context.object());
 	}
 
 	inline void *

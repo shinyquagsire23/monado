@@ -235,7 +235,7 @@ android_device_create()
 	}
 
 	struct xrt_android_display_metrics metrics;
-	if (!android_custom_surface_get_display_metrics(android_globals_get_vm(), android_globals_get_activity(),
+	if (!android_custom_surface_get_display_metrics(android_globals_get_vm(), android_globals_get_context(),
 	                                                &metrics)) {
 		U_LOG_E("Could not get Android display metrics.");
 		/* Fallback to default values (Pixel 3) */

@@ -11,22 +11,17 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.WindowManager;
 
 import androidx.annotation.GuardedBy;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Calendar;
 
 @Keep
@@ -100,15 +95,17 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     @NonNull
     @Keep
-    public static DisplayMetrics getDisplayMetrics(Activity activity) {
+    public static DisplayMetrics getDisplayMetrics(@NonNull Context context) {
         DisplayMetrics displayMetrics = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        wm.getDefaultDisplay().getMetrics(displayMetrics);
         return displayMetrics;
     }
 
     @Keep
-    public static float getDisplayRefreshRate(Activity activity) {
-        return activity.getWindowManager().getDefaultDisplay().getRefreshRate();
+    public static float getDisplayRefreshRate(@NonNull Context context) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        return wm.getDefaultDisplay().getRefreshRate();
     }
 
     @Keep

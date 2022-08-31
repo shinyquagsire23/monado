@@ -17,6 +17,10 @@ namespace android::app {
 	class Activity;
 } // namespace android::app
 
+namespace android::content {
+	class Context;
+} // namespace android::content
+
 namespace android::view {
 	class SurfaceHolder;
 } // namespace android::view
@@ -78,25 +82,25 @@ namespace org::freedesktop::monado::auxiliary {
 		 * Wrapper for the getDisplayMetrics static method
 		 *
 		 * Java prototype:
-		 * `public static android.util.DisplayMetrics getDisplayMetrics(android.app.Activity);`
+		 * `public static android.util.DisplayMetrics getDisplayMetrics(android.content.Context);`
 		 *
-		 * JNI signature: (Landroid/app/Activity;)Landroid/util/DisplayMetrics;
+		 * JNI signature: (Landroid/content/Context;)Landroid/util/DisplayMetrics;
 		 *
 		 */
 		static jni::Object
-		getDisplayMetrics(android::app::Activity const &activity);
+		getDisplayMetrics(android::content::Context const &context);
 
 		/*!
 		 * Wrapper for the getDisplayRefreshRate static method
 		 *
 		 * Java prototype:
-		 * `public static float getDisplayRefreshRate(android.app.Activity);`
+		 * `public static float getDisplayRefreshRate(android.content.Context);`
 		 *
-		 * JNI signature: (Landroid/app/Activity;)F;
+		 * JNI signature: (Landroid/content/Context;)F;
 		 *
 		 */
 		static float
-		getDisplayRefreshRate(android::app::Activity const &activity);
+		getDisplayRefreshRate(android::content::Context const &context);
 
 		/*!
 		 * Wrapper for the getNativePointer method
