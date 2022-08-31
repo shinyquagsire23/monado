@@ -123,7 +123,7 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 
 	char buf[16384] = {0};
 
-	int remainingBuffer = sizeof(buf) - 2;
+	int remainingBuffer = sizeof(buf) - 2; // 2 for \n\0
 	int printed = print_prefix(remainingBuffer, buf, func, level);
 
 	va_list args;
@@ -131,10 +131,10 @@ u_log(const char *file, int line, const char *func, enum u_logging_level level, 
 	DISPATCH_SINK(file, line, func, level, format, args);
 	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
-	*(buf + printed) = '\n';
-	printed++;
-	*(buf + printed) = '\0';
+	buf[printed++] = '\n';
+	buf[printed++] = '\0';
 	OutputDebugStringA(buf);
+	fprintf(stderr, "%s", buf);
 }
 
 void
@@ -149,15 +149,18 @@ u_log_xdev(const char *file,
 
 	char buf[16384] = {0};
 
-	int remainingBuffer = sizeof(buf) - 1;
+	int remainingBuffer = sizeof(buf) - 2; // 2 for \n\0
 	int printed = print_prefix(remainingBuffer, buf, func, level);
 
 	va_list args;
 	va_start(args, format);
 	DISPATCH_SINK(file, line, func, level, format, args);
-	vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
+	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
 	va_end(args);
+	buf[printed++] = '\n';
+	buf[printed++] = '\0';
 	OutputDebugStringA(buf);
+	fprintf(stderr, "%s", buf);
 }
 
 
