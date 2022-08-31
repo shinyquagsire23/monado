@@ -948,7 +948,7 @@ render_resources_init(struct render_resources *r,
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
 		r->distortion.images[i] = VK_NULL_HANDLE;
 	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.device_memories); i++) {
 		r->distortion.device_memories[i] = VK_NULL_HANDLE;
 	}
 
@@ -1035,7 +1035,7 @@ render_distortion_buffer_close(struct render_resources *r)
 	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
 		D(Image, r->distortion.images[i]);
 	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
+	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.device_memories); i++) {
 		DF(Memory, r->distortion.device_memories[i]);
 	}
 }
