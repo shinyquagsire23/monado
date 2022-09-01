@@ -202,13 +202,19 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 			break;
 		}
 
-		U_LOG_D("next: %f (%" PRIu64 ")\nprogress: %f (%" PRIu64 ")\nscheduled: %f (%" PRIu64 ")\n",
-		        time_ns_to_ms_f((int64_t)v_mc->slot_next_frame_display - now_ns),   //
-		        v_mc->slot_next_frame_display,                                      //
-		        time_ns_to_ms_f((int64_t)v_mc->progress.display_time_ns - now_ns),  //
-		        v_mc->progress.display_time_ns,                                     //
-		        time_ns_to_ms_f((int64_t)v_mc->scheduled.display_time_ns - now_ns), //
-		        v_mc->scheduled.display_time_ns);                                   //
+		U_LOG_D(
+		    "Two frames have completed GPU work and are waiting to be displayed."
+		    "\n\tnext frame: %fms (%" PRIu64
+		    ") (next time for compositor to pick up frame)"
+		    "\n\tprogress: %fms (%" PRIu64
+		    ")  (latest completed frame)"
+		    "\n\tscheduled: %fms (%" PRIu64 ") (oldest waiting frame)",
+		    time_ns_to_ms_f((int64_t)v_mc->slot_next_frame_display - now_ns),   //
+		    v_mc->slot_next_frame_display,                                      //
+		    time_ns_to_ms_f((int64_t)v_mc->progress.display_time_ns - now_ns),  //
+		    v_mc->progress.display_time_ns,                                     //
+		    time_ns_to_ms_f((int64_t)v_mc->scheduled.display_time_ns - now_ns), //
+		    v_mc->scheduled.display_time_ns);                                   //
 
 		os_mutex_unlock(&mc->slot_lock);
 
