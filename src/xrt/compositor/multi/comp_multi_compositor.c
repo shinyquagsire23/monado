@@ -219,7 +219,7 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 
 		os_mutex_unlock(&mc->slot_lock);
 
-		os_nanosleep(U_TIME_1MS_IN_NS);
+		os_precise_sleeper_nanosleep(&mc->scheduled_sleeper, U_TIME_1MS_IN_NS);
 
 		os_mutex_lock(&mc->slot_lock);
 	}
@@ -566,7 +566,7 @@ multi_compositor_wait_frame(struct xrt_compositor *xc,
 	    out_predicted_display_period_ns); //
 
 	// Wait until the given wake up time.
-	u_wait_until(&mc->sleeper, wake_up_time_ns);
+	u_wait_until(&mc->frame_sleeper, wake_up_time_ns);
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
@@ -873,7 +873,8 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	// Does null checking.
 	u_pa_destroy(&mc->upa);
 
-	os_precise_sleeper_deinit(&mc->sleeper);
+	os_precise_sleeper_deinit(&mc->frame_sleeper);
+	os_precise_sleeper_deinit(&mc->scheduled_sleeper);
 
 	os_mutex_destroy(&mc->slot_lock);
 	os_mutex_destroy(&mc->event.mutex);
@@ -942,7 +943,10 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	mc->base.base.info = msc->xcn->base.info;
 
 	// Used in wait frame.
-	os_precise_sleeper_init(&mc->sleeper);
+	os_precise_sleeper_init(&mc->frame_sleeper);
+
+	// Used in scheduled waiting function.
+	os_precise_sleeper_init(&mc->scheduled_sleeper);
 
 	// This is safe to do without a lock since we are not on the list yet.
 	u_paf_create(msc->upaf, &mc->upa);

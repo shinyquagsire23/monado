@@ -101,8 +101,11 @@ struct multi_compositor
 	//! Owning system compositor.
 	struct multi_system_compositor *msc;
 
-	//! Only matters for Windows and in process.
-	struct os_precise_sleeper sleeper;
+	//! Used to implement wait frame, only used for in process.
+	struct os_precise_sleeper frame_sleeper;
+
+	//! Used when waiting for the scheduled frame to complete.
+	struct os_precise_sleeper scheduled_sleeper;
 
 	struct
 	{
