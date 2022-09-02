@@ -16,6 +16,7 @@
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
+#include "util/u_wait.h"
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
@@ -339,17 +340,16 @@ broadcast_timings_to_pacers(struct multi_system_compositor *msc,
 }
 
 static void
-wait_frame(struct xrt_compositor *xc, int64_t frame_id, uint64_t wake_up_time_ns)
+wait_frame(struct os_precise_sleeper *sleeper, struct xrt_compositor *xc, int64_t frame_id, uint64_t wake_up_time_ns)
 {
 	COMP_TRACE_MARKER();
 
+	// Wait until the given wake up time.
+	u_wait_until(sleeper, wake_up_time_ns);
+
 	uint64_t now_ns = os_monotonic_get_ns();
-	if (now_ns < wake_up_time_ns) {
-		os_nanosleep(wake_up_time_ns - now_ns);
-	}
 
-	now_ns = os_monotonic_get_ns();
-
+	// Signal that we woke up.
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 }
 
@@ -399,6 +399,10 @@ multi_main_loop(struct multi_system_compositor *msc)
 
 	struct xrt_compositor *xc = &msc->xcn->base;
 
+	// For wait frame.
+	struct os_precise_sleeper sleeper = {0};
+	os_precise_sleeper_init(&sleeper);
+
 	// Protect the thread state and the sessions state.
 	os_thread_helper_lock(&msc->oth);
 
@@ -437,7 +441,7 @@ multi_main_loop(struct multi_system_compositor *msc)
 		broadcast_timings_to_clients(msc, predicted_display_time_ns);
 
 		// Now we can wait.
-		wait_frame(xc, frame_id, wake_up_time_ns);
+		wait_frame(&sleeper, xc, frame_id, wake_up_time_ns);
 
 		uint64_t now_ns = os_monotonic_get_ns();
 		uint64_t diff_ns = predicted_display_time_ns - now_ns;
@@ -471,6 +475,8 @@ multi_main_loop(struct multi_system_compositor *msc)
 	}
 
 	os_thread_helper_unlock(&msc->oth);
+
+	os_precise_sleeper_deinit(&sleeper);
 
 	return 0;
 }
