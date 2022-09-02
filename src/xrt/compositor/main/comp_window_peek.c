@@ -273,15 +273,18 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // dstStageMask
 	    range);                               // subresourceRange
 
-	VkImageBlit blit = {.srcSubresource =
-	                        {
-	                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	                            .layerCount = 1,
-	                        },
-	                    .dstSubresource = {
-	                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	                        .layerCount = 1,
-	                    }};
+	VkImageBlit blit = {
+	    .srcSubresource =
+	        {
+	            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	            .layerCount = 1,
+	        },
+	    .dstSubresource =
+	        {
+	            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	            .layerCount = 1,
+	        },
+	};
 
 	blit.srcOffsets[1].x = width;
 	blit.srcOffsets[1].y = height;
