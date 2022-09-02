@@ -8,6 +8,7 @@
  * @ingroup comp_multi
  */
 
+#include "util/u_wait.h"
 #include "xrt/xrt_gfx_native.h"
 
 #include "os/os_time.h"
@@ -564,14 +565,12 @@ multi_compositor_wait_frame(struct xrt_compositor *xc,
 	    out_predicted_display_time_ns,    //
 	    out_predicted_display_period_ns); //
 
+	// Wait until the given wake up time.
+	u_wait_until(&mc->sleeper, wake_up_time_ns);
+
 	uint64_t now_ns = os_monotonic_get_ns();
-	if (now_ns < wake_up_time_ns) {
-		uint32_t delay = (uint32_t)(wake_up_time_ns - now_ns);
-		os_precise_sleeper_nanosleep(&mc->sleeper, delay);
-	}
 
-	now_ns = os_monotonic_get_ns();
-
+	// Signal that we woke up.
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 
 	*out_frame_id = frame_id;
@@ -942,7 +941,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
 	// Passthrough our formats from the native compositor to the client.
 	mc->base.base.info = msc->xcn->base.info;
 
-	// Using in wait frame.
+	// Used in wait frame.
 	os_precise_sleeper_init(&mc->sleeper);
 
 	// This is safe to do without a lock since we are not on the list yet.
