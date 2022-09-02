@@ -254,7 +254,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    src,                                           // image
 	    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,          // srcAccessMask
 	    VK_ACCESS_TRANSFER_READ_BIT,                   // dstAccessMask
-	    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,      // oldImageLayout
+	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,      // oldImageLayout
 	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,          // newImageLayout
 	    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask
 	    VK_PIPELINE_STAGE_TRANSFER_BIT,                // dstStageMask
