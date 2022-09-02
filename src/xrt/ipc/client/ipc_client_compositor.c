@@ -11,11 +11,13 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_defines.h"
-
-#include "util/u_misc.h"
-#include "util/u_trace_marker.h"
+#include "xrt/xrt_config_os.h"
 
 #include "os/os_time.h"
+
+#include "util/u_wait.h"
+#include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
@@ -69,6 +71,9 @@ struct ipc_client_compositor
 
 	//! Has the native compositor been created, only supports one for now.
 	bool compositor_created;
+
+	//! To get better wake up in wait frame.
+	struct os_precise_sleeper sleeper;
 
 #ifdef IPC_USE_LOOPBACK_IMAGE_ALLOCATOR
 	//! To test image allocator.
@@ -508,43 +513,11 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	                                               out_predicted_display_time,     // Display time
 	                                               out_predicted_display_period)); // Current period
 
-	uint64_t now_ns = os_monotonic_get_ns();
+	// Wait until the given wake up time.
+	u_wait_until(&icc->sleeper, wake_up_time_ns);
 
-	// Lets hope its not to late.
-	if (wake_up_time_ns <= now_ns) {
-		res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
-		return res;
-	}
-
-	const uint64_t _1ms_in_ns = 1000 * 1000;
-	const uint64_t measured_scheduler_latency_ns = 50 * 1000;
-
-	// Within one ms, just release the app right now.
-	if (wake_up_time_ns - _1ms_in_ns <= now_ns) {
-		res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
-		return res;
-	}
-
-	// This is how much we should sleep.
-	uint64_t diff_ns = wake_up_time_ns - now_ns;
-
-	// A minor tweak that helps achieve the timing better.
-	diff_ns -= measured_scheduler_latency_ns;
-
-	os_nanosleep(diff_ns);
-
+	// Signal that we woke up.
 	res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
-
-#if 0
-	uint64_t then_ns = now_ns;
-	now_ns = os_monotonic_get_ns();
-
-	diff_ns = now_ns - then_ns;
-	uint64_t ms100 = diff_ns / (1000 * 10);
-
-	U_LOG_D("%s: Slept %i.%02ims", __func__, (int)ms100 / 100,
-	        (int)ms100 % 100);
-#endif
 
 	return res;
 }
@@ -799,6 +772,8 @@ ipc_compositor_destroy(struct xrt_compositor *xc)
 
 	IPC_CALL_CHK(ipc_call_session_destroy(icc->ipc_c));
 
+	os_precise_sleeper_deinit(&icc->sleeper);
+
 	icc->compositor_created = false;
 }
 
@@ -826,6 +801,9 @@ ipc_compositor_init(struct ipc_client_compositor *icc, struct xrt_compositor_nat
 	icc->base.base.layer_commit_with_semaphore = ipc_compositor_layer_commit_with_semaphore;
 	icc->base.base.destroy = ipc_compositor_destroy;
 	icc->base.base.poll_events = ipc_compositor_poll_events;
+
+	// Using in wait frame.
+	os_precise_sleeper_init(&icc->sleeper);
 
 	// Fetch info from the compositor, among it the format format list.
 	get_info(&(icc->base.base), &icc->base.base.info);
