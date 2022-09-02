@@ -16,7 +16,10 @@
 
 #include <SDL2/SDL_vulkan.h>
 
+
 DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)
+
+#define PEEK_IMAGE_USAGE (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 
 static inline struct vk_bundle *
 get_vk(struct comp_window_peek *w)
@@ -149,9 +152,14 @@ comp_window_peek_create(struct comp_compositor *c)
 	}
 
 	/* TODO: present mode fallback to FIFO if MAILBOX is not available */
-	comp_target_create_images(&w->base.base, w->width, w->height, w->c->settings.color_format,
-	                          w->c->settings.color_space, VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-	                          VK_PRESENT_MODE_MAILBOX_KHR);
+	comp_target_create_images(        //
+	    &w->base.base,                //
+	    w->width,                     //
+	    w->height,                    //
+	    w->c->settings.color_format,  //
+	    w->c->settings.color_space,   //
+	    PEEK_IMAGE_USAGE,             //
+	    VK_PRESENT_MODE_MAILBOX_KHR); //
 
 	VkSemaphoreCreateInfo sem_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -212,9 +220,14 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 
 	if (w->width != w->base.base.width || w->height != w->base.base.height) {
 		COMP_DEBUG(w->c, "Resizing swapchain");
-		comp_target_create_images(&w->base.base, w->width, w->height, w->c->settings.color_format,
-		                          w->c->settings.color_space, VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-		                          VK_PRESENT_MODE_MAILBOX_KHR);
+		comp_target_create_images(        //
+		    &w->base.base,                //
+		    w->width,                     //
+		    w->height,                    //
+		    w->c->settings.color_format,  //
+		    w->c->settings.color_space,   //
+		    PEEK_IMAGE_USAGE,             //
+		    VK_PRESENT_MODE_MAILBOX_KHR); //
 	}
 
 	while (!comp_target_check_ready(&w->base.base))
