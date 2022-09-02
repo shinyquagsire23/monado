@@ -535,7 +535,8 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 	}
 
 	if (sess->frame_timing_wait_sleep_ms > 0) {
-		os_nanosleep(U_TIME_1MS_IN_NS * sess->frame_timing_wait_sleep_ms);
+		uint64_t sleep_ns = U_TIME_1MS_IN_NS * sess->frame_timing_wait_sleep_ms;
+		os_precise_sleeper_nanosleep(&sess->sleeper, sleep_ns);
 	}
 
 	return oxr_session_success_result(sess);
@@ -615,6 +616,7 @@ oxr_session_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	xrt_comp_destroy(&sess->compositor);
 	xrt_comp_native_destroy(&sess->xcn);
 
+	os_precise_sleeper_deinit(&sess->sleeper);
 	os_semaphore_destroy(&sess->sem);
 	os_mutex_destroy(&sess->active_wait_frames_lock);
 
@@ -634,6 +636,9 @@ oxr_session_allocate_and_init(struct oxr_logger *log, struct oxr_system *sys, st
 
 	// Init the begin/wait frame semaphore and related fields.
 	os_semaphore_init(&sess->sem, 1);
+
+	// Init the wait frame precise sleeper.
+	os_precise_sleeper_init(&sess->sleeper);
 
 	sess->active_wait_frames = 0;
 	os_mutex_init(&sess->active_wait_frames_lock);

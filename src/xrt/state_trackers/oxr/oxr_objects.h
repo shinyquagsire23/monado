@@ -1565,6 +1565,11 @@ struct oxr_session
 	struct os_semaphore sem;
 
 	/*!
+	 * Used to implement precise extra sleeping in wait frame.
+	 */
+	struct os_precise_sleeper sleeper;
+
+	/*!
 	 * An array of action set attachments that this session owns.
 	 *
 	 * If non-null, this means action sets have been attached to this
