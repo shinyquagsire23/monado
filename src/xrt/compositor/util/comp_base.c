@@ -8,6 +8,7 @@
  * @ingroup comp_util
  */
 
+#include "util/u_wait.h"
 #include "util/u_trace_marker.h"
 
 #include "util/comp_base.h"
@@ -229,14 +230,12 @@ base_wait_frame(struct xrt_compositor *xc,
 	    out_predicted_display_time_ns,    //
 	    out_predicted_display_period_ns); //
 
+	// Wait until the given wake up time.
+	u_wait_until(&cb->sleeper, wake_up_time_ns);
+
 	uint64_t now_ns = os_monotonic_get_ns();
-	if (now_ns < wake_up_time_ns) {
-		uint32_t delay = (uint32_t)(wake_up_time_ns - now_ns);
-		os_precise_sleeper_nanosleep(&cb->sleeper, delay);
-	}
 
-	now_ns = os_monotonic_get_ns();
-
+	// Signal that we woke up.
 	xrt_comp_mark_frame(xc, frame_id, XRT_COMPOSITOR_FRAME_POINT_WOKE, now_ns);
 
 	*out_frame_id = frame_id;
