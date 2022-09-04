@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021, The Khronos Group Inc.
+// Copyright (c) 2017-2022, The Khronos Group Inc.
 // Copyright (c) 2017 Valve Corporation
 // Copyright (c) 2017 LunarG, Inc.
 //
@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "openxr.h"
+#include <openxr/openxr.h>
 
 #ifdef __cplusplus
 extern "C" {
