@@ -177,9 +177,9 @@ comp_window_peek_create(struct comp_compositor *c)
 		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
 	}
 
-	ret = vk_cmd_buffer_create_and_begin(vk, &w->cmd);
+	ret = vk_cmd_buffer_create(vk, &w->cmd);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_buffer_create_and_begin: %s", vk_result_string(ret));
+		COMP_ERROR(c, "vk_cmd_buffer_create: %s", vk_result_string(ret));
 	}
 
 	os_thread_helper_init(&w->oth);
