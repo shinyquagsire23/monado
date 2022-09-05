@@ -21,6 +21,12 @@ DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)
 
 #define PEEK_IMAGE_USAGE (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 
+#define D(TYPE, thing)                                                                                                 \
+	if (thing != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
+		thing = VK_NULL_HANDLE;                                                                                \
+	}
+
 static inline struct vk_bundle *
 get_vk(struct comp_window_peek *w)
 {
@@ -201,7 +207,10 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 	SDL_DestroyWindow(w->window);
 
 	struct vk_bundle *vk = get_vk(w);
+
 	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &w->cmd);
+	D(Semaphore, w->acquire);
+	D(Semaphore, w->submit);
 
 	comp_target_swapchain_cleanup(&w->base);
 	os_thread_helper_destroy(&w->oth);
