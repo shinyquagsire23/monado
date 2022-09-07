@@ -159,13 +159,13 @@ render_buffer_init_exportable(struct vk_bundle *vk,
 
 	VkExternalMemoryBufferCreateInfo export_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-	    .handleTypes = vk_csci_get_image_external_handle_type(vk),
+	    .handleTypes = vk_cb_get_buffer_external_handle_type(vk),
 	};
 
 	VkExportMemoryAllocateInfo export_alloc_info = {
 	    .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
 	    .pNext = NULL,
-	    .handleTypes = vk_csci_get_image_external_handle_type(vk),
+	    .handleTypes = vk_cb_get_buffer_external_handle_type(vk),
 	};
 
 	ret = create_buffer(vk,                        //

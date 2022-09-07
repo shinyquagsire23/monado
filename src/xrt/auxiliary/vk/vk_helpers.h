@@ -1087,9 +1087,17 @@ vk_create_compute_pipeline(struct vk_bundle *vk,
 
 /*
  *
- * Compositor swapchain image flags helpers, in the vk_compositor_flags.c file.
+ * Compositor buffer and swapchain image flags helpers, in the vk_compositor_flags.c file.
  *
  */
+
+/*!
+ * Return the extern handle type that a buffer should be created with.
+ *
+ * cb = Compositor Buffer.
+ */
+VkExternalMemoryHandleTypeFlags
+vk_cb_get_buffer_external_handle_type(struct vk_bundle *vk);
 
 /*!
  * Helper for all of the supported formats to check support for.
@@ -1216,6 +1224,7 @@ vk_csci_get_image_external_support(struct vk_bundle *vk,
                                    VkExternalMemoryHandleTypeFlags handle_type,
                                    bool *out_importable,
                                    bool *out_exportable);
+
 
 /*
  *

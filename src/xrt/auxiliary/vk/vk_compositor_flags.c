@@ -58,6 +58,20 @@ check_feature(VkFormat format,
  *
  */
 
+VkExternalMemoryHandleTypeFlags
+vk_cb_get_buffer_external_handle_type(struct vk_bundle *vk)
+{
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+	return VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#else
+#error "need port"
+#endif
+}
+
 VkAccessFlags
 vk_csci_get_barrier_access_mask(enum xrt_swapchain_usage_bits bits)
 {
