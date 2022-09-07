@@ -96,4 +96,5 @@ if(_have_opengl_test)
 	target_link_libraries(
 		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl ${SDL2_LIBRARIES}
 		)
+	target_include_directories(tests_comp_client_opengl PRIVATE ${SDL2_INCLUDE_DIRS})
 endif()
