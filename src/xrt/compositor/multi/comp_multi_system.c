@@ -262,6 +262,17 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 			continue;
 		}
 
+		// The client isn't visible, do not submit it's layers.
+		if (!mc->state.visible) {
+			continue;
+		}
+
+		// Just in case.
+		if (!mc->state.session_active) {
+			U_LOG_W("Session is visible but not active.");
+			continue;
+		}
+
 		uint64_t frame_time_ns = mc->delivered.display_time_ns;
 		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
 			log_frame_time_diff(frame_time_ns, display_time_ns);
