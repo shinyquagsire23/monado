@@ -183,8 +183,13 @@ main(int argc, char *argv[])
 		}
 	}
 
-	struct ipc_connection ipc_c;
+	// Initializing the logging level also zeroes the rest of the struct.
+	struct ipc_connection ipc_c = {
+	    .log_level = U_LOGGING_INFO,
+	};
+
 	os_mutex_init(&ipc_c.mutex);
+
 	int ret = do_connect(&ipc_c);
 	if (ret != 0) {
 		return ret;
