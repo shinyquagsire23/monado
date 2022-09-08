@@ -40,18 +40,24 @@ DEBUG_GET_ONCE_LOG_OPTION(opengloves_log, "OPENGLOVES_LOG", U_LOGGING_INFO)
 
 enum opengloves_input_index
 {
-	OPENGLOVES_INDEX_HAND_TRACKING,
+	OPENGLOVES_INPUT_INDEX_HAND_TRACKING,
 
-	OPENGLOVES_INDEX_TRIGGER_CLICK,
-	OPENGLOVES_INDEX_TRIGGER_VALUE,
+	OPENGLOVES_INPUT_INDEX_TRIGGER_CLICK,
+	OPENGLOVES_INPUT_INDEX_TRIGGER_VALUE,
 
-	OPENGLOVES_INDEX_A_CLICK,
-	OPENGLOVES_INDEX_B_CLICK,
+	OPENGLOVES_INPUT_INDEX_A_CLICK,
+	OPENGLOVES_INPUT_INDEX_B_CLICK,
 
-	OPENGLOVES_INDEX_JOYSTICK_MAIN,
-	OPENGLOVES_INDEX_JOYSTICK_MAIN_CLICK,
+	OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN,
+	OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN_CLICK,
 
-	OPENGLOVES_INDEX_COUNT
+	OPENGLOVES_INPUT_INDEX_COUNT
+};
+
+enum opengloves_output_index
+{
+	OPENGLOVES_OUPUT_INDEX_FORCE_FEEDBACK,
+	OPENGLOVES_OUTPUT_INDEX_COUNT
 };
 
 /*!
@@ -146,15 +152,16 @@ opengloves_device_update_inputs(struct xrt_device *xdev)
 
 	os_mutex_lock(&od->lock);
 
-	od->base.inputs[OPENGLOVES_INDEX_A_CLICK].value.boolean = od->last_input->buttons.A.pressed;
-	od->base.inputs[OPENGLOVES_INDEX_B_CLICK].value.boolean = od->last_input->buttons.B.pressed;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_A_CLICK].value.boolean = od->last_input->buttons.A.pressed;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_B_CLICK].value.boolean = od->last_input->buttons.B.pressed;
 
-	od->base.inputs[OPENGLOVES_INDEX_TRIGGER_CLICK].value.boolean = od->last_input->buttons.trigger.pressed;
-	od->base.inputs[OPENGLOVES_INDEX_TRIGGER_VALUE].value.vec1.x = od->last_input->buttons.trigger.value;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_TRIGGER_CLICK].value.boolean = od->last_input->buttons.trigger.pressed;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_TRIGGER_VALUE].value.vec1.x = od->last_input->buttons.trigger.value;
 
-	od->base.inputs[OPENGLOVES_INDEX_JOYSTICK_MAIN].value.vec2.x = od->last_input->joysticks.main.x;
-	od->base.inputs[OPENGLOVES_INDEX_JOYSTICK_MAIN].value.vec2.y = od->last_input->joysticks.main.y;
-	od->base.inputs[OPENGLOVES_INDEX_JOYSTICK_MAIN_CLICK].value.boolean = od->last_input->joysticks.main.pressed;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN].value.vec2.x = od->last_input->joysticks.main.x;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN].value.vec2.y = od->last_input->joysticks.main.y;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN_CLICK].value.boolean =
+	    od->last_input->joysticks.main.pressed;
 
 	os_mutex_unlock(&od->lock);
 }
@@ -287,7 +294,7 @@ opengloves_device_create(struct opengloves_communication_device *ocd, enum xrt_h
 
 	// hand tracking
 	od->base.get_hand_tracking = opengloves_device_get_hand_tracking;
-	od->base.inputs[OPENGLOVES_INDEX_HAND_TRACKING].name =
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_HAND_TRACKING].name =
 	    od->hand == XRT_HAND_LEFT ? XRT_INPUT_GENERIC_HAND_TRACKING_LEFT : XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
 
 	od->base.hand_tracking_supported = true;
@@ -297,15 +304,14 @@ opengloves_device_create(struct opengloves_communication_device *ocd, enum xrt_h
 	od->base.update_inputs = opengloves_device_update_inputs;
 	od->last_input = U_TYPED_CALLOC(struct opengloves_input);
 
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_A_CLICK].name = XRT_INPUT_INDEX_A_CLICK;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_B_CLICK].name = XRT_INPUT_INDEX_B_CLICK;
 
-	od->base.inputs[OPENGLOVES_INDEX_A_CLICK].name = XRT_INPUT_INDEX_A_CLICK;
-	od->base.inputs[OPENGLOVES_INDEX_B_CLICK].name = XRT_INPUT_INDEX_B_CLICK;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_TRIGGER_VALUE].name = XRT_INPUT_INDEX_TRIGGER_VALUE;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_TRIGGER_CLICK].name = XRT_INPUT_INDEX_TRIGGER_CLICK;
 
-	od->base.inputs[OPENGLOVES_INDEX_TRIGGER_VALUE].name = XRT_INPUT_INDEX_TRIGGER_VALUE;
-	od->base.inputs[OPENGLOVES_INDEX_TRIGGER_CLICK].name = XRT_INPUT_INDEX_TRIGGER_CLICK;
-
-	od->base.inputs[OPENGLOVES_INDEX_JOYSTICK_MAIN].name = XRT_INPUT_INDEX_THUMBSTICK;
-	od->base.inputs[OPENGLOVES_INDEX_JOYSTICK_MAIN_CLICK].name = XRT_INPUT_INDEX_THUMBSTICK_CLICK;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN].name = XRT_INPUT_INDEX_THUMBSTICK;
+	od->base.inputs[OPENGLOVES_INPUT_INDEX_JOYSTICK_MAIN_CLICK].name = XRT_INPUT_INDEX_THUMBSTICK_CLICK;
 
 	// outputs
 	od->base.outputs[0].name =
