@@ -26,7 +26,7 @@ struct opengloves_communication_device
 {
 	int (*read)(struct opengloves_communication_device *comm_dev, char *data, size_t size);
 
-	int (*write)(struct opengloves_communication_device *comm_dev, const uint8_t *data, size_t size);
+	int (*write)(struct opengloves_communication_device *comm_dev, const char *data, size_t size);
 
 	void (*destroy)(struct opengloves_communication_device *comm_dev);
 };
@@ -38,9 +38,7 @@ opengloves_communication_device_read(struct opengloves_communication_device *com
 }
 
 static inline int
-opengloves_communication_device_write(struct opengloves_communication_device *comm_dev,
-                                      const uint8_t *data,
-                                      size_t size)
+opengloves_communication_device_write(struct opengloves_communication_device *comm_dev, const char *data, size_t size)
 {
 	return comm_dev->write(comm_dev, data, size);
 }

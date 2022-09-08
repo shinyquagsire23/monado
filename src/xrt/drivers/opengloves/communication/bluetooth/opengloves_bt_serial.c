@@ -41,7 +41,7 @@ opengloves_bt_read(struct opengloves_communication_device *ocdev, char *data, si
 }
 
 static int
-opengloves_bt_write(struct opengloves_communication_device *ocdev, const uint8_t *data, size_t length)
+opengloves_bt_write(struct opengloves_communication_device *ocdev, const char *data, size_t length)
 {
 	struct opengloves_bt_device *obdev = (struct opengloves_bt_device *)ocdev;
 

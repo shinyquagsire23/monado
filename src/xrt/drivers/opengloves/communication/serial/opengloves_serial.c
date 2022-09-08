@@ -31,7 +31,7 @@ opengloves_serial_read(struct opengloves_communication_device *ocdev, char *data
 }
 
 static int
-opengloves_serial_write(struct opengloves_communication_device *ocdev, const uint8_t *data, size_t length)
+opengloves_serial_write(struct opengloves_communication_device *ocdev, const char *data, size_t length)
 {
 	struct opengloves_serial_device *osdev = (struct opengloves_serial_device *)ocdev;
 
