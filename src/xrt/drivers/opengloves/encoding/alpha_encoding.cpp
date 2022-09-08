@@ -90,7 +90,7 @@ opengloves_alpha_encoding_is_key_character(const char character)
 	return opengloves_alpha_encoding_key_characters.find(character) != std::string::npos;
 }
 
-static const std::map<std::string, int> opengloves_alpha_encoding_key_string{
+static const std::map<std::string, int> opengloves_alpha_encoding_input_key_string{
     {"A", OPENGLOVES_ALPHA_ENCODING_FinThumb},         // whole thumb curl (default curl value for thumb joints)
     {"(AB)", OPENGLOVES_ALPHA_ENCODING_FinSplayThumb}, // whole thumb splay thumb joint 3 (doesn't exist, but keeps
                                                        // consistency with the other fingers
@@ -180,9 +180,9 @@ opengloves_alpha_encoding_parse_to_map(const std::string &str)
 
 			// Even if the value is empty we still want to use the key, it means that we have a button that
 			// is pressed (it only appears in the packet if it is)
-			if (opengloves_alpha_encoding_key_string.find(key) !=
-			    opengloves_alpha_encoding_key_string.end())
-				result.insert_or_assign(opengloves_alpha_encoding_key_string.at(key), value);
+			if (opengloves_alpha_encoding_input_key_string.find(key) !=
+			    opengloves_alpha_encoding_input_key_string.end())
+				result.insert_or_assign(opengloves_alpha_encoding_input_key_string.at(key), value);
 			else
 				U_LOG_W("Unable to insert key: %s into input map as it was not found", key.c_str());
 		} else
