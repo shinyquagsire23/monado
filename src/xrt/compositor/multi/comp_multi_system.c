@@ -502,9 +502,9 @@ system_compositor_set_state(struct xrt_system_compositor *xsc, struct xrt_compos
 	(void)msc;
 
 	//! @todo Locking?
-	if (mc->state.sent.visible != visible || mc->state.sent.focused != focused) {
-		mc->state.sent.visible = visible;
-		mc->state.sent.focused = focused;
+	if (mc->state.visible != visible || mc->state.focused != focused) {
+		mc->state.visible = visible;
+		mc->state.focused = focused;
 
 		union xrt_compositor_event xce = {0};
 		xce.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;

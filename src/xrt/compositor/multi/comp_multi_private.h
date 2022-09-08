@@ -116,16 +116,8 @@ struct multi_compositor
 
 	struct
 	{
-		struct
-		{
-			bool visible;
-			bool focused;
-		} sent;
-		struct
-		{
-			bool visible;
-			bool focused;
-		} current;
+		bool visible;
+		bool focused;
 
 		int64_t z_order;
 
