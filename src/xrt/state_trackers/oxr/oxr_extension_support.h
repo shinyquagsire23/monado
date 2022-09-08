@@ -324,6 +324,17 @@
 #define OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)
 #endif
 
+
+/*
+ * XR_MNDX_force_feedback_curl
+ */
+#if defined(XR_MNDX_force_feedback_curl)
+#define OXR_HAVE_MNDX_force_feedback_curl
+#define OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) _(MNDX_force_feedback_curl, MNDX_FORCE_FEEDBACK_CURL)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
+#endif
+
 // end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
@@ -374,5 +385,6 @@
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
-    OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_)
+    OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
 // clang-format on
