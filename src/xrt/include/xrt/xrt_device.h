@@ -259,6 +259,7 @@ struct xrt_device
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
+	bool force_feedback_supported;
 
 	/*!
 	 * Update any attached inputs.

@@ -212,6 +212,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->base.position_tracking_supported = isdev->position_tracking_supported;
 	ich->base.device_type = isdev->device_type;
 	ich->base.hand_tracking_supported = isdev->hand_tracking_supported;
+	ich->base.force_feedback_supported = isdev->force_feedback_supported;
 
 	return &ich->base;
 }
