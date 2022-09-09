@@ -1254,7 +1254,7 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  */
 
 VkResult
-vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
+vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 {
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
@@ -1305,7 +1305,7 @@ err_buffer:
 }
 
 XRT_CHECK_RESULT VkResult
-vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
+vk_cmd_buffer_submit(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
 {
 	VkResult ret = VK_SUCCESS;
 	VkFence fence;

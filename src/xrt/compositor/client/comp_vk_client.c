@@ -646,11 +646,11 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	// Prerecord command buffers for swapchain image ownership/layout transitions
 	for (uint32_t i = 0; i < xsc->image_count; i++) {
-		ret = vk_init_cmd_buffer(vk, &sc->acquire[i]);
+		ret = vk_cmd_buffer_create_and_begin(vk, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
 		}
-		ret = vk_init_cmd_buffer(vk, &sc->release[i]);
+		ret = vk_cmd_buffer_create_and_begin(vk, &sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
 		}

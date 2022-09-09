@@ -1380,7 +1380,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	}
 
 	VkCommandBuffer cmd;
-	vk_init_cmd_buffer(vk, &cmd);
+	vk_cmd_buffer_create_and_begin(vk, &cmd);
 
 	// For submitting commands.
 	os_mutex_lock(&vk->cmd_pool_mutex);
@@ -1481,7 +1481,7 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	// Waits for command to finish.
-	ret = vk_submit_cmd_buffer(vk, cmd);
+	ret = vk_cmd_buffer_submit(vk, cmd);
 	if (ret != VK_SUCCESS) {
 		//! @todo Better handling of error?
 		COMP_ERROR(r->c, "Failed to mirror image");

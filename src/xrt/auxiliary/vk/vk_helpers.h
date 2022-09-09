@@ -922,14 +922,14 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  */
 
 /*!
- * Create a new command buffer, takes the pool lock.
+ * Create and begins a new command buffer, takes the pool lock.
  *
  * @pre Requires successful call to vk_init_mutex.
  *
  * @ingroup aux_vk
  */
 VkResult
-vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
+vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
 
 /*!
  * A do everything command buffer submission function, during the operation
@@ -946,7 +946,7 @@ vk_init_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
  * @ingroup aux_vk
  */
 XRT_CHECK_RESULT VkResult
-vk_submit_cmd_buffer(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
+vk_cmd_buffer_submit(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
 
 /*!
  * Submits to the given queue, with the given fence.

@@ -631,7 +631,7 @@ comp_layer_renderer_draw(struct comp_layer_renderer *self)
 	struct vk_bundle *vk = self->vk;
 
 	VkCommandBuffer cmd_buffer;
-	if (vk_init_cmd_buffer(vk, &cmd_buffer) != VK_SUCCESS)
+	if (vk_cmd_buffer_create_and_begin(vk, &cmd_buffer) != VK_SUCCESS)
 		return;
 	os_mutex_lock(&vk->cmd_pool_mutex);
 	if (self->layer_count == 0) {
@@ -641,7 +641,7 @@ comp_layer_renderer_draw(struct comp_layer_renderer *self)
 	}
 	os_mutex_unlock(&vk->cmd_pool_mutex);
 
-	VkResult res = vk_submit_cmd_buffer(vk, cmd_buffer);
+	VkResult res = vk_cmd_buffer_submit(vk, cmd_buffer);
 	vk_check_error("vk_submit_cmd_buffer", res, );
 }
 

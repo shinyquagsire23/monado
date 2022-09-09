@@ -184,7 +184,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	 *
 	 */
 
-	vk_init_cmd_buffer(vk, &cmd_buffer);
+	vk_cmd_buffer_create_and_begin(vk, &cmd_buffer);
 
 	VkImageAspectFlagBits image_barrier_aspect = vk_csci_get_barrier_aspect_mask(image_view_format);
 
@@ -208,7 +208,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		    subresource_range);                       //
 	}
 
-	ret = vk_submit_cmd_buffer(vk, cmd_buffer);
+	ret = vk_cmd_buffer_submit(vk, cmd_buffer);
 	if (ret != VK_SUCCESS) {
 		//! @todo Propegate error
 		VK_ERROR(vk, "Failed to barrier images");

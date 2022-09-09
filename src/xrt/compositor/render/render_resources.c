@@ -741,14 +741,14 @@ render_resources_init(struct render_resources *r,
 
 
 		VkCommandBuffer cmd = VK_NULL_HANDLE;
-		C(vk_init_cmd_buffer(vk, &cmd));
+		C(vk_cmd_buffer_create_and_begin(vk, &cmd));
 
 		C(prepare_mock_image(      //
 		    vk,                    // vk_bundle
 		    cmd,                   // cmd
 		    r->mock.color.image)); // dsat
 
-		C(vk_submit_cmd_buffer(vk, cmd));
+		C(vk_cmd_buffer_submit(vk, cmd));
 
 		// No need to wait, submit waits on the fence.
 	}
@@ -997,7 +997,7 @@ render_distortion_buffer_init(struct render_resources *r,
 	create_and_fill_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1, pre_rotate);
 
 	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
-	C(vk_init_cmd_buffer(vk, &upload_buffer));
+	C(vk_cmd_buffer_create_and_begin(vk, &upload_buffer));
 
 	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
 		C(create_and_queue_upload(             //
@@ -1009,7 +1009,7 @@ render_distortion_buffer_init(struct render_resources *r,
 		    &r->distortion.image_views[i]));   // out_image_view
 	}
 
-	C(vk_submit_cmd_buffer(vk, upload_buffer));
+	C(vk_cmd_buffer_submit(vk, upload_buffer));
 
 	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
