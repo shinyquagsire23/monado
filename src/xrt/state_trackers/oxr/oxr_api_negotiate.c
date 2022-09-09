@@ -232,6 +232,10 @@ handle_non_null(struct oxr_instance *inst, struct oxr_logger *log, const char *n
 	ENTRY_IF_EXT(xrLocateHandJointsEXT, EXT_hand_tracking);
 #endif
 
+#ifdef OXR_HAVE_MNDX_force_feedback_curl
+	ENTRY_IF_EXT(xrApplyForceFeedbackCurlMNDX, MNDX_force_feedback_curl);
+#endif
+
 #ifdef OXR_HAVE_FB_display_refresh_rate
 	ENTRY_IF_EXT(xrEnumerateDisplayRefreshRatesFB, FB_display_refresh_rate);
 	ENTRY_IF_EXT(xrGetDisplayRefreshRateFB, FB_display_refresh_rate);

@@ -473,6 +473,29 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 
 /*
  *
+ * XR_MNDX_force_feedback_curl
+ *
+ */
+
+#ifdef XR_MNDX_force_feedback_curl
+
+XrResult
+oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrApplyForceFeedbackCurlLocationsMNDX *locations)
+{
+	OXR_TRACE_MARKER();
+
+	struct oxr_hand_tracker *hand_tracker;
+	struct oxr_logger log;
+	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker, "xrApplyForceFeedbackCurlMNDX");
+	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locations, XR_TYPE_FORCE_FEEDBACK_CURL_APPLY_LOCATIONS_MNDX);
+
+	return oxr_session_apply_force_feedback(&log, hand_tracker, locations);
+}
+
+#endif
+
+/*
+ *
  * XR_FB_display_refresh_rate
  *
  */

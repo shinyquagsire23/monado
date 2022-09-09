@@ -544,6 +544,11 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
                           const XrHandJointsLocateInfoEXT *locateInfo,
                           XrHandJointLocationsEXT *locations);
 
+//! OpenXR API function @ep{xrApplyForceFeedbackCurlMNDX}
+XRAPI_ATTR XrResult XRAPI_CALL
+oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrApplyForceFeedbackCurlLocationsMNDX *locations);
+
+
 //! OpenXR API function @ep{xrEnumerateDisplayRefreshRatesFB}
 XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,

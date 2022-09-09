@@ -793,6 +793,11 @@ oxr_session_hand_joints(struct oxr_logger *log,
                         const XrHandJointsLocateInfoEXT *locateInfo,
                         XrHandJointLocationsEXT *locations);
 
+XrResult
+oxr_session_apply_force_feedback(struct oxr_logger *log,
+                                 struct oxr_hand_tracker *hand_tracker,
+                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations);
+
 /*
  *
  * oxr_space.c
@@ -998,6 +1003,9 @@ oxr_system_enumerate_view_conf_views(struct oxr_logger *log,
 
 bool
 oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance *inst);
+
+bool
+oxr_system_get_force_feedback_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 /*
  *

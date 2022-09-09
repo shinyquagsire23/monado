@@ -183,6 +183,19 @@ oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance
 	return left_supported || right_supported;
 }
 
+bool
+oxr_system_get_force_feedback_support(struct oxr_logger *log, struct oxr_instance *inst)
+{
+	struct oxr_system *sys = &inst->system;
+	struct xrt_device *ffb_left = GET_XDEV_BY_ROLE(sys, hand_tracking.left);
+	struct xrt_device *ffb_right = GET_XDEV_BY_ROLE(sys, hand_tracking.right);
+
+	bool left_supported = ffb_left && ffb_left->force_feedback_supported;
+	bool right_supported = ffb_right && ffb_right->force_feedback_supported;
+
+	return left_supported || right_supported;
+}
+
 XrResult
 oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSystemProperties *properties)
 {
@@ -217,6 +230,17 @@ oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSyst
 
 	if (hand_tracking_props) {
 		hand_tracking_props->supportsHandTracking = oxr_system_get_hand_tracking_support(log, sys->inst);
+	}
+
+	XrSystemForceFeedbackCurlPropertiesMNDX *force_feedback_props = NULL;
+	if (sys->inst->extensions.MNDX_force_feedback_curl) {
+		force_feedback_props =
+		    OXR_GET_OUTPUT_FROM_CHAIN(properties, XR_TYPE_SYSTEM_FORCE_FEEDBACK_CURL_PROPERTIES_MNDX,
+		                              XrSystemForceFeedbackCurlPropertiesMNDX);
+	}
+
+	if (force_feedback_props) {
+		force_feedback_props->supportsForceFeedbackCurl = oxr_system_get_force_feedback_support(log, sys->inst);
 	}
 
 	return XR_SUCCESS;

@@ -1008,3 +1008,26 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 	return XR_SUCCESS;
 }
+
+XrResult
+oxr_session_apply_force_feedback(struct oxr_logger *log,
+                                 struct oxr_hand_tracker *hand_tracker,
+                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations)
+{
+	struct xrt_device *xdev = hand_tracker->xdev;
+
+	union xrt_output_value result;
+	result.force_feedback.force_feedback_location_count = locations->locationCount;
+	for (uint32_t i = 0; i < locations->locationCount; i++) {
+		result.force_feedback.force_feedback[i].location =
+		    (enum xrt_force_feedback_location)locations->locations[i].location;
+		result.force_feedback.force_feedback[i].value = locations->locations[i].value;
+	}
+
+	xrt_device_set_output(xdev,
+	                      hand_tracker->hand == XRT_HAND_LEFT ? XRT_OUTPUT_NAME_FORCE_FEEDBACK_LEFT
+	                                                          : XRT_OUTPUT_NAME_FORCE_FEEDBACK_RIGHT,
+	                      &result);
+
+	return XR_SUCCESS;
+}
