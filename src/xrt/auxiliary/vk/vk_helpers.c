@@ -1254,7 +1254,7 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  */
 
 VkResult
-vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
+vk_cmd_buffer_create(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
 {
 	VkCommandBuffer cmd_buffer;
 	VkResult ret;
@@ -1275,6 +1275,24 @@ vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_bu
 
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
+		// Nothing to cleanup
+		return ret;
+	}
+
+	*out_cmd_buffer = cmd_buffer;
+
+	return VK_SUCCESS;
+}
+
+VkResult
+vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
+{
+	VkCommandBuffer cmd_buffer;
+	VkResult ret;
+
+	ret = vk_cmd_buffer_create(vk, &cmd_buffer);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_cmd_buffer_create: %s", vk_result_string(ret));
 		// Nothing to cleanup
 		return ret;
 	}

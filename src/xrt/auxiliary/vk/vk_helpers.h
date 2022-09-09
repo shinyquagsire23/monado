@@ -922,6 +922,16 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  */
 
 /*!
+ * Create a new command buffer, takes the pool lock.
+ *
+ * @pre Requires successful call to vk_init_mutex.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_cmd_buffer_create(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
+
+/*!
  * Create and begins a new command buffer, takes the pool lock.
  *
  * @pre Requires successful call to vk_init_mutex.
