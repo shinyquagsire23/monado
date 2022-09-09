@@ -66,6 +66,20 @@ struct opengloves_input
 	struct opengloves_input_gestures gestures;
 };
 
+struct opengloves_output_force_feedback
+{
+	float thumb;
+	float index;
+	float middle;
+	float ring;
+	float little;
+};
+
+struct opengloves_output
+{
+	struct opengloves_output_force_feedback force_feedback;
+};
+
 #ifdef __cplusplus
 }
 #endif

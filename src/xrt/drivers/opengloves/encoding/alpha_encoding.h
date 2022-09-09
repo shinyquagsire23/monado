@@ -17,6 +17,8 @@ extern "C" {
 void
 opengloves_alpha_encoding_decode(const char *data, struct opengloves_input *out_kv);
 
+void
+opengloves_alpha_encoding_encode(const struct opengloves_output *output, char *out_buff);
 #ifdef __cplusplus
 }
 #endif

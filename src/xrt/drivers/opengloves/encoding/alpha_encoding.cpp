@@ -140,6 +140,14 @@ static const std::map<std::string, int> opengloves_alpha_encoding_key_string{
     {"", OPENGLOVES_ALPHA_ENCODING_MAX}                   // Junk key
 };
 
+static const std::map<int, std::string> opengloves_alpha_encoding_output_key_string{
+    {OPENGLOVES_ALPHA_ENCODING_FinThumb, "A"},  // thumb force feedback
+    {OPENGLOVES_ALPHA_ENCODING_FinIndex, "B"},  // index force feedback
+    {OPENGLOVES_ALPHA_ENCODING_FinMiddle, "C"}, // middle force feedback
+    {OPENGLOVES_ALPHA_ENCODING_FinRing, "D"},   // ring force feedback
+    {OPENGLOVES_ALPHA_ENCODING_FinPinky, "E"},  // pinky force feedback
+};
+
 static std::map<int, std::string>
 opengloves_alpha_encoding_parse_to_map(const std::string &str)
 {
@@ -247,4 +255,20 @@ opengloves_alpha_encoding_decode(const char *data, struct opengloves_input *out)
 	out->gestures.grab.activated = input_map.find(OPENGLOVES_ALPHA_ENCODING_GesGrab) != input_map.end();
 	out->gestures.pinch.activated = input_map.find(OPENGLOVES_ALPHA_ENCODING_GesPinch) != input_map.end();
 	out->buttons.menu.pressed = input_map.find(OPENGLOVES_ALPHA_ENCODING_BtnMenu) != input_map.end();
+}
+
+void
+opengloves_alpha_encoding_encode(const struct opengloves_output *output, char *out_buff)
+{
+	sprintf(out_buff, "%s%d%s%d%s%d%s%d%s%d\n",
+	        opengloves_alpha_encoding_output_key_string.at(OPENGLOVES_ALPHA_ENCODING_FinThumb).c_str(),
+	        (int)(output->force_feedback.thumb * 1000),
+	        opengloves_alpha_encoding_output_key_string.at(OPENGLOVES_ALPHA_ENCODING_FinIndex).c_str(),
+	        (int)(output->force_feedback.index * 1000),
+	        opengloves_alpha_encoding_output_key_string.at(OPENGLOVES_ALPHA_ENCODING_FinMiddle).c_str(),
+	        (int)(output->force_feedback.middle * 1000),
+	        opengloves_alpha_encoding_output_key_string.at(OPENGLOVES_ALPHA_ENCODING_FinRing).c_str(),
+	        (int)(output->force_feedback.ring * 1000),
+	        opengloves_alpha_encoding_output_key_string.at(OPENGLOVES_ALPHA_ENCODING_FinPinky).c_str(),
+	        (int)(output->force_feedback.little * 1000));
 }
