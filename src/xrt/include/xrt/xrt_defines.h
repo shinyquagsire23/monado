@@ -987,6 +987,7 @@ enum xrt_output_type
 {
 	// clang-format off
 	XRT_OUTPUT_TYPE_VIBRATION             = 0x00,
+	XRT_OUTPUT_TYPE_FORCE_FEEDBACK        = 0x01
 	// clang-format on
 };
 
@@ -1014,6 +1015,9 @@ enum xrt_output_name
 
 	XRT_OUTPUT_NAME_TOUCH_HAPTIC                = XRT_OUTPUT_NAME(0x0070, VIBRATION),
 
+	XRT_OUTPUT_NAME_FORCE_FEEDBACK_LEFT         = XRT_OUTPUT_NAME(0x0080, FORCE_FEEDBACK),
+	XRT_OUTPUT_NAME_FORCE_FEEDBACK_RIGHT        = XRT_OUTPUT_NAME(0x0081, FORCE_FEEDBACK),
+
 	// clang-format on
 };
 
@@ -1040,6 +1044,21 @@ enum xrt_output_name
  */
 #define XRT_INFINITE_DURATION (0x7fffffffffffffffLL)
 
+enum xrt_force_feedback_location
+{
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_THUMB,
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_INDEX,
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_MIDDLE,
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_RING,
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_PINKY
+};
+
+struct xrt_output_force_feedback
+{
+	float value;
+	enum xrt_force_feedback_location location;
+};
+
 /*!
  * A union of all output types.
  *
@@ -1053,6 +1072,12 @@ union xrt_output_value {
 		float amplitude;
 		int64_t duration_ns;
 	} vibration;
+
+	struct
+	{
+		struct xrt_output_force_feedback force_feedback[5];
+		uint64_t force_feedback_location_count;
+	} force_feedback;
 };
 
 
