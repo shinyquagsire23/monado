@@ -439,7 +439,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
 - Major changes
   - Centralise the logging functionality in Monado to a single util helper.
     Previously most of our logging was done via fprints and gated behind booleans,
-    now there are common functions to call and a predfined set of levels.
+    now there are common functions to call and a predefined set of levels.
     ([!408](https://gitlab.freedesktop.org/monado/monado/merge_requests/408),
     [!409](https://gitlab.freedesktop.org/monado/monado/merge_requests/409))
 - XRT Interface

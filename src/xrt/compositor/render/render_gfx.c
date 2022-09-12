@@ -431,7 +431,7 @@ update_mesh_discriptor_set(struct vk_bundle *vk,
 
 /*
  *
- * 'Exported' target resourecs functions.
+ * 'Exported' target resources functions.
  *
  */
 

@@ -167,7 +167,7 @@ comp_window_direct_create_surface(struct comp_target_swapchain *cts,
 		return ret;
 	}
 
-	COMP_DEBUG(cts->base.c, "Found %d plane properites.", plane_property_count);
+	COMP_DEBUG(cts->base.c, "Found %d plane properties.", plane_property_count);
 
 	VkDisplayPlanePropertiesKHR *plane_properties =
 	    U_TYPED_ARRAY_CALLOC(VkDisplayPlanePropertiesKHR, plane_property_count);

@@ -1356,7 +1356,7 @@ vk_create_timeline_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync
  * Note the timestamp needs to be in the past and not to old, this is because
  * not all GPU has full 64 bit timer resolution. For instance a Intel GPU "only"
  * have 36 bits of valid timestamp and a tick period 83.3333 nanosecond,
- * equating to an epoch of 5726 seconds before overflowing. The functio can
+ * equating to an epoch of 5726 seconds before overflowing. The function can
  * handle overflows happening between the given timestamps and when it is called
  * but only for one such epoch overflow, any more will only be treated as one
  * such overflow. So timestamps needs to be converted resonably soon after they

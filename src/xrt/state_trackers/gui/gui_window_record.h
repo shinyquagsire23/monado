@@ -104,7 +104,7 @@ void
 gui_window_record_render(struct gui_record_window *rw, struct gui_program *p);
 
 /*!
- * Frees all resources assocciated with a record window. Make sure to only call
+ * Frees all resources associated with a record window. Make sure to only call
  * this function on the main gui thread, and that nothing is pushing into the
  * record windows sink.
  */

@@ -1168,7 +1168,7 @@ process_load_image(class Calibration &c, struct xrt_frame *xf)
 	std::swap(c.num_wait_for, num_wait_for);
 
 	for (uint32_t i = 0; i < c.load.num_images; i++) {
-		// Early out if the user requeted less images.
+		// Early out if the user requested less images.
 		if (c.state.calibrated) {
 			break;
 		}

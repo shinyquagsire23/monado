@@ -74,7 +74,7 @@ public:
 
 	friend SharedThreadGroup;
 
-	// No default contstructor.
+	// No default constructor.
 	SharedThreadPool() = delete;
 	// No move.
 	SharedThreadPool(SharedThreadPool &&) = delete;
