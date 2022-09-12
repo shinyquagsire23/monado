@@ -373,6 +373,17 @@ if(XRT_BUILD_DRIVER_EUROC)
 	list(APPEND ENABLED_DRIVERS euroc)
 endif()
 
+if(XRT_BUILD_DRIVER_SIMULAVR)
+	add_library(
+		drv_svr STATIC
+		simula/svr_hmd.c
+		simula/svr_interface.h
+		)
+	target_link_libraries(drv_svr PRIVATE xrt-interfaces aux_math xrt-external-cjson)
+	list(APPEND ENABLED_HEADSET_DRIVERS svr)
+endif()
+
+
 if(XRT_BUILD_SAMPLES)
 	# We build the sample driver to make sure it stays valid,
 	# but it never gets linked into a final target.

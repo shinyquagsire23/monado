@@ -33,6 +33,10 @@ if(XRT_BUILD_DRIVER_SURVIVE OR XRT_BUILD_DRIVER_VIVE)
 	target_sources(target_lists PRIVATE target_builder_lighthouse.c)
 endif()
 
+if(XRT_BUILD_DRIVER_SURVIVE)
+	target_sources(target_lists PRIVATE target_builder_simulavr.c)
+endif()
+
 # Drivers
 if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
@@ -130,6 +134,10 @@ endif()
 
 if(XRT_BUILD_DRIVER_EUROC)
 	target_link_libraries(target_lists PRIVATE drv_euroc)
+endif()
+
+if(XRT_BUILD_DRIVER_SIMULAVR)
+	target_link_libraries(target_lists PRIVATE drv_svr)
 endif()
 
 ####

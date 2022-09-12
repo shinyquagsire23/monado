@@ -28,6 +28,10 @@
 #define T_BUILDER_LIGHTHOUSE
 #endif
 
+#if defined(XRT_BUILD_DRIVER_SIMULAVR) || defined(XRT_DOXYGEN)
+#define T_BUILDER_SIMULAVR
+#endif
+
 // Always enabled.
 #define T_BUILDER_LEGACY
 
@@ -62,9 +66,18 @@ struct xrt_builder *
 t_builder_legacy_create(void);
 #endif
 
-
+#ifdef T_BUILDER_LIGHTHOUSE
 /*!
- * Builder used as a fallback for drivers not converted to builders yet.
+ * Builder for Lighthouse-tracked devices (vive, index, tundra trackers, etc.)
  */
 struct xrt_builder *
 t_builder_lighthouse_create(void);
+#endif
+
+#ifdef T_BUILDER_SIMULAVR
+/*!
+ * Builder for SimulaVR headsets
+ */
+struct xrt_builder *
+t_builder_simula_create(void);
+#endif

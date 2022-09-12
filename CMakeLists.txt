@@ -299,6 +299,7 @@ option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS Leap
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32")
+option_with_deps(XRT_BUILD_DRIVER_SIMULAVR "Enable simula driver" DEPENDS XRT_HAVE_REALSENSE)
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
 
 option(XRT_BUILD_SAMPLES "Enable compiling sample code implementations that will not be linked into any final targets" ON)
@@ -354,6 +355,7 @@ list(
 	"QWERTY"
 	"WMR"
 	"EUROC"
+	"SIMULAVR"
 	)
 
 # Package name needs to be known by the native code itself.
@@ -520,6 +522,7 @@ message(STATUS "#    DRIVER_ULV2:         ${XRT_BUILD_DRIVER_ULV2}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
+message(STATUS "#    DRIVER_SIMULAVR:     ${XRT_BUILD_DRIVER_SIMULAVR}")
 message(STATUS "#####----- Config -----#####")
 
 if(XRT_FEATURE_SERVICE AND NOT XRT_FEATURE_OPENXR)
