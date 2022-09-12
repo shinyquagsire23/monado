@@ -973,6 +973,14 @@ ipc_syscomp_destroy(struct xrt_system_compositor *xsc)
  *
  */
 
+/*!
+ *
+ *
+ * This actually creates an IPC client "native" compositor with deferred initialization.
+ * It owns a special implementation of the @ref xrt_system_compositor interface
+ * whose "create_native_compositor" method actually completes the deferred initialization
+ * of the compositor, effectively finishing creation of a compositor IPC proxy.
+ */
 int
 ipc_client_create_system_compositor(struct ipc_connection *ipc_c,
                                     struct xrt_image_native_allocator *xina,

@@ -1875,12 +1875,13 @@ xrt_comp_native_destroy(struct xrt_compositor_native **xcn_ptr)
 
 /*
  *
- * System compositor.
+ * System composition: how to composite on a system, either directly or by combining layers from multiple apps
  *
  */
 
 /*!
- * Capabilities and information about the system compositor and device together.
+ * Capabilities and information about the system compositor (and its wrapped native compositor, if any),
+ * and device together.
  */
 struct xrt_system_compositor_info
 {
@@ -1901,7 +1902,7 @@ struct xrt_system_compositor_info
 		} max; //!< Maximums for this view.
 	} views[2];    //!< View configuration information.
 
-	//! Maximum number of layers supported by the compositor, never changes.
+	//! Maximum number of composition layers supported, never changes.
 	uint32_t max_layers;
 
 	/*!
@@ -1937,6 +1938,8 @@ struct xrt_system_compositor;
 /*!
  * @interface xrt_multi_compositor_control
  * Special functions to control multi session/clients.
+ * Effectively an optional aspect of @ref xrt_system_compositor
+ * exposed by implementations that can combine layers from multiple sessions/clients.
  */
 struct xrt_multi_compositor_control
 {
@@ -1967,18 +1970,26 @@ struct xrt_multi_compositor_control
 };
 
 /*!
- * The system compositor is a long lived object, it has the same life time as a
- * XrSystemID.
+ * The system compositor handles composition for a system.
+ * It is not itself a "compositor" (as in xrt_compositor), but it can create/own compositors.
+ * - In a multi-app capable system, the system compositor may own an internal compositor, and
+ *   xrt_system_compositor::create_native_compositor will
+ *   create a compositor that submits layers to a merging mechanism.
+ * - In a non-multi-app capable system, xrt_system_compositor::create_native_compositor
+ *   creates normal, native compositors, that do not wrap or feed into any other compositor.
+ *
+ * This is a long lived object: it has the same life time as an XrSystemID.
  */
 struct xrt_system_compositor
 {
-	//! Info regarding the system.
-	struct xrt_system_compositor_info info;
-
 	/*!
-	 * Does this system compositor support multi client controls.
+	 * An optional aspect/additional interface, providing multi-app control.
+	 * Populated if this system compositor supports multi client controls.
 	 */
 	struct xrt_multi_compositor_control *xmcc;
+
+	//! Info regarding the system.
+	struct xrt_system_compositor_info info;
 
 	/*!
 	 * Create a new native compositor.
@@ -1986,9 +1997,13 @@ struct xrt_system_compositor
 	 * This signals that you want to start XR, and as such implicitly brings
 	 * up a new session. Does not "call" `xrBeginSession`.
 	 *
-	 * Some system compositors might only support that one `xrt_compositor`
-	 * is active at a time, will return `XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED`
+	 * Some system compositors might only support one `xrt_compositor`
+	 * active at a time, will return `XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED`
 	 * if this is the case.
+	 *
+	 * In a multi-session capable system compositor, this may return a "proxy"
+	 * for feeding a single client's layers to a compositor or a layer merging mechanism,
+	 * rather than a raw native compositor (not wrapping or forwarding) directly.
 	 */
 	xrt_result_t (*create_native_compositor)(struct xrt_system_compositor *xsc,
 	                                         const struct xrt_session_info *xsi,
@@ -2007,6 +2022,9 @@ struct xrt_system_compositor
  *
  * Helper for calling through the function pointer.
  *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
+ *
  * @public @memberof xrt_system_compositor
  */
 static inline xrt_result_t
@@ -2023,6 +2041,9 @@ xrt_syscomp_set_state(struct xrt_system_compositor *xsc, struct xrt_compositor *
  * @copydoc xrt_multi_compositor_control::set_z_order
  *
  * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
  *
  * @public @memberof xrt_system_compositor
  */
@@ -2041,6 +2062,9 @@ xrt_syscomp_set_z_order(struct xrt_system_compositor *xsc, struct xrt_compositor
  * @copydoc xrt_multi_compositor_control::set_main_app_visibility
  *
  * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
  *
  * @public @memberof xrt_system_compositor
  */

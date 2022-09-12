@@ -84,8 +84,8 @@ directed-acyclic-graph.
         words if you go by the `_` delimiters, but for clarity we treat
         swapchain as if it were two words when abbreviating. A few other places
         in the `xrt` headers use `x` + an abbreviated name form, like `xinst`
-        for @ref xrt_instance, `xdev` for @ref xrt_device, `xsysc` sometimes
-        used for @ref xrt_system_compositor.
+        for @ref xrt_instance, `xdev` for @ref xrt_device, `xsysd` sometimes
+        used for @ref xrt_system_devices.
   - `create` and `destroy` are used when the functions actually perform
     allocation and return the new object, or deallocation of the passed-in
     object.

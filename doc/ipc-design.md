@@ -5,11 +5,12 @@ Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
-- Last updated: 15-July-2022
+- Last updated: 12-September-2022
 
 When the service starts, an `xrt_instance` is created and selected, a native
-system compositor is initialized, a shared memory segment for device data is
-initialized, and other internal state is set up. (See `ipc_server_process.c`.)
+compositor is initialized by a system compositor, a shared memory segment for
+device data is initialized, and other internal state is set up. (See
+`ipc_server_process.c`.)
 
 There are three main communication needs:
 

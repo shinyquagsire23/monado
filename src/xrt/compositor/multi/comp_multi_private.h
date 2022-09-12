@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Multi-client compositor internal structs.
+ * @brief  System compositor capable of supporting multiple clients: internal structs.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_multi
  */
@@ -87,7 +87,8 @@ struct multi_event
 };
 
 /*!
- * A single compositor.
+ * A single compositor for feeding the layers from one session/app into
+ * the multi-client-capable system compositor.
  *
  * @ingroup comp_multi
  */
@@ -209,6 +210,7 @@ multi_compositor_create(struct multi_system_compositor *msc,
  * Push a event to be delivered to the client.
  *
  * @ingroup comp_multi
+ * @private @memberof multi_compositor
  */
 void
 multi_compositor_push_event(struct multi_compositor *mc, const union xrt_compositor_event *xce);
@@ -218,6 +220,7 @@ multi_compositor_push_event(struct multi_compositor *mc, const union xrt_composi
  * thread and copies data from multi_compositor::scheduled to multi_compositor::delivered while holding the slot_lock.
  *
  * @ingroup comp_multi
+ * @private @memberof multi_compositor
  */
 void
 multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t display_time_ns);
@@ -225,12 +228,12 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
 
 /*
  *
- * System compositor.
+ * Multi-client-capable system compositor
  *
  */
 
 /*!
- * State of the multi compositor system, use to track the calling of native
+ * State of the multi-client system compositor. Use to track the calling of native
  * compositor methods @ref xrt_comp_begin_session and @ref xrt_comp_end_session.
  *
  * It is driven by the number of active app sessions.
@@ -242,34 +245,35 @@ enum multi_system_state
 	/*!
 	 * Initial state and post stopping state.
 	 *
-	 * The multi system compositor have called @ref xrt_comp_end_session
-	 * on it's @ref xrt_compositor_native.
+	 * The multi-client system compositor has called @ref xrt_comp_end_session
+	 * on its @ref xrt_compositor_native.
 	 */
 	MULTI_SYSTEM_STATE_STOPPED,
 
 	/*!
 	 * The main session is running.
 	 *
-	 * The multi system compositor have called @ref xrt_comp_begin_session
-	 * on it's @ref xrt_compositor_native.
+	 * The multi-client system compositor has called @ref xrt_comp_begin_session
+	 * on its @ref xrt_compositor_native.
 	 */
 	MULTI_SYSTEM_STATE_RUNNING,
 
 	/*!
-	 * There are no active sessions and the multi compositor system is
-	 * drawing on or more clear frames.
+	 * There are no active sessions and the multi-client system compositor is
+	 * instructing the native compositor to draw one or more clear frames.
 	 *
-	 * The multi system compositor have not yet @ref xrt_comp_begin_session
-	 * on it's @ref xrt_compositor_native.
+	 * The multi-client system compositor has not yet called @ref xrt_comp_begin_session
+	 * on its @ref xrt_compositor_native.
 	 */
 	MULTI_SYSTEM_STATE_STOPPING,
 };
 
 /*!
- * The multi compositor system, multiplexes access to the native compositors
- * and tracks some state needed.
+ * The multi-client system compositor multiplexes access to a single native compositor,
+ * merging layers from one or more client apps/sessions.
  *
  * @ingroup comp_multi
+ * @implements xrt_system_compositor
  */
 struct multi_system_compositor
 {
@@ -290,8 +294,9 @@ struct multi_system_compositor
 	struct
 	{
 		/*!
-		 * The state of the multi compositor system, this is updated on
-		 * the oth thread, aka multi compositor system main thread.
+		 * The state of the multi-client system compositor.
+		 * This is updated on the multi_system_compositor::oth
+		 * thread, aka multi-client system compositor main thread.
 		 * It is driven by the active_count field.
 		 */
 		enum multi_system_state state;
@@ -316,6 +321,12 @@ struct multi_system_compositor
 	struct multi_compositor *clients[MULTI_MAX_CLIENTS];
 };
 
+/*!
+ * Cast helper
+ *
+ * @ingroup comp_multi
+ * @private @memberof multi_system_compositor
+ */
 static inline struct multi_system_compositor *
 multi_system_compositor(struct xrt_system_compositor *xsc)
 {
@@ -323,10 +334,11 @@ multi_system_compositor(struct xrt_system_compositor *xsc)
 }
 
 /*!
- * The client compositor calls this function to update when it's session is
+ * The client compositor calls this function to update when its session is
  * started or stopped.
  *
  * @ingroup comp_multi
+ * @private @memberof multi_system_compositor
  */
 void
 multi_system_compositor_update_session_status(struct multi_system_compositor *msc, bool active);

@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -16,11 +16,8 @@
 extern "C" {
 #endif
 
-
-struct time_state;
-
 /*!
- * Creates the main system compositor.
+ * Creates the main system compositor (and its nested native compositor).
  *
  * @ingroup xrt_iface
  * @relates xrt_system_compositor
