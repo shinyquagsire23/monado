@@ -48,6 +48,14 @@ struct xrt_fs *
 rs_source_create(struct xrt_frame_context *xfctx, int device_idx);
 
 /*!
+ * Creates an xrt_device that exposes the onboard tracking of a Realsense device
+ * (ie. probably a T265)
+ * @return An xrt_device that you can call get_tracked_pose on with XRT_INPUT_GENERIC_TRACKER_POSE
+ */
+struct xrt_device *
+rs_create_tracked_device_internal_slam();
+
+/*!
  * @dir drivers/realsense
  *
  * @brief @ref drv_realsense files.

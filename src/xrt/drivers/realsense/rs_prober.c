@@ -223,6 +223,33 @@ create_tracked_rs_device(struct xrt_prober *xp)
 	return dev;
 }
 
+
+//! Basically just for T265
+struct xrt_device *
+rs_create_tracked_device_internal_slam()
+{
+	rs2_error *e = NULL;
+	struct rs_container rsc = {0};
+
+	rsc.context = DO(rs2_create_context, RS2_API_VERSION);
+	rsc.device_list = DO(rs2_query_devices, rsc.context);
+	rsc.device_count = DO(rs2_get_device_count, rsc.device_list);
+
+
+	int ddev_idx = find_capable_device(RS_TRACKING_DEVICE_SLAM, rsc.device_list);
+
+
+
+	rs_container_cleanup(&rsc); // We got ddev_idx and hdev_idx, release realsense resources
+
+	struct xrt_device *dev = NULL;
+
+	dev = rs_ddev_create(ddev_idx);
+
+
+	return dev;
+}
+
 //! @public @memberof rs_prober
 static int
 rs_prober_autoprobe(struct xrt_auto_prober *xap,
