@@ -373,6 +373,14 @@ update_session_state_locked(struct multi_system_compositor *msc)
 	enum xrt_view_type view_type = XRT_VIEW_TYPE_STEREO;
 
 	switch (msc->sessions.state) {
+	case MULTI_SYSTEM_STATE_INIT_WARM_START:
+		U_LOG_I("Doing warm start, %u active app session(s).", (uint32_t)msc->sessions.active_count);
+
+		// Produce at least one frame on init.
+		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
+		xrt_comp_begin_session(xc, view_type);
+		break;
+
 	case MULTI_SYSTEM_STATE_STOPPED:
 		if (msc->sessions.active_count == 0) {
 			break;
@@ -387,6 +395,7 @@ update_session_state_locked(struct multi_system_compositor *msc)
 		if (msc->sessions.active_count > 0) {
 			break;
 		}
+
 		U_LOG_I("Stopping main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
 		break;
@@ -405,6 +414,7 @@ update_session_state_locked(struct multi_system_compositor *msc)
 		xrt_comp_end_session(xc);
 		break;
 
+	case MULTI_SYSTEM_STATE_INVALID:
 	default:
 		U_LOG_E("Got invalid state %u", msc->sessions.state);
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;

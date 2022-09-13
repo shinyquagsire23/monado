@@ -235,7 +235,20 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
 enum multi_system_state
 {
 	/*!
-	 * Initial state and post stopping state.
+	 * Invalid state, never used.
+	 */
+	MULTI_SYSTEM_STATE_INVALID,
+
+	/*!
+	 * One of the initial states, the multi-client system compositor will
+	 * make sure that its @ref xrt_compositor_native submits one frame.
+	 *
+	 * The session hasn't been started yet.
+	 */
+	MULTI_SYSTEM_STATE_INIT_WARM_START,
+
+	/*!
+	 * One of the initial state and post stopping state.
 	 *
 	 * The multi-client system compositor has called @ref xrt_comp_end_session
 	 * on its @ref xrt_compositor_native.
