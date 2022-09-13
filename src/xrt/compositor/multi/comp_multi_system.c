@@ -392,12 +392,23 @@ update_session_state_locked(struct multi_system_compositor *msc)
 		break;
 
 	case MULTI_SYSTEM_STATE_STOPPING:
+		// Just in case
+		if (msc->sessions.active_count > 0) {
+			U_LOG_I("Restarting main session, %u active app session(s).",
+			        (uint32_t)msc->sessions.active_count);
+			msc->sessions.state = MULTI_SYSTEM_STATE_RUNNING;
+			break;
+		}
+
 		U_LOG_I("Stopped main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPED;
 		xrt_comp_end_session(xc);
 		break;
 
-	default: assert(false);
+	default:
+		U_LOG_E("Got invalid state %u", msc->sessions.state);
+		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
+		assert(false);
 	}
 }
 
