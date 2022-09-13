@@ -1305,5 +1305,5 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	xrt_result_t xret = u_pa_factory_create(&upaf);
 	assert(xret == XRT_SUCCESS && upaf != NULL);
 
-	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, out_xsysc);
+	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, true, out_xsysc);
 }

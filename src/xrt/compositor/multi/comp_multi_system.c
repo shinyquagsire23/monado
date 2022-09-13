@@ -642,6 +642,7 @@ xrt_result_t
 comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
                                     struct u_pacing_app_factory *upaf,
                                     const struct xrt_system_compositor_info *xsci,
+                                    bool do_warm_start,
                                     struct xrt_system_compositor **out_xsysc)
 {
 	struct multi_system_compositor *msc = U_TYPED_CALLOC(struct multi_system_compositor);
@@ -654,8 +655,8 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->base.info = *xsci;
 	msc->upaf = upaf;
 	msc->xcn = xcn;
-	msc->sessions.state = MULTI_SYSTEM_STATE_STOPPED;
 	msc->sessions.active_count = 0;
+	msc->sessions.state = do_warm_start ? MULTI_SYSTEM_STATE_INIT_WARM_START : MULTI_SYSTEM_STATE_STOPPED;
 
 	os_mutex_init(&msc->list_and_timing_lock);
 
