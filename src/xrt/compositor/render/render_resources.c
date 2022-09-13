@@ -833,9 +833,8 @@ render_resources_init(struct render_resources *r,
 	 */
 
 	VkBufferUsageFlags ubo_usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	VkMemoryPropertyFlags memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-	                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-	                                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	VkMemoryPropertyFlags memory_property_flags =
+	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
 	C(vk_create_sampler(                       //
 	    vk,                                    // vk_bundle
