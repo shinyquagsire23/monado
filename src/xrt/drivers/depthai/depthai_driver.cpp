@@ -36,9 +36,6 @@
 #include <memory>
 #include <sstream>
 
-// Disable it for now, unsure if everything has been upstreamed.
-#undef DEPTHAI_ILLUMINATED_IR
-
 /*
  *
  * Printing functions.
@@ -52,6 +49,8 @@
 #define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
+DEBUG_GET_ONCE_BOOL_OPTION(depthai_want_floodlight, "DEPTHAI_WANT_FLOODLIGHT", true)
+
 
 
 /*
@@ -133,9 +132,7 @@ struct depthai_fs
 	dai::DataOutputQueue *image_queue;
 	dai::DataOutputQueue *imu_queue;
 
-#ifdef DEPTHAI_ILLUMINATED_IR
 	dai::DataInputQueue *control_queue;
-#endif
 
 	dai::ColorCameraProperties::SensorResolution color_sensor_resolution;
 	dai::ColorCameraProperties::ColorOrder color_order;
@@ -149,6 +146,9 @@ struct depthai_fs
 	uint32_t fps;
 	bool interleaved;
 	bool oak_d_lite;
+
+	bool has_floodlight;
+	bool want_floodlight;
 
 	bool want_cameras;
 	bool want_imu;
@@ -257,6 +257,24 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 	t_stereo_camera_calibration_reference(&c, NULL);
 
 	return true;
+}
+
+//!@todo this function will look slightly different for an OAK-D Pro with dot projectors - mine only has floodlights
+void
+depthai_guess_ir_drivers(struct depthai_fs *depthai)
+{
+	std::vector<std::tuple<std::string, int, int>> list_of_drivers = depthai->device->getIrDrivers();
+	depthai->has_floodlight = false;
+
+	for (std::tuple<std::string, int, int> elem : list_of_drivers) {
+		if (std::get<0>(elem) == "LM3644") {
+			DEPTHAI_DEBUG(depthai, "DepthAI: Found an IR floodlight");
+			depthai->has_floodlight = true;
+		}
+	}
+	if (!depthai->has_floodlight) {
+		DEPTHAI_DEBUG(depthai, "DepthAI: Didn't find any IR illuminators");
+	}
 }
 
 static void
@@ -644,10 +662,8 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	const char *name_images = "image_frames";
 	const char *name_imu = "imu_samples";
 
-#ifdef DEPTHAI_ILLUMINATED_IR
 	auto controlIn = p.create<dai::node::XLinkIn>();
 	controlIn->setStreamName("control");
-#endif
 
 	if (depthai->want_cameras) {
 
@@ -670,10 +686,8 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 			// Link plugins CAM -> XLINK
 			grayCam->out.link(xlinkOut->input);
-#ifdef DEPTHAI_ILLUMINATED_IR
 			// Link control to camera
 			controlIn->out.link(grayCam->inputControl);
-#endif
 		}
 	}
 
@@ -698,16 +712,19 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 		depthai->imu_queue = depthai->device->getOutputQueue(name_imu, 4, false).get(); // out of shared pointer
 	}
 
-#ifdef DEPTHAI_ILLUMINATED_IR
+
 	depthai->control_queue = depthai->device->getInputQueue("control").get();
 
+	if (depthai->has_floodlight && depthai->want_floodlight) {
+		depthai->device->setIrFloodLightBrightness(1500);
+	}
 
-	depthai->device->setIrFloodLightBrightness(15000);
-
+	//!@todo This code will turn the exposure time down, but you may not want it. Or we may want to rework Monado's
+	//! AEG code to control the IR floodlight brightness in concert with the exposure itme. For now, disable.
+#if 0
 	dai::CameraControl ctrl;
 	ctrl.setManualExposure(500, 700);
 	depthai->control_queue->send(ctrl);
-	depthai->device->setIrFloodLightBrightness(15000);
 #endif
 }
 
@@ -927,10 +944,12 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
 	depthai->log_level = debug_get_log_option_depthai_log();
+	depthai->want_floodlight = debug_get_bool_option_depthai_want_floodlight();
 	depthai->device = d;
 
 	// Some debug printing.
 	depthai_guess_camera_type(depthai);
+	depthai_guess_ir_drivers(depthai);
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
