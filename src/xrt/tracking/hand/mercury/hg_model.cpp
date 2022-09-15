@@ -584,7 +584,67 @@ init_keypoint_estimation_new(HandTracking *hgt, onnx_wrap *wrap)
 	wrap->api->ReleaseSessionOptions(opts);
 }
 
+void
+calc_src_tri(cv::Point2f center,
+             cv::Point2f go_right,
+             cv::Point2f go_down,
+             enum t_camera_orientation rot,
+             cv::Point2f out_src_tri[3])
+{
+	// cv::Point2f go_right = {size_px / 2, 0};
+	// cv::Point2f go_down = {0, size_px / 2};
 
+	cv::Point2f top_left = {center - go_down - go_right};
+	cv::Point2f bottom_left = {center + go_down - go_right};
+	cv::Point2f bottom_right = {center + go_down + go_right};
+	cv::Point2f top_right = {center - go_down + go_right};
+
+	switch (rot) {
+	case CAMERA_ORIENTATION_0: {
+
+		// top left
+		out_src_tri[0] = top_left; // {center - go_down - go_right};
+
+		// bottom left
+		out_src_tri[1] = bottom_left; //{center + go_down - go_right};
+
+		// top right
+		out_src_tri[2] = top_right; //{center - go_down + go_right};
+	} break;
+	case CAMERA_ORIENTATION_90: {
+
+		// top left (becomes bottom left)
+		out_src_tri[0] = bottom_left; //{center + go_down - go_right};
+
+		// bottom left (becomes bottom right)
+		out_src_tri[1] = bottom_right; //{center + go_down + go_right};
+
+		// top right (becomes top left)
+		out_src_tri[2] = top_left; //{center - go_down - go_right};
+	} break;
+	case CAMERA_ORIENTATION_180: {
+		// top left (becomes bottom right)
+		out_src_tri[0] = bottom_left;
+
+		// bottom left (becomes top right)
+		out_src_tri[1] = top_right;
+
+		// top right (becomes bottom left)
+		out_src_tri[2] = bottom_left;
+	} break;
+	case CAMERA_ORIENTATION_270: {
+		// top left (becomes top right)
+		out_src_tri[0] = top_right;
+
+		// bottom left (becomes top left)
+		out_src_tri[1] = top_left;
+
+		// top right (becomes bottom right)
+		out_src_tri[2] = bottom_right;
+	}
+	default: assert(false);
+	}
+}
 
 void
 run_keypoint_estimation_new(void *ptr)
@@ -612,14 +672,8 @@ run_keypoint_estimation_new(void *ptr)
 	if (info->hand_idx == 1) {
 		go_right *= -1;
 	}
-	// top left
-	src_tri[0] = {center - go_down - go_right};
 
-	// bottom left
-	src_tri[1] = {center + go_down - go_right};
-
-	// top right
-	src_tri[2] = {center - go_down + go_right};
+	calc_src_tri(center, go_right, go_down, info->view->camera_info.camera_orientation, src_tri);
 
 	dst_tri[0] = {0, 0};
 	dst_tri[1] = {0, 128};
