@@ -188,7 +188,12 @@ valve_index_hand_track(struct lighthouse_system *lhs,
 
 	LH_ASSERT_(stereo_calib != NULL);
 
-	struct t_camera_extra_info info;
+	// zero-initialized out of paranoia
+	struct t_camera_extra_info info = {0};
+
+	info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
+	info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+
 	info.views[0].boundary_type = HT_IMAGE_BOUNDARY_CIRCLE;
 	info.views[1].boundary_type = HT_IMAGE_BOUNDARY_CIRCLE;
 
