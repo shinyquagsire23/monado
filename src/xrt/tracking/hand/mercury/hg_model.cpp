@@ -624,7 +624,7 @@ calc_src_tri(cv::Point2f center,
 	} break;
 	case CAMERA_ORIENTATION_180: {
 		// top left (becomes bottom right)
-		out_src_tri[0] = bottom_left;
+		out_src_tri[0] = bottom_right;
 
 		// bottom left (becomes top right)
 		out_src_tri[1] = top_right;
