@@ -564,7 +564,8 @@ CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 	return true;
 }
 
-
+// look at tests_quat_change_of_basis
+#if 0
 template <typename T>
 static inline void
 zldtt_ori_right(Quat<T> &orientation, xrt_quat *out)
@@ -591,6 +592,17 @@ zldtt_ori_right(Quat<T> &orientation, xrt_quat *out)
 
 	math_quat_from_plus_x_z(&x, &z, out);
 }
+#else
+template <typename T>
+static inline void
+zldtt_ori_right(Quat<T> &orientation, xrt_quat *out)
+{
+	out->x = -orientation.x;
+	out->y = orientation.y;
+	out->z = orientation.z;
+	out->w = -orientation.w;
+}
+#endif
 
 template <typename T>
 static inline void
