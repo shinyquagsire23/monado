@@ -262,6 +262,23 @@ u_json_get_quat(const cJSON *json, struct xrt_quat *out_quat)
 	return true;
 }
 
+// note: you should be using "position" and "orientation" and lower-case xyz(w)
+bool
+u_json_get_pose(const cJSON *json, struct xrt_pose *out_pose)
+{
+	struct xrt_pose tmp;
+
+	bool good = true;
+	good = good && u_json_get_vec3(u_json_get(json, "position"), &tmp.position);
+	good = good && u_json_get_quat(u_json_get(json, "orientation"), &tmp.orientation);
+
+	if (good) {
+		*out_pose = tmp;
+	}
+	return good;
+}
+
+
 size_t
 u_json_get_float_array(const cJSON *json_array, float *out_array, size_t max_size)
 {

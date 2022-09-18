@@ -102,6 +102,15 @@ bool
 u_json_get_quat(const cJSON *json, struct xrt_quat *out_quat);
 
 /*!
+ * @brief Parse a pose from a JSON object, composed of a vec3 named "position" and a quat named "orientation".
+ *
+ * @return true if successful, false if not.
+ */
+bool
+u_json_get_pose(const cJSON *json, struct xrt_pose *out_pose);
+
+
+/*!
  * @brief Parse up to max_size floats from a JSON array.
  *
  * @return the number of elements set.
