@@ -154,3 +154,19 @@ u_file_read_content(FILE *file)
 
 	return buffer;
 }
+
+char *
+u_file_read_content_from_path(const char *path)
+{
+	FILE *file = fopen(path, "r");
+	if (file == NULL) {
+		return NULL;
+	}
+	char *file_content = u_file_read_content(file);
+	int ret = fclose(file);
+	// We don't care about the return value since we're just reading
+	(void)ret;
+
+	// Either valid non-null or null
+	return file_content;
+}

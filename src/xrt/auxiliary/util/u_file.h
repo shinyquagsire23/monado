@@ -34,6 +34,9 @@ u_file_get_runtime_dir(char *out_path, size_t out_path_size);
 char *
 u_file_read_content(FILE *file);
 
+char *
+u_file_read_content_from_path(const char *path);
+
 ssize_t
 u_file_get_path_in_runtime_dir(const char *suffix, char *out_path, size_t out_path_size);
 
