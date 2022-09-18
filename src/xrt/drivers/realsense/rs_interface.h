@@ -22,6 +22,12 @@ struct xrt_frame_context;
  * @brief Driver for the SLAM-capable Intel Realsense devices.
  */
 
+#define REALSENSE_MOVIDIUS_VID 0x03E7
+#define REALSENSE_MOVIDIUS_PID 0x2150
+
+#define REALSENSE_TM2_VID 0x8087
+#define REALSENSE_TM2_PID 0x0B37
+
 #define RS_TRACKING_DISABLED -1
 #define RS_TRACKING_UNSPECIFIED 0
 #define RS_TRACKING_DEVICE_SLAM 1
