@@ -268,6 +268,14 @@ ns_3d_create_optical_system(struct ns_3d_eye *eye)
 }
 
 extern "C" void
+ns_3d_free_optical_system(struct ns_optical_system **system)
+{
+	OpticalSystem *cast_sys = (OpticalSystem *)*system;
+	delete cast_sys;
+	*system = NULL;
+}
+
+extern "C" void
 ns_3d_display_uv_to_render_uv(struct xrt_vec2 in, struct xrt_vec2 *out, struct ns_3d_eye *eye)
 {
 	OpticalSystem *opticalSystem = (OpticalSystem *)eye->optical_system;
