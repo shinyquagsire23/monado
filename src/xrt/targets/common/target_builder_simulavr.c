@@ -82,13 +82,11 @@ process_poly_values(const cJSON *values, struct svr_display_distortion_polynomia
 static bool
 process_config(const char *config_path, struct svr_two_displays_distortion *out_dist)
 {
-	FILE *file = fopen(config_path, "r");
-	const char *file_content = u_file_read_content(file);
-	int ret = fclose(file);
-	if (ret != 0) {
-		// Apparently I have to handle this. I have no idea how this could happen or if it would be bad, so
-		// let's print and keep going.
-		U_LOG_E("Failed to close file?");
+	char *file_content = u_file_read_content_from_path(config_path);
+	if (file_content == NULL) {
+		U_LOG_E("The file at \"%s\" was unable to load. Either there wasn't a file there or it was empty.",
+		        config_path);
+		return false;
 	}
 
 	cJSON *config_json = cJSON_Parse(file_content);
