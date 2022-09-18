@@ -49,12 +49,6 @@ static const char *driver_list[] = {
     "simula",
 };
 
-#define MOVIDIUS_VID 0x03E7
-#define MOVIDIUS_PID 0x2150
-
-#define TM2_VID 0x8087
-#define TM2_PID 0x0B37
-
 struct simula_builder
 {
 	struct xrt_builder base;
@@ -72,12 +66,6 @@ process_poly_values(const cJSON *values, struct svr_display_distortion_polynomia
 	good = good && u_json_get_float(u_json_get(values, "k9"), &out_values->k9);
 	return good;
 }
-
-// struct svr_two_displays_distortion
-// process_eye_config(cJSON *config_json)
-// {
-
-// }
 
 static bool
 process_config(const char *config_path, struct svr_two_displays_distortion *out_dist)
@@ -175,15 +163,18 @@ svr_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp
 		return xret;
 	}
 
-	bool movidius = u_builder_find_prober_device(xpdevs, xpdev_count, MOVIDIUS_VID, MOVIDIUS_PID, XRT_BUS_TYPE_USB);
-	bool tm2 = u_builder_find_prober_device(xpdevs, xpdev_count, TM2_VID, TM2_PID, XRT_BUS_TYPE_USB);
+	bool movidius = u_builder_find_prober_device(xpdevs, xpdev_count, REALSENSE_MOVIDIUS_VID,
+	                                             REALSENSE_MOVIDIUS_PID, XRT_BUS_TYPE_USB);
+	bool tm2 =
+	    u_builder_find_prober_device(xpdevs, xpdev_count, REALSENSE_TM2_VID, REALSENSE_TM2_PID, XRT_BUS_TYPE_USB);
 
 	if (!movidius && !tm2) {
 		U_LOG_E("Simula enabled but couldn't find realsense device!");
 		return XRT_SUCCESS;
 	}
 
-	// I think that ideally we want `movidius` - in that case I think when we grab the device, it reboots to `tm2`
+	// I think that ideally we want `movidius` - in that case I think when we grab the device, it reboots to
+	// `tm2`
 
 
 	estimate->maybe.head = true;
@@ -205,9 +196,6 @@ svr_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 		result = XRT_ERROR_DEVICE_CREATION_FAILED;
 		goto end;
 	}
-
-
-	// The below is a garbage hack - we should remove the autoprober entirely - but I'm tired af and need to ship it
 
 	struct xrt_device *t265_dev = rs_create_tracked_device_internal_slam(xp);
 
