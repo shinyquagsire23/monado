@@ -627,6 +627,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		grayCam->out.link(xlinkOut->input);
 	}
 
+	p.setXLinkChunkSize(0);
 
 	// Start the pipeline
 	depthai->device->startPipeline(p);
@@ -702,6 +703,8 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 		imu->out.link(xlinkOut_imu->input);
 	}
 
+	p.setXLinkChunkSize(0);
+
 	// Start the pipeline
 	depthai->device->startPipeline(p);
 	if (depthai->want_cameras) {
@@ -767,6 +770,8 @@ depthai_setup_stereo_rgb_pipeline(struct depthai_fs *depthai)
 		// Link plugins CAM -> XLINK
 		grayCam->preview.link(xlinkOut->input);
 	}
+
+	p.setXLinkChunkSize(0);
 
 	// Start the pipeline
 	depthai->device->startPipeline(p);
