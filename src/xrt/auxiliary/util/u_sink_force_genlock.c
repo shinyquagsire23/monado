@@ -47,6 +47,9 @@ struct u_sink_force_genlock
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
+	//! Timestamp of the last frameset we pushed.
+	int64_t last_ts;
+
 	//! Should we keep running?
 	//! currently, true upon startup, false as we're exiting.
 	bool running;
@@ -137,10 +140,16 @@ force_genlock_mainloop(void *ptr)
 		frames[0]->timestamp = ts;
 		frames[1]->timestamp = ts;
 
-		// Send to the consumer, in left-right order.
-		xrt_sink_push_frame(q->consumer_left, frames[0]);
-		xrt_sink_push_frame(q->consumer_right, frames[1]);
-
+		if (ts == q->last_ts) {
+			U_LOG_W("Got an image frame with a duplicate timestamp! Old: %lu; New: %lu", q->last_ts, ts);
+		} else if (ts < q->last_ts) {
+			U_LOG_W("Got an image frame with a non-monotonically-increasing timestamp! Old: %lu; New: %lu",
+			        q->last_ts, ts);
+		} else {
+			// Send to the consumer, in left-right order.
+			xrt_sink_push_frame(q->consumer_left, frames[0]);
+			xrt_sink_push_frame(q->consumer_right, frames[1]);
+		}
 		/*
 		 * Drop our reference - we don't need it anymore. If the consumer wants to keep it, they will have
 		 * referenced it in their push_frame handler.
