@@ -35,14 +35,8 @@ extern "C" {
  * @ingroup drv_ulv2
  * @see xrt_prober_found_func_t
  */
-int
-ulv2_found(struct xrt_prober *xp,
-           struct xrt_prober_device **devices,
-           size_t device_count,
-           size_t index,
-           cJSON *attached_data,
-           struct xrt_device **out_xdev);
-
+xrt_result_t
+ulv2_create_device(struct xrt_device **out_xdev);
 #ifdef __cplusplus
 }
 #endif

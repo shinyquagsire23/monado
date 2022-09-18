@@ -379,13 +379,8 @@ ulv2_device_destroy(struct xrt_device *xdev)
 	u_device_free(&ulv2d->base);
 }
 
-int
-ulv2_found(struct xrt_prober *xp,
-           struct xrt_prober_device **devices,
-           size_t device_count,
-           size_t index,
-           cJSON *attached_data,
-           struct xrt_device **out_xdev)
+xrt_result_t
+ulv2_create_device(struct xrt_device **out_xdev)
 {
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_NO_FLAGS;
 
@@ -444,11 +439,11 @@ ulv2_found(struct xrt_prober *xp,
 
 	out_xdev[0] = &ulv2d->base;
 
-	return 1;
+	return XRT_SUCCESS;
 
 cleanup:
 	ulv2_device_destroy(&ulv2d->base);
-	return 0;
+	return XRT_ERROR_DEVICE_CREATION_FAILED;
 }
 
 } // extern "C"

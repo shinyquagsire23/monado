@@ -146,11 +146,6 @@ struct xrt_prober_entry target_entry_list[] = {
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
-
-#ifdef XRT_BUILD_DRIVER_ULV2
-    {ULV2_VID, ULV2_PID, ulv2_found, "Leap Motion Controller", "ulv2"},
-#endif
-
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
     {DEPTHAI_VID, DEPTHAI_PID, depthai_3dof_device_found, "DepthAI Device as Head Tracker", "depthai"},
 #endif
