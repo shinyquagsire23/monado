@@ -44,7 +44,7 @@ static void
 u_config_json_open_or_create_file(struct u_config_json *json, const char *filename)
 {
 	json->file_loaded = false;
-#if defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)
+#if (defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS)) && !defined(XRT_OS_ANDROID)
 	char tmp[1024];
 	ssize_t ret = u_file_get_path_in_config_dir(filename, tmp, sizeof(tmp));
 	if (ret <= 0) {

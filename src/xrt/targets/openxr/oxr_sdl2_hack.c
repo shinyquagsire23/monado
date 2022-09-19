@@ -150,6 +150,12 @@ sdl2_loop(struct sdl2_program *p)
 	assert(res > 0);
 	io->IniFilename = p->layout_file;
 
+	// Ensure imgui.ini file exists in config dir
+	FILE *imgui_ini = u_file_open_file_in_config_dir("imgui.ini", "a");
+	if (imgui_ini != NULL) {
+		fclose(imgui_ini);
+	}
+
 	// Setup Platform/Renderer bindings
 	igImGui_ImplSDL2_InitForOpenGL(p->win, p->ctx);
 	igImGui_ImplOpenGL3_Init(NULL);
