@@ -42,13 +42,19 @@ PATCH_NAME=fixes.diff
     echo "Running clang-format..."
     echo
     ./format-project.sh
+
+    echo "Running cmake-format..."
+    echo
+    ./format-cmake.sh
+
+    
     (
         cd ..
         mkdir -p $PATCH_DIR
         # Can't use tee because it hides the exit code
         if git diff --patch --exit-code > $PATCH_DIR/$PATCH_NAME; then
             echo
-            echo "clang-format and codespell changed nothing."
+            echo "clang-format, cmake-format and codespell changed nothing."
         else
             echo
             echo "clang-format and/or codespell made at least one change, please apply the patch in the job artifacts and seen below!"
