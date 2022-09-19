@@ -533,7 +533,7 @@ u_gui_state_get_scene(struct u_config_json *json, enum u_gui_state_scene scene)
 
 	struct cJSON *c =
 	    cJSON_DetachItemFromObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(json->root, "scenes"), scene_name);
-	cJSON_free(json->root);
+	cJSON_Delete(json->root);
 	return c;
 }
 
