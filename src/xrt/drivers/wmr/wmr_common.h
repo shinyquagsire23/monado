@@ -35,6 +35,7 @@ extern "C" {
 #define WMR_CONTROLLER_RIGHT_PRODUCT_STRING "Motion controller - Right"
 
 #define HP_VID 0x03f0
+#define VR1000_PID 0x0367
 #define REVERB_G1_PID 0x0c6a
 #define REVERB_G2_PID 0x0580
 #define REVERB_G2_CONTROLLER_PID 0x066a /* On 0x045e Microsoft VID */

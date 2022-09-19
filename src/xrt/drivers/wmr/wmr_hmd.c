@@ -90,6 +90,7 @@ wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable);
 
 const struct wmr_headset_descriptor headset_map[] = {
     {WMR_HEADSET_GENERIC, NULL, "Unknown WMR HMD", NULL, NULL, NULL}, /* Catch-all for unknown headsets */
+    {WMR_HEADSET_HP_VR1000, "HP Reverb VR Headset VR1000-1xxx", "HP VR1000", NULL, NULL, NULL}, /*! @todo init funcs */
     {WMR_HEADSET_REVERB_G1, "HP Reverb VR Headset VR1000-2xxx", "HP Reverb", wmr_hmd_activate_reverb,
      wmr_hmd_deactivate_reverb, wmr_hmd_screen_enable_reverb},
     {WMR_HEADSET_REVERB_G2, "HP Reverb Virtual Reality Headset G2", "HP Reverb G2", wmr_hmd_activate_reverb,
