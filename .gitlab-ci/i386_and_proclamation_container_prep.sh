@@ -7,4 +7,4 @@
     bash ./install-cross.sh
 )
 
-python3 -m pip install proclamation
+python3 -m pip install proclamation cmakelang

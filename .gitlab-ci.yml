@@ -30,7 +30,7 @@ include:
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
+    FDO_DISTRIBUTION_TAG: "2022-09-19.1"
 
 # Variables for build and usage of Debian bullseye-ndk image
 .monado.variables.debian:bullseye-ndk:

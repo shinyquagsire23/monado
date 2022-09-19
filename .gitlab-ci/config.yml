@@ -69,7 +69,7 @@ distributions:
       # This image does some extra work.
       - codename: bullseye
         script: i386_and_proclamation_container_prep.sh
-        tag: "2022-07-25.0"
+        tag: "2022-09-19.1"
         deb_version_suffix: bpo11
         packages:
           <<: *default_debian_packages
