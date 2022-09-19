@@ -110,7 +110,7 @@ u_compute_distortion_cardboard(struct u_cardboard_distortion_values *values,
 
 /*
  *
- * North Star 2D/Polynomial distortion.
+ * Values for North Star 2D/Polynomial distortion correction.
  *
  */
 
@@ -134,32 +134,28 @@ u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, f
 
 /*
  *
- * North Star 2D/"VIPD" distortion.
+ * Values for Moses Turner's North Star distortion correction.
  *
  */
-struct u_ns_vipd_grid
-{
-	struct xrt_vec2 grid[2][65][65];
-};
-
-struct u_ns_vipd_values
+struct u_ns_meshgrid_values
 {
 	int number_of_ipds;
 	float *ipds;
-	struct u_ns_vipd_grid *grids;
-	struct u_ns_vipd_grid grid_for_use;
+	int num_grid_points_u;
+	int num_grid_points_v;
+	struct xrt_vec2 *grid[2];
 	struct xrt_fov fov[2]; // left, right
 	float ipd;
 };
 
 /*!
- * Distortion correction implementation for North Star 2D/"VIPD".
+ * Moses Turner's North Star distortion correction implementation
  *
  * @ingroup aux_distortion
  */
 bool
-u_compute_distortion_ns_vipd(
-    struct u_ns_vipd_values *values, int view, float u, float v, struct xrt_uv_triplet *result);
+u_compute_distortion_ns_meshgrid(
+    struct u_ns_meshgrid_values *values, int view, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*

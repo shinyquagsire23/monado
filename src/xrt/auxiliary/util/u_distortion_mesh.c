@@ -324,54 +324,54 @@ u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, f
 
 /*
  *
- * Moses's "variable-IPD 2D" distortion
- * If Moses goes away or stops using North Star for some reason, please remove this - as of june 2021 nobody else is
- * using it.
+ * Moses Turner's mesh-grid-based North Star distortion correction.
+ * This is a relatively ad-hoc thing I wrote; if this ends up going unused feel free to remove it.
  *
  */
 
 bool
-u_compute_distortion_ns_vipd(struct u_ns_vipd_values *values, int view, float u, float v, struct xrt_uv_triplet *result)
+u_compute_distortion_ns_meshgrid(
+    struct u_ns_meshgrid_values *values, int view, float u, float v, struct xrt_uv_triplet *result)
 {
-	int u_index_int = (int)floorf(u * 64);
-	int v_index_int = (int)floorf(v * 64);
-	float u_index_frac = (u * 64) - u_index_int;
-	float v_index_frac = (v * 64) - v_index_int;
+	int u_edge_num = (values->num_grid_points_u - 1);
+	int v_edge_num = (values->num_grid_points_v - 1);
 
-	float x_ray;
-	float y_ray;
+	int u_index_int = floorf(u * u_edge_num);
+	int v_index_int = floorf(v * v_edge_num);
+	float u_index_frac = (u * u_edge_num) - u_index_int;
+	float v_index_frac = (v * v_edge_num) - v_index_int;
 
-	if (u_index_frac > 0.0001) {
-		// Probably this codepath if grid size is not 65x65
+	// Imagine this like a ray coming out of your eye with x, y coordinate bearing and z coordinate -1.0f
+	struct xrt_vec2 bearing;
+
+	int stride = values->num_grid_points_u;
+
+
+	if (u_index_frac > 0.000001 || v_index_frac > 0.000001) {
 		// {top,bottom}-{left,right} notation might be inaccurate. The code *works* right now but don't take its
 		// word when reading
-		struct xrt_vec2 topleft = values->grid_for_use.grid[view][v_index_int][u_index_int];
-		struct xrt_vec2 topright = values->grid_for_use.grid[view][v_index_int][u_index_int + 1];
-		struct xrt_vec2 bottomleft = values->grid_for_use.grid[view][v_index_int + 1][u_index_int];
-		struct xrt_vec2 bottomright = values->grid_for_use.grid[view][v_index_int + 1][u_index_int + 1];
-		struct xrt_vec2 leftcorrect = {(float)math_map_ranges(v_index_frac, 0, 1, topleft.x, bottomleft.x),
-		                               (float)math_map_ranges(v_index_frac, 0, 1, topleft.y, bottomleft.y)};
-		struct xrt_vec2 rightcorrect = {(float)math_map_ranges(v_index_frac, 0, 1, topright.x, bottomright.x),
-		                                (float)math_map_ranges(v_index_frac, 0, 1, topright.y, bottomright.y)};
-		y_ray = (float)math_map_ranges(u_index_frac, 0, 1, leftcorrect.x, rightcorrect.x);
-		x_ray = (float)math_map_ranges(u_index_frac, 0, 1, leftcorrect.y, rightcorrect.y);
+		struct xrt_vec2 topleft = values->grid[view][(v_index_int * stride) + u_index_int];
+		struct xrt_vec2 topright = values->grid[view][(v_index_int * stride) + u_index_int + 1];
+		struct xrt_vec2 bottomleft = values->grid[view][((v_index_int + 1) * stride) + u_index_int];
+		struct xrt_vec2 bottomright = values->grid[view][((v_index_int + 1) * stride) + u_index_int + 1];
+		struct xrt_vec2 left_point_on_line_segment = m_vec2_lerp(topleft, bottomleft, v_index_frac);
+		struct xrt_vec2 right_point_on_line_segment = m_vec2_lerp(topright, bottomright, v_index_frac);
+
+		bearing = m_vec2_lerp(left_point_on_line_segment, right_point_on_line_segment, u_index_frac);
 	} else {
-		// probably this path if grid size is 65x65 like normal
-		x_ray = values->grid_for_use.grid[view][v_index_int][u_index_int].y;
-		y_ray = values->grid_for_use.grid[view][v_index_int][u_index_int].x;
+		int acc_idx = (v_index_int * stride) + u_index_int;
+		bearing = values->grid[view][acc_idx];
 	}
 
 	struct xrt_fov fov = values->fov[view];
 
-	float left_ray_bound = tanf(fov.angle_left);
-	float right_ray_bound = tanf(fov.angle_right);
-	float up_ray_bound = tanf(fov.angle_up);
-	float down_ray_bound = tanf(fov.angle_down);
-	// printf("%f %f", fov.angle_down, fov.angle_up);
+	float left_ray_bound = tan(fov.angle_left);
+	float right_ray_bound = tan(fov.angle_right);
+	float up_ray_bound = tan(fov.angle_up);
+	float down_ray_bound = tan(fov.angle_down);
 
-	float u_eye = (float)math_map_ranges(x_ray, left_ray_bound, right_ray_bound, 0, 1);
-
-	float v_eye = (float)math_map_ranges(y_ray, down_ray_bound, up_ray_bound, 0, 1);
+	float u_eye = math_map_ranges(bearing.x, left_ray_bound, right_ray_bound, 0, 1);
+	float v_eye = math_map_ranges(bearing.y, down_ray_bound, up_ray_bound, 0, 1);
 
 	// boilerplate, put the UV coordinates in all the RGB slots
 	result->r.x = u_eye;
@@ -380,8 +380,6 @@ u_compute_distortion_ns_vipd(struct u_ns_vipd_values *values, int view, float u,
 	result->g.y = v_eye;
 	result->b.x = u_eye;
 	result->b.y = v_eye;
-	// printf("%f %f\n", values->grid_for_use.grid[view][v_index_int][u_index_int].y,
-	// values->grid_for_use.grid[view][v_index_int][u_index_int].x);
 
 	return true;
 }

@@ -109,132 +109,6 @@ good:
 	memcpy(right_fov, &out_fov, sizeof(struct xrt_fov));
 }
 
-bool
-ns_vipd_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
-{
-	struct ns_hmd *ns = ns_hmd(xdev);
-	return u_compute_distortion_ns_vipd(&ns->dist_vipd, view, u, v, result);
-}
-
-bool
-ns_vipd_parse(struct ns_hmd *ns)
-{
-
-	struct u_ns_vipd_values *temp_data = &ns->dist_vipd;
-	const struct cJSON *config_json = ns->config_json;
-
-	const cJSON *grids_json = u_json_get(config_json, "grids");
-	if (grids_json == NULL)
-		goto cleanup_vipd;
-
-	const cJSON *current_element = NULL;
-	char *current_key = NULL;
-
-	cJSON_ArrayForEach(current_element, grids_json)
-	{ // Note to people reviewing this: this is definitely not super safe. Tried to add as many null-checks as
-	  // possible etc. but is probably a waste of time, it takes a while to do this right and the only person using
-	  // this code is me -Moses
-		current_key = current_element->string;
-		float ipd = strtof(current_key, NULL) / 1000;
-		if (!((ipd < .100) && (ipd > .030))) {
-			U_LOG_E("Nonsense IPD in grid %d, skipping", temp_data->number_of_ipds + 1);
-			continue;
-		}
-
-		temp_data->number_of_ipds += 1;
-		temp_data->ipds = realloc(temp_data->ipds, temp_data->number_of_ipds * sizeof(float));
-		temp_data->ipds[temp_data->number_of_ipds - 1] = ipd;
-		temp_data->grids = realloc(temp_data->grids, temp_data->number_of_ipds * sizeof(struct u_ns_vipd_grid));
-
-		for (int view = 0; view <= 1; view++) {
-			const struct cJSON *grid_root = u_json_get(current_element, view ? "right" : "left");
-			// if view is 0, then left. if view is 1, then right
-			for (int lv = 0; lv < 65; lv++) {
-				struct cJSON *v_axis = cJSON_GetArrayItem(grid_root, lv);
-
-				for (int lu = 0; lu < 65; lu++) {
-					struct cJSON *cell = cJSON_GetArrayItem(v_axis, lu + 1);
-
-					struct cJSON *cellX = cJSON_GetArrayItem(cell, 0);
-					struct cJSON *cellY = cJSON_GetArrayItem(cell, 1);
-					if (grid_root == NULL || cell == NULL || v_axis == NULL || cellX == NULL ||
-					    cellY == NULL) {
-						NS_ERROR(ns,
-						         "VIPD distortion config is malformed in some way, bailing.");
-						goto cleanup_vipd;
-					}
-					temp_data->grids[temp_data->number_of_ipds - 1].grid[view][lv][lu].x =
-					    (float)cellX->valuedouble;
-					temp_data->grids[temp_data->number_of_ipds - 1].grid[view][lv][lu].y =
-					    (float)cellY->valuedouble;
-				}
-			}
-		}
-	}
-
-	float baseline = try_get_ipd(ns, config_json);
-
-	struct u_ns_vipd_grid *high_grid = {0};
-	struct u_ns_vipd_grid *low_grid = {0};
-	float interp = 0;
-	for (int i = 1; i < temp_data->number_of_ipds; i++) {
-		NS_DEBUG(ns, "looking at %f lower and %f upper\n", temp_data->ipds[i - 1], temp_data->ipds[i]);
-		if ((baseline >= temp_data->ipds[i - 1]) && (baseline <= temp_data->ipds[i])) {
-			NS_DEBUG(ns, "okay, IPD is between %f and %f\n", temp_data->ipds[i - 1], temp_data->ipds[i]);
-			high_grid = &temp_data->grids[i - 1];
-			low_grid = &temp_data->grids[i];
-			interp = math_map_ranges(baseline, temp_data->ipds[i - 1], temp_data->ipds[i], 0, 1);
-			NS_DEBUG(ns, "interp is %f\n", interp);
-			break;
-		}
-	}
-
-	for (int view = 0; view <= 1; view++) {
-		for (int lv = 0; lv < 65; lv++) {
-			for (int lu = 0; lu < 65; lu++) {
-				temp_data->grid_for_use.grid[view][lv][lu].x = math_map_ranges(
-				    interp, 0, 1, low_grid->grid[view][lv][lu].x, high_grid->grid[view][lv][lu].x);
-				temp_data->grid_for_use.grid[view][lv][lu].y = math_map_ranges(
-				    interp, 0, 1, low_grid->grid[view][lv][lu].y, high_grid->grid[view][lv][lu].y);
-			}
-		}
-	}
-
-	try_get_fov(ns, config_json, &temp_data->fov[0], &temp_data->fov[1]);
-
-	memcpy(&ns->base.hmd->distortion.fov[0], &temp_data->fov[0], sizeof(struct xrt_fov));
-	memcpy(&ns->base.hmd->distortion.fov[1], &temp_data->fov[1], sizeof(struct xrt_fov));
-
-	printf("%f %f %f %f\n", ns->base.hmd->distortion.fov[1].angle_down, ns->base.hmd->distortion.fov[1].angle_left,
-	       ns->base.hmd->distortion.fov[1].angle_right, ns->base.hmd->distortion.fov[1].angle_up);
-
-	ns->head_pose_to_eye[0].orientation.x = 0.0f;
-	ns->head_pose_to_eye[0].orientation.y = 0.0f;
-	ns->head_pose_to_eye[0].orientation.z = 0.0f;
-	ns->head_pose_to_eye[0].orientation.w = 1.0f;
-	ns->head_pose_to_eye[0].position.x = -baseline / 2;
-	ns->head_pose_to_eye[0].position.y = 0.0f;
-	ns->head_pose_to_eye[0].position.z = 0.0f;
-
-
-
-	ns->head_pose_to_eye[1].orientation.x = 0.0f;
-	ns->head_pose_to_eye[1].orientation.y = 0.0f;
-	ns->head_pose_to_eye[1].orientation.z = 0.0f;
-	ns->head_pose_to_eye[1].orientation.w = 1.0f;
-	ns->head_pose_to_eye[1].position.x = baseline / 2;
-	ns->head_pose_to_eye[1].position.y = 0.0f;
-	ns->head_pose_to_eye[1].position.z = 0.0f;
-
-	ns->base.compute_distortion = &ns_vipd_mesh_calc;
-
-	return true;
-
-cleanup_vipd:
-	memset(&ns->dist_vipd, 0, sizeof(struct u_ns_vipd_values));
-	return false;
-}
-
 /*
  *
  * "2D Polynomial" distortion; original implementation by Johnathon Zelstadt
@@ -415,6 +289,120 @@ cleanup_l3d:
 	return false;
 }
 
+
+/*
+ *
+ * Moses Turner's distortion correction
+ *
+ */
+
+bool
+ns_meshgrid_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+{
+	struct ns_hmd *ns = ns_hmd(xdev);
+	return u_compute_distortion_ns_meshgrid(&ns->dist_meshgrid, view, u, v, result);
+}
+
+void
+ns_meshgrid_free_values(struct ns_hmd *ns)
+{
+	free(ns->dist_meshgrid.ipds);
+	free(ns->dist_meshgrid.grid[0]);
+	free(ns->dist_meshgrid.grid[1]);
+}
+
+bool
+ns_meshgrid_parse(struct ns_hmd *ns)
+{
+
+	struct u_ns_meshgrid_values *values = &ns->dist_meshgrid;
+	const struct cJSON *config_json = ns->config_json;
+
+	if (strcmp(cJSON_GetStringValue(u_json_get(config_json, "type")), "Moses Turner's distortion correction") !=
+	    0) {
+		goto cleanup_mt;
+	}
+	int version = 0;
+	u_json_get_int(u_json_get(config_json, "version"), &version);
+	if (version != 2) {
+		goto cleanup_mt;
+	}
+
+	u_json_get_int(u_json_get(config_json, "num_grid_points_x"), &values->num_grid_points_u);
+	u_json_get_int(u_json_get(config_json, "num_grid_points_y"), &values->num_grid_points_v);
+
+	values->grid[0] =
+	    realloc(values->grid[0], sizeof(struct xrt_vec2) * values->num_grid_points_u * values->num_grid_points_v);
+	values->grid[1] =
+	    realloc(values->grid[1], sizeof(struct xrt_vec2) * values->num_grid_points_u * values->num_grid_points_v);
+
+	values->ipd = try_get_ipd(ns, ns->config_json);
+
+	const cJSON *current_element = config_json;
+
+
+	for (int view = 0; view <= 1; view++) {
+		const struct cJSON *grid_root = u_json_get(current_element, view ? "right" : "left");
+		grid_root = u_json_get(grid_root, "grid");
+		// if view is 0, then left. if view is 1, then right
+		for (int lv = 0; lv < values->num_grid_points_v; lv++) {
+			struct cJSON *v_axis = cJSON_GetArrayItem(grid_root, lv);
+
+			for (int lu = 0; lu < values->num_grid_points_u; lu++) {
+				struct cJSON *cell = cJSON_GetArrayItem(v_axis, lu);
+
+				struct cJSON *cellX = cJSON_GetArrayItem(cell, 0);
+				struct cJSON *cellY = cJSON_GetArrayItem(cell, 1);
+				if (grid_root == NULL || cell == NULL || v_axis == NULL || cellX == NULL ||
+				    cellY == NULL) {
+					NS_ERROR(ns, "Distortion config file is malformed in some way, bailing");
+					goto cleanup_mt;
+				}
+				float *x_ptr = &values->grid[view][(lv * values->num_grid_points_u) + lu].x;
+				float *y_ptr = &values->grid[view][(lv * values->num_grid_points_u) + lu].y;
+				u_json_get_float(cellX, x_ptr);
+				u_json_get_float(cellY, y_ptr);
+			}
+		}
+	}
+
+	float baseline = values->ipd;
+
+
+	try_get_fov(ns, config_json, &values->fov[0], &values->fov[1]);
+
+	ns->base.hmd->distortion.fov[0] = values->fov[0];
+	ns->base.hmd->distortion.fov[1] = values->fov[1];
+
+	ns->head_pose_to_eye[0].orientation.x = 0.0f;
+	ns->head_pose_to_eye[0].orientation.y = 0.0f;
+	ns->head_pose_to_eye[0].orientation.z = 0.0f;
+	ns->head_pose_to_eye[0].orientation.w = 1.0f;
+	ns->head_pose_to_eye[0].position.x = -baseline / 2;
+	ns->head_pose_to_eye[0].position.y = 0.0f;
+	ns->head_pose_to_eye[0].position.z = 0.0f;
+
+
+
+	ns->head_pose_to_eye[1].orientation.x = 0.0f;
+	ns->head_pose_to_eye[1].orientation.y = 0.0f;
+	ns->head_pose_to_eye[1].orientation.z = 0.0f;
+	ns->head_pose_to_eye[1].orientation.w = 1.0f;
+	ns->head_pose_to_eye[1].position.x = baseline / 2;
+	ns->head_pose_to_eye[1].position.y = 0.0f;
+	ns->head_pose_to_eye[1].position.z = 0.0f;
+
+	ns->base.compute_distortion = &ns_meshgrid_mesh_calc;
+
+	ns->free_distortion_values = ns_meshgrid_free_values;
+
+	return true;
+
+cleanup_mt:
+	memset(&ns->dist_meshgrid, 0, sizeof(struct u_ns_meshgrid_values));
+	return false;
+}
+
 /*
  *
  * Common functions
@@ -428,6 +416,10 @@ ns_hmd_destroy(struct xrt_device *xdev)
 
 	// Remove the variable tracking.
 	u_var_remove_root(ns);
+
+	if (ns->free_distortion_values != NULL) {
+		ns->free_distortion_values(ns);
+	}
 
 	u_device_free(&ns->base);
 }
@@ -563,10 +555,10 @@ ns_hmd_create(const char *config_path)
 		goto cleanup; // don't need to print any error, ns_config_load did that for us
 
 	int number_wrap = 3; // number of elements in below array of function pointers. Const to stop compiler warnings.
-	bool (*wrap_func_ptr[3])(struct ns_hmd *) = {ns_3d_parse, ns_p2d_parse, ns_vipd_parse};
+	bool (*wrap_func_ptr[3])(struct ns_hmd *) = {ns_3d_parse, ns_p2d_parse, ns_meshgrid_parse};
 	// C syntax is weird here. This is an array of pointers to functions with arguments (struct ns_system * system)
 	// that all return a boolean value. The array should be roughly in descending order of how likely we think the
-	// user means to use each method For now VIPD is last because Moses is the only one that uses it
+	// user means to use each method For now `meshgrid` is last because Moses is the only one that uses it
 
 	bool found_config_wrap = false;
 	for (int i = 0; i < number_wrap; i++) {

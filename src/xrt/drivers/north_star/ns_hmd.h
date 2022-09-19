@@ -110,10 +110,11 @@ struct ns_hmd
 	struct cJSON *config_json;
 	struct xrt_pose head_pose_to_eye[2]; // left, right
 
+	void (*free_distortion_values)(struct ns_hmd *hmd);
 	union {
 		struct ns_3d_data dist_3d;
 		struct u_ns_p2d_values dist_p2d;
-		struct u_ns_vipd_values dist_vipd;
+		struct u_ns_meshgrid_values dist_meshgrid;
 	};
 
 	enum u_logging_level log_level;
