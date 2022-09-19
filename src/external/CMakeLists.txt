@@ -1,4 +1,4 @@
-# Copyright 2020, Collabora, Ltd.
+# Copyright 2020-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 # Catch2
@@ -50,6 +50,19 @@ if(ANDROID)
 		)
 	target_link_libraries(xrt-external-jni-wrap PUBLIC xrt-external-jnipp)
 endif()
+
+# Nano Protobuf
+add_library(
+	xrt-external-nanopb STATIC
+	nanopb/pb.h
+	nanopb/pb_common.c
+	nanopb/pb_common.h
+	nanopb/pb_decode.c
+	nanopb/pb_decode.h
+	nanopb/pb_encode.c
+	nanopb/pb_encode.h
+	)
+target_include_directories(xrt-external-nanopb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/nanopb)
 
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
