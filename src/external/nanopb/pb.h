@@ -178,6 +178,9 @@ extern "C" {
 #    elif defined(__cplusplus)
        /* C++11 standard static_assert mechanism */
 #      define PB_STATIC_ASSERT(COND,MSG) static_assert(COND,#MSG);
+#    elif defined(_MSC_VER)
+       /* Required to work on MSVC */
+#      define PB_STATIC_ASSERT(COND,MSG) static_assert(COND,#MSG);
 #    else
        /* C11 standard _Static_assert mechanism */
 #      define PB_STATIC_ASSERT(COND,MSG) _Static_assert(COND,#MSG);
