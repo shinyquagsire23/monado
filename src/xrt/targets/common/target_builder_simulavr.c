@@ -128,7 +128,7 @@ end:
 
 
 
-	cJSON_free(config_json);
+	cJSON_Delete(config_json);
 
 	return good;
 }
