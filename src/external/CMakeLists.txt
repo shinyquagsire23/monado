@@ -133,4 +133,6 @@ endif()
 
 # tinyceres
 add_library(xrt-external-tinyceres INTERFACE)
-target_include_directories(xrt-external-tinyceres SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinyceres/include)
+target_include_directories(
+	xrt-external-tinyceres SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinyceres/include
+	)

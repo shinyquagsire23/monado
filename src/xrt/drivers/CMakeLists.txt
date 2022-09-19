@@ -27,7 +27,10 @@ if(XRT_BUILD_DRIVER_DAYDREAM)
 endif()
 
 if(XRT_BUILD_DRIVER_DEPTHAI)
-	add_library(drv_depthai STATIC depthai/depthai_driver.cpp depthai/depthai_tracked_device.c depthai/depthai_interface.h)
+	add_library(
+		drv_depthai STATIC depthai/depthai_driver.cpp depthai/depthai_tracked_device.c
+				   depthai/depthai_interface.h
+		)
 	target_link_libraries(
 		drv_depthai
 		PRIVATE
@@ -43,7 +46,10 @@ if(XRT_BUILD_DRIVER_DEPTHAI)
 endif()
 
 if(XRT_BUILD_DRIVER_SIMULATED)
-	add_library(drv_simulated STATIC simulated/simulated_hmd.c simulated/simulated_interface.h simulated/simulated_prober.c)
+	add_library(
+		drv_simulated STATIC simulated/simulated_hmd.c simulated/simulated_interface.h
+				     simulated/simulated_prober.c
+		)
 	target_link_libraries(drv_simulated PRIVATE xrt-interfaces aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS simulated)
 endif()
@@ -115,15 +121,25 @@ endif()
 
 if(XRT_BUILD_DRIVER_OPENGLOVES)
 	add_library(
-			drv_opengloves STATIC
-			opengloves/opengloves_interface.h opengloves/opengloves_device.c opengloves/opengloves_prober.c opengloves/opengloves_device.h opengloves/communication/serial/opengloves_serial.h opengloves/communication/serial/opengloves_serial.c opengloves/encoding/alpha_encoding.h opengloves/encoding/alpha_encoding.cpp opengloves/encoding/encoding.h opengloves/communication/bluetooth/opengloves_bt_serial.h opengloves/communication/bluetooth/opengloves_bt_serial.c opengloves/communication/opengloves_communication.h opengloves/communication/serial/opengloves_prober_serial.h opengloves/communication/serial/opengloves_prober_serial.c opengloves/communication/bluetooth/opengloves_prober_bt.h opengloves/communication/bluetooth/opengloves_prober_bt.c)
-	target_link_libraries(drv_opengloves
-			PRIVATE
-			xrt-interfaces
-			aux_util
-			aux_os
-			bluetooth
-			)
+		drv_opengloves STATIC
+		opengloves/opengloves_interface.h
+		opengloves/opengloves_device.c
+		opengloves/opengloves_prober.c
+		opengloves/opengloves_device.h
+		opengloves/communication/serial/opengloves_serial.h
+		opengloves/communication/serial/opengloves_serial.c
+		opengloves/encoding/alpha_encoding.h
+		opengloves/encoding/alpha_encoding.cpp
+		opengloves/encoding/encoding.h
+		opengloves/communication/bluetooth/opengloves_bt_serial.h
+		opengloves/communication/bluetooth/opengloves_bt_serial.c
+		opengloves/communication/opengloves_communication.h
+		opengloves/communication/serial/opengloves_prober_serial.h
+		opengloves/communication/serial/opengloves_prober_serial.c
+		opengloves/communication/bluetooth/opengloves_prober_bt.h
+		opengloves/communication/bluetooth/opengloves_prober_bt.c
+		)
+	target_link_libraries(drv_opengloves PRIVATE xrt-interfaces aux_util aux_os bluetooth)
 	list(APPEND ENABLED_DRIVERS opengloves)
 
 endif()
@@ -256,10 +272,7 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 endif()
 
 if(XRT_BUILD_DRIVER_SURVIVE)
-	add_library(
-		drv_survive STATIC survive/survive_driver.c
-				   survive/survive_interface.h
-		)
+	add_library(drv_survive STATIC survive/survive_driver.c survive/survive_interface.h)
 	target_link_libraries(
 		drv_survive
 		PRIVATE
@@ -374,15 +387,10 @@ if(XRT_BUILD_DRIVER_EUROC)
 endif()
 
 if(XRT_BUILD_DRIVER_SIMULAVR)
-	add_library(
-		drv_svr STATIC
-		simula/svr_hmd.c
-		simula/svr_interface.h
-		)
+	add_library(drv_svr STATIC simula/svr_hmd.c simula/svr_interface.h)
 	target_link_libraries(drv_svr PRIVATE xrt-interfaces aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS svr)
 endif()
-
 
 if(XRT_BUILD_SAMPLES)
 	# We build the sample driver to make sure it stays valid,

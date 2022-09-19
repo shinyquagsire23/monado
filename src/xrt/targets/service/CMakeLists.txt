@@ -99,14 +99,9 @@ if(XRT_INSTALL_SYSTEMD_UNIT_FILES OR XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES)
 endif()
 
 if(XRT_HAVE_SDL2)
-	target_link_libraries(
-		monado-service PRIVATE st_gui xrt-external-imgui-sdl2 aux_ogl
-		)
+	target_link_libraries(monado-service PRIVATE st_gui xrt-external-imgui-sdl2 aux_ogl)
 
 	if(XRT_BUILD_DRIVER_QWERTY)
-		target_link_libraries(
-			monado-service PRIVATE drv_qwerty_includes
-			)
+		target_link_libraries(monado-service PRIVATE drv_qwerty_includes)
 	endif()
 endif()
-

@@ -1,14 +1,11 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
 add_library(
 	android_app_glue STATIC
 	${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
 	)
-target_include_directories(
-	android_app_glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue
-	)
+target_include_directories(android_app_glue PUBLIC ${ANDROID_NDK}/sources/android/native_app_glue)
 # disable these warnings in external code
 target_compile_options(android_app_glue PRIVATE -Wno-format-pedantic)
 

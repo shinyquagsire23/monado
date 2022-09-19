@@ -1,7 +1,6 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-
 add_library(
 	aux_math STATIC
 	m_api.h

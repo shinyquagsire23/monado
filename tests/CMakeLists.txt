@@ -10,22 +10,22 @@ if(ANDROID)
 endif()
 
 set(tests
-	tests_cxx_wrappers
-	tests_deque
-	tests_generic_callbacks
-	tests_history_buf
-	tests_id_ringbuffer
-	tests_input_transform
-	tests_json
-	tests_lowpass_float
-	tests_lowpass_integer
-	tests_pacing
-	tests_quatexpmap
-	tests_quat_change_of_basis
-	tests_rational
-	tests_vector
-	tests_worker
-	tests_pose
+    tests_cxx_wrappers
+    tests_deque
+    tests_generic_callbacks
+    tests_history_buf
+    tests_id_ringbuffer
+    tests_input_transform
+    tests_json
+    tests_lowpass_float
+    tests_lowpass_integer
+    tests_pacing
+    tests_quatexpmap
+    tests_quat_change_of_basis
+    tests_rational
+    tests_vector
+    tests_worker
+    tests_pose
 	)
 if(XRT_HAVE_D3D11)
 	list(APPEND tests tests_aux_d3d_d3d11 tests_comp_client_d3d11)
@@ -68,7 +68,6 @@ target_link_libraries(tests_pose PRIVATE aux_math)
 target_link_libraries(tests_quat_change_of_basis PRIVATE aux_math)
 
 target_include_directories(tests_quat_change_of_basis SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
-
 
 if(XRT_BUILD_DRIVER_HANDTRACKING)
 	target_link_libraries(

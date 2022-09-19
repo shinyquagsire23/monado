@@ -118,29 +118,27 @@ endif()
 
 if(XRT_HAVE_VULKAN)
 	set(SHADERS
-		shaders/clear.comp
-		shaders/distortion.comp
-		shaders/mesh.frag
-		shaders/mesh.vert
-		shaders/layer.frag
-		shaders/layer.vert
-		shaders/equirect1.vert
-		shaders/equirect1.frag
-		shaders/equirect2.vert
-		shaders/equirect2.frag
+	    shaders/clear.comp
+	    shaders/distortion.comp
+	    shaders/mesh.frag
+	    shaders/mesh.vert
+	    shaders/layer.frag
+	    shaders/layer.vert
+	    shaders/equirect1.vert
+	    shaders/equirect1.frag
+	    shaders/equirect2.vert
+	    shaders/equirect2.frag
 		)
 	if(XRT_FEATURE_OPENXR_LAYER_CUBE)
-		list(APPEND SHADERS
-			shaders/cube.vert
-			shaders/cube.frag
-			)
+		list(APPEND SHADERS shaders/cube.vert shaders/cube.frag)
 	endif()
 
 	spirv_shaders(
 		SHADER_HEADERS
 		SPIRV_VERSION
 		1.0 # Currently targeting Vulkan 1.0
-		SOURCES ${SHADERS}
+		SOURCES
+		${SHADERS}
 		)
 
 	add_library(

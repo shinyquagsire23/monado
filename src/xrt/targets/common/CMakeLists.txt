@@ -5,11 +5,9 @@
 # Lists
 #
 
-add_library(target_lists STATIC
-	target_builder_interface.h
-	target_builder_legacy.c
-	target_lists.c
-	target_lists.h
+add_library(
+	target_lists STATIC target_builder_interface.h target_builder_legacy.c target_lists.c
+			    target_lists.h
 	)
 target_link_libraries(
 	target_lists
