@@ -236,6 +236,58 @@ predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t peri
 
 /*
  *
+ * Metrics and tracing.
+ *
+ */
+
+static void
+do_tracing(struct pacing_app *pa, struct u_pa_frame *f)
+{
+	// Trace the data.
+#ifdef XRT_FEATURE_TRACING
+	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
+		return;
+	}
+
+
+#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
+#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
+
+	TE_BEG(pa_cpu, f->when.predicted_ns, "sleep");
+	TE_END(pa_cpu, f->when.wait_woke_ns);
+
+	uint64_t cpu_start_ns = f->when.wait_woke_ns + 1;
+	TE_BEG(pa_cpu, cpu_start_ns, "cpu");
+	TE_END(pa_cpu, f->when.begin_ns);
+
+	TE_BEG(pa_draw, f->when.begin_ns, "draw");
+	if (f->when.begin_ns > f->predicted_gpu_done_time_ns) {
+		TE_BEG(pa_draw, f->when.begin_ns, "late");
+		TE_END(pa_draw, f->when.delivered_ns);
+	} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+		TE_BEG(pa_draw, f->predicted_gpu_done_time_ns, "late");
+		TE_END(pa_draw, f->when.delivered_ns);
+	}
+	TE_END(pa_draw, f->when.delivered_ns);
+
+	TE_BEG(pa_wait, f->when.delivered_ns, "wait");
+	if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+		TE_BEG(pa_wait, f->when.delivered_ns, "late");
+		TE_END(pa_wait, f->when.gpu_done_ns);
+	} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
+		TE_BEG(pa_wait, f->predicted_gpu_done_time_ns, "late");
+		TE_END(pa_wait, f->when.gpu_done_ns);
+	}
+	TE_END(pa_wait, f->when.gpu_done_ns);
+
+#undef TE_BEG
+#undef TE_END
+#endif
+}
+
+
+/*
+ *
  * Member functions.
  *
  */
@@ -395,43 +447,8 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	do_iir_filter(&pa->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
 	do_iir_filter(&pa->app.wait_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_wait_ns);
 
-	// Trace the data.
-#ifdef XRT_FEATURE_TRACING
-#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
-#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
-
-	if (U_TRACE_CATEGORY_IS_ENABLED(timing)) {
-		TE_BEG(pa_cpu, f->when.predicted_ns, "sleep");
-		TE_END(pa_cpu, f->when.wait_woke_ns);
-
-		uint64_t cpu_start_ns = f->when.wait_woke_ns + 1;
-		TE_BEG(pa_cpu, cpu_start_ns, "cpu");
-		TE_END(pa_cpu, f->when.begin_ns);
-
-		TE_BEG(pa_draw, f->when.begin_ns, "draw");
-		if (f->when.begin_ns > f->predicted_gpu_done_time_ns) {
-			TE_BEG(pa_draw, f->when.begin_ns, "late");
-			TE_END(pa_draw, f->when.delivered_ns);
-		} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
-			TE_BEG(pa_draw, f->predicted_gpu_done_time_ns, "late");
-			TE_END(pa_draw, f->when.delivered_ns);
-		}
-		TE_END(pa_draw, f->when.delivered_ns);
-
-		TE_BEG(pa_wait, f->when.delivered_ns, "wait");
-		if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
-			TE_BEG(pa_wait, f->when.delivered_ns, "late");
-			TE_END(pa_wait, f->when.gpu_done_ns);
-		} else if (f->when.delivered_ns > f->predicted_gpu_done_time_ns) {
-			TE_BEG(pa_wait, f->predicted_gpu_done_time_ns, "late");
-			TE_END(pa_wait, f->when.gpu_done_ns);
-		}
-		TE_END(pa_wait, f->when.gpu_done_ns);
-	}
-
-#undef TE_BEG
-#undef TE_END
-#endif
+	// Write out tracing data.
+	do_tracing(pa, f);
 
 	// Reset the frame.
 	f->state = U_PA_READY;
