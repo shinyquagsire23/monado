@@ -61,6 +61,8 @@ add_library(
 	u_json.hpp
 	u_logging.c
 	u_logging.h
+	u_metrics.c
+	u_metrics.h
 	u_misc.c
 	u_misc.h
 	u_pacing.h
@@ -98,7 +100,15 @@ add_library(
 	u_worker.hpp
 	"${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
 	)
-target_link_libraries(aux_util PUBLIC aux-includes aux_generated_bindings aux_os aux_math)
+target_link_libraries(
+	aux_util
+	PUBLIC
+		xrt-external-nanopb
+		aux-includes
+		aux_generated_bindings
+		aux_os
+		aux_math
+	)
 
 # Is basically used everywhere, unavoidable.
 if(XRT_HAVE_SYSTEM_CJSON)
