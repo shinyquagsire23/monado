@@ -216,11 +216,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
     simulated_create_auto_prober,
 #endif
 
-#ifdef XRT_BUILD_DRIVER_HANDTRACKING
-#ifdef XRT_BUILD_DRIVER_DEPTHAI
-    ht_create_auto_prober,
-#endif
-#endif
     NULL, // Terminate
 };
 
