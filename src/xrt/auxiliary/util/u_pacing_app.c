@@ -13,6 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_pacing.h"
+#include "util/u_metrics.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -254,6 +255,33 @@ predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t peri
  */
 
 static void
+do_metrics(struct pacing_app *pa, struct u_pa_frame *f, bool discarded)
+{
+	if (!u_metrics_is_active()) {
+		return;
+	}
+
+	struct u_metrics_session_frame umsf = {
+	    .session_id = pa->session_id,
+	    .frame_id = f->frame_id,
+	    .predicted_frame_time_ns = f->predicted_frame_time_ns,
+	    .predicted_wake_up_time_ns = f->predicted_wake_up_time_ns,
+	    .predicted_gpu_done_time_ns = f->predicted_gpu_done_time_ns,
+	    .predicted_display_time_ns = f->predicted_display_time_ns,
+	    .predicted_display_period_ns = f->predicted_display_period_ns,
+	    .display_time_ns = f->display_time_ns,
+	    .when_predicted_ns = f->when.predicted_ns,
+	    .when_wait_woke_ns = f->when.wait_woke_ns,
+	    .when_begin_ns = f->when.begin_ns,
+	    .when_delivered_ns = f->when.delivered_ns,
+	    .when_gpu_done_ns = f->when.gpu_done_ns,
+	    .discarded = discarded,
+	};
+
+	u_metrics_write_session_frame(&umsf);
+}
+
+static void
 do_tracing(struct pacing_app *pa, struct u_pa_frame *f)
 {
 	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
@@ -406,7 +434,11 @@ pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	// Update all data.
 	f->when.delivered_ns = when_ns;
 
+	// Write out metrics data.
+	do_metrics(pa, f, true);
+
 	// Reset the frame.
+	U_ZERO(f); // Zero for metrics
 	f->state = U_PA_READY;
 	f->frame_id = -1;
 }
@@ -477,12 +509,13 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	do_iir_filter(&pa->app.draw_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_draw_ns);
 	do_iir_filter(&pa->app.wait_time_ns, IIR_ALPHA_LT, IIR_ALPHA_GT, diff_wait_ns);
 
-	// Write out tracing data.
+	// Write out metrics and tracing data.
+	do_metrics(pa, f, false);
 	do_tracing(pa, f);
 
 #ifndef VALIDATE_LATCHED_AND_RETIRED
 	// Reset the frame.
-	U_ZERO(f);
+	U_ZERO(f); // Zero for metrics
 	f->state = U_PA_READY;
 	f->frame_id = -1;
 #endif
@@ -501,6 +534,15 @@ pa_latched(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, int64_t
 #else
 	(void)pa;
 #endif
+
+	struct u_metrics_used umu = {
+	    .session_id = pa->session_id,
+	    .session_frame_id = frame_id,
+	    .system_frame_id = system_frame_id,
+	    .when_ns = when_ns,
+	};
+
+	u_metrics_write_used(&umu);
 }
 
 static void
@@ -515,7 +557,7 @@ pa_retired(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	assert(f->state == U_RT_GPU_DONE || f->state == U_RT_DELIVERED);
 
 	// Reset the frame.
-	U_ZERO(f);
+	U_ZERO(f); // Zero for metrics
 	f->state = U_PA_READY;
 	f->frame_id = -1;
 #else

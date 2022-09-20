@@ -13,6 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_pacing.h"
+#include "util/u_metrics.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -123,6 +124,21 @@ pc_predict(struct u_pacing_compositor *upc,
 	*out_predicted_display_time_ns = predicted_display_time_ns;
 	*out_predicted_display_period_ns = predicted_display_period_ns;
 	*out_min_display_period_ns = min_display_period_ns;
+
+	if (!u_metrics_is_active()) {
+		return;
+	}
+
+	struct u_metrics_system_frame umsf = {
+	    .frame_id = frame_id,
+	    .predicted_display_time_ns = predicted_display_time_ns,
+	    .predicted_display_period_ns = predicted_display_period_ns,
+	    .desired_present_time_ns = desired_present_time_ns,
+	    .wake_up_time_ns = wake_up_time_ns,
+	    .present_slop_ns = present_slop_ns,
+	};
+
+	u_metrics_write_system_frame(&umsf);
 }
 
 static void
@@ -156,6 +172,17 @@ static void
 pc_info_gpu(
     struct u_pacing_compositor *upc, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
 {
+	if (u_metrics_is_active()) {
+		struct u_metrics_system_gpu_info umgi = {
+		    .frame_id = frame_id,
+		    .gpu_start_ns = gpu_start_ns,
+		    .gpu_end_ns = gpu_end_ns,
+		    .when_ns = when_ns,
+		};
+
+		u_metrics_write_system_gpu_info(&umgi);
+	}
+
 #ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 #define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(frame_id))
