@@ -8,6 +8,7 @@
  * @ingroup ipc
  */
 
+#include "util/u_metrics.h"
 #include "util/u_trace_marker.h"
 
 #include "target_lists.h"
@@ -24,6 +25,11 @@ int
 main(int argc, char *argv[])
 {
 	u_trace_marker_init();
+	u_metrics_init();
 
-	return ipc_server_main(argc, argv);
+	int ret = ipc_server_main(argc, argv);
+
+	u_metrics_close();
+
+	return ret;
 }
