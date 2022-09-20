@@ -18,7 +18,9 @@ target_link_libraries(
 	)
 target_include_directories(target_lists PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+###
 # Builders
+#
 if(XRT_BUILD_DRIVER_REMOTE)
 	target_sources(target_lists PRIVATE target_builder_remote.c)
 endif()
@@ -35,7 +37,10 @@ if(XRT_BUILD_DRIVER_SIMULAVR)
 	target_sources(target_lists PRIVATE target_builder_simulavr.c)
 endif()
 
+###
 # Drivers
+#
+
 if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
 endif()
@@ -141,6 +146,7 @@ endif()
 ####
 # Instance
 #
+
 if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
 	add_library(target_instance STATIC target_instance.c)
 	target_link_libraries(
