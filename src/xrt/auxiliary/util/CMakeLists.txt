@@ -46,6 +46,8 @@ add_library(
 	u_hashset.h
 	u_id_ringbuffer.cpp
 	u_id_ringbuffer.h
+	u_imu_sink_split.c
+	u_imu_sink_force_monotonic.c
 	u_json.c
 	u_json.h
 	u_json.hpp

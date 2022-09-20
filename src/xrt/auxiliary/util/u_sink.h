@@ -12,6 +12,7 @@
 
 #include "os/os_threading.h"
 #include "xrt/xrt_frame.h"
+#include "xrt/xrt_tracking.h"
 
 
 #ifdef __cplusplus
@@ -228,6 +229,30 @@ u_sink_debug_destroy(struct u_sink_debug *usd)
 {
 	os_mutex_destroy(&usd->mutex);
 }
+
+
+/*!
+ * @public @memberof xrt_imu_sink
+ * @see xrt_frame_context
+ * Takes an IMU sample and pushes it to two sinks
+ */
+void
+u_imu_sink_split_create(struct xrt_frame_context *xfctx,
+                        struct xrt_imu_sink *downstream_one,
+                        struct xrt_imu_sink *downstream_two,
+                        struct xrt_imu_sink **out_imu_sink);
+
+
+/*!
+ * @public @memberof xrt_imu_sink
+ * @see xrt_frame_context
+ * Takes an IMU sample and only pushes it if its timestamp has monotonically increased.
+ * Useful for handling hardware inconsistencies.
+ */
+void
+u_imu_sink_force_monotonic_create(struct xrt_frame_context *xfctx,
+                                  struct xrt_imu_sink *downstream,
+                                  struct xrt_imu_sink **out_imu_sink);
 
 
 #ifdef __cplusplus
