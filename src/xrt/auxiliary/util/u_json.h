@@ -111,6 +111,16 @@ u_json_get_pose(const cJSON *json, struct xrt_pose *out_pose);
 
 
 /*!
+ * @brief Parse a pose from a JSON object, composed of
+ * a vec3 named "position", "translation", "location", "pos", or "loc"
+ * and a quat named "orientation". "rotation", or "rot"
+ *
+ * @return true if successful, false if not.
+ */
+bool
+u_json_get_pose_permissive(const cJSON *json, struct xrt_pose *out_pose);
+
+/*!
  * @brief Parse up to max_size floats from a JSON array.
  *
  * @return the number of elements set.

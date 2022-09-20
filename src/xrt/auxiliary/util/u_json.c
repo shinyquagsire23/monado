@@ -278,6 +278,42 @@ u_json_get_pose(const cJSON *json, struct xrt_pose *out_pose)
 	return good;
 }
 
+bool
+u_json_get_pose_permissive(const cJSON *json, struct xrt_pose *out_pose)
+{
+	struct xrt_pose tmp;
+
+	const char *position_names[] = {"position", "translation", "location", "pos", "loc"};
+	const char *orientation_names[] = {"orientation", "rotation", "rot"};
+
+	bool found_position = false;
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(position_names); i++) {
+		found_position = u_json_get_vec3(u_json_get(json, position_names[i]), &tmp.position);
+		if (found_position) {
+			break;
+		}
+	}
+	if (!found_position) {
+		return false;
+	}
+
+	bool found_orientation = false;
+
+	for (uint32_t i = 0; i < ARRAY_SIZE(orientation_names); i++) {
+		found_orientation = u_json_get_vec3(u_json_get(json, orientation_names[i]), &tmp.position);
+		if (found_orientation) {
+			break;
+		}
+	}
+	if (!found_orientation) {
+		return false;
+	}
+
+
+	return true;
+}
+
 
 size_t
 u_json_get_float_array(const cJSON *json_array, float *out_array, size_t max_size)
