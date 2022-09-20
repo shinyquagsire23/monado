@@ -266,15 +266,16 @@ pa_predict(struct u_pacing_app *upa,
 	*out_predicted_display_period = period_ns;
 
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
-	assert(pa->frames[index].frame_id == -1);
-	assert(pa->frames[index].state == U_PA_READY);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == -1);
+	assert(f->state == U_PA_READY);
 
-	pa->frames[index].state = U_RT_PREDICTED;
-	pa->frames[index].frame_id = frame_id;
-	pa->frames[index].predicted_gpu_done_time_ns = gpu_done_time_ns;
-	pa->frames[index].predicted_display_time_ns = predict_ns;
-	pa->frames[index].predicted_display_period_ns = period_ns;
-	pa->frames[index].when.predicted_ns = now_ns;
+	f->state = U_RT_PREDICTED;
+	f->frame_id = frame_id;
+	f->predicted_gpu_done_time_ns = gpu_done_time_ns;
+	f->predicted_display_time_ns = predict_ns;
+	f->predicted_display_period_ns = period_ns;
+	f->when.predicted_ns = now_ns;
 }
 
 static void
@@ -285,20 +286,21 @@ pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point po
 	UPA_LOG_T("%" PRIi64 " (%u)", frame_id, point);
 
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
-	assert(pa->frames[index].frame_id == frame_id);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == frame_id);
 
 	switch (point) {
 	case U_TIMING_POINT_WAKE_UP:
-		assert(pa->frames[index].state == U_RT_PREDICTED);
+		assert(f->state == U_RT_PREDICTED);
 
-		pa->frames[index].when.wait_woke_ns = when_ns;
-		pa->frames[index].state = U_RT_WAIT_LEFT;
+		f->when.wait_woke_ns = when_ns;
+		f->state = U_RT_WAIT_LEFT;
 		break;
 	case U_TIMING_POINT_BEGIN:
-		assert(pa->frames[index].state == U_RT_WAIT_LEFT);
+		assert(f->state == U_RT_WAIT_LEFT);
 
-		pa->frames[index].when.begin_ns = when_ns;
-		pa->frames[index].state = U_RT_BEGUN;
+		f->when.begin_ns = when_ns;
+		f->state = U_RT_BEGUN;
 		break;
 	case U_TIMING_POINT_SUBMIT:
 	default: assert(false);
@@ -313,12 +315,16 @@ pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 	DEBUG_PRINT_FRAME_ID();
 
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
-	assert(pa->frames[index].frame_id == frame_id);
-	assert(pa->frames[index].state == U_RT_WAIT_LEFT || pa->frames[index].state == U_RT_BEGUN);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == frame_id);
+	assert(f->state == U_RT_WAIT_LEFT || f->state == U_RT_BEGUN);
 
-	pa->frames[index].when.delivered_ns = when_ns;
-	pa->frames[index].state = U_PA_READY;
-	pa->frames[index].frame_id = -1;
+	// Update all data.
+	f->when.delivered_ns = when_ns;
+
+	// Reset the frame.
+	f->state = U_PA_READY;
+	f->frame_id = -1;
 }
 
 static void
@@ -333,6 +339,7 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, 
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_BEGUN);
 
+	// Update all data.
 	f->when.delivered_ns = when_ns;
 	f->display_time_ns = display_time_ns;
 	f->state = U_RT_DELIVERED;
@@ -364,8 +371,6 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 		diff_ns = -diff_ns;
 		late = true;
 	}
-
-#define NS_TO_MS_F(ns) (time_ns_to_s(ns) * 1000.0)
 
 	uint64_t diff_cpu_ns = f->when.begin_ns - f->when.wait_woke_ns;
 	uint64_t diff_draw_ns = f->when.delivered_ns - f->when.begin_ns;
