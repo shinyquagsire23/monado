@@ -83,6 +83,8 @@ add_library(
 	u_time.h
 	u_trace_marker.c
 	u_trace_marker.h
+	u_tracked_imu_3dof.c
+	u_tracked_imu_3dof.h
 	u_var.cpp
 	u_var.h
 	u_vector.cpp
