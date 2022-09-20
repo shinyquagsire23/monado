@@ -82,6 +82,9 @@ struct pacing_app
 {
 	struct u_pacing_app base;
 
+	//! Id for this session.
+	int64_t session_id;
+
 	struct u_pa_frame frames[FRAME_COUNT];
 	uint32_t current_frame;
 	uint32_t next_frame;
@@ -455,7 +458,7 @@ pa_destroy(struct u_pacing_app *upa)
 }
 
 static xrt_result_t
-pa_create(struct u_pacing_app **out_upa)
+pa_create(int64_t session_id, struct u_pacing_app **out_upa)
 {
 	struct pacing_app *pa = U_TYPED_CALLOC(struct pacing_app);
 	pa->base.predict = pa_predict;
@@ -465,6 +468,7 @@ pa_create(struct u_pacing_app **out_upa)
 	pa->base.mark_gpu_done = pa_mark_gpu_done;
 	pa->base.info = pa_info;
 	pa->base.destroy = pa_destroy;
+	pa->session_id = session_id;
 	pa->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.draw_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.margin_ns = U_TIME_1MS_IN_NS * 2;
@@ -489,7 +493,9 @@ pa_create(struct u_pacing_app **out_upa)
 static xrt_result_t
 paf_create(struct u_pacing_app_factory *upaf, struct u_pacing_app **out_upa)
 {
-	return pa_create(out_upa);
+	static int64_t session_id_gen = 0; // For now until global session id is introduced.
+
+	return pa_create(session_id_gen++, out_upa);
 }
 
 static void
