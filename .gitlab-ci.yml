@@ -9,7 +9,7 @@
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 
-.templates_sha: &templates_sha 34039cd573a2df832d465bc9e4c5f543571f5241
+.templates_sha: &templates_sha d5aa3941aa03c2f716595116354fb81eb8012acb
 
 include:
   # Debian
@@ -30,32 +30,32 @@ include:
 .monado.variables.debian:bullseye:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-09-19.1"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.1"
 
 # Variables for build and usage of Debian bullseye-ndk image
 .monado.variables.debian:bullseye-ndk:
   variables:
     FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
     FDO_REPO_SUFFIX: ndk
 
 # Variables for build and usage of Ubuntu focal image
 .monado.variables.ubuntu:focal:
   variables:
     FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2022-07-25.1"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
 
 # Variables for build and usage of Ubuntu jammy image
 .monado.variables.ubuntu:jammy:
   variables:
     FDO_DISTRIBUTION_VERSION: "22.04"
-    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
 
 # Variables for build and usage of Arch rolling image
 .monado.variables.arch:rolling:
   variables:
     FDO_DISTRIBUTION_VERSION: "rolling"
-    FDO_DISTRIBUTION_TAG: "2022-07-25.0"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
 
 stages:
   - container_prep

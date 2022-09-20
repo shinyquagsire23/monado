@@ -4,7 +4,7 @@
 # Please run the following from the repo root after modifying this file:
 #   make -f .gitlab-ci/ci-scripts.mk
 
-fdo_ci_templates_sha: 34039cd573a2df832d465bc9e4c5f543571f5241
+fdo_ci_templates_sha: d5aa3941aa03c2f716595116354fb81eb8012acb
 
 # These are a mapping, instead of a list/array, so we can merge.
 .default_debian_packages:
@@ -69,7 +69,7 @@ distributions:
       # This image does some extra work.
       - codename: bullseye
         script: i386_and_proclamation_container_prep.sh
-        tag: "2022-09-19.1"
+        tag: "2022-09-20.1"
         deb_version_suffix: bpo11
         packages:
           <<: *default_debian_packages
@@ -116,7 +116,7 @@ distributions:
         distro_version: bullseye
         repo_suffix: ndk
         script: android_container_prep.sh
-        tag: "2022-07-25.0"
+        tag: "2022-09-20.0"
         # This must match ext.sharedTargetSdk in build.gradle
         android_compile_sdk: 31
         # This must match buildscript.ext.buildToolsVersion in build.gradle
@@ -171,7 +171,7 @@ distributions:
       # LTS
       - codename: focal
         distro_version: "20.04"
-        tag: "2022-07-25.1"
+        tag: "2022-09-20.0"
         deb_version_suffix: ubuntu2004
         packages:
           <<: *default_debian_packages
@@ -182,7 +182,7 @@ distributions:
 
       - codename: jammy
         distro_version: "22.04"
-        tag: "2022-07-25.0"
+        tag: "2022-09-20.0"
         deb_version_suffix: ubuntu2204
         packages:
           <<: *default_debian_packages
@@ -195,7 +195,7 @@ distributions:
   - name: arch
     images:
       - codename: rolling
-        tag: "2022-07-25.0"
+        tag: "2022-09-20.0"
         packages:
           git:
           gcc:
