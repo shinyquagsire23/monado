@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <math.h>
+#include "math/m_mathinclude.h"
 using namespace std;
 
 // min set of functions needed
