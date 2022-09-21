@@ -177,6 +177,8 @@ vive_source_node_destroy(struct xrt_frame_node *node)
 	struct vive_source *vs = container_of(node, struct vive_source, node);
 	os_mutex_destroy(&vs->frame_timestamps_lock);
 	u_deque_timepoint_ns_destroy(&vs->frame_timestamps);
+
+	free(vs);
 }
 
 
