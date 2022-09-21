@@ -105,7 +105,6 @@ if(XRT_BUILD_DRIVER_NS)
 		north_star/ns_hmd.h
 		north_star/ns_hmd.c
 		north_star/ns_interface.h
-		north_star/ns_prober.c
 		)
 	target_link_libraries(drv_ns PRIVATE xrt-interfaces aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS ns)

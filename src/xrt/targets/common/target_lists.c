@@ -28,10 +28,6 @@
 #include "ohmd/oh_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_NS
-#include "north_star/ns_interface.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_PSMV
 #include "psmv/psmv_interface.h"
 #endif
@@ -108,6 +104,9 @@ xrt_builder_create_func_t target_builder_list[] = {
     t_builder_remote_create,
 #endif // T_BUILDER_REMOTE
 
+#ifdef T_BUILDER_NS
+    t_builder_north_star_create,
+#endif
 #ifdef T_BUILDER_LEGACY
     t_builder_legacy_create,
 #endif // T_BUILDER_LEGACY
@@ -180,11 +179,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 #ifdef XRT_BUILD_DRIVER_OHMD
     // OpenHMD almost as the end as we want to override it with native drivers.
     oh_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_NS
-    // North star driver here for now.
-    ns_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_ANDROID

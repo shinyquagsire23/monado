@@ -32,6 +32,10 @@
 #define T_BUILDER_SIMULAVR
 #endif
 
+#if defined(XRT_BUILD_DRIVER_NS)
+#define T_BUILDER_NS
+#endif
+
 // Always enabled.
 #define T_BUILDER_LEGACY
 
@@ -80,4 +84,9 @@ t_builder_lighthouse_create(void);
  */
 struct xrt_builder *
 t_builder_simula_create(void);
+#endif
+
+#ifdef T_BUILDER_NS
+struct xrt_builder *
+t_builder_north_star_create(void);
 #endif

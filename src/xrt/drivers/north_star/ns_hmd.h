@@ -29,18 +29,6 @@ extern "C" {
 
 /*
  *
- * Printing functions.
- *
- */
-
-#define NS_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
-#define NS_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
-#define NS_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
-#define NS_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
-#define NS_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
-
-/*
- *
  * 3D distortion structs
  * Sometimes known as "v1", config file name is often "Calibration.json"
  *
@@ -52,19 +40,6 @@ extern "C" {
  * @ingroup drv_ns
  */
 struct ns_3d_optical_system;
-
-/*!
- * Configuration information about the LMC or Rigel sensor according to the
- * configuration file.
- *
- * @ingroup drv_ns
- */
-struct ns_3d_leap
-{
-	char name[64];
-	char serial[64];
-	struct xrt_pose pose;
-};
 
 /*!
  * Distortion information about an eye parsed from the configuration file.
@@ -81,6 +56,7 @@ struct ns_3d_eye
 
 	struct xrt_pose eye_pose;
 
+	// This is more of a vec4 than a quat
 	struct xrt_quat camera_projection;
 
 	struct xrt_matrix_4x4 sphere_to_world_space;
@@ -89,11 +65,36 @@ struct ns_3d_eye
 	struct ns_optical_system *optical_system;
 };
 
-struct ns_3d_data
+struct ns_3d_values
 {
 	struct ns_3d_eye eyes[2];
-	struct ns_3d_leap leap;
 };
+
+enum ns_distortion_type
+{
+	NS_DISTORTION_TYPE_INVALID,
+	NS_DISTORTION_TYPE_GEOMETRIC_3D,
+	NS_DISTORTION_TYPE_POLYNOMIAL_2D,
+	NS_DISTORTION_TYPE_MOSES_MESHGRID,
+};
+
+// The config json data gets dumped in here.
+// In general, `target_builder_north_star.c` sets up tracking, and `ns_hmd.c` sets up distortion/optics.
+struct ns_optics_config
+{
+	struct xrt_pose head_pose_to_eye[2]; // left, right
+	struct xrt_fov fov[2];               // left,right
+
+
+
+	enum ns_distortion_type distortion_type;
+	union {
+		struct ns_3d_values dist_3d;
+		struct u_ns_p2d_values dist_p2d;
+		struct u_ns_meshgrid_values dist_meshgrid;
+	};
+};
+
 
 /*!
  * Information about the whole North Star headset.
@@ -106,16 +107,8 @@ struct ns_hmd
 {
 	struct xrt_device base;
 	struct xrt_space_relation no_tracker_relation;
-	const char *config_path;
-	struct cJSON *config_json;
-	struct xrt_pose head_pose_to_eye[2]; // left, right
-
-	void (*free_distortion_values)(struct ns_hmd *hmd);
-	union {
-		struct ns_3d_data dist_3d;
-		struct u_ns_p2d_values dist_p2d;
-		struct u_ns_meshgrid_values dist_meshgrid;
-	};
+	const cJSON *config_json;
+	struct ns_optics_config config;
 
 	enum u_logging_level log_level;
 };
@@ -139,15 +132,6 @@ ns_hmd(struct xrt_device *xdev)
 
 
 /*!
- * Create a North Star hmd.
- *
- * @ingroup drv_ns
- */
-struct xrt_device *
-ns_hmd_create(const char *config_path);
-
-
-/*!
  * Convert the display UV to the render UV using the distortion mesh.
  *
  * @ingroup drv_ns
@@ -158,6 +142,9 @@ ns_3d_display_uv_to_render_uv(struct xrt_vec2 in, struct xrt_vec2 *out, struct n
 
 struct ns_optical_system *
 ns_3d_create_optical_system(struct ns_3d_eye *eye);
+
+void
+ns_3d_free_optical_system(struct ns_optical_system **system);
 
 
 #ifdef __cplusplus
