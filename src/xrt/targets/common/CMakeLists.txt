@@ -45,6 +45,8 @@ if(XRT_BUILD_DRIVER_ARDUINO)
 	target_link_libraries(target_lists PRIVATE drv_arduino)
 endif()
 
+target_link_libraries(target_lists PRIVATE drv_cemu)
+
 if(XRT_BUILD_DRIVER_DAYDREAM)
 	target_link_libraries(target_lists PRIVATE drv_daydream)
 endif()
@@ -67,6 +69,10 @@ endif()
 
 if(XRT_BUILD_DRIVER_NS)
 	target_link_libraries(target_lists PRIVATE drv_ns)
+endif()
+
+if(XRT_BUILD_DRIVER_TWRAP)
+	target_link_libraries(target_lists PRIVATE drv_twrap)
 endif()
 
 if(XRT_BUILD_DRIVER_ULV2)

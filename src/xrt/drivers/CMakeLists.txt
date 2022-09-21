@@ -58,6 +58,11 @@ if(XRT_BUILD_DRIVER_SIMULATED)
 	list(APPEND ENABLED_HEADSET_DRIVERS simulated)
 endif()
 
+if(XRT_BUILD_DRIVER_TWRAP)
+	add_library(drv_twrap STATIC twrap/twrap_slam.c twrap/twrap_interface.h)
+	target_link_libraries(drv_twrap PRIVATE xrt-interfaces aux_util)
+endif()
+
 if(XRT_BUILD_DRIVER_QWERTY)
 	add_library(
 		drv_qwerty STATIC
