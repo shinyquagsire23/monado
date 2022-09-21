@@ -272,6 +272,7 @@ pa_predict(struct u_pacing_app *upa,
 	pa->frames[index].state = U_RT_PREDICTED;
 	pa->frames[index].frame_id = frame_id;
 	pa->frames[index].predicted_gpu_done_time_ns = gpu_done_time_ns;
+	pa->frames[index].predicted_display_time_ns = predict_ns;
 	pa->frames[index].predicted_display_period_ns = period_ns;
 	pa->frames[index].when.predicted_ns = now_ns;
 }
