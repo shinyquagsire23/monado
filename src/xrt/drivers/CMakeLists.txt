@@ -224,11 +224,6 @@ if(XRT_BUILD_DRIVER_VIVE)
 	target_link_libraries(drv_vive PRIVATE ${ZLIB_LIBRARIES})
 	target_include_directories(drv_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
 	list(APPEND ENABLED_HEADSET_DRIVERS vive)
-
-	if(XRT_BUILD_DRIVER_HANDTRACKING)
-		target_link_libraries(drv_vive PRIVATE drv_ht)
-		target_link_libraries(drv_vive PRIVATE drv_cemu)
-	endif()
 endif()
 
 if(XRT_HAVE_V4L2)
@@ -284,11 +279,6 @@ if(XRT_BUILD_DRIVER_SURVIVE)
 			PkgConfig::SURVIVE
 		)
 	list(APPEND ENABLED_HEADSET_DRIVERS survive)
-
-	if(XRT_BUILD_DRIVER_HANDTRACKING)
-		target_link_libraries(drv_survive PRIVATE drv_ht)
-		target_link_libraries(drv_survive PRIVATE drv_cemu)
-	endif()
 endif()
 
 if(XRT_BUILD_DRIVER_ANDROID)
