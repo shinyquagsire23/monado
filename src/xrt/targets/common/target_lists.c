@@ -146,10 +146,6 @@ struct xrt_prober_entry target_entry_list[] = {
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
-#ifdef XRT_BUILD_DRIVER_DEPTHAI
-    {DEPTHAI_VID, DEPTHAI_PID, depthai_3dof_device_found, "DepthAI Device as Head Tracker", "depthai"},
-#endif
-
 #ifdef XRT_BUILD_DRIVER_WMR
     {MICROSOFT_VID, HOLOLENS_SENSORS_PID, wmr_found, "Microsoft HoloLens Sensors", "wmr"},
     {MICROSOFT_VID, WMR_CONTROLLER_PID, wmr_bt_controller_found, "WMR Bluetooth controller", "wmr"},

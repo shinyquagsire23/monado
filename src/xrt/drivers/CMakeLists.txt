@@ -31,10 +31,7 @@ if(XRT_BUILD_DRIVER_DAYDREAM)
 endif()
 
 if(XRT_BUILD_DRIVER_DEPTHAI)
-	add_library(
-		drv_depthai STATIC depthai/depthai_driver.cpp depthai/depthai_tracked_device.c
-				   depthai/depthai_interface.h
-		)
+	add_library(drv_depthai STATIC depthai/depthai_driver.cpp depthai/depthai_interface.h)
 	target_link_libraries(
 		drv_depthai
 		PRIVATE

@@ -73,7 +73,15 @@ create_depthai_stereo(struct video_select *vs)
 {
 	vs->xfctx = U_TYPED_CALLOC(struct xrt_frame_context);
 
-	vs->xfs = depthai_fs_stereo_grayscale(vs->xfctx);
+
+	struct depthai_slam_startup_settings settings = {0};
+	settings.frames_per_second = 60;
+	settings.half_size_ov9282 = false;
+	settings.want_cameras = true;
+	settings.want_imu = false;
+
+
+	vs->xfs = depthai_fs_slam(vs->xfctx, &settings);
 	if (vs->xfs == NULL) {
 		U_LOG_E("Failed to open DepthAI camera!");
 		free(vs->xfctx);

@@ -11,6 +11,7 @@
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
+#include "util/u_sink.h"
 #include "xrt/xrt_tracking.h"
 
 #include "util/u_var.h"
@@ -50,6 +51,7 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_BOOL_OPTION(depthai_want_floodlight, "DEPTHAI_WANT_FLOODLIGHT", true)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_startup_wait_frames, "DEPTHAI_STARTUP_WAIT_FRAMES", 0)
 
 
 
@@ -128,6 +130,8 @@ struct depthai_fs
 	xrt_frame_sink *sink[4];
 	xrt_imu_sink *imu_sink;
 
+	struct u_sink_debug debug_sinks[4];
+
 	dai::Device *device;
 	dai::DataOutputQueue *image_queue;
 	dai::DataOutputQueue *imu_queue;
@@ -152,6 +156,10 @@ struct depthai_fs
 
 	bool want_cameras;
 	bool want_imu;
+	bool half_size_ov9282;
+
+	uint32_t first_frames_idx;
+	uint32_t first_frames_camera_to_watch;
 };
 
 
@@ -370,6 +378,17 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 		return;
 	}
 
+	if (depthai->first_frames_idx < debug_get_num_option_depthai_startup_wait_frames()) {
+		if (depthai->first_frames_idx == 0) {
+			depthai->first_frames_camera_to_watch = num;
+		}
+		if (num != depthai->first_frames_camera_to_watch) {
+			return;
+		}
+		depthai->first_frames_idx++;
+		return;
+	}
+
 	// Create a wrapper that will keep the frame alive as long as the frame was alive.
 	DepthAIFrameWrapper *dfw = new DepthAIFrameWrapper(imgFrame);
 
@@ -386,6 +405,7 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 
 	// Push the frame to the sink.
 	xrt_sink_push_frame(depthai->sink[num], xf);
+	u_sink_debug_push_frame(&depthai->debug_sinks[num], xf);
 
 	// If downstream wants to keep the frame they would have referenced it.
 	xrt_frame_reference(&xf, NULL);
@@ -429,10 +449,15 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 {
 	std::shared_ptr<dai::IMUData> imuData = depthai->imu_queue->get<dai::IMUData>();
 
+	if (depthai->first_frames_idx < debug_get_num_option_depthai_startup_wait_frames()) {
+		return;
+	}
+
+
 	std::vector<dai::IMUPacket> imuPackets = imuData->packets;
 
 	if (imuPackets.size() != 2) {
-		DEPTHAI_WARN(depthai, "Wrong number of IMU reports!");
+		DEPTHAI_ERROR(depthai, "Wrong number of IMU reports!");
 		// Yeah we're not dealing with this. Shouldn't ever happen
 		return;
 	}
@@ -642,11 +667,16 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 		// OV_9282 L/R
 		depthai->width = 1280;
 		depthai->height = 800;
+		if (depthai->half_size_ov9282) {
+			depthai->width /= 2;
+			depthai->height /= 2;
+			depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_400_P;
+		} else {
+			depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
+		}
 		depthai->format = XRT_FORMAT_L8;
 		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
-		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // Currently supports up to 60.
 	} else {
 		// OV_7251 L/R
 		depthai->width = 640;
@@ -655,7 +685,6 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 		depthai->camera_board_socket = dai::CameraBoardSocket::LEFT;
 		depthai->grayscale_sensor_resolution = dai::MonoCameraProperties::SensorResolution::THE_480_P;
 		depthai->image_orientation = dai::CameraImageOrientation::AUTO;
-		depthai->fps = 60; // Currently supports up to 60.
 	}
 
 	dai::Pipeline p = {};
@@ -952,6 +981,12 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->want_floodlight = debug_get_bool_option_depthai_want_floodlight();
 	depthai->device = d;
 
+	u_var_add_root(depthai, "DepthAI Source", 0);
+	u_var_add_sink_debug(depthai, &depthai->debug_sinks[0], "RGB");
+	u_var_add_sink_debug(depthai, &depthai->debug_sinks[1], "Left");
+	u_var_add_sink_debug(depthai, &depthai->debug_sinks[2], "Right");
+	u_var_add_sink_debug(depthai, &depthai->debug_sinks[3], "CamD");
+
 	// Some debug printing.
 	depthai_guess_camera_type(depthai);
 	depthai_guess_ir_drivers(depthai);
@@ -995,14 +1030,18 @@ depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx)
 }
 
 extern "C" struct xrt_fs *
-depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx)
+depthai_fs_slam(struct xrt_frame_context *xfctx, struct depthai_slam_startup_settings *settings)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
-	depthai->want_cameras = true;
-	depthai->want_imu = false;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
+
+	depthai->fps = settings->frames_per_second;
+	depthai->want_cameras = settings->want_cameras;
+	depthai->want_imu = settings->want_imu;
+	depthai->half_size_ov9282 = settings->half_size_ov9282;
+
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_stereo_grayscale_pipeline(depthai);
@@ -1057,28 +1096,6 @@ depthai_fs_just_imu(struct xrt_frame_context *xfctx)
 
 	return &depthai->base;
 }
-
-
-// struct xrt_fs *
-// depthai_fs_just_imu(struct xrt_frame_context *xfctx)
-// {
-// 	{
-// 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
-// 	if (depthai == nullptr) {
-// 		return nullptr;
-// 	}
-
-// 	// Last bit is to setup the pipeline.
-// 	depthai_setup_stereo_grayscale_pipeline(depthai);
-
-// 	// And finally add us to the context when we are done.
-// 	xrt_frame_context_add(xfctx, &depthai->node);
-
-// 	DEPTHAI_DEBUG(depthai, "DepthAI: Created");
-
-// 	return &depthai->base;
-// }
-// }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
 extern "C" struct xrt_fs *

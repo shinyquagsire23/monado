@@ -25,11 +25,16 @@ struct t_stereo_camera_calibration;
 
 
 #define DEPTHAI_VID 0x03e7
-// 2485
 #define DEPTHAI_PID 0x2485
-// #define DEPTHAI_PID 0xf63b
-// #define DEPTHAI_PID_ENUMERATED 0x2485
+// FWIW, when the device is actively running, it reboots with the PID 0xf63b.
 
+struct depthai_slam_startup_settings
+{
+	bool want_cameras;
+	bool want_imu;
+	bool half_size_ov9282;
+	int frames_per_second;
+};
 
 int
 depthai_3dof_device_found(struct xrt_prober *xp,
@@ -61,25 +66,7 @@ depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx);
  * @ingroup drv_depthai
  */
 struct xrt_fs *
-depthai_fs_stereo_grayscale(struct xrt_frame_context *xfctx);
-
-/*!
- * Create a DepthAI frameserver using two gray cameras and the IMU.
- * Only OAK-D - OAK-D Lite doesn't have an IMU. Custom FFC setups may or may not work.
- *
- * @ingroup drv_depthai
- */
-struct xrt_fs *
-depthai_fs_stereo_grayscale_and_imu(struct xrt_frame_context *xfctx);
-
-/*!
- * Create a DepthAI frameserver using two gray cameras.
- * Any DepthAI device with an IMU.
- *
- * @ingroup drv_depthai
- */
-struct xrt_fs *
-depthai_fs_just_imu(struct xrt_frame_context *xfctx);
+depthai_fs_slam(struct xrt_frame_context *xfctx, struct depthai_slam_startup_settings *settings);
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
 /*!

@@ -207,7 +207,14 @@ create_depthai_stereo(struct camera_window *cw)
 		return;
 	}
 
-	cw->camera.xfs = depthai_fs_stereo_grayscale(&cw->camera.xfctx);
+	struct depthai_slam_startup_settings settings = {0};
+	settings.frames_per_second = 60;
+	settings.half_size_ov9282 = false;
+	settings.want_cameras = true;
+	settings.want_imu = false;
+
+
+	cw->camera.xfs = depthai_fs_slam(&cw->camera.xfctx, &settings);
 	if (cw->camera.xfs == NULL) {
 		U_LOG_W("Could not create depthai camera!");
 		return;
