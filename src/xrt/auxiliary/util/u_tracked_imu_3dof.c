@@ -7,14 +7,8 @@
  * @ingroup aux_util
  */
 
-#pragma once
-
 #include "u_tracked_imu_3dof.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 static void
 u_tracked_imu_receive_imu_sample(struct xrt_imu_sink *imu_sink, struct xrt_imu_sample *imu_sample)
@@ -76,8 +70,3 @@ u_tracked_imu_3dof_create(struct xrt_frame_context *xfctx, struct u_tracked_imu_
 
 	*out_3dof = dof3;
 }
-
-
-#ifdef __cplusplus
-}
-#endif
