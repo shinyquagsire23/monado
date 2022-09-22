@@ -971,6 +971,17 @@ comp_target_swapchain_update_timings(struct comp_target *ct)
 	return VK_SUCCESS;
 }
 
+static void
+comp_target_swapchain_info_gpu(
+    struct comp_target *ct, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
+{
+	COMP_TRACE_MARKER();
+
+	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
+
+	u_pc_info_gpu(cts->upc, frame_id, gpu_start_ns, gpu_end_ns, when_ns);
+}
+
 
 /*
  *
@@ -1026,5 +1037,6 @@ comp_target_swapchain_init_and_set_fnptrs(struct comp_target_swapchain *cts,
 	cts->base.calc_frame_pacing = comp_target_swapchain_calc_frame_pacing;
 	cts->base.mark_timing_point = comp_target_swapchain_mark_timing_point;
 	cts->base.update_timings = comp_target_swapchain_update_timings;
+	cts->base.info_gpu = comp_target_swapchain_info_gpu;
 	os_thread_helper_init(&cts->vblank.event_thread);
 }

@@ -1615,17 +1615,8 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	uint64_t gpu_start_ns, gpu_end_ns;
 	if (render_resources_get_timestamps(&c->nr, &gpu_start_ns, &gpu_end_ns)) {
-		//! @todo submit data to target (pacer).
-		(void)frame_id;
-
-#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(frame_id))
-#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
-
-		TE_BEG(pc_gpu, gpu_start_ns, "gpu");
-		TE_END(pc_gpu, gpu_end_ns);
-
-#undef TE_BEG
-#undef TE_END
+		uint64_t now_ns = os_monotonic_get_ns();
+		comp_target_info_gpu(ct, frame_id, gpu_start_ns, gpu_end_ns, now_ns);
 	}
 
 

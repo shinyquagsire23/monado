@@ -213,6 +213,23 @@ struct comp_target
 	 */
 	VkResult (*update_timings)(struct comp_target *ct);
 
+	/*!
+	 * Provide frame timing information about GPU start and stop time.
+	 *
+	 * Depend on when the information is delivered this can be called at any
+	 * point of the following frames.
+	 *
+	 * @param[in] ct           The compositor target.
+	 * @param[in] frame_id     The frame ID to record for.
+	 * @param[in] gpu_start_ns When the GPU work startred.
+	 * @param[in] gpu_end_ns   When the GPU work stopped.
+	 * @param[in] when_ns      When the informatioon collected, nominally
+	 *                         from @ref os_monotonic_get_ns.
+	 *
+	 * @see @ref frame-pacing.
+	 */
+	void (*info_gpu)(
+	    struct comp_target *ct, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns);
 
 	/*
 	 *
@@ -450,6 +467,21 @@ comp_target_update_timings(struct comp_target *ct)
 	COMP_TRACE_MARKER();
 
 	return ct->update_timings(ct);
+}
+
+/*!
+ * @copydoc comp_target::info_gpu
+ *
+ * @public @memberof comp_target
+ * @ingroup comp_main
+ */
+static inline void
+comp_target_info_gpu(
+    struct comp_target *ct, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
+{
+	COMP_TRACE_MARKER();
+
+	ct->info_gpu(ct, frame_id, gpu_start_ns, gpu_end_ns, when_ns);
 }
 
 /*!
