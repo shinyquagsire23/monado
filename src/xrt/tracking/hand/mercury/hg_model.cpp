@@ -93,7 +93,7 @@ blackbar(const cv::Mat &in, enum t_camera_orientation rot, cv::Mat &out, xrt_siz
 	case CAMERA_ORIENTATION_180:
 		// clang-format off
 			go(0,0) = -scale_down;  go(0,1) = 0.0f;         go(0,2) = translate_x+out_size.w-1;
-			go(1,0) = 0.0f;         go(1,1) = -scale_down;  go(1,2) = translate_y+out_size.h-1;
+			go(1,0) = 0.0f;         go(1,1) = -scale_down;  go(1,2) = -translate_y+out_size.h-1;
 		// clang-format on
 		break;
 	case CAMERA_ORIENTATION_270:
