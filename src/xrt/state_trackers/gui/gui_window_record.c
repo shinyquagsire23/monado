@@ -196,28 +196,13 @@ draw_gst(struct gui_record_window *rw)
 static void
 window_draw_misc(struct gui_record_window *rw)
 {
-	if (!igCollapsingHeaderBoolPtr("Misc", NULL, ImGuiTreeNodeFlags_None)) {
-		return;
-	}
+	igSliderFloat("", &rw->texture.scale, 20.0, 300.f, "Scale %f%%", ImGuiSliderFlags_None);
 
-	static ImVec2 button_dims = {0, 0};
-	bool plus = igButton("+", button_dims);
-	igSameLine(0.0f, 4.0f);
-	bool minus = igButton("-", button_dims);
-	igSameLine(0.0f, 4.0f);
+	igSameLine(0, 30);
 
-	if (rw->texture.scale == 1) {
-		igText("Scale 100%%");
-	} else {
-		igText("Scale 1/%i", rw->texture.scale);
-	}
+	igCheckbox("Rotate 180 degrees", &rw->texture.rotate_180);
 
-	if (plus && rw->texture.scale > 1) {
-		rw->texture.scale--;
-	}
-	if (minus && rw->texture.scale < 6) {
-		rw->texture.scale++;
-	}
+	igSameLine(0, 30);
 
 	igText("Sequence %u", (uint32_t)rw->texture.ogl->seq);
 }
@@ -278,7 +263,8 @@ gui_window_record_init(struct gui_record_window *rw)
 
 
 	// Setup the preview texture.
-	rw->texture.scale = 2;
+	// 50% scale.
+	rw->texture.scale = 50.0;
 	struct xrt_frame_sink *tmp = NULL;
 	rw->texture.ogl = gui_ogl_sink_create("View", &rw->texture.xfctx, &tmp);
 	u_sink_create_to_r8g8b8_r8g8b8a8_r8g8b8x8_or_l8(&rw->texture.xfctx, tmp, &tmp);
@@ -295,14 +281,23 @@ gui_window_record_render(struct gui_record_window *rw, struct gui_program *p)
 
 	gui_ogl_sink_update(rw->texture.ogl);
 
+	window_draw_misc(rw);
+
 	struct gui_ogl_texture *tex = rw->texture.ogl;
 
-	int w = tex->w / rw->texture.scale;
-	int h = tex->h / rw->texture.scale;
+	int w = tex->w * rw->texture.scale / 100.0f;
+	int h = tex->h * rw->texture.scale / 100.0f;
 
 	ImVec2 size = {(float)w, (float)h};
 	ImVec2 uv0 = {0, 0};
 	ImVec2 uv1 = {1, 1};
+
+	// Note: We can't easily do 90 or 270-degree rotations: https://github.com/ocornut/imgui/issues/3267
+	if (rw->texture.rotate_180) {
+		uv0 = (ImVec2){1, 1};
+		uv1 = (ImVec2){0, 0};
+	}
+
 	ImVec4 white = {1, 1, 1, 1};
 	ImTextureID id = (ImTextureID)(intptr_t)tex->id;
 	igImage(id, size, uv0, uv1, white, white);
@@ -311,7 +306,6 @@ gui_window_record_render(struct gui_record_window *rw, struct gui_program *p)
 	draw_gst(rw);
 #endif
 
-	window_draw_misc(rw);
 
 	// Pop the ID making everything unique.
 	igPopID();

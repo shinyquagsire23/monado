@@ -58,7 +58,8 @@ struct gui_record_window
 	{
 		struct xrt_frame_context xfctx;
 
-		int scale;
+		float scale;
+		bool rotate_180;
 
 		struct xrt_frame_sink *sink;
 		struct gui_ogl_texture *ogl;
