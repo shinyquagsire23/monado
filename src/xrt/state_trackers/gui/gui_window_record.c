@@ -198,6 +198,37 @@ window_draw_misc(struct gui_record_window *rw)
 {
 	igSliderFloat("", &rw->texture.scale, 20.0, 300.f, "Scale %f%%", ImGuiSliderFlags_None);
 
+	static ImVec2 button_dims = {0, 0};
+
+	igSameLine(0.0f, 4.0f);
+	bool minus = igButton("-", button_dims);
+
+	igSameLine(0.0f, 4.0f);
+	bool plus = igButton("+", button_dims);
+
+	const static double scales[] = {
+	    25.0, 50.0, 100.0, 200.0, 300.0,
+	};
+
+	if (plus) {
+		for (uint32_t i = 0; i < ARRAY_SIZE(scales); i++) {
+			if (rw->texture.scale >= scales[i]) {
+				continue;
+			}
+			rw->texture.scale = scales[i];
+			break;
+		}
+	} else if (minus) {
+		// Initial length always greater then 0 so safe.
+		for (uint32_t i = ARRAY_SIZE(scales); i-- > 0;) {
+			if (rw->texture.scale <= scales[i]) {
+				continue;
+			}
+			rw->texture.scale = scales[i];
+			break;
+		}
+	}
+
 	igSameLine(0, 30);
 
 	igCheckbox("Rotate 180 degrees", &rw->texture.rotate_180);
