@@ -325,7 +325,7 @@ run_hand_detection(void *ptr)
 	size_t plane_size = 80 * 60;
 
 	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
-		const float *this_side_data = out_data + hand_idx * plane_size * 2;
+		float *this_side_data = out_data + hand_idx * plane_size * 2;
 		int max_idx = argmax(this_side_data, 4800);
 
 		hand_bounding_box *output = info->outputs[hand_idx];
@@ -362,6 +362,31 @@ run_hand_detection(void *ptr)
 				cv::rectangle(debug_frame,
 				              cv::Rect(pt - cv::Point2i(size / 2, size / 2), cv::Size(size, size)),
 				              PINK, 1);
+			}
+		}
+
+		if (hgt->debug_scribble) {
+			// note: this will multiply the model outputs by 255, don't do anything with them after this.
+			int top_of_rect_y = 8; // 8 + 128 + 8 + 128 + 8;
+			int left_of_rect_x = 8 + ((128 + 8) * 4);
+			int start_y = top_of_rect_y + ((240 + 8) * view->view);
+			int start_x = left_of_rect_x + 8 + 320 + 8;
+			cv::Rect p = cv::Rect(left_of_rect_x, start_y, 320, 240);
+
+			_240x320_uint8.copyTo(hgt->visualizers.mat(p));
+
+			{
+				cv::Rect p = cv::Rect(start_x + (hand_idx * (80 + 8)), start_y, 80, 60);
+				cv::Mat start(cv::Size(80, 60), CV_32FC1, this_side_data, 80 * sizeof(float));
+				start *= 255.0;
+				start.copyTo(hgt->visualizers.mat(p));
+			}
+
+			{
+				cv::Rect p = cv::Rect(start_x + (hand_idx * (80 + 8)), start_y + ((60 + 8)), 80, 60);
+				cv::Mat start(cv::Size(80, 60), CV_32FC1, this_side_data + 4800, 80 * sizeof(float));
+				start *= 255.0;
+				start.copyTo(hgt->visualizers.mat(p));
 			}
 		}
 	}
@@ -647,6 +672,25 @@ calc_src_tri(cv::Point2f center,
 }
 
 void
+make_keypoint_heatmap_output(int camera_idx, int hand_idx, int grid_pt_x, int grid_pt_y, float *plane, cv::Mat &out)
+{
+	int root_x = 8 + ((1 + 2 * hand_idx) * (128 + 8));
+	int root_y = 8 + (camera_idx * (128 + 8));
+
+	int org_x = (root_x) + (grid_pt_x * 25);
+	int org_y = (root_y) + (grid_pt_y * 25);
+	cv::Rect p = cv::Rect(org_x, org_y, 22, 22);
+
+
+	cv::Mat start(cv::Size(22, 22), CV_32FC1, plane, 22 * sizeof(float));
+	// cv::Mat start(cv::Size(40, 42), CV_32FC1, plane, 40 * 42 * sizeof(float));
+	start *= 255.0;
+
+	start.copyTo(out(p));
+}
+
+
+void
 run_keypoint_estimation_new(void *ptr)
 {
 	XRT_TRACE_MARKER();
@@ -682,10 +726,10 @@ run_keypoint_estimation_new(void *ptr)
 	cv::Matx23f go_there = getAffineTransform(src_tri, dst_tri);
 	cv::Matx23f go_back = getAffineTransform(dst_tri, src_tri);
 
+	cv::Mat data_128x128_uint8;
+
 	{
 		XRT_TRACE_IDENT(transforms);
-
-		cv::Mat data_128x128_uint8;
 
 		cv::warpAffine(info->view->run_model_on_this, data_128x128_uint8, go_there, cv::Size(128, 128),
 		               cv::INTER_LINEAR);
@@ -742,21 +786,48 @@ run_keypoint_estimation_new(void *ptr)
 		tan_space.kps[i] = raycoord(info->view, loc);
 	}
 
-	if (hgt->debug_scribble && hgt->tuneable_values.scribble_keypoint_model_outputs) {
-		for (int finger = 0; finger < 5; finger++) {
-			cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
-			for (int joint = 0; joint < 4; joint++) {
-				cv::Point the_new = {(int)keypoints_global[1 + finger * 4 + joint].x,
-				                     (int)keypoints_global[1 + finger * 4 + joint].y};
+	if (hgt->debug_scribble) {
+		int data_acc_idx = 0;
 
-				cv::line(debug, last, the_new, colors[info->hand_idx]);
-				last = the_new;
+		int root_x = 8 + ((2 * info->hand_idx) * (128 + 8));
+		int root_y = 8 + (info->view->view * (128 + 8));
+
+		cv::Rect p = cv::Rect(root_x, root_y, 128, 128);
+
+		data_128x128_uint8.copyTo(hgt->visualizers.mat(p));
+
+		make_keypoint_heatmap_output(info->view->view, info->hand_idx, 0, 0,
+		                             out_data + (data_acc_idx * plane_size), hgt->visualizers.mat);
+		data_acc_idx++;
+
+		for (int finger = 0; finger < 5; finger++) {
+			for (int joint = 0; joint < 4; joint++) {
+
+				make_keypoint_heatmap_output(info->view->view, info->hand_idx, 1 + joint, finger,
+				                             out_data + (data_acc_idx * plane_size),
+				                             hgt->visualizers.mat);
+				data_acc_idx++;
 			}
 		}
 
-		for (int i = 0; i < 21; i++) {
-			xrt_vec2 loc = keypoints_global[i];
-			handDot(debug, loc, 2, (float)(i) / 21.0, 1, 2);
+
+
+		if (hgt->tuneable_values.scribble_keypoint_model_outputs) {
+			for (int finger = 0; finger < 5; finger++) {
+				cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
+				for (int joint = 0; joint < 4; joint++) {
+					cv::Point the_new = {(int)keypoints_global[1 + finger * 4 + joint].x,
+					                     (int)keypoints_global[1 + finger * 4 + joint].y};
+
+					cv::line(debug, last, the_new, colors[info->hand_idx]);
+					last = the_new;
+				}
+			}
+
+			for (int i = 0; i < 21; i++) {
+				xrt_vec2 loc = keypoints_global[i];
+				handDot(debug, loc, 2, (float)(i) / 21.0, 1, 2);
+			}
 		}
 	}
 

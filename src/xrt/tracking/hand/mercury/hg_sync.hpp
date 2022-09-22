@@ -172,6 +172,17 @@ struct hand_size_refinement
 	float hand_size_refinement_schedule_y = 0;
 };
 
+struct model_output_visualizers
+{
+	// After setup, these reference the same piece of memory.
+	cv::Mat mat;
+	xrt_frame *xrtframe = NULL;
+
+	// After pushing to the debug UI, we reference the frame here so that we can copy memory out of it for next
+	// frame.
+	xrt_frame *old_frame = NULL;
+};
+
 /*!
  * Main class of Mercury hand tracking.
  *
@@ -183,7 +194,8 @@ public:
 	// Base thing, has to be first.
 	t_hand_tracking_sync base = {};
 
-	struct u_sink_debug debug_sink = {};
+	struct u_sink_debug debug_sink_ann = {};
+	struct u_sink_debug debug_sink_model = {};
 
 	float multiply_px_coord_for_undistort;
 
@@ -203,6 +215,8 @@ public:
 
 	struct ht_view views[2] = {};
 
+	struct model_output_visualizers visualizers;
+
 	u_worker_thread_pool *pool;
 
 	u_worker_group *group;
@@ -213,8 +227,7 @@ public:
 
 	uint64_t current_frame_timestamp = {};
 
-	// Change this whenever you want
-	volatile bool debug_scribble = true;
+	bool debug_scribble = false;
 
 	char models_folder[1024];
 

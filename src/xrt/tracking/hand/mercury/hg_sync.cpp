@@ -14,6 +14,7 @@
 #include "util/u_hand_tracking.h"
 #include "math/m_vec2.h"
 #include "util/u_misc.h"
+#include "xrt/xrt_frame.h"
 
 
 #include <numeric>
@@ -590,12 +591,16 @@ HandTracking::HandTracking()
 {
 	this->base.process = &HandTracking::cCallbackProcess;
 	this->base.destroy = &HandTracking::cCallbackDestroy;
-	u_sink_debug_init(&this->debug_sink);
+	u_sink_debug_init(&this->debug_sink_ann);
+	u_sink_debug_init(&this->debug_sink_model);
 }
 
 HandTracking::~HandTracking()
 {
-	u_sink_debug_destroy(&this->debug_sink);
+	u_sink_debug_destroy(&this->debug_sink_ann);
+	u_sink_debug_destroy(&this->debug_sink_model);
+
+	xrt_frame_reference(&this->visualizers.old_frame, NULL);
 
 	release_onnx_wrap(&this->views[0].keypoint[0]);
 	release_onnx_wrap(&this->views[0].keypoint[1]);
@@ -672,7 +677,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	*out_timestamp_ns = hgt->current_frame_timestamp; // No filtering, fine to do this now. Also just a reminder
 	                                                  // that this took you 2 HOURS TO DEBUG THAT ONE TIME.
 
-	hgt->debug_scribble = u_sink_debug_is_active(&hgt->debug_sink);
+	hgt->debug_scribble =
+	    u_sink_debug_is_active(&hgt->debug_sink_ann) && u_sink_debug_is_active(&hgt->debug_sink_model);
 
 	cv::Mat debug_output = {};
 	xrt_frame *debug_frame = nullptr;
@@ -692,6 +698,35 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		hgt->views[0].debug_out_to_this = debug_output(cv::Rect(view_offsets[0], view_size));
 		hgt->views[1].debug_out_to_this = debug_output(cv::Rect(view_offsets[1], view_size));
 		scribble_image_boundary(hgt);
+
+		//
+
+		struct xrt_frame *new_model_inputs_and_outputs = NULL;
+
+		// Let's check that the collage size is actually as big as we think it is
+		static_assert(1064 == (8 + ((128 + 8) * 4) + ((320 + 8)) + ((80 + 8) * 2) + 8));
+		static_assert(504 == (240 + 240 + 8 + 8 + 8));
+
+		const int w = 1064;
+		const int h = 504;
+
+		u_frame_create_one_off(XRT_FORMAT_L8, w, h, &hgt->visualizers.xrtframe);
+		hgt->visualizers.xrtframe->timestamp = hgt->current_frame_timestamp;
+
+		cv::Size size = cv::Size(w, h);
+
+		hgt->visualizers.mat =
+		    cv::Mat(size, CV_8U, hgt->visualizers.xrtframe->data, hgt->visualizers.xrtframe->stride);
+
+		if (hgt->visualizers.old_frame == NULL) {
+			// There wasn't a previous frame so let's setup the background
+			hgt->visualizers.mat = 255;
+		} else {
+			// They had better be the same size.
+			memcpy(hgt->visualizers.xrtframe->data, hgt->visualizers.old_frame->data,
+			       hgt->visualizers.old_frame->size);
+			xrt_frame_reference(&hgt->visualizers.old_frame, NULL);
+		}
 	}
 
 	check_new_user_event(hgt);
@@ -885,8 +920,14 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 
 	// If the debug UI is active, push our debug frame
 	if (hgt->debug_scribble) {
-		u_sink_debug_push_frame(&hgt->debug_sink, debug_frame);
+		u_sink_debug_push_frame(&hgt->debug_sink_ann, debug_frame);
 		xrt_frame_reference(&debug_frame, NULL);
+
+		// We don't dereference the model inputs/outputs frame here; we make a copy of it next frame and
+		// dereference it then.
+		u_sink_debug_push_frame(&hgt->debug_sink_model, hgt->visualizers.xrtframe);
+		xrt_frame_reference(&hgt->visualizers.old_frame, hgt->visualizers.xrtframe);
+		xrt_frame_reference(&hgt->visualizers.xrtframe, NULL);
 	}
 
 	// done!
@@ -1043,7 +1084,8 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	               "Use IK optimizer (may put tracking in unexpected state, use with care)");
 
 
-	u_var_add_sink_debug(hgt, &hgt->debug_sink, "i");
+	u_var_add_sink_debug(hgt, &hgt->debug_sink_ann, "Annotated camera feeds");
+	u_var_add_sink_debug(hgt, &hgt->debug_sink_model, "Model inputs and outputs");
 
 	HG_DEBUG(hgt, "Hand Tracker initialized!");
 
