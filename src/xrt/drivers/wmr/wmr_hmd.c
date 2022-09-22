@@ -1494,7 +1494,11 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	//!@todo Turning it off is okay for now, but we should plug metric_radius (or whatever it's called) in, at some
 	//! point.
-	struct t_camera_extra_info extra_camera_info;
+	struct t_camera_extra_info extra_camera_info = {0};
+
+	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
+	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
