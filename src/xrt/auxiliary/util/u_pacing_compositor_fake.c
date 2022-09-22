@@ -153,6 +153,13 @@ pc_info(struct u_pacing_compositor *upc,
 }
 
 static void
+pc_info_gpu(
+    struct u_pacing_compositor *upc, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
+{
+	// No-op
+}
+
+static void
 pc_update_vblank_from_display_control(struct u_pacing_compositor *upc, uint64_t last_vblank_ns)
 {
 	struct fake_timing *ft = fake_timing(upc);
@@ -193,6 +200,7 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	ft->base.predict = pc_predict;
 	ft->base.mark_point = pc_mark_point;
 	ft->base.info = pc_info;
+	ft->base.info_gpu = pc_info_gpu;
 	ft->base.update_vblank_from_display_control = pc_update_vblank_from_display_control;
 	ft->base.update_present_offset = pc_update_present_offset;
 	ft->base.destroy = pc_destroy;

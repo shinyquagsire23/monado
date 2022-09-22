@@ -135,6 +135,27 @@ struct u_pacing_compositor
 	             uint64_t when_ns);
 
 	/*!
+	 * Provide frame timing information about GPU start and stop time.
+	 *
+	 * Depend on when the information is delivered this can be called at any
+	 * point of the following frames.
+	 *
+	 * @param[in] upc          The compositor pacing helper.
+	 * @param[in] frame_id     The frame ID to record for.
+	 * @param[in] gpu_start_ns When the GPU work startred.
+	 * @param[in] gpu_end_ns   When the GPU work stopped.
+	 * @param[in] when_ns      When the informatioon collected, nominally
+	 *                         from @ref os_monotonic_get_ns.
+	 *
+	 * @see @ref frame-pacing.
+	 */
+	void (*info_gpu)(struct u_pacing_compositor *upc,
+	                 int64_t frame_id,
+	                 uint64_t gpu_start_ns,
+	                 uint64_t gpu_end_ns,
+	                 uint64_t when_ns);
+
+	/*!
 	 * Provide a vblank timing information, derived from the
 	 * VK_EXT_display_control extension. Since the extension only says when
 	 * a vblank happened (somewhat inaccurate as well) but not if a specific
@@ -231,6 +252,22 @@ u_pc_info(struct u_pacing_compositor *upc,
 {
 	upc->info(upc, frame_id, desired_present_time_ns, actual_present_time_ns, earliest_present_time_ns,
 	          present_margin_ns, when_ns);
+}
+
+
+/*!
+ * @copydoc u_pacing_compositor::info_gpu
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof u_pacing_compositor
+ * @ingroup aux_pacing
+ */
+static inline void
+u_pc_info_gpu(
+    struct u_pacing_compositor *upc, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
+{
+	upc->info_gpu(upc, frame_id, gpu_start_ns, gpu_end_ns, when_ns);
 }
 
 /*!
