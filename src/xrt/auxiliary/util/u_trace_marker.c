@@ -23,6 +23,12 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(tracing, "XRT_TRACING", false)
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+// ATOMIC_VAR_INIT was deprecated in C14 which is used by PERCETTO_* defines.
+#pragma GCC diagnostic ignored "-Wdeprecated-pragma"
+#endif
+
 PERCETTO_CATEGORY_DEFINE(U_TRACE_CATEGORIES)
 
 PERCETTO_TRACK_DEFINE(pc_cpu, PERCETTO_TRACK_EVENTS);
@@ -36,9 +42,13 @@ PERCETTO_TRACK_DEFINE(pa_cpu, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(pa_draw, PERCETTO_TRACK_EVENTS);
 PERCETTO_TRACK_DEFINE(pa_wait, PERCETTO_TRACK_EVENTS);
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 static enum u_trace_which static_which;
 static bool static_inited = false;
+
 
 void
 u_trace_marker_setup(enum u_trace_which which)
