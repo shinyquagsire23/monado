@@ -119,6 +119,24 @@ template <typename Scalar> struct Rational
 	{
 		return Rational{denominator - numerator, denominator}.withNonNegativeDenominator();
 	}
+
+	/*!
+	 * Get an approximation of this value as a float.
+	 */
+	constexpr float
+	as_float() const noexcept
+	{
+		return static_cast<float>(numerator) / static_cast<float>(denominator);
+	}
+
+	/*!
+	 * Get an approximation of this value as a double.
+	 */
+	constexpr double
+	as_double() const noexcept
+	{
+		return static_cast<double>(numerator) / static_cast<double>(denominator);
+	}
 };
 
 /*!

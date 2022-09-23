@@ -28,21 +28,23 @@ template <typename T> struct StringMaker<Rational<T>>
 };
 } // namespace Catch
 
-TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
+TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t, int64_t, uint64_t)
 {
 	using R = Rational<TestType>;
 	using T = TestType;
 	CHECK(R{1, 1} == R::simplestUnity());
 	CHECK((R::simplestUnity() * T{1}) == R::simplestUnity());
 	CHECK((T{1} * R::simplestUnity()) == R::simplestUnity());
+	CHECK(R::simplestUnity().as_float() == 1.0f);
+	CHECK(R::simplestUnity().as_double() == 1.0);
 
 	CHECK(R{5, 8}.reciprocal() == R{8, 5});
 
 	CHECK(R{5, 8}.complement() == R{3, 8});
 	CHECK(R{8, 8}.complement() == R{0, 8});
 
-	if constexpr (std::is_signed<TestType>::value) {
-	}
+	CHECK(R{0, 8}.as_float() == 0.0f);
+	CHECK(R{0, 8}.as_double() == 0.0);
 
 	CHECK(R{5, 8}.withNonNegativeDenominator() == R{5, 8});
 
@@ -90,7 +92,7 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK((val / T{1}) == valNonNegativeDenominator);
 	}
 
-	// Check all our predicates
+	// Check all our predicates, and our float convesions
 	{
 		// This is divide by zero error, all should be false
 		R val{0, 0};
@@ -107,6 +109,9 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK_FALSE(val.isBetweenZeroAndOne());
 		CHECK_FALSE(val.isUnity());
 		CHECK_FALSE(val.isOverUnity());
+
+		CHECK(val.as_float() == 0.0f);
+		CHECK(val.as_double() == 0.0);
 	}
 
 	{
@@ -116,6 +121,11 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK(val.isBetweenZeroAndOne());
 		CHECK_FALSE(val.isUnity());
 		CHECK_FALSE(val.isOverUnity());
+
+		CHECK(val.as_float() > 0.0f);
+		CHECK(val.as_float() < 1.0f);
+		CHECK(val.as_double() > 0.0);
+		CHECK(val.as_double() < 1.0);
 	}
 
 	{
@@ -125,6 +135,9 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK_FALSE(val.isBetweenZeroAndOne());
 		CHECK(val.isUnity());
 		CHECK_FALSE(val.isOverUnity());
+
+		CHECK(val.as_float() == 1.0f);
+		CHECK(val.as_double() == 1.0);
 	}
 	{
 		R val = R::simplestUnity();
@@ -133,6 +146,9 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK_FALSE(val.isBetweenZeroAndOne());
 		CHECK(val.isUnity());
 		CHECK_FALSE(val.isOverUnity());
+
+		CHECK(val.as_float() == 1.0f);
+		CHECK(val.as_double() == 1.0);
 	}
 	{
 		R val{8, 5};
@@ -141,5 +157,8 @@ TEMPLATE_TEST_CASE("Rational", "", int32_t, uint32_t)
 		CHECK_FALSE(val.isBetweenZeroAndOne());
 		CHECK_FALSE(val.isUnity());
 		CHECK(val.isOverUnity());
+
+		CHECK(val.as_float() > 1.0f);
+		CHECK(val.as_double() > 1.0);
 	}
 }
