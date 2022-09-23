@@ -24,7 +24,13 @@ Context::Meta::Meta(bool deferDrop)
           "startActivity", "(Landroid/content/Intent;Landroid/os/Bundle;)V")),
       createPackageContext(classRef().getMethod(
           "createPackageContext",
-          "(Ljava/lang/String;I)Landroid/content/Context;")) {
+          "(Ljava/lang/String;I)Landroid/content/Context;")),
+      createDisplayContext(classRef().getMethod(
+          "createDisplayContext", "(Landroid/view/Display;)Landroid/content/Context;")),
+      getSystemService(classRef().getMethod(
+          "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;")),
+      getExternalFilesDir(classRef().getMethod(
+          "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;")) {
     if (!deferDrop) {
         MetaBaseDroppable::dropClassRef();
     }

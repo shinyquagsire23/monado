@@ -8,6 +8,10 @@
 #include <string>
 
 namespace wrap {
+namespace java::io {
+class File;
+} // namespace java::io
+
 namespace android::content {
 class ComponentName;
 class ContentResolver;
@@ -27,6 +31,10 @@ namespace android::net {
 class Uri;
 class Uri_Builder;
 } // namespace android::net
+
+namespace android::view {
+class Display;
+} // namespace android::view
 
 namespace android::os {
 class Bundle;
@@ -153,6 +161,39 @@ class Context : public ObjectWrapperBase {
      */
     Context createPackageContext(std::string const &packageName, int32_t flags);
 
+    /*!
+     * Wrapper for the createDisplayContext method
+     *
+     * Java prototype:
+     * `public abstract Context createDisplayContext(android.view.Display display)`
+     *
+     * JNI signature: (Landroid/view/Display;)Landroid/content/Context;
+     *
+     */
+    Context createDisplayContext(wrap::android::view::Display const &display);
+
+    /*!
+     * Wrapper for the getSystemService method
+     *
+     * Java prototype:
+     * `public abstract java.lang.Object getSystemService(java.lang.String);`
+     *
+     * JNI signature: (Ljava/lang/String;)Ljava/lang/Object;
+     *
+     */
+    jni::Object getSystemService(std::string const &name);
+
+    /*!
+     * Wrapper for the getExternalFilesDir method
+     *
+     * Java prototype:
+     * `public abstract java.io.File getExternalFilesDir(java.lang.String);`
+     *
+     * JNI signature: (Ljava/lang/String;)Ljava/io/File;
+     *
+     */
+    java::io::File getExternalFilesDir(std::string const &type);
+
     enum {
         CONTEXT_INCLUDE_CODE = 1,
         CONTEXT_IGNORE_SECURITY = 2,
@@ -171,6 +212,9 @@ class Context : public ObjectWrapperBase {
         jni::method_t startActivity;
         jni::method_t startActivity1;
         jni::method_t createPackageContext;
+        jni::method_t createDisplayContext;
+        jni::method_t getSystemService;
+        jni::method_t getExternalFilesDir;
 
         /*!
          * Singleton accessor

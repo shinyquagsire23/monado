@@ -9,6 +9,8 @@
 #include "android.database.h"
 #include "android.net.h"
 #include "android.os.h"
+#include "android.view.h"
+#include "java.io.h"
 #include "java.lang.h"
 #include <string>
 
@@ -69,6 +71,21 @@ inline Context Context::createPackageContext(std::string const &packageName,
     assert(!isNull());
     return Context(object().call<jni::Object>(Meta::data().createPackageContext,
                                               packageName, flags));
+}
+
+inline Context Context::createDisplayContext(const wrap::android::view::Display &display) {
+    assert(!isNull());
+    return Context(object().call<jni::Object>(Meta::data().createDisplayContext, display.object()));
+}
+
+inline jni::Object Context::getSystemService(std::string const &name) {
+    assert(!isNull());
+    return object().call<jni::Object>(Meta::data().getSystemService, name);
+}
+
+inline java::io::File Context::getExternalFilesDir(std::string const &type) {
+    assert(!isNull());
+    return java::io::File(object().call<jni::Object>(Meta::data().getExternalFilesDir, type));
 }
 
 inline net::Uri_Builder ContentUris::appendId(net::Uri_Builder &uri_Builder,

@@ -8,6 +8,10 @@
 #include <string>
 
 namespace wrap {
+namespace android::content {
+    class Context;
+} // namespace android::content
+
 namespace android::provider {
 /*!
  * Wrapper for android.provider.Settings objects.
@@ -31,10 +35,24 @@ class Settings : public ObjectWrapperBase {
     static std::string ACTION_VR_LISTENER_SETTINGS();
 
     /*!
+     * Wrapper for the canDrawOverlays static method
+     *
+     * Java prototype:
+     * `public static final boolean
+     * canDrawOverlays(android.content.Context);`
+     *
+     * JNI signature:
+     * (Landroid/content/Context;)Z
+     *
+     */
+    static bool canDrawOverlays(content::Context const &context);
+
+    /*!
      * Class metadata
      */
     struct Meta : public MetaBase {
         impl::StaticFieldId<std::string> ACTION_VR_LISTENER_SETTINGS;
+        jni::method_t canDrawOverlays;
 
         /*!
          * Singleton accessor

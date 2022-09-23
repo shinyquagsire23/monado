@@ -16,11 +16,6 @@ inline jni::Object Activity::getWindow() {
     return object().call<jni::Object>(Meta::data().getWindow);
 }
 
-inline jni::Object Activity::getSystemService(std::string const &name) {
-    assert(!isNull());
-    return object().call<jni::Object>(Meta::data().getSystemService, name);
-}
-
 inline void
 Activity::setVrModeEnabled(bool enabled,
                            content::ComponentName const &requestedComponent) {

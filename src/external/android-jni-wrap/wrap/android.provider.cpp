@@ -8,6 +8,8 @@ namespace wrap {
 namespace android::provider {
 Settings::Meta::Meta()
     : MetaBase(Settings::getTypeName()),
-      ACTION_VR_LISTENER_SETTINGS(classRef(), "ACTION_VR_LISTENER_SETTINGS") {}
+      ACTION_VR_LISTENER_SETTINGS(classRef(), "ACTION_VR_LISTENER_SETTINGS"),
+      canDrawOverlays(classRef().getStaticMethod(
+              "canDrawOverlays", "(Landroid/content/Context;)Z")) {}
 } // namespace android::provider
 } // namespace wrap
