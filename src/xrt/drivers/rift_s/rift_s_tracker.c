@@ -246,7 +246,9 @@ rift_s_create_hand_tracker(struct rift_s_tracker *t,
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 
 	//!@todo What's a sensible boundary for Rift S?
-	struct t_camera_extra_info extra_camera_info;
+	struct t_camera_extra_info extra_camera_info = {
+	    0,
+	};
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
@@ -463,48 +465,41 @@ rift_s_tracker_get_hand_tracking_device(struct rift_s_tracker *t)
 	return t->handtracker;
 }
 
-/*!
- * Convert a hardware timestamp into monotonic clock. Updates offset estimate.
- * @note Only used with IMU samples as they have the smallest USB transmission time.
- *
- * @param t struct rift_s_tracker
- * @param local_timestamp_ns Monotonic timestamp at which the IMU sample was received
- * @param device_ts HMD Hardware timestamp, gets converted to local monotonic clock.
- */
-static timepoint_ns
-clock_hw2mono_update(struct rift_s_tracker *t, timepoint_ns local_timestamp_ns, uint64_t device_ts)
+//! Given a sample from two timestamp domains a and b that should have been
+//! sampled as close as possible, together with an estimate of the offset
+//! between a clock and b clock (or zero), it applies a smoothing average on the
+//! estimated offset and returns a in b clock.
+//! @todo Copy of clock_hw2mono in wmr_source.c and vive_source.c, unify into a utility.
+static inline timepoint_ns
+clock_offset_a2b(double freq, timepoint_ns a, timepoint_ns b, time_duration_ns *inout_a2b)
 {
-	const double alpha = 0.9995; // Weight to put on accumulated hw2mono clock offset
-	timepoint_ns hw = device_ts;
-
-	/* Only do updates if the monotonic time increased
-	 * (otherwise we're processing packets that arrived
-	 * at the same time - so only take the earliest) */
-	if (local_timestamp_ns > t->last_hw2mono_local_ts) {
-		time_duration_ns old_hw2mono = t->hw2mono;
-		time_duration_ns got_hw2mono = local_timestamp_ns - hw;
-		time_duration_ns new_hw2mono = old_hw2mono * alpha + got_hw2mono * (1.0 - alpha);
-		if (old_hw2mono == 0) { // hw2mono was not set for the first time yet
-			new_hw2mono = got_hw2mono;
-		}
-
-		time_duration_ns new_hw2mono_out = hw + new_hw2mono;
-
-		if (new_hw2mono_out >= t->last_hw2mono_out) {
-			t->last_hw2mono_out = new_hw2mono_out;
-			t->hw2mono = new_hw2mono;
-			t->have_hw2mono = true;
-			t->last_hw2mono_local_ts = local_timestamp_ns;
-		} else {
-			RIFT_S_WARN("Monotonic time map went backward (%" PRIu64 ", %" PRIu64 ") => %" PRIu64
-			            " < %" PRIu64 ". Reporting %" PRIu64,
-			            hw, local_timestamp_ns, new_hw2mono_out, t->last_hw2mono_out, hw + t->hw2mono);
-		}
-	} else {
-		t->last_hw2mono_out = hw + t->hw2mono;
+	// Totally arbitrary way of computing alpha, if you have a better one, replace it
+	const double alpha = 1.0 - 12.5 / freq; // Weight to put on accumulated a2b
+	time_duration_ns old_a2b = *inout_a2b;
+	time_duration_ns got_a2b = b - a;
+	time_duration_ns new_a2b = old_a2b * alpha + got_a2b * (1.0 - alpha);
+	if (old_a2b == 0) { // a2b has not been set yet
+		new_a2b = got_a2b;
 	}
+	*inout_a2b = new_a2b;
+	return a + new_a2b;
+}
 
-	return t->last_hw2mono_out;
+void
+rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_ns, timepoint_ns local_timestamp_ns)
+{
+	os_mutex_lock(&t->mutex);
+	time_duration_ns last_hw2mono = t->hw2mono;
+	clock_offset_a2b(25000, device_timestamp_ns, local_timestamp_ns, &t->hw2mono);
+
+	if (!t->have_hw2mono) {
+		time_duration_ns change_ns = last_hw2mono - t->hw2mono;
+		if (change_ns >= -U_TIME_HALF_MS_IN_NS && change_ns <= U_TIME_HALF_MS_IN_NS) {
+			RIFT_S_INFO("HMD device to local clock map stabilised");
+			t->have_hw2mono = true;
+		}
+	}
+	os_mutex_unlock(&t->mutex);
 }
 
 //! Camera specific logic for clock conversion
@@ -516,36 +511,37 @@ clock_hw2mono_get(struct rift_s_tracker *t, uint64_t device_ts, timepoint_ns *ou
 
 void
 rift_s_tracker_imu_update(struct rift_s_tracker *t,
-                          uint64_t timestamp_ns,
-                          timepoint_ns local_timestamp_ns_orig,
+                          uint64_t device_timestamp_ns,
                           const struct xrt_vec3 *accel,
                           const struct xrt_vec3 *gyro)
 {
 	os_mutex_lock(&t->mutex);
 
-	/* Ignore packets before we're ready */
-	if (!t->ready_for_data) {
+	/* Ignore packets before we're ready and clock is stable */
+	if (!t->ready_for_data || !t->have_hw2mono) {
 		os_mutex_unlock(&t->mutex);
 		return;
 	}
 
 	/* Get the smoothed monotonic time estimate for this IMU sample */
-	timepoint_ns local_timestamp_ns = clock_hw2mono_update(t, local_timestamp_ns_orig, timestamp_ns);
+	timepoint_ns local_timestamp_ns;
+
+	clock_hw2mono_get(t, device_timestamp_ns, &local_timestamp_ns);
 
 	if (t->fusion.last_imu_local_timestamp_ns != 0 && local_timestamp_ns < t->fusion.last_imu_local_timestamp_ns) {
 		RIFT_S_WARN("IMU time went backward by %" PRId64 " ns",
 		            local_timestamp_ns - t->fusion.last_imu_local_timestamp_ns);
 	} else {
-		m_imu_3dof_update(&t->fusion.i3dof, timestamp_ns, accel, gyro);
+		m_imu_3dof_update(&t->fusion.i3dof, local_timestamp_ns, accel, gyro);
 	}
 
-	RIFT_S_TRACE("IMU timestamp %" PRIu64 " (dt %f) local %" PRIu64 " hw2mono %" PRIu64 " (dt %f) offset %" PRId64,
-	             timestamp_ns, (double)(timestamp_ns - t->fusion.last_imu_timestamp_ns) / 1000000000.0,
-	             local_timestamp_ns_orig, local_timestamp_ns,
+	RIFT_S_TRACE("IMU timestamp %" PRIu64 " (dt %f) hw2mono local ts %" PRIu64 " (dt %f) offset %" PRId64,
+	             device_timestamp_ns,
+	             (double)(device_timestamp_ns - t->fusion.last_imu_timestamp_ns) / 1000000000.0, local_timestamp_ns,
 	             (double)(local_timestamp_ns - t->fusion.last_imu_local_timestamp_ns) / 1000000000.0, t->hw2mono);
 
 	t->fusion.last_angular_velocity = *gyro;
-	t->fusion.last_imu_timestamp_ns = timestamp_ns;
+	t->fusion.last_imu_timestamp_ns = device_timestamp_ns;
 	t->fusion.last_imu_local_timestamp_ns = local_timestamp_ns;
 
 	t->pose.orientation = t->fusion.i3dof.rot;

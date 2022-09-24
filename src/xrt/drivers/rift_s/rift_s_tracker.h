@@ -86,8 +86,6 @@ struct rift_s_tracker
 	//!< Estimated offset from HMD device timestamp to local monotonic clock
 	bool have_hw2mono;
 	time_duration_ns hw2mono;
-	time_duration_ns last_hw2mono_out;
-	timepoint_ns last_hw2mono_local_ts;
 	timepoint_ns last_frame_time;
 
 	//! Adjustment to apply to camera timestamps to bring them into the
@@ -139,9 +137,11 @@ struct xrt_device *
 rift_s_tracker_get_hand_tracking_device(struct rift_s_tracker *t);
 
 void
+rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_ns, timepoint_ns local_timestamp_ns);
+
+void
 rift_s_tracker_imu_update(struct rift_s_tracker *t,
-                          uint64_t timestamp_ns,
-                          timepoint_ns local_timestamp_ns,
+                          uint64_t device_timestamp_ns,
                           const struct xrt_vec3 *accel,
                           const struct xrt_vec3 *gyro);
 

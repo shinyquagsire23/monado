@@ -87,8 +87,17 @@ rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_h
 	const uint32_t TICK_LEN_US = 1000000 / imu_config->imu_hz;
 	uint32_t dt = TICK_LEN_US;
 
+	int n_samples = 0;
+
+	for (int i = 0; i < 3; i++) {
+		rift_s_hmd_imu_sample_t *s = report->samples + i;
+		if (s->marker & 0x80)
+			break; /* Sample (and remaining ones) are invalid */
+		n_samples++;
+	}
+
 	/* Check that there's at least 1 valid sample */
-	if (report->samples[0].marker & 0x80)
+	if (n_samples == 0)
 		return;
 
 	if (hmd->last_imu_timestamp_ns != 0) {
@@ -98,6 +107,15 @@ rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_h
 		hmd->last_imu_timestamp_ns = (timepoint_ns)(report->timestamp) * OS_NS_PER_USEC;
 		hmd->last_imu_timestamp32 = report->timestamp;
 	}
+
+	/* Give the tracker an update for matching local clock to device. The sample ts we're
+	 * given seems to be the time the first IMU sample was captured, but the local_ts
+	 * is USB packet arrival time, which is after the last IMU sample was captured,
+	 * so calculate the correct imu timestamp accordingly */
+	uint64_t packet_duration_us = (n_samples - 1) * TICK_LEN_US + dt;
+	uint64_t end_imu_timestamp_ns = hmd->last_imu_timestamp_ns + (OS_NS_PER_USEC * packet_duration_us);
+
+	rift_s_tracker_clock_update(hmd->tracker, end_imu_timestamp_ns, local_ts);
 
 	const float gyro_scale = 1.0 / imu_config->gyro_scale;
 	const float accel_scale = MATH_GRAVITY_M_S2 / imu_config->accel_scale;
@@ -141,7 +159,7 @@ rift_s_hmd_handle_report(struct rift_s_hmd *hmd, timepoint_ns local_ts, rift_s_h
 #endif
 
 		// Send the sample to the pose tracker
-		rift_s_tracker_imu_update(hmd->tracker, hmd->last_imu_timestamp_ns, local_ts, &accel, &gyro);
+		rift_s_tracker_imu_update(hmd->tracker, hmd->last_imu_timestamp_ns, &accel, &gyro);
 
 		hmd->last_imu_timestamp_ns += (uint64_t)dt * OS_NS_PER_USEC;
 		hmd->last_imu_timestamp32 += dt;
