@@ -99,9 +99,14 @@ opengloves_get_serial_devices(uint16_t vid, uint16_t pid, struct opengloves_comm
 
 			parent_dev = udev_device_get_parent(parent_dev);
 		}
+
+		// Need to unref the raw device since we create that.
+		udev_device_unref(raw_dev);
 	}
 
+	// Both the enumerate and the udev struct needs to be unreferenced.
 	udev_enumerate_unref(tty_enumerate);
+	udev_unref(ud);
 
 	return dev_count;
 }
