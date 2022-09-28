@@ -89,8 +89,8 @@ opengloves_create_devices(struct xrt_device **out_xdevs, const struct xrt_system
 	if (dev_left != NULL && sysdevs->roles.left != NULL) {
 		struct xrt_quat rot = XRT_QUAT_IDENTITY;
 		struct xrt_vec3 pos = XRT_VEC3_ZERO;
-		JSON_QUAT(opengloves_config_json, "offset_rot_right", &rot);
-		JSON_VEC3(opengloves_config_json, "offset_pos_right", &pos);
+		JSON_QUAT(opengloves_config_json, "offset_rot_left", &rot);
+		JSON_VEC3(opengloves_config_json, "offset_pos_left", &pos);
 
 		struct xrt_pose offset_pose = {.orientation = rot, .position = pos};
 
@@ -110,7 +110,7 @@ opengloves_create_devices(struct xrt_device **out_xdevs, const struct xrt_system
 		struct xrt_pose offset_pose = {.orientation = rot, .position = pos};
 
 		struct xrt_device *dev_wrap =
-		    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_DIRECT, dev_left, sysdevs->roles.left,
+		    multi_create_tracking_override(XRT_TRACKING_OVERRIDE_DIRECT, dev_right, sysdevs->roles.right,
 		                                   XRT_INPUT_GENERIC_TRACKER_POSE, &offset_pose);
 
 		out_xdevs[cur_dev++] = dev_wrap;
