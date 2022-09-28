@@ -666,7 +666,7 @@ calc_src_tri(cv::Point2f center,
 
 		// top right (becomes bottom right)
 		out_src_tri[2] = bottom_right;
-	}
+	} break;
 	default: assert(false);
 	}
 }
