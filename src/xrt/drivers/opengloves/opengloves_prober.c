@@ -33,15 +33,15 @@
 
 
 static const cJSON *
-opengloves_load_config_file(struct u_config_json config_json)
+opengloves_load_config_file(struct u_config_json *config_json)
 {
-	u_config_json_open_or_create_main_file(&config_json);
-	if (!config_json.file_loaded) {
+	u_config_json_open_or_create_main_file(config_json);
+	if (!config_json->file_loaded) {
 		OPENGLOVES_ERROR("Failed to load config file");
 		return NULL;
 	}
 
-	const cJSON *out_config_json = u_json_get(config_json.root, "config_opengloves");
+	const cJSON *out_config_json = u_json_get(config_json->root, "config_opengloves");
 	if (out_config_json == NULL) {
 		return NULL;
 	}
@@ -78,7 +78,11 @@ opengloves_create_devices(struct xrt_device **out_xdevs, const struct xrt_system
 
 	// load config
 	struct u_config_json config_json = {0};
-	const cJSON *opengloves_config_json = opengloves_load_config_file(config_json);
+	const cJSON *opengloves_config_json = opengloves_load_config_file(&config_json);
+	if (opengloves_config_json == NULL) {
+		cJSON_Delete(config_json.root);
+		return 0;
+	}
 
 	// set up tracking overrides
 	int cur_dev = 0;
@@ -111,6 +115,8 @@ opengloves_create_devices(struct xrt_device **out_xdevs, const struct xrt_system
 
 		out_xdevs[cur_dev++] = dev_wrap;
 	}
+
+	cJSON_Delete(config_json.root);
 
 	return cur_dev;
 }
