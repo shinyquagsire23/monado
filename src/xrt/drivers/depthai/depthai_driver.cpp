@@ -540,6 +540,10 @@ depthai_destroy(struct depthai_fs *depthai)
 	DEPTHAI_DEBUG(depthai, "DepthAI: Frameserver destroy called");
 	os_thread_helper_destroy(&depthai->image_thread);
 	os_thread_helper_destroy(&depthai->imu_thread);
+	u_var_remove_root(depthai);
+	for (int i = 0; i < 4; i++) {
+		u_sink_debug_destroy(&depthai->debug_sinks[i]);
+	}
 
 	// To work around use after free issue detected by ASan, v2.13.3 has this bug.
 	if (depthai->image_queue) {
@@ -982,6 +986,9 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->device = d;
 
 	u_var_add_root(depthai, "DepthAI Source", 0);
+	for (int i = 0; i < 4; i++) {
+		u_sink_debug_init(&depthai->debug_sinks[i]);
+	}
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[0], "RGB");
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[1], "Left");
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[2], "Right");
@@ -994,6 +1001,7 @@ depthai_create_and_do_minimal_setup(void)
 
 	// Make sure that the thread helper is initialised.
 	os_thread_helper_init(&depthai->image_thread);
+	os_thread_helper_init(&depthai->imu_thread);
 
 	return depthai;
 }
