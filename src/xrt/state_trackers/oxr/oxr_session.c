@@ -1009,6 +1009,16 @@ oxr_session_hand_joints(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static enum xrt_output_name
+xr_hand_to_force_feedback_output(XrHandEXT hand)
+{
+	switch (hand) {
+	case XR_HAND_LEFT_EXT: return XRT_OUTPUT_NAME_FORCE_FEEDBACK_LEFT;
+	case XR_HAND_RIGHT_EXT: return XRT_OUTPUT_NAME_FORCE_FEEDBACK_RIGHT;
+	default: assert(false);
+	}
+}
+
 XrResult
 oxr_session_apply_force_feedback(struct oxr_logger *log,
                                  struct oxr_hand_tracker *hand_tracker,
@@ -1024,10 +1034,7 @@ oxr_session_apply_force_feedback(struct oxr_logger *log,
 		result.force_feedback.force_feedback[i].value = locations->locations[i].value;
 	}
 
-	xrt_device_set_output(xdev,
-	                      hand_tracker->hand == XRT_HAND_LEFT ? XRT_OUTPUT_NAME_FORCE_FEEDBACK_LEFT
-	                                                          : XRT_OUTPUT_NAME_FORCE_FEEDBACK_RIGHT,
-	                      &result);
+	xrt_device_set_output(xdev, xr_hand_to_force_feedback_output(hand_tracker->hand), &result);
 
 	return XR_SUCCESS;
 }
