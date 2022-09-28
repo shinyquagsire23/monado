@@ -86,6 +86,17 @@ struct comp_target
 	//! Transformation of the current surface, required for pre-rotation
 	VkSurfaceTransformFlagBitsKHR surface_transform;
 
+	struct
+	{
+		//! Optional semaphore the target should signal when present is complete.
+		VkSemaphore present_complete;
+
+		//! Semaphore the renderer (consuming this target) should signal when rendering is complete.
+		VkSemaphore render_complete;
+
+		//! If true, @ref render_complete is a timeline semaphore instead of a binary semaphore
+		bool render_complete_is_timeline;
+	} semaphores;
 
 	/*
 	 *
@@ -137,19 +148,29 @@ struct comp_target
 	/*!
 	 * Acquire the next image for rendering.
 	 *
+	 * If @ref semaphores::present_complete is not null, your use of this image should wait on it.
+	 *
 	 * @pre @ref has_images returns true
 	 */
-	VkResult (*acquire)(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index);
+	VkResult (*acquire)(struct comp_target *ct, uint32_t *out_index);
 
 	/*!
 	 * Present the image at index to the screen.
 	 *
 	 * @pre @ref acquire succeeded for the same @p semaphore and @p index you are passing
+	 *
+	 * @param ct self
+	 * @param queue The Vulkan queue being used
+	 * @param index The swapchain image index to present
+	 * @param timeline_semaphore_value The value to await on @ref semaphores::render_complete if @ref
+	 * semaphores::render_complete_is_timeline is true.
+	 * @param desired_present_time_ns The timestamp to present at, ideally.
+	 * @param present_slop_ns TODO
 	 */
 	VkResult (*present)(struct comp_target *ct,
 	                    VkQueue queue,
 	                    uint32_t index,
-	                    VkSemaphore semaphore,
+	                    uint64_t timeline_semaphore_value,
 	                    uint64_t desired_present_time_ns,
 	                    uint64_t present_slop_ns);
 
@@ -300,11 +321,11 @@ comp_target_has_images(struct comp_target *ct)
  * @ingroup comp_main
  */
 static inline VkResult
-comp_target_acquire(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
+comp_target_acquire(struct comp_target *ct, uint32_t *out_index)
 {
 	COMP_TRACE_MARKER();
 
-	return ct->acquire(ct, semaphore, out_index);
+	return ct->acquire(ct, out_index);
 }
 
 /*!
@@ -317,20 +338,20 @@ static inline VkResult
 comp_target_present(struct comp_target *ct,
                     VkQueue queue,
                     uint32_t index,
-                    VkSemaphore semaphore,
+                    uint64_t timeline_semaphore_value,
                     uint64_t desired_present_time_ns,
                     uint64_t present_slop_ns)
 
 {
 	COMP_TRACE_MARKER();
 
-	return ct->present(          //
-	    ct,                      //
-	    queue,                   //
-	    index,                   //
-	    semaphore,               //
-	    desired_present_time_ns, //
-	    present_slop_ns);        //
+	return ct->present(           //
+	    ct,                       //
+	    queue,                    //
+	    index,                    //
+	    timeline_semaphore_value, //
+	    desired_present_time_ns,  //
+	    present_slop_ns);         //
 }
 
 /*!

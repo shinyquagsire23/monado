@@ -243,7 +243,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 		;
 
 	uint32_t current;
-	VkResult ret = comp_target_acquire(&w->base.base, w->acquire, &current);
+	VkResult ret = comp_target_acquire(&w->base.base, &current);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(w->c, "comp_target_acquire: %s", vk_result_string(ret));
 	}

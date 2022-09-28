@@ -43,6 +43,20 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <inttypes.h>
+
+
+/*
+ *
+ * Small internal helpers.
+ *
+ */
+
+#define CHAIN(STRUCT, NEXT)                                                                                            \
+	do {                                                                                                           \
+		(STRUCT).pNext = NEXT;                                                                                 \
+		NEXT = (VkBaseInStructure *)&(STRUCT);                                                                 \
+	} while (false)
 
 
 /*
@@ -85,12 +99,6 @@ struct comp_renderer
 
 	} mirror_to_debug_gui;
 
-
-	struct
-	{
-		VkSemaphore present_complete;
-		VkSemaphore render_complete;
-	} semaphores;
 	//! @}
 
 	//! @name Image-dependent members
@@ -144,27 +152,6 @@ renderer_wait_gpu_idle(struct comp_renderer *r)
 	os_mutex_lock(&vk->queue_mutex);
 	vk->vkDeviceWaitIdle(vk->device);
 	os_mutex_unlock(&vk->queue_mutex);
-}
-
-static void
-renderer_init_semaphores(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->base.vk;
-	VkResult ret;
-
-	VkSemaphoreCreateInfo info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	};
-
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.present_complete);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &r->semaphores.render_complete);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
 }
 
 static void
@@ -568,11 +555,7 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 
 	r->acquired_buffer = -1;
 	r->fenced_buffer = -1;
-	r->semaphores.present_complete = VK_NULL_HANDLE;
-	r->semaphores.render_complete = VK_NULL_HANDLE;
 	r->rtr_array = NULL;
-
-	renderer_init_semaphores(r);
 
 	// Try to early-allocate these, in case we can.
 	renderer_ensure_images_and_renderings(r, false);
@@ -631,9 +614,9 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	VkResult ret;
 
 
-#define WAIT_SEMAPHORE_COUNT 1
-	VkPipelineStageFlags stage_flags[WAIT_SEMAPHORE_COUNT] = {pipeline_stage_flag};
-	VkSemaphore wait_semaphores[WAIT_SEMAPHORE_COUNT] = {r->semaphores.present_complete};
+	/*
+	 * Wait for previous frame's work to complete.
+	 */
 
 	// Wait for the last fence, if any.
 	renderer_wait_for_last_fence(r);
@@ -645,15 +628,59 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 		COMP_ERROR(r->c, "vkResetFences: %s", vk_result_string(ret));
 	}
 
+
+	/*
+	 * Regular semaphore setup.
+	 */
+
+	struct comp_target *ct = r->c->target;
+#define WAIT_SEMAPHORE_COUNT 1
+
+	VkSemaphore wait_sems[WAIT_SEMAPHORE_COUNT] = {ct->semaphores.present_complete};
+	VkPipelineStageFlags stage_flags[WAIT_SEMAPHORE_COUNT] = {pipeline_stage_flag};
+
+	VkSemaphore *wait_sems_ptr = NULL;
+	VkPipelineStageFlags *stage_flags_ptr = NULL;
+	uint32_t wait_sem_count = 0;
+	if (wait_sems[0] != VK_NULL_HANDLE) {
+		wait_sems_ptr = wait_sems;
+		stage_flags_ptr = stage_flags;
+		wait_sem_count = WAIT_SEMAPHORE_COUNT;
+	}
+
+	// Next pointer for VkSubmitInfo
+	const void *next = NULL;
+
+#ifdef VK_KHR_timeline_semaphore
+	assert(r->c->frame.rendering.id >= 0);
+	uint64_t render_complete_signal_values[WAIT_SEMAPHORE_COUNT] = {(uint64_t)r->c->frame.rendering.id};
+
+	VkTimelineSemaphoreSubmitInfoKHR timeline_info = {
+	    .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+	};
+
+	if (ct->semaphores.render_complete_is_timeline) {
+		timeline_info = (VkTimelineSemaphoreSubmitInfoKHR){
+		    .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+		    .signalSemaphoreValueCount = WAIT_SEMAPHORE_COUNT,
+		    .pSignalSemaphoreValues = render_complete_signal_values,
+		};
+
+		CHAIN(timeline_info, next);
+	}
+#endif
+
+
 	VkSubmitInfo comp_submit_info = {
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .waitSemaphoreCount = WAIT_SEMAPHORE_COUNT,
-	    .pWaitSemaphores = wait_semaphores,
-	    .pWaitDstStageMask = stage_flags,
+	    .pNext = next,
+	    .pWaitDstStageMask = stage_flags_ptr,
+	    .pWaitSemaphores = wait_sems_ptr,
+	    .waitSemaphoreCount = wait_sem_count,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &cmd,
 	    .signalSemaphoreCount = 1,
-	    .pSignalSemaphores = &r->semaphores.render_complete,
+	    .pSignalSemaphores = &ct->semaphores.render_complete,
 	};
 
 	ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
@@ -722,7 +749,7 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 		// Not ready yet.
 		return;
 	}
-	ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &buffer_index);
+	ret = comp_target_acquire(r->c->target, &buffer_index);
 
 	if ((ret == VK_ERROR_OUT_OF_DATE_KHR) || (ret == VK_SUBOPTIMAL_KHR)) {
 		COMP_DEBUG(r->c, "Received %s.", vk_result_string(ret));
@@ -736,7 +763,7 @@ renderer_acquire_swapchain_image(struct comp_renderer *r)
 		}
 
 		/* Acquire image again to silence validation error */
-		ret = comp_target_acquire(r->c->target, r->semaphores.present_complete, &buffer_index);
+		ret = comp_target_acquire(r->c->target, &buffer_index);
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "comp_target_acquire: %s", vk_result_string(ret));
 		}
@@ -767,13 +794,16 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 
 	VkResult ret;
 
-	ret = comp_target_present(         //
-	    r->c->target,                  //
-	    r->c->base.vk.queue,           //
-	    r->acquired_buffer,            //
-	    r->semaphores.render_complete, //
-	    desired_present_time_ns,       //
-	    present_slop_ns);              //
+	assert(r->c->frame.rendering.id >= 0);
+	uint64_t render_complete_signal_value = (uint64_t)r->c->frame.rendering.id;
+
+	ret = comp_target_present(        //
+	    r->c->target,                 //
+	    r->c->base.vk.queue,          //
+	    r->acquired_buffer,           //
+	    render_complete_signal_value, //
+	    desired_present_time_ns,      //
+	    present_slop_ns);             //
 	r->acquired_buffer = -1;
 
 	if (ret == VK_ERROR_OUT_OF_DATE_KHR || ret == VK_SUBOPTIMAL_KHR) {
@@ -797,16 +827,6 @@ renderer_destroy(struct comp_renderer *r)
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
-
-	// Semaphores
-	if (r->semaphores.present_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device, r->semaphores.present_complete, NULL);
-		r->semaphores.present_complete = VK_NULL_HANDLE;
-	}
-	if (r->semaphores.render_complete != VK_NULL_HANDLE) {
-		vk->vkDestroySemaphore(vk->device, r->semaphores.render_complete, NULL);
-		r->semaphores.render_complete = VK_NULL_HANDLE;
-	}
 
 	comp_layer_renderer_destroy(&(r->lr));
 

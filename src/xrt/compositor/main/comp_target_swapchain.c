@@ -594,6 +594,46 @@ create_vblank_event_thread(struct comp_target *ct)
 }
 #endif
 
+static void
+target_fini_semaphores(struct comp_target_swapchain *cts)
+{
+	struct vk_bundle *vk = get_vk(cts);
+
+	if (cts->base.semaphores.present_complete != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore(vk->device, cts->base.semaphores.present_complete, NULL);
+		cts->base.semaphores.present_complete = VK_NULL_HANDLE;
+	}
+
+	if (cts->base.semaphores.render_complete != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore(vk->device, cts->base.semaphores.render_complete, NULL);
+		cts->base.semaphores.render_complete = VK_NULL_HANDLE;
+	}
+}
+
+static void
+target_init_semaphores(struct comp_target_swapchain *cts)
+{
+	struct vk_bundle *vk = get_vk(cts);
+	VkResult ret;
+
+	target_fini_semaphores(cts);
+
+	VkSemaphoreCreateInfo info = {
+	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+	};
+
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &cts->base.semaphores.present_complete);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_result_string(ret));
+	}
+
+	cts->base.semaphores.render_complete_is_timeline = false;
+	ret = vk->vkCreateSemaphore(vk->device, &info, NULL, &cts->base.semaphores.render_complete);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(cts->base.c, "vkCreateSemaphore: %s", vk_result_string(ret));
+	}
+}
+
 
 /*
  *
@@ -627,6 +667,8 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 
 	// Free old image views.
 	destroy_image_views(cts);
+
+	target_init_semaphores(cts);
 
 	VkSwapchainKHR old_swapchain_handle = cts->swapchain.handle;
 
@@ -771,7 +813,7 @@ comp_target_swapchain_has_images(struct comp_target *ct)
 }
 
 static VkResult
-comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore semaphore, uint32_t *out_index)
+comp_target_swapchain_acquire_next_image(struct comp_target *ct, uint32_t *out_index)
 {
 	struct comp_target_swapchain *cts = (struct comp_target_swapchain *)ct;
 	struct vk_bundle *vk = get_vk(cts);
@@ -781,20 +823,20 @@ comp_target_swapchain_acquire_next_image(struct comp_target *ct, VkSemaphore sem
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
 
-	return vk->vkAcquireNextImageKHR( //
-	    vk->device,                   // device
-	    cts->swapchain.handle,        // swapchain
-	    UINT64_MAX,                   // timeout
-	    semaphore,                    // semaphore
-	    VK_NULL_HANDLE,               // fence
-	    out_index);                   // pImageIndex
+	return vk->vkAcquireNextImageKHR(          //
+	    vk->device,                            // device
+	    cts->swapchain.handle,                 // swapchain
+	    UINT64_MAX,                            // timeout
+	    cts->base.semaphores.present_complete, // semaphore
+	    VK_NULL_HANDLE,                        // fence
+	    out_index);                            // pImageIndex
 }
 
 static VkResult
 comp_target_swapchain_present(struct comp_target *ct,
                               VkQueue queue,
                               uint32_t index,
-                              VkSemaphore semaphore,
+                              uint64_t timeline_semaphore_value,
                               uint64_t desired_present_time_ns,
                               uint64_t present_slop_ns)
 {
@@ -819,7 +861,7 @@ comp_target_swapchain_present(struct comp_target *ct,
 	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
 	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &semaphore,
+	    .pWaitSemaphores = &cts->base.semaphores.render_complete,
 	    .swapchainCount = 1,
 	    .pSwapchains = &cts->swapchain.handle,
 	    .pImageIndices = &index,
@@ -965,6 +1007,8 @@ comp_target_swapchain_cleanup(struct comp_target_swapchain *cts)
 		    NULL);               //
 		cts->surface.handle = VK_NULL_HANDLE;
 	}
+
+	target_fini_semaphores(cts);
 
 	u_pc_destroy(&cts->upc);
 }
