@@ -61,6 +61,7 @@ slot_clear_locked(struct multi_compositor *mc, struct multi_layer_slot *slot)
 	}
 
 	U_ZERO(slot);
+	slot->frame_id = -1;
 }
 
 /*!
@@ -70,11 +71,13 @@ static void
 slot_move_into_cleared(struct multi_layer_slot *dst, struct multi_layer_slot *src)
 {
 	assert(!dst->active);
+	assert(dst->frame_id == -1);
 
 	// All references are kept.
 	*dst = *src;
 
 	U_ZERO(src);
+	src->frame_id = -1;
 }
 
 /*!
