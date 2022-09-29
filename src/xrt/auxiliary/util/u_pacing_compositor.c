@@ -30,6 +30,8 @@ DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_COMPOSITOR_LOG", U_LOGGING_WARN)
 
 #define NUM_FRAMES 16
 
+#define PRESENT_SLOP_NS (U_TIME_HALF_MS_IN_NS)
+
 
 /*
  *
@@ -414,7 +416,7 @@ pc_predict(struct u_pacing_compositor *upc,
 
 	uint64_t wake_up_time_ns = f->wake_up_time_ns;
 	uint64_t desired_present_time_ns = f->desired_present_time_ns;
-	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
+	uint64_t present_slop_ns = PRESENT_SLOP_NS;
 	uint64_t predicted_display_time_ns = f->predicted_display_time_ns;
 	uint64_t predicted_display_period_ns = pc->frame_period_ns;
 	uint64_t min_display_period_ns = pc->frame_period_ns;
@@ -483,8 +485,11 @@ pc_info(struct u_pacing_compositor *upc,
 		}
 		return;
 	}
+
 	assert(f->state == STATE_SUBMITTED);
-	assert(f->desired_present_time_ns == desired_present_time_ns);
+	uint64_t unslopped_desired_present_time_ns = desired_present_time_ns + PRESENT_SLOP_NS;
+	assert(f->desired_present_time_ns == desired_present_time_ns ||
+	       f->desired_present_time_ns == unslopped_desired_present_time_ns);
 
 	f->when_infoed_ns = when_ns;
 	f->actual_present_time_ns = actual_present_time_ns;
