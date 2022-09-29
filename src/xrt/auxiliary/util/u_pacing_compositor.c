@@ -395,6 +395,128 @@ adjust_comp_time(struct pacing_compositor *pc, struct frame *f)
 
 /*
  *
+ * Metrics and tracing.
+ *
+ */
+
+static void
+do_tracing(struct pacing_compositor *pc, struct frame *f)
+{
+	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
+		return;
+	}
+
+#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
+#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
+
+
+	/*
+	 *
+	 * CPU
+	 *
+	 */
+
+	TE_BEG(pc_cpu, f->when_predict_ns, "sleep");
+	TE_END(pc_cpu, f->wake_up_time_ns);
+
+	uint64_t oversleep_start_ns = f->wake_up_time_ns + 1;
+	if (f->when_woke_ns > oversleep_start_ns) {
+		TE_BEG(pc_cpu, oversleep_start_ns, "oversleep");
+		TE_END(pc_cpu, f->when_woke_ns);
+	}
+
+
+	/*
+	 *
+	 * GPU
+	 *
+	 */
+
+	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
+	if (gpu_end_ns > f->when_submitted_ns) {
+		TE_BEG(pc_gpu, f->when_submitted_ns, "gpu");
+		TE_END(pc_gpu, gpu_end_ns);
+	} else {
+		TE_BEG(pc_gpu, gpu_end_ns, "gpu-time-travel");
+		TE_END(pc_gpu, f->when_submitted_ns);
+	}
+
+
+	/*
+	 *
+	 * Margin
+	 *
+	 */
+
+	if (gpu_end_ns < f->desired_present_time_ns) {
+		TE_BEG(pc_margin, gpu_end_ns, "margin");
+		TE_END(pc_margin, f->desired_present_time_ns);
+	}
+
+
+	/*
+	 *
+	 * ERROR
+	 *
+	 */
+
+	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
+		if (f->actual_present_time_ns > f->desired_present_time_ns) {
+			TE_BEG(pc_error, f->desired_present_time_ns, "slippage");
+			TE_END(pc_error, f->actual_present_time_ns);
+		} else {
+			TE_BEG(pc_error, f->actual_present_time_ns, "run-ahead");
+			TE_END(pc_error, f->desired_present_time_ns);
+		}
+	}
+
+
+	/*
+	 *
+	 * Info
+	 *
+	 */
+
+	if (f->when_infoed_ns >= f->actual_present_time_ns) {
+		TE_BEG(pc_info, f->actual_present_time_ns, "info");
+		TE_END(pc_info, f->when_infoed_ns);
+	} else {
+		TE_BEG(pc_info, f->when_infoed_ns, "info_before");
+		TE_END(pc_info, f->actual_present_time_ns);
+	}
+
+
+	/*
+	 *
+	 * Present
+	 *
+	 */
+
+	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
+		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->earliest_present_time_ns, "earliest");
+	}
+	if (!is_within_half_ms(f->desired_present_time_ns, f->earliest_present_time_ns)) {
+		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->desired_present_time_ns, "predicted");
+	}
+	U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->actual_present_time_ns, "vsync");
+
+
+	/*
+	 *
+	 * Compositor time
+	 *
+	 */
+
+	TE_BEG(pc_allotted, f->wake_up_time_ns, "allotted");
+	TE_END(pc_allotted, f->wake_up_time_ns + f->current_comp_time_ns);
+
+#undef TE_BEG
+#undef TE_END
+}
+
+
+/*
+ *
  * Member functions.
  *
  */
@@ -533,117 +655,8 @@ pc_info(struct u_pacing_compositor *upc,
 	    f->present_margin_ns,                        //
 	    present_margin_ms);                          //
 
-
-	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
-		return;
-	}
-
-#define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
-#define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
-
-
-	/*
-	 *
-	 * CPU
-	 *
-	 */
-
-	TE_BEG(pc_cpu, f->when_predict_ns, "sleep");
-	TE_END(pc_cpu, f->wake_up_time_ns);
-
-	uint64_t oversleep_start_ns = f->wake_up_time_ns + 1;
-	if (f->when_woke_ns > oversleep_start_ns) {
-		TE_BEG(pc_cpu, oversleep_start_ns, "oversleep");
-		TE_END(pc_cpu, f->when_woke_ns);
-	}
-
-
-	/*
-	 *
-	 * GPU
-	 *
-	 */
-
-	uint64_t gpu_end_ns = f->actual_present_time_ns - f->present_margin_ns;
-	if (gpu_end_ns > f->when_submitted_ns) {
-		TE_BEG(pc_gpu, f->when_submitted_ns, "gpu");
-		TE_END(pc_gpu, gpu_end_ns);
-	} else {
-		TE_BEG(pc_gpu, gpu_end_ns, "gpu-time-travel");
-		TE_END(pc_gpu, f->when_submitted_ns);
-	}
-
-
-	/*
-	 *
-	 * Margin
-	 *
-	 */
-
-	if (gpu_end_ns < f->desired_present_time_ns) {
-		TE_BEG(pc_margin, gpu_end_ns, "margin");
-		TE_END(pc_margin, f->desired_present_time_ns);
-	}
-
-
-	/*
-	 *
-	 * ERROR
-	 *
-	 */
-
-	if (!is_within_half_ms(f->actual_present_time_ns, f->desired_present_time_ns)) {
-		if (f->actual_present_time_ns > f->desired_present_time_ns) {
-			TE_BEG(pc_error, f->desired_present_time_ns, "slippage");
-			TE_END(pc_error, f->actual_present_time_ns);
-		} else {
-			TE_BEG(pc_error, f->actual_present_time_ns, "run-ahead");
-			TE_END(pc_error, f->desired_present_time_ns);
-		}
-	}
-
-
-	/*
-	 *
-	 * Info
-	 *
-	 */
-
-	if (f->when_infoed_ns >= f->actual_present_time_ns) {
-		TE_BEG(pc_info, f->actual_present_time_ns, "info");
-		TE_END(pc_info, f->when_infoed_ns);
-	} else {
-		TE_BEG(pc_info, f->when_infoed_ns, "info_before");
-		TE_END(pc_info, f->actual_present_time_ns);
-	}
-
-
-	/*
-	 *
-	 * Present
-	 *
-	 */
-
-	if (f->actual_present_time_ns != f->earliest_present_time_ns) {
-		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->earliest_present_time_ns, "earliest");
-	}
-	if (!is_within_half_ms(f->desired_present_time_ns, f->earliest_present_time_ns)) {
-		U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->desired_present_time_ns, "predicted");
-	}
-	U_TRACE_INSTANT_ON_TRACK(timing, pc_present, f->actual_present_time_ns, "vsync");
-
-
-	/*
-	 *
-	 * Compositor time
-	 *
-	 */
-
-	TE_BEG(pc_allotted, f->wake_up_time_ns, "allotted");
-	TE_END(pc_allotted, f->wake_up_time_ns + f->current_comp_time_ns);
-
-#undef TE_BEG
-#undef TE_END
+	// Write out tracing data.
+	do_tracing(pc, f);
 }
 
 static void
