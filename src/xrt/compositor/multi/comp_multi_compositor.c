@@ -942,6 +942,12 @@ multi_compositor_latch_frame_locked(struct multi_compositor *mc, uint64_t when_n
 	u_pa_latched(mc->upa, mc->delivered.frame_id, when_ns, system_frame_id);
 }
 
+void
+multi_compositor_retire_delivered_locked(struct multi_compositor *mc, uint64_t when_ns)
+{
+	slot_clear_locked(mc, &mc->delivered);
+}
+
 xrt_result_t
 multi_compositor_create(struct multi_system_compositor *msc,
                         const struct xrt_session_info *xsi,

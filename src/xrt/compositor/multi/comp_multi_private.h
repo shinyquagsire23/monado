@@ -228,6 +228,16 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
 void
 multi_compositor_latch_frame_locked(struct multi_compositor *mc, uint64_t when_ns, int64_t system_frame_id);
 
+/*!
+ * Clears and retires the delivered frame, called by the render thread.
+ * The list_and_timing_lock is held when this function is called.
+ *
+ * @ingroup comp_multi
+ * @private @memberof multi_compositor
+ */
+void
+multi_compositor_retire_delivered_locked(struct multi_compositor *mc, uint64_t when_ns);
+
 
 /*
  *

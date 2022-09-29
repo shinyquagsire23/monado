@@ -257,12 +257,17 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 
 		// The client isn't visible, do not submit it's layers.
 		if (!mc->state.visible) {
+			// Need to drop delivered frame as it shouldn't be reused.
+			multi_compositor_retire_delivered_locked(mc, now_ns);
 			continue;
 		}
 
 		// Just in case.
 		if (!mc->state.session_active) {
 			U_LOG_W("Session is visible but not active.");
+
+			// Need to drop delivered frame as it shouldn't be reused.
+			multi_compositor_retire_delivered_locked(mc, now_ns);
 			continue;
 		}
 
