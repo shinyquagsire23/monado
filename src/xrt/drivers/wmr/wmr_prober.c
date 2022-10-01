@@ -64,7 +64,7 @@ check_and_get_interface(struct xrt_prober_device *device,
 
 		if (device->product_id == REVERB_G1_PID)
 			*out_hmd_type = WMR_HEADSET_REVERB_G1;
-		else if (device->product_id == REVERB_G2_CONTROLLER_PID)
+		else if (device->product_id == REVERB_G2_PID)
 			*out_hmd_type = WMR_HEADSET_REVERB_G2;
 		else if (device->product_id == VR1000_PID)
 			*out_hmd_type = WMR_HEADSET_HP_VR1000;
