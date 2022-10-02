@@ -482,7 +482,7 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 		ts += ts_accel / 4;
 		ts += ts_gyro / 4;
 
-		float diff_in_ms = fabs(diff) / (double)U_TIME_1MS_IN_NS;
+		float diff_in_ms = (float)(abs((double)diff) / (double)U_TIME_1MS_IN_NS);
 		if (diff_in_ms > 2.5) {
 			DEPTHAI_WARN(depthai, "Accel and gyro samples are too far apart - %f ms!", diff_in_ms);
 		}
