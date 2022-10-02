@@ -568,7 +568,7 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		depthai->width = 1280;
 		depthai->height = 800;
 		depthai->format = XRT_FORMAT_R8G8B8;
-		depthai->color_sensor_resoultion = dai::ColorCameraProperties::SensorResolution::THE_800_P;
+		depthai->color_sensor_resolution = dai::ColorCameraProperties::SensorResolution::THE_800_P;
 		depthai->image_orientation = dai::CameraImageOrientation::ROTATE_180_DEG;
 		depthai->fps = 60; // Currently only supports 60.
 		depthai->interleaved = true;
