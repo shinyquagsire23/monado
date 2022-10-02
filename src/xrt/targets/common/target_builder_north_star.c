@@ -284,7 +284,7 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	depthai_fs_get_stereo_calibration(the_fs, &calib);
 
 
-
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	struct xrt_slam_sinks *hand_sinks = NULL;
 
 	struct t_camera_extra_info extra_camera_info;
@@ -304,6 +304,7 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	if (create_status != 0) {
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
+#endif
 
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
@@ -312,9 +313,13 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	struct xrt_frame_sink *entry_left_sink = NULL;
 	struct xrt_frame_sink *entry_right_sink = NULL;
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	u_sink_split_create(&usysd->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
 	u_sink_split_create(&usysd->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
-
+#else
+	entry_left_sink = slam_sinks->left;
+	entry_right_sink = slam_sinks->right;
+#endif
 
 	entry_sinks = (struct xrt_slam_sinks){
 	    .left = entry_left_sink,
