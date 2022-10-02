@@ -563,7 +563,6 @@ static void
 depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera_type camera_type)
 {
 	switch (camera_type) {
-#if 0
 	case (RGB_OV_9782):
 		depthai->width = 1280;
 		depthai->height = 800;
@@ -574,7 +573,6 @@ depthai_setup_monocular_pipeline(struct depthai_fs *depthai, enum depthai_camera
 		depthai->interleaved = true;
 		depthai->color_order = dai::ColorCameraProperties::ColorOrder::RGB;
 		break;
-#endif
 	case (RGB_IMX_378):
 		depthai->width = 1920;
 		depthai->height = 1080;
