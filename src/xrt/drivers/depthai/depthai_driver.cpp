@@ -1015,11 +1015,13 @@ extern "C" struct xrt_fs *
 depthai_fs_monocular_rgb(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
-	depthai->want_cameras = true;
-	depthai->want_imu = false;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
+
+	// Set after checking for null.
+	depthai->want_imu = false;
+	depthai->want_cameras = true;
 
 	// Currently hardcoded to the default Oak-D camera.
 	enum depthai_camera_type camera_type = RGB_IMX_378;
@@ -1043,11 +1045,11 @@ depthai_fs_slam(struct xrt_frame_context *xfctx, struct depthai_slam_startup_set
 		return nullptr;
 	}
 
+	// Set after checking for null.
 	depthai->fps = settings->frames_per_second;
 	depthai->want_cameras = settings->want_cameras;
 	depthai->want_imu = settings->want_imu;
 	depthai->half_size_ov9282 = settings->half_size_ov9282;
-
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_stereo_grayscale_pipeline(depthai);
@@ -1064,11 +1066,13 @@ extern "C" struct xrt_fs *
 depthai_fs_stereo_grayscale_and_imu(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
-	depthai->want_cameras = true;
-	depthai->want_imu = true;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
+
+	// Set after checking for null.
+	depthai->want_cameras = true;
+	depthai->want_imu = true;
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_stereo_grayscale_pipeline(depthai);
@@ -1086,11 +1090,13 @@ extern "C" struct xrt_fs *
 depthai_fs_just_imu(struct xrt_frame_context *xfctx)
 {
 	struct depthai_fs *depthai = depthai_create_and_do_minimal_setup();
-	depthai->want_cameras = false;
-	depthai->want_imu = true;
 	if (depthai == nullptr) {
 		return nullptr;
 	}
+
+	// Set after checking for null.
+	depthai->want_cameras = false;
+	depthai->want_imu = true;
 
 	// Last bit is to setup the pipeline.
 	depthai_setup_stereo_grayscale_pipeline(depthai);
