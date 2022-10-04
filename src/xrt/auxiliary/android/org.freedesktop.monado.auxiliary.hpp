@@ -23,6 +23,7 @@ namespace android::content {
 
 namespace android::view {
 	class SurfaceHolder;
+	class WindowManager_LayoutParams;
 } // namespace android::view
 
 namespace org::freedesktop::monado::auxiliary {
@@ -54,29 +55,33 @@ namespace org::freedesktop::monado::auxiliary {
 		}
 
 		/*!
-		 * Wrapper for the attachToActivity static method
+		 * Wrapper for the attachToWindow static method
 		 *
 		 * Java prototype:
-		 * `public static org.freedesktop.monado.auxiliary.MonadoView attachToActivity(android.app.Activity,
-		 * long);`
+		 * `public static org.freedesktop.monado.auxiliary.MonadoView attachToActivity(android.content.Context,
+		 * long, android.view.WindowManager.LayoutParams);`
 		 *
-		 * JNI signature: (Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;
+		 * JNI signature:
+		 * (Landroid/content/Context;JLandroid/view/WindowManager$LayoutParams;)Lorg/freedesktop/monado/auxiliary/MonadoView;
 		 *
 		 */
 		static MonadoView
-		attachToActivity(android::app::Activity const &activity, void *nativePointer);
+		attachToWindow(android::content::Context const &displayContext,
+		               void *nativePointer,
+		               android::view::WindowManager_LayoutParams const &lp);
 
 		/*!
-		 * Wrapper for the attachToActivity static method
+		 * Wrapper for the removeFromWindow static method
 		 *
 		 * Java prototype:
-		 * `public static org.freedesktop.monado.auxiliary.MonadoView attachToActivity(android.app.Activity);`
+		 * `public static void removeFromWindow(android.content.Context,
+		 * org.freedesktop.monado.auxiliary.MonadoView, int);`
 		 *
-		 * JNI signature: (Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;
+		 * JNI signature: (Landroid/content/Context;Lorg/freedesktop/monado/auxiliary/MonadoView;I)V
 		 *
 		 */
-		static MonadoView
-		attachToActivity(android::app::Activity const &activity);
+		static void
+		removeFromWindow(MonadoView const &view);
 
 		/*!
 		 * Wrapper for the getDisplayMetrics static method
@@ -153,8 +158,8 @@ namespace org::freedesktop::monado::auxiliary {
 		 */
 		struct Meta : public MetaBase
 		{
-			jni::method_t attachToActivity;
-			jni::method_t attachToActivity1;
+			jni::method_t attachToWindow;
+			jni::method_t removeFromWindow;
 			jni::method_t getDisplayMetrics;
 			jni::method_t getDisplayRefreshRate;
 			jni::method_t getNativePointer;

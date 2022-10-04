@@ -18,18 +18,19 @@
 namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	inline MonadoView
-	MonadoView::attachToActivity(android::app::Activity const &activity, void *nativePointer)
+	MonadoView::attachToWindow(android::content::Context const &displayContext,
+	                           void *nativePointer,
+	                           wrap::android::view::WindowManager_LayoutParams const &lp)
 	{
 		return MonadoView(Meta::data().clazz().call<jni::Object>(
-		    Meta::data().attachToActivity, activity.object(),
-		    static_cast<long long>(reinterpret_cast<uintptr_t>(nativePointer))));
+		    Meta::data().attachToWindow, displayContext.object(),
+		    static_cast<long long>(reinterpret_cast<uintptr_t>(nativePointer)), lp.object()));
 	}
 
-	inline MonadoView
-	MonadoView::attachToActivity(android::app::Activity const &activity)
+	inline void
+	MonadoView::removeFromWindow(const MonadoView &view)
 	{
-		return MonadoView(
-		    Meta::data().clazz().call<jni::Object>(Meta::data().attachToActivity1, activity.object()));
+		Meta::data().clazz().call<void>(Meta::data().removeFromWindow, view.object());
 	}
 
 	inline jni::Object

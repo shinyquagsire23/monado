@@ -11,7 +11,8 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -29,10 +30,6 @@ public class MonadoView extends SurfaceView
         implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
 
-    @NonNull private final Context context;
-
-    /// The activity we've connected to.
-    @Nullable private final Activity activity;
     private final Object currentSurfaceHolderSync = new Object();
 
     public int width = -1;
@@ -47,28 +44,19 @@ public class MonadoView extends SurfaceView
 
     public MonadoView(Context context) {
         super(context);
-        this.context = context;
-        Activity activity;
+
         if (context instanceof Activity) {
-            activity = (Activity) context;
+            Activity activity = (Activity) context;
             systemUiController = new SystemUiController(activity.getWindow().getDecorView());
             systemUiController.hide();
-        } else {
-            activity = null;
         }
-        this.activity = activity;
+        SurfaceHolder surfaceHolder = getHolder();
+        surfaceHolder.addCallback(this);
     }
 
-    public MonadoView(Activity activity) {
-        super(activity);
-        this.context = activity;
-        this.activity = activity;
-        systemUiController = new SystemUiController(activity.getWindow().getDecorView());
-        systemUiController.hide();
-    }
+    private MonadoView(Context context, long nativePointer) {
+        this(context);
 
-    private MonadoView(Activity activity, long nativePointer) {
-        this(activity);
         nativeCounterpart = new NativeCounterpart(nativePointer);
     }
 
@@ -76,23 +64,71 @@ public class MonadoView extends SurfaceView
      * Construct and start attaching a MonadoView to a client application.
      *
      * @param activity The activity to attach to.
-     * @param nativePointer The native android_custom_surface pointer, cast to a long.
      * @return The MonadoView instance created and asynchronously attached.
      */
     @NonNull @Keep
-    @SuppressWarnings("deprecation")
-    public static MonadoView attachToActivity(
-            @NonNull final Activity activity, long nativePointer) {
-        final MonadoView view = new MonadoView(activity, nativePointer);
-        view.createSurfaceInActivity();
+    public static MonadoView attachToActivity(@NonNull final Activity activity) {
+        final MonadoView view = new MonadoView(activity);
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.flags =
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        attachToWindow(activity, view, lp);
         return view;
     }
 
+    /**
+     * Construct and start attaching a MonadoView to window.
+     *
+     * @param displayContext Display context used for looking for target window.
+     * @param nativePointer The native android_custom_surface pointer, cast to a long.
+     * @param lp Layout parameters associated with view.
+     * @return The MonadoView instance created and asynchronously attached.
+     */
     @NonNull @Keep
-    public static MonadoView attachToActivity(@NonNull final Activity activity) {
-        final MonadoView view = new MonadoView(activity);
-        view.createSurfaceInActivity();
+    public static MonadoView attachToWindow(
+            @NonNull final Context displayContext,
+            long nativePointer,
+            WindowManager.LayoutParams lp)
+            throws IllegalArgumentException {
+        final MonadoView view = new MonadoView(displayContext, nativePointer);
+        attachToWindow(displayContext, view, lp);
         return view;
+    }
+
+    private static void attachToWindow(
+            @NonNull final Context context,
+            @NonNull MonadoView view,
+            @NonNull WindowManager.LayoutParams lp) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(
+                () -> {
+                    Log.d(TAG, "Start adding view to window");
+                    WindowManager wm =
+                            (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                    wm.addView(view, lp);
+
+                    SystemUiController systemUiController = new SystemUiController(view);
+                    systemUiController.hide();
+                });
+    }
+
+    /**
+     * Remove given MonadoView from window.
+     *
+     * @param view The view to remove.
+     */
+    @Keep
+    public static void removeFromWindow(@NonNull MonadoView view) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(
+                () -> {
+                    Log.d(TAG, "Start removing view from window");
+                    WindowManager wm =
+                            (WindowManager)
+                                    view.getContext().getSystemService(Context.WINDOW_SERVICE);
+                    wm.removeView(view);
+                });
     }
 
     @NonNull @Keep
@@ -115,45 +151,6 @@ public class MonadoView extends SurfaceView
             return 0;
         }
         return nativeCounterpart.getNativePointer();
-    }
-
-    private void createSurfaceInActivity() {
-        createSurfaceInActivity(false);
-    }
-
-    /** @param focusable Indicates MonadoView should be focusable or not */
-    private void createSurfaceInActivity(boolean focusable) {
-        Log.i(TAG, "Starting to add a new surface!");
-        activity.runOnUiThread(
-                () -> {
-                    Log.i(TAG, "Starting runOnUiThread");
-                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-                    WindowManager windowManager = activity.getWindowManager();
-                    WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-                    if (focusable) {
-                        lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
-                    } else {
-                        // There are 2 problems if view is focusable on all-in-one device:
-                        // 1. Navigation bar won't go away because view gets focus.
-                        // 2. Underlying activity lost focus and cannot receive input.
-                        lp.flags =
-                                WindowManager.LayoutParams.FLAG_FULLSCREEN
-                                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        lp.layoutInDisplayCutoutMode =
-                                WindowManager.LayoutParams
-                                        .LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-                    }
-                    windowManager.addView(this, lp);
-                    if (focusable) {
-                        requestFocus();
-                    }
-                    SurfaceHolder surfaceHolder = getHolder();
-                    surfaceHolder.addCallback(this);
-                    Log.i(TAG, "Registered callbacks!");
-                });
     }
 
     /**

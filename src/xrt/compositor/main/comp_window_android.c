@@ -87,8 +87,9 @@ comp_window_android_update_window_title(struct comp_target *ct, const char *titl
 static struct ANativeWindow *
 _create_android_window(struct comp_window_android *cwa)
 {
+	// 0 means default display
 	cwa->custom_surface =
-	    android_custom_surface_async_start(android_globals_get_vm(), android_globals_get_activity());
+	    android_custom_surface_async_start(android_globals_get_vm(), android_globals_get_activity(), 0);
 	if (cwa->custom_surface == NULL) {
 		COMP_ERROR(cwa->base.base.c,
 		           "comp_window_android_create_surface: could not "
