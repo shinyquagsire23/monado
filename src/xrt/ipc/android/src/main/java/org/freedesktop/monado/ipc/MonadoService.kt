@@ -32,19 +32,15 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
     @Inject lateinit var serviceNotification: IServiceNotification
 
-    private lateinit var surfaceManager: SurfaceManager
-
     override fun onCreate() {
         super.onCreate()
 
-        surfaceManager = SurfaceManager(this)
-        binder = MonadoImpl(surfaceManager)
+        binder = MonadoImpl(this)
         watchdog =
             Watchdog(
                 // If the surface comes from client, just stop the service when client disconnected
                 // because the surface belongs to the client.
-                if (surfaceManager.canDrawOverlays()) BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS
-                else 0,
+                if (binder.canDrawOverOtherApps()) BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS else 0,
                 this
             )
         watchdog.startMonitor()
@@ -61,7 +57,6 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
         binder.shutdown()
         watchdog.stopMonitor()
-        surfaceManager.destroySurface()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

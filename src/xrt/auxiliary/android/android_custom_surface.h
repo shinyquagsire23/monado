@@ -93,6 +93,9 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
                                            void *activity,
                                            struct xrt_android_display_metrics *out_metrics);
 
+bool
+android_custom_surface_can_draw_overlays(struct _JavaVM *vm, void *context);
+
 #ifdef __cplusplus
 }
 #endif

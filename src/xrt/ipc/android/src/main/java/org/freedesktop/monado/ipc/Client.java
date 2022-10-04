@@ -22,7 +22,6 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.WindowManager;
 
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
@@ -155,39 +154,24 @@ public class Client implements ServiceConnection {
         // (ready ... synchronized ... visible ... focused)
         new Thread(
                         () -> {
-                            boolean surfaceCreated = false;
                             Activity activity = null;
                             if (context_ instanceof Activity) {
                                 activity = (Activity) context_;
                             }
 
                             try {
-                                // Determine whether runtime or client should create surface
-                                if (monado.canDrawOverOtherApps()) {
-                                    WindowManager wm =
-                                            (WindowManager)
-                                                    context_.getSystemService(
-                                                            Context.WINDOW_SERVICE);
-                                    surfaceCreated =
-                                            monado.createSurface(
-                                                    wm.getDefaultDisplay().getDisplayId(), false);
-                                } else {
-                                    if (activity != null) {
-                                        Surface surface = attachViewAndGetSurface(activity);
-                                        surfaceCreated = (surface != null);
-                                        if (surfaceCreated) {
-                                            monado.passAppSurface(surface);
-                                        }
+                                if (!monado.canDrawOverOtherApps() && activity != null) {
+                                    Surface surface = attachViewAndGetSurface(activity);
+                                    if (surface == null) {
+                                        Log.e(TAG, "Failed to create surface");
+                                        handleFailure();
+                                        return;
                                     }
+
+                                    monado.passAppSurface(surface);
                                 }
                             } catch (RemoteException e) {
                                 e.printStackTrace();
-                            }
-
-                            if (!surfaceCreated) {
-                                Log.e(TAG, "Failed to create surface");
-                                handleFailure();
-                                return;
                             }
 
                             if (activity != null) {

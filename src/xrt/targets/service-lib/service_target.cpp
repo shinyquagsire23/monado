@@ -133,12 +133,19 @@ private:
 };
 } // namespace
 
-extern "C" void
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz)
+extern "C" JNIEXPORT void JNICALL
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz, jobject context)
 {
+	JavaVM *jvm = nullptr;
+	jint result = env->GetJavaVM(&jvm);
+	assert(result == JNI_OK);
+	assert(jvm);
+
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
 	U_LOG_D("service: Called nativeStartServer");
+
+	android_globals_store_vm_and_context(jvm, context);
 
 	IpcServerHelper::instance().startServer();
 }
@@ -173,18 +180,4 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeShutdownServer(JNIEnv *env, job
 	jni::Object monadoImpl(thiz);
 
 	return IpcServerHelper::instance().shutdownServer();
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_org_freedesktop_monado_openxr_1runtime_MonadoOpenXrApplication_nativeStoreContext(JNIEnv *env,
-                                                                                       jobject thiz,
-                                                                                       jobject context)
-{
-	JavaVM *jvm = nullptr;
-	jint result = env->GetJavaVM(&jvm);
-	assert(result == JNI_OK);
-	assert(jvm);
-
-	jni::init(env);
-	android_globals_store_vm_and_context(jvm, context);
 }

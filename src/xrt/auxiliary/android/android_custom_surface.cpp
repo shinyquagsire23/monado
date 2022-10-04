@@ -17,6 +17,7 @@
 
 #include "wrap/android.content.h"
 #include "wrap/android.hardware.display.h"
+#include "wrap/android.provider.h"
 #include "wrap/android.view.h"
 #include "org.freedesktop.monado.auxiliary.hpp"
 
@@ -24,6 +25,7 @@
 
 using wrap::android::content::Context;
 using wrap::android::hardware::display::DisplayManager;
+using wrap::android::provider::Settings;
 using wrap::android::view::Display;
 using wrap::android::view::SurfaceHolder;
 using wrap::android::view::WindowManager_LayoutParams;
@@ -197,4 +199,11 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		U_LOG_E("Could not get display metrics: %s", e.what());
 		return false;
 	}
+}
+
+bool
+android_custom_surface_can_draw_overlays(struct _JavaVM *vm, void *context)
+{
+	jni::init(vm);
+	return Settings::canDrawOverlays(Context{(jobject)context});
 }
