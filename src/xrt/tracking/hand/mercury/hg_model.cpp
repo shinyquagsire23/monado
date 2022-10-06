@@ -637,16 +637,17 @@ calc_src_tri(cv::Point2f center,
 		out_src_tri[2] = top_right; //{center - go_down + go_right};
 	} break;
 	case CAMERA_ORIENTATION_90: {
+		// Need to rotate the view back by -90°
+		// top left (becomes top right)
+		out_src_tri[0] = top_right;
 
-		// top left (becomes bottom left)
-		out_src_tri[0] = bottom_left; //{center + go_down - go_right};
+		// bottom left (becomes top left)
+		out_src_tri[1] = top_left;
 
-		// bottom left (becomes bottom right)
-		out_src_tri[1] = bottom_right; //{center + go_down + go_right};
-
-		// top right (becomes top left)
-		out_src_tri[2] = top_left; //{center - go_down - go_right};
+		// top right (becomes bottom right)
+		out_src_tri[2] = bottom_right;
 	} break;
+
 	case CAMERA_ORIENTATION_180: {
 		// top left (becomes bottom right)
 		out_src_tri[0] = bottom_right;
@@ -658,14 +659,15 @@ calc_src_tri(cv::Point2f center,
 		out_src_tri[2] = bottom_left;
 	} break;
 	case CAMERA_ORIENTATION_270: {
-		// top left (becomes top right)
-		out_src_tri[0] = top_right;
+		// Need to rotate the view clockwise 90°
+		// top left (becomes bottom left)
+		out_src_tri[0] = bottom_left; //{center + go_down - go_right};
 
-		// bottom left (becomes top left)
-		out_src_tri[1] = top_left;
+		// bottom left (becomes bottom right)
+		out_src_tri[1] = bottom_right; //{center + go_down + go_right};
 
-		// top right (becomes bottom right)
-		out_src_tri[2] = bottom_right;
+		// top right (becomes top left)
+		out_src_tri[2] = top_left; //{center - go_down - go_right};
 	} break;
 	default: assert(false);
 	}
@@ -713,15 +715,20 @@ run_keypoint_estimation_new(void *ptr)
 	cv::Point2f go_right = {output->size_px / 2, 0};
 	cv::Point2f go_down = {0, output->size_px / 2};
 
-	if (info->hand_idx == 1) {
-		go_right *= -1;
-	}
-
 	calc_src_tri(center, go_right, go_down, info->view->camera_info.camera_orientation, src_tri);
 
-	dst_tri[0] = {0, 0};
-	dst_tri[1] = {0, 128};
-	dst_tri[2] = {128, 0};
+	/* For the right hand, flip the result horizontally since
+	 * the model is trained on left hands.
+	 * Top left, bottom left, top right */
+	if (info->hand_idx == 1) {
+		dst_tri[0] = {128, 0};
+		dst_tri[1] = {128, 128};
+		dst_tri[2] = {0, 0};
+	} else {
+		dst_tri[0] = {0, 0};
+		dst_tri[1] = {0, 128};
+		dst_tri[2] = {128, 0};
+	}
 
 	cv::Matx23f go_there = getAffineTransform(src_tri, dst_tri);
 	cv::Matx23f go_back = getAffineTransform(dst_tri, src_tri);
