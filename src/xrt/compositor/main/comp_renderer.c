@@ -994,7 +994,6 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 	    fovs,                                            //
 	    poses);                                          //
 
-	struct xrt_pose base_space_pose = XRT_POSE_IDENTITY;
 	for (uint32_t i = 0; i < 2; i++) {
 		const struct xrt_fov fov = fovs[i];
 		const struct xrt_pose eye_pose = poses[i];
@@ -1005,7 +1004,6 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose_if_not_identity(&xrc, &eye_pose);
 		m_relation_chain_push_relation(&xrc, &head_relation);
-		m_relation_chain_push_pose_if_not_identity(&xrc, &base_space_pose);
 		m_relation_chain_resolve(&xrc, &result);
 
 		out_eye[i] = eye_pose;
