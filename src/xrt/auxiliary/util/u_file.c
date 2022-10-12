@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -16,6 +16,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#ifdef XRT_OS_WINDOWS
+#define PATH_MAX MAX_PATH
+#endif
 
 #ifdef XRT_OS_LINUX
 #include <sys/stat.h>
@@ -103,10 +107,7 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	// Do not report error.
 	return fopen(file_str, mode);
 }
-
-#else if defined(XRT_OS_WINDOWS)
-#define PATH_MAX MAX_PATH
-#endif
+#endif /* XRT_OS_LINUX */
 
 ssize_t
 u_file_get_runtime_dir(char *out_path, size_t out_path_size)
