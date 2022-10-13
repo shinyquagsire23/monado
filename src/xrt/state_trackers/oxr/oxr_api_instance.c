@@ -252,28 +252,17 @@ oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RES
 	struct oxr_instance *inst;
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrResultToString");
-#ifdef _MSC_VER
 
 #define MAKE_RESULT_CASE(VAL, _)                                                                                       \
-	case VAL: {                                                                                                    \
-		const char str[] = #VAL;                                                                               \
-		_STATIC_ASSERT(sizeof(str) < XR_MAX_RESULT_STRING_SIZE);                                               \
-		memcpy(buffer, str, sizeof(str));                                                                      \
-		break;                                                                                                 \
-	}
-#else
-#define MAKE_RESULT_CASE(VAL, _)                                                                                       \
-	case VAL:                                                                                                      \
-		strncpy(buffer, #VAL, XR_MAX_RESULT_STRING_SIZE);                                                      \
-		break;
-#endif
+	case VAL: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, #VAL); break;
+
 	switch (value) {
 		XR_LIST_ENUM_XrResult(MAKE_RESULT_CASE);
 	default:
 		snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_%s_%d", value < 0 ? "FAILURE" : "SUCCESS",
 		         value);
 	}
-	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
+	// The function snprintf always null terminates.
 
 	return XR_SUCCESS;
 }
@@ -289,11 +278,12 @@ oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buf
 
 #define MAKE_TYPE_CASE(VAL, _)                                                                                         \
 	case VAL: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, #VAL); break;
+
 	switch (value) {
 		XR_LIST_ENUM_XrStructureType(MAKE_TYPE_CASE);
 	default: snprintf(buffer, XR_MAX_RESULT_STRING_SIZE, "XR_UNKNOWN_STRUCTURE_TYPE_%d", value);
 	}
-	buffer[XR_MAX_RESULT_STRING_SIZE - 1] = '\0';
+	// The function snprintf always null terminates.
 
 	return XR_SUCCESS;
 }
