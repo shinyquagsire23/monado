@@ -85,7 +85,7 @@ ipc_receive_fds(
     struct ipc_message_channel *imc, void *out_data, size_t size, HANDLE *out_handles, uint32_t handle_count)
 {
 	auto rc = ipc_receive(imc, out_data, size);
-	if (rc != XRT_SUCCESS || !handle_count) {
+	if (rc != XRT_SUCCESS) {
 		return rc;
 	}
 	return ipc_receive(imc, out_handles, handle_count * sizeof(*out_handles));
