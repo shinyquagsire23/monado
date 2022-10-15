@@ -29,7 +29,7 @@ namespace xrt::auxiliary::tracking::slam {
 
 // For implementation: same as IMPLEMENTATION_VERSION_*
 // For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
-constexpr int HEADER_VERSION_MAJOR = 4; //!< API Breakages
+constexpr int HEADER_VERSION_MAJOR = 5; //!< API Breakages
 constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
 constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
 
@@ -88,6 +88,17 @@ struct img_sample {
 };
 
 /*!
+ * @brief Parameters for creating the system pipeline.
+ */
+struct slam_config {
+  //! Path to a implementation-specific config file. If null, use defaults.
+  std::shared_ptr<std::string> config_file;
+
+  //! If supported, whether to open the system's UI.
+  bool show_ui;
+};
+
+/*!
  * @brief slam_tracker serves as an interface between Monado and external SLAM
  * systems.
  *
@@ -95,15 +106,7 @@ struct img_sample {
  * should be provided by an external SLAM system.
  */
 struct slam_tracker {
-  /*!
-   * @brief Construct a new slam tracker object
-   *
-   * @param config_file SLAM systems parameters tend to be numerous and very
-   * specific, so they usually use a configuration file as the main way to set
-   * them up. Therefore, this constructor receives a path to a
-   * implementation-specific configuration file.
-   */
-  slam_tracker(const std::string &config_file);
+  slam_tracker(const slam_config &config);
   ~slam_tracker();
 
   slam_tracker(const slam_tracker &) = delete;

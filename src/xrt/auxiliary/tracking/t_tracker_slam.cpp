@@ -66,6 +66,7 @@
 //! @see t_slam_tracker_config
 DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", nullptr)
+DEBUG_GET_ONCE_BOOL_OPTION(slam_ui, "SLAM_UI", false)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_SL))
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
@@ -1268,6 +1269,7 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 {
 	config->log_level = debug_get_log_option_slam_log();
 	config->slam_config = debug_get_option_slam_config();
+	config->slam_ui = debug_get_bool_option_slam_ui();
 	config->submit_from_start = debug_get_bool_option_slam_submit_from_start();
 	config->prediction = t_slam_prediction_type(debug_get_num_option_slam_prediction_type());
 	config->write_csvs = debug_get_bool_option_slam_write_csvs();
@@ -1321,8 +1323,10 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	t.base.get_tracked_pose = t_slam_get_tracked_pose;
 
-	std::string config_file_string = std::string(config_file ? config_file : "DEFAULT");
-	t.slam = new slam_tracker{config_file_string};
+	slam_config system_config = {};
+	system_config.config_file = config_file ? make_shared<string>(config_file) : nullptr;
+	system_config.show_ui = config->slam_ui;
+	t.slam = new slam_tracker{system_config};
 
 	if (!config_file) {
 		SLAM_INFO("Using calibration from driver and default pipeline settings");

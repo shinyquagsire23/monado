@@ -465,6 +465,7 @@ struct t_slam_tracker_config
 {
 	enum u_logging_level log_level; //!< SLAM tracking logging level
 	const char *slam_config;        //!< Config file path, format is specific to the SLAM implementation in use
+	bool slam_ui;                   //!< Whether to open the external UI of the external SLAM system
 	bool submit_from_start;         //!< Whether to submit data to the SLAM tracker without user action
 	enum t_slam_prediction_type prediction; //!< Which level of prediction to use
 	bool write_csvs;                        //!< Whether to enable CSV writers from the start for later analysis
