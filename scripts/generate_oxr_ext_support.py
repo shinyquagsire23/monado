@@ -5,6 +5,28 @@
 
 from pathlib import Path
 
+def _add_defined(s):
+    if "defined" in s:
+        return s
+    return "defined({})".format(s)
+
+def or_(*args):
+    """
+    Create an "OR" in the definition condition list.
+
+    Takes any number of strings directly or through e.g. "not_".
+    """
+    return "({})".format(" || ".join(_add_defined(s) for s in args))
+
+
+def not_(s):
+    """
+    Create a "NOT" in the condition list.
+
+    Takes a single string, directly or through e.g. "or_".
+    """
+    return "(!{})".format(_add_defined(s))
+
 # Each extension that we implement gets an entry in this tuple.
 # Each entry should be a list of defines that are checked for an extension:
 # the first one must be the name of the extension itself.
@@ -40,30 +62,6 @@ EXTENSIONS = (
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MNDX_force_feedback_curl'],
 )
-
-
-def or_(*args):
-    """
-    Create an "OR" in the definition condition list.
-
-    Takes any number of strings directly or through e.g. "not_".
-    """
-    return "({})".format(" || ".join(_add_defined(s) for s in args))
-
-
-def not_(s):
-    """
-    Create a "NOT" in the condition list.
-
-    Takes a single string, directly or through e.g. "or_".
-    """
-    return "(!{})".format(_add_defined(s))
-
-
-def _add_defined(s):
-    if "defined" in s:
-        return s
-    return "defined({})".format(s)
 
 
 ROOT = Path(__file__).resolve().parent.parent
