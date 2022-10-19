@@ -104,7 +104,7 @@
 /*
  * XR_KHR_convert_timespec_time
  */
-#if defined(XR_KHR_convert_timespec_time) && defined(XR_USE_TIMESPEC)
+#if defined(XR_KHR_convert_timespec_time) && defined(XR_USE_TIMESPEC) && (!defined(XR_USE_PLATFORM_WIN32))
 #define OXR_HAVE_KHR_convert_timespec_time
 #define OXR_EXTENSION_SUPPORT_KHR_convert_timespec_time(_) _(KHR_convert_timespec_time, KHR_CONVERT_TIMESPEC_TIME)
 #else

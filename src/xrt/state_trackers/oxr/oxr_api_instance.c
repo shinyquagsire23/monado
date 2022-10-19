@@ -355,7 +355,7 @@ oxr_xrPathToString(
 }
 
 // ---- XR_KHR_convert_timespec_time extension
-#ifdef XR_USE_TIMESPEC
+#ifdef OXR_HAVE_KHR_convert_timespec_time
 XrResult
 oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *timespecTime, XrTime *time)
 {
@@ -390,7 +390,7 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct time
 	return oxr_instance_convert_time_to_timespec(&log, inst, time, timespecTime);
 }
 
-#endif // XR_USE_TIMESPEC
+#endif // OXR_HAVE_KHR_convert_timespec_time
 
 // ---- XR_KHR_win32_convert_performance_counter_time extension
 #ifdef XR_USE_PLATFORM_WIN32
