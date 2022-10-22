@@ -373,6 +373,7 @@ if(XRT_BUILD_DRIVER_WMR)
 		PRIVATE
 			xrt-interfaces
 			aux_util
+			aux_util_sink # TODO remove this when converted to builders.
 			aux_math
 			aux_tracking
 			xrt-external-cjson

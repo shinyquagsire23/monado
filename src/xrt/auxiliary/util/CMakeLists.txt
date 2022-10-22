@@ -1,6 +1,10 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+####
+# Main util library
+#
+
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
 	@ONLY
@@ -63,16 +67,6 @@ add_library(
 	u_pretty_print.h
 	u_prober.c
 	u_prober.h
-	u_sink.h
-	u_sink_combiner.c
-	u_sink_force_genlock.c
-	u_sink_converter.c
-	u_sink_deinterleaver.c
-	u_sink_queue.c
-	u_sink_simple_queue.c
-	u_sink_quirk.c
-	u_sink_split.c
-	u_sink_stereo_sbs_to_slam_sbs.c
 	u_string_list.cpp
 	u_string_list.h
 	u_string_list.hpp
@@ -102,12 +96,7 @@ add_library(
 	u_worker.hpp
 	"${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
 	)
-target_link_libraries(aux_util PUBLIC aux-includes xrt-pthreads aux_generated_bindings aux_math)
-
-if(XRT_HAVE_JPEG)
-	target_link_libraries(aux_util PRIVATE ${JPEG_LIBRARIES})
-	target_include_directories(aux_util PRIVATE ${JPEG_INCLUDE_DIRS})
-endif()
+target_link_libraries(aux_util PUBLIC aux-includes aux_generated_bindings aux_os aux_math)
 
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
@@ -130,3 +119,35 @@ if(ANDROID)
 endif()
 
 target_include_directories(aux_util PRIVATE ${EIGEN3_INCLUDE_DIR})
+
+####
+# Sink library
+#
+
+add_library(
+	aux_util_sink STATIC
+	u_sink.h
+	u_sink_combiner.c
+	u_sink_force_genlock.c
+	u_sink_converter.c
+	u_sink_deinterleaver.c
+	u_sink_queue.c
+	u_sink_simple_queue.c
+	u_sink_quirk.c
+	u_sink_split.c
+	u_sink_stereo_sbs_to_slam_sbs.c
+	)
+target_link_libraries(
+	aux_util_sink
+	PUBLIC
+		aux-includes
+		xrt-pthreads
+		aux_os
+		aux_math
+		aux_util
+	)
+
+if(XRT_HAVE_JPEG)
+	target_link_libraries(aux_util_sink PRIVATE ${JPEG_LIBRARIES})
+	target_include_directories(aux_util_sink PRIVATE ${JPEG_INCLUDE_DIRS})
+endif()

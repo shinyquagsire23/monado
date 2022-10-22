@@ -28,6 +28,7 @@ target_link_libraries(
 	PRIVATE
 		xrt-external-stb
 		aux_util
+		aux_util_sink
 		aux_os
 		aux_ogl
 		drv_includes

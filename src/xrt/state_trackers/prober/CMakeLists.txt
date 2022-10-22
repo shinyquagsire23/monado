@@ -17,6 +17,7 @@ target_link_libraries(
 		drv_includes
 		drv_multi
 		aux_util
+		aux_util_sink
 		aux_os
 		aux_tracking
 	)
