@@ -86,8 +86,6 @@ add_library(
 	u_config_json.c
 	u_config_json.h
 	u_verify.h
-	u_process.c
-	u_process.h
 	u_win32_com_guard.cpp
 	u_win32_com_guard.hpp
 	u_worker.c
@@ -107,11 +105,6 @@ endif()
 
 if(XRT_FEATURE_TRACING AND XRT_HAVE_PERCETTO)
 	target_link_libraries(aux_util PUBLIC percetto::percetto)
-endif()
-
-if(XRT_HAVE_LIBBSD)
-	target_include_directories(aux_util SYSTEM PRIVATE ${LIBBSD_INCLUDE_DIRS})
-	target_link_libraries(aux_util PUBLIC ${LIBBSD_LIBRARIES})
 endif()
 
 if(ANDROID)
@@ -150,4 +143,16 @@ target_link_libraries(
 if(XRT_HAVE_JPEG)
 	target_link_libraries(aux_util_sink PRIVATE ${JPEG_LIBRARIES})
 	target_include_directories(aux_util_sink PRIVATE ${JPEG_INCLUDE_DIRS})
+endif()
+
+####
+# Process library
+#
+
+add_library(aux_util_process STATIC u_process.c u_process.h)
+target_link_libraries(aux_util_process PUBLIC aux-includes aux_util)
+
+if(XRT_HAVE_LIBBSD)
+	target_include_directories(aux_util_process SYSTEM PRIVATE ${LIBBSD_INCLUDE_DIRS})
+	target_link_libraries(aux_util_process PUBLIC ${LIBBSD_LIBRARIES})
 endif()
