@@ -1,4 +1,4 @@
-# Copyright 2019-2021, Collabora, Ltd.
+# Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ####
@@ -9,18 +9,13 @@ add_library(
 	target_lists STATIC target_builder_interface.h target_builder_legacy.c target_lists.c
 			    target_lists.h
 	)
-target_link_libraries(
-	target_lists
-	PRIVATE
-		xrt-interfaces
-		aux_util # TODO Remove this after removing #include "util/u_time.h" from xrt_defines.h
-		drv_includes
-	)
+target_link_libraries(target_lists PRIVATE xrt-interfaces aux_util drv_includes)
 target_include_directories(target_lists PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 ###
 # Builders
 #
+
 if(XRT_BUILD_DRIVER_REMOTE)
 	target_sources(target_lists PRIVATE target_builder_remote.c)
 endif()
