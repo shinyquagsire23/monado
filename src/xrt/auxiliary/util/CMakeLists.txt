@@ -4,6 +4,10 @@
 ####
 # Main util library
 #
+# Avoid linking with libraries that brings in DSOs as this
+# library is used everywhere. Including libraries loaded in
+# by applications like the OpenXR runtime library.
+#
 
 configure_file(
 	"${CMAKE_CURRENT_SOURCE_DIR}/u_git_tag.c.in" "${CMAKE_CURRENT_BINARY_DIR}/u_git_tag.c"
@@ -96,6 +100,7 @@ add_library(
 	)
 target_link_libraries(aux_util PUBLIC aux-includes aux_generated_bindings aux_os aux_math)
 
+# Is basically used everywhere, unavoidable.
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
 	target_compile_definitions(aux_util PRIVATE XRT_HAVE_SYSTEM_CJSON)
@@ -103,14 +108,17 @@ else()
 	target_link_libraries(aux_util PUBLIC xrt-external-cjson)
 endif()
 
+# Is basically used everywhere, only used in debugging.
 if(XRT_FEATURE_TRACING AND XRT_HAVE_PERCETTO)
 	target_link_libraries(aux_util PUBLIC percetto::percetto)
 endif()
 
+# Is basically used everywhere, so link with here.
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})
 endif()
 
+# Internal dependency and doesn't bring in any DSO.
 target_include_directories(aux_util PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 ####
