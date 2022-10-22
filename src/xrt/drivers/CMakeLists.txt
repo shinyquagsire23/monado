@@ -13,7 +13,7 @@ if(XRT_BUILD_DRIVER_ARDUINO)
 		drv_arduino STATIC arduino/arduino_device.c arduino/arduino_interface.h
 				   arduino/arduino_prober.c
 		)
-	target_link_libraries(drv_arduino PRIVATE xrt-interfaces aux_util aux_os)
+	target_link_libraries(drv_arduino PRIVATE xrt-interfaces aux_util aux_os aux_os_ble)
 	list(APPEND ENABLED_DRIVERS arduino)
 endif()
 
@@ -26,7 +26,7 @@ if(XRT_BUILD_DRIVER_DAYDREAM)
 		drv_daydream STATIC daydream/daydream_device.c daydream/daydream_device.h
 				    daydream/daydream_interface.h daydream/daydream_prober.c
 		)
-	target_link_libraries(drv_daydream PRIVATE xrt-interfaces aux_util aux_os)
+	target_link_libraries(drv_daydream PRIVATE xrt-interfaces aux_util aux_os aux_os_ble)
 	list(APPEND ENABLED_DRIVERS daydream)
 endif()
 
