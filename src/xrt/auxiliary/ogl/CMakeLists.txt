@@ -19,7 +19,8 @@ if(XRT_HAVE_EGL)
 	target_sources(aux_ogl PRIVATE egl_api.c egl_api.h)
 endif()
 
-if(XRT_HAVE_OPENGLES)
+# Only needed on Android
+if(ANDROID AND XRT_HAVE_OPENGLES)
 	target_link_libraries(aux_ogl PUBLIC EGL::EGL)
 endif()
 
