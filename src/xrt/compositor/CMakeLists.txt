@@ -41,8 +41,9 @@ endif()
 
 if(XRT_HAVE_EGL)
 	target_sources(
-		comp_client PRIVATE client/comp_gl_eglimage_swapchain.c
-				    client/comp_gl_eglimage_swapchain.h
+		comp_client
+		PRIVATE client/comp_gl_eglimage_swapchain.c client/comp_gl_eglimage_swapchain.h
+			client/comp_egl_client.c client/comp_egl_client.h
 		)
 endif()
 
@@ -59,9 +60,6 @@ if(XRT_HAVE_OPENGL AND WIN32)
 		comp_client PRIVATE client/comp_gl_win32_client.c client/comp_gl_win32_client.h
 				    client/comp_gl_win32_glue.c
 		)
-endif()
-if(XRT_HAVE_EGL)
-	target_sources(comp_client PRIVATE client/comp_egl_client.c client/comp_egl_client.h)
 endif()
 
 if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
