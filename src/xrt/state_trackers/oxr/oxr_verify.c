@@ -586,11 +586,11 @@ oxr_verify_XrGraphicsBindingOpenGLWin32KHR(struct oxr_logger *log, const XrGraph
 	}
 
 	if (next->hDC == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "hDC is NULL");
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID, "hDC is NULL");
 	}
 
 	if (next->hGLRC == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "hGLRC is NULL");
+		return oxr_error(log, XR_ERROR_GRAPHICS_DEVICE_INVALID, "hGLRC is NULL");
 	}
 
 	return XR_SUCCESS;
