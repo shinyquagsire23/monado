@@ -9,8 +9,8 @@
   inherit:
     default: false
   variables:
-    MONADO_WIN_BASE_TAG: "20220727.0"
-    MONADO_WIN_MAIN_TAG: "20220727.0"
+    MONADO_WIN_BASE_TAG: "20221026.0"
+    MONADO_WIN_MAIN_TAG: "20221026.0"
     MONADO_BASE_IMAGE_PATH: "win2022/vs2022_base"
     MONADO_MAIN_IMAGE_PATH: "win2022/vs2022"
 

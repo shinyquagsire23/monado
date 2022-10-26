@@ -135,22 +135,32 @@ function Test-Image {
     return $false
 }
 
+if ($BaseImage -and (!$BaseUpstreamImage)) {
+    $BaseUpstreamImage = $BaseImage
+}
+
 Write-Host "Will log in to $RegistryUri as $RegistryUsername"
 Write-Host "Will check for image $UserImage - if it does not exist but $UpstreamImage does, we copy that one, otherwise we need to build it."
 if ($BaseImage) {
     Write-Host "This image builds on $BaseImage so we will check for it."
     if ($BaseUpstreamImage) {
         Write-Host "If it is missing but $BaseUpstreamImage exists, we copy that one. If both are missing, we error out."
-    } else {
+    }
+    else {
         Write-Host "If it is missing, we error out."
     }
 }
 
-# Start-Docker -ArgumentList ("login", "-u", "$RegistryUsername", "--password-stdin", "$RegistryPassword", "$RegistryUri")
-$loginProc = Start-Process -FilePath "docker" -ArgumentList ($CommonDockerArgs + @("login", "-u", "$RegistryUsername", "--password", "$RegistryPassword", "$RegistryUri")) `
-    -NoNewWindow -PassThru -WorkingDirectory "$PSScriptRoot" -Wait
-if ($loginProc.ExitCode -ne 0) {
-    throw "docker login failed"
+if ($RegistryPassword) {
+    # Start-Docker -ArgumentList ("login", "-u", "$RegistryUsername", "--password-stdin", "$RegistryPassword", "$RegistryUri")
+    $loginProc = Start-Process -FilePath "docker" -ArgumentList ($CommonDockerArgs + @("login", "-u", "$RegistryUsername", "--password", "$RegistryPassword", "$RegistryUri")) `
+        -NoNewWindow -PassThru -WorkingDirectory "$PSScriptRoot" -Wait
+    if ($loginProc.ExitCode -ne 0) {
+        throw "docker login failed"
+    }
+}
+else {
+    Write-Host "Skipping docker login, password not available"
 }
 
 # if the image already exists, don't rebuild it
@@ -194,4 +204,10 @@ Get-Date
 
 Write-Host "Done building image, now pushing $UserImage"
 Start-Docker -LogoutOnFailure -ArgumentList ("push", "$UserImage")
-Start-Docker -ArgumentList ("logout", "$RegistryUri")
+
+if ($RegistryPassword) {
+    Start-Docker -ArgumentList ("logout", "$RegistryUri")
+}
+else {
+    Write-Host "Skipping docker logout, password not available so we did not login"
+}

@@ -3,9 +3,24 @@
 # SPDX-License-Identifier: MIT
 # Based on https://gitlab.freedesktop.org/mesa/mesa/-/blob/8396df5ad90aeb6ab2267811aba2187954562f81/.gitlab-ci/windows/mesa_build.ps1
 
-# force the CA cert cache to be rebuilt, in case Meson tries to access anything
-Write-Host "Refreshing Windows TLS CA cache"
-(New-Object System.Net.WebClient).DownloadString("https://github.com") > $null
+[CmdletBinding()]
+param (
+    # Should we install the project?
+    [Parameter()]
+    [switch]
+    $Install = $false,
+
+    # Should we package the project?
+    [Parameter()]
+    [switch]
+    $Package = $false,
+
+    # Should we run the test suite?
+    [Parameter()]
+    [switch]
+    $RunTests = $false
+)
+$ErrorActionPreference = 'Stop'
 
 $env:PYTHONUTF8 = 1
 
@@ -22,19 +37,27 @@ Remove-Item -Recurse -Force $installdir -ErrorAction SilentlyContinue
 Write-Output "builddir:$builddir"
 Write-Output "installdir:$installdir"
 Write-Output "sourcedir:$sourcedir"
+Write-Output "toolchainfile:$toolchainfile"
 
-$installPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -version 17  -property installationpath
-Write-Output "vswhere.exe installPath: $installPath"
+# $installPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -version 17  -property installationpath
+# Write-Information "vswhere.exe installPath: $installPath"
+# if (!$installPath) {
+#     throw "Could not find VS2022 using vswhere!"
+# }
 $installPath = "C:\BuildTools"
-Write-Output "Final installPath: $installPath"
+Write-Output "installPath: $installPath"
 
 # Note that we can't have $ErrorActionPreference as "Stop" here:
 # it "errors" (not finding some shared tool because of our mini build tools install)
 # but the error doesn't matter for our use case.
+Write-Output "There may be a harmless error about 'Team Explorer' shown next, which may be ignored."
+$ErrorActionPreference = 'Continue'
 Import-Module (Join-Path $installPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
 Enter-VsDevShell -VsInstallPath $installPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -no_logo -host_arch=amd64'
 
+$ErrorActionPreference = 'Stop'
 Push-Location $sourcedir
+
 $cmakeArgs = @(
     "-S"
     "."
@@ -44,18 +67,32 @@ $cmakeArgs = @(
     "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     "-DCMAKE_TOOLCHAIN_FILE=$toolchainfile"
     "-DCMAKE_INSTALL_PREFIX=$installdir"
+    "-DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON"
 )
 cmake @cmakeArgs
+if (!$?) {
+    throw "cmake generate failed!"
+}
 
-ninja -C $builddir
-ninja -C $builddir install test
+Write-Information "Building"
+cmake --build $builddir
+if (!$?) {
+    throw "cmake build failed!"
+}
 
-$buildstatus = $?
-Pop-Location
+if ($RunTests) {
+    Write-Information "Running tests"
+    cmake --build $builddir --target test
 
-Get-Date
+}
 
-if (!$buildstatus) {
-    Write-Host "Monado build or test failed"
-    Exit 1
+if ($Install) {
+    Write-Information "Installing"
+    cmake --build $builddir --target install
+}
+
+
+if ($Package) {
+    Write-Information "Packaging"
+    cmake --build $builddir --target package
 }

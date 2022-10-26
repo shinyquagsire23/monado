@@ -175,8 +175,8 @@ arch:rolling:container_prep:
   inherit:
     default: false
   variables:
-    MONADO_WIN_BASE_TAG: "20220727.0"
-    MONADO_WIN_MAIN_TAG: "20220727.0"
+    MONADO_WIN_BASE_TAG: "20221026.0"
+    MONADO_WIN_MAIN_TAG: "20221026.0"
     MONADO_BASE_IMAGE_PATH: "win2022/vs2022_base"
     MONADO_MAIN_IMAGE_PATH: "win2022/vs2022"
 
@@ -492,7 +492,7 @@ windows:
   extends:
     - .monado.image.windows
   script:
-    - ./.gitlab-ci/windows/monado_build.ps1
+    - ./.gitlab-ci/windows/monado_build.ps1 -Install -RunTests
   artifacts:
     when: always
     paths:

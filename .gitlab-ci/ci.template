@@ -201,7 +201,7 @@ windows:
   extends:
     - .monado.image.windows
   script:
-    - ./.gitlab-ci/windows/monado_build.ps1
+    - ./.gitlab-ci/windows/monado_build.ps1 -Install -RunTests
   artifacts:
     when: always
     paths:
