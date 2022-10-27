@@ -381,6 +381,9 @@ handle_tracker_sensor_msg(struct psvr_device *psvr, unsigned char *buffer, int s
 
 	time_duration_ns inter_sample_duration_ns = tick_delta2 * PSVR_NS_PER_TICK;
 
+	// If this is larger then one second something bad is going on.
+	assert(inter_sample_duration_ns < U_TIME_1S_IN_NS);
+
 	// Move it back in time.
 	timepoint_ns timestamp_ns = (uint64_t)now_ns - (uint64_t)inter_sample_duration_ns;
 
