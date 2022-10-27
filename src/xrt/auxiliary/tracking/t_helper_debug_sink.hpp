@@ -123,7 +123,12 @@ public:
 		rgb[0] = cv::Mat();
 		rgb[1] = cv::Mat();
 
-		// Does checking.
+		// Don't try to push null frames.
+		if (frame == nullptr) {
+			return;
+		}
+
+		// Does checking if the sink is active.
 		u_sink_debug_push_frame(&usd, frame);
 
 		// We unreference the frame here, downstream is either
