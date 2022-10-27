@@ -884,8 +884,12 @@ psvr_device_update_inputs(struct xrt_device *xdev)
 {
 	struct psvr_device *psvr = psvr_device(xdev);
 
+	os_mutex_lock(&psvr->device_mutex);
+
 	read_sensor_packets(psvr);
 	update_leds_if_changed(psvr);
+
+	os_mutex_unlock(&psvr->device_mutex);
 }
 
 static void
