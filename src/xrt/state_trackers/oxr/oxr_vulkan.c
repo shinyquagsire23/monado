@@ -291,6 +291,18 @@ vk_get_device_features(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
+static inline VkBaseInStructure const *
+vk_find_struct_in_chain(const VkBaseInStructure *base, VkStructureType type)
+{
+	while (base != NULL) {
+		if (base->sType == type) {
+			return base;
+		}
+		base = base->pNext;
+	}
+	return NULL;
+}
+
 XrResult
 oxr_vk_create_vulkan_device(struct oxr_logger *log,
                             struct oxr_system *sys,
@@ -393,13 +405,23 @@ oxr_vk_create_vulkan_device(struct oxr_logger *log,
 	};
 
 	if (timeline_semaphore_info.timelineSemaphore) {
-		/*
-		 * Insert timeline semaphore request first to override
-		 * any the app may have put on the next chain.
-		 */
-		// Have to cast away const.
-		timeline_semaphore.pNext = (void *)modified_info.pNext;
-		modified_info.pNext = &timeline_semaphore;
+		// Check if the user has already put the struct into the chain
+		const VkBaseInStructure *existing = vk_find_struct_in_chain(
+		    (VkBaseInStructure *)&modified_info, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+		if (existing != NULL) {
+			VkPhysicalDeviceTimelineSemaphoreFeatures *existing_timeline_semaphore_info =
+			    (VkPhysicalDeviceTimelineSemaphoreFeatures *)existing;
+			if (!existing_timeline_semaphore_info->timelineSemaphore) {
+				oxr_warn(log, "Timeline semaphores are explicitly disabled by application");
+				timeline_semaphore_info.timelineSemaphore = VK_FALSE;
+			}
+			// Timeline semaphores are already enabled so we don't have to do anything
+		} else {
+			// Insert struct at the front of the chain
+			// Have to cast away const.
+			timeline_semaphore.pNext = (void *)modified_info.pNext;
+			modified_info.pNext = &timeline_semaphore;
+		}
 	}
 #endif
 
