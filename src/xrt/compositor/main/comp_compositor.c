@@ -115,11 +115,34 @@ get_vk(struct comp_compositor *c)
  *
  */
 
+static bool
+compositor_init_window_post_vulkan(struct comp_compositor *c);
+static bool
+compositor_init_swapchain(struct comp_compositor *c);
+static bool
+compositor_init_renderer(struct comp_compositor *c);
+
 static xrt_result_t
 compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "BEGIN_SESSION");
+
+	// clang-format off
+	if (c->deferred_surface) {
+		if (!compositor_init_window_post_vulkan(c) ||
+		    !compositor_init_swapchain(c) ||
+		    !compositor_init_renderer(c)) {
+			COMP_ERROR(c, "Failed to init compositor %p", (void *)c);
+			c->base.base.base.destroy(&c->base.base.base);
+
+			return XRT_ERROR_VULKAN;
+		}
+		comp_target_set_title(c->target, WINDOW_TITLE);
+		comp_renderer_add_debug_vars(c->r);
+	}
+	// clang-format on
+
 	return XRT_SUCCESS;
 }
 
@@ -128,6 +151,17 @@ compositor_end_session(struct xrt_compositor *xc)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "END_SESSION");
+
+	if (c->deferred_surface) {
+		// Make sure we don't have anything to destroy.
+		comp_swapchain_garbage_collect(&c->base.cscgc);
+		comp_renderer_destroy(&c->r);
+#ifdef XRT_FEATURE_WINDOW_PEEK
+		comp_window_peek_destroy(&c->peek);
+#endif
+		comp_target_destroy(&c->target);
+	}
+
 	return XRT_SUCCESS;
 }
 
@@ -1229,18 +1263,25 @@ comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_co
 	    !compositor_check_vulkan_caps(c) ||
 	    !compositor_init_window_pre_vulkan(c) ||
 	    !compositor_init_vulkan(c) ||
-	    !compositor_init_render_resources(c) ||
-	    !compositor_init_window_post_vulkan(c) ||
-	    !compositor_init_swapchain(c) ||
-	    !compositor_init_renderer(c)) {
+	    !compositor_init_render_resources(c)) {
 		COMP_ERROR(c, "Failed to init compositor %p", (void *)c);
 		c->base.base.base.destroy(&c->base.base.base);
 
 		return XRT_ERROR_VULKAN;
 	}
-	// clang-format on
 
-	comp_target_set_title(c->target, WINDOW_TITLE);
+	if (!c->deferred_surface) {
+		if (!compositor_init_window_post_vulkan(c) ||
+		    !compositor_init_swapchain(c) ||
+		    !compositor_init_renderer(c)) {
+			COMP_ERROR(c, "Failed to init compositor %p", (void*)c);
+			c->base.base.base.destroy(&c->base.base.base);
+
+			return XRT_ERROR_VULKAN;
+		}
+		comp_target_set_title(c->target, WINDOW_TITLE);
+	}
+	// clang-format on
 
 	COMP_DEBUG(c, "Done %p", (void *)c);
 
@@ -1317,9 +1358,10 @@ comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_co
 	sys_info->num_refresh_rates = 1;
 	sys_info->refresh_rates[0] = (float)(1. / time_ns_to_s(c->settings.nominal_frame_interval_ns));
 
-
-
-	comp_renderer_add_debug_vars(c->r);
+	// Needs to be delayed until after compositor's u_var has been setup.
+	if (!c->deferred_surface) {
+		comp_renderer_add_debug_vars(c->r);
+	}
 
 	c->state = COMP_STATE_READY;
 
@@ -1328,5 +1370,5 @@ comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_co
 	xrt_result_t xret = u_pa_factory_create(&upaf);
 	assert(xret == XRT_SUCCESS && upaf != NULL);
 
-	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, true, out_xsysc);
+	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, !c->deferred_surface, out_xsysc);
 }

@@ -133,6 +133,9 @@ struct comp_compositor
 		//! Temporarily disable ATW
 		bool atw_off;
 	} debug;
+
+	//! If true, part of the compositor startup will be delayed until a session is started
+	bool deferred_surface;
 };
 
 
