@@ -47,11 +47,10 @@ Write-Output "toolchainfile:$toolchainfile"
 $installPath = "C:\BuildTools"
 Write-Output "installPath: $installPath"
 
-# Note that we can't have $ErrorActionPreference as "Stop" here:
-# it "errors" (not finding some shared tool because of our mini build tools install)
-# but the error doesn't matter for our use case.
-Write-Output "There may be a harmless error about 'Team Explorer' shown next, which may be ignored."
-$ErrorActionPreference = 'Continue'
+# We have to clear this because some characters in a commit message may confuse cmd/Enter-VsDevShell.
+$env:CI_COMMIT_DESCRIPTION = ""
+$env:CI_COMMIT_MESSAGE = ""
+
 Import-Module (Join-Path $installPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
 Enter-VsDevShell -VsInstallPath $installPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -no_logo -host_arch=amd64'
 
