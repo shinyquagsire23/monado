@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -77,20 +77,23 @@ struct comp_compositor
 {
 	struct comp_base base;
 
-	//! Renderer helper.
-	struct comp_renderer *r;
-
-	//! The target we are displaying to.
-	struct comp_target *target;
+	//! The settings.
+	struct comp_settings settings;
 
 	//! The device we are displaying to.
 	struct xrt_device *xdev;
 
-	//! The settings.
-	struct comp_settings settings;
-
-	//! Vulkan shaders that the compositor uses.
+	//! Vulkan shaders that the compositor (renderer) uses.
 	struct render_shaders shaders;
+
+	//! Vulkan resources that the compositor (renderer) uses.
+	struct render_resources nr;
+
+	//! The target we are displaying to.
+	struct comp_target *target;
+
+	//! Renderer helper.
+	struct comp_renderer *r;
 
 	//! Timestamp of last-rendered (immersive) frame.
 	int64_t last_frame_time_ns;
@@ -130,8 +133,6 @@ struct comp_compositor
 		//! Temporarily disable ATW
 		bool atw_off;
 	} debug;
-
-	struct render_resources nr;
 };
 
 
