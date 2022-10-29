@@ -549,7 +549,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 
 //! Create renderer and initialize non-image-dependent members
 static void
-renderer_create(struct comp_renderer *r, struct comp_compositor *c)
+renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 {
 	r->c = c;
 	r->settings = &c->settings;
@@ -557,6 +557,9 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	r->acquired_buffer = -1;
 	r->fenced_buffer = -1;
 	r->rtr_array = NULL;
+
+	// Do this init as early as possible.
+	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
 
 	// Try to early-allocate these, in case we can.
 	renderer_ensure_images_and_renderings(r, false);
@@ -577,8 +580,6 @@ renderer_create(struct comp_renderer *r, struct comp_compositor *c)
 	if (r->mirror_to_debug_gui.image_extent.width % 2 == 1) {
 		r->mirror_to_debug_gui.image_extent.width += 1;
 	}
-
-	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
 
 	struct vk_bundle *vk = &r->c->base.vk;
 
@@ -817,22 +818,25 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 }
 
 static void
-renderer_destroy(struct comp_renderer *r)
+renderer_fini(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
 
+	// Remove u_var root as early as possible.
+	u_var_remove_root(r);
+
 	// Left eye readback
 	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
-
-	u_sink_debug_destroy(&r->mirror_to_debug_gui.debug_sink);
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
 
 	comp_layer_renderer_destroy(&(r->lr));
 
-	u_var_remove_root(r);
 	u_frame_times_widget_teardown(&r->mirror_to_debug_gui.push_frame_times);
+
+	// Destroy as late as possible.
+	u_sink_debug_destroy(&r->mirror_to_debug_gui.debug_sink);
 }
 
 static VkImageView
@@ -2023,7 +2027,7 @@ comp_renderer_create(struct comp_compositor *c)
 {
 	struct comp_renderer *r = U_TYPED_CALLOC(struct comp_renderer);
 
-	renderer_create(r, c);
+	renderer_init(r, c);
 
 	return r;
 }
@@ -2040,7 +2044,8 @@ comp_renderer_destroy(struct comp_renderer **ptr_r)
 		return;
 	}
 
-	renderer_destroy(r);
+	renderer_fini(r);
+
 	free(r);
 	*ptr_r = NULL;
 }
