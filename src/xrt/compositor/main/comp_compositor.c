@@ -1124,20 +1124,24 @@ compositor_init_swapchain(struct comp_compositor *c)
 }
 
 static bool
-compositor_init_shaders(struct comp_compositor *c)
+compositor_init_render_resources(struct comp_compositor *c)
 {
 	struct vk_bundle *vk = get_vk(c);
 
-	return render_shaders_load(&c->shaders, vk);
+	if (!render_shaders_load(&c->shaders, vk)) {
+		return false;
+	}
+
+	if (!render_resources_init(&c->nr, &c->shaders, get_vk(c), c->xdev)) {
+		return false;
+	}
+
+	return true;
 }
 
 static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
-	if (!render_resources_init(&c->nr, &c->shaders, get_vk(c), c->xdev)) {
-		return false;
-	}
-
 	c->r = comp_renderer_create(c);
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
@@ -1207,8 +1211,8 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	    !compositor_check_vulkan_caps(c) ||
 	    !compositor_init_window_pre_vulkan(c) ||
 	    !compositor_init_vulkan(c) ||
+	    !compositor_init_render_resources(c) ||
 	    !compositor_init_window_post_vulkan(c) ||
-	    !compositor_init_shaders(c) ||
 	    !compositor_init_swapchain(c) ||
 	    !compositor_init_renderer(c)) {
 		COMP_ERROR(c, "Failed to init compositor %p", (void *)c);
