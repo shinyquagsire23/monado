@@ -428,13 +428,14 @@ compositor_destroy(struct xrt_compositor *xc)
 	comp_window_peek_destroy(&c->peek);
 #endif
 
+	// Does NULL checking.
+	comp_target_destroy(&c->target);
+
+	// Only depends on vk_bundle and shaders.
 	render_resources_close(&c->nr);
 
 	// As long as vk_bundle is valid it's safe to call this function.
 	render_shaders_close(&c->shaders, vk);
-
-	// Does NULL checking.
-	comp_target_destroy(&c->target);
 
 	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
