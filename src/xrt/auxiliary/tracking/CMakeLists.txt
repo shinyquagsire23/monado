@@ -40,7 +40,11 @@ if(XRT_HAVE_OPENCV)
 			t_tracker_psvr.cpp
 		)
 	target_include_directories(aux_tracking SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
-	target_link_libraries(aux_tracking PUBLIC ${OpenCV_LIBRARIES})
+	target_link_libraries(
+		aux_tracking
+		PUBLIC ${OpenCV_LIBRARIES}
+		PRIVATE aux_util_sink
+		)
 endif()
 
 if(XRT_FEATURE_SLAM)
