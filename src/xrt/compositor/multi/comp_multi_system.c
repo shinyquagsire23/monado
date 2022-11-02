@@ -386,11 +386,10 @@ update_session_state_locked(struct multi_system_compositor *msc)
 
 	switch (msc->sessions.state) {
 	case MULTI_SYSTEM_STATE_INIT_WARM_START:
-		U_LOG_I("Doing warm start, %u active app session(s).", (uint32_t)msc->sessions.active_count);
-
 		// Produce at least one frame on init.
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
 		xrt_comp_begin_session(xc, view_type);
+		U_LOG_I("Doing warm start, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 
 	case MULTI_SYSTEM_STATE_STOPPED:
@@ -398,9 +397,9 @@ update_session_state_locked(struct multi_system_compositor *msc)
 			break;
 		}
 
-		U_LOG_I("Starting native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		msc->sessions.state = MULTI_SYSTEM_STATE_RUNNING;
 		xrt_comp_begin_session(xc, view_type);
+		U_LOG_I("Started native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 
 	case MULTI_SYSTEM_STATE_RUNNING:
@@ -408,22 +407,22 @@ update_session_state_locked(struct multi_system_compositor *msc)
 			break;
 		}
 
-		U_LOG_I("Stopping main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
+		U_LOG_D("Stopping native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 
 	case MULTI_SYSTEM_STATE_STOPPING:
 		// Just in case
 		if (msc->sessions.active_count > 0) {
-			U_LOG_I("Restarting main session, %u active app session(s).",
-			        (uint32_t)msc->sessions.active_count);
 			msc->sessions.state = MULTI_SYSTEM_STATE_RUNNING;
+			U_LOG_D("Restarting native session, %u active app session(s).",
+			        (uint32_t)msc->sessions.active_count);
 			break;
 		}
 
-		U_LOG_I("Stopped main session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPED;
 		xrt_comp_end_session(xc);
+		U_LOG_I("Stopped native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 
 	case MULTI_SYSTEM_STATE_INVALID:
