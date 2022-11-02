@@ -96,7 +96,11 @@ struct vive_device
 		//! Set at start. Whether the hand tracker was initialized.
 		bool hand_enabled;
 
+		//! SLAM systems track the IMU pose, enabling this corrects it to middle of the eyes
+		bool imu2me;
 	} tracking;
+
+	struct xrt_pose P_imu_me; //!< IMU to head/display/middle-of-eyes transform in OpenXR coords
 
 	//! Whether to track the HMD with 6dof SLAM or fallback to the 3dof tracker
 	bool slam_over_3dof;

@@ -159,6 +159,10 @@ vive_device_get_slam_tracked_pose(struct xrt_device *xdev,
 #endif
 	}
 
+	if (d->tracking.imu2me) {
+		math_pose_transform(&d->pose, &d->P_imu_me, &d->pose);
+	}
+
 	out_relation->pose = d->pose;
 	out_relation->relation_flags = (enum xrt_space_relation_flags)(
 	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
@@ -810,6 +814,7 @@ vive_device_setup_ui(struct vive_device *d)
 
 	u_var_add_gui_header(d, NULL, "SLAM Tracking");
 	u_var_add_ro_text(d, d->gui.slam_status, "Tracker status");
+	u_var_add_bool(d, &d->tracking.imu2me, "Correct IMU pose to middle of eyes");
 
 	u_var_add_gui_header(d, NULL, "Hand Tracking");
 	u_var_add_ro_text(d, d->gui.hand_status, "Tracker status");
@@ -842,6 +847,7 @@ vive_set_trackers_status(struct vive_device *d, struct vive_tracking_status stat
 
 	d->tracking.slam_enabled = slam_enabled;
 	d->tracking.hand_enabled = hand_enabled;
+	d->tracking.imu2me = true;
 
 	d->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
 
@@ -857,6 +863,49 @@ vive_set_trackers_status(struct vive_device *d, struct vive_tracking_status stat
 
 	snprintf(d->gui.slam_status, sizeof(d->gui.slam_status), "%s", slam_status);
 	snprintf(d->gui.hand_status, sizeof(d->gui.hand_status), "%s", hand_status);
+}
+
+/*!
+ * Precompute transforms to convert between OpenXR and device coordinate systems.
+ *
+ * OpenXR: X: Right, Y: Up, Z: Backward
+ * Index / tracking reference / tr: X: Left, Y: Up, Z: Forward
+ */
+static void
+precompute_sensor_transforms(struct vive_device *d)
+{
+	// P_A_B is such that B = P_A_B * A. See conventions.md
+
+	struct xrt_pose P_tr_imu = d->config.imu.trackref;
+
+	struct xrt_pose P_tr_me = d->config.display.trackref;
+
+	struct xrt_pose P_imu_tr = {0};
+	math_pose_invert(&P_tr_imu, &P_imu_tr);
+
+	struct xrt_pose P_imu_me = {0};
+	math_pose_transform(&P_imu_tr, &P_tr_me, &P_imu_me);
+
+	// Rotation needed to convert IMU coords to OpenXR coords. E.g., for an Index
+	// it goes from X: down, Y: left, Z: forward to X: right, Y: up, Z: backward
+	struct xrt_quat Q_imu_tr = P_imu_tr.orientation;
+	struct xrt_quat Q_tr_oxr = {.x = 0, .y = 1, .z = 0, .w = 0};
+	struct xrt_quat Q_imu_oxr = {0};
+	math_quat_rotate(&Q_imu_tr, &Q_tr_oxr, &Q_imu_oxr);
+
+	// imuxr is the same IMU entity but with axes rotated to be like OpenXR
+	struct xrt_pose P_imu_imuxr = {Q_imu_oxr, XRT_VEC3_ZERO};
+
+	struct xrt_pose P_tr_imuxr = {0};
+	math_pose_transform(&P_tr_imu, &P_imu_imuxr, &P_tr_imuxr);
+
+	struct xrt_pose P_imuxr_imu = {0};
+	math_pose_invert(&P_imu_imuxr, &P_imuxr_imu);
+
+	struct xrt_pose P_imuxr_me = {0};
+	math_pose_transform(&P_imuxr_imu, &P_imu_me, &P_imuxr_me);
+
+	d->P_imu_me = P_imuxr_me;
 }
 
 struct vive_device *
@@ -981,6 +1030,8 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 			return NULL;
 		}
 	}
+
+	precompute_sensor_transforms(d);
 
 	// Init threads.
 	os_thread_helper_init(&d->mainboard_thread);
