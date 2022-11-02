@@ -150,16 +150,17 @@ getModelsFolder(struct HandTracking *hgt)
 	strcat(exec_location, "../share/monado/hand-tracking-models/");
 	strcpy(hgt->startup_config.model_slug, exec_location);
 #else
-	const char *xdg_home = getenv("XDG_CONFIG_HOME");
+	const char *xdg_data_home = getenv("XDG_DATA_HOME");
 	const char *home = getenv("HOME");
-	if (xdg_home != NULL) {
-		strcpy(hgt->models_folder, xdg_home);
+	if (xdg_data_home != NULL) {
+		strcpy(hgt->models_folder, xdg_data_home);
+		strcat(hgt->models_folder, "/monado/hand-tracking-models/");
 	} else if (home != NULL) {
 		strcpy(hgt->models_folder, home);
+		strcat(hgt->models_folder, "/.local/share/monado/hand-tracking-models/");
 	} else {
 		assert(false);
 	}
-	strcat(hgt->models_folder, "/.local/share/monado/hand-tracking-models/");
 #endif
 }
 
