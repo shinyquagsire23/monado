@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -27,6 +27,12 @@ DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_APP_LOG", U_LOGGING_WARN)
 #define UPA_LOG_I(...) U_LOG_IFL_I(debug_get_log_option_log_level(), __VA_ARGS__)
 #define UPA_LOG_W(...) U_LOG_IFL_W(debug_get_log_option_log_level(), __VA_ARGS__)
 #define UPA_LOG_E(...) U_LOG_IFL_E(debug_get_log_option_log_level(), __VA_ARGS__)
+
+/*!
+ * Define to validate latched and retired call. Currently disabled due to
+ * simplistic frame allocation code, enable once improved.
+ */
+#undef VALIDATE_LATCHED_AND_RETIRED
 
 
 /*
@@ -451,6 +457,13 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 
 	// Write out tracing data.
 	do_tracing(pa, f);
+
+#ifndef VALIDATE_LATCHED_AND_RETIRED
+	// Reset the frame.
+	U_ZERO(f);
+	f->state = U_PA_READY;
+	f->frame_id = -1;
+#endif
 }
 
 static void
@@ -458,7 +471,14 @@ pa_latched(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, int64_t
 {
 	struct pacing_app *pa = pacing_app(upa);
 
+#ifdef VALIDATE_LATCHED_AND_RETIRED
+	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
+	struct u_pa_frame *f = &pa->frames[index];
+	assert(f->frame_id == frame_id);
+	assert(f->state == U_RT_GPU_DONE);
+#else
 	(void)pa;
+#endif
 }
 
 static void
@@ -466,14 +486,19 @@ pa_retired(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
+#ifdef VALIDATE_LATCHED_AND_RETIRED
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	struct u_pa_frame *f = &pa->frames[index];
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_GPU_DONE || f->state == U_RT_DELIVERED);
 
 	// Reset the frame.
+	U_ZERO(f);
 	f->state = U_PA_READY;
 	f->frame_id = -1;
+#else
+	(void)pa;
+#endif
 }
 
 static void
