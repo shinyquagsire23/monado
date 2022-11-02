@@ -143,11 +143,7 @@ fast_change_of_basis_unity_to_oxr(xrt_quat *in, xrt_quat *out)
 	out->w = -in->w;
 }
 
-
-
-// int
-// main()
-TEST_CASE("LevenbergMarquardt")
+TEST_CASE("QuaternionChangeOfBasis")
 
 {
 	U_LOG_E("LH to RH!");
