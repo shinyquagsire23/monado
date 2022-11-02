@@ -67,8 +67,6 @@ static const cv::Scalar PINK(255, 0, 255);
 
 static const cv::Scalar colors[2] = {YELLOW, RED};
 
-#undef USE_NCNN
-
 // Forward declaration for ht_view
 struct HandTracking;
 struct ht_view;
@@ -208,11 +206,6 @@ public:
 	// So that we can calibrate cameras at 1280x800 but ship images over USB at 640x400
 	struct xrt_size last_frame_one_view_size_px = {};
 
-#ifdef USE_NCNN
-	ncnn_net_t net;
-	ncnn_net_t net_keypoint;
-#endif
-
 	struct ht_view views[2] = {};
 
 	struct model_output_visualizers visualizers;
@@ -307,16 +300,8 @@ run_hand_detection(void *ptr);
 void
 init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap);
 
-
 void
 run_keypoint_estimation(void *ptr);
-
-
-void
-init_keypoint_estimation_new(HandTracking *hgt, onnx_wrap *wrap);
-
-void
-run_keypoint_estimation_new(void *ptr);
 
 void
 release_onnx_wrap(onnx_wrap *wrap);

@@ -24,7 +24,6 @@ namespace xrt::tracking::hand::mercury {
 #define DEG_TO_RAD(DEG) (DEG * M_PI / 180.)
 
 DEBUG_GET_ONCE_LOG_OPTION(mercury_log, "MERCURY_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(mercury_use_simdr_keypoint, "MERCURY_USE_SIMDR_KEYPOINT", false)
 
 // Flags to tell state tracker that these are indeed valid joints
 static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_relation_flags)(
@@ -962,7 +961,6 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 
 	// Setup logging first. We like logging.
 	hgt->log_level = xrt::tracking::hand::mercury::debug_get_log_option_mercury_log();
-	bool use_simdr = xrt::tracking::hand::mercury::debug_get_bool_option_mercury_use_simdr_keypoint();
 
 	/*
 	 * Get configuration
@@ -975,32 +973,6 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	getCalibration(hgt, calib);
 	getModelsFolder(hgt);
 
-#ifdef USE_NCNN
-	{
-		hgt->net = ncnn_net_create();
-		ncnn_option_t opt = ncnn_option_create();
-		ncnn_option_set_use_vulkan_compute(opt, 1);
-
-		ncnn_net_set_option(hgt->net, opt);
-		ncnn_net_load_param(hgt->net, "/3/clones/ncnn/batch_size_2.param");
-		ncnn_net_load_model(hgt->net, "/3/clones/ncnn/batch_size_2.bin");
-	}
-
-	{
-		hgt->net_keypoint = ncnn_net_create();
-		ncnn_option_t opt = ncnn_option_create();
-		ncnn_option_set_use_vulkan_compute(opt, 1);
-
-		ncnn_net_set_option(hgt->net_keypoint, opt);
-		ncnn_net_load_param(
-		    hgt->net_keypoint,
-		    "/home/moses/.local/share/monado/hand-tracking-models/grayscale_keypoint_new.param");
-		ncnn_net_load_model(hgt->net_keypoint,
-		                    "/home/moses/.local/share/monado/hand-tracking-models/grayscale_keypoint_new.bin");
-	}
-
-
-#endif
 
 	hgt->views[0].hgt = hgt;
 	hgt->views[1].hgt = hgt; // :)
@@ -1011,21 +983,12 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	init_hand_detection(hgt, &hgt->views[0].detection);
 	init_hand_detection(hgt, &hgt->views[1].detection);
 
-	if (use_simdr) {
-		init_keypoint_estimation(hgt, &hgt->views[0].keypoint[0]);
-		init_keypoint_estimation(hgt, &hgt->views[0].keypoint[1]);
+	init_keypoint_estimation(hgt, &hgt->views[0].keypoint[0]);
+	init_keypoint_estimation(hgt, &hgt->views[0].keypoint[1]);
 
-		init_keypoint_estimation(hgt, &hgt->views[1].keypoint[0]);
-		init_keypoint_estimation(hgt, &hgt->views[1].keypoint[1]);
-		hgt->keypoint_estimation_run_func = xrt::tracking::hand::mercury::run_keypoint_estimation;
-	} else {
-		init_keypoint_estimation_new(hgt, &hgt->views[0].keypoint[0]);
-		init_keypoint_estimation_new(hgt, &hgt->views[0].keypoint[1]);
-
-		init_keypoint_estimation_new(hgt, &hgt->views[1].keypoint[0]);
-		init_keypoint_estimation_new(hgt, &hgt->views[1].keypoint[1]);
-		hgt->keypoint_estimation_run_func = xrt::tracking::hand::mercury::run_keypoint_estimation_new;
-	}
+	init_keypoint_estimation(hgt, &hgt->views[1].keypoint[0]);
+	init_keypoint_estimation(hgt, &hgt->views[1].keypoint[1]);
+	hgt->keypoint_estimation_run_func = xrt::tracking::hand::mercury::run_keypoint_estimation;
 
 	hgt->views[0].view = 0;
 	hgt->views[1].view = 1;
