@@ -211,9 +211,9 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 	VkResult ret;
 
 	const char *prio_strs[3] = {
-	    "realtime",
-	    "high",
-	    "normal",
+	    "QUEUE_GLOBAL_PRIORITY_REALTIME",
+	    "QUEUE_GLOBAL_PRIORITY_HIGH",
+	    "QUEUE_GLOBAL_PRIORITY_MEDIUM",
 	};
 
 	VkQueueGlobalPriorityEXT prios[3] = {
@@ -243,8 +243,8 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 
 		// All ok!
 		if (ret == VK_SUCCESS) {
-			VK_INFO(vk, "Created device and %s queue with %s priority.",
-			        only_compute_queue ? "compute" : "graphics", prio_strs[i]);
+			VK_INFO(vk, "Created device and %s queue with %s.", only_compute_queue ? "COMPUTE" : "GRAPHICS",
+			        prio_strs[i]);
 			break;
 		}
 
@@ -254,6 +254,12 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 		}
 
 		// Some other error!
+		VK_ERROR_RET(vk, "vk_create_device", "Failed to create Vulkan device.", ret);
+		return ret;
+	}
+
+	// All tries failed, return error. Yes this code is clunky.
+	if (ret != VK_SUCCESS) {
 		VK_ERROR_RET(vk, "vk_create_device", "Failed to create Vulkan device.", ret);
 		return ret;
 	}
