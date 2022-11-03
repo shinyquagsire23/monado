@@ -877,34 +877,26 @@ precompute_sensor_transforms(struct vive_device *d)
 	// P_A_B is such that B = P_A_B * A. See conventions.md
 
 	struct xrt_pose P_tr_imu = d->config.imu.trackref;
-
 	struct xrt_pose P_tr_me = d->config.display.trackref;
-
 	struct xrt_pose P_imu_tr = {0};
-	math_pose_invert(&P_tr_imu, &P_imu_tr);
-
 	struct xrt_pose P_imu_me = {0};
-	math_pose_transform(&P_imu_tr, &P_tr_me, &P_imu_me);
-
-	// Rotation needed to convert IMU coords to OpenXR coords. E.g., for an Index
-	// it goes from X: down, Y: left, Z: forward to X: right, Y: up, Z: backward
-	struct xrt_quat Q_imu_tr = P_imu_tr.orientation;
+	struct xrt_quat Q_imu_tr = {0};
 	struct xrt_quat Q_tr_oxr = {.x = 0, .y = 1, .z = 0, .w = 0};
 	struct xrt_quat Q_imu_oxr = {0};
-	math_quat_rotate(&Q_imu_tr, &Q_tr_oxr, &Q_imu_oxr);
-
-	// imuxr is the same IMU entity but with axes rotated to be like OpenXR
-	struct xrt_pose P_imu_imuxr = {Q_imu_oxr, XRT_VEC3_ZERO};
-
-	struct xrt_pose P_tr_imuxr = {0};
-	math_pose_transform(&P_tr_imu, &P_imu_imuxr, &P_tr_imuxr);
-
+	struct xrt_pose P_imu_imuxr = {0};
 	struct xrt_pose P_imuxr_imu = {0};
+	struct xrt_pose P_imuxr_me = {0};
+
+	// Compute P_imuxr_imu. imuxr is same entity as IMU but with axes like OpenXR
+	// E.g., for Index IMU has X: down, Y: left, Z: forward
+	math_pose_invert(&P_tr_imu, &P_imu_tr);
+	math_pose_transform(&P_imu_tr, &P_tr_me, &P_imu_me);
+	Q_imu_tr = P_imu_tr.orientation;
+	math_quat_rotate(&Q_imu_tr, &Q_tr_oxr, &Q_imu_oxr);
+	P_imu_imuxr.orientation = Q_imu_oxr;
 	math_pose_invert(&P_imu_imuxr, &P_imuxr_imu);
 
-	struct xrt_pose P_imuxr_me = {0};
 	math_pose_transform(&P_imuxr_imu, &P_imu_me, &P_imuxr_me);
-
 	d->P_imu_me = P_imuxr_me;
 }
 
