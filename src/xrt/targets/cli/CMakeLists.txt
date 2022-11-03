@@ -26,6 +26,7 @@ target_link_libraries(
 	cli
 	PRIVATE
 		aux_os
+		aux_os_ble
 		aux_util
 		aux_math
 		target_instance_no_comp
