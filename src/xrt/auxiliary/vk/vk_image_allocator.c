@@ -296,6 +296,7 @@ vk_ic_allocate(struct vk_bundle *vk,
 	VkResult ret = VK_SUCCESS;
 
 	if (image_count > ARRAY_SIZE(out_vkic->images)) {
+		U_LOG_E("To many images for vk_image_collection");
 		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
