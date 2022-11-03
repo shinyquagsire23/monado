@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "xrt/xrt_limits.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_handles.h"
 #include "xrt/xrt_config_os.h"
@@ -59,16 +60,6 @@ typedef uint64_t VkDeviceMemory;
  * @addtogroup xrt_iface
  * @{
  */
-
-/*!
- * Max swapchain images, artificial limit.
- */
-#define XRT_MAX_SWAPCHAIN_IMAGES 8
-
-/*!
- * Max formats supported by a compositor, artificial limit.
- */
-#define XRT_MAX_SWAPCHAIN_FORMATS 16
 
 /*!
  * Special flags for creating swapchain images.
