@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_limits.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_tracking.h"
@@ -133,7 +134,6 @@ struct oxr_action_ref;
 struct oxr_hand_tracker;
 
 #define XRT_MAX_HANDLE_CHILDREN 256
-#define OXR_MAX_SWAPCHAIN_IMAGES 8
 #define OXR_MAX_BINDINGS_PER_ACTION 16
 
 struct time_state;
@@ -2128,7 +2128,7 @@ struct oxr_swapchain
 	struct
 	{
 		enum oxr_image_state state;
-	} images[OXR_MAX_SWAPCHAIN_IMAGES];
+	} images[XRT_MAX_SWAPCHAIN_IMAGES];
 
 	struct
 	{
