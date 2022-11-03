@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_limits.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_vulkan_includes.h"
 #include "vk/vk_helpers.h"
@@ -35,7 +36,11 @@ struct vk_image_collection
 {
 	struct xrt_swapchain_create_info info;
 
-	struct vk_image images[8];
+	/*!
+	 * Limit set to same as max swapchain images because
+	 * this struct is mostly used to back swapchains.
+	 */
+	struct vk_image images[XRT_MAX_SWAPCHAIN_IMAGES];
 
 	uint32_t image_count;
 };
