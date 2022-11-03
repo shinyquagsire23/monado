@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2021-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,14 +11,9 @@
 #include "rgb_sync.hpp"
 #include <math.h>
 
-struct Box
-{
-	float cx;
-	float cy;
-	float w;
-	float h;
-};
+#include "util/u_box_iou.hpp"
 
+using namespace xrt::auxiliary::util::box_iou;
 struct NMSPalm
 {
 	Box bbox;
@@ -27,43 +22,6 @@ struct NMSPalm
 };
 
 
-static float
-overlap(float x1, float w1, float x2, float w2)
-{
-	float l1 = x1 - w1 / 2;
-	float l2 = x2 - w2 / 2;
-	float left = l1 > l2 ? l1 : l2;
-
-	float r1 = x1 + w1 / 2;
-	float r2 = x2 + w2 / 2;
-	float right = r1 < r2 ? r1 : r2;
-
-	return right - left;
-}
-
-static float
-boxIntersection(const Box &a, const Box &b)
-{
-	float w = overlap(a.cx, a.w, b.cx, b.w);
-	float h = overlap(a.cy, a.h, b.cy, b.h);
-
-	if (w < 0 || h < 0)
-		return 0;
-
-	return w * h;
-}
-
-static float
-boxUnion(const Box &a, const Box &b)
-{
-	return a.w * a.h + b.w * b.h - boxIntersection(a, b);
-}
-
-static float
-boxIOU(const Box &a, const Box &b)
-{
-	return boxIntersection(a, b) / boxUnion(a, b);
-}
 
 static NMSPalm
 weightedAvgBoxes(const std::vector<NMSPalm> &detections)
