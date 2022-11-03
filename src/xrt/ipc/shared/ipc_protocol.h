@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "xrt/xrt_limits.h"
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_compositor.h"
 #include "xrt/xrt_results.h"
@@ -23,7 +24,7 @@
 
 #include <sys/types.h>
 
-#define IPC_MAX_SWAPCHAIN_HANDLES 8
+
 #define IPC_CRED_SIZE 1    // auth not implemented
 #define IPC_BUF_SIZE 512   // must be >= largest message length in bytes
 #define IPC_MAX_VIEWS 8    // max views we will return configs for
@@ -297,7 +298,7 @@ struct ipc_app_state
  */
 struct ipc_arg_swapchain_from_native
 {
-	uint32_t sizes[IPC_MAX_SWAPCHAIN_HANDLES];
+	uint32_t sizes[XRT_MAX_SWAPCHAIN_IMAGES];
 };
 
 /*!

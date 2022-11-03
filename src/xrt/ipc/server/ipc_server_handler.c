@@ -789,7 +789,7 @@ ipc_handle_swapchain_create(volatile struct ipc_client_state *ics,
 	struct xrt_swapchain_native *xscn = (struct xrt_swapchain_native *)xsc;
 
 	// Limit checking
-	assert(xsc->image_count <= IPC_MAX_SWAPCHAIN_HANDLES);
+	assert(xsc->image_count <= XRT_MAX_SWAPCHAIN_IMAGES);
 	assert(xsc->image_count <= max_handle_capacity);
 
 	for (size_t i = 1; i < xsc->image_count; i++) {
@@ -830,7 +830,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 		return xret;
 	}
 
-	struct xrt_image_native xins[IPC_MAX_SWAPCHAIN_HANDLES] = {0};
+	struct xrt_image_native xins[XRT_MAX_SWAPCHAIN_IMAGES] = {0};
 	for (uint32_t i = 0; i < handle_count; i++) {
 		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
