@@ -60,6 +60,11 @@ using namespace xrt::auxiliary::util;
 #define HG_WARN(hgt, ...) U_LOG_IFL_W(hgt->log_level, __VA_ARGS__)
 #define HG_ERROR(hgt, ...) U_LOG_IFL_E(hgt->log_level, __VA_ARGS__)
 
+static constexpr uint16_t kDetectionInputSize = 160;
+static constexpr uint16_t kKeypointInputSize = 128;
+
+static constexpr uint16_t kKeypointOutputHeatmapSize = 22;
+static constexpr uint16_t kVisSpacerSize = 8;
 
 static const cv::Scalar RED(255, 30, 30);
 static const cv::Scalar YELLOW(255, 255, 0);
@@ -83,6 +88,15 @@ struct Hand3D
 	struct xrt_vec3 kps[21];
 };
 
+struct model_input_wrap
+{
+	float *data = nullptr;
+	// int64_t isn't a bug; that's what onnxruntime wants.
+	std::vector<int64_t> dimensions = {};
+	OrtValue *tensor = nullptr;
+	const char *name;
+};
+
 struct onnx_wrap
 {
 	const OrtApi *api = nullptr;
@@ -90,10 +104,8 @@ struct onnx_wrap
 
 	OrtMemoryInfo *meminfo = nullptr;
 	OrtSession *session = nullptr;
-	OrtValue *tensor = nullptr;
-	float *data;
-	int64_t input_shape[4];
-	const char *input_name;
+
+	std::vector<model_input_wrap> wraps;
 };
 
 struct hand_bounding_box
@@ -101,7 +113,7 @@ struct hand_bounding_box
 	xrt_vec2 center;
 	float size_px;
 	bool found;
-	bool confidence;
+	float confidence;
 };
 
 struct hand_detection_run_info
@@ -168,6 +180,7 @@ struct hand_size_refinement
 	float out_hand_confidence;
 	float hand_size_refinement_schedule_x = 0;
 	float hand_size_refinement_schedule_y = 0;
+	bool optimizing = true;
 };
 
 struct model_output_visualizers
@@ -259,6 +272,7 @@ public:
 		struct u_var_draggable_f32 dyn_radii_fac;
 		struct u_var_draggable_f32 dyn_joint_y_angle_error;
 		struct u_var_draggable_f32 amount_to_lerp_prediction;
+		struct u_var_draggable_f32 max_permissible_iou;
 		bool scribble_predictions_into_this_frame = false;
 		bool scribble_keypoint_model_outputs = false;
 		bool scribble_optimizer_outputs = true;

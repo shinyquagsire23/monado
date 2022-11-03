@@ -11,6 +11,7 @@
 
 #include "hg_sync.hpp"
 #include "hg_image_math.inl"
+#include "util/u_box_iou.hpp"
 #include "util/u_hand_tracking.h"
 #include "math/m_vec2.h"
 #include "util/u_misc.h"
@@ -362,18 +363,6 @@ check_new_user_event(struct HandTracking *hgt)
 	}
 }
 
-bool
-should_run_detection(struct HandTracking *hgt)
-{
-	if (hgt->tuneable_values.always_run_detection_model) {
-		return true;
-	} else {
-		hgt->detection_counter++;
-		// Every 30 frames, but only if we aren't tracking both hands.
-		bool saw_both_hands_last_frame = hgt->last_frame_hand_detected[0] && hgt->last_frame_hand_detected[1];
-		return (hgt->detection_counter % 30 == 0) && !saw_both_hands_last_frame;
-	}
-}
 
 void
 dispatch_and_process_hand_detections(struct HandTracking *hgt)
@@ -412,53 +401,69 @@ dispatch_and_process_hand_detections(struct HandTracking *hgt)
 	infos[1].outputs[1] = &states[1][1];
 
 
-	u_worker_group_push(hgt->group, run_hand_detection, &infos[0]);
-	u_worker_group_push(hgt->group, run_hand_detection, &infos[1]);
-	u_worker_group_wait_all(hgt->group);
+	size_t active_camera = hgt->detection_counter++ % 2;
+
+	int num_views = 0;
+
+	if (hgt->tuneable_values.always_run_detection_model || hgt->refinement.optimizing) {
+		u_worker_group_push(hgt->group, run_hand_detection, &infos[0]);
+		u_worker_group_push(hgt->group, run_hand_detection, &infos[1]);
+		num_views = 2;
+		u_worker_group_wait_all(hgt->group);
+	} else {
+		run_hand_detection(&infos[active_camera]);
+		num_views = 1;
+	}
+
+
 	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
-		if ((states[0][hand_idx].confidence + states[1][hand_idx].confidence) < 0.90) {
+		// run_hand_detection(&infos[active_camera]);
+
+
+
+		// float confidence_sum = states[active_camera][hand_idx].confidence;
+		float confidence_sum =
+		    (states[0][hand_idx].confidence + states[1][hand_idx].confidence) / float(num_views);
+		if (confidence_sum < 0.9) {
 			continue;
 		}
 
-
-		//!@todo Commented out the below code, which required all detections to be pointing at roughly the same
-		//! point in space.
-		// We should add this back, instead using lineline.cpp. But I gotta ship this, so we're just going to be
-		// less robust for now.
-
-		// xrt_vec2 in_left = raycoord(&hgt->views[0], states[0][hand_idx].center);
-		// xrt_vec2 in_right = raycoord(&hgt->views[1], states[1][hand_idx].center);
-
-		// xrt_vec2 dir_y_l = {in_left.y, -1.0f};
-		// xrt_vec2 dir_y_r = {in_right.y, -1.0f};
-
-		// m_vec2_normalize(&dir_y_l);
-		// m_vec2_normalize(&dir_y_r);
-
-		// float minimum = cosf(DEG_TO_RAD(10));
-
-		// float diff = m_vec2_dot(dir_y_l, dir_y_r);
-
-		// // U_LOG_E("diff %f", diff);
-
-		// if (diff < minimum) {
-		// 	HG_DEBUG(hgt,
-		// 	         "Mismatch in detection models! Diff is %f, left Y axis is %f, right Y "
-		// 	         "axis is %f",
-		// 	         diff, in_left.y, in_right.y);
-		// 	continue;
-		// }
-
-		// If this hand was not detected last frame, we can add our prediction in.
-		// Or, if we're running the model every frame.
 		if (hgt->tuneable_values.always_run_detection_model || !hgt->last_frame_hand_detected[hand_idx]) {
-			hgt->views[0].bboxes_this_frame[hand_idx] = states[0][hand_idx];
-			hgt->views[1].bboxes_this_frame[hand_idx] = states[1][hand_idx];
+			// hgt->views[active_camera].bboxes_this_frame[hand_idx] =
+			// states[active_camera][hand_idx];
+			bool good_to_go = true;
+
+			for (int view_idx = 0; view_idx < 2; view_idx++) {
+				hand_bounding_box this_state = states[view_idx][hand_idx];
+				hand_bounding_box other_state = states[view_idx][!hand_idx];
+				if (!this_state.found || !other_state.found) {
+					continue;
+				}
+
+				xrt::auxiliary::util::box_iou::Box this_box(states[view_idx][hand_idx].center,
+				                                            states[view_idx][hand_idx].size_px);
+				xrt::auxiliary::util::box_iou::Box other_box(states[view_idx][!hand_idx].center,
+				                                             states[view_idx][!hand_idx].size_px);
+
+				float iou = xrt::auxiliary::util::box_iou::boxIOU(this_box, other_box);
+				if (iou > hgt->tuneable_values.max_permissible_iou.val) {
+					HG_WARN(
+					    hgt,
+					    "Rejected detection because the iou for hand idx %d, view idx %d was %f",
+					    hand_idx, view_idx, iou);
+					good_to_go = false;
+					break;
+				}
+			}
+			if (good_to_go) {
+				hgt->views[0].bboxes_this_frame[hand_idx] = states[0][hand_idx];
+				hgt->views[1].bboxes_this_frame[hand_idx] = states[1][hand_idx];
+				// if (hgt->views[!active_camera].bboxes_this_frame[h])
+				hgt->this_frame_hand_detected[hand_idx] = true;
+			}
 		}
-
-
-		hgt->this_frame_hand_detected[hand_idx] = true;
 	}
+
 	// Most of the time, this codepath runs - we predict where the hand should be based on the last
 	// two frames.
 }
@@ -562,6 +567,47 @@ predict_new_regions_of_interest(struct HandTracking *hgt)
 	}
 }
 
+//!@todo This looks like it sucks, but it doesn't given the current architecture.
+// There are two distinct failure modes here:
+// * One hand goes over the other hand, and we wish to discard the hand that is being obscured.
+// * One hand "ate" the other hand: easiest way to see this is by putting your hands close together and shaking them
+// around.
+//
+// If we were only concerned about the first one, we'd do some simple depth testing to figure out which one is
+// closer to the hand and only discard the further-away hand. But the second one is such a common (and bad) failure mode
+// that we really just need to stop tracking all hands if they start overlapping.
+
+//!@todo I really want to try making a discrete optimizer that looks at recent info and decides whether to drop tracking
+//! for a hand, switch its handedness or switch to some forthcoming overlapping-hands model. This would likely work by
+//! pruning impossible combinations, calculating a loss for each remaining option and picking the least bad one.
+void
+stop_everything_if_hands_are_overlapping(struct HandTracking *hgt)
+{
+	bool ok = true;
+	for (int view_idx = 0; view_idx < 2; view_idx++) {
+		hand_bounding_box left_box = hgt->views[view_idx].bboxes_this_frame[0];
+		hand_bounding_box right_box = hgt->views[view_idx].bboxes_this_frame[1];
+		if (!left_box.found || !right_box.found) {
+			continue;
+		}
+		box_iou::Box this_nbox(left_box.center, right_box.size_px);
+		box_iou::Box other_nbox(right_box.center, right_box.size_px);
+		float iou = box_iou::boxIOU(this_nbox, other_nbox);
+		if (iou > hgt->tuneable_values.max_permissible_iou.val) {
+			HG_DEBUG(hgt, "Stopped tracking because iou was %f in view %d", iou, view_idx);
+			ok = false;
+			break;
+		}
+	}
+	if (!ok) {
+		for (int view_idx = 0; view_idx < 2; view_idx++) {
+			for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
+				hgt->views[view_idx].bboxes_this_frame[hand_idx].found = false;
+			}
+		}
+	}
+}
+
 void
 scribble_image_boundary(struct HandTracking *hgt)
 {
@@ -625,6 +671,8 @@ HandTracking::~HandTracking()
 	u_frame_times_widget_teardown(&this->ft_widget);
 }
 
+
+// THIS FUNCTION MUST NEVER EXPLICITLY RETURN, BECAUSE OF tick_up.
 void
 HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
                                struct xrt_frame *left_frame,
@@ -704,11 +752,14 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		struct xrt_frame *new_model_inputs_and_outputs = NULL;
 
 		// Let's check that the collage size is actually as big as we think it is
-		static_assert(1064 == (8 + ((128 + 8) * 4) + ((320 + 8)) + ((80 + 8) * 2) + 8));
-		static_assert(504 == (240 + 240 + 8 + 8 + 8));
+		static_assert(720 == (kVisSpacerSize + ((kKeypointInputSize + kVisSpacerSize) * 4) +
+		                      ((kDetectionInputSize + 8))));
 
-		const int w = 1064;
-		const int h = 504;
+		static_assert(344 == (kDetectionInputSize + kDetectionInputSize + //
+		                      kVisSpacerSize + kVisSpacerSize + kVisSpacerSize));
+
+		const int w = 720;
+		const int h = 344;
 
 		u_frame_create_one_off(XRT_FORMAT_L8, w, h, &hgt->visualizers.xrtframe);
 		hgt->visualizers.xrtframe->timestamp = hgt->current_frame_timestamp;
@@ -732,7 +783,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	check_new_user_event(hgt);
 
 	// Every now and then if we're not already tracking both hands, try to detect new hands.
-	if (should_run_detection(hgt)) {
+	bool saw_both_hands_last_frame = hgt->last_frame_hand_detected[0] && hgt->last_frame_hand_detected[1];
+	if (!saw_both_hands_last_frame) {
 		dispatch_and_process_hand_detections(hgt);
 	}
 	// For already-tracked hands, predict where we think they should be in image space based on the past two
@@ -741,6 +793,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	if (!hgt->tuneable_values.always_run_detection_model) {
 		predict_new_regions_of_interest(hgt);
 	}
+
+	stop_everything_if_hands_are_overlapping(hgt);
 
 	//!@todo does this go here?
 	// If no hand regions of interest were found anywhere, there's no hand - register that in the state tracker
@@ -787,6 +841,8 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 	if ((hgt->refinement.hand_size_refinement_schedule_x > frame_max)) {
 		hgt->refinement.hand_size_refinement_schedule_y = mul_max;
 		optimize_hand_size = false;
+
+		hgt->refinement.optimizing = false;
 	} else {
 		hgt->refinement.hand_size_refinement_schedule_y =
 		    powf((hgt->refinement.hand_size_refinement_schedule_x / frame_max), 2) * mul_max;
@@ -1034,11 +1090,15 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	hgt->tuneable_values.amount_to_lerp_prediction.min = -1.5f;
 	hgt->tuneable_values.amount_to_lerp_prediction.step = 0.01f;
 	hgt->tuneable_values.amount_to_lerp_prediction.val = 0.4f;
-
+	hgt->tuneable_values.max_permissible_iou.max = 1.0f;
+	hgt->tuneable_values.max_permissible_iou.min = 0.0f;
+	hgt->tuneable_values.max_permissible_iou.step = 0.01f;
+	hgt->tuneable_values.max_permissible_iou.val = 0.8f;
 
 	u_var_add_draggable_f32(hgt, &hgt->tuneable_values.dyn_radii_fac, "radius factor (predict)");
 	u_var_add_draggable_f32(hgt, &hgt->tuneable_values.dyn_joint_y_angle_error, "max error hand joint");
 	u_var_add_draggable_f32(hgt, &hgt->tuneable_values.amount_to_lerp_prediction, "Amount to lerp pose-prediction");
+	u_var_add_draggable_f32(hgt, &hgt->tuneable_values.max_permissible_iou, "Max permissible IOU");
 
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_predictions_into_this_frame, "Scribble pose-predictions");
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_keypoint_model_outputs, "Scribble keypoint model output");

@@ -29,6 +29,7 @@ namespace xrt::tracking::hand::mercury {
 		}                                                                                                      \
 	} while (0)
 
+
 static cv::Matx23f
 blackbar(const cv::Mat &in, enum t_camera_orientation rot, cv::Mat &out, xrt_size out_size)
 {
@@ -178,38 +179,7 @@ refine_center_of_distribution(
 	return;
 }
 
-static float
-average_size(const float *data, const float *data_loc, int coarse_x, int coarse_y, int w, int h)
-{
-	float sum = 0.0;
-	float sum_of_values = 0;
-	int max_kern_width = 10;
-	int min_x = std::max(0, coarse_x - max_kern_width);
-	int max_x = std::min(w, coarse_x + max_kern_width);
 
-	int min_y = std::max(0, coarse_y - max_kern_width);
-	int max_y = std::min(h, coarse_y + max_kern_width);
-
-
-	assert(min_x >= 0);
-	assert(max_x <= w);
-
-	assert(min_y >= 0);
-	assert(max_y <= h);
-
-	for (int y = min_y; y < max_y; y++) {
-		for (int x = min_x; x < max_x; x++) {
-			int acc = (y * w) + x;
-			float val = data[acc];
-			float val_loc = data_loc[acc];
-			sum += 1 * val_loc;
-			sum_of_values += val * val_loc;
-		}
-	}
-
-	assert(sum != 0);
-	return sum_of_values / sum;
-}
 
 static void
 normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
@@ -234,22 +204,11 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 }
 
 void
-init_hand_detection(HandTracking *hgt, onnx_wrap *wrap)
+setup_ort_api(HandTracking *hgt, onnx_wrap *wrap, std::filesystem::path path)
 {
-	std::filesystem::path path = hgt->models_folder;
-
-	path /= "grayscale_detection.onnx";
-
-	wrap->input_name = "input_image_grayscale";
-	wrap->input_shape[0] = 1;
-	wrap->input_shape[1] = 1;
-	wrap->input_shape[2] = 240;
-	wrap->input_shape[3] = 320;
-
 	wrap->api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
-
-
 	OrtSessionOptions *opts = nullptr;
+
 	ORT(CreateSessionOptions(&opts));
 
 	ORT(SetSessionGraphOptimizationLevel(opts, ORT_ENABLE_ALL));
@@ -261,26 +220,49 @@ init_hand_detection(HandTracking *hgt, onnx_wrap *wrap)
 
 	ORT(CreateSession(wrap->env, path.c_str(), opts, &wrap->session));
 	assert(wrap->session != NULL);
+	wrap->api->ReleaseSessionOptions(opts);
+}
 
-	size_t input_size = wrap->input_shape[0] * wrap->input_shape[1] * wrap->input_shape[2] * wrap->input_shape[3];
-
-	wrap->data = (float *)malloc(input_size * sizeof(float));
+void
+setup_model_image_input(HandTracking *hgt, onnx_wrap *wrap, const char *name, int64_t w, int64_t h)
+{
+	model_input_wrap inputimg = {};
+	inputimg.name = name;
+	inputimg.dimensions.push_back(1);
+	inputimg.dimensions.push_back(1);
+	inputimg.dimensions.push_back(h);
+	inputimg.dimensions.push_back(w);
+	size_t data_size = w * h * sizeof(float);
+	inputimg.data = (float *)malloc(data_size);
 
 	ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
-	                                   wrap->data,                          //
-	                                   input_size * sizeof(float),          //
-	                                   wrap->input_shape,                   //
-	                                   4,                                   //
+	                                   inputimg.data,                       //
+	                                   data_size,                           //
+	                                   inputimg.dimensions.data(),          //
+	                                   inputimg.dimensions.size(),          //
 	                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
-	                                   &wrap->tensor));
+	                                   &inputimg.tensor));
 
-	assert(wrap->tensor);
+	assert(inputimg.tensor);
 	int is_tensor;
-	ORT(IsTensor(wrap->tensor, &is_tensor));
+	ORT(IsTensor(inputimg.tensor, &is_tensor));
 	assert(is_tensor);
 
+	wrap->wraps.push_back(inputimg);
+}
 
-	wrap->api->ReleaseSessionOptions(opts);
+void
+init_hand_detection(HandTracking *hgt, onnx_wrap *wrap)
+{
+	std::filesystem::path path = hgt->models_folder;
+
+	path /= "grayscale_detection_160x160.onnx";
+
+	wrap->wraps.clear();
+
+	setup_ort_api(hgt, wrap, path);
+
+	setup_model_image_input(hgt, wrap, "inputImg", kDetectionInputSize, kDetectionInputSize);
 }
 
 
@@ -289,76 +271,84 @@ run_hand_detection(void *ptr)
 {
 	XRT_TRACE_MARKER();
 
-	// ht_view *view = (ht_view *)ptr;
-
 	hand_detection_run_info *info = (hand_detection_run_info *)ptr;
 	ht_view *view = info->view;
-
 	HandTracking *hgt = view->hgt;
 	onnx_wrap *wrap = &view->detection;
-	cv::Mat &data_400x640 = view->run_model_on_this;
+
+	cv::Mat &orig_data = view->run_model_on_this;
+
+	cv::Mat binned_uint8;
+
+	xrt_size desired_bin_size;
+	desired_bin_size.h = kDetectionInputSize;
+	desired_bin_size.w = kDetectionInputSize;
+
+	cv::Matx23f go_back = blackbar(orig_data, view->camera_info.camera_orientation, binned_uint8, desired_bin_size);
+
+	cv::Mat binned_float_wrapper_mat(cv::Size(kDetectionInputSize, kDetectionInputSize),
+	                                 CV_32FC1,            //
+	                                 wrap->wraps[0].data, //
+	                                 kDetectionInputSize * sizeof(float));
+
+	normalizeGrayscaleImage(binned_uint8, binned_float_wrapper_mat);
+
+	const OrtValue *inputs[] = {wrap->wraps[0].tensor};
+	const char *input_names[] = {wrap->wraps[0].name};
+
+	OrtValue *output_tensors[] = {nullptr, nullptr, nullptr, nullptr};
+	const char *output_names[] = {"hand_exists", "cx", "cy", "size"};
+
+	{
+		XRT_TRACE_IDENT(model);
+		static_assert(ARRAY_SIZE(input_names) == ARRAY_SIZE(inputs));
+		static_assert(ARRAY_SIZE(output_names) == ARRAY_SIZE(output_tensors));
+		ORT(Run(wrap->session, nullptr, input_names, inputs, ARRAY_SIZE(input_names), output_names,
+		        ARRAY_SIZE(output_names), output_tensors));
+	}
+
+	float *hand_exists = nullptr;
+	float *cx = nullptr;
+	float *cy = nullptr;
+	float *sizee = nullptr;
+
+	ORT(GetTensorMutableData(output_tensors[0], (void **)&hand_exists));
+	ORT(GetTensorMutableData(output_tensors[1], (void **)&cx));
+	ORT(GetTensorMutableData(output_tensors[2], (void **)&cy));
+	ORT(GetTensorMutableData(output_tensors[3], (void **)&sizee));
 
 
-	cv::Mat _240x320_uint8;
-
-	xrt_size desire;
-	desire.h = 240;
-	desire.w = 320;
-
-	cv::Matx23f go_back = blackbar(data_400x640, view->camera_info.camera_orientation, _240x320_uint8, desire);
-
-
-	cv::Mat _240x320(cv::Size(320, 240), CV_32FC1, wrap->data, 320 * sizeof(float));
-
-	normalizeGrayscaleImage(_240x320_uint8, _240x320);
-
-	const char *output_name = "hand_locations_radii";
-
-	OrtValue *output_tensor = nullptr;
-	ORT(Run(wrap->session, nullptr, &wrap->input_name, &wrap->tensor, 1, &output_name, 1, &output_tensor));
-
-
-	float *out_data = nullptr;
-
-	ORT(GetTensorMutableData(output_tensor, (void **)&out_data));
-
-	size_t plane_size = 80 * 60;
 
 	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
-		float *this_side_data = out_data + hand_idx * plane_size * 2;
-		int max_idx = argmax(this_side_data, 4800);
-
 		hand_bounding_box *output = info->outputs[hand_idx];
 
-		output->found = this_side_data[max_idx] > 0.3;
+		output->found = hand_exists[hand_idx] > 0.3;
 
 		if (output->found) {
-			output->confidence = this_side_data[max_idx];
+			output->confidence = hand_exists[hand_idx];
 
-			int row = max_idx / 80;
-			int col = max_idx % 80;
+			xrt_vec2 _pt = {};
+			_pt.x = math_map_ranges(cx[hand_idx], -1, 1, 0, kDetectionInputSize);
+			_pt.y = math_map_ranges(cy[hand_idx], -1, 1, 0, kDetectionInputSize);
 
-			float size = average_size(this_side_data + plane_size, this_side_data, col, row, 80, 60);
+			float size = sizee[hand_idx];
 
-			// model output width is between 0 and 1. multiply by image width and tuned factor
+
+
 			constexpr float fac = 2.0f;
-			size *= 320 * fac;
+			size *= kDetectionInputSize * fac;
 			size *= m_vec2_len({go_back(0, 0), go_back(0, 1)});
 
-			float refined_x, refined_y;
-
-			refine_center_of_distribution(this_side_data, col, row, 80, 60, &refined_x, &refined_y);
 
 			cv::Mat &debug_frame = view->debug_out_to_this;
 
-			xrt_vec2 _pt = {refined_x * 4, refined_y * 4};
 			_pt = transformVecBy2x3(_pt, go_back);
 
 			output->center = _pt;
 			output->size_px = size;
 
 			if (hgt->debug_scribble) {
-				cv::Point2i pt(_pt.x, _pt.y);
+				cv::Point2i pt((int)output->center.x, (int)output->center.y);
 				cv::rectangle(debug_frame,
 				              cv::Rect(pt - cv::Point2i(size / 2, size / 2), cv::Size(size, size)),
 				              PINK, 1);
@@ -367,31 +357,18 @@ run_hand_detection(void *ptr)
 
 		if (hgt->debug_scribble) {
 			// note: this will multiply the model outputs by 255, don't do anything with them after this.
-			int top_of_rect_y = 8; // 8 + 128 + 8 + 128 + 8;
-			int left_of_rect_x = 8 + ((128 + 8) * 4);
-			int start_y = top_of_rect_y + ((240 + 8) * view->view);
-			int start_x = left_of_rect_x + 8 + 320 + 8;
-			cv::Rect p = cv::Rect(left_of_rect_x, start_y, 320, 240);
+			int top_of_rect_y = kVisSpacerSize; // 8 + 128 + 8 + 128 + 8;
+			int left_of_rect_x = kVisSpacerSize + ((kKeypointInputSize + kVisSpacerSize) * 4);
+			int start_y = top_of_rect_y + ((kDetectionInputSize + kVisSpacerSize) * view->view);
+			cv::Rect p = cv::Rect(left_of_rect_x, start_y, kDetectionInputSize, kDetectionInputSize);
 
-			_240x320_uint8.copyTo(hgt->visualizers.mat(p));
-
-			{
-				cv::Rect p = cv::Rect(start_x + (hand_idx * (80 + 8)), start_y, 80, 60);
-				cv::Mat start(cv::Size(80, 60), CV_32FC1, this_side_data, 80 * sizeof(float));
-				start *= 255.0;
-				start.copyTo(hgt->visualizers.mat(p));
-			}
-
-			{
-				cv::Rect p = cv::Rect(start_x + (hand_idx * (80 + 8)), start_y + ((60 + 8)), 80, 60);
-				cv::Mat start(cv::Size(80, 60), CV_32FC1, this_side_data + 4800, 80 * sizeof(float));
-				start *= 255.0;
-				start.copyTo(hgt->visualizers.mat(p));
-			}
+			binned_uint8.copyTo(hgt->visualizers.mat(p));
 		}
 	}
 
-	wrap->api->ReleaseValue(output_tensor);
+	for (size_t i = 0; i < ARRAY_SIZE(output_tensors); i++) {
+		wrap->api->ReleaseValue(output_tensors[i]);
+	}
 }
 
 void
@@ -402,51 +379,11 @@ init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap)
 
 	path /= "grayscale_keypoint_new.onnx";
 
-	// input_names = {"input_image_grayscale"};
-	wrap->input_name = "inputImg";
-	wrap->input_shape[0] = 1;
-	wrap->input_shape[1] = 1;
-	wrap->input_shape[2] = 128;
-	wrap->input_shape[3] = 128;
+	wrap->wraps.clear();
 
-	wrap->api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+	setup_ort_api(hgt, wrap, path);
 
-
-	OrtSessionOptions *opts = nullptr;
-	ORT(CreateSessionOptions(&opts));
-
-	// TODO review options, config for threads?
-	ORT(SetSessionGraphOptimizationLevel(opts, ORT_ENABLE_ALL));
-	ORT(SetIntraOpNumThreads(opts, 1));
-
-
-	ORT(CreateEnv(ORT_LOGGING_LEVEL_FATAL, "monado_ht", &wrap->env));
-
-	ORT(CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &wrap->meminfo));
-
-	// HG_DEBUG(this->device, "Loading hand detection model from file '%s'", path.c_str());
-	ORT(CreateSession(wrap->env, path.c_str(), opts, &wrap->session));
-	assert(wrap->session != NULL);
-
-	size_t input_size = wrap->input_shape[0] * wrap->input_shape[1] * wrap->input_shape[2] * wrap->input_shape[3];
-
-	wrap->data = (float *)malloc(input_size * sizeof(float));
-
-	ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
-	                                   wrap->data,                          //
-	                                   input_size * sizeof(float),          //
-	                                   wrap->input_shape,                   //
-	                                   4,                                   //
-	                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
-	                                   &wrap->tensor));
-
-	assert(wrap->tensor);
-	int is_tensor;
-	ORT(IsTensor(wrap->tensor, &is_tensor));
-	assert(is_tensor);
-
-
-	wrap->api->ReleaseSessionOptions(opts);
+	setup_model_image_input(hgt, wrap, "inputImg", kKeypointInputSize, kKeypointInputSize);
 }
 
 void
@@ -456,9 +393,6 @@ calc_src_tri(cv::Point2f center,
              enum t_camera_orientation rot,
              cv::Point2f out_src_tri[3])
 {
-	// cv::Point2f go_right = {size_px / 2, 0};
-	// cv::Point2f go_down = {0, size_px / 2};
-
 	cv::Point2f top_left = {center - go_down - go_right};
 	cv::Point2f bottom_left = {center + go_down - go_right};
 	cv::Point2f bottom_right = {center + go_down + go_right};
@@ -516,8 +450,8 @@ calc_src_tri(cv::Point2f center,
 void
 make_keypoint_heatmap_output(int camera_idx, int hand_idx, int grid_pt_x, int grid_pt_y, float *plane, cv::Mat &out)
 {
-	int root_x = 8 + ((1 + 2 * hand_idx) * (128 + 8));
-	int root_y = 8 + (camera_idx * (128 + 8));
+	int root_x = kVisSpacerSize + ((1 + 2 * hand_idx) * (kKeypointInputSize + kVisSpacerSize));
+	int root_y = kVisSpacerSize + (camera_idx * (kKeypointInputSize + kVisSpacerSize));
 
 	int org_x = (root_x) + (grid_pt_x * 25);
 	int org_y = (root_y) + (grid_pt_y * 25);
@@ -525,7 +459,6 @@ make_keypoint_heatmap_output(int camera_idx, int hand_idx, int grid_pt_x, int gr
 
 
 	cv::Mat start(cv::Size(22, 22), CV_32FC1, plane, 22 * sizeof(float));
-	// cv::Mat start(cv::Size(40, 42), CV_32FC1, plane, 40 * 42 * sizeof(float));
 	start *= 255.0;
 
 	start.copyTo(out(p));
@@ -561,40 +494,52 @@ run_keypoint_estimation(void *ptr)
 	 * the model is trained on left hands.
 	 * Top left, bottom left, top right */
 	if (info->hand_idx == 1) {
-		dst_tri[0] = {128, 0};
-		dst_tri[1] = {128, 128};
+		dst_tri[0] = {kKeypointInputSize, 0};
+		dst_tri[1] = {kKeypointInputSize, kKeypointInputSize};
 		dst_tri[2] = {0, 0};
 	} else {
 		dst_tri[0] = {0, 0};
-		dst_tri[1] = {0, 128};
-		dst_tri[2] = {128, 0};
+		dst_tri[1] = {0, kKeypointInputSize};
+		dst_tri[2] = {kKeypointInputSize, 0};
 	}
 
 	cv::Matx23f go_there = getAffineTransform(src_tri, dst_tri);
-	cv::Matx23f go_back = getAffineTransform(dst_tri, src_tri);
+	cv::Matx23f go_back = getAffineTransform(dst_tri, src_tri); // NOLINT
 
-	cv::Mat data_128x128_uint8;
+	cv::Mat cropped_image_uint8;
 
 	{
 		XRT_TRACE_IDENT(transforms);
 
-		cv::warpAffine(info->view->run_model_on_this, data_128x128_uint8, go_there, cv::Size(128, 128),
-		               cv::INTER_LINEAR);
+		cv::warpAffine(info->view->run_model_on_this, cropped_image_uint8, go_there,
+		               cv::Size(kKeypointInputSize, kKeypointInputSize), cv::INTER_LINEAR);
 
-		cv::Mat data_128x128_float(cv::Size(128, 128), CV_32FC1, wrap->data, 128 * sizeof(float));
+		cv::Mat cropped_image_float_wrapper(cv::Size(kKeypointInputSize, kKeypointInputSize), //
+		                                    CV_32FC1,                                         //
+		                                    wrap->wraps[0].data,                              //
+		                                    kKeypointInputSize * sizeof(float));
 
-		normalizeGrayscaleImage(data_128x128_uint8, data_128x128_float);
+		normalizeGrayscaleImage(cropped_image_uint8, cropped_image_float_wrapper);
 	}
 
 	// Ending here
 
-	const char *output_names[2] = {"heatmap"};
+	const OrtValue *inputs[] = {wrap->wraps[0].tensor};
+	const char *input_names[] = {wrap->wraps[0].name};
 
-	OrtValue *output_tensor = nullptr;
+	OrtValue *output_tensors[] = {nullptr};
+
+	const char *output_names[] = {"heatmap"};
+
+
+	// OrtValue *output_tensor = nullptr;
 
 	{
 		XRT_TRACE_IDENT(model);
-		ORT(Run(wrap->session, nullptr, &wrap->input_name, &wrap->tensor, 1, output_names, 1, &output_tensor));
+		static_assert(ARRAY_SIZE(input_names) == ARRAY_SIZE(inputs));
+		static_assert(ARRAY_SIZE(output_names) == ARRAY_SIZE(output_tensors));
+		ORT(Run(wrap->session, nullptr, input_names, inputs, ARRAY_SIZE(input_names), output_names,
+		        ARRAY_SIZE(output_names), output_tensors));
 	}
 
 	// To here
@@ -602,28 +547,30 @@ run_keypoint_estimation(void *ptr)
 	float *out_data = nullptr;
 
 
-	ORT(GetTensorMutableData(output_tensor, (void **)&out_data));
+	ORT(GetTensorMutableData(output_tensors[0], (void **)&out_data));
 
 	Hand2D &px_coord = info->view->keypoint_outputs[info->hand_idx].hand_px_coord;
 	Hand2D &tan_space = info->view->keypoint_outputs[info->hand_idx].hand_tan_space;
 	float *confidences = info->view->keypoint_outputs[info->hand_idx].hand_tan_space.confidences;
 	xrt_vec2 *keypoints_global = px_coord.kps;
 
-	size_t plane_size = 22 * 22;
+	size_t plane_size = kKeypointOutputHeatmapSize * kKeypointOutputHeatmapSize;
 
 	for (int i = 0; i < 21; i++) {
 		float *data = &out_data[i * plane_size];
-		int out_idx = argmax(data, 22 * 22);
-		int row = out_idx / 22;
-		int col = out_idx % 22;
+		int out_idx = argmax(data, kKeypointOutputHeatmapSize * kKeypointOutputHeatmapSize);
+		int row = out_idx / kKeypointOutputHeatmapSize;
+		int col = out_idx % kKeypointOutputHeatmapSize;
 
 		xrt_vec2 loc;
 
 
-		refine_center_of_distribution(data, col, row, 22, 22, &loc.x, &loc.y);
+		refine_center_of_distribution(data, col, row, kKeypointOutputHeatmapSize, kKeypointOutputHeatmapSize,
+		                              &loc.x, &loc.y);
 
-		loc.x *= 128.0f / 22.0f;
-		loc.y *= 128.0f / 22.0f;
+		// 128.0/22.0f
+		loc.x *= float(kKeypointInputSize) / float(kKeypointOutputHeatmapSize);
+		loc.y *= float(kKeypointInputSize) / float(kKeypointOutputHeatmapSize);
 
 		loc = transformVecBy2x3(loc, go_back);
 
@@ -636,12 +583,12 @@ run_keypoint_estimation(void *ptr)
 	if (hgt->debug_scribble) {
 		int data_acc_idx = 0;
 
-		int root_x = 8 + ((2 * info->hand_idx) * (128 + 8));
-		int root_y = 8 + (info->view->view * (128 + 8));
+		int root_x = kVisSpacerSize + ((2 * info->hand_idx) * (kKeypointInputSize + kVisSpacerSize));
+		int root_y = kVisSpacerSize + (info->view->view * (kKeypointInputSize + kVisSpacerSize));
 
-		cv::Rect p = cv::Rect(root_x, root_y, 128, 128);
+		cv::Rect p = cv::Rect(root_x, root_y, kKeypointInputSize, kKeypointInputSize);
 
-		data_128x128_uint8.copyTo(hgt->visualizers.mat(p));
+		cropped_image_uint8.copyTo(hgt->visualizers.mat(p));
 
 		make_keypoint_heatmap_output(info->view->view, info->hand_idx, 0, 0,
 		                             out_data + (data_acc_idx * plane_size), hgt->visualizers.mat);
@@ -678,7 +625,7 @@ run_keypoint_estimation(void *ptr)
 		}
 	}
 
-	wrap->api->ReleaseValue(output_tensor);
+	wrap->api->ReleaseValue(output_tensors[0]);
 }
 
 void
@@ -686,9 +633,11 @@ release_onnx_wrap(onnx_wrap *wrap)
 {
 	wrap->api->ReleaseMemoryInfo(wrap->meminfo);
 	wrap->api->ReleaseSession(wrap->session);
-	wrap->api->ReleaseValue(wrap->tensor);
+	for (model_input_wrap &a : wrap->wraps) {
+		wrap->api->ReleaseValue(a.tensor);
+		free(a.data);
+	}
 	wrap->api->ReleaseEnv(wrap->env);
-	free(wrap->data);
 }
 
 } // namespace xrt::tracking::hand::mercury
