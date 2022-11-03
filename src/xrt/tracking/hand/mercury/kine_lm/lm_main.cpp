@@ -184,7 +184,7 @@ eval_hand_set_rel_orientations(const OptimizerHand<T> &opt, Orientations54<T> &r
 // Thumb MCP hidden orientation
 #if 0
 	Vec2<T> mcp_root_swing;
-	
+
 	mcp_root_swing.x = rad<T>((T)(-10));
 	mcp_root_swing.y = rad<T>((T)(-40));
 
@@ -544,7 +544,7 @@ CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 // When you're hacking, you want to set the residuals to always-0 so that any of them you forget to touch keep their 0
 // gradient.
 // But then later this just becomes a waste.
-#if 0	
+#if 0
 	for (size_t i = 0; i < residual_size; i++) {
 		residual[i] = (T)(0);
 	}
@@ -848,7 +848,7 @@ opt_run(KinematicHandLM &state, one_frame_input &observation, xrt_hand_joint_set
 		uint64_t diff = end - start;
 		double time_taken = (double)diff / (double)U_TIME_1MS_IN_NS;
 
-		const char *status;
+		const char *status = "UNDEFINED";
 
 		switch (summary.status) {
 		case 0: {

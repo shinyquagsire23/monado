@@ -609,7 +609,7 @@ pc_info(struct u_pacing_compositor *upc,
 	}
 
 	assert(f->state == STATE_SUBMITTED);
-	uint64_t unslopped_desired_present_time_ns = desired_present_time_ns + PRESENT_SLOP_NS;
+	XRT_MAYBE_UNUSED uint64_t unslopped_desired_present_time_ns = desired_present_time_ns + PRESENT_SLOP_NS;
 	assert(f->desired_present_time_ns == desired_present_time_ns ||
 	       f->desired_present_time_ns == unslopped_desired_present_time_ns);
 

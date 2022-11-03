@@ -351,6 +351,7 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	 * This only makes sense with 3dof.
 	 */
 
+#if 0
 	float pivot_offset_z = 0.15;
 
 	struct xrt_space_relation controller_relation = {
@@ -359,6 +360,7 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
+#endif
 
 	struct xrt_vec3 static_offset = {0, 0, 0};
 

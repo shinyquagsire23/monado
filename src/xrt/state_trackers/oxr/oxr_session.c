@@ -1015,7 +1015,7 @@ xr_hand_to_force_feedback_output(XrHandEXT hand)
 	switch (hand) {
 	case XR_HAND_LEFT_EXT: return XRT_OUTPUT_NAME_FORCE_FEEDBACK_LEFT;
 	case XR_HAND_RIGHT_EXT: return XRT_OUTPUT_NAME_FORCE_FEEDBACK_RIGHT;
-	default: assert(false);
+	default: assert(false); return 0;
 	}
 }
 

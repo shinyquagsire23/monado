@@ -206,7 +206,7 @@ window_draw_misc(struct gui_record_window *rw)
 	igSameLine(0.0f, 4.0f);
 	bool plus = igButton("+", button_dims);
 
-	const static double scales[] = {
+	static const double scales[] = {
 	    25.0, 50.0, 100.0, 200.0, 300.0,
 	};
 

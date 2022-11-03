@@ -747,10 +747,6 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		hgt->views[1].debug_out_to_this = debug_output(cv::Rect(view_offsets[1], view_size));
 		scribble_image_boundary(hgt);
 
-		//
-
-		struct xrt_frame *new_model_inputs_and_outputs = NULL;
-
 		// Let's check that the collage size is actually as big as we think it is
 		static_assert(720 == (kVisSpacerSize + ((kKeypointInputSize + kVisSpacerSize) * 4) +
 		                      ((kDetectionInputSize + 8))));

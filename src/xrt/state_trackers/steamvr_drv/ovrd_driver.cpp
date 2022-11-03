@@ -314,7 +314,7 @@ flexion_joints_to_bone_transform(struct xrt_hand_joint_set *hand_joint_set,
 	struct xrt_hand_joint_value *joint_values = hand_joint_set->values.hand_joint_set_default;
 
 	// Apply orientations for four-finger pxm and onward
-	int parent;
+	int parent = -1;
 	for (int joint = XRT_HAND_JOINT_THUMB_METACARPAL; joint < XRT_HAND_JOINT_COUNT; joint++) {
 		if (u_hand_joint_is_metacarpal((xrt_hand_joint)joint)) {
 			parent = joint;

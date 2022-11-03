@@ -53,7 +53,7 @@ oxr_dpad_state_get_or_add(struct oxr_dpad_state *state, uint64_t key)
 	struct oxr_dpad_entry *e = oxr_dpad_state_get(state, key);
 	if (e == NULL) {
 		e = U_TYPED_CALLOC(struct oxr_dpad_entry);
-		int ret = u_hashmap_int_insert(state->uhi, key, (void *)e);
+		XRT_MAYBE_UNUSED int ret = u_hashmap_int_insert(state->uhi, key, (void *)e);
 		assert(ret >= 0);
 	}
 
