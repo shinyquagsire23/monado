@@ -151,14 +151,23 @@ on_video_device(struct xrt_prober *xp,
 }
 
 static struct xrt_slam_sinks *
-valve_index_slam_track(struct lighthouse_system *lhs)
+valve_index_slam_track(struct lighthouse_system *lhs,
+                       struct t_stereo_camera_calibration *stereo_calib,
+                       struct t_imu_calibration *imu_calib,
+                       struct t_slam_calib_extras *extra_calib)
 {
 	struct xrt_slam_sinks *sinks = NULL;
 
-#ifdef XRT_FEATURE_SLAM
 	struct vive_device *d = (struct vive_device *)lhs->devices->base.roles.head;
 
-	int create_status = t_slam_create(&lhs->devices->xfctx, NULL, &d->tracking.slam, &sinks);
+#ifdef XRT_FEATURE_SLAM
+	struct t_slam_tracker_config config = {0};
+	t_slam_fill_default_config(&config);
+	config.stereo_calib = stereo_calib; // Won't hold stereo_calib so no refcount
+	config.imu_calib = imu_calib;
+	config.extra_calib = extra_calib;
+
+	int create_status = t_slam_create(&lhs->devices->xfctx, &config, &d->tracking.slam, &sinks);
 	if (create_status != 0) {
 		return NULL;
 	}
@@ -371,11 +380,13 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	struct t_stereo_camera_calibration *stereo_calib = NULL;
 	struct xrt_pose head_in_left_cam;
 	vive_get_stereo_camera_calibration(lhs->hmd_config, &stereo_calib, &head_in_left_cam);
+	struct t_imu_calibration imu_calib = vive_get_imu_calibration(lhs->hmd_config);
+	struct t_slam_calib_extras extra_calib = vive_get_extra_calibration(lhs->hmd_config);
 
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (slam_enabled) {
-		slam_sinks = valve_index_slam_track(lhs);
+		slam_sinks = valve_index_slam_track(lhs, stereo_calib, &imu_calib, &extra_calib);
 		if (slam_sinks == NULL) {
 			lhs->vive_tstatus.slam_enabled = false;
 			slam_enabled = false;
