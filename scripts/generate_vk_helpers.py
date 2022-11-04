@@ -255,6 +255,7 @@ INSTANCE_EXTENSIONS_TO_CHECK = [
 DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_external_fence_fd",
     "VK_KHR_external_semaphore_fd",
+    "VK_KHR_global_priority",
     "VK_KHR_image_format_list",
     "VK_KHR_maintenance1",
     "VK_KHR_maintenance2",
