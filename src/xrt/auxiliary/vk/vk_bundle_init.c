@@ -988,7 +988,14 @@ vk_create_device(struct vk_bundle *vk,
 	    .pQueuePriorities = &queue_priority,
 	};
 
-	if (vk->has_EXT_global_priority) {
+#ifdef VK_KHR_global_priority
+	static_assert(VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_EXT ==
+	                  VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR,
+	              "Vulkan structs doesn't have the same structure ID!");
+#endif
+
+	if (vk->has_EXT_global_priority || vk->has_KHR_global_priority) {
+		// This is okay, see static_assert above.
 		priority_info.pNext = queue_create_info.pNext;
 		queue_create_info.pNext = (void *)&priority_info;
 	}
