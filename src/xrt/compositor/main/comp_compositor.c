@@ -632,6 +632,9 @@ static const char *optional_device_extensions[] = {
 #error "Need port!"
 #endif
 
+#ifdef VK_KHR_global_priority
+    VK_KHR_GLOBAL_PRIORITY_EXTENSION_NAME,
+#endif
 #ifdef VK_KHR_image_format_list
     VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
 #endif
