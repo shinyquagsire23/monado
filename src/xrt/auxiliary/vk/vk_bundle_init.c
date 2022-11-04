@@ -959,9 +959,17 @@ vk_create_device(struct vk_bundle *vk,
 	filter_device_features(vk, vk->physical_device, optional_device_features, &device_features);
 	vk->features.timeline_semaphore = device_features.timeline_semaphore;
 
+
 	/*
 	 * Queue
 	 */
+
+	// If we don't have global priority, only allow medium priority queues.
+	if (!vk->has_EXT_global_priority && //
+	    !vk->has_KHR_global_priority && //
+	    global_priority != VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_EXT) {
+		return VK_ERROR_NOT_PERMITTED_EXT;
+	}
 
 	if (only_compute) {
 		ret = find_compute_queue_family(vk, &vk->queue_family_index);
