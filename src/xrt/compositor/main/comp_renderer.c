@@ -700,15 +700,14 @@ renderer_get_view_projection(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
-	struct xrt_fov fovs[2] = {0};
-	struct xrt_pose poses[2] = {0};
-
 	struct xrt_vec3 default_eye_relation = {
 	    0.063000f, /*! @todo get actual ipd_meters */
 	    0.0f,
 	    0.0f,
 	};
+
+	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	struct xrt_pose poses[2] = {0};
 
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
@@ -716,13 +715,13 @@ renderer_get_view_projection(struct comp_renderer *r)
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
 	    &head_relation,                                  //
-	    fovs,                                            //
+	    r->c->base.slot.fovs,                            //
 	    poses);                                          //
 
 	struct xrt_pose base_space_pose = XRT_POSE_IDENTITY;
 
 	for (uint32_t i = 0; i < 2; i++) {
-		const struct xrt_fov fov = fovs[i];
+		const struct xrt_fov fov = r->c->base.slot.fovs[i];
 		const struct xrt_pose eye_pose = poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
@@ -734,6 +733,7 @@ renderer_get_view_projection(struct comp_renderer *r)
 		m_relation_chain_push_pose_if_not_identity(&xrc, &base_space_pose);
 		m_relation_chain_resolve(&xrc, &result);
 
+		r->c->base.slot.poses[i] = result.pose;
 		comp_layer_renderer_set_pose(r->lr, &eye_pose, &result.pose, i);
 	}
 }
@@ -943,6 +943,11 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
+		c->base.slot.poses[0] = lvd->pose;
+		c->base.slot.poses[1] = rvd->pose;
+		c->base.slot.fovs[0] = lvd->fov;
+		c->base.slot.fovs[1] = rvd->fov;
+
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
 		renderer_submit_queue(r, rr->r->cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -955,6 +960,11 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		c->base.slot.poses[0] = lvd->pose;
+		c->base.slot.poses[1] = rvd->pose;
+		c->base.slot.fovs[0] = lvd->fov;
+		c->base.slot.fovs[1] = rvd->fov;
 
 		do_gfx_mesh_and_proj(r, rr, rtr, layer, lvd, rvd);
 
@@ -980,15 +990,14 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 {
 	COMP_TRACE_MARKER();
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
-	struct xrt_fov fovs[2] = {0};
-	struct xrt_pose poses[2] = {0};
-
 	struct xrt_vec3 default_eye_relation = {
 	    0.063000f, /*! @todo get actual ipd_meters */
 	    0.0f,
 	    0.0f,
 	};
+
+	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	struct xrt_pose poses[2] = {0};
 
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
@@ -996,11 +1005,11 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
 	    &head_relation,                                  //
-	    fovs,                                            //
+	    r->c->base.slot.fovs,                            //
 	    poses);                                          //
 
 	for (uint32_t i = 0; i < 2; i++) {
-		const struct xrt_fov fov = fovs[i];
+		const struct xrt_fov fov = r->c->base.slot.fovs[i];
 		const struct xrt_pose eye_pose = poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
@@ -1013,6 +1022,7 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 
 		out_eye[i] = eye_pose;
 		out_world[i] = result.pose;
+		r->c->base.slot.poses[i] = result.pose;
 	}
 }
 
