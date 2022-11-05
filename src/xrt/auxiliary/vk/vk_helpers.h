@@ -127,7 +127,9 @@ struct vk_bundle
 	bool has_KHR_timeline_semaphore;
 	bool has_EXT_calibrated_timestamps;
 	bool has_EXT_display_control;
+	bool has_EXT_external_memory_dma_buf;
 	bool has_EXT_global_priority;
+	bool has_EXT_image_drm_format_modifier;
 	bool has_EXT_robustness2;
 	bool has_GOOGLE_display_timing;
 	// end of GENERATED device extension code - do not modify - used by scripts
@@ -190,6 +192,7 @@ struct vk_bundle
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
 	PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties;
+	PFN_vkGetPhysicalDeviceFormatProperties2KHR vkGetPhysicalDeviceFormatProperties2;
 	PFN_vkGetPhysicalDeviceImageFormatProperties2 vkGetPhysicalDeviceImageFormatProperties2;
 	PFN_vkGetPhysicalDeviceExternalBufferPropertiesKHR vkGetPhysicalDeviceExternalBufferPropertiesKHR;
 	PFN_vkGetPhysicalDeviceExternalFencePropertiesKHR vkGetPhysicalDeviceExternalFencePropertiesKHR;
@@ -404,7 +407,12 @@ struct vk_bundle
 	PFN_vkGetSwapchainCounterEXT vkGetSwapchainCounterEXT;
 	PFN_vkRegisterDeviceEventEXT vkRegisterDeviceEventEXT;
 	PFN_vkRegisterDisplayEventEXT vkRegisterDisplayEventEXT;
+
 #endif // defined(VK_EXT_display_control)
+
+#if defined(VK_EXT_image_drm_format_modifier)
+	PFN_vkGetImageDrmFormatModifierPropertiesEXT vkGetImageDrmFormatModifierPropertiesEXT;
+#endif // defined(VK_EXT_image_drm_format_modifier)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 };
