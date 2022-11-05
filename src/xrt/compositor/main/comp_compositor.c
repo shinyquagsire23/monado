@@ -982,8 +982,20 @@ compositor_try_window(struct comp_compositor *c, struct comp_target *ct)
 }
 
 static bool
-compositor_init_window_pre_vulkan(struct comp_compositor *c)
+compositor_init_window_pre_vulkan(struct comp_compositor *c, struct xrt_device *xdev)
 {
+	if (xdev->create_compositor_target) {
+		struct comp_target *target;
+		xdev->create_compositor_target(xdev, c, &target);
+
+		if (compositor_try_window(c, target)) {
+			c->settings.window_type = WINDOW_NONE;
+			return true;
+		}
+
+		return false;
+	}
+
 	// Nothing to do for nvidia and vk_display.
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA || c->settings.window_type == WINDOW_VK_DISPLAY) {
 		return true;
@@ -1209,7 +1221,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	// clang-format off
 	if (!compositor_check_and_prepare_xdev(c, xdev) ||
 	    !compositor_check_vulkan_caps(c) ||
-	    !compositor_init_window_pre_vulkan(c) ||
+	    !compositor_init_window_pre_vulkan(c, xdev) ||
 	    !compositor_init_vulkan(c) ||
 	    !compositor_init_render_resources(c) ||
 	    !compositor_init_window_post_vulkan(c) ||
