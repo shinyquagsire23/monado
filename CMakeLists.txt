@@ -40,6 +40,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ###
 # Dependencies
 ###
+if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
+	include(FetchContent)
+	include(ExternalProject)
+endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sanitizers")
 include(OptionWithDeps)
@@ -98,6 +102,7 @@ find_package(ZLIB MODULE)
 find_package(cJSON MODULE)
 find_package(LeapV2 MODULE)
 find_package(ONNXRuntime MODULE)
+find_package(CUDAToolkit)
 if(NOT WIN32)
 	find_package(EGL MODULE)
 	find_package(Percetto MODULE)
@@ -160,6 +165,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
+		pkg_check_modules(
+			FFMPEG
+			IMPORTED_TARGET
+			libavcodec
+			libavutil
+			libavfilter
+			)
+		pkg_check_modules(X264 IMPORTED_TARGET x264)
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
@@ -267,6 +280,7 @@ option_with_deps(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path t
 
 # Driver deps to use (sorted, though there are some internal dependencies)
 option_with_deps(XRT_HAVE_BLUETOOTH "Enable Bluetooth (legacy, non-ble)" DEPENDS BLUETOOTH_FOUND)
+option_with_deps(XRT_HAVE_CUDA "Enable CUDA (used for video encoding)" DEPENDS CUDAToolkit_FOUND)
 option_with_deps(XRT_HAVE_FFMPEG "Enable ffmpeg testing video driver" DEPENDS FFMPEG_FOUND)
 option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
@@ -275,6 +289,7 @@ option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" DEPENDS ONNXRUNTIME_FOUND)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
+option_with_deps(XRT_HAVE_X264 "Enable software video encoding (wivrn driver)" DEPENDS X264_FOUND)
 
 # Drivers to build (sorted)
 option_with_deps(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" DEPENDS ANDROID)
@@ -300,6 +315,12 @@ option_with_deps(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" DEPENDS SUR
 option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS LeapV2_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
+if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
+	option_with_deps(XRT_BUILD_DRIVER_WIVRN "Enable WiVRn streaming driver"
+		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264")
+else()
+	set(XRT_BUILD_DRIVER_WIVRN OFF)
+endif()
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32")
 option_with_deps(XRT_BUILD_DRIVER_SIMULAVR "Enable simula driver" DEPENDS XRT_HAVE_REALSENSE)
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
@@ -357,6 +378,7 @@ list(
 	"DEPTHAI"
 	"VIVE"
 	"QWERTY"
+	"WIVRN"
 	"WMR"
 	"EUROC"
 	"SIMULAVR"
@@ -459,6 +481,7 @@ message(STATUS "#    GIT_DESC:        ${GIT_DESC}")
 message(STATUS "#")
 message(STATUS "#    BASALT:          ${XRT_HAVE_BASALT_SLAM}")
 message(STATUS "#    BLUETOOTH:       ${XRT_HAVE_BLUETOOTH}")
+message(STATUS "#    CUDA:            ${XRT_HAVE_CUDA}")
 message(STATUS "#    D3D11:           ${XRT_HAVE_D3D11}")
 message(STATUS "#    DBUS:            ${XRT_HAVE_DBUS}")
 message(STATUS "#    EGL:             ${XRT_HAVE_EGL}")
@@ -484,6 +507,7 @@ message(STATUS "#    SYSTEMD:         ${XRT_HAVE_SYSTEMD}")
 message(STATUS "#    VULKAN:          ${XRT_HAVE_VULKAN}")
 message(STATUS "#    WAYLAND:         ${XRT_HAVE_WAYLAND}")
 message(STATUS "#    WAYLAND_DIRECT:  ${XRT_HAVE_WAYLAND_DIRECT}")
+message(STATUS "#    X264:            ${XRT_HAVE_X264}")
 message(STATUS "#    XCB:             ${XRT_HAVE_XCB}")
 message(STATUS "#    XLIB:            ${XRT_HAVE_XLIB}")
 message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
@@ -529,6 +553,7 @@ message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_ULV2:         ${XRT_BUILD_DRIVER_ULV2}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
+message(STATUS "#    DRIVER_WIVRN:        ${XRT_BUILD_DRIVER_WIVRN}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
 message(STATUS "#####----- Config -----#####")
 

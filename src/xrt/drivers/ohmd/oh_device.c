@@ -1148,6 +1148,17 @@ oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs)
 		ohmd_list_geti(ctx, i, OHMD_DEVICE_CLASS, &device_class);
 		ohmd_list_geti(ctx, i, OHMD_DEVICE_FLAGS, &device_flags);
 
+		if (device_flags & OHMD_DEVICE_FLAGS_NULL_DEVICE) {
+			U_LOG_D("Rejecting device idx %i, is a NULL device.", i);
+			continue;
+		}
+
+		prod = ohmd_list_gets(ctx, i, OHMD_PRODUCT);
+		if (strcmp(prod, "External Device") == 0 && !debug_get_bool_option_ohmd_external()) {
+			U_LOG_D("Rejecting device idx %i, is a External device.", i);
+			continue;
+		}
+
 		if (device_class == OHMD_DEVICE_CLASS_CONTROLLER) {
 			if ((device_flags & OHMD_DEVICE_FLAGS_LEFT_CONTROLLER) != 0) {
 				if (left_idx != -1) {
@@ -1176,17 +1187,6 @@ oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs)
 			U_LOG_D("Selecting hmd idx %i", i);
 			hmd_idx = i;
 			hmd_flags = device_flags;
-		}
-
-		if (device_flags & OHMD_DEVICE_FLAGS_NULL_DEVICE) {
-			U_LOG_D("Rejecting device idx %i, is a NULL device.", i);
-			continue;
-		}
-
-		prod = ohmd_list_gets(ctx, i, OHMD_PRODUCT);
-		if (strcmp(prod, "External Device") == 0 && !debug_get_bool_option_ohmd_external()) {
-			U_LOG_D("Rejecting device idx %i, is a External device.", i);
-			continue;
 		}
 
 		if (hmd_idx != -1 && left_idx != -1 && right_idx != -1) {

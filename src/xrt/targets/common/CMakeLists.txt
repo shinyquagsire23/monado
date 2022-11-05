@@ -145,6 +145,10 @@ if(XRT_BUILD_DRIVER_QWERTY)
 	target_link_libraries(target_lists PRIVATE drv_qwerty)
 endif()
 
+if(XRT_BUILD_DRIVER_WIVRN)
+	target_link_libraries(target_lists PRIVATE drv_wivrn)
+endif()
+
 if(XRT_BUILD_DRIVER_WMR)
 	target_link_libraries(target_lists PRIVATE drv_wmr)
 endif()

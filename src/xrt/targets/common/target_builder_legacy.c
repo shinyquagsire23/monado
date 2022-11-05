@@ -79,6 +79,10 @@ static const char *driver_list[] = {
     "ht",
 #endif
 
+#if defined(XRT_BUILD_DRIVER_WIVRN)
+    "wivrn",
+#endif
+
 #if defined(XRT_BUILD_DRIVER_SIMULATED)
     "simulated",
 #endif

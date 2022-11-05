@@ -30,8 +30,8 @@ m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_re
 }
 
 extern "C" void
-m_space_relation_interpolate(struct xrt_space_relation *a,
-                             struct xrt_space_relation *b,
+m_space_relation_interpolate(const struct xrt_space_relation *a,
+                             const struct xrt_space_relation *b,
                              float t,
                              enum xrt_space_relation_flags flags,
                              struct xrt_space_relation *out_relation)

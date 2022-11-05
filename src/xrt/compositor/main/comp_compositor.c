@@ -653,6 +653,15 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_EXT_display_control
     VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_external_memory_dma_buf
+    VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
+#endif
+#ifdef VK_EXT_image_drm_format_modifier
+    VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
+    VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
+    VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
+    VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+#endif
 };
 
 static VkResult
