@@ -269,7 +269,11 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
         else:
             f.write("\t\tstruct ipc_result_reply reply = {0};\n")
         if call.in_handles:
+            # We need to fetch these handles separately
             f.write("\t\tstruct ipc_result_reply _sync = {XRT_SUCCESS};\n")
+            f.write("\t\t%s in_%s[XRT_MAX_IPC_HANDLES] = {0};\n" % (
+                call.in_handles.typename, call.in_handles.arg_name))
+            f.write("\t\tstruct ipc_command_msg _handle_msg = {0};\n")
         if call.out_handles:
             f.write("\t\t%s %s[XRT_MAX_IPC_HANDLES] = {0};\n" % (
                 call.out_handles.typename, call.out_handles.arg_name))
@@ -279,11 +283,6 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
         f.write("\n")
 
         if call.in_handles:
-            # We need to fetch these handles separately
-            f.write("\t\t%s in_%s[XRT_MAX_IPC_HANDLES] = {0};\n" % (
-                call.in_handles.typename, call.in_handles.arg_name))
-            f.write("\t\tstruct ipc_command_msg _handle_msg = {0};\n")
-
             # Validate the number of handles.
             f.write("\t\tif (msg->%s > XRT_MAX_IPC_HANDLES) {\n" % (call.in_handles.count_arg_name))
             f.write("\t\t\treturn XRT_ERROR_IPC_FAILURE;\n")
