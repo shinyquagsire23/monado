@@ -18,7 +18,14 @@
  */
 
 /*!
+ * Maximum number of handles sent in one call.
+ */
+#define XRT_MAX_IPC_HANDLES 16
+
+/*!
  * Max swapchain images, artificial limit.
+ *
+ * Must be smaller or the same as XRT_MAX_IPC_HANDLES.
  */
 #define XRT_MAX_SWAPCHAIN_IMAGES 8
 
