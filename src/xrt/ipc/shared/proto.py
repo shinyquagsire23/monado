@@ -270,7 +270,7 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
         else:
             f.write("\t\tstruct ipc_result_reply reply = {0};\n")
         if call.in_handles:
-            f.write("\tstruct ipc_result_reply _sync = {XRT_SUCCESS};\n")
+            f.write("\t\tstruct ipc_result_reply _sync = {XRT_SUCCESS};\n")
         if call.out_handles:
             f.write("\t\t%s %s[MAX_HANDLES] = {0};\n" % (
                 call.out_handles.typename, call.out_handles.arg_name))
