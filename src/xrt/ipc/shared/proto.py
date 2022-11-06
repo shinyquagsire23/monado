@@ -263,10 +263,8 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
 
         if call.needs_msg_struct:
             f.write(
-                "\t\tstruct ipc_{}_msg *msg =\n".format(call.name))
-            f.write(
-                "\t\t    (struct ipc_{}_msg *)ipc_command;\n".format(
-                    call.name))
+                "\t\tstruct ipc_{}_msg *msg = ".format(call.name))
+            f.write("(struct ipc_{}_msg *)ipc_command;\n".format(call.name))
         if call.out_args:
             f.write("\t\tstruct ipc_%s_reply reply = {0};\n" % call.name)
         else:
