@@ -35,6 +35,15 @@ r_hmd(struct xrt_device *xdev)
 	return (struct r_hmd *)xdev;
 }
 
+static inline void
+copy_head_center_to_relation(struct r_hmd *rh, struct xrt_space_relation *out_relation)
+{
+	out_relation->pose = rh->r->latest.head.center;
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
+	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+}
+
 static void
 r_hmd_destroy(struct xrt_device *xdev)
 {
@@ -67,10 +76,7 @@ r_hmd_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	out_relation->pose = rh->r->latest.hmd.pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT);
+	copy_head_center_to_relation(rh, out_relation);
 }
 
 static void
@@ -93,8 +99,33 @@ r_hmd_get_view_poses(struct xrt_device *xdev,
                      struct xrt_fov *out_fovs,
                      struct xrt_pose *out_poses)
 {
-	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
-	                        out_poses);
+	struct r_hmd *rh = r_hmd(xdev);
+
+	if (!rh->r->latest.head.per_view_data_valid) {
+		u_device_get_view_poses(  //
+		    xdev,                 //
+		    default_eye_relation, //
+		    at_timestamp_ns,      //
+		    view_count,           //
+		    out_head_relation,    //
+		    out_fovs,             //
+		    out_poses);           //
+
+		// Done now
+		return;
+	}
+
+	if (view_count > ARRAY_SIZE(rh->r->latest.head.views)) {
+		U_LOG_E("Asking for too many views!");
+		return;
+	}
+
+	copy_head_center_to_relation(rh, out_head_relation);
+
+	for (uint32_t i = 0; i < view_count; i++) {
+		out_poses[i] = rh->r->latest.head.views[i].pose;
+		out_fovs[i] = rh->r->latest.head.views[i].fov;
+	}
 }
 
 static void

@@ -286,9 +286,9 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 
 	r->base.destroy = r_hub_system_devices_destroy;
 	r->origin.type = XRT_TRACKING_TYPE_RGB;
-	r->origin.offset.orientation.w = 1.0f; // All other members are zero.
-	r->reset.hmd.pose.position.y = 1.6f;
-	r->reset.hmd.pose.orientation.w = 1.0f;
+	r->origin.offset = (struct xrt_pose)XRT_POSE_IDENTITY;
+	r->reset.head.center = (struct xrt_pose)XRT_POSE_IDENTITY;
+	r->reset.head.center.position.y = 1.6f;
 	r->reset.left.active = true;
 	r->reset.left.hand_tracking_active = true;
 	r->reset.left.pose.position.x = -0.2f;
@@ -353,7 +353,7 @@ r_create_devices(uint16_t port, struct xrt_system_devices **out_xsysd)
 
 	u_var_add_root(r, "Remote Hub", true);
 	// u_var_add_gui_header(r, &r->gui.hmd, "MHD");
-	u_var_add_pose(r, &r->latest.hmd.pose, "hmd.pose");
+	u_var_add_pose(r, &r->latest.head.center, "head.center");
 	// u_var_add_gui_header(r, &r->gui.left, "Left");
 	u_var_add_bool(r, &r->latest.left.active, "left.active");
 	u_var_add_pose(r, &r->latest.left.pose, "left.pose");
