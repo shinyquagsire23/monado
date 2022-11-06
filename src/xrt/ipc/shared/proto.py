@@ -236,16 +236,15 @@ def generate_server_c(file, p):
     f = open(file, "w")
     f.write(header.format(brief='Generated IPC server code', suffix='_server'))
     f.write('''
-#include "ipc_server_generated.h"
+#include "xrt/xrt_limits.h"
 
 #include "shared/ipc_protocol.h"
 #include "shared/ipc_utils.h"
 
 #include "server/ipc_server.h"
 
+#include "ipc_server_generated.h"
 
-
-#define MAX_HANDLES 16
 ''')
 
     f.write('''
@@ -272,7 +271,7 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
         if call.in_handles:
             f.write("\t\tstruct ipc_result_reply _sync = {XRT_SUCCESS};\n")
         if call.out_handles:
-            f.write("\t\t%s %s[MAX_HANDLES] = {0};\n" % (
+            f.write("\t\t%s %s[XRT_MAX_IPC_HANDLES] = {0};\n" % (
                 call.out_handles.typename, call.out_handles.arg_name))
             f.write("\t\t%s %s = {0};\n" % (
                 call.out_handles.count_arg_type,
@@ -281,9 +280,14 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
 
         if call.in_handles:
             # We need to fetch these handles separately
-            f.write("\t\t%s in_%s[MAX_HANDLES] = {0};\n" % (
+            f.write("\t\t%s in_%s[XRT_MAX_IPC_HANDLES] = {0};\n" % (
                 call.in_handles.typename, call.in_handles.arg_name))
             f.write("\t\tstruct ipc_command_msg _handle_msg = {0};\n")
+
+            # Validate the number of handles.
+            f.write("\t\tif (msg->%s > XRT_MAX_IPC_HANDLES) {\n" % (call.in_handles.count_arg_name))
+            f.write("\t\t\treturn XRT_ERROR_IPC_FAILURE;\n")
+            f.write("\t\t}\n")
 
             # Let the client know we are ready to receive the handles.
             write_invocation(
@@ -328,7 +332,7 @@ ipc_dispatch(volatile struct ipc_client_state *ics, ipc_command_t *ipc_command)
                         else ("msg->" + arg.name))
         args.extend("&reply." + arg.name for arg in call.out_args)
         if call.out_handles:
-            args.extend(("MAX_HANDLES",
+            args.extend(("XRT_MAX_IPC_HANDLES",
                          call.out_handles.arg_name,
                          "&" + call.out_handles.count_arg_name))
 
