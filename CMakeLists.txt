@@ -30,6 +30,8 @@ if(NOT WIN32)
 		)
 endif()
 
+option(XRT_ENABLE_GPL "Allow use of GPL code, monado compositor will be under GPL" OFF)
+
 # We use C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -172,7 +174,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			libavutil
 			libavfilter
 			)
-		pkg_check_modules(X264 IMPORTED_TARGET x264)
+		if(XRT_ENABLE_GPL)
+			pkg_check_modules(X264 IMPORTED_TARGET x264)
+		endif()
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
@@ -512,6 +516,7 @@ message(STATUS "#    XCB:             ${XRT_HAVE_XCB}")
 message(STATUS "#    XLIB:            ${XRT_HAVE_XLIB}")
 message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
 message(STATUS "#")
+message(STATUS "#    ENABLE_GPL:                           ${XRT_ENABLE_GPL}")
 message(STATUS "#    FEATURE_CLIENT_DEBUG_GUI:             ${XRT_FEATURE_CLIENT_DEBUG_GUI}")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
 message(STATUS "#    FEATURE_COMPOSITOR_MAIN:              ${XRT_FEATURE_COMPOSITOR_MAIN}")
