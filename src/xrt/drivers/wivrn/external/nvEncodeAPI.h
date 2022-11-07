@@ -25,6 +25,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 // SPDX-License-Identifier: MIT
+// clang-format off
 
 /**
  * \file nvEncodeAPI.h
