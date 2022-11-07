@@ -1,9 +1,9 @@
 /*
  * fec.c -- forward error correction based on Vandermonde matrices
  *
- * (C) 1997-98 Luigi Rizzo (luigi@iet.unipi.it)
- * (C) 2001 Alain Knaff (alain@knaff.lu)
- * (C) 2017 Iwan Timmer (irtimmer@gmail.com)
+ * Copyright 1997-98 Luigi Rizzo (luigi@iet.unipi.it)
+ * Copyright 2001 Alain Knaff (alain@knaff.lu)
+ * Copyright 2017 Iwan Timmer (irtimmer@gmail.com)
  *
  * Portions derived from code by Phil Karn (karn@ka9q.ampr.org),
  * Robert Morelos-Zaragoza (robert@spectra.eng.hawaii.edu) and Hari
@@ -33,6 +33,7 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
+// SPDX-License-Identifier: BSD-2-Clause
 
 #include <stdio.h>
 #include <stdlib.h>
