@@ -177,7 +177,7 @@ static void generate_gf(void) {
             gf_exp[GF_BITS] ^= mask;
     }
     /*
-     * now gf_exp[GF_BITS] = \alpha ** GF_BITS is complete, so can als
+     * now gf_exp[GF_BITS] = \alpha ** GF_BITS is complete, so can also
      * compute its inverse.
      */
     gf_log[gf_exp[GF_BITS]] = GF_BITS;
@@ -207,7 +207,7 @@ static void generate_gf(void) {
     /*
      * again special cases. 0 has no inverse. This used to
      * be initialized to GF_SIZE, but it should make no difference
-     * since noone is supposed to read from here.
+     * since no one is supposed to read from here.
      */
     inverse[0] = 0;
     inverse[1] = 1;
