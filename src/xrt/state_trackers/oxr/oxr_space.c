@@ -68,7 +68,7 @@ oxr_space_action_create(struct oxr_logger *log,
 	struct oxr_space *spc = NULL;
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, spc, OXR_XR_DEBUG_SPACE, oxr_space_destroy, &sess->handle);
 
-	oxr_classify_sub_action_paths(log, inst, 1, &createInfo->subactionPath, &subaction_paths);
+	oxr_classify_subaction_paths(log, inst, 1, &createInfo->subactionPath, &subaction_paths);
 
 	spc->sess = sess;
 	spc->space_type = OXR_SPACE_TYPE_ACTION;

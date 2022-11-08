@@ -456,19 +456,19 @@ oxr_action_to_openxr(struct oxr_action *act)
  * Sets all members of @p subaction_paths ( @ref oxr_subaction_paths ) as
  * appropriate based on the subaction paths found in the list.
  *
- * If no paths are provided, @p sub_paths->any will be true.
+ * If no paths are provided, @p subaction_paths->any will be true.
  *
  * @return false if an invalid subaction path is provided.
  *
  * @public @memberof oxr_instance
- * @see oxr_sub_paths
+ * @see oxr_subaction_paths
  */
 bool
-oxr_classify_sub_action_paths(struct oxr_logger *log,
-                              const struct oxr_instance *inst,
-                              uint32_t subaction_path_count,
-                              const XrPath *subaction_paths,
-                              struct oxr_subaction_paths *subaction_paths_out);
+oxr_classify_subaction_paths(struct oxr_logger *log,
+                             const struct oxr_instance *inst,
+                             uint32_t subaction_path_count,
+                             const XrPath *subaction_paths,
+                             struct oxr_subaction_paths *subaction_paths_out);
 
 /*!
  * Find the pose input for the set of subaction_paths
