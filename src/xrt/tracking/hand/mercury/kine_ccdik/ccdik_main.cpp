@@ -26,7 +26,7 @@ namespace xrt::tracking::hand::mercury::ccdik {
 static void
 _two_set_ele(Eigen::Matrix<float, 3, kNumNNJoints> &thing, Eigen::Affine3f jt, int idx)
 {
-	//! @optimize
+	//! @todo Optimize
 	thing.col(idx) = jt.translation();
 }
 
@@ -180,7 +180,7 @@ clamp_to_x_axis(struct KinematicHandCCDIK *hand,
 	// std::cout << bone->bone_relation.linear() * Eigen::Vector3f::UnitX() << "\n";
 
 	if (clamp_angle) {
-		//! @optimize: get rid of 1 and 2, we only need 0.
+		//! @todo Optimize: get rid of 1 and 2, we only need 0.
 
 		// signed angle: asin(Cross product of -z and rot*-z X axis.
 		// U_LOG_E("before X clamp");
@@ -200,7 +200,7 @@ clamp_to_x_axis(struct KinematicHandCCDIK *hand,
 
 
 
-		//! @optimize: Move the asin into constexpr land
+		//! @todo Optimize: Move the asin into constexpr land
 		// No, the sine of the joint limit
 		float rotation_value = asin(cross(0));
 

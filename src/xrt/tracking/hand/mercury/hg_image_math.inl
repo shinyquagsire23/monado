@@ -73,7 +73,7 @@ hsv2rgb(float fH, float fS, float fV)
 }
 
 
-//! @optimize Make it take an array of vec2's and give out an array of vec2's, then
+//! @todo Make it take an array of vec2's and give out an array of vec2's, then
 // put it in its own target so we don't have to link to OpenCV.
 // Oooorrrrr... actually add good undistortion stuff to Monado so that we don't have to depend on OpenCV at all.
 

@@ -181,7 +181,7 @@ check_outside_view(struct HandTracking *hgt, struct t_camera_extra_info_one_view
 	// No boundary, and we passed the previous check. Not outside the view.
 	case HT_IMAGE_BOUNDARY_NONE: return false; break;
 	case HT_IMAGE_BOUNDARY_CIRCLE: {
-		//!@optimize Most of this can be calculated once at startup
+		//!@todo Optimize:  Most of this can be calculated once at startup
 		xrt_vec2 center_px = {
 		    boundary.boundary.circle.normalized_center.x * (float)hgt->calibration_one_view_size_px.w, //
 		    boundary.boundary.circle.normalized_center.y * (float)hgt->calibration_one_view_size_px.h};
@@ -895,7 +895,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 
 			float out_hand_size;
 
-			//!@optimize We can have one of these on each thread
+			//!@todo Optimize:  We can have one of these on each thread
 			float reprojection_error;
 			lm::optimizer_run(hand,                                            //
 			                  input,                                           //

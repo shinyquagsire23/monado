@@ -192,8 +192,7 @@ ht_async_get_hand(struct t_hand_tracking_async *ht_async,
 	// apply the pose change from the latest wrist to the predicted wrist
 	// to all the joints on the hand.
 
-	//!@optimize We could slightly reduce the total number of transforms by putting some of this in
-	//! ht_async_mainloop
+	//! @todo We could slightly reduce the total number of transforms by putting some of this in ht_async_mainloop
 	for (int i = 0; i < XRT_HAND_JOINT_COUNT; i++) {
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_relation(&xrc, &latest_hand.values.hand_joint_set_default[i].relation);
