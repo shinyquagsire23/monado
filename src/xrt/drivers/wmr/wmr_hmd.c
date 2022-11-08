@@ -1480,6 +1480,42 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 	return sinks;
 }
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+static enum t_camera_orientation
+wmr_hmd_guess_camera_orientation(struct wmr_hmd *wh)
+{
+	struct xrt_quat Q_ht0_me = wh->P_ht0_me.orientation;
+	struct xrt_vec2 swing = {0};
+	float twist = 0;
+	math_quat_to_swing_twist(&Q_ht0_me, &swing, &twist);
+	WMR_DEBUG(wh, "HT0 twist value is %f", twist);
+
+	float abstwist = fabsf(twist);
+
+	// Bottom quadrant
+	if (abstwist < M_PI / 4) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_0 front cameras!");
+		return CAMERA_ORIENTATION_0;
+	}
+
+	// Top quadrant
+	if (abstwist > 3 * M_PI / 4) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_180 front cameras!");
+		return CAMERA_ORIENTATION_180;
+	}
+
+	// Right quadrant
+	if (twist < 0) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_90 front cameras!");
+		return CAMERA_ORIENTATION_90;
+	}
+
+	// Left quadrant
+	WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_270 front cameras!");
+	return CAMERA_ORIENTATION_270;
+}
+#endif
+
 static int
 wmr_hmd_hand_track(struct wmr_hmd *wh,
                    struct t_stereo_camera_calibration *stereo_calib,
@@ -1492,13 +1528,20 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 	struct xrt_device *device = NULL;
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	//!@todo Turning it off is okay for now, but we should plug metric_radius (or whatever it's called) in, at some
-	//! point.
+
 	struct t_camera_extra_info extra_camera_info = {0};
 
-	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
-	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+	enum t_camera_orientation ori_guess = CAMERA_ORIENTATION_0;
 
+	if (wh->hmd_desc->hmd_type == WMR_HEADSET_GENERIC || //
+	    wh->hmd_desc->hmd_type == WMR_HEADSET_REVERB_G2) {
+		ori_guess = wmr_hmd_guess_camera_orientation(wh);
+	}
+	extra_camera_info.views[0].camera_orientation = ori_guess;
+	extra_camera_info.views[1].camera_orientation = ori_guess;
+
+	//!@todo Turning it off is okay for now, but we should plug metric_radius (or whatever it's called) in, at some
+	//! point.
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
