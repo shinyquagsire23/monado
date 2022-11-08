@@ -12,6 +12,7 @@
 
 #include "vive_config.h"
 
+#include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
 #include "util/u_distortion_mesh.h"
@@ -35,6 +36,8 @@
 #define JSON_VEC3(a, b, c) u_json_get_vec3_array(u_json_get(a, b), c)
 #define JSON_MATRIX_3X3(a, b, c) u_json_get_matrix_3x3(u_json_get(a, b), c)
 #define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+
+DEBUG_GET_ONCE_BOOL_OPTION(vive_use_factory_rotations, "VIVE_USE_FACTORY_ROTATIONS", false)
 
 #define printf_pose(pose)                                                                                              \
 	printf("%f %f %f  %f %f %f %f\n", pose.position.x, pose.position.y, pose.position.z, pose.orientation.x,       \
@@ -445,6 +448,23 @@ vive_get_extra_calibration(struct vive_config *d)
 	math_pose_transform(&P_imu_tr, &P_tr_cam1, &P_imu_cam1);
 	math_pose_transform(&P_imuxr_imu, &P_imu_cam1, &P_imuxr_cam1);
 	math_pose_transform(&P_imuxr_cam1, &P_cam1_cam1slam, &P_imuxr_cam1slam);
+
+	bool use_factory_rots = debug_get_bool_option_vive_use_factory_rotations();
+	if (!use_factory_rots) {
+		//! @todo: Index factory calibration is weird and doesn't seem to have the
+		//! proper extrinsics. Let's overwrite them with some extrinsics
+		//! I got from doing a calibration on my own headset. These seem to work
+		//! better than native values. (@mateosss)
+		P_imuxr_cam0slam.orientation.x = 0.999206844251353;
+		P_imuxr_cam0slam.orientation.y = -0.008523559718599975;
+		P_imuxr_cam0slam.orientation.z = -0.038897421992888748;
+		P_imuxr_cam0slam.orientation.w = 0.00014796379001732346;
+
+		P_imuxr_cam1slam.orientation.x = 0.9990931516177515;
+		P_imuxr_cam1slam.orientation.y = -0.011906493530393766;
+		P_imuxr_cam1slam.orientation.z = 0.03990451825243117;
+		P_imuxr_cam1slam.orientation.w = 0.008873512571741;
+	}
 
 	// Convert to 4x4 SE(3) matrices
 	math_matrix_4x4_isometry_from_pose(&P_imuxr_cam0slam, &T_imu_cam0);
