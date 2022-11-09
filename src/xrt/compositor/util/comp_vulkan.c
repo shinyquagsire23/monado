@@ -307,19 +307,19 @@ is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_us
 	const VkFormatFeatureFlagBits bits = prop.optimalTilingFeatures;
 
 	if ((bits & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0) {
-		VK_DEBUG(vk, "Format '%s' can not be sampled from in optimal layout!", vk_format_string(format));
+		VK_DEBUG(vk, "Format '%s' cannot be sampled from in optimal layout!", vk_format_string(format));
 		return false;
 	}
 
 	if ((xbits & XRT_SWAPCHAIN_USAGE_COLOR) != 0 && (bits & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0) {
-		VK_DEBUG(vk, "Color format '%s' can not be used as render target in optimal layout!",
+		VK_DEBUG(vk, "Color format '%s' cannot be used as render target in optimal layout!",
 		         vk_format_string(format));
 		return false;
 	}
 
 	if ((xbits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0 &&
 	    (bits & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
-		VK_DEBUG(vk, "Depth/stencil format '%s' can not be used as render target in optimal layout!",
+		VK_DEBUG(vk, "Depth/stencil format '%s' cannot be used as render target in optimal layout!",
 		         vk_format_string(format));
 		return false;
 	}
