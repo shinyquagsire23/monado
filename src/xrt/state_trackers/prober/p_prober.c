@@ -1153,7 +1153,7 @@ p_open_hid_interface(struct xrt_prober *xp,
 
 #elif defined(XRT_OS_WINDOWS)
 	(void)ret;
-	U_LOG_E("HID devices not yet supported on Windows, can not open interface (%i)", interface);
+	U_LOG_E("HID devices not yet supported on Windows, cannot open interface (%i)", interface);
 	return -1;
 #else
 #error "no port of hid code"
@@ -1298,7 +1298,7 @@ p_get_string_descriptor(struct xrt_prober *xp,
 	}
 #else
 	if (pdev->base.bus == XRT_BUS_TYPE_USB) {
-		P_WARN(p, "Can not get usb descriptors (libusb-dev not installed)!");
+		P_WARN(p, "Cannot get usb descriptors (libusb-dev not installed)!");
 		return ret;
 	}
 #endif
@@ -1344,7 +1344,7 @@ p_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev)
 
 	// No backend compiled in to judge the ability to open the device.
 	if (!has_been_queried) {
-		P_WARN(p, "Can not tell if '%s' can be opened, assuming yes!", pdev->usb.product);
+		P_WARN(p, "Cannot tell if '%s' can be opened, assuming yes!", pdev->usb.product);
 		return true;
 	}
 
