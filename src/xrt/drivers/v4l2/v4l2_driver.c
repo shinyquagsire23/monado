@@ -177,7 +177,7 @@ v4l2_query_cap_and_validate(struct v4l2_fs *vid)
 	}
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 		// cannot stream
-		V4L2_ERROR(vid, "error: Can not stream!");
+		V4L2_ERROR(vid, "error: Cannot stream!");
 		return -1;
 	}
 	if (cap.capabilities & V4L2_CAP_EXT_PIX_FORMAT) {
@@ -689,7 +689,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 
 	int fd = open(path, O_RDWR, 0);
 	if (fd < 0) {
-		V4L2_ERROR(vid, "Can not open '%s'", path);
+		V4L2_ERROR(vid, "Cannot open '%s'", path);
 		free(vid);
 		return NULL;
 	}

@@ -245,7 +245,7 @@ multi_create_tracking_override(enum xrt_tracking_override_type override_type,
 	// The offset describes the physical pose of the tracker in the space of the thing we want to track.
 	// For a tracker that is physically attached at y=.1m to the tracked thing, when querying the pose for the
 	// tracked thing, we want to transform its pose by y-=.1m relative to the tracker. Multiple target devices may
-	// share a single tracker, therefore we can not simply adjust the tracker's tracking origin.
+	// share a single tracker, therefore we cannot simply adjust the tracker's tracking origin.
 	math_pose_invert(offset, &d->tracking_override.offset_inv);
 
 	d->tracking_override.target = tracking_override_target;
