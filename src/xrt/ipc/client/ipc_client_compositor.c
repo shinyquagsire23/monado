@@ -239,7 +239,7 @@ ipc_client_compositor_semaphore_wait(struct xrt_compositor_semaphore *xcsem, uin
 	struct ipc_client_compositor_semaphore *iccs = ipc_client_compositor_semaphore(xcsem);
 	struct ipc_client_compositor *icc = iccs->icc;
 
-	IPC_ERROR(icc->ipc_c, "Can not call wait on client side!");
+	IPC_ERROR(icc->ipc_c, "Cannot call wait on client side!");
 
 	return XRT_ERROR_IPC_FAILURE;
 }

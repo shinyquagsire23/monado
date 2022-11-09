@@ -133,7 +133,7 @@ ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
 			out_poses[i] = info.poses[i];
 		}
 	} else {
-		IPC_ERROR(ich->ipc_c, "Can not handle %u view_count, only 2 supported.", view_count);
+		IPC_ERROR(ich->ipc_c, "Cannot handle %u view_count, only 2 supported.", view_count);
 		assert(false && !"Can only handle view_count of 2.");
 	}
 }
