@@ -134,7 +134,7 @@ struct xrt_prober
 
 	/*!
 	 * Enumerate all connected devices, whether or not we have an associated
-	 * driver. Can not be called with the device list is locked
+	 * driver. Cannot be called with the device list is locked
 	 * @ref xrt_prober::lock_list and @ref xrt_prober::unlock_list.
 	 *
 	 * This function along with lock/unlock allows a @ref xrt_builder to
