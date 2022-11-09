@@ -32,7 +32,7 @@ ovrd_log_init(vr::IVRDriverLog *pDriverLog)
 	s_pLogFile = vr::VRDriverLog();
 }
 
-// Can not use the XRT_PRINTF_FORMAT macro on a function definition.
+// Cannot use the XRT_PRINTF_FORMAT macro on a function definition.
 static inline void
 ovrd_log(const char *fmt, ...) XRT_PRINTF_FORMAT(1, 2);
 
