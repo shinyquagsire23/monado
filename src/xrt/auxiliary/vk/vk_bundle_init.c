@@ -441,7 +441,7 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 	}
 
 	if (gpu_count > 1) {
-		VK_DEBUG(vk, "Can not deal well with multiple devices.");
+		VK_DEBUG(vk, "Cannot deal well with multiple devices.");
 	}
 
 	VK_DEBUG(vk, "Choosing Vulkan device index");

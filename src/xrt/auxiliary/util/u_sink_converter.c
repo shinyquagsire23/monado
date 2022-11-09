@@ -492,7 +492,7 @@ convert_frame_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		from_YUYV422_to_L8(converted, xf->width, xf->height, xf->stride, xf->data);
 		break;
-	default: U_LOG_E("Can not convert from '%s' to L8!", u_format_str(xf->format)); return;
+	default: U_LOG_E("Cannot convert from '%s' to L8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -551,7 +551,7 @@ convert_frame_r8g8b8_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default: U_LOG_E("Can not convert from '%s' to R8G8B8 or L8!", u_format_str(xf->format)); return;
+	default: U_LOG_E("Cannot convert from '%s' to R8G8B8 or L8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -619,7 +619,7 @@ convert_frame_r8g8b8_bayer_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *xf
 		}
 		break;
 #endif
-	default: U_LOG_E("Can not convert from '%s' to R8G8B8 or L8!", u_format_str(xf->format)); return;
+	default: U_LOG_E("Cannot convert from '%s' to R8G8B8 or L8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -683,7 +683,7 @@ convert_frame_r8g8b8(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default: U_LOG_E("Can not convert from '%s' to R8G8B8!", u_format_str(xf->format)); return;
+	default: U_LOG_E("Cannot convert from '%s' to R8G8B8!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);
@@ -718,7 +718,7 @@ convert_frame_rgb_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs, struct xrt_fram
 		break;
 #endif
 	default:
-		U_LOG_E("Can not convert from '%s' to either R8G8B8, YUV, YUYV, UYVY or L8!", u_format_str(xf->format));
+		U_LOG_E("Cannot convert from '%s' to either R8G8B8, YUV, YUYV, UYVY or L8!", u_format_str(xf->format));
 		return;
 	}
 
@@ -754,7 +754,7 @@ convert_frame_yuv_yuyv_uyvy_or_l8(struct xrt_frame_sink *xs, struct xrt_frame *x
 #endif
 	default:
 		U_LOG_E(
-		    "Can not convert from '%s' to either YUV, YUYV, UYVY or "
+		    "Cannot convert from '%s' to either YUV, YUYV, UYVY or "
 		    "L8!",
 		    u_format_str(xf->format));
 		return;
@@ -788,7 +788,7 @@ convert_frame_yuv_or_yuyv(struct xrt_frame_sink *xs, struct xrt_frame *xf)
 		}
 		break;
 #endif
-	default: U_LOG_E("Can not convert from '%s' to either YUV or YUYV!", u_format_str(xf->format)); return;
+	default: U_LOG_E("Cannot convert from '%s' to either YUV or YUYV!", u_format_str(xf->format)); return;
 	}
 
 	s->downstream->push_frame(s->downstream, converted);

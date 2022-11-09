@@ -293,7 +293,7 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
                                    struct xrt_pose *out_head_in_left_camera)
 {
 	if (!d->cameras.valid) {
-		U_LOG_E("Camera config not loaded, can not produce camera calibration.");
+		U_LOG_E("Camera config not loaded, cannot produce camera calibration.");
 		return false;
 	}
 
