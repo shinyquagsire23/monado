@@ -71,7 +71,7 @@ oxr_session_populate_egl(struct oxr_logger *log,
 
 	if (xret == XRT_ERROR_EGL_CONFIG_MISSING) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "XrGraphicsBindingEGLMNDX::config can not be null when EGL_KHR_no_config_context is "
+		                 "XrGraphicsBindingEGLMNDX::config cannot be null when EGL_KHR_no_config_context is "
 		                 "not supported by the display.");
 	}
 	if (xret != XRT_SUCCESS || xcgl == NULL) {

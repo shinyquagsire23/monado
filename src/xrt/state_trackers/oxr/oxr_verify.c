@@ -68,7 +68,7 @@ oxr_verify_fixed_size_single_level_path(struct oxr_logger *log, const char *path
 	}
 
 	if (path[0] == '\0') {
-		return oxr_error(log, XR_ERROR_NAME_INVALID, "(%s) can not be empty", name);
+		return oxr_error(log, XR_ERROR_NAME_INVALID, "(%s) cannot be empty", name);
 	}
 
 	if (!contains_zero(path, array_size)) {
@@ -99,7 +99,7 @@ oxr_verify_localized_name(struct oxr_logger *log, const char *string, uint32_t a
 	}
 
 	if (string[0] == '\0') {
-		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID, "(%s) can not be empty", name);
+		return oxr_error(log, XR_ERROR_LOCALIZED_NAME_INVALID, "(%s) cannot be empty", name);
 	}
 
 	if (!contains_zero(string, array_size)) {

@@ -195,7 +195,7 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 	if (suggestedBindings->countSuggestedBindings == 0) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
 		                 "(suggestedBindings->countSuggestedBindings "
-		                 "== 0) can not suggest 0 bindings");
+		                 "== 0) cannot suggest 0 bindings");
 	}
 
 	XrPath ip = suggestedBindings->interactionProfile;
@@ -453,7 +453,7 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
 	}
 
 	if (getInfo->whichComponents == 0) {
-		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "(getInfo->whichComponents == 0) can not be zero");
+		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "(getInfo->whichComponents == 0) cannot be zero");
 	}
 
 	return oxr_action_get_input_source_localized_name(&log, sess, getInfo, bufferCapacityInput, bufferCountOutput,

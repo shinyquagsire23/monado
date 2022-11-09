@@ -87,7 +87,7 @@ oxr_session_populate_vk(struct oxr_logger *log,
 	if (sys->inst->extensions.KHR_vulkan_enable && sys->inst->extensions.KHR_vulkan_enable2 &&
 	    !external_fence_fd_enabled && !external_semaphore_fd_enabled) {
 		oxr_warn(log,
-		         "Both KHR_vulkan_enable and KHR_vulkan_enable2 are enabled can not safely determine if "
+		         "Both KHR_vulkan_enable and KHR_vulkan_enable2 are enabled cannot safely determine if "
 		         "external fence|semaphore FD has been enabled assuming yes.");
 		external_fence_fd_enabled = true;
 		external_semaphore_fd_enabled = true;

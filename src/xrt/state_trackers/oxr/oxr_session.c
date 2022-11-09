@@ -107,7 +107,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 	struct oxr_instance *inst = sess->sys->inst;
 	struct xrt_compositor *xc = sess->compositor;
 	if (formatCountOutput == NULL) {
-		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(formatCountOutput == NULL) can not be null");
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "(formatCountOutput == NULL) cannot be null");
 	}
 	if (xc == NULL) {
 		if (formatCountOutput != NULL) {

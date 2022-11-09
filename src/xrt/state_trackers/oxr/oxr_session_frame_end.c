@@ -620,7 +620,7 @@ verify_cylinder_layer(struct xrt_compositor *xc,
 
 	if (cylinder->radius < 0.f) {
 		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(frameEndInfo->layers[%u]->radius == %f) radius can not be negative", layer_index,
+		                 "(frameEndInfo->layers[%u]->radius == %f) radius cannot be negative", layer_index,
 		                 cylinder->radius);
 	}
 
@@ -1334,7 +1334,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
 		if (layer == NULL) {
 			return oxr_error(log, XR_ERROR_LAYER_INVALID,
-			                 "(frameEndInfo->layers[%u] == NULL) layer can not be null", i);
+			                 "(frameEndInfo->layers[%u] == NULL) layer cannot be null", i);
 		}
 
 		XrResult res;
