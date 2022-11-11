@@ -69,8 +69,6 @@ public:
 
 	std::vector<uint8_t>
 	receive_raw();
-	std::pair<std::vector<uint8_t>, sockaddr_in6>
-	receive_from_raw();
 	void
 	send_raw(const std::vector<uint8_t> &data);
 
@@ -79,17 +77,12 @@ public:
 	void
 	bind(int port);
 	void
-	subscribe_multicast(in6_addr address);
-	void
-	unsubscribe_multicast(in6_addr address);
-	void
 	set_receive_buffer_size(int size);
 };
 
 class TCP : public socket_base
 {
 public:
-	TCP(in6_addr address, int port);
 	explicit TCP(int fd);
 	TCP(const TCP &) = delete;
 	TCP(TCP &&) = default;

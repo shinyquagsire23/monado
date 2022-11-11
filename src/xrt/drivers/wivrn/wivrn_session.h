@@ -6,7 +6,7 @@
 
 #include "wivrn_packets.h"
 #include "wivrn_connection.h"
-#include "xrt/xrt_device.h"
+#include "xrt/xrt_system.h"
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -30,7 +30,7 @@ struct clock_offset
 
 class wivrn_session : public std::enable_shared_from_this<wivrn_session>
 {
-	wivrn_connection session;
+	wivrn_connection connection;
 
 	std::atomic<bool> quit = false;
 	std::thread thread;
@@ -45,11 +45,11 @@ class wivrn_session : public std::enable_shared_from_this<wivrn_session>
 
 	std::ofstream feedback_csv;
 
-	wivrn_session();
+	wivrn_session(TCP &&tcp, in6_addr &address);
 
 public:
-	static int
-	wait_for_handshake(xrt_device **out_devices);
+	static xrt_system_devices *
+	create_session(TCP &&tcp);
 
 	clock_offset
 	get_offset();
@@ -69,14 +69,14 @@ public:
 	void
 	send_stream(const T &packet)
 	{
-		session.send_stream(packet);
+		connection.send_stream(packet);
 	}
 
 	template <typename T>
 	void
 	send_control(const T &packet)
 	{
-		session.send_control(packet);
+		connection.send_control(packet);
 	}
 
 private:

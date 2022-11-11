@@ -20,10 +20,6 @@
 #include "simulated/simulated_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_WIVRN
-#include "wivrn/wivrn_interface.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_HDK
 #include "hdk/hdk_interface.h"
 #endif
@@ -211,10 +207,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_QWERTY
     qwerty_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_WIVRN
-    wivrn_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SIMULATED

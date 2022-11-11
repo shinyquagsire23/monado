@@ -491,12 +491,17 @@ comp_wivrn_present_thread(void *void_param)
 		vk_check_error("vkWaitForFences", res, NULL);
 
 		const auto &psc_image = cn->psc.images[presenting_index];
-		for (auto &encoder : param->encoders) {
-			bool idr_requested = false;
+		try {
+			for (auto &encoder : param->encoders) {
+				bool idr_requested = false;
 
-			encoder->Encode(*cn->cnx, psc_image.view_info, psc_image.frame_index, presenting_index,
-			                idr_requested);
+				encoder->Encode(*cn->cnx, psc_image.view_info, psc_image.frame_index, presenting_index,
+				                idr_requested);
+			}
+		} catch (...) {
+			// Ignore errors
 		}
+
 		std::lock_guard lock(cn->psc.mutex);
 		for (int i = 0; i < nb_fences; i++) {
 			cn->psc.images[indices[i]].status &= ~status_bit;

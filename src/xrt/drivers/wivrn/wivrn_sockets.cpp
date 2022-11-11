@@ -75,33 +75,6 @@ xrt::drivers::wivrn::UDP::connect(in6_addr address, int port)
 }
 
 void
-xrt::drivers::wivrn::UDP::subscribe_multicast(in6_addr address)
-{
-	assert(IN6_IS_ADDR_MULTICAST(&address));
-
-	ipv6_mreq subscribe{};
-	subscribe.ipv6mr_multiaddr = address;
-
-	if (setsockopt(fd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &subscribe, sizeof(subscribe)) < 0) {
-		::close(fd);
-		throw std::system_error{errno, std::generic_category()};
-	}
-}
-
-void
-xrt::drivers::wivrn::UDP::unsubscribe_multicast(in6_addr address)
-{
-	assert(IN6_IS_ADDR_MULTICAST(&address));
-
-	ipv6_mreq subscribe{};
-	subscribe.ipv6mr_multiaddr = address;
-
-	if (setsockopt(fd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &subscribe, sizeof(subscribe)) < 0) {
-		::close(fd);
-		throw std::system_error{errno, std::generic_category()};
-	}
-}
-void
 xrt::drivers::wivrn::UDP::set_receive_buffer_size(int size)
 {
 	setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
@@ -110,31 +83,6 @@ xrt::drivers::wivrn::UDP::set_receive_buffer_size(int size)
 xrt::drivers::wivrn::TCP::TCP(int fd)
 {
 	this->fd = fd;
-
-	int nodelay = 1;
-	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)) < 0) {
-		::close(fd);
-		throw std::system_error{errno, std::generic_category()};
-	}
-}
-
-xrt::drivers::wivrn::TCP::TCP(in6_addr address, int port)
-{
-	fd = socket(AF_INET6, SOCK_STREAM, 0);
-
-	if (fd < 0) {
-		throw std::system_error{errno, std::generic_category()};
-	}
-
-	sockaddr_in6 sa;
-	sa.sin6_family = AF_INET6;
-	sa.sin6_addr = address;
-	sa.sin6_port = htons(port);
-
-	if (connect(fd, (sockaddr *)&sa, sizeof(sa)) < 0) {
-		::close(fd);
-		throw std::system_error{errno, std::generic_category()};
-	}
 
 	int nodelay = 1;
 	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)) < 0) {
@@ -187,28 +135,19 @@ xrt::drivers::wivrn::TCPListener::accept()
 	return {TCP{fd2}, addr};
 }
 
-std::pair<std::vector<uint8_t>, sockaddr_in6>
-xrt::drivers::wivrn::UDP::receive_from_raw()
+std::vector<uint8_t>
+xrt::drivers::wivrn::UDP::receive_raw()
 {
 	std::vector<uint8_t> buffer(2000);
 
-	sockaddr_in6 addr;
-	socklen_t addrlen = sizeof(addr);
-
-	ssize_t received = recvfrom(fd, buffer.data(), buffer.size(), 0, (sockaddr *)&addr, &addrlen);
+	ssize_t received = recv(fd, buffer.data(), buffer.size(), 0);
 	if (received < 0) {
 		throw std::system_error{errno, std::generic_category()};
 	}
 
 	buffer.resize(received);
 
-	return {buffer, addr};
-}
-
-std::vector<uint8_t>
-xrt::drivers::wivrn::UDP::receive_raw()
-{
-	return receive_from_raw().first;
+	return buffer;
 }
 
 void

@@ -9,7 +9,6 @@
 #include "util/u_device.h"
 #include <stdio.h>
 
-#include "wivrn_interface.h"
 #include "xrt/xrt_defines.h"
 
 /*
@@ -260,10 +259,14 @@ wivrn_controller::set_output(xrt_output_name name, const xrt_output_value *value
 	auto id = device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER ? device_id::LEFT_CONTROLLER_HAPTIC
 	                                                              : device_id::RIGHT_CONTROLLER_HAPTIC;
 
-	cnx->send_stream(to_headset::haptics{id, std::chrono::nanoseconds(value->vibration.duration_ns),
-	                                     value->vibration.frequency, value->vibration.amplitude
+	try {
+		cnx->send_stream(to_headset::haptics{id, std::chrono::nanoseconds(value->vibration.duration_ns),
+		                                     value->vibration.frequency, value->vibration.amplitude
 
-	});
+		});
+	} catch (...) {
+		// Ignore errors
+	}
 }
 
 /*

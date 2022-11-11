@@ -34,7 +34,6 @@
 #include <stdatomic.h>
 
 #include "wivrn_comp_target.h"
-#include "wivrn_interface.h"
 
 /*
  *

@@ -16,22 +16,8 @@
 
 namespace xrt::drivers::wivrn {
 
-static const int announce_port = 9756;
 static const int control_port = 9757;
 static const int stream_port = 9757;
-static const in6_addr announce_address = []() {
-	in6_addr address{};
-
-	address.s6_addr[0] = 0xff; // multicast
-	address.s6_addr[1] = 0x15; // not assigned by IANA, site-local
-
-	address.s6_addr[11] = 'W';
-	address.s6_addr[12] = 'i';
-	address.s6_addr[13] = 'V';
-	address.s6_addr[14] = 'R';
-	address.s6_addr[15] = 'n';
-	return address;
-}();
 
 enum class device_id : uint8_t
 {
@@ -78,16 +64,6 @@ enum video_codec
 };
 
 namespace from_headset {
-
-	struct client_announce_packet
-	{
-		static const constexpr std::array<char, 5> magic_value = {'W', 'i', 'V', 'R', 'n'};
-		// Broadcast on the announce port, not typed
-		std::array<char, 5> magic;
-
-		std::string client_version;
-		uint64_t protocol_hash;
-	};
 
 	struct headset_info_packet
 	{

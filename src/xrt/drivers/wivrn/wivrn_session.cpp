@@ -9,13 +9,30 @@
 #include "wivrn_controller.h"
 #include "wivrn_hmd.h"
 
-wivrn_session::wivrn_session() {}
+xrt::drivers::wivrn::wivrn_session::wivrn_session(xrt::drivers::wivrn::TCP &&tcp, in6_addr &address)
+    : connection(std::move(tcp), address)
+{}
 
-int
-wivrn_session::wait_for_handshake(xrt_device **out_device)
+xrt_system_devices *
+xrt::drivers::wivrn::wivrn_session::create_session(xrt::drivers::wivrn::TCP &&tcp)
 {
-	auto self = std::shared_ptr<wivrn_session>(new wivrn_session());
-	auto control = self->session.poll_control(-1);
+	sockaddr_in6 address;
+	socklen_t address_len = sizeof(address);
+	if (getpeername(tcp.get_fd(), (sockaddr *)&address, &address_len) < 0) {
+		U_LOG_E("Cannot get peer address: %s", strerror(errno));
+		return nullptr;
+	}
+
+	std::shared_ptr<wivrn_session> self;
+	std::optional<xrt::drivers::wivrn::from_headset::control_packets> control;
+	try {
+		self = std::shared_ptr<wivrn_session>(new wivrn_session(std::move(tcp), address.sin6_addr));
+		control = self->connection.poll_control(-1);
+	} catch (std::exception &e) {
+		U_LOG_E("Error creating WiVRn session: %s", e.what());
+		return nullptr;
+	}
+
 	if (control) {
 		const auto &info = std::get<from_headset::headset_info_packet>(*control);
 		self->hmd = std::make_unique<wivrn_hmd>(self, info);
@@ -25,13 +42,20 @@ wivrn_session::wait_for_handshake(xrt_device **out_device)
 		throw std::runtime_error("no packet received from headset, failed to initialise");
 	}
 
+	xrt_system_devices *devices = new xrt_system_devices{};
+
 	int n = 0;
 	if (self->hmd)
-		out_device[n++] = self->hmd.get();
+		devices->roles.head = devices->xdevs[n++] = self->hmd.get();
 	if (self->left_hand)
-		out_device[n++] = self->left_hand.get();
+		devices->roles.left = devices->xdevs[n++] = self->left_hand.get();
 	if (self->right_hand)
-		out_device[n++] = self->right_hand.get();
+		devices->roles.right = devices->xdevs[n++] = self->right_hand.get();
+
+	devices->xdev_count = n;
+	devices->destroy = [](xrt_system_devices *xsd) {
+		// TODO
+	};
 
 #if 0
 	// For debugging purposes
@@ -39,8 +63,9 @@ wivrn_session::wait_for_handshake(xrt_device **out_device)
 #endif
 
 	self->thread = std::thread(&wivrn_session::run, self);
-	return n;
+	return devices;
 }
+
 
 clock_offset
 wivrn_session::get_offset()
@@ -138,17 +163,19 @@ wivrn_session::run(std::weak_ptr<wivrn_session> weak_self)
 					    std::chrono::seconds(5)) {
 						to_headset::timesync_query timesync{};
 						timesync.query = std::chrono::nanoseconds(os_monotonic_get_ns());
-						self->session.send_stream(timesync);
+						self->connection.send_stream(timesync);
 					}
 				}
-				self->session.poll(*self, 20);
+				self->connection.poll(*self, 20);
 			} else
 				return;
 		} catch (const std::exception &e) {
-			U_LOG_E("exception in network thread: %s", e.what());
+			U_LOG_E("Exception in network thread: %s", e.what());
 			auto self = weak_self.lock();
-			if (self)
+			if (self) {
 				self->quit = true;
+				exit(0);
+			}
 			return;
 		}
 	}

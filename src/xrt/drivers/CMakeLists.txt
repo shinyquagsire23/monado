@@ -82,8 +82,6 @@ if(XRT_BUILD_DRIVER_WIVRN)
 		drv_wivrn STATIC
 		wivrn/encoder_settings.cpp
 		wivrn/wivrn_hmd.cpp
-		wivrn/wivrn_interface.h
-		wivrn/wivrn_prober.cpp
 		wivrn/wivrn_comp_target.cpp
 		wivrn/wivrn_controller.cpp
 		wivrn/pose_list.cpp
@@ -101,15 +99,11 @@ if(XRT_BUILD_DRIVER_WIVRN)
 		drv_wivrn SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wivrn #shaders
 					 ../compositor/ ${EIGEN3_INCLUDE_DIR}
 		)
+	target_include_directories(drv_wivrn INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/wivrn)
 	target_link_libraries(
 		drv_wivrn
-		PRIVATE
-			xrt-external-openxr
-			xrt-interfaces
-			aux_util
-			aux_os
-			aux_vk
-			Boost::pfr
+		PRIVATE xrt-interfaces aux_util aux_os aux_vk
+		PUBLIC Boost::pfr xrt-external-openxr
 		)
 
 	if(XRT_HAVE_CUDA)

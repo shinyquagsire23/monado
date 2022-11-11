@@ -17,8 +17,7 @@ class wivrn_connection
 	typed_socket<UDP, from_headset::stream_packets, to_headset::stream_packets> stream;
 
 public:
-	wivrn_connection();
-	wivrn_connection(in6_addr address);
+	wivrn_connection(TCP &&tcp, in6_addr address);
 	wivrn_connection(const wivrn_connection &) = delete;
 	wivrn_connection &
 	operator=(const wivrn_connection &) = delete;

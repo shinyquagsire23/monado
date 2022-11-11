@@ -39,3 +39,7 @@ if(XRT_FEATURE_SERVICE
 	)
 	add_subdirectory(sdl_test)
 endif()
+
+if(XRT_BUILD_DRIVER_WIVRN)
+	add_subdirectory(wivrn)
+endif()
