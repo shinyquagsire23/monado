@@ -34,6 +34,7 @@ XRT_MAYBE_UNUSED static const char *NV_DIRECT_ALLOWLIST[] = {
     "Oculus VR Inc. Rift",         // DK1, DK2 and CV1
     "Valve Corporation Index HMD", // Valve Index
     "Seiko/Epson SEC144A",         // Samsung Odyssey+
+    "HPN",                         // Reverb G2
 };
 
 /*!
