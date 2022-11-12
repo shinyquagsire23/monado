@@ -1,10 +1,6 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2022, Guillaume Meunier
+// Copyright 2022, Patrick Nicolas
 // SPDX-License-Identifier: BSL-1.0
-/*!
- * @file
- * @brief  Shared default implementation of the instance with compositor.
- * @author Jakob Bornecrantz <jakob@collabora.com>
- */
 
 #include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_system.h"
@@ -30,8 +26,8 @@ extern std::unique_ptr<TCP> tcp;
 
 static xrt_result_t
 wivrn_instance_create_system(struct xrt_instance *xinst,
-                         struct xrt_system_devices **out_xsysd,
-                         struct xrt_system_compositor **out_xsysc)
+                             struct xrt_system_devices **out_xsysd,
+                             struct xrt_system_compositor **out_xsysc)
 {
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);

@@ -147,6 +147,8 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 
 	# @TODO Turn into a find_package FFMPEG file.
 	pkg_check_modules(FFMPEG libavcodec)
+
+	pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
 endif()
 
 find_package(OpenGL)
@@ -240,6 +242,7 @@ option_with_deps(XRT_HAVE_XLIB "Enable xlib support" DEPENDS X11_FOUND)
 option_with_deps(XRT_HAVE_XRANDR "Enable xlib-xrandr support" DEPENDS XRANDR_FOUND)
 
 # System deps to use (sorted)
+option_with_deps(XRT_HAVE_AVAHI "Enable avahi support" DEPENDS AVAHI_FOUND)
 option_with_deps(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" DEPENDS DBUS_FOUND)
 option_with_deps(XRT_HAVE_LIBBSD "Enable libbsd support" DEPENDS LIBBSD_FOUND)
 option_with_deps(XRT_HAVE_LIBUDEV "Enable libudev (used for device probing on Linux)" DEPENDS UDEV_FOUND)
@@ -321,7 +324,7 @@ option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file s
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
 if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
 	option_with_deps(XRT_BUILD_DRIVER_WIVRN "Enable WiVRn streaming driver"
-		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264")
+		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" XRT_HAVE_AVAHI XRT_HAVE_SYSTEMD)
 else()
 	set(XRT_BUILD_DRIVER_WIVRN OFF)
 endif()
@@ -483,6 +486,7 @@ endif()
 message(STATUS "#####----- Config -----#####")
 message(STATUS "#    GIT_DESC:        ${GIT_DESC}")
 message(STATUS "#")
+message(STATUS "#    AVAHI:           ${XRT_HAVE_AVAHI}")
 message(STATUS "#    BASALT:          ${XRT_HAVE_BASALT_SLAM}")
 message(STATUS "#    BLUETOOTH:       ${XRT_HAVE_BLUETOOTH}")
 message(STATUS "#    CUDA:            ${XRT_HAVE_CUDA}")
