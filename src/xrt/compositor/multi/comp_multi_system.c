@@ -8,10 +8,8 @@
  * @ingroup comp_multi
  */
 
-#include "os/os_threading.h"
-#include "xrt/xrt_gfx_native.h"
-
 #include "os/os_time.h"
+#include "os/os_threading.h"
 
 #include "util/u_var.h"
 #include "util/u_misc.h"

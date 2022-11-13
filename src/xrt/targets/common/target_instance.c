@@ -6,7 +6,6 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
 

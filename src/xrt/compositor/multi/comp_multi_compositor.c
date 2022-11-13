@@ -8,12 +8,10 @@
  * @ingroup comp_multi
  */
 
-#include "util/u_wait.h"
-#include "xrt/xrt_gfx_native.h"
-
 #include "os/os_time.h"
 
 #include "util/u_var.h"
+#include "util/u_wait.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
 #include "util/u_debug.h"

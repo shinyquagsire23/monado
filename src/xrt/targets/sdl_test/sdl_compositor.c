@@ -12,8 +12,6 @@
  * @ingroup sdl_test
  */
 
-#include "xrt/xrt_gfx_native.h"
-
 #include "os/os_time.h"
 
 #include "util/u_misc.h"

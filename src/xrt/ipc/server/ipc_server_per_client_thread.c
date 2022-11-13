@@ -8,8 +8,6 @@
  * @ingroup ipc_server
  */
 
-#include "xrt/xrt_gfx_native.h"
-
 #include "util/u_misc.h"
 
 #include "server/ipc_server.h"

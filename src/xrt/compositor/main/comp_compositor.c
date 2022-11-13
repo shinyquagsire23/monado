@@ -42,7 +42,6 @@
  * behavior.
  */
 
-#include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_config_have.h"
 
 #include "os/os_time.h"

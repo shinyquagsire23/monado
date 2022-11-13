@@ -7,8 +7,6 @@
  * @ingroup ipc_server
  */
 
-#include "xrt/xrt_gfx_native.h"
-
 #include "util/u_misc.h"
 #include "util/u_handles.h"
 #include "util/u_trace_marker.h"

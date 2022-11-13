@@ -12,7 +12,6 @@
 #endif
 
 #include "xrt/xrt_instance.h"
-#include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_handles.h"
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_config_android.h"
