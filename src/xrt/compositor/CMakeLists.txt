@@ -197,7 +197,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 			comp_util
 			comp_render
 		)
-	target_include_directories(comp_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_include_directories(comp_main PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 	if(XRT_HAVE_XCB)
 		target_sources(comp_main PRIVATE main/comp_window_xcb.c)

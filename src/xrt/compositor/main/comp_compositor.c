@@ -1157,7 +1157,7 @@ compositor_init_renderer(struct comp_compositor *c)
 }
 
 xrt_result_t
-xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
+comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
 {
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 

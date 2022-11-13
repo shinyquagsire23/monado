@@ -16,6 +16,10 @@
 #include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
 
+#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#include "main/comp_main_interface.h"
+#endif
+
 #include "target_instance_parts.h"
 
 #include <assert.h>
@@ -81,7 +85,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 
 #ifdef XRT_FEATURE_COMPOSITOR_MAIN
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
-		xret = xrt_gfx_provider_create_system(head, &xsysc);
+		xret = comp_main_create_system_compositor(head, &xsysc);
 	}
 #else
 	if (!use_null) {
