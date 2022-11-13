@@ -9,10 +9,9 @@
  */
 
 #include "xrt/xrt_config.h"
+#include "xrt/xrt_config_build.h"
 
 #ifdef XRT_OS_LINUX
-
-#define PID_FILE_NAME "monado.pid"
 
 #ifdef XRT_HAVE_LIBBSD
 #include <bsd/libutil.h>
@@ -28,7 +27,7 @@
 XRT_MAYBE_UNUSED static inline int
 get_pidfile_path(char *buf)
 {
-	int size = u_file_get_path_in_runtime_dir(PID_FILE_NAME, buf, PATH_MAX);
+	int size = u_file_get_path_in_runtime_dir(XRT_IPC_SERVICE_PID_FILENAME, buf, PATH_MAX);
 	if (size == -1) {
 		U_LOG_W("Failed to determine runtime dir, not creating pidfile");
 		return -1;

@@ -4,8 +4,7 @@
 ######
 # Create a loadable OpenXR driver.
 
-set(RUNTIME_BARE_SUFFIX monado)
-set(RUNTIME_SUFFIX _${RUNTIME_BARE_SUFFIX})
+set(RUNTIME_SUFFIX _${XRT_OXR_RUNTIME_SUFFIX})
 
 set(RUNTIME_TARGET
     ${RUNTIME_PREFIX}openxr${RUNTIME_SUFFIX}
