@@ -16,6 +16,8 @@
 #include "xrt/xrt_gfx_xlib.h"
 #endif // XR_USE_PLATFORM_XLIB
 
+#include "xrt/xrt_gfx_sdl.h"
+
 #ifdef XRT_HAVE_VULKAN
 #include "xrt/xrt_gfx_vk.h"
 #endif // XRT_HAVE_VULKAN
@@ -710,6 +712,21 @@ oxr_session_create_impl(struct oxr_logger *log,
 	}
 #endif
 
+#if defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
+	XrGraphicsBindingOpenGLSDLEXT const *opengl_sdl = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT, XrGraphicsBindingOpenGLSDLEXT);
+	if (opengl_sdl != NULL) {
+		if (!sys->gotten_requirements) {
+			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
+			                 "Has not called "
+			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
+		}
+
+		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
+		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
+		return oxr_session_populate_gl_sdl(log, sys, opengl_sdl, *out_session);
+	}
+#endif
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
@@ -840,6 +857,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 		return oxr_session_populate_d3d12(log, sys, d3d12, *out_session);
 	}
 #endif
+
+
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)
@@ -854,6 +873,7 @@ oxr_session_create_impl(struct oxr_logger *log,
 		(*out_session)->create_swapchain = NULL;
 		return XR_SUCCESS;
 	}
+
 	return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,
 	                 "(createInfo->next->type) doesn't contain a valid "
 	                 "graphics binding structs");

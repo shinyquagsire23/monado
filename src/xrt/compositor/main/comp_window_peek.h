@@ -18,7 +18,7 @@
 #include "os/os_threading.h"
 
 #ifdef XRT_HAVE_SDL2
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #else
 #error "comp_window_peek.h requires SDL2"
 #endif

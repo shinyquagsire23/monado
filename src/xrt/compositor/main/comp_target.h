@@ -96,6 +96,9 @@ struct comp_target
 
 		//! If true, @ref render_complete is a timeline semaphore instead of a binary semaphore
 		bool render_complete_is_timeline;
+
+		//! If true, rendering is offscreen and should not wait on any semaphores.
+		bool render_is_offscreen;
 	} semaphores;
 
 	/*

@@ -99,6 +99,17 @@ struct vk_bundle
 
 		bool timeline_semaphore_sync_fd;
 		bool timeline_semaphore_opaque_fd;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+
+		bool fence_sync_xpc;
+		bool fence_opaque_xpc;
+
+		bool binary_semaphore_sync_xpc;
+		bool binary_semaphore_opaque_xpc;
+
+		bool timeline_semaphore_sync_xpc;
+		bool timeline_semaphore_opaque_xpc;
+		
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 		bool fence_win32_handle;
 

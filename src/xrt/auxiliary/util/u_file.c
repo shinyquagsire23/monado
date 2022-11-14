@@ -21,6 +21,10 @@
 #define PATH_MAX MAX_PATH
 #endif
 
+#ifdef XRT_OS_DARWIN
+#include <sys/syslimits.h>
+#endif
+
 #ifdef XRT_OS_LINUX
 #include <sys/stat.h>
 #include <linux/limits.h>

@@ -906,6 +906,13 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
 	    .handle = image_native->handle,
 	};
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+	VkImportMemoryFdInfoKHR import_memory_info = {
+	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
+	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
+	    .fd = image_native->handle,
+	};
+	// TODO
 #else
 #error "need port"
 #endif
@@ -960,6 +967,18 @@ get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt
 	*out_handle = fd;
 
 	return ret;
+}
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+
+static VkResult
+get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
+{
+	// TODO
+
+	*out_handle = 0;
+
+	return VK_SUCCESS;
 }
 
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)

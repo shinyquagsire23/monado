@@ -53,6 +53,9 @@ foreach(testname ${tests})
 	target_link_libraries(${testname} PRIVATE tests_main)
 	target_link_libraries(${testname} PRIVATE aux_util)
 	add_test(NAME ${testname} COMMAND ${testname} --success)
+	if(XRT_HAVE_XCB)
+			target_include_directories(${testname} SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+	endif()
 endforeach()
 
 # For tests that require more than just aux_util, link those other libs down here.

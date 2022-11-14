@@ -216,7 +216,7 @@ struct ipc_server_mainloop
 #define XRT_IPC_GOT_IMPL
 #endif
 
-#if (defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)) || defined(XRT_DOXYGEN)
+#if (defined(XRT_OS_LINUX) && !defined(XRT_OS_ANDROID)) || defined(XRT_OS_DARWIN) || defined(XRT_DOXYGEN)
 	/*!
 	 * @name Desktop Linux Mainloop Members
 	 * @{

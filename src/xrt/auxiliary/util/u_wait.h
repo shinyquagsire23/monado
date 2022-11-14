@@ -22,7 +22,7 @@
  */
 #define U_WAIT_MEASURED_SCHEDULER_LATENCY_NS (uint64_t)(0)
 
-#elif defined(XRT_OS_LINUX) || defined(XRT_OS_ANDROID)
+#elif defined(XRT_OS_LINUX) || defined(XRT_OS_ANDROID) || defined(XRT_OS_DARWIN)
 #define U_WAIT_MEASURED_SCHEDULER_LATENCY_NS (uint64_t)(50 * 1000)
 #elif defined(XRT_OS_WINDOWS)
 #define U_WAIT_MEASURED_SCHEDULER_LATENCY_NS (uint64_t)(0)

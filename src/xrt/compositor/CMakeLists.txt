@@ -14,6 +14,10 @@ target_link_libraries(
 	)
 target_include_directories(comp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+if(XRT_HAVE_XCB)
+	target_include_directories(comp_client SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+endif()
+
 if(XRT_HAVE_VULKAN)
 	target_sources(
 		comp_client PRIVATE client/comp_vk_client.c client/comp_vk_client.h
@@ -53,6 +57,16 @@ if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
 				    client/comp_gl_xlib_glue.c
 		)
 	target_link_libraries(comp_client PRIVATE OpenGL::GLX)
+endif()
+
+if(XRT_HAVE_OPENGL AND XRT_HAVE_SDL2)
+	target_sources(
+		comp_client PRIVATE client/comp_gl_sdl_client.c client/comp_gl_sdl_client.h
+				    client/comp_gl_sdl_glue.c
+		)
+	#target_link_libraries(comp_client PRIVATE OpenGL::GLX)
+	target_include_directories(comp_client PRIVATE ${SDL2_INCLUDES})
+	target_link_libraries(comp_client PRIVATE ${SDL2_LIBRARIES})
 endif()
 
 if(XRT_HAVE_OPENGL AND WIN32)
@@ -108,6 +122,9 @@ if(XRT_HAVE_VULKAN)
 		PRIVATE aux_util aux_os aux_vk
 		)
 	target_include_directories(comp_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+	if(XRT_HAVE_XCB)
+			target_include_directories(comp_util SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+	endif()
 endif()
 
 ##
@@ -159,6 +176,9 @@ if(XRT_HAVE_VULKAN)
 	target_include_directories(comp_render PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 	# Shaders - marked SYSTEM so we get no warnings
 	target_include_directories(comp_render SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+	if(XRT_HAVE_XCB)
+			target_include_directories(comp_render SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+	endif()
 
 	add_subdirectory(shaders)
 endif()
@@ -186,6 +206,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 		main/comp_layer.c
 		main/comp_layer_renderer.h
 		main/comp_layer_renderer.c
+		main/comp_window_none.c
 		)
 	target_link_libraries(
 		comp_main
@@ -202,10 +223,10 @@ if(XRT_FEATURE_COMPOSITOR_MAIN)
 	if(XRT_HAVE_XCB)
 		target_sources(comp_main PRIVATE main/comp_window_xcb.c)
 		target_include_directories(comp_main SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
-		target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+		target_link_libraries(comp_main PRIVATE ${XCB_LINK_LIBRARIES})
 		if(XRT_HAVE_EGL)
 			target_include_directories(comp_main SYSTEM PRIVATE ${EGL_INCLUDE_DIRS})
-			target_link_libraries(comp_main PRIVATE ${XCB_LIBRARIES})
+			target_link_libraries(comp_main PRIVATE ${XCB_LINK_LIBRARIES})
 		endif()
 	endif()
 	if(XRT_HAVE_XCB AND XRT_HAVE_XLIB)

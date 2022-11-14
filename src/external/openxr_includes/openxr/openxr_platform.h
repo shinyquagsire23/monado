@@ -683,6 +683,21 @@ typedef struct XrVulkanSwapchainCreateInfoMETA {
 
 #endif /* XR_USE_GRAPHICS_API_VULKAN */
 
+
+
+//ADDED TODO TODO
+//#ifdef XR_USE_PLATFORM_XLIB
+typedef struct SDL_Window SDL_Window;
+typedef void* SDL_GLContext;
+// XrGraphicsBindingOpenGLSDLEXT extends XrSessionCreateInfo
+typedef struct XrGraphicsBindingOpenGLSDLEXT {
+    XrStructureType             type;
+    const void* XR_MAY_ALIAS    next;
+    SDL_Window*                 sdlWindow;
+    SDL_GLContext        sdlContext;
+} XrGraphicsBindingOpenGLSDLEXT;
+//#endif // XR_USE_PLATFORM_XLIB
+
 #ifdef __cplusplus
 }
 #endif

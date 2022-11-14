@@ -49,6 +49,24 @@ ref_graphics_handle(xrt_graphics_buffer_handle_t handle)
 	return dup(handle);
 }
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+#include <stdio.h>
+
+static inline void
+release_graphics_handle(xrt_graphics_buffer_handle_t handle)
+{
+	printf("UNIMPLEMENTED: release_graphics_handle\n");
+	//close(handle);
+}
+
+static inline xrt_graphics_buffer_handle_t
+ref_graphics_handle(xrt_graphics_buffer_handle_t handle)
+{
+	printf("UNIMPLEMENTED: ref_graphics_handle\n");
+	//return dup(handle);
+	return handle;
+}
+
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
 
 static inline void
@@ -115,6 +133,24 @@ static inline xrt_graphics_sync_handle_t
 ref_sync_handle(xrt_graphics_sync_handle_t handle)
 {
 	return dup(handle);
+}
+
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+#include <stdio.h>
+
+static inline void
+release_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	printf("UNIMPLEMENTED: release_sync_handle\n");
+	//close(handle);
+}
+
+static inline xrt_graphics_sync_handle_t
+ref_sync_handle(xrt_graphics_sync_handle_t handle)
+{
+	printf("UNIMPLEMENTED: ref_sync_handle\n");
+	//return dup(handle);
+	return handle;
 }
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)

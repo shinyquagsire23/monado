@@ -685,9 +685,11 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	    .pSignalSemaphores = &ct->semaphores.render_complete,
 	};
 
-	ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
+	if (!ct->semaphores.render_is_offscreen) {
+		ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
+		if (ret != VK_SUCCESS) {
+			COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
+		}
 	}
 
 	// This buffer now have a pending fence.

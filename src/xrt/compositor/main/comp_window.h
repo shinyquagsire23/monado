@@ -112,6 +112,15 @@ comp_window_mswin_create(struct comp_compositor *c);
 
 #endif // XRT_OS_WINDOWS
 
+/*!
+ * Create a null rendering window.
+ *
+ * @ingroup comp_main
+ * @public @memberof comp_window_none
+ */
+struct comp_target *
+comp_window_none_create(struct comp_compositor *c);
+
 #ifdef __cplusplus
 }
 #endif

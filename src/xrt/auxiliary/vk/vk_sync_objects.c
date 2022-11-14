@@ -30,7 +30,8 @@ vk_get_semaphore_handle_type(struct vk_bundle *vk)
 	if (vk->external.binary_semaphore_opaque_fd) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
 	}
-
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	return 0; // TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	if (vk->external.binary_semaphore_d3d12_fence) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
@@ -52,6 +53,8 @@ vk_get_timeline_semaphore_handle_type(struct vk_bundle *vk)
 	if (vk->external.timeline_semaphore_opaque_fd) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
 	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	return 0; // TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	if (vk->external.timeline_semaphore_d3d12_fence) {
 		return VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
@@ -110,6 +113,8 @@ vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle
 
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	const VkExternalFenceHandleTypeFlags handle_type = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	const VkExternalFenceHandleTypeFlags handle_type = 0; // TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	const VkExternalFenceHandleTypeFlags handle_type = VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 #else
@@ -173,6 +178,8 @@ vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle
 		vk->vkDestroyFence(vk->device, fence, NULL);
 		return ret;
 	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	//! @todo Not tested.
 	VkFenceGetWin32HandleInfoKHR get_handle_info = {
@@ -252,6 +259,8 @@ create_semaphore_and_native(struct vk_bundle *vk,
 		vk->vkDestroySemaphore(vk->device, semaphore, NULL);
 		return ret;
 	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	VkSemaphoreGetWin32HandleInfoKHR get_handle_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR,
@@ -366,6 +375,8 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 		VK_ERROR(vk, "vkImportFenceFdKHR: %s", vk_result_string(ret));
 		return ret;
 	}
+#elif XRT_GRAPHICS_SYNC_HANDLE_IS_XPC
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	//! @todo make sure this is the right one
 	VkExternalFenceHandleTypeFlagBits handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
@@ -429,6 +440,8 @@ create_semaphore_from_native(struct vk_bundle *vk,
 		vk->vkDestroySemaphore(vk->device, *out_sem, NULL);
 		return ret;
 	}
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	VkImportSemaphoreWin32HandleInfoKHR import_semaphore_handle_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR,
@@ -457,6 +470,8 @@ vk_create_semaphore_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_t
 
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	handle_type = 0;
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	handle_type = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 #else

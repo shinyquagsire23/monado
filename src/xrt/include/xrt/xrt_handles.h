@@ -264,6 +264,44 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  */
 #define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
 
+#elif defined(XRT_OS_DARWIN)
+
+/*!
+ * The type underlying buffers shared between compositor clients and the main
+ * compositor.
+ *
+ * On Linux, this is a file descriptor.
+ */
+typedef int xrt_graphics_buffer_handle_t;
+
+/*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC 1
+
+/*!
+ * Check whether a graphics buffer handle is valid.
+ *
+ * @public @memberof xrt_graphics_buffer_handle_t
+ */
+static inline bool
+xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
+{
+    return handle >= 0;
+}
+
+/*!
+ * An invalid value for a graphics buffer.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_buffer_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_buffer_handle_t
+ */
+#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
+
 #elif defined(XRT_OS_WINDOWS)
 
 /*!
@@ -305,7 +343,7 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 #error "Not yet implemented for this platform"
 #endif
 
-#ifdef XRT_OS_UNIX
+#if defined(XRT_OS_UNIX) && !defined(XRT_OS_DARWIN)
 
 
 /*
@@ -338,6 +376,50 @@ static inline bool
 xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
 {
 	return handle >= 0;
+}
+
+/*!
+ * An invalid value for a graphics sync primitive.
+ *
+ * Note that there may be more than one value that's invalid - use
+ * xrt_graphics_sync_handle_is_valid() instead of comparing against this!
+ *
+ * @relates xrt_graphics_sync_handle_t
+ */
+#define XRT_GRAPHICS_SYNC_HANDLE_INVALID (-1)
+
+#elif defined(XRT_OS_DARWIN)
+
+/*
+ *
+ * xrt_graphics_sync_handle_t
+ *
+ */
+
+/*!
+ * The type underlying synchronization primitives (semaphores, etc) shared
+ * between compositor clients and the main compositor.
+ *
+ * On Linux, this is a file descriptor.
+ */
+typedef int xrt_graphics_sync_handle_t;
+
+/*!
+ * Defined to allow detection of the underlying type.
+ *
+ * @relates xrt_graphics_sync_handle_t
+ */
+#define XRT_GRAPHICS_SYNC_HANDLE_IS_XPC 1
+
+/*!
+ * Check whether a graphics sync handle is valid.
+ *
+ * @public @memberof xrt_graphics_sync_handle_t
+ */
+static inline bool
+xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
+{
+    return handle >= 0;
 }
 
 /*!

@@ -138,6 +138,8 @@ vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_le
 	          "VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT(timeline)",     //
 	          vk->external.timeline_semaphore_opaque_fd ? "true" : "false");   //
 
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 
 	U_LOG_IFL(log_level, vk->log_level,                            //

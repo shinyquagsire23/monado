@@ -528,6 +528,15 @@ oxr_verify_XrSessionCreateInfo(struct oxr_logger *log,
 	}
 #endif // XR_USE_GRAPHICS_API_D3D12
 
+#if defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_SDL)
+	XrGraphicsBindingOpenGLSDLEXT const *opengl_sdl = OXR_GET_INPUT_FROM_CHAIN(
+	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT, XrGraphicsBindingOpenGLSDLEXT);
+	if (opengl_sdl != NULL) {
+		OXR_VERIFY_EXTENSION(log, inst, KHR_opengl_enable);
+		return oxr_verify_XrGraphicsBindingOpenGLSDLEXT(log, opengl_sdl);
+	}
+#endif // defined(OXR_HAVE_KHR_opengl_enable) && defined(XR_USE_PLATFORM_XLIB)
+
 	/*
 	 * Add any new graphics binding structs here - before the headless
 	 * check. (order for non-headless checks not specified in standard.)
@@ -575,6 +584,29 @@ oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger *log, const XrGraphi
 }
 
 #endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
+
+#if defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
+
+XrResult
+oxr_verify_XrGraphicsBindingOpenGLSDLEXT(struct oxr_logger *log, const XrGraphicsBindingOpenGLSDLEXT *next)
+{
+	if (next->type != XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "Graphics binding has invalid type");
+	}
+
+	if (next->sdlWindow == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "xDisplay is NULL");
+	}
+
+	if (next->sdlWindow == NULL) {
+		return oxr_error(log, XR_ERROR_VALIDATION_FAILURE, "glxContext is NULL");
+	}
+
+
+	return XR_SUCCESS;
+}
+
+#endif // defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
 #if defined(XR_USE_PLATFORM_WIN32) && defined(XR_USE_GRAPHICS_API_OPENGL)
 

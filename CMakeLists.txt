@@ -4,6 +4,10 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(XRT VERSION 21.0.0)
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
+endif()
+
 # CMake 3.11 introduced CMP0072 - Prefer GLVND
 if(POLICY CMP0072)
 	cmake_policy(SET CMP0072 NEW)
@@ -30,9 +34,11 @@ if(NOT WIN32)
 		)
 endif()
 
-# We use C++17
+# We use C++17 and C11
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # So that clangd/Intellisense/Sourcetrail know how to parse our code.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -170,6 +176,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	pkg_check_modules(SURVIVE IMPORTED_TARGET survive)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	set(XRT_HAVE_DARWIN YES)
+	find_package(X11)
+	if(PKGCONFIG_FOUND)
+		pkg_check_modules(XRANDR xrandr)
+		pkg_check_modules(XCB xcb xcb-randr x11-xcb)
+	endif()
+	find_package(OpenGL COMPONENTS GLX)
+	#set(XCB_INCLUDE_DIRS "/opt/homebrew/Cellar/libxcb/1.15/include/")
+	#set(XCB_INCLUDE_DIR ${XCB_INCLUDE_DIRS})
+	set(XCB_INCLUDE_DIR ${XCB_INCLUDE_DIR} ${XCB_INCLUDE_DIRS} /opt/homebrew/include/)
+	set(XCB_INCLUDE_DIRS ${XCB_INCLUDE_DIRS} /opt/homebrew/include/)
+endif()
+
 # Find a external SLAM implementation
 set(EXTERNAL_SLAM_SYSTEMS kimera_vio basalt)
 foreach(slam_system IN LISTS EXTERNAL_SLAM_SYSTEMS)
@@ -239,9 +259,9 @@ option_with_deps(XRT_HAVE_KIMERA_SLAM "Enable Kimera support" DEPENDS kimera_vio
 
 # Feature configuration (sorted)
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
-option_with_deps(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" DEPENDS XRT_HAVE_VULKAN "XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32")
+option_with_deps(XRT_FEATURE_COMPOSITOR_MAIN "Build main compositor host functionality" DEPENDS XRT_HAVE_VULKAN "XRT_HAVE_WAYLAND OR XRT_HAVE_XCB OR ANDROID OR WIN32 OR XRT_HAVE_DARWIN")
 option_with_deps(XRT_FEATURE_COMPOSITOR_NULL "Build testing null compositor" DEPENDS XRT_HAVE_VULKAN)
-option(XRT_FEATURE_IPC "Enable the build of the IPC layer" ON)
+option_with_deps(XRT_FEATURE_IPC "Enable the build of the IPC layer" DEPENDS "NOT XRT_HAVE_DARWIN")
 option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS "XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL")
 option_with_deps(XRT_FEATURE_RENDERDOC "Enable RenderDoc API" DEPENDS "RT_LIBRARY OR WIN32")
 option_with_deps(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR runtime" DEPENDS XRT_FEATURE_IPC XRT_FEATURE_OPENXR)
@@ -272,6 +292,7 @@ option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
 option_with_deps(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" DEPENDS JPEG_FOUND)
 option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS LIBUSB1_FOUND)
+option_with_deps(XRT_HAVE_LIBUV "Enable libuv async io" DEPENDS LIBUV_FOUND)
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" DEPENDS ONNXRUNTIME_FOUND)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
@@ -300,7 +321,7 @@ option_with_deps(XRT_BUILD_DRIVER_SURVIVE "Enable libsurvive driver" DEPENDS SUR
 option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS LeapV2_FOUND)
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
-option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32")
+option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32" "NOT XRT_HAVE_DARWIN")
 option_with_deps(XRT_BUILD_DRIVER_SIMULAVR "Enable simula driver" DEPENDS XRT_HAVE_REALSENSE)
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
 
@@ -382,7 +403,7 @@ if(XRT_HAVE_XLIB AND NOT XRT_HAVE_XRANDR)
 endif()
 
 if(XRT_HAVE_OPENGLES AND NOT XRT_HAVE_EGL)
-	message(FATAL_ERROR "XRT_HAVE_OPENGLES requires XRT_HAVE_EGL but XRT_HAVE_EGL is disabled")
+	#message(FATAL_ERROR "XRT_HAVE_OPENGLES requires XRT_HAVE_EGL but XRT_HAVE_EGL is disabled")
 endif()
 
 if(XRT_HAVE_SDL2)
@@ -469,6 +490,7 @@ message(STATUS "#    JPEG:            ${XRT_HAVE_JPEG}")
 message(STATUS "#    KIMERA:          ${XRT_HAVE_KIMERA_SLAM}")
 message(STATUS "#    LIBBSD:          ${XRT_HAVE_LIBBSD}")
 message(STATUS "#    LIBUSB:          ${XRT_HAVE_LIBUSB}")
+message(STATUS "#    LIBUV:           ${XRT_HAVE_LIBUV}")
 message(STATUS "#    LIBUVC:          ${XRT_HAVE_LIBUVC}")
 message(STATUS "#    ONNXRUNTIME:     ${XRT_HAVE_ONNXRUNTIME}")
 message(STATUS "#    OPENCV:          ${XRT_HAVE_OPENCV}")

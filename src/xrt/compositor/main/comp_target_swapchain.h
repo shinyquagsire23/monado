@@ -90,6 +90,68 @@ struct comp_target_swapchain
 };
 
 
+/*!
+ * Wraps and manage VkSwapchainKHR and VkSurfaceKHR, used by @ref comp code.
+ *
+ * @ingroup comp_main
+ */
+struct comp_target_none
+{
+    //! Base target.
+    struct comp_target base;
+
+    //! Compositor frame pacing helper
+    struct u_pacing_compositor *upc;
+
+    //! If we should use display timing.
+    enum comp_target_display_timing_usage timing_usage;
+
+    //! Also works as a frame index.
+    int64_t current_frame_id;
+
+    struct
+    {
+        VkSwapchainKHR handle;
+    } swapchain;
+
+    struct
+    {
+        VkSurfaceKHR handle;
+        VkSurfaceFormatKHR format;
+#ifdef VK_EXT_display_surface_counter
+        VkSurfaceCounterFlagsEXT surface_counter_flags;
+#endif
+    } surface;
+
+    struct
+    {
+        VkFormat color_format;
+        VkColorSpaceKHR color_space;
+    } preferred;
+
+    //! Present mode that the system must support.
+    VkPresentModeKHR present_mode;
+
+    //! The current display used for direct mode, VK_NULL_HANDLE else.
+    VkDisplayKHR display;
+
+    struct
+    {
+        //! Must only be accessed from main compositor thread.
+        bool has_started;
+
+        //! Protected by event_thread lock.
+        bool should_wait;
+
+        //! Protected by event_thread lock.
+        uint64_t last_vblank_ns;
+
+        //! Thread waiting on vblank_event_fence (first pixel out).
+        struct os_thread_helper event_thread;
+    } vblank;
+};
+
+
 /*
  *
  * Functions.

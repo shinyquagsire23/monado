@@ -37,6 +37,12 @@
 #define XRT_HAVE_TIMESPEC
 #define XRT_HAVE_TIMEVAL
 
+#elif defined(XRT_OS_DARWIN)
+#include <time.h>
+#include <sys/time.h>
+#define XRT_HAVE_TIMESPEC
+#define XRT_HAVE_TIMEVAL
+
 #else
 #error "No time support on non-Linux platforms yet."
 #endif
@@ -282,7 +288,7 @@ os_ns_per_qpc_tick_get()
 static inline uint64_t
 os_monotonic_get_ns(void)
 {
-#if defined(XRT_OS_LINUX)
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN)
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
 	if (ret != 0) {

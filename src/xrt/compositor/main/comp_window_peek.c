@@ -14,7 +14,7 @@
 
 #include "util/u_debug.h"
 
-#include <SDL2/SDL_vulkan.h>
+#include <SDL_vulkan.h>
 
 
 DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)

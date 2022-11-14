@@ -393,7 +393,8 @@ fill_in_external_object_properties(struct vk_bundle *vk)
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT);
 	vk->external.timeline_semaphore_opaque_fd = is_timeline_semaphore_bit_supported( //
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT);
-
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 
 	vk->external.fence_win32_handle = is_fence_bit_supported( //

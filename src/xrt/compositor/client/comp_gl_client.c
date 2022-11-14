@@ -437,7 +437,6 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
 	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
 
-
 	if (xret != XRT_SUCCESS) {
 		c->context_end(xc);
 		return xret;

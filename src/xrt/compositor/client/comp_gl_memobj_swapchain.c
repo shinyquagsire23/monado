@@ -82,6 +82,9 @@ client_gl_memobj_swapchain_import(GLuint memory, size_t size, xrt_graphics_buffe
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
 	glImportMemoryWin32HandleEXT(memory, size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
 	return true;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+	//glImportMemoryWin32HandleEXT(memory, size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
+	return true;
 #else
 	(void)memory;
 	(void)size;
@@ -144,6 +147,27 @@ client_gl_memobj_swapchain_create(struct xrt_compositor *xc,
 			                         info->height, info->array_size, sc->memory[i], 0);
 		}
 	}
+
+	*out_cglsc = &sc->base;
+	return &sc->base.base.base;
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+	GLuint binding_enum = 0;
+	GLuint tex_target = 0;
+	ogl_texture_target_for_swapchain_info(info, &tex_target, &binding_enum);
+	struct xrt_swapchain *native_xsc = &xscn->base;
+
+	struct client_gl_memobj_swapchain *sc = U_TYPED_CALLOC(struct client_gl_memobj_swapchain);
+	sc->base.base.base.destroy = client_gl_memobj_swapchain_destroy;
+	sc->base.base.base.reference.count = 1;
+	sc->base.base.base.image_count =
+	    native_xsc->image_count; // Fetch the number of images from the native swapchain.
+	sc->base.xscn = xscn;
+	sc->base.tex_target = tex_target;
+
+	sc->base.gl_compositor = c;
+
+	struct xrt_swapchain_gl *xscgl = &sc->base.base;
+	glGenTextures(native_xsc->image_count, xscgl->images);
 
 	*out_cglsc = &sc->base;
 	return &sc->base.base.base;

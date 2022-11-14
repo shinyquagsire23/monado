@@ -321,7 +321,7 @@ from_MJPEG_to_R8G8B8(struct xrt_frame *dst_frame, size_t size, const uint8_t *da
 	jerr.trace_level = 0;
 
 	jpeg_create_decompress(&cinfo);
-	jpeg_mem_src(&cinfo, data, size);
+	jpeg_mem_src(&cinfo, (uint8_t*)data, size);
 
 	int ret = jpeg_read_header(&cinfo, TRUE);
 	if (ret != JPEG_HEADER_OK) {
@@ -363,7 +363,7 @@ from_MJPEG_to_YUV888(struct xrt_frame *dst_frame, size_t size, const uint8_t *da
 	jerr.trace_level = 0;
 
 	jpeg_create_decompress(&cinfo);
-	jpeg_mem_src(&cinfo, data, size);
+	jpeg_mem_src(&cinfo, (uint8_t*)data, size);
 
 	int ret = jpeg_read_header(&cinfo, TRUE);
 	if (ret != JPEG_HEADER_OK) {

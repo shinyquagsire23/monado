@@ -34,6 +34,11 @@
 #define XRT_OS_WAS_AUTODETECTED
 #endif
 
+#if defined(__APPLE__)
+#define XRT_OS_DARWIN
+#define XRT_OS_UNIX
+#define XRT_OS_WAS_AUTODETECTED
+#endif
 
 #ifndef XRT_OS_WAS_AUTODETECTED
 #error "OS type not found during compile"

@@ -12,6 +12,10 @@
 #include "xrt/xrt_config_os.h"
 #include "util/u_file.h"
 
+#ifdef XRT_OS_DARWIN
+#define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
+#endif
+
 #ifndef XRT_OS_LINUX
 
 #include <errno.h>

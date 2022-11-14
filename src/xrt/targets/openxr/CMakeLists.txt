@@ -15,7 +15,7 @@ set(RUNTIME_TARGET
 # OpenXR 1.0
 set(XR_API_MAJOR "1")
 
-add_library(${RUNTIME_TARGET} MODULE target.c libopenxr.def)
+add_library(${RUNTIME_TARGET} SHARED target.c libopenxr.def)
 
 # Note: Order may matter in these lists!
 target_link_libraries(${RUNTIME_TARGET} PUBLIC aux_vk aux_os aux_util aux_math)
@@ -35,7 +35,7 @@ else()
 		)
 endif()
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT XRT_HAVE_DARWIN)
 	# Force the main "negotiate" symbol's inclusion
 	# and use a version script to ensure that's the only one we expose.
 	set_property(
@@ -50,6 +50,16 @@ if(NOT WIN32)
 		TARGET ${RUNTIME_TARGET}
 		APPEND
 		PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/libopenxr.version"
+		)
+endif()
+
+if (XRT_HAVE_DARWIN)
+	set_property(
+		TARGET ${RUNTIME_TARGET}
+		APPEND_STRING
+		PROPERTY
+			LINK_FLAGS
+			"-Wl,-exported_symbol,_xrNegotiateLoaderRuntimeInterface"
 		)
 endif()
 

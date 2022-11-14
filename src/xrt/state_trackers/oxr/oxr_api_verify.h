@@ -272,6 +272,11 @@ XrResult
 oxr_verify_XrGraphicsBindingOpenGLXlibKHR(struct oxr_logger * /*log*/, const XrGraphicsBindingOpenGLXlibKHR * /*next*/);
 #endif // defined(XR_USE_PLATFORM_XLIB) && defined(XR_USE_GRAPHICS_API_OPENGL)
 
+#if defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
+XrResult
+oxr_verify_XrGraphicsBindingOpenGLSDLEXT(struct oxr_logger * /*log*/, const XrGraphicsBindingOpenGLSDLEXT * /*next*/);
+#endif // defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
+
 #if defined(XR_USE_PLATFORM_WIN32) && defined(XR_USE_GRAPHICS_API_OPENGL)
 XrResult
 oxr_verify_XrGraphicsBindingOpenGLWin32KHR(struct oxr_logger * /*log*/,

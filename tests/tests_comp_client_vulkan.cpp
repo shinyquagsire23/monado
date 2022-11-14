@@ -55,6 +55,9 @@ static const char *required_device_extensions[] = {
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
     VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    // TODO?
+
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
     VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
 
@@ -67,6 +70,9 @@ static const char *required_device_extensions[] = {
 
 // Platform version of "external_fence" and "external_semaphore"
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD) // Optional
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    // TODO?
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
@@ -136,6 +142,8 @@ TEST_CASE("client_compositor", "[.][needgpu]")
 	    vk->external.fence_sync_fd,              //
 	    vk->external.binary_semaphore_sync_fd,   //
 	    vk->external.timeline_semaphore_sync_fd, //
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    	0,0,0, // TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	    vk->external.fence_win32_handle,              //
 	    vk->external.binary_semaphore_win32_handle,   //

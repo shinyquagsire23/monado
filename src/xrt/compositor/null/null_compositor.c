@@ -74,6 +74,9 @@ static const char *required_device_extensions[] = {
 #if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_FD)
     VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
 
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    // TODO?
+
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
     VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
 
@@ -86,6 +89,9 @@ static const char *required_device_extensions[] = {
 
 // Platform version of "external_fence" and "external_semaphore"
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD) // Optional
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    // TODO?
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
     VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME, //
@@ -104,6 +110,9 @@ static const char *optional_device_extensions[] = {
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)      // Optional
     VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME, //
     VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME,     //
+
+#elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+    // TODO?
 
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE) // Not optional
 

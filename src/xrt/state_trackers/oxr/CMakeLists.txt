@@ -48,6 +48,10 @@ if(XRT_HAVE_VULKAN)
 	target_link_libraries(st_oxr PUBLIC Vulkan::Vulkan)
 endif()
 
+if(XRT_HAVE_XCB)
+	target_include_directories(st_oxr SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+endif()
+
 if(XRT_HAVE_OPENGL)
 	target_compile_definitions(st_oxr PRIVATE XR_USE_GRAPHICS_API_OPENGL)
 endif()
@@ -63,6 +67,12 @@ endif()
 if(XRT_HAVE_OPENGL_GLX AND XRT_HAVE_XLIB)
 	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_XLIB)
 	target_sources(st_oxr PRIVATE oxr_session_gfx_gl_xlib.c)
+endif()
+
+if(XRT_HAVE_OPENGL AND XRT_HAVE_SDL2)
+	target_compile_definitions(st_oxr PRIVATE XR_USE_PLATFORM_SDL)
+	target_sources(st_oxr PRIVATE oxr_session_gfx_gl_sdl.c)
+	target_include_directories(st_oxr PRIVATE ${SDL2_INCLUDES})
 endif()
 
 if(XRT_HAVE_EGL)

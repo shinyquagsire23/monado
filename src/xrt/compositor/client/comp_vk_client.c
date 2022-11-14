@@ -164,6 +164,9 @@ submit_fence(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out
 #if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_FD)
 	// Using sync fds currently to match OpenGL extension.
 	bool sync_fence = vk->external.fence_sync_fd;
+#elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	// Using sync fds currently to match OpenGL extension.
+	bool sync_fence = vk->external.fence_sync_xpc;
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	bool sync_fence = vk->external.fence_win32_handle;
 #else

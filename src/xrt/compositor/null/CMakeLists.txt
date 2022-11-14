@@ -13,3 +13,6 @@ target_link_libraries(
 		comp_multi
 	)
 target_include_directories(comp_null PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+if(XRT_HAVE_XCB)
+	target_include_directories(comp_null SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})
+endif()
