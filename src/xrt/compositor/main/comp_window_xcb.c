@@ -429,3 +429,47 @@ comp_window_xcb_update_window_title(struct comp_target *ct, const char *title)
 	xcb_change_property(w_xcb->connection, XCB_PROP_MODE_REPLACE, w_xcb->window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING,
 	                    8, strlen(title), title);
 }
+
+
+/*
+ *
+ * Factory
+ *
+ */
+
+static const char *instance_extensions[] = {
+    VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+};
+
+static bool
+detect(struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	return false;
+}
+
+static bool
+create_target(struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+{
+	struct comp_target *ct = comp_window_xcb_create(c);
+	if (ct == NULL) {
+		return false;
+	}
+
+	COMP_DEBUG(c, "Using VK_PRESENT_MODE_IMMEDIATE_KHR for xcb window")
+	c->settings.present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+	*out_ct = ct;
+
+	return true;
+}
+
+struct comp_target_factory comp_target_factory_xcb = {
+    .name = "X11(XCB) Windowed",
+    .identifier = "x11",
+    .requires_vulkan_for_create = false,
+    .is_deferred = false,
+    .required_instance_extensions = instance_extensions,
+    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .detect = detect,
+    .create_target = create_target,
+};

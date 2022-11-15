@@ -27,6 +27,7 @@ extern "C" {
  */
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
+
 /*!
  * Create a xcb window.
  *
@@ -35,9 +36,13 @@ extern "C" {
  */
 struct comp_target *
 comp_window_xcb_create(struct comp_compositor *c);
-#endif
+
+extern struct comp_target_factory comp_target_factory_xcb;
+
+#endif // VK_USE_PLATFORM_XCB_KHR
 
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
+
 /*!
  * Create a wayland window.
  *
@@ -47,6 +52,8 @@ comp_window_xcb_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_wayland_create(struct comp_compositor *c);
 
+extern struct comp_target_factory comp_target_factory_wayland;
+
 /*!
  * Create a direct surface to a HMD using Wayland.
  *
@@ -55,7 +62,9 @@ comp_window_wayland_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_direct_wayland_create(struct comp_compositor *c);
 
-#endif
+extern struct comp_target_factory comp_target_factory_direct_wayland;
+
+#endif // VK_USE_PLATFORM_WAYLAND_KHR
 
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 /*!
@@ -67,6 +76,8 @@ comp_window_direct_wayland_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_direct_randr_create(struct comp_compositor *c);
 
+extern struct comp_target_factory comp_target_factory_direct_randr;
+
 /*!
  * Create a direct surface to an HMD on NVIDIA.
  *
@@ -75,8 +86,11 @@ comp_window_direct_randr_create(struct comp_compositor *c);
  */
 struct comp_target *
 comp_window_direct_nvidia_create(struct comp_compositor *c);
-#endif
 
+extern struct comp_target_factory comp_target_factory_direct_nvidia;
+#endif // VK_USE_PLATFORM_XLIB_XRANDR_EXT
+
+#if 1
 /*!
  * Create a direct surface to an HMD on VkDisplay.
  *
@@ -86,8 +100,10 @@ comp_window_direct_nvidia_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_vk_display_create(struct comp_compositor *c);
 
-#ifdef XRT_OS_ANDROID
+extern struct comp_target_factory comp_target_factory_vk_display;
+#endif // 1
 
+#ifdef XRT_OS_ANDROID
 /*!
  * Create a surface to an HMD on Android.
  *
@@ -97,6 +113,7 @@ comp_window_vk_display_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_android_create(struct comp_compositor *c);
 
+extern struct comp_target_factory comp_target_factory_android;
 #endif // XRT_OS_ANDROID
 
 #ifdef XRT_OS_WINDOWS
@@ -110,6 +127,7 @@ comp_window_android_create(struct comp_compositor *c);
 struct comp_target *
 comp_window_mswin_create(struct comp_compositor *c);
 
+extern struct comp_target_factory comp_target_factory_mswin;
 #endif // XRT_OS_WINDOWS
 
 #ifdef __cplusplus

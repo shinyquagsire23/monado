@@ -68,7 +68,6 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->display = debug_get_num_option_xcb_display();
 	s->color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 	s->present_mode = VK_PRESENT_MODE_FIFO_KHR;
-	s->window_type = WINDOW_AUTO;
 	s->fullscreen = debug_get_bool_option_xcb_fullscreen();
 	s->preferred.width = xdev->hmd->screens[0].w_pixels;
 	s->preferred.height = xdev->hmd->screens[0].h_pixels;
@@ -80,33 +79,35 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	s->desired_mode = debug_get_num_option_desired_mode();
 	s->viewport_scale = debug_get_num_option_scale_percentage() / 100.0;
 
-	if (debug_get_bool_option_force_nvidia()) {
-		s->window_type = WINDOW_DIRECT_NVIDIA;
-	}
 
 	s->nvidia_display = debug_get_option_nvidia_display();
+	if (debug_get_bool_option_force_nvidia()) {
+		s->target_identifier = "x11_direct_nvidia";
+	}
+
 	s->vk_display = debug_get_num_option_vk_display();
 	if (s->vk_display >= 0) {
-		s->window_type = WINDOW_VK_DISPLAY;
+		s->target_identifier = "vk_display";
 	}
 
 	if (debug_get_bool_option_force_randr()) {
-		s->window_type = WINDOW_DIRECT_RANDR;
+		s->target_identifier = "x11_direct";
 	}
 
 	if (debug_get_bool_option_force_wayland_direct()) {
-		s->window_type = WINDOW_DIRECT_WAYLAND;
+		s->target_identifier = "wayland_direct";
 	}
 
-
 	if (debug_get_bool_option_force_xcb()) {
-		s->window_type = WINDOW_XCB;
+		s->target_identifier = "x11";
+
 		// HMD screen tends to be much larger then monitors.
 		s->preferred.width /= 2;
 		s->preferred.height /= 2;
 	}
 	if (debug_get_bool_option_force_wayland()) {
-		s->window_type = WINDOW_WAYLAND;
+		s->target_identifier = "wayland";
+
 		// HMD screen tends to be much larger then monitors.
 		s->preferred.width /= 2;
 		s->preferred.height /= 2;

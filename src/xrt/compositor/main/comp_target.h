@@ -519,6 +519,81 @@ comp_target_destroy(struct comp_target **ct_ptr)
 	*ct_ptr = NULL;
 }
 
+/*!
+ * A factory of targets.
+ *
+ * @ingroup comp_main
+ */
+struct comp_target_factory
+{
+	//! Pretty loggable name of target type.
+	const char *name;
+
+	//! Short all lowercaps identifier for target type.
+	const char *identifier;
+
+	//! Does this factory require Vulkan to have been initialized.
+	bool requires_vulkan_for_create;
+
+	/*!
+	 * Is this a deferred target that can have it's creation
+	 * delayed even further then after Vulkan initialization.
+	 */
+	bool is_deferred;
+
+	//! Required instance extensions.
+	const char **required_instance_extensions;
+
+	//! Required instance extension count.
+	size_t required_instance_extension_count;
+
+	/*!
+	 * Checks if this target can be detected, is the preferred target or
+	 * some other special considiration that this target should be used over
+	 * all other targets.
+	 *
+	 * This is needed for NVIDIA direct mode which window must be created
+	 * after vulkan has initialized.
+	 */
+	bool (*detect)(struct comp_target_factory *ctf, struct comp_compositor *c);
+
+	/*!
+	 * Create a target from this factory, some targets requires Vulkan to
+	 * have been initialised, see @ref requires_vulkan_for_create.
+	 */
+	bool (*create_target)(struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct);
+};
+
+/*!
+ * @copydoc comp_target_factory::detect
+ *
+ * @public @memberof comp_target_factory
+ * @ingroup comp_main
+ */
+static inline bool
+comp_target_factory_detect(struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	COMP_TRACE_MARKER();
+
+	return ctf->detect(ctf, c);
+}
+
+/*!
+ * @copydoc comp_target_factory::create_target
+ *
+ * @public @memberof comp_target_factory
+ * @ingroup comp_main
+ */
+static inline bool
+comp_target_factory_create_target(struct comp_target_factory *ctf,
+                                  struct comp_compositor *c,
+                                  struct comp_target **out_ct)
+{
+	COMP_TRACE_MARKER();
+
+	return ctf->create_target(ctf, c, out_ct);
+}
+
 
 #ifdef __cplusplus
 }

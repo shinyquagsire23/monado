@@ -38,26 +38,6 @@ XRT_MAYBE_UNUSED static const char *NV_DIRECT_ALLOWLIST[] = {
 };
 
 /*!
- * Window type to use.
- *
- * @ingroup comp_main
- */
-enum window_type
-{
-	WINDOW_NONE = 0,
-	WINDOW_AUTO,
-	WINDOW_XCB,
-	WINDOW_WAYLAND,
-	WINDOW_DIRECT_WAYLAND,
-	WINDOW_DIRECT_RANDR,
-	WINDOW_DIRECT_NVIDIA,
-	WINDOW_ANDROID,
-	WINDOW_MSWIN,
-	WINDOW_VK_DISPLAY,
-};
-
-
-/*!
  * Settings for the compositor.
  *
  * @ingroup comp_main
@@ -72,8 +52,8 @@ struct comp_settings
 	VkColorSpaceKHR color_space;
 	VkPresentModeKHR present_mode;
 
-	//! Window type to use.
-	enum window_type window_type;
+	//! Preferred window type to use, not actual used.
+	const char *target_identifier;
 
 	//! display string forced by user or NULL
 	const char *nvidia_display;
