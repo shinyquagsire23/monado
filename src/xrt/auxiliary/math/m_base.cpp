@@ -409,26 +409,79 @@ math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result)
 	}
 }
 
+// See https://gitlab.freedesktop.org/slitcch/rotation_visualizer/-/blob/main/lm_rotations_story.inl for the derivation
 extern "C" void
 math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result)
 {
 	assert(swing != NULL);
 	assert(result != NULL);
 
-	struct xrt_quat swing_quat;
-	struct xrt_quat twist_quat;
+	float swing_x = swing->x;
+	float swing_y = swing->y;
 
-	struct xrt_vec3 aax_twist;
+	float theta_squared_swing = swing_x * swing_x + swing_y * swing_y;
 
-	aax_twist.x = 0.f;
-	aax_twist.y = 0.f;
-	aax_twist.z = twist;
+	if (theta_squared_swing > float(0.0)) {
+		// theta_squared_swing is nonzero, so we the regular derived conversion.
 
-	math_quat_from_swing(swing, &swing_quat);
+		float theta = sqrt(theta_squared_swing);
 
-	math_quat_exp(&aax_twist, &twist_quat);
+		float half_theta = theta * float(0.5);
 
-	math_quat_rotate(&swing_quat, &twist_quat, result);
+		// the "other" theta
+		float half_twist = twist * float(0.5);
+
+		float cos_half_theta = cos(half_theta);
+		float cos_half_twist = cos(half_twist);
+
+		float sin_half_theta = sin(half_theta);
+		float sin_half_twist = sin(half_twist);
+
+		float sin_half_theta_over_theta = sin_half_theta / theta;
+
+		result->w = cos_half_theta * cos_half_twist;
+
+		float x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		float x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result->x = x_part_1 + x_part_2;
+
+		float y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		float y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result->y = y_part_1 - y_part_2;
+
+		result->z = cos_half_theta * sin_half_twist;
+
+	} else {
+		// sin_half_theta/theta would be undefined, but
+		// the limit approaches 0.5, so we do this.
+		// Note the differences w/ lm_rotations.inl - we can skip some things as we're not using this to compute
+		// a jacobian.
+
+		float half_twist = twist * float(0.5);
+
+		float cos_half_twist = cos(half_twist);
+
+		float sin_half_twist = sin(half_twist);
+
+		float sin_half_theta_over_theta = float(0.5);
+
+		// cos(0) is 1 so no cos_half_theta necessary
+		result->w = cos_half_twist;
+
+		float x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		float x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result->x = x_part_1 + x_part_2;
+
+		float y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		float y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result->y = y_part_1 - y_part_2;
+
+		result->z = sin_half_twist;
+	}
 }
 
 /*
