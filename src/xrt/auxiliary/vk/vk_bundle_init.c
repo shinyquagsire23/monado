@@ -944,6 +944,12 @@ filter_device_features(struct vk_bundle *vk,
  *
  */
 
+VkResult
+vk_select_physical_device(struct vk_bundle *vk, int forced_index)
+{
+	return select_physical_device(vk, forced_index);
+}
+
 XRT_CHECK_RESULT VkResult
 vk_create_device(struct vk_bundle *vk,
                  int forced_index,

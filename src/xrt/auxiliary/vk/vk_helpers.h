@@ -618,6 +618,14 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 void
 vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *ext_list);
 
+/*!
+ * Setup the physical device, this is called by vk_create_device but has uses
+ * for outside of that.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_select_physical_device(struct vk_bundle *vk, int forced_index);
 
 /*!
  * Used to enable device features as a argument @ref vk_create_device.
