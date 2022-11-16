@@ -256,7 +256,7 @@ os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 #endif // XRT_HAVE_TIMESPEC
 
 
-#if defined(XRT_HAVE_TIMEVAL) && defined(XRT_OS_LINUX)
+#if defined(XRT_HAVE_TIMEVAL) && (defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN))
 
 #define OS_NS_PER_USEC (1000)
 
