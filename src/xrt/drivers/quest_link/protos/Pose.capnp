@@ -48,7 +48,7 @@ struct PoseTrackedController {
     triggerCovered @11 :Float32;
     triggerFingerCurl @12 :Float32;
     unk6p1 @13 :Float32;
-    struct0 @14 :OvrPoseF;
+    pose @14 :OvrPoseF;
     struct1 @15 :PoseStruct1;
 }
 

@@ -63,13 +63,13 @@ log_ql_hmd(enum u_logging_level log_level, struct xrt_prober *xp, struct xrt_pro
 	log_ql_string(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER);
 }
 
-static void
+static int
 init_ql_usb(struct xrt_prober *xp,
            struct xrt_prober_device *dev,
            struct xrt_prober_device **devices,
            size_t device_count,
            enum u_logging_level log_level,
-           struct ql_hmd **out_vdev)
+           struct xrt_device **out_vdev)
 {
 	log_ql_hmd(log_level, xp, dev);
 
@@ -83,7 +83,7 @@ init_ql_usb(struct xrt_prober *xp,
 	int if_num = xrt_prober_find_interface(xp, dev, XRSP_IF_CLASS, XRSP_IF_SUBCLASS, XRSP_IF_PROTOCOL);
 	if (if_num < 0) {
 		U_LOG_E("Could not find XRSP interface on Quest Link device.");
-		return;
+		return 0;
 	}
 	printf("Found if %x\n", if_num);
 
@@ -98,12 +98,14 @@ init_ql_usb(struct xrt_prober *xp,
 	struct ql_system *d =
 	    ql_system_create(xp, dev, hmd_serial_no, if_num);
 	if (d == NULL) {
-		return;
+		return 0;
 	}
 
-	*out_vdev = d->hmd;
+	out_vdev[0] = &d->hmd->base;
+	out_vdev[1] = &d->controllers[0]->base;
+	out_vdev[2] = &d->controllers[1]->base;
 
-	return;
+	return 3;
 }
 
 int
@@ -129,25 +131,26 @@ ql_found(struct xrt_prober *xp,
 	}
 
 	struct ql_hmd *vdev = NULL;
+	int count = 0;
 
 	switch (dev->product_id) {
 	case QUEST_XRSP_PID:
 	case QUEST_MTP_XRSP_PID:
 	case QUEST_MTP_XRSP_ADB_PID:
 	case QUEST_XRSP_ADB_PID: {
-		init_ql_usb(xp, dev, devices, device_count, log_level, &vdev);
+		count = init_ql_usb(xp, dev, devices, device_count, log_level, out_xdev);
 		break;
 	}
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return 0;
 	}
 
-	if (vdev == NULL) {
+	/*if (vdev == NULL) {
 		U_LOG_E("Failed after opening Quest Link device?");
 		return 0;
-	}
+	}*/
 
 	//*out_ql_config = &vdev->config;
-	*out_xdev = &vdev->base;
+	//*out_xdev = &vdev->base;
 
-	return 1;
+	return count;
 }

@@ -248,6 +248,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		drv_quest_link STATIC
 		quest_link/ql_interface.h
 		quest_link/ql_types.h
+		quest_link/ql_controller.c
+		quest_link/ql_controller.h
 		quest_link/ql_hmd.c
 		quest_link/ql_hmd.h
 		quest_link/ql_prober.c
@@ -264,6 +266,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_xrsp_hostinfo.h
 		quest_link/ql_xrsp_topic.c
 		quest_link/ql_xrsp_topic.h
+		quest_link/ql_xrsp_segmented_pkt.c
+		quest_link/ql_xrsp_segmented_pkt.h
 		quest_link/ql_xrsp_types.c
 		quest_link/ql_xrsp_types.h
 		${quest_link_proto_srcs}

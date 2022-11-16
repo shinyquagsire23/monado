@@ -124,6 +124,18 @@ struct ql_tracked_device
     //ql_device_type device_type;
 };
 
+struct ql_controller
+{
+    struct xrt_device base;
+
+    struct xrt_pose pose;
+    struct xrt_vec3 center;
+
+    double created_ns;
+
+    struct ql_system *sys;
+};
+
 struct ql_hmd
 {
     struct xrt_device base;
@@ -179,7 +191,7 @@ typedef struct ql_system
     struct ql_hmd *hmd;
 
     /* Controller devices */
-    //struct ql_controller *controllers[MAX_TRACKED_DEVICES];
+    struct ql_controller *controllers[MAX_TRACKED_DEVICES];
 
     /* Video feed handling */
     struct xrt_frame_context xfctx;

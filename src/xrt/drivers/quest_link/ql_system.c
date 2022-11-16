@@ -43,6 +43,7 @@
 #include "xrt/xrt_device.h"
 
 #include "ql_system.h"
+#include "ql_controller.h"
 #include "ql_hmd.h"
 #include "ql_utils.h"
 #include "ql_xrsp.h"
@@ -86,6 +87,23 @@ ql_system_create(struct xrt_prober *xp,
     }
 
     sys->hmd = hmd;
+
+    /* Create the HMD now. Controllers are created in the
+     * ql_system_get_controller() call later */
+    struct ql_controller *ctrl_left = ql_controller_create(sys, XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);
+    if (ctrl_left == NULL) {
+        QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
+        goto cleanup;
+    }
+
+    struct ql_controller *ctrl_right = ql_controller_create(sys, XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);
+    if (ctrl_left == NULL) {
+        QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
+        goto cleanup;
+    }
+
+    sys->controllers[0] = ctrl_left;
+    sys->controllers[1] = ctrl_right;
 
 	ret = ql_xrsp_host_create(&sys->xrsp_host, dev->vendor_id, dev->product_id, if_num);
 	if (ret != 0) {

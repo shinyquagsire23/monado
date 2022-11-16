@@ -42,8 +42,20 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     PayloadPose::Reader pose = message.getRoot<PayloadPose>();
 
     //std::cout << pose << "\n";
+    int idx = 0;
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
+        struct ql_controller* ctrl = host->sys->controllers[idx++];
         printf("%x\n", controller.getButtons());
+        OvrPoseF::Reader controllerPose = controller.getPose();
+
+        ctrl->pose.position.x = controllerPose.getPosX();
+        ctrl->pose.position.y = controllerPose.getPosY();
+        ctrl->pose.position.z = controllerPose.getPosZ();
+
+        ctrl->pose.orientation.x = controllerPose.getQuatX();
+        ctrl->pose.orientation.y = controllerPose.getQuatY();
+        ctrl->pose.orientation.z = controllerPose.getQuatZ();
+        ctrl->pose.orientation.w = controllerPose.getQuatW();
     }
 
     OvrPoseF::Reader headsetPose = pose.getHeadset();
