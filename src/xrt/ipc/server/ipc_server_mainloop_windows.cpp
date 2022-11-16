@@ -26,11 +26,24 @@
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_file.h"
+#include "util/u_windows.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
 
 #include <conio.h>
+#include <sddl.h>
+
+
+/*
+ *
+ * Helpers.
+ *
+ */
+
+#define ERROR_STR(BUF, ERR) (u_winerror(BUF, ARRAY_SIZE(BUF), ERR, true))
+
+DEBUG_GET_ONCE_BOOL_OPTION(relaxed, "IPC_RELAXED_CONNECTION_SECURITY", false)
 
 
 /*
@@ -42,6 +55,42 @@
 static bool
 create_pipe_instance(struct ipc_server_mainloop *ml, bool first)
 {
+	SECURITY_ATTRIBUTES sa{};
+	sa.nLength = sizeof(sa);
+	sa.lpSecurityDescriptor = nullptr;
+	sa.bInheritHandle = FALSE;
+
+	/*
+	 * Change the pipe's DACL to allow other users access.
+	 *
+	 * https://learn.microsoft.com/en-us/windows/win32/secbp/creating-a-dacl
+	 * https://learn.microsoft.com/en-us/windows/win32/secauthz/sid-strings
+	 */
+	const TCHAR *str =               //
+	    TEXT("D:")                   // Discretionary ACL
+	    TEXT("(D;OICI;GA;;;BG)")     // Guest: deny
+	    TEXT("(D;OICI;GA;;;AN)")     // Anonymous: deny
+	    TEXT("(A;OICI;GRGWGX;;;AC)") // UWP/AppContainer packages: read/write/execute
+	    TEXT("(A;OICI;GRGWGX;;;AU)") // Authenticated user: read/write/execute
+	    TEXT("(A;OICI;GA;;;BA)");    // Administrator: full control
+
+	BOOL bret = ConvertStringSecurityDescriptorToSecurityDescriptor( //
+	    str,                                                         // StringSecurityDescriptor
+	    SDDL_REVISION_1,                                             // StringSDRevision
+	    &sa.lpSecurityDescriptor,                                    // SecurityDescriptor
+	    NULL);                                                       // SecurityDescriptorSize
+	if (!bret) {
+		DWORD err = GetLastError();
+		char buffer[1024];
+		U_LOG_E("ConvertStringSecurityDescriptorToSecurityDescriptor: %u %s", err, ERROR_STR(buffer, err));
+	}
+
+	LPSECURITY_ATTRIBUTES lpsa = nullptr;
+	if (debug_get_bool_option_relaxed()) {
+		U_LOG_W("Using relax security permissions on pipe");
+		lpsa = &sa;
+	}
+
 	DWORD dwOpenMode = PIPE_ACCESS_DUPLEX;
 	DWORD dwPipeMode = PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS;
 
@@ -57,7 +106,14 @@ create_pipe_instance(struct ipc_server_mainloop *ml, bool first)
 	    IPC_BUF_SIZE,                   //
 	    IPC_BUF_SIZE,                   //
 	    0,                              //
-	    nullptr);                       //
+	    lpsa);                          //
+
+	if (sa.lpSecurityDescriptor != nullptr) {
+		// Need to free the security descriptor.
+		LocalFree(sa.lpSecurityDescriptor);
+		sa.lpSecurityDescriptor = nullptr;
+	}
+
 	if (ml->pipe_handle != INVALID_HANDLE_VALUE) {
 		return true;
 	}
