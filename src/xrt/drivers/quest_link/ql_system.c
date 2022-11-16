@@ -93,6 +93,8 @@ ql_system_create(struct xrt_prober *xp,
 		goto cleanup;
 	}
 
+	sys->xrsp_host.sys = sys;
+
 	/* Turn on the headset and display connection */
 
 	QUEST_LINK_DEBUG("Meta Quest Link driver ready");

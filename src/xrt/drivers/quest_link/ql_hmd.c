@@ -41,6 +41,7 @@
 #include "xrt/xrt_device.h"
 
 #include "ql_hmd.h"
+#include "ql_system.h"
 
 static void
 ql_update_inputs(struct xrt_device *xdev)
@@ -71,12 +72,13 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 	const struct xrt_vec3 up = {0, 1, 0};
 
 	// Wobble time.
-	hmd->pose.position.x = hmd->center.x + sin((time_s / t2) * M_PI) * d2 - d;
-	hmd->pose.position.y = hmd->center.y + sin((time_s / t) * M_PI) * d;
-	hmd->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
+	//hmd->pose.position.x = hmd->center.x + sin((time_s / t2) * M_PI) * d2 - d;
+	//hmd->pose.position.y = hmd->center.y + sin((time_s / t) * M_PI) * d;
+	
+	/*hmd->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
 	hmd->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
 	hmd->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
-	hmd->pose.orientation.w = 1;
+	hmd->pose.orientation.w = 1;*/
 	math_quat_normalize(&hmd->pose.orientation);
 
 	out_relation->pose = hmd->pose;
@@ -156,6 +158,15 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 
 	hmd->created_ns = os_monotonic_get_ns();
 	hmd->last_imu_timestamp_ns = 0;
+
+	hmd->pose.position.x = 0.0f;
+	hmd->pose.position.y = 0.0f;
+	hmd->pose.position.z = 0.0f;
+
+	hmd->pose.orientation.x = 0.0f;
+	hmd->pose.orientation.y = 0.0f;
+	hmd->pose.orientation.z = 0.0f;
+	hmd->pose.orientation.w = 1.0f;
 
 	// Setup info.
 	struct u_device_simple_info info;

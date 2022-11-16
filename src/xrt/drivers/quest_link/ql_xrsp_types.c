@@ -52,7 +52,7 @@ static const char* xrsp_result_lut[33] = {
     "pairing_invalid_cert"
 };
 
-static const char* xrsp_topics[33] = {
+static const char* xrsp_topics[34] = {
     "aui4a-adv",
     "hostinfo-adv",
     "Command",

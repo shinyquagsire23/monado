@@ -96,6 +96,13 @@ void ql_xrsp_topic_pkt_destroy(struct ql_xrsp_topic_pkt* pkt)
 
 void ql_xrsp_topic_pkt_dump(struct ql_xrsp_topic_pkt* pkt)
 {
+    uint8_t muted_topics[] = {TOPIC_AUI4A_ADV, TOPIC_HOSTINFO_ADV};
+
+    for (int i = 0; i < sizeof(muted_topics); i++)
+    {
+        if (pkt->topic == muted_topics[i]) return;
+    }
+
     //printf("version_maybe: %x\n", pkt->version_maybe);
     printf("has_alignment_padding: %x\n",  pkt->has_alignment_padding);
     printf("packet_version_is_internal: %x\n",  pkt->packet_version_is_internal);

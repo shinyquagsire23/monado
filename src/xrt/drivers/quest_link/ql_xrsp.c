@@ -21,6 +21,7 @@
 #include "ql_xrsp_topic.h"
 #include "ql_xrsp_types.h"
 #include "ql_utils.h"
+#include "ql_xrsp_pose.h"
 
 static void *
 ql_xrsp_run_thread(void *ptr);
@@ -537,8 +538,7 @@ static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
             xrsp_finish_pairing_2(host, &hostinfo);
 
             host->pairing_state = PAIRINGSTATE_PAIRED;
-        }
-            
+        } 
     }   
 }
 
@@ -546,11 +546,15 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
 {
     struct ql_xrsp_topic_pkt* pkt = &host->working_pkt;
 
-    //ql_xrsp_topic_pkt_dump(pkt);
+    ql_xrsp_topic_pkt_dump(pkt);
 
     if (pkt->topic == TOPIC_HOSTINFO_ADV)
     {
         xrsp_handle_hostinfo_adv(host);
+    }
+    else if (pkt->topic == TOPIC_POSE)
+    {
+        ql_xrsp_handle_pose(host, pkt);
     }
 }
 

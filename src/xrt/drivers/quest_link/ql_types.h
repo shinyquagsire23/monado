@@ -18,6 +18,7 @@ extern "C" {
 
 #include "os/os_threading.h"
 #include "util/u_logging.h"
+#include "util/u_distortion_mesh.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_frameserver.h"
@@ -71,6 +72,8 @@ typedef struct ql_xrsp_topic_pkt
 
 typedef struct ql_xrsp_host
 {
+    struct ql_system* sys;
+
     /* Packet processing thread */
     struct os_thread_helper oth;
 
@@ -119,6 +122,34 @@ struct ql_tracked_device
 {
     uint64_t device_id;
     //ql_device_type device_type;
+};
+
+struct ql_hmd
+{
+    struct xrt_device base;
+
+    struct xrt_pose pose;
+    struct xrt_vec3 center;
+
+    double created_ns;
+
+    struct ql_system *sys;
+    /* HMD config info (belongs to the system, which we have a ref to */
+    struct ql_hmd_config *config;
+
+    /* Pose tracker provided by the system */
+    struct ql_tracker *tracker;
+
+    /* Tracking to extend 32-bit HMD time to 64-bit nanoseconds */
+    uint32_t last_imu_timestamp32; /* 32-bit µS device timestamp */
+    timepoint_ns last_imu_timestamp_ns;
+
+    /* Auxiliary state */
+    float temperature;
+    bool display_on;
+
+    /* Temporary distortion values for mesh calc */
+    struct u_panotools_values distortion_vals[2];
 };
 
 typedef struct ql_system

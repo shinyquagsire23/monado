@@ -236,6 +236,14 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 endif()
 
 if(XRT_BUILD_DRIVER_QUEST_LINK)
+	capnp_generate_cpp(quest_link_proto_srcs quest_link_proto_headers 
+		quest_link/protos/Audio.capnp
+		quest_link/protos/CameraStream.capnp
+		quest_link/protos/Logging.capnp
+		quest_link/protos/Pose.capnp
+		quest_link/protos/RuntimeIPC.capnp
+		quest_link/protos/Slice.capnp
+		)
 	add_library(
 		drv_quest_link STATIC
 		quest_link/ql_interface.h
@@ -250,16 +258,19 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_system.h
 		quest_link/ql_xrsp.c
 		quest_link/ql_xrsp.h
+		quest_link/ql_xrsp_pose.cpp
+		quest_link/ql_xrsp_pose.h
 		quest_link/ql_xrsp_hostinfo.c
 		quest_link/ql_xrsp_hostinfo.h
 		quest_link/ql_xrsp_topic.c
 		quest_link/ql_xrsp_topic.h
 		quest_link/ql_xrsp_types.c
 		quest_link/ql_xrsp_types.h
+		${quest_link_proto_srcs}
 		)
-	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/quest_link/)
 	target_include_directories(drv_quest_link PUBLIC ${LIBUSB1_INCLUDE_DIRS})
-	target_link_libraries(drv_quest_link PRIVATE ${LIBUSB1_LIBRARIES})
+	target_link_libraries(drv_quest_link PRIVATE ${LIBUSB1_LIBRARIES} CapnProto::capnp)
 	target_link_libraries(
 		drv_quest_link
 		PRIVATE

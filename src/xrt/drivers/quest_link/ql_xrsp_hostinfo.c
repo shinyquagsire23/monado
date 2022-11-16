@@ -78,6 +78,7 @@ void ql_xrsp_hostinfo_pkt_destroy(struct ql_xrsp_hostinfo_pkt* pkt)
 
 void ql_xrsp_hostinfo_pkt_dump(struct ql_xrsp_hostinfo_pkt* pkt)
 {
+
     printf("type: %s (%x)\n", xrsp_builtin_type_str(pkt->message_type), pkt->message_type);
     printf("result: %x\n",  pkt->result);
     printf("stream size: %x\n",  pkt->stream_size);
