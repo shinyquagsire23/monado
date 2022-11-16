@@ -235,6 +235,43 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 	list(APPEND ENABLED_HEADSET_DRIVERS rift-s)
 endif()
 
+if(XRT_BUILD_DRIVER_QUEST_LINK)
+	add_library(
+		drv_quest_link STATIC
+		quest_link/ql_interface.h
+		quest_link/ql_types.h
+		quest_link/ql_hmd.c
+		quest_link/ql_hmd.h
+		quest_link/ql_prober.c
+		quest_link/ql_prober.h
+		quest_link/ql_utils.c
+		quest_link/ql_utils.h
+		quest_link/ql_system.c
+		quest_link/ql_system.h
+		quest_link/ql_xrsp.c
+		quest_link/ql_xrsp.h
+		quest_link/ql_xrsp_hostinfo.c
+		quest_link/ql_xrsp_hostinfo.h
+		quest_link/ql_xrsp_topic.c
+		quest_link/ql_xrsp_topic.h
+		quest_link/ql_xrsp_types.c
+		quest_link/ql_xrsp_types.h
+		)
+	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+	target_include_directories(drv_quest_link PUBLIC ${LIBUSB1_INCLUDE_DIRS})
+	target_link_libraries(drv_quest_link PRIVATE ${LIBUSB1_LIBRARIES})
+	target_link_libraries(
+		drv_quest_link
+		PRIVATE
+			xrt-interfaces
+			aux_util
+			aux_math
+			xrt-external-cjson
+			xrt-external-tinyceres
+		)
+	list(APPEND ENABLED_HEADSET_DRIVERS quest-link)
+endif()
+
 set(VIVE_CONFIG_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/vive")
 if(XRT_BUILD_DRIVER_VIVE)
 	add_library(

@@ -40,6 +40,10 @@
 #include "rift_s/rift_s_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+#include "quest_link/ql_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_HYDRA
 #include "hydra/hydra_interface.h"
 #endif
@@ -160,6 +164,13 @@ struct xrt_prober_entry target_entry_list[] = {
     {MICROSOFT_VID, ODYSSEY_CONTROLLER_PID, wmr_bt_controller_found, "Odyssey Bluetooth controller", "wmr"},
 
 #endif // XRT_BUILD_DRIVER_WMR
+
+#ifdef XRT_BUILD_DRIVER_QUEST_LINK
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_XRSP_PID, ql_found, "Quest Link (XRSP)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_MTP_XRSP_PID, ql_found, "Quest Link (MTP, XRSP)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_MTP_XRSP_ADB_PID, ql_found, "Quest Link (MTP, XRSP, ADB)", "quest_link"},
+    {META_PLATFORMS_TECH_LLC_VID, QUEST_XRSP_ADB_PID, ql_found, "Quest Link (XRSP, ADB)", "quest_link"},
+#endif
 
     {0x0000, 0x0000, NULL, NULL, NULL}, // Terminate
 };

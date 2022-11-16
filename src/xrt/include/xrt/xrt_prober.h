@@ -286,6 +286,25 @@ struct xrt_prober
 	                             size_t max_length);
 
 	/*!
+	 * Returns an interface number which matches the parameters
+	 * @p which_string in @p out_buffer.
+	 *
+	 * @param[in] xp             Prober.
+	 * @param[in] xpdev          Device to get string property from.
+	 * @param[in] if_class       Interface class id to match.
+	 * @param[in] if_subclass    Interface subclass id to match.
+	 * @param[in] if_protocol    Interface protocol id to match.
+	 *
+	 * @return The interface number, or negative on error.
+	 *
+	 */
+	int (*find_interface)(struct xrt_prober *xp,
+	                      struct xrt_prober_device *xpdev,
+	                      unsigned char if_class,
+	                      unsigned char if_subclass,
+	                      unsigned char if_protocol);
+
+	/*!
 	 * Determine whether a prober device can be opened.
 	 *
 	 * @param xp Pointer to self
@@ -414,6 +433,23 @@ xrt_prober_get_string_descriptor(struct xrt_prober *xp,
                                  size_t max_length)
 {
 	return xp->get_string_descriptor(xp, xpdev, which_string, out_buffer, max_length);
+}
+
+/*!
+ * @copydoc xrt_prober::find_interface
+ *
+ * Helper function for @ref xrt_prober::find_interface.
+ *
+ * @public @memberof xrt_prober
+ */
+static inline int
+xrt_prober_find_interface(struct xrt_prober *xp,
+                          struct xrt_prober_device *xpdev,
+                          unsigned char if_class,
+	                      unsigned char if_subclass,
+	                      unsigned char if_protocol)
+{
+	return xp->find_interface(xp, xpdev, if_class, if_subclass, if_protocol);
 }
 
 /*!
