@@ -166,6 +166,36 @@ p_libusb_get_string_descriptor(struct prober *p,
 	return string_length;
 }
 
+int
+p_libusb_find_interface(struct prober *p,
+                        struct prober_device *pdev,
+                        unsigned char if_class,
+                        unsigned char if_subclass,
+                        unsigned char if_protocol)
+{
+
+	libusb_device *usb_dev = pdev->usb.dev;
+	struct libusb_config_descriptor *config = NULL;
+	int result = libusb_get_active_config_descriptor(usb_dev, &config);
+	if (result < 0 || !config) {
+		P_ERROR(p, "libusb_get_active_config_descriptor failed!");
+		return result;
+	}
+	int iface_num = -1;
+	for (uint8_t i = 0; i < config->bNumInterfaces; i++) {
+		if (iface_num >= 0) break;
+		const struct libusb_interface* pIfAlts = &config->interface[i];
+		for (uint8_t j = 0; j < pIfAlts->num_altsetting; j++) {
+			const struct libusb_interface_descriptor* pIf = &pIfAlts->altsetting[j];
+			if (pIf->bInterfaceClass == if_class && pIf->bInterfaceSubClass == if_subclass && pIf->bInterfaceProtocol == if_protocol) {
+				iface_num = pIf->bInterfaceNumber;
+				break;
+			}
+		}
+	}
+	return iface_num;
+}
+
 bool
 p_libusb_can_open(struct prober *p, struct prober_device *pdev)
 {

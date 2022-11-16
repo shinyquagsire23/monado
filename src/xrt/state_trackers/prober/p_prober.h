@@ -272,6 +272,16 @@ p_libusb_get_string_descriptor(struct prober *p,
 /*!
  * @private @memberof prober
  */
+int
+p_libusb_find_interface(struct prober *p,
+                        struct prober_device *pdev,
+                        unsigned char if_class,
+                        unsigned char if_subclass,
+                        unsigned char if_protocol);
+
+/*!
+ * @private @memberof prober
+ */
 bool
 p_libusb_can_open(struct prober *p, struct prober_device *pdev);
 

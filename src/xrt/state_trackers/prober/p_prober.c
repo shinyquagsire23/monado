@@ -121,6 +121,13 @@ p_get_string_descriptor(struct xrt_prober *xp,
                         unsigned char *buffer,
                         size_t length);
 
+static int
+p_find_interface(struct xrt_prober *xp,
+                 struct xrt_prober_device *xpdev,
+                 unsigned char class,
+                 unsigned char subclass,
+                 unsigned char protocol);
+
 static bool
 p_can_open(struct xrt_prober *xp, struct xrt_prober_device *xpdev);
 
@@ -440,6 +447,7 @@ initialize(struct prober *p, struct xrt_prober_entry_lists *lists)
 	p->base.list_video_devices = p_list_video_devices;
 	p->base.get_entries = p_get_entries;
 	p->base.get_string_descriptor = p_get_string_descriptor;
+	p->base.find_interface = p_find_interface;
 	p->base.can_open = p_can_open;
 	p->base.destroy = p_destroy;
 	p->lists = lists;
@@ -1327,6 +1335,37 @@ p_get_string_descriptor(struct xrt_prober *xp,
 
 	//! @todo add more backends
 	//! @todo make this unicode (utf-16)? utf-8 would be better...
+	return ret;
+}
+
+static int
+p_find_interface(struct xrt_prober *xp,
+                 struct xrt_prober_device *xpdev,
+                 unsigned char if_class,
+                 unsigned char if_subclass,
+                 unsigned char if_protocol)
+{
+	XRT_TRACE_MARKER();
+
+	XRT_MAYBE_UNUSED struct prober *p = (struct prober *)xp;
+	struct prober_device *pdev = (struct prober_device *)xpdev;
+	int ret = -1;
+
+#ifdef XRT_HAVE_LIBUSB
+	if (pdev->base.bus == XRT_BUS_TYPE_USB && pdev->usb.dev != NULL) {
+		ret = p_libusb_find_interface(p, pdev, if_class, if_subclass, if_protocol);
+		if (ret >= 0) {
+			return ret;
+		}
+	}
+#else
+	if (pdev->base.bus == XRT_BUS_TYPE_USB) {
+		P_WARN(p, "Cannot find usb interface (libusb-dev not installed)!");
+		return ret;
+	}
+#endif
+
+	//! @todo add more backends?
 	return ret;
 }
 
