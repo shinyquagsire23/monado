@@ -666,6 +666,15 @@ static const char *optional_device_extensions[] = {
 #ifdef VK_EXT_display_control
     VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME,
 #endif
+#ifdef VK_EXT_external_memory_dma_buf
+    VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
+#endif
+#ifdef VK_EXT_image_drm_format_modifier
+    VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
+    VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
+    VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
+    VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+#endif
 };
 
 static VkResult
@@ -995,8 +1004,20 @@ compositor_try_window(struct comp_compositor *c, struct comp_target *ct)
 }
 
 static bool
-compositor_init_window_pre_vulkan(struct comp_compositor *c)
+compositor_init_window_pre_vulkan(struct comp_compositor *c, struct xrt_device *xdev)
 {
+	if (xdev->create_compositor_target) {
+		struct comp_target *target;
+		xdev->create_compositor_target(xdev, c, &target);
+
+		if (compositor_try_window(c, target)) {
+			c->settings.window_type = WINDOW_NONE;
+			return true;
+		}
+
+		return false;
+	}
+
 	// Nothing to do for nvidia and vk_display.
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA || c->settings.window_type == WINDOW_VK_DISPLAY) {
 		return true;
@@ -1229,7 +1250,7 @@ xrt_gfx_provider_create_system(struct xrt_device *xdev, struct xrt_system_compos
 	// clang-format off
 	if (!compositor_check_and_prepare_xdev(c, xdev) ||
 	    !compositor_check_vulkan_caps(c) ||
-	    !compositor_init_window_pre_vulkan(c) ||
+	    !compositor_init_window_pre_vulkan(c, xdev) ||
 	    !compositor_init_vulkan(c) ||
 	    !compositor_init_render_resources(c) ||
 	    !compositor_init_window_post_vulkan(c) ||

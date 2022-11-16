@@ -60,6 +60,71 @@ if(XRT_BUILD_DRIVER_TWRAP)
 	target_link_libraries(drv_twrap PRIVATE xrt-interfaces aux_util)
 endif()
 
+if(XRT_BUILD_DRIVER_WIVRN)
+	spirv_shaders(
+		WIVRN_SHADER_HEADERS
+		SPIRV_VERSION
+		1.0 # Currently targeting Vulkan 1.0
+		SOURCES
+		wivrn/shaders/yuv_converter.vert
+		wivrn/shaders/yuv_converter.y.frag
+		wivrn/shaders/yuv_converter.uv.frag
+		)
+
+	FetchContent_Declare(
+		boostpfr
+		GIT_REPOSITORY https://github.com/boostorg/pfr.git
+		GIT_TAG 2.0.3
+		)
+	FetchContent_MakeAvailable(boostpfr)
+
+	add_library(
+		drv_wivrn STATIC
+		wivrn/encoder_settings.cpp
+		wivrn/wivrn_hmd.cpp
+		wivrn/wivrn_comp_target.cpp
+		wivrn/wivrn_controller.cpp
+		wivrn/pose_list.cpp
+		wivrn/video_encoder.cpp
+		wivrn/view_list.cpp
+		wivrn/wivrn_session.cpp
+		wivrn/wivrn_connection.cpp
+		wivrn/wivrn_sockets.cpp
+		wivrn/xrt_cast.cpp
+		wivrn/external/rs.c
+		${WIVRN_SHADER_HEADERS}
+		wivrn/yuv_converter.cpp
+		)
+	target_include_directories(
+		drv_wivrn SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wivrn #shaders
+					 ../compositor/ ${EIGEN3_INCLUDE_DIR}
+		)
+	target_include_directories(drv_wivrn INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/wivrn)
+	target_link_libraries(
+		drv_wivrn
+		PRIVATE xrt-interfaces aux_util aux_os aux_vk
+		PUBLIC Boost::pfr xrt-external-openxr
+		)
+
+	if(XRT_HAVE_CUDA)
+		target_sources(drv_wivrn PRIVATE wivrn/video_encoder_nvenc.cpp)
+		target_link_libraries(drv_wivrn PRIVATE CUDA::cuda_driver nvidia-encode)
+	endif()
+	if(XRT_HAVE_FFMPEG)
+		target_sources(
+			drv_wivrn
+			PRIVATE wivrn/ffmpeg/VideoEncoderFFMPEG.cpp wivrn/ffmpeg/VideoEncoderVA.cpp
+				wivrn/ffmpeg/ffmpeg_helper.cpp
+			)
+		target_link_libraries(drv_wivrn PRIVATE PkgConfig::FFMPEG)
+	endif()
+	if(XRT_HAVE_X264)
+		target_sources(drv_wivrn PRIVATE wivrn/video_encoder_x264.cpp)
+		target_link_libraries(drv_wivrn PRIVATE PkgConfig::X264)
+	endif()
+	list(APPEND ENABLED_HEADSET_DRIVERS wivrn)
+endif()
+
 if(XRT_BUILD_DRIVER_QWERTY)
 	add_library(
 		drv_qwerty STATIC

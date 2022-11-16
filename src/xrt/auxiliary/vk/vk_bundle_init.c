@@ -615,7 +615,9 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_calibrated_timestamps = false;
 	vk->has_EXT_display_control = false;
+	vk->has_EXT_external_memory_dma_buf = false;
 	vk->has_EXT_global_priority = false;
+	vk->has_EXT_image_drm_format_modifier = false;
 	vk->has_EXT_robustness2 = false;
 	vk->has_GOOGLE_display_timing = false;
 
@@ -702,12 +704,26 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 		}
 #endif // defined(VK_EXT_display_control)
 
+#if defined(VK_EXT_external_memory_dma_buf)
+		if (strcmp(ext, VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME) == 0) {
+			vk->has_EXT_external_memory_dma_buf = true;
+			continue;
+		}
+#endif // defined(VK_EXT_external_memory_dma_buf)
+
 #if defined(VK_EXT_global_priority)
 		if (strcmp(ext, VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
 			vk->has_EXT_global_priority = true;
 			continue;
 		}
 #endif // defined(VK_EXT_global_priority)
+
+#if defined(VK_EXT_image_drm_format_modifier)
+		if (strcmp(ext, VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME) == 0) {
+			vk->has_EXT_image_drm_format_modifier = true;
+			continue;
+		}
+#endif // defined(VK_EXT_image_drm_format_modifier)
 
 #if defined(VK_EXT_robustness2)
 		if (strcmp(ext, VK_EXT_ROBUSTNESS_2_EXTENSION_NAME) == 0) {

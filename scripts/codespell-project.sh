@@ -19,7 +19,7 @@
 set -e
 
 # Comma-delimited list of words for codespell to not try to correct.
-IGNORE_WORDS_LIST="ang,sinc,sie,inout,stoll,wil,daa,localy,od"
+IGNORE_WORDS_LIST="ang,sinc,sie,inout,stoll,wil,daa,localy,od,ptd"
 
 SCRIPTDIR=$(cd $(dirname $0) && pwd)
 

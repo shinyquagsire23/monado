@@ -77,6 +77,7 @@ vk_get_instance_functions(struct vk_bundle *vk)
 	vk->vkGetPhysicalDeviceSurfacePresentModesKHR         = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfacePresentModesKHR);
 	vk->vkGetPhysicalDeviceSurfaceSupportKHR              = GET_INS_PROC(vk, vkGetPhysicalDeviceSurfaceSupportKHR);
 	vk->vkGetPhysicalDeviceFormatProperties               = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties);
+	vk->vkGetPhysicalDeviceFormatProperties2              = GET_INS_PROC(vk, vkGetPhysicalDeviceFormatProperties2KHR);
 	vk->vkGetPhysicalDeviceImageFormatProperties2         = GET_INS_PROC(vk, vkGetPhysicalDeviceImageFormatProperties2);
 	vk->vkGetPhysicalDeviceExternalBufferPropertiesKHR    = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalBufferPropertiesKHR);
 	vk->vkGetPhysicalDeviceExternalFencePropertiesKHR     = GET_INS_PROC(vk, vkGetPhysicalDeviceExternalFencePropertiesKHR);
@@ -300,7 +301,12 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkGetSwapchainCounterEXT                    = GET_DEV_PROC(vk, vkGetSwapchainCounterEXT);
 	vk->vkRegisterDeviceEventEXT                    = GET_DEV_PROC(vk, vkRegisterDeviceEventEXT);
 	vk->vkRegisterDisplayEventEXT                   = GET_DEV_PROC(vk, vkRegisterDisplayEventEXT);
+
 #endif // defined(VK_EXT_display_control)
+
+#if defined(VK_EXT_image_drm_format_modifier)
+	vk->vkGetImageDrmFormatModifierPropertiesEXT    = GET_DEV_PROC(vk, vkGetImageDrmFormatModifierPropertiesEXT);
+#endif // defined(VK_EXT_image_drm_format_modifier)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 	// clang-format on

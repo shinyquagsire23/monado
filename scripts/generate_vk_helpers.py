@@ -167,6 +167,8 @@ def get_device_cmds():
         Cmd("vkGetSwapchainCounterEXT", requires=("VK_EXT_display_control",)),
         Cmd("vkRegisterDeviceEventEXT", requires=("VK_EXT_display_control",)),
         Cmd("vkRegisterDisplayEventEXT", requires=("VK_EXT_display_control",)),
+        None,
+        Cmd("vkGetImageDrmFormatModifierPropertiesEXT", requires=("VK_EXT_image_drm_format_modifier",)),
     ]
 
 
@@ -191,6 +193,7 @@ def get_instance_cmds():
         Cmd("vkGetPhysicalDeviceSurfacePresentModesKHR"),
         Cmd("vkGetPhysicalDeviceSurfaceSupportKHR"),
         Cmd("vkGetPhysicalDeviceFormatProperties"),
+        Cmd("vkGetPhysicalDeviceFormatProperties2KHR", member_name="vkGetPhysicalDeviceFormatProperties2"),
         Cmd("vkGetPhysicalDeviceImageFormatProperties2"),
         Cmd("vkGetPhysicalDeviceExternalBufferPropertiesKHR"),
         Cmd("vkGetPhysicalDeviceExternalFencePropertiesKHR"),
@@ -243,7 +246,7 @@ def get_instance_cmds():
         None,
         Cmd("vkCreateWin32SurfaceKHR", requires=("VK_USE_PLATFORM_WIN32_KHR",)),
         None,
-        Cmd("vkGetPhysicalDeviceSurfaceCapabilities2EXT", requires=("VK_EXT_display_surface_counter",))
+        Cmd("vkGetPhysicalDeviceSurfaceCapabilities2EXT", requires=("VK_EXT_display_surface_counter",)),
     ]
 
 
@@ -264,7 +267,9 @@ DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_timeline_semaphore",
     "VK_EXT_calibrated_timestamps",
     "VK_EXT_display_control",
+    "VK_EXT_external_memory_dma_buf",
     "VK_EXT_global_priority",
+    "VK_EXT_image_drm_format_modifier",
     "VK_EXT_robustness2",
     "VK_GOOGLE_display_timing",
 ]

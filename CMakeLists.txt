@@ -34,6 +34,8 @@ if(NOT WIN32)
 		)
 endif()
 
+option(XRT_ENABLE_GPL "Allow use of GPL code, monado compositor will be under GPL" OFF)
+
 # We use C++17 and C11
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -46,6 +48,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ###
 # Dependencies
 ###
+if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
+	include(FetchContent)
+	include(ExternalProject)
+endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sanitizers")
 include(OptionWithDeps)
@@ -105,6 +111,7 @@ find_package(cJSON MODULE)
 find_package(CapnProto CONFIG)
 find_package(LeapV2 MODULE)
 find_package(ONNXRuntime MODULE)
+find_package(CUDAToolkit)
 if(NOT WIN32)
 	find_package(EGL MODULE)
 	find_package(Percetto MODULE)
@@ -147,6 +154,8 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 
 	# @TODO Turn into a find_package FFMPEG file.
 	pkg_check_modules(FFMPEG libavcodec)
+
+	pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
 endif()
 
 find_package(OpenGL)
@@ -167,6 +176,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
+		pkg_check_modules(
+			FFMPEG
+			IMPORTED_TARGET
+			libavcodec
+			libavutil
+			libavfilter
+			)
+		if(XRT_ENABLE_GPL)
+			pkg_check_modules(X264 IMPORTED_TARGET x264)
+		endif()
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	pkg_search_module(DBUS dbus-1)
@@ -244,6 +263,7 @@ option_with_deps(XRT_HAVE_XLIB "Enable xlib support" DEPENDS X11_FOUND)
 option_with_deps(XRT_HAVE_XRANDR "Enable xlib-xrandr support" DEPENDS XRANDR_FOUND)
 
 # System deps to use (sorted)
+option_with_deps(XRT_HAVE_AVAHI "Enable avahi support" DEPENDS AVAHI_FOUND)
 option_with_deps(XRT_HAVE_DBUS "Enable dbus support (for BLE support)" DEPENDS DBUS_FOUND)
 option_with_deps(XRT_HAVE_LIBBSD "Enable libbsd support" DEPENDS LIBBSD_FOUND)
 option_with_deps(XRT_HAVE_LIBUDEV "Enable libudev (used for device probing on Linux)" DEPENDS UDEV_FOUND)
@@ -289,6 +309,7 @@ option_with_deps(XRT_INSTALL_ABSOLUTE_SYSTEMD_UNIT_FILES "Use an absolute path t
 # Driver deps to use (sorted, though there are some internal dependencies)
 option_with_deps(XRT_HAVE_BLUETOOTH "Enable Bluetooth (legacy, non-ble)" DEPENDS BLUETOOTH_FOUND)
 option_with_deps(XRT_HAVE_CAPNPROTO "Enable Cap'n Proto (used for Quest Link)" DEPENDS CAPNP_EXECUTABLE)
+option_with_deps(XRT_HAVE_CUDA "Enable CUDA (used for video encoding)" DEPENDS CUDAToolkit_FOUND)
 option_with_deps(XRT_HAVE_FFMPEG "Enable ffmpeg testing video driver" DEPENDS FFMPEG_FOUND)
 option_with_deps(XRT_HAVE_GST "Enable gstreamer" DEPENDS GST_FOUND)
 option_with_deps(XRT_HAVE_HIDAPI "Enable libhidapi (used for PSVR)" DEPENDS HIDAPI_FOUND)
@@ -298,6 +319,7 @@ option_with_deps(XRT_HAVE_LIBUV "Enable libuv async io" DEPENDS LIBUV_FOUND)
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" DEPENDS ONNXRUNTIME_FOUND)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
+option_with_deps(XRT_HAVE_X264 "Enable software video encoding (wivrn driver)" DEPENDS X264_FOUND)
 
 # Drivers to build (sorted)
 option_with_deps(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" DEPENDS ANDROID)
@@ -325,6 +347,12 @@ option_with_deps(XRT_BUILD_DRIVER_ULV2 "Enable Ultraleap v2 driver" DEPENDS Leap
 option_with_deps(XRT_BUILD_DRIVER_VF "Build video frame driver (for video file support, uses gstreamer)" DEPENDS XRT_HAVE_GST)
 option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Valve Index, and their controllers" DEPENDS ZLIB_FOUND XRT_HAVE_LINUX)
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32" "NOT XRT_HAVE_DARWIN")
+if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
+	option_with_deps(XRT_BUILD_DRIVER_WIVRN "Enable WiVRn streaming driver"
+		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" XRT_HAVE_AVAHI XRT_HAVE_SYSTEMD)
+else()
+	set(XRT_BUILD_DRIVER_WIVRN OFF)
+endif()
 option_with_deps(XRT_BUILD_DRIVER_SIMULAVR "Enable simula driver" DEPENDS XRT_HAVE_REALSENSE)
 option(XRT_BUILD_DRIVER_SIMULATED "Enable simulated driver" ON)
 
@@ -382,6 +410,7 @@ list(
 	"DEPTHAI"
 	"VIVE"
 	"QWERTY"
+	"WIVRN"
 	"WMR"
 	"EUROC"
 	"SIMULAVR"
@@ -482,8 +511,10 @@ endif()
 message(STATUS "#####----- Config -----#####")
 message(STATUS "#    GIT_DESC:        ${GIT_DESC}")
 message(STATUS "#")
+message(STATUS "#    AVAHI:           ${XRT_HAVE_AVAHI}")
 message(STATUS "#    BASALT:          ${XRT_HAVE_BASALT_SLAM}")
 message(STATUS "#    BLUETOOTH:       ${XRT_HAVE_BLUETOOTH}")
+message(STATUS "#    CUDA:            ${XRT_HAVE_CUDA}")
 message(STATUS "#    D3D11:           ${XRT_HAVE_D3D11}")
 message(STATUS "#    DBUS:            ${XRT_HAVE_DBUS}")
 message(STATUS "#    EGL:             ${XRT_HAVE_EGL}")
@@ -510,10 +541,12 @@ message(STATUS "#    SYSTEMD:         ${XRT_HAVE_SYSTEMD}")
 message(STATUS "#    VULKAN:          ${XRT_HAVE_VULKAN}")
 message(STATUS "#    WAYLAND:         ${XRT_HAVE_WAYLAND}")
 message(STATUS "#    WAYLAND_DIRECT:  ${XRT_HAVE_WAYLAND_DIRECT}")
+message(STATUS "#    X264:            ${XRT_HAVE_X264}")
 message(STATUS "#    XCB:             ${XRT_HAVE_XCB}")
 message(STATUS "#    XLIB:            ${XRT_HAVE_XLIB}")
 message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
 message(STATUS "#")
+message(STATUS "#    ENABLE_GPL:                           ${XRT_ENABLE_GPL}")
 message(STATUS "#    FEATURE_CLIENT_DEBUG_GUI:             ${XRT_FEATURE_CLIENT_DEBUG_GUI}")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
 message(STATUS "#    FEATURE_COMPOSITOR_MAIN:              ${XRT_FEATURE_COMPOSITOR_MAIN}")
@@ -556,6 +589,7 @@ message(STATUS "#    DRIVER_SURVIVE:      ${XRT_BUILD_DRIVER_SURVIVE}")
 message(STATUS "#    DRIVER_ULV2:         ${XRT_BUILD_DRIVER_ULV2}")
 message(STATUS "#    DRIVER_VF:           ${XRT_BUILD_DRIVER_VF}")
 message(STATUS "#    DRIVER_VIVE:         ${XRT_BUILD_DRIVER_VIVE}")
+message(STATUS "#    DRIVER_WIVRN:        ${XRT_BUILD_DRIVER_WIVRN}")
 message(STATUS "#    DRIVER_WMR:          ${XRT_BUILD_DRIVER_WMR}")
 message(STATUS "#####----- Config -----#####")
 

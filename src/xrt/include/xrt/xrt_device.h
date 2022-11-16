@@ -20,6 +20,8 @@ extern "C" {
 #endif
 
 struct xrt_tracking;
+struct comp_compositor;
+struct comp_target;
 
 
 /*!
@@ -393,6 +395,17 @@ struct xrt_device
 	 */
 	bool (*compute_distortion)(
 	    struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *out_result);
+
+	/**
+	 * Create a compositor target
+	 *
+	 * @param xdev            the device
+	 * @param comp            the compositor
+	 * @param[out] out_target the target
+	 */
+	void (*create_compositor_target)(struct xrt_device *xdev,
+	                                 struct comp_compositor *comp,
+	                                 struct comp_target **out_target);
 
 	/*!
 	 * Destroy device.
