@@ -13,6 +13,9 @@
 
 #include "xrt/xrt_config_os.h"
 
+#include "util/u_windows.h"
+#include "util/u_logging.h"
+
 #include "shared/ipc_utils.h"
 #include "shared/ipc_protocol.h"
 
@@ -21,9 +24,8 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "util/u_logging.h"
-
 #include <vector>
+
 
 /*
  *
@@ -41,10 +43,7 @@ const char *
 ipc_winerror(DWORD err)
 {
 	static char s_buf[4096]; // N.B. Not thread-safe. If needed, use a thread var
-	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, err, LANG_SYSTEM_DEFAULT, s_buf, sizeof(s_buf), NULL)) {
-		s_buf[0] = 0;
-	}
-	return s_buf;
+	return u_winerror(s_buf, sizeof(s_buf), err, false);
 }
 
 void
