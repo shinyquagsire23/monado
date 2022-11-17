@@ -110,6 +110,11 @@ target_link_libraries(
 		aux_math
 	)
 
+# Only uses normal Windows libraries, doesn't add anything extra.
+if(WIN32)
+	target_sources(aux_util PRIVATE u_windows.c u_windows.h)
+endif()
+
 # Is basically used everywhere, unavoidable.
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
