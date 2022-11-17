@@ -351,7 +351,8 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
                             struct xrt_vec3 *out_ang_vel);
 
 /*!
- * Converts a rotation vector in axis-angle form to its corresponding unit quaternion.
+ * Takes a rotation vector equal to half of a Rodrigues rotation vector and returns its corresponding unit quaternion.
+ * Useful for head tracking and pose-prediction.
  *
  * @relates xrt_quat
  * @see xrt_vec3
@@ -362,7 +363,8 @@ math_quat_exp(const struct xrt_vec3 *axis_angle, struct xrt_quat *out_quat);
 
 
 /*!
- * Converts a unit quaternion into its corresponding axis-angle vector representation.
+ * Takes a unit quaternion and returns a rotation vector equal to half of its corresponding Rodrigues rotation vector.
+ * Useful for head tracking and pose-prediction.
  *
  * @relates xrt_quat
  * @see xrt_vec3
