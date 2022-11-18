@@ -111,6 +111,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 extern xrt_result_t
 wivrn_xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst); 
 
+DEBUG_GET_ONCE_BOOL_OPTION(wivrn_target_hack, "WIVRN_TARGET_HACK", false)
 
 xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
@@ -118,7 +119,9 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 	struct xrt_prober *xp = NULL;
 
 	u_trace_marker_init();
-	return wivrn_xrt_instance_create(ii, out_xinst);
+
+	if (debug_get_bool_option_wivrn_target_hack())
+		return wivrn_xrt_instance_create(ii, out_xinst);
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {
