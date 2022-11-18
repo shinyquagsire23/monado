@@ -34,6 +34,9 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
 int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num)
 {
     int ret;
+    const struct libusb_interface_descriptor* pIf = NULL;
+    struct libusb_config_descriptor *config = NULL;
+    libusb_device *usb_dev = NULL;
 
     *host = (struct ql_xrsp_host){0};
     host->if_num = if_num;
@@ -79,15 +82,14 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
         goto cleanup;
     }
 
-    libusb_device *usb_dev = libusb_get_device(host->dev);
-    struct libusb_config_descriptor *config = NULL;
+    usb_dev = libusb_get_device(host->dev);
     ret = libusb_get_active_config_descriptor(usb_dev, &config);
     if (ret < 0 || !config) {
         QUEST_LINK_ERROR("Failed libusb_get_active_config_descriptor");
         goto cleanup;
     }
 
-    const struct libusb_interface_descriptor* pIf = NULL;
+    
     for (uint8_t i = 0; i < config->bNumInterfaces; i++) {
         if (pIf) break;
         const struct libusb_interface* pIfAlts = &config->interface[i];
@@ -154,7 +156,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
 
 static void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size)
 {
-    uint32_t preamble[2] = {idx, data_size >> 3};
+    uint32_t preamble[2] = {idx, static_cast<uint32_t>(data_size) >> 3};
     xrsp_send_to_topic(host, topic, (uint8_t*)preamble, sizeof(uint32_t) * 2);
     xrsp_send_to_topic(host, topic, data, data_size);
 }    
@@ -200,7 +202,7 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
 
     //printf("align up %x, %x\n", align_up_bytes, data_size);
 
-    uint8_t* msg = malloc(data_size + align_up_bytes + sizeof(xrsp_topic_header) + 0x400);
+    uint8_t* msg = (uint8_t*)malloc(data_size + align_up_bytes + sizeof(xrsp_topic_header) + 0x400);
     uint8_t* msg_payload = msg + sizeof(xrsp_topic_header);
     int32_t msg_size = data_size + align_up_bytes + sizeof(xrsp_topic_header);
 

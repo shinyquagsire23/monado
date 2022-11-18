@@ -34,7 +34,7 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
     pkt->sequence_num = header->sequence_num;
 
     pkt->payload_size = (pkt->num_words - 1) * sizeof(uint32_t);
-    pkt->payload = malloc(pkt->payload_size);
+    pkt->payload = (uint8_t*)malloc(pkt->payload_size);
     pkt->remainder_offs = sizeof(xrsp_topic_header) + pkt->payload_size;
 
     int32_t initial_size_no_header = initial_size - sizeof(xrsp_topic_header);

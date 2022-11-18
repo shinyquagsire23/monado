@@ -326,27 +326,27 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		drv_quest_link STATIC
 		quest_link/ql_interface.h
 		quest_link/ql_types.h
-		quest_link/ql_controller.c
+		quest_link/ql_controller.cpp
 		quest_link/ql_controller.h
-		quest_link/ql_hmd.c
+		quest_link/ql_hmd.cpp
 		quest_link/ql_hmd.h
-		quest_link/ql_prober.c
+		quest_link/ql_prober.cpp
 		quest_link/ql_prober.h
-		quest_link/ql_utils.c
+		quest_link/ql_utils.cpp
 		quest_link/ql_utils.h
-		quest_link/ql_system.c
+		quest_link/ql_system.cpp
 		quest_link/ql_system.h
-		quest_link/ql_xrsp.c
+		quest_link/ql_xrsp.cpp
 		quest_link/ql_xrsp.h
 		quest_link/ql_xrsp_pose.cpp
 		quest_link/ql_xrsp_pose.h
-		quest_link/ql_xrsp_hostinfo.c
+		quest_link/ql_xrsp_hostinfo.cpp
 		quest_link/ql_xrsp_hostinfo.h
-		quest_link/ql_xrsp_topic.c
+		quest_link/ql_xrsp_topic.cpp
 		quest_link/ql_xrsp_topic.h
-		quest_link/ql_xrsp_segmented_pkt.c
+		quest_link/ql_xrsp_segmented_pkt.cpp
 		quest_link/ql_xrsp_segmented_pkt.h
-		quest_link/ql_xrsp_types.c
+		quest_link/ql_xrsp_types.cpp
 		quest_link/ql_xrsp_types.h
 		${quest_link_proto_srcs}
 		)

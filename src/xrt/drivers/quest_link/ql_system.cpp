@@ -62,6 +62,8 @@ ql_system_create(struct xrt_prober *xp,
                      	 int if_num)
 {
 	int ret;
+	 struct ql_hmd *hmd;
+	struct ql_controller *ctrl_left, *ctrl_right;
 
 	DRV_TRACE_MARKER();
 
@@ -80,7 +82,7 @@ ql_system_create(struct xrt_prober *xp,
 
 	/* Create the HMD now. Controllers are created in the
      * ql_system_get_controller() call later */
-    struct ql_hmd *hmd = ql_hmd_create(sys, hmd_serial_no, &sys->hmd_config);
+    hmd = ql_hmd_create(sys, hmd_serial_no, &sys->hmd_config);
     if (hmd == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link device.");
         goto cleanup;
@@ -90,13 +92,13 @@ ql_system_create(struct xrt_prober *xp,
 
     /* Create the HMD now. Controllers are created in the
      * ql_system_get_controller() call later */
-    struct ql_controller *ctrl_left = ql_controller_create(sys, XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);
+    ctrl_left = ql_controller_create(sys, XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);
     if (ctrl_left == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
         goto cleanup;
     }
 
-    struct ql_controller *ctrl_right = ql_controller_create(sys, XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);
+    ctrl_right = ql_controller_create(sys, XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);
     if (ctrl_left == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
         goto cleanup;

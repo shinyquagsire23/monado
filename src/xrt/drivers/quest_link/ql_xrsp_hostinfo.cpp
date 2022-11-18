@@ -102,10 +102,10 @@ uint8_t* ql_xrsp_craft_basic(uint8_t message_type, uint16_t result, uint32_t unk
 
 uint8_t* ql_xrsp_craft_capnp(uint8_t message_type, uint16_t result, uint32_t unk_4, const uint8_t* payload, size_t payload_size, int32_t* out_len)
 {
-    xrsp_capnp_payload payload_header = {0, payload_size >> 3};
+    xrsp_capnp_payload payload_header = {0, (uint32_t)payload_size >> 3};
 
     int32_t tmp_size = payload_size + sizeof(payload_header);
-    uint8_t* tmp = malloc(tmp_size);
+    uint8_t* tmp = (uint8_t*)malloc(tmp_size);
     memcpy(tmp, &payload_header, sizeof(payload_header));
     if (payload) {
         memcpy(tmp + sizeof(payload_header), payload, payload_size);
@@ -121,7 +121,7 @@ uint8_t* ql_xrsp_craft_capnp(uint8_t message_type, uint16_t result, uint32_t unk
 uint8_t* ql_xrsp_craft(uint8_t message_type, uint16_t result, uint32_t stream_size, uint32_t unk_4, const uint8_t* payload, size_t payload_size, int32_t* out_len)
 {
     int32_t total_size = sizeof(xrsp_hostinfo_header) + payload_size;
-    uint8_t* out = malloc(total_size);
+    uint8_t* out = (uint8_t*)malloc(total_size);
     memset(out, 0, total_size);
 
     xrsp_hostinfo_header* header = (xrsp_hostinfo_header*)out;

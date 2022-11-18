@@ -14,7 +14,7 @@
 #include "ql_xrsp_types.h"
 #include "ql_utils.h"
 
-static const char* xrsp_result_lut[33] = {
+static const char* xrsp_result_lut[35] = {
     "success",
     "invalid argument",
     "invalid data",
