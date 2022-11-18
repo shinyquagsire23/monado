@@ -21,12 +21,6 @@ DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)
 
 #define PEEK_IMAGE_USAGE (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 
-#define D(TYPE, thing)                                                                                                 \
-	if (thing != VK_NULL_HANDLE) {                                                                                 \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
-		thing = VK_NULL_HANDLE;                                                                                \
-	}
-
 static inline struct vk_bundle *
 get_vk(struct comp_window_peek *w)
 {
@@ -167,23 +161,7 @@ comp_window_peek_create(struct comp_compositor *c)
 	    PEEK_IMAGE_USAGE,             //
 	    VK_PRESENT_MODE_MAILBOX_KHR); //
 
-	VkSemaphoreCreateInfo sem_info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	};
-
-	VkResult ret = vk->vkCreateSemaphore(vk->device, &sem_info, NULL, &w->acquire);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk->vkCreateSemaphore(vk->device, &sem_info, NULL, &w->submit);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk_cmd_buffer_create(vk, &w->cmd);
+	VkResult ret = vk_cmd_buffer_create(vk, &w->cmd);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "vk_cmd_buffer_create: %s", vk_result_string(ret));
 	}
@@ -202,18 +180,24 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 		return;
 	}
 
+	// Finish the SDL window loop
 	w->running = false;
+	os_thread_helper_destroy(&w->oth);
 
-	SDL_DestroyWindow(w->window);
 
 	struct vk_bundle *vk = get_vk(w);
 
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
+
+	os_mutex_lock(&vk->cmd_pool_mutex);
 	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &w->cmd);
-	D(Semaphore, w->acquire);
-	D(Semaphore, w->submit);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	comp_target_swapchain_cleanup(&w->base);
-	os_thread_helper_destroy(&w->oth);
+
+	SDL_DestroyWindow(w->window);
 
 	free(w);
 
@@ -223,7 +207,7 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 void
 comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, int32_t height)
 {
-	if (w->hidden) {
+	if (w->hidden || !w->running) {
 		return;
 	}
 
@@ -252,12 +236,12 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 
 	struct vk_bundle *vk = get_vk(w);
 
-	// For submitting commands.
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
 	VkCommandBufferBeginInfo begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
+
+	// For submitting commands.
+	os_mutex_lock(&vk->cmd_pool_mutex);
 
 	ret = vk->vkBeginCommandBuffer(w->cmd, &begin_info);
 
@@ -369,12 +353,12 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &w->acquire,
+	    .pWaitSemaphores = &w->base.base.semaphores.present_complete,
 	    .pWaitDstStageMask = &submit_flags,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &w->cmd,
 	    .signalSemaphoreCount = 1,
-	    .pSignalSemaphores = &w->submit,
+	    .pSignalSemaphores = &w->base.base.semaphores.render_complete,
 	};
 
 	os_mutex_lock(&vk->queue_mutex);
@@ -392,7 +376,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &w->submit,
+	    .pWaitSemaphores = &w->base.base.semaphores.render_complete,
 	    .swapchainCount = 1,
 	    .pSwapchains = &w->base.swapchain.handle,
 	    .pImageIndices = &current,
