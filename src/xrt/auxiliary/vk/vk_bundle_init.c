@@ -394,6 +394,17 @@ fill_in_external_object_properties(struct vk_bundle *vk)
 	vk->external.timeline_semaphore_opaque_fd = is_timeline_semaphore_bit_supported( //
 	    vk, VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT);
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+
+	vk->external.fence_sync_xpc = true;
+	vk->external.fence_opaque_xpc = true;
+
+	vk->external.binary_semaphore_sync_xpc = true;
+	vk->external.binary_semaphore_opaque_xpc = true;
+
+	//! @todo Is this safe to assume working, do we need to check an extension?
+	vk->external.timeline_semaphore_sync_xpc = true;
+	vk->external.timeline_semaphore_opaque_xpc = true;
+
 	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 

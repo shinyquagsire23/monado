@@ -272,7 +272,13 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  *
  * On Linux, this is a file descriptor.
  */
-typedef int xrt_graphics_buffer_handle_t;
+typedef struct xrt_graphics_buffer_handle_t_struct
+{
+    void* image;
+    void* mem;
+} xrt_graphics_buffer_handle_t_struct;
+
+typedef xrt_graphics_buffer_handle_t_struct* xrt_graphics_buffer_handle_t;
 
 /*!
  * Defined to allow detection of the underlying type.
@@ -289,7 +295,7 @@ typedef int xrt_graphics_buffer_handle_t;
 static inline bool
 xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 {
-    return handle >= 0;
+    return handle;
 }
 
 /*!
@@ -300,7 +306,7 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  *
  * @relates xrt_graphics_buffer_handle_t
  */
-#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
+#define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (NULL)
 
 #elif defined(XRT_OS_WINDOWS)
 
@@ -402,7 +408,7 @@ xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
  *
  * On Linux, this is a file descriptor.
  */
-typedef int xrt_graphics_sync_handle_t;
+typedef void* xrt_graphics_sync_handle_t;
 
 /*!
  * Defined to allow detection of the underlying type.
@@ -419,7 +425,7 @@ typedef int xrt_graphics_sync_handle_t;
 static inline bool
 xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
 {
-    return handle >= 0;
+    return handle;
 }
 
 /*!
@@ -430,7 +436,7 @@ xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
  *
  * @relates xrt_graphics_sync_handle_t
  */
-#define XRT_GRAPHICS_SYNC_HANDLE_INVALID (-1)
+#define XRT_GRAPHICS_SYNC_HANDLE_INVALID (NULL)
 
 #elif defined(XRT_OS_WINDOWS)
 

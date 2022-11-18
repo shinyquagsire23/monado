@@ -814,6 +814,11 @@ vk_create_image_from_native(struct vk_bundle *vk,
                             VkImage *out_image,
                             VkDeviceMemory *out_mem)
 {
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
+	*out_image = image_native->handle->image;
+	*out_mem = image_native->handle->mem;
+	return VK_SUCCESS;
+#endif
 	VkResult ret = VK_SUCCESS;
 
 	// This is the format we allocate the image in, can be changed further down.
@@ -846,8 +851,9 @@ vk_create_image_from_native(struct vk_bundle *vk,
 
 	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
 
-	bool importable = false;
-	vk_csci_get_image_external_support(vk, image_format, info->bits, handle_type, &importable, NULL);
+	// HACK
+	bool importable = true;
+	//vk_csci_get_image_external_support(vk, image_format, info->bits, handle_type, &importable, NULL);
 
 	if (!importable) {
 		VK_ERROR(vk, "External memory handle is not importable");
@@ -907,15 +913,56 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	    .handle = image_native->handle,
 	};
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
-	VkImportMemoryFdInfoKHR import_memory_info = {
+	//printf("%p = %p %p before\n", image_native->handle, image_native->handle->mem, image_native->handle->image);
+
+	/*VkImportMemoryFdInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
 	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-	    .fd = image_native->handle,
+	    .fd = 0,//image_native->handle,
+	};*/
+
+#if 0
+	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
+	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+	    .pNext = NULL,//&import_memory_info,
+	    .image = image,
+	    .buffer = VK_NULL_HANDLE,
 	};
+
+	ret = vk_alloc_and_bind_image_memory( //
+	    vk,                               // vk_bundle
+	    image,                            // image
+	    image_native->size,               // max_size
+	    &dedicated_memory_info,           // pNext_for_allocate
+	    __func__,                         // caller_name
+	    out_mem,                          // out_mem
+	    NULL);                            // out_size
+#endif
+
+#if 0
+	// Bind the memory to the image.
+	ret = vk->vkBindImageMemory(vk->device, image, image_native->handle->mem, 0);
+	if (ret != VK_SUCCESS) {
+		// Clean up memory
+		//vk->vkFreeMemory(vk->device, image_native->handle->mem, NULL);
+		VK_ERROR(vk, "vkBindImageMemory: %s", vk_result_string(ret));
+		return ret;
+	}
+#endif
+
+	//*out_image = image_native->handle->image;
+	//image_native->handle->mem = *out_mem;
+	image_native->handle->image = image;
+	*out_mem = image_native->handle->mem;
+
+	//printf("%p = %p %p\n", image_native->handle, image_native->handle->mem, image_native->handle->image);
+
 	// TODO
 #else
 #error "need port"
 #endif
+
+#if !defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
 	VkMemoryDedicatedAllocateInfoKHR dedicated_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
 	    .pNext = &import_memory_info,
@@ -939,6 +986,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		vk->vkDestroyImage(vk->device, image, NULL);
 		return ret;
 	}
+#endif
 
 	*out_image = image;
 	return ret;
@@ -975,8 +1023,21 @@ static VkResult
 get_device_memory_handle(struct vk_bundle *vk, VkDeviceMemory device_memory, xrt_graphics_buffer_handle_t *out_handle)
 {
 	// TODO
+	if (!out_handle)
+	{
+		//printf("aaaaaaaaaa\n");
+		return VK_SUCCESS;
+	}
 
-	*out_handle = 0;
+	//printf("%p %p\n", out_handle, *out_handle);
+
+	//if (!(*out_handle))
+	{
+		(*out_handle) = malloc(sizeof(*(*out_handle)));
+	}
+
+	(*out_handle)->mem = device_memory;
+	(*out_handle)->image = NULL;
 
 	return VK_SUCCESS;
 }

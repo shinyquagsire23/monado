@@ -464,6 +464,16 @@ comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, stru
 {
 	uint32_t format_count = 0;
 
+	struct comp_vulkan_formats *_formats = (struct comp_vulkan_formats *)formats;
+	
+	// HACK
+	_formats->has_R8G8B8A8_UNORM = true;
+	//if (info->format_count == 0) {
+	info->formats[0] = VK_FORMAT_R8G8B8A8_UNORM;
+	info->format_count = 1;
+	//}
+	format_count = 1;
+
 #define ADD_IF_SUPPORTED(FORMAT)                                                                                       \
 	if (formats->has_##FORMAT) {                                                                                   \
 		info->formats[format_count++] = VK_FORMAT_##FORMAT;                                                    \
