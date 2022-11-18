@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 #include <iostream>
 
-#include "avahi_publisher.h"
+#include "mdns_publisher.h"
 #include "hostname.h"
 
 // Insert the on load constructor to init trace marker.
@@ -42,9 +42,9 @@ oxr_sdl2_hack_stop(void **hack_ptr)
 
 using namespace xrt::drivers::wivrn;
 
-std::unique_ptr<TCP> tcp;
+extern std::unique_ptr<TCP> tcp;
 
-void
+static void
 avahi_callback(AvahiWatch *w, int fd, AvahiWatchEvent event, void *userdata)
 {
 	bool *client_connected = (bool *)userdata;
@@ -74,6 +74,7 @@ main(int argc, char *argv[])
 			tcp = std::make_unique<TCP>(listener.accept().first);
 		}
 
+#ifdef XRT_FEATURE_SERVICE
 		pid_t child = fork();
 
 		if (child < 0) {
@@ -89,10 +90,14 @@ main(int argc, char *argv[])
 			waitpid(child, &wstatus, 0);
 
 			std::cerr << "Server exited, exit status " << WEXITSTATUS(wstatus) << std::endl;
-			if (WIFSIGNALED(wstatus))
+			if (WIFSIGNALED(wstatus)) {
+#ifndef XRT_OS_DARWIN
 				std::cerr << "Received signal " << sigabbrev_np(WTERMSIG(wstatus)) << " ("
 				          << strsignal(WTERMSIG(wstatus)) << ")"
 				          << (WCOREDUMP(wstatus) ? ", core dumped" : "") << std::endl;
+#endif
+			}
 		}
+#endif
 	}
 }

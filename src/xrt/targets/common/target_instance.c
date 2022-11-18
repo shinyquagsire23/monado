@@ -108,12 +108,17 @@ t_instance_create_system(struct xrt_instance *xinst,
  *
  */
 
+extern xrt_result_t
+wivrn_xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst); 
+
+
 xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
 	struct xrt_prober *xp = NULL;
 
 	u_trace_marker_init();
+	return wivrn_xrt_instance_create(ii, out_xinst);
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {

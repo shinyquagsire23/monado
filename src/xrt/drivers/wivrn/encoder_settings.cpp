@@ -7,6 +7,7 @@
 #include "video_encoder.h"
 #include "vk/vk_helpers.h"
 
+#include <cmath>
 #include <string>
 #include <vulkan/vulkan.h>
 

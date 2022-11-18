@@ -179,6 +179,7 @@ if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
 			st_prober
 			target_lists
 			drv_includes
+			monado-wivrn-target
 		)
 	target_include_directories(target_instance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

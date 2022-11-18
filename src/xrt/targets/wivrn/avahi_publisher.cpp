@@ -100,9 +100,13 @@ avahi_publisher::avahi_publisher(const char *name, std::string type, int port)
 	int error;
 	avahi_client =
 	    avahi_client_new(avahi_simple_poll_get(avahi_poll), (AvahiClientFlags)0, &client_callback, this, &error);
+	printf("asdfasdf %x\n", avahi_client);
 
-	if (!avahi_client)
-		throw std::runtime_error(std::string("Cannot create avahi client: ") + avahi_strerror(error));
+	if (!avahi_client) {
+		std::string err = std::string("Cannot create avahi client: ") + avahi_strerror(error);
+		printf("%s\n", err.c_str());
+		//throw std::runtime_error(std::string("Cannot create avahi client: ") + avahi_strerror(error));
+	}
 }
 
 avahi_publisher::~avahi_publisher()

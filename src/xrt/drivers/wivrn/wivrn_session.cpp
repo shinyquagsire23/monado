@@ -9,9 +9,25 @@
 #include "wivrn_controller.h"
 #include "wivrn_hmd.h"
 
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 xrt::drivers::wivrn::wivrn_session::wivrn_session(xrt::drivers::wivrn::TCP &&tcp, in6_addr &address)
     : connection(std::move(tcp), address)
 {}
+
+void ipv6_to_str_unexpanded(const struct in6_addr *addr) {
+   printf("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+                 (int)addr->s6_addr[0], (int)addr->s6_addr[1],
+                 (int)addr->s6_addr[2], (int)addr->s6_addr[3],
+                 (int)addr->s6_addr[4], (int)addr->s6_addr[5],
+                 (int)addr->s6_addr[6], (int)addr->s6_addr[7],
+                 (int)addr->s6_addr[8], (int)addr->s6_addr[9],
+                 (int)addr->s6_addr[10], (int)addr->s6_addr[11],
+                 (int)addr->s6_addr[12], (int)addr->s6_addr[13],
+                 (int)addr->s6_addr[14], (int)addr->s6_addr[15]);
+}
 
 xrt_system_devices *
 xrt::drivers::wivrn::wivrn_session::create_session(xrt::drivers::wivrn::TCP &&tcp)
@@ -22,6 +38,21 @@ xrt::drivers::wivrn::wivrn_session::create_session(xrt::drivers::wivrn::TCP &&tc
 		U_LOG_E("Cannot get peer address: %s", strerror(errno));
 		return nullptr;
 	}
+
+	sockaddr_in6 address_idk = {};
+
+	int ret = inet_pton(AF_INET6, "fe80::9333:21d4:c60a:2647%en0", &address_idk.sin6_addr); // ff02::fb // fe80::9333:21d4:c60a:2647
+	printf("Got ret %x\n", ret);
+	//address.sin6_addr = address_idk.sin6_addr;
+	//address.sin6_flowinfo = address_idk.sin6_flowinfo;
+	//address.sin6_scope_id = address_idk.sin6_scope_id;
+	address_idk.sin6_port = address.sin6_port;
+
+	ipv6_to_str_unexpanded(&address_idk.sin6_addr);
+
+	char tmp[100];
+    inet_ntop(AF_INET6, &address.sin6_addr, tmp, sizeof(tmp));
+    printf("UDP to %s\n", tmp);
 
 	std::shared_ptr<wivrn_session> self;
 	std::optional<xrt::drivers::wivrn::from_headset::control_packets> control;

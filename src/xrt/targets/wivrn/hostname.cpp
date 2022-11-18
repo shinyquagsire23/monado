@@ -4,6 +4,26 @@
 
 #include "hostname.h"
 
+#include "xrt/xrt_config_os.h"
+
+#if defined(XRT_OS_DARWIN)
+#include <unistd.h>
+
+std::string
+hostname()
+{
+	char tmp[256];
+
+	if (gethostname(tmp, sizeof(tmp)) < 0) {
+		return "Unknown";
+	}
+
+	return std::string(tmp);
+	//return "WiVRn-Hostname";
+}
+
+#else
+
 #include <systemd/sd-bus.h>
 
 std::string
@@ -36,3 +56,4 @@ hostname()
 
 	return "Unknown";
 }
+#endif

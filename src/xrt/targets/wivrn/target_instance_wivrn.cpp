@@ -14,6 +14,9 @@
 
 #include <assert.h>
 
+#include "mdns_publisher.h"
+#include "hostname.h"
+
 #include "wivrn_session.h"
 
 /*
@@ -22,7 +25,7 @@
  *
  */
 
-extern std::unique_ptr<TCP> tcp;
+std::unique_ptr<TCP> tcp;
 
 static xrt_result_t
 wivrn_instance_create_system(struct xrt_instance *xinst,
@@ -79,10 +82,33 @@ wivrn_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp
  *
  */
 
-xrt_result_t
-xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
+static void
+avahi_callback(AvahiWatch *w, int fd, AvahiWatchEvent event, void *userdata)
+{
+	bool *client_connected = (bool *)userdata;
+	*client_connected = true;
+}
+
+extern "C" xrt_result_t
+wivrn_xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
 	u_trace_marker_init();
+
+	avahi_publisher publisher(hostname().c_str(), "_wivrn._tcp", control_port);
+
+	TCPListener listener(control_port);
+	//bool client_connected = false;
+
+	//AvahiWatch *watch =
+	//    publisher.watch_new(listener.get_fd(), AVAHI_WATCH_IN, &avahi_callback, &client_connected);
+
+	//while (publisher.iterate() && !client_connected)
+	//	;
+
+	//publisher.watch_free(watch);
+
+	tcp = std::make_unique<TCP>(listener.accept().first);
+	printf("Got connection!\n");
 
 	struct xrt_instance *xinst = U_TYPED_CALLOC(struct xrt_instance);
 	xinst->create_system = wivrn_instance_create_system;
@@ -95,3 +121,13 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	return XRT_SUCCESS;
 }
+
+#ifdef XRT_FEATURE_SERVICE
+xrt_result_t
+xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
+{
+	u_trace_marker_init();
+
+	return wivrn_xrt_instance_create(ii, out_xinst);
+}
+#endif

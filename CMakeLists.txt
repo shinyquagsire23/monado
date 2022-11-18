@@ -153,9 +153,9 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 	pkg_check_modules(LIBUVC libuvc)
 
 	# @TODO Turn into a find_package FFMPEG file.
-	pkg_check_modules(FFMPEG libavcodec)
+	#pkg_check_modules(FFMPEG libavcodec)
 
-	pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
+	#pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
 endif()
 
 find_package(OpenGL)
@@ -202,6 +202,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	if(PKGCONFIG_FOUND)
 		pkg_check_modules(XRANDR xrandr)
 		pkg_check_modules(XCB xcb xcb-randr x11-xcb)
+		
+		#pkg_check_modules(
+		#	FFMPEG
+		#	IMPORTED_TARGET
+		#	libavcodec
+		#	libavutil
+		#	libavfilter
+		#	)
+		if(XRT_ENABLE_GPL)
+			pkg_check_modules(X264 IMPORTED_TARGET x264)
+		endif()
 	endif()
 	find_package(OpenGL COMPONENTS GLX)
 	#set(XCB_INCLUDE_DIRS "/opt/homebrew/Cellar/libxcb/1.15/include/")
@@ -349,7 +360,7 @@ option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Va
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32" "NOT XRT_HAVE_DARWIN")
 if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
 	option_with_deps(XRT_BUILD_DRIVER_WIVRN "Enable WiVRn streaming driver"
-		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" XRT_HAVE_AVAHI XRT_HAVE_SYSTEMD)
+		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" "XRT_HAVE_AVAHI OR XRT_HAVE_DARWIN" ) #XRT_HAVE_SYSTEMD
 else()
 	set(XRT_BUILD_DRIVER_WIVRN OFF)
 endif()

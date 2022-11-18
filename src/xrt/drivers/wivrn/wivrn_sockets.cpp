@@ -41,6 +41,7 @@ xrt::drivers::wivrn::socket_base::~socket_base()
 
 xrt::drivers::wivrn::UDP::UDP()
 {
+	printf("UDP created\n");
 	fd = socket(AF_INET6, SOCK_DGRAM, 0);
 
 	if (fd < 0) {
@@ -82,6 +83,7 @@ xrt::drivers::wivrn::UDP::set_receive_buffer_size(int size)
 
 xrt::drivers::wivrn::TCP::TCP(int fd)
 {
+	printf("TCP created\n");
 	this->fd = fd;
 
 	int nodelay = 1;
