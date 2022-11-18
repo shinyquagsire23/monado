@@ -357,6 +357,7 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR,
 	    .fence = fence,
 	    .handleType = handleType,
+	    .flags = VK_FENCE_IMPORT_TEMPORARY_BIT,
 	    .fd = native,
 	};
 
