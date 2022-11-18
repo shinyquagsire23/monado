@@ -1043,7 +1043,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c, struct xrt_device *
 			return true;
 		}
 #endif
-#ifdef VK_USE_PLATFORM_XCB_KHR
+#if defined(VK_USE_PLATFORM_XCB_KHR) && !defined(XRT_OS_DARWIN)
 		if (compositor_try_window(c, comp_window_xcb_create(c))) {
 			c->settings.window_type = WINDOW_XCB;
 			COMP_DEBUG(c, "Using VK_PRESENT_MODE_IMMEDIATE_KHR for xcb window")
