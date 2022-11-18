@@ -17,15 +17,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#version 450
 
-#include "xrt/xrt_defines.h"
-#include <openxr/openxr.h>
+layout (binding = 0) uniform sampler2D image;
 
-xrt_pose xrt_cast(const XrPosef &);
-xrt_vec3 xrt_cast(const XrVector3f &);
-xrt_quat xrt_cast(const XrQuaternionf &);
-xrt_fov xrt_cast(const XrFovf &);
+layout (location = 0) in vec2 pos;
 
-XrPosef xrt_cast(const xrt_pose &);
-XrFovf xrt_cast(const xrt_fov &);
+layout (location = 0) out vec2 uv;
+
+float gamma(float x)
+{
+	if (x <= 0.0031308)
+		return 12.92 * x;
+	else
+		return 1.055 * pow(x, 1/2.4) - 0.055;
+}
+
+vec4 gamma4(vec4 x)
+{
+	return vec4(gamma(x.r), gamma(x.g), gamma(x.b), gamma(x.a));
+}
+
+void main() {
+	vec4 rgba = gamma4(texture(image, pos));
+	uv.x = 0.5 + rgba.r * -0.1146 + rgba.g * -0.3854 + rgba.b *  0.5;
+	uv.y = 0.5 + rgba.r *  0.5    + rgba.g * -0.4542 + rgba.b * -0.0458;
+}
+

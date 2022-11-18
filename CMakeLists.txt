@@ -156,6 +156,7 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 	#pkg_check_modules(FFMPEG libavcodec)
 
 	#pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
+	find_package(nlohmann_json REQUIRED)
 endif()
 
 find_package(OpenGL)

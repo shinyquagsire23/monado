@@ -1,43 +1,58 @@
-// Copyright 2022, Guillaume Meunier
-// Copyright 2022, Patrick Nicolas
-// SPDX-License-Identifier: BSL-1.0
+/*
+ * WiVRn VR streaming
+ * Copyright (C) 2022  Guillaume Meunier <guillaume.meunier@centraliens.net>
+ * Copyright (C) 2022  Patrick Nicolas <patricknicolas@laposte.net>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
 #include "wivrn_serialization.h"
 
+#include <memory>
+#include <mutex>
 #include <netinet/ip.h>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
-namespace xrt::drivers::wivrn {
+namespace xrt::drivers::wivrn
+{
 class socket_shutdown : public std::exception
 {
 public:
-	const char *
-	what() const noexcept override;
+	const char * what() const noexcept override;
 };
 
 class invalid_packet : public std::exception
 {
 public:
-	const char *
-	what() const noexcept override;
+	const char * what() const noexcept override;
 };
 
-template <typename T, typename... Ts> struct index_of_type
-{
-};
+template <typename T, typename... Ts>
+struct index_of_type
+{};
 
-template <typename T, typename... Ts> struct index_of_type<T, T, Ts...> : std::integral_constant<size_t, 0>
-{
-};
+template <typename T, typename... Ts>
+struct index_of_type<T, T, Ts...> : std::integral_constant<size_t, 0>
+{};
 
 template <typename T, typename T2, typename... Ts>
 struct index_of_type<T, T2, Ts...> : std::integral_constant<size_t, 1 + index_of_type<T, Ts...>::value>
-{
-};
+{};
 
 static_assert(index_of_type<int, int, float>::value == 0);
 static_assert(index_of_type<float, int, float>::value == 1);
@@ -53,8 +68,7 @@ protected:
 	~socket_base();
 
 public:
-	int
-	get_fd() const
+	int get_fd() const
 	{
 		return fd;
 	}
@@ -67,30 +81,33 @@ public:
 	UDP(const UDP &) = delete;
 	UDP(UDP &&) = default;
 
-	std::vector<uint8_t>
-	receive_raw();
-	void
-	send_raw(const std::vector<uint8_t> &data);
+	deserialization_packet receive_raw();
+	void send_raw(const std::vector<uint8_t> & data);
 
-	void
-	connect(in6_addr address, int port);
-	void
-	bind(int port);
-	void
-	set_receive_buffer_size(int size);
+	void connect(in6_addr address, int port);
+	void connect(in_addr address, int port);
+	void bind(int port);
+	void subscribe_multicast(in6_addr address);
+	void unsubscribe_multicast(in6_addr address);
+	void set_receive_buffer_size(int size);
 };
 
 class TCP : public socket_base
 {
+	std::vector<uint8_t> buffer;
+	std::unique_ptr<std::mutex> mutex;
+
+	void init();
+
 public:
+	TCP(in6_addr address, int port);
+	TCP(in_addr address, int port);
 	explicit TCP(int fd);
 	TCP(const TCP &) = delete;
 	TCP(TCP &&) = default;
 
-	std::vector<uint8_t>
-	receive_raw();
-	void
-	send_raw(const std::vector<uint8_t> &data);
+	deserialization_packet receive_raw();
+	void send_raw(const std::vector<uint8_t> & data);
 };
 
 class TCPListener : public socket_base
@@ -100,32 +117,29 @@ public:
 	TCPListener(const TCPListener &) = delete;
 	TCPListener(TCPListener &&) = default;
 
-	std::pair<TCP, sockaddr_in6>
-	accept();
+	std::pair<TCP, sockaddr_in6> accept();
 };
 
-template <typename Socket, typename ReceivedType, typename SentType> class typed_socket : public Socket
+template <typename Socket, typename ReceivedType, typename SentType>
+class typed_socket : public Socket
 {
 public:
-	template <typename... Args> typed_socket(Args &&...args) : Socket(std::forward<Args>(args)...) {}
+	template <typename... Args>
+	typed_socket(Args &&... args) :
+	        Socket(std::forward<Args>(args)...)
+	{}
 
-	ReceivedType
-	receive()
+	std::optional<ReceivedType> receive()
 	{
-		deserialization_packet p(this->receive_raw());
-		return p.deserialize<ReceivedType>();
-	}
+		deserialization_packet packet = this->receive_raw();
+		if (packet.empty())
+			return {};
 
-	std::pair<ReceivedType, sockaddr_in6>
-	receive_from()
-	{
-		auto [packet, addr] = this->receive_from_raw();
-		return {deserialization_packet(packet).deserialize<ReceivedType>(), addr};
+		return packet.deserialize<ReceivedType>();
 	}
 
 	template <typename T = SentType, typename = std::enable_if_t<std::is_same_v<T, SentType>>>
-	void
-	send(const T &data)
+	void send(const T & data)
 	{
 		serialization_packet p;
 		p.serialize(data);

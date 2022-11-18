@@ -17,15 +17,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#version 450
 
-#include "xrt/xrt_defines.h"
-#include <openxr/openxr.h>
+layout (location = 0) out vec2 outUV;
 
-xrt_pose xrt_cast(const XrPosef &);
-xrt_vec3 xrt_cast(const XrVector3f &);
-xrt_quat xrt_cast(const XrQuaternionf &);
-xrt_fov xrt_cast(const XrFovf &);
-
-XrPosef xrt_cast(const xrt_pose &);
-XrFovf xrt_cast(const xrt_fov &);
+void main() {
+    outUV = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2); // [(0, 0), (2, 0), (0, 2)]
+    gl_Position = vec4(outUV * 2.0f + -1.0f, 0.0f, 1.0f); // [(-1, -1), (3, -1), (-1, 3)]
+}

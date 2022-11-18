@@ -61,15 +61,17 @@ if(XRT_BUILD_DRIVER_TWRAP)
 endif()
 
 if(XRT_BUILD_DRIVER_WIVRN)
-	spirv_shaders(
-		WIVRN_SHADER_HEADERS
-		SPIRV_VERSION
-		1.0 # Currently targeting Vulkan 1.0
-		SOURCES
-		wivrn/shaders/yuv_converter.vert
-		wivrn/shaders/yuv_converter.y.frag
-		wivrn/shaders/yuv_converter.uv.frag
-		)
+	#spirv_shaders(
+	#	WIVRN_SHADER_HEADERS
+	#	SPIRV_VERSION
+	#	1.0 # Currently targeting Vulkan 1.0
+	#	SOURCES
+	#	wivrn/shaders/yuv_converter.vert.glsl
+	#	wivrn/shaders/yuv_converter.y.frag.glsl
+	#	wivrn/shaders/yuv_converter.uv.frag.glsl
+	#	)
+
+	include(CompileGLSL)
 
 	FetchContent_Declare(
 		boostpfr
@@ -91,10 +93,17 @@ if(XRT_BUILD_DRIVER_WIVRN)
 		wivrn/wivrn_connection.cpp
 		wivrn/wivrn_sockets.cpp
 		wivrn/xrt_cast.cpp
+		wivrn/configuration.cpp
 		wivrn/external/rs.c
 		${WIVRN_SHADER_HEADERS}
 		wivrn/yuv_converter.cpp
 		)
+	
+	file(GLOB VULKAN_SHADERS CONFIGURE_DEPENDS "wivrn/shaders/*.glsl")
+	target_sources(drv_wivrn PRIVATE ${LOCAL_SOURCE} ${VULKAN_SHADERS})
+	compile_glsl(drv_wivrn ${VULKAN_SHADERS})
+
+	configure_file(wivrn/wivrn_config.h.in wivrn/wivrn_config.h)
 	target_include_directories(
 		drv_wivrn SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/wivrn #shaders
 					 ../compositor/ ${EIGEN3_INCLUDE_DIR}

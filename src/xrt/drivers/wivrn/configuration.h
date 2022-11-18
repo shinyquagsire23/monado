@@ -19,13 +19,30 @@
 
 #pragma once
 
-#include "xrt/xrt_defines.h"
-#include <openxr/openxr.h>
+#include <map>
+#include <optional>
+#include <string>
 
-xrt_pose xrt_cast(const XrPosef &);
-xrt_vec3 xrt_cast(const XrVector3f &);
-xrt_quat xrt_cast(const XrQuaternionf &);
-xrt_fov xrt_cast(const XrFovf &);
+#include "wivrn_packets.h"
 
-XrPosef xrt_cast(const xrt_pose &);
-XrFovf xrt_cast(const xrt_fov &);
+struct configuration
+{
+	struct encoder
+	{
+		std::string name;
+		std::optional<double> width;
+		std::optional<double> height;
+		std::optional<double> offset_x;
+		std::optional<double> offset_y;
+		std::optional<int> bitrate;
+		std::optional<int> group;
+		std::optional<xrt::drivers::wivrn::video_codec> codec;
+		std::map<std::string, std::string> options;
+	};
+
+	std::vector<encoder> encoders;
+	std::optional<double> scale;
+
+	static configuration read_user_configuration();
+
+};
