@@ -16,6 +16,7 @@
 
 #include "vk/vk_helpers.h"
 
+#include <stdio.h>
 
 /*
  *
@@ -180,6 +181,9 @@ vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle
 	}
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
 	// TODO
+	native = fence;
+	//*out_native = native; // HACK WHY IS THIS COMMENT NEEDED??
+	return VK_SUCCESS;
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	//! @todo Not tested.
 	VkFenceGetWin32HandleInfoKHR get_handle_info = {
@@ -261,6 +265,7 @@ create_semaphore_and_native(struct vk_bundle *vk,
 	}
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
 	// TODO
+	native = semaphore;
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	VkSemaphoreGetWin32HandleInfoKHR get_handle_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR,
@@ -347,6 +352,13 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 	VkFence fence = VK_NULL_HANDLE;
 	VkResult ret;
 
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	//printf("%p\n", native);
+	//VkFence *in_sem = (VkFence*)native;
+	//*out_fence = *in_sem;
+	//return VK_SUCCESS;
+#endif
+
 	VkFenceCreateInfo create_info = {
 	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 	    .flags = VK_FENCE_CREATE_SIGNALED_BIT,
@@ -376,6 +388,9 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 		return ret;
 	}
 #elif XRT_GRAPHICS_SYNC_HANDLE_IS_XPC
+	VkFence *in_fence = (VkFence*)native;
+	*in_fence = fence;
+	//*out_fence = *in_sem;
 	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	//! @todo make sure this is the right one
@@ -414,6 +429,12 @@ create_semaphore_from_native(struct vk_bundle *vk,
 {
 	VkResult ret;
 
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	//VkSemaphore *in_sem = (VkSemaphore*)native;
+	//*out_sem = *in_sem;
+	//return VK_SUCCESS;
+#endif
+
 	VkSemaphoreCreateInfo semaphore_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
 	    .pNext = next,
@@ -441,6 +462,9 @@ create_semaphore_from_native(struct vk_bundle *vk,
 		return ret;
 	}
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+	VkSemaphore *in_sem = (VkSemaphore*)native;
+	*in_sem = *out_sem;
+	return VK_SUCCESS;
 	// TODO
 #elif defined(XRT_GRAPHICS_SYNC_HANDLE_IS_WIN32_HANDLE)
 	VkImportSemaphoreWin32HandleInfoKHR import_semaphore_handle_info = {

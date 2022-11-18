@@ -418,6 +418,9 @@ vk_ic_get_handles(struct vk_bundle *vk,
 	size_t i = 0;
 	for (; i < vkic->image_count && i < max_handles; i++) {
 		ret = vk_get_native_handle_from_device_memory(vk, vkic->images[i].memory, &out_handles[i]);
+#if defined(XRT_GRAPHICS_SYNC_HANDLE_IS_XPC)
+		out_handles[i]->image = vkic->images[i].handle; // HACK
+#endif
 		if (ret != VK_SUCCESS) {
 			break;
 		}
