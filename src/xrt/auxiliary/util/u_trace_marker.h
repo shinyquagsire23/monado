@@ -81,20 +81,54 @@ u_trace_marker_init(void);
 
 /*
  *
- * When enabled.
+ * When disabled.
  *
  */
 
-#ifdef XRT_FEATURE_TRACING
+#ifndef XRT_FEATURE_TRACING
+
+
+#define U_TRACE_EVENT(CATEGORY, NAME)                                                                                  \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME)                                                              \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_CATEGORY_IS_ENABLED(_) (false)
+
+/*!
+ * Add to target c file to enable tracing, see @ref tracing.
+ *
+ * @ingroup aux_util
+ */
+#define U_TRACE_TARGET_SETUP(WHICH)
+
+
+/*
+ *
+ * Percetto support.
+ *
+ */
+
+#elif defined(XRT_HAVE_PERCETTO) // && XRT_FEATURE_TRACKING
 
 #ifndef XRT_OS_LINUX
 #error "Tracing only supported on Linux"
 #endif
-
-#ifndef XRT_HAVE_PERCETTO
-#error "Need to have Percetto/Perfetto"
-#endif
-
 
 
 #define U_TRACE_CATEGORIES(C, G)                                                                                       \
@@ -140,46 +174,11 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 		u_trace_marker_setup(WHICH);                                                                           \
 	}
 
+#else // !XRT_FEATURE_TRACING && !XRT_HAVE_PERCETTO
 
-#else // XRT_FEATURE_TRACING
+#error "Need to have Percetto/Perfetto"
 
-
-/*
- *
- * When disabled.
- *
- */
-
-#define U_TRACE_EVENT(CATEGORY, NAME)                                                                                  \
-	do {                                                                                                           \
-	} while (false)
-
-#define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
-	do {                                                                                                           \
-	} while (false)
-
-#define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
-	do {                                                                                                           \
-	} while (false)
-
-#define U_TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME)                                                              \
-	do {                                                                                                           \
-	} while (false)
-
-#define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
-	do {                                                                                                           \
-	} while (false)
-
-#define U_TRACE_CATEGORY_IS_ENABLED(_) (false)
-
-/*!
- * Add to target c file to enable tracing, see @ref tracing.
- *
- * @ingroup aux_util
- */
-#define U_TRACE_TARGET_SETUP(WHICH)
-
-#endif // XRT_FEATURE_TRACING
+#endif // Error checking
 
 
 #ifdef __cplusplus
