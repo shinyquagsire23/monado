@@ -61,7 +61,7 @@ u_trace_marker_setup(enum u_trace_which which);
 void
 u_trace_marker_init(void);
 
-#define VK_TRACE_MARKER(IDENT) U_TRACE_EVENT(vk, __func__)
+#define VK_TRACE_MARKER() U_TRACE_EVENT(vk, __func__)
 #define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
 #define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
 #define XRT_TRACE_IDENT(IDENT) U_TRACE_EVENT(xrt, #IDENT)
