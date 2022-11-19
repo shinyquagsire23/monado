@@ -61,22 +61,22 @@ u_trace_marker_setup(enum u_trace_which which);
 void
 u_trace_marker_init(void);
 
-#define VK_TRACE_MARKER() U_TRACE_EVENT(vk, __func__)
-#define VK_TRACE_IDENT(IDENT) U_TRACE_EVENT(vk, #IDENT)
-#define XRT_TRACE_MARKER() U_TRACE_EVENT(xrt, __func__)
-#define XRT_TRACE_IDENT(IDENT) U_TRACE_EVENT(xrt, #IDENT)
-#define DRV_TRACE_MARKER() U_TRACE_EVENT(drv, __func__)
-#define DRV_TRACE_IDENT(IDENT) U_TRACE_EVENT(drv, #IDENT)
-#define IPC_TRACE_MARKER() U_TRACE_EVENT(ipc, __func__)
-#define IPC_TRACE_IDENT(IDENT) U_TRACE_EVENT(ipc, #IDENT)
-#define OXR_TRACE_MARKER() U_TRACE_EVENT(oxr, __func__)
-#define OXR_TRACE_IDENT(IDENT) U_TRACE_EVENT(oxr, #IDENT)
-#define COMP_TRACE_MARKER() U_TRACE_EVENT(comp, __func__)
-#define COMP_TRACE_IDENT(IDENT) U_TRACE_EVENT(comp, #IDENT)
-#define SINK_TRACE_MARKER() U_TRACE_EVENT(sink, __func__)
-#define SINK_TRACE_IDENT(IDENT) U_TRACE_EVENT(sink, #IDENT)
-#define TRACK_TRACE_MARKER() U_TRACE_EVENT(track, __func__)
-#define TRACK_TRACE_IDENT(IDENT) U_TRACE_EVENT(track, #IDENT)
+#define VK_TRACE_MARKER() U_TRACE_FUNC(vk)
+#define VK_TRACE_IDENT(IDENT) U_TRACE_IDENT(vk, IDENT)
+#define XRT_TRACE_MARKER() U_TRACE_FUNC(xrt)
+#define XRT_TRACE_IDENT(IDENT) U_TRACE_IDENT(xrt, IDENT)
+#define DRV_TRACE_MARKER() U_TRACE_FUNC(drv)
+#define DRV_TRACE_IDENT(IDENT) U_TRACE_IDENT(drv, IDENT)
+#define IPC_TRACE_MARKER() U_TRACE_FUNC(ipc)
+#define IPC_TRACE_IDENT(IDENT) U_TRACE_IDENT(ipc, IDENT)
+#define OXR_TRACE_MARKER() U_TRACE_FUNC(oxr)
+#define OXR_TRACE_IDENT(IDENT) U_TRACE_IDENT(oxr, IDENT)
+#define COMP_TRACE_MARKER() U_TRACE_FUNC(comp)
+#define COMP_TRACE_IDENT(IDENT) U_TRACE_IDENT(comp, IDENT)
+#define SINK_TRACE_MARKER() U_TRACE_FUNC(sink)
+#define SINK_TRACE_IDENT(IDENT) U_TRACE_IDENT(sink, IDENT)
+#define TRACK_TRACE_MARKER() U_TRACE_FUNC(track)
+#define TRACK_TRACE_IDENT(IDENT) U_TRACE_IDENT(track, IDENT)
 
 
 /*
@@ -88,7 +88,11 @@ u_trace_marker_init(void);
 #ifndef XRT_FEATURE_TRACING
 
 
-#define U_TRACE_EVENT(CATEGORY, NAME)                                                                                  \
+#define U_TRACE_FUNC(CATEGORY)                                                                                         \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_IDENT(CATEGORY, IDENT)                                                                                 \
 	do {                                                                                                           \
 	} while (false)
 
@@ -155,7 +159,8 @@ PERCETTO_TRACK_DECLARE(pa_cpu);
 PERCETTO_TRACK_DECLARE(pa_draw);
 PERCETTO_TRACK_DECLARE(pa_wait);
 
-#define U_TRACE_EVENT(CATEGORY, NAME) TRACE_EVENT(CATEGORY, NAME)
+#define U_TRACE_FUNC(CATEGORY) TRACE_EVENT(CATEGORY, __func__)
+#define U_TRACE_IDENT(CATEGORY, IDENT) TRACE_EVENT(CATEGORY, #IDENT)
 #define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
 	TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)
 #define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
