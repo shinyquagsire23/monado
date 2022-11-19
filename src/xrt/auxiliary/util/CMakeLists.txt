@@ -113,6 +113,11 @@ if(XRT_FEATURE_TRACING AND XRT_HAVE_PERCETTO)
 	target_link_libraries(aux_util PUBLIC percetto::percetto)
 endif()
 
+# Is basically used everywhere, only used in debugging.
+if(XRT_FEATURE_TRACING AND XRT_HAVE_TRACY)
+	target_link_libraries(aux_util PUBLIC xrt-external-tracy)
+endif()
+
 # Is basically used everywhere, so link with here.
 if(ANDROID)
 	target_link_libraries(aux_util PUBLIC ${ANDROID_LOG_LIBRARY})

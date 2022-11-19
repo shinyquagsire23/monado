@@ -30,6 +30,14 @@
 #include <percetto.h>
 #endif
 
+#if defined(XRT_FEATURE_TRACING) && defined(XRT_HAVE_TRACY)
+#define U_TRACE_TRACY
+#include "tracy/TracyC.h"
+#ifdef __cplusplus
+#include "tracy/Tracy.hpp"
+#endif
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,11 +138,92 @@ u_trace_marker_init(void);
 
 /*
  *
+ * Tracy support.
+ *
+ */
+
+#elif defined(XRT_HAVE_TRACY) // && XRT_FEATURE_TRACING
+
+// Different wrappers for different cases.
+#ifdef __cplusplus
+
+#define U_TRACE_FUNC(CATEGORY) ZoneScoped
+
+#define U_TRACE_IDENT(CATEGORY, IDENT) ZoneScopedN(#IDENT)
+
+#elif !defined(XRT_OS_WINDOWS) // !__cplusplus
+
+static inline void
+u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
+{
+	TracyCZoneEnd(*ctx_ptr);
+}
+
+#define U_TRACE_FUNC(CATEGORY)                                                                                         \
+	static const struct ___tracy_source_location_data __func_loc = {                                               \
+	    NULL, __func__, __FILE__, (uint32_t)__LINE__, 0,                                                           \
+	};                                                                                                             \
+	TracyCZoneCtx __attribute__((cleanup(u_trace_scope_cleanup))) ctx =                                            \
+	    ___tracy_emit_zone_begin(&__func_loc, true);                                                               \
+	(void)ctx
+
+#define U_TRACE_IDENT(CATEGORY, IDENT)                                                                                 \
+	static const struct ___tracy_source_location_data __##IDENT##_loc = {                                          \
+	    #IDENT, __func__, __FILE__, (uint32_t)__LINE__, 0,                                                         \
+	};                                                                                                             \
+	TracyCZoneCtx __attribute__((cleanup(u_trace_scope_cleanup))) ctx##IDENT =                                     \
+	    ___tracy_emit_zone_begin(&__##IDENT##_loc, true);                                                          \
+	(void)ctx##IDENT
+
+#else // !XRT_OS_WINDOWS && !__cplusplus
+
+#define U_TRACE_FUNC(CATEGORY)                                                                                         \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_IDENT(CATEGORY, IDENT)                                                                                 \
+	do {                                                                                                           \
+	} while (false)
+
+#endif // !XRT_OS_WINDOWS && !__cplusplus
+
+
+#define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_EVENT_END_ON_TRACK(CATEGORY, TRACK, TIME)                                                              \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_CATEGORY_IS_ENABLED(_) (true) // All categories are always enabled with Tracy.
+
+#define U_TRACE_SET_THREAD_NAME(STRING)                                                                                \
+	do {                                                                                                           \
+		/* To help with thread ordering and seeing when a thread is created. */                                \
+		TracyCZoneN(created, "created", true);                                                                 \
+		TracyCSetThreadName(STRING);                                                                           \
+		TracyCZoneEnd(created);                                                                                \
+	} while (false)
+
+#define U_TRACE_TARGET_SETUP(WHICH)
+
+
+/*
+ *
  * Percetto support.
  *
  */
 
-#elif defined(XRT_HAVE_PERCETTO) // && XRT_FEATURE_TRACKING
+#elif defined(XRT_HAVE_PERCETTO) // && XRT_FEATURE_TRACKING && !XRT_HAVE_TRACY
 
 #ifndef XRT_OS_LINUX
 #error "Tracing only supported on Linux"
@@ -190,7 +279,7 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 		u_trace_marker_setup(WHICH);                                                                           \
 	}
 
-#else // !XRT_FEATURE_TRACING && !XRT_HAVE_PERCETTO
+#else // !XRT_FEATURE_TRACING && !XRT_HAVE_PERCETTO && !XRT_HAVE_TRACY
 
 #error "Need to have Percetto/Perfetto"
 
