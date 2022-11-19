@@ -33,6 +33,7 @@
 #cmakedefine XRT_HAVE_PERCETTO
 #cmakedefine XRT_HAVE_SDL2
 #cmakedefine XRT_HAVE_SYSTEMD
+#cmakedefine XRT_HAVE_TRACY
 #cmakedefine XRT_HAVE_V4L2
 #cmakedefine XRT_HAVE_VULKAN
 #cmakedefine XRT_HAVE_WAYLAND

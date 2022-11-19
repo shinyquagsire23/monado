@@ -200,6 +200,7 @@ endif()
 
 # cmake-format: off
 option_with_deps(CMAKE_INTERPROCEDURAL_OPTIMIZATION "Enable inter-procedural (link-time) optimization" DEFAULT OFF DEPENDS HAS_IPO)
+option(XRT_HAVE_TRACY "Enable Tracy support for tracing, make sure to set XRT_FEATURE_TRACING as well." OFF)
 
 # Graphics deps to use (sorted in each group, groups thematic and ordered to handle internal deps: e.g. EGL and SDL2 need OpenGL/GLES)
 option_with_deps(XRT_HAVE_OPENGL "Enable OpenGL Graphics API support" DEPENDS OPENGL_WITHOUT_GLX_FOUND)
@@ -248,7 +249,7 @@ option_with_deps(XRT_FEATURE_SERVICE "Enable separate service module for OpenXR 
 option_with_deps(XRT_FEATURE_SERVICE_SYSTEMD "Enable systemd socket activation of the service" DEPENDS XRT_HAVE_SYSTEMD XRT_FEATURE_SERVICE)
 option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAVE_OPENCV "XRT_HAVE_BASALT_SLAM OR XRT_HAVE_KIMERA_SLAM")
 option_with_deps(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" DEPENDS "NOT ANDROID")
-option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS XRT_HAVE_PERCETTO)
+option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS "XRT_HAVE_PERCETTO OR XRT_HAVE_TRACY")
 option_with_deps(XRT_FEATURE_WINDOW_PEEK "Enable a window that displays the content of the HMD on screen" DEPENDS XRT_HAVE_SDL2)
 
 if (XRT_FEATURE_SERVICE)
@@ -377,6 +378,15 @@ endif()
 # Flags
 ###
 
+if(XRT_HAVE_TRACY)
+	# Needed to fully enable.
+	add_definitions(-DTRACY_ENABLE)
+endif()
+
+if(XRT_HAVE_TRACY AND XRT_HAVE_PERCETTO)
+	message(FATAL_ERROR "Max one tracing backend, XRT_HAVE_TRACY and XRT_HAVE_PERCETTO enabled")
+endif()
+
 if(XRT_HAVE_XLIB AND NOT XRT_HAVE_XRANDR)
 	message(WARNING "XRT_HAVE_XLIB requires XRT_HAVE_XRANDR but XRT_HAVE_XRANDR is disabled")
 endif()
@@ -481,6 +491,7 @@ message(STATUS "#    SDL2:            ${XRT_HAVE_SDL2}")
 message(STATUS "#    SLAM:            ${XRT_FEATURE_SLAM}")
 message(STATUS "#    SYSTEM_CJSON:    ${XRT_HAVE_SYSTEM_CJSON}")
 message(STATUS "#    SYSTEMD:         ${XRT_HAVE_SYSTEMD}")
+message(STATUS "#    TRACY:           ${XRT_HAVE_TRACY}")
 message(STATUS "#    VULKAN:          ${XRT_HAVE_VULKAN}")
 message(STATUS "#    WAYLAND:         ${XRT_HAVE_WAYLAND}")
 message(STATUS "#    WAYLAND_DIRECT:  ${XRT_HAVE_WAYLAND_DIRECT}")
