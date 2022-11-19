@@ -25,7 +25,7 @@
 #endif
 #endif
 
-#ifdef XRT_FEATURE_TRACING
+#if defined(XRT_FEATURE_TRACING) && defined(XRT_HAVE_PERCETTO)
 #define U_TRACE_PERCETTO
 #include <percetto.h>
 #endif
