@@ -108,3 +108,8 @@ Files:  src/external/glad/src/*
 Copyright: 2013-2022, David Herberth
 License: MIT
 Comment: SPDX-License-Identifier missing.
+
+Files:  src/external/tracy/*
+Copyright: 2017-2022, Bartosz Taudul
+License: BSD-3-Clause
+Comment: SPDX-License-Identifier missing.

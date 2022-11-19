@@ -142,3 +142,11 @@ add_library(xrt-external-tinyceres INTERFACE)
 target_include_directories(
 	xrt-external-tinyceres SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinyceres/include
 	)
+
+# Tracy
+if(XRT_HAVE_TRACY)
+	add_library(xrt-external-tracy STATIC tracy/TracyClient.cpp)
+	target_include_directories(
+		xrt-external-tracy SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tracy
+		)
+endif()
