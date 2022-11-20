@@ -472,6 +472,8 @@ compositor_destroy(struct xrt_compositor *xc)
 static bool
 compositor_check_and_prepare_xdev(struct comp_compositor *c, struct xrt_device *xdev)
 {
+	COMP_TRACE_MARKER();
+
 	// clang-format off
 	bool has_none = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_NONE) != 0;
 	bool has_meshuv = (xdev->hmd->distortion.models & XRT_DISTORTION_MODEL_MESHUV) != 0;
@@ -716,6 +718,8 @@ select_instances_extensions(struct comp_compositor *c, struct u_string_list *req
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 	struct vk_bundle *vk = get_vk(c);
 	VkResult ret;
 
@@ -881,6 +885,8 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 static bool
 compositor_check_vulkan_caps(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 #ifdef VK_USE_PLATFORM_XLIB_XRANDR_EXT
 	VkResult ret;
 
@@ -986,6 +992,8 @@ compositor_try_window(struct comp_compositor *c, struct comp_target *ct)
 static bool
 compositor_init_window_pre_vulkan(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 	// Nothing to do for nvidia and vk_display.
 	if (c->settings.window_type == WINDOW_DIRECT_NVIDIA || c->settings.window_type == WINDOW_VK_DISPLAY) {
 		return true;
@@ -1112,6 +1120,8 @@ compositor_init_window_post_vulkan(struct comp_compositor *c)
 static bool
 compositor_init_swapchain(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 	if (comp_target_init_post_vulkan(c->target,                   //
 	                                 c->settings.preferred.width, //
 	                                 c->settings.preferred.height)) {
@@ -1128,6 +1138,8 @@ compositor_init_swapchain(struct comp_compositor *c)
 static bool
 compositor_init_render_resources(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 	struct vk_bundle *vk = get_vk(c);
 
 	if (!render_shaders_load(&c->shaders, vk)) {
@@ -1144,6 +1156,8 @@ compositor_init_render_resources(struct comp_compositor *c)
 static bool
 compositor_init_renderer(struct comp_compositor *c)
 {
+	COMP_TRACE_MARKER();
+
 	c->r = comp_renderer_create(c);
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
@@ -1158,6 +1172,8 @@ compositor_init_renderer(struct comp_compositor *c)
 xrt_result_t
 comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
 {
+	COMP_TRACE_MARKER();
+
 	struct comp_compositor *c = U_TYPED_CALLOC(struct comp_compositor);
 
 	c->base.base.base.begin_session = compositor_begin_session;
