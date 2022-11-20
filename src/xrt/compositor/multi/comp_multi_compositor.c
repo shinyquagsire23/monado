@@ -563,10 +563,11 @@ multi_compositor_mark_frame(struct xrt_compositor *xc,
 
 	struct multi_compositor *mc = multi_compositor(xc);
 
+	uint64_t now_ns = os_monotonic_get_ns();
+
 	switch (point) {
 	case XRT_COMPOSITOR_FRAME_POINT_WOKE:
 		os_mutex_lock(&mc->msc->list_and_timing_lock);
-		uint64_t now_ns = os_monotonic_get_ns();
 		u_pa_mark_point(mc->upa, frame_id, U_TIMING_POINT_WAKE_UP, now_ns);
 		os_mutex_unlock(&mc->msc->list_and_timing_lock);
 		break;
