@@ -250,8 +250,7 @@ predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t peri
 static void
 do_tracing(struct pacing_app *pa, struct u_pa_frame *f)
 {
-	// Trace the data.
-#ifdef XRT_FEATURE_TRACING
+#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 		return;
 	}

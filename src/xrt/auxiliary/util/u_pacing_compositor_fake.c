@@ -156,6 +156,7 @@ static void
 pc_info_gpu(
     struct u_pacing_compositor *upc, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
 {
+#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 #define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(frame_id))
 #define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
@@ -166,6 +167,7 @@ pc_info_gpu(
 #undef TE_BEG
 #undef TE_END
 	}
+#endif
 }
 
 static void

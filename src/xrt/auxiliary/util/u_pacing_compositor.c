@@ -402,6 +402,7 @@ adjust_comp_time(struct pacing_compositor *pc, struct frame *f)
 static void
 do_tracing(struct pacing_compositor *pc, struct frame *f)
 {
+#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 		return;
 	}
@@ -512,6 +513,7 @@ do_tracing(struct pacing_compositor *pc, struct frame *f)
 
 #undef TE_BEG
 #undef TE_END
+#endif
 }
 
 
