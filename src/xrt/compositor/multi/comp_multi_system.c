@@ -490,7 +490,12 @@ multi_main_loop(struct multi_system_compositor *msc)
 		broadcast_timings_to_pacers(msc, predicted_display_time_ns, predicted_display_period_ns, diff_ns);
 
 		xrt_comp_begin_frame(xc, frame_id);
-		xrt_comp_layer_begin(xc, frame_id, 0, 0);
+
+		//! @todo Pick the blend mode from primary client.
+		enum xrt_blend_mode blend_mode = XRT_BLEND_MODE_OPAQUE;
+		//! @todo Pick a good display time.
+		uint64_t display_time_ns = 0;
+		xrt_comp_layer_begin(xc, frame_id, display_time_ns, blend_mode);
 
 		// Make sure that the clients doesn't go away while we transfer layers.
 		os_mutex_lock(&msc->list_and_timing_lock);
