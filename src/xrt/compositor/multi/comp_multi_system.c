@@ -546,7 +546,7 @@ system_compositor_set_state(struct xrt_system_compositor *xsc, struct xrt_compos
 		mc->state.visible = visible;
 		mc->state.focused = focused;
 
-		union xrt_compositor_event xce = {0};
+		union xrt_compositor_event xce = XRT_STRUCT_INIT;
 		xce.type = XRT_COMPOSITOR_EVENT_STATE_CHANGE;
 		xce.state.visible = visible;
 		xce.state.focused = focused;
@@ -577,7 +577,7 @@ system_compositor_set_main_app_visibility(struct xrt_system_compositor *xsc, str
 	struct multi_compositor *mc = multi_compositor(xc);
 	(void)msc;
 
-	union xrt_compositor_event xce = {0};
+	union xrt_compositor_event xce = XRT_STRUCT_INIT;
 	xce.type = XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE;
 	xce.overlay.visible = visible;
 
