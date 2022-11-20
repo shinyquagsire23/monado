@@ -45,7 +45,7 @@ setup_epoll(volatile struct ipc_client_state *ics)
 
 	int epoll_fd = ret;
 
-	struct epoll_event ev = {0};
+	struct epoll_event ev = XRT_STRUCT_INIT;
 
 	ev.events = EPOLLIN;
 	ev.data.fd = listen_socket;
@@ -82,7 +82,7 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	while (ics->server->running) {
 		const int half_a_second_ms = 500;
-		struct epoll_event event = {0};
+		struct epoll_event event = XRT_STRUCT_INIT;
 
 		// We use epoll here to be able to timeout.
 		int ret = epoll_wait(epoll_fd, &event, 1, half_a_second_ms);

@@ -828,7 +828,7 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 		return xret;
 	}
 
-	struct xrt_image_native xins[XRT_MAX_SWAPCHAIN_IMAGES] = {0};
+	struct xrt_image_native xins[XRT_MAX_SWAPCHAIN_IMAGES] = XRT_STRUCT_INIT;
 	for (uint32_t i = 0; i < handle_count; i++) {
 		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
