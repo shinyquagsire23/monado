@@ -58,7 +58,7 @@ struct u_sink_force_genlock
 static void *
 force_genlock_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("Sink Genlock");
 
 	struct u_sink_force_genlock *q = (struct u_sink_force_genlock *)ptr;
 	struct xrt_frame *frames[2] = {NULL, NULL};
