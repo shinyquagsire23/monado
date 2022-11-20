@@ -239,7 +239,7 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics)
 void *
 ipc_server_client_thread(void *_ics)
 {
-	volatile struct ipc_client_state *ics = _ics;
+	volatile struct ipc_client_state *ics = (volatile struct ipc_client_state *)_ics;
 
 	client_loop(ics);
 
