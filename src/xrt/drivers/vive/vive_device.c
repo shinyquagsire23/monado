@@ -447,6 +447,8 @@ vive_mainboard_read_one_msg(struct vive_device *d)
 		return false;
 	}
 
+	DRV_TRACE_IDENT(packet);
+
 	switch (buffer[0]) {
 	case VIVE_MAINBOARD_STATUS_REPORT_ID:
 		if (ret != sizeof(struct vive_mainboard_status_report)) {
@@ -612,6 +614,8 @@ vive_sensors_read_one_msg(struct vive_device *d,
 		return false;
 	}
 
+	DRV_TRACE_IDENT(packet);
+
 	if (buffer[0] == report_id) {
 		if (!_is_report_size_valid(d, ret, report_size, report_id))
 			return false;
@@ -703,6 +707,8 @@ vive_sensors_read_lighthouse_msg(struct vive_device *d)
 		           ret);
 		return false;
 	}
+
+	DRV_TRACE_IDENT(packet);
 
 	int expected; // size;
 
