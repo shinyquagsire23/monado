@@ -12,10 +12,13 @@
 #include <stdio.h>
 
 #include "util/u_trace_marker.h"
+#include "math/m_api.h"
+#include "math/m_vec3.h"
 
 #include "os/os_time.h"
 
 #include "ql_system.h"
+#include "ql_hmd.h"
 #include "ql_xrsp.h"
 #include "ql_xrsp_hostinfo.h"
 #include "ql_xrsp_topic.h"
@@ -26,6 +29,7 @@
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+#include "protos/HostInfo.capnp.h"
 #include "protos/Slice.capnp.h"
 
 static void *
@@ -674,6 +678,43 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
     }  
 }
 
+static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
+{
+    ql_xrsp_hostinfo_capnp_payload* payload = (ql_xrsp_hostinfo_capnp_payload*)pkt->payload;
+    uint8_t* capnp_data = pkt->payload + sizeof(*payload);
+
+    //hex_dump(capnp_data, payload->len_u64s * 8);
+
+    //size_t num_words = (pkt->stream_size - 8) >> 3;
+
+    kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)capnp_data, payload->len_u64s)};
+    capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
+
+    PayloadHostInfo::Reader info = message.getRoot<PayloadHostInfo>();
+
+    HeadsetConfig::Reader config = info.getConfig();
+    HeadsetDescription::Reader description = config.getDescription();
+    HeadsetLens::Reader lensLeft = description.getLeftLens();
+    HeadsetLens::Reader lensRight = description.getRightLens();
+
+    struct ql_hmd* hmd = host->sys->hmd;
+
+    // TODO mutex
+
+    ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), description.getRefreshRateHz());
+
+    // Pull FOV information
+    hmd->base.hmd->distortion.fov[0].angle_up = lensLeft.getAngleUp() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[0].angle_down = -lensLeft.getAngleDown() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[0].angle_left = -lensLeft.getAngleLeft() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[0].angle_right = lensLeft.getAngleRight() * M_PI / 180;
+    
+    hmd->base.hmd->distortion.fov[1].angle_up = lensRight.getAngleUp() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[1].angle_down = -lensRight.getAngleDown() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[1].angle_left = -lensRight.getAngleLeft() * M_PI / 180;
+    hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
+}
+
 static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
 {
     int ret;
@@ -690,6 +731,11 @@ static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
     if (hostinfo.message_type == BUILTIN_ECHO) {
         xrsp_handle_echo(host, &hostinfo);
         return;
+    }
+
+    // Pull lens and distortion info
+    if (hostinfo.message_type == BUILTIN_INVITE) {
+        xrsp_handle_invite(host, &hostinfo);
     }
 
     if (host->pairing_state == PAIRINGSTATE_WAIT_FIRST)
@@ -901,6 +947,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     msg.setUnk0p1(0);
     msg.setRectifyMeshId(0);
 
+    // TODO mutex
     struct ql_hmd* hmd = host->sys->hmd;
 
     msg.setPoseQuatX(hmd->pose.orientation.x);

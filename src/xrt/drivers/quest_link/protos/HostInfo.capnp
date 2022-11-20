@@ -2,10 +2,10 @@
 
 struct HeadsetLens
 {
-    info8Unk1p0 @0 :Float32;
-    info8Unk1p1 @1 :Float32;
-    info8Unk2p0 @2 :Float32;
-    info8Unk2p1 @3 :Float32;
+    angleUp @0 :Float32;
+    angleDown @1 :Float32;
+    angleLeft @2 :Float32;
+    angleRight @3 :Float32;
 
     info8Unk3p0 @4 :Float32;
     info8Unk3p1 @5 :Float32;

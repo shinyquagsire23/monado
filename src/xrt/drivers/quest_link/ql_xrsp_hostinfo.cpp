@@ -50,8 +50,8 @@ int32_t ql_xrsp_hostinfo_pkt_create(struct ql_xrsp_hostinfo_pkt* pkt, struct ql_
         pkt->payload_size = topic_pkt->payload_size - 8;
     }
     else {
-        pkt->payload = topic_pkt->payload + 0x10;
-        pkt->payload_size = topic_pkt->payload_size - 0x10;
+        pkt->payload = topic_pkt->payload + 0x8;
+        pkt->payload_size = topic_pkt->payload_size - 0x8;
     }
 
     pkt->message_type = header->message_type;

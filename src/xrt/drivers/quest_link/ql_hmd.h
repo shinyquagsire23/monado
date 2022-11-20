@@ -30,6 +30,8 @@ extern "C" {
 #ifndef QUEST_LINK_HMD_H
 #define QUEST_LINK_HMD_H
 
+void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps);
+
 struct ql_hmd *
 ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct ql_hmd_config *config);
 //void

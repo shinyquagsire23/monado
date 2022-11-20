@@ -31,6 +31,12 @@ struct ql_hmd;
 struct ql_controller;
 struct ql_camera;
 
+typedef struct ql_xrsp_hostinfo_capnp_payload
+{
+    uint32_t unk_8;
+    uint32_t len_u64s;
+} ql_xrsp_hostinfo_capnp_payload;
+
 typedef struct ql_xrsp_echo_payload
 {
     int64_t org;
@@ -49,8 +55,6 @@ typedef struct ql_xrsp_hostinfo_pkt
     uint32_t stream_size;
 
     uint32_t unk_4;
-    uint32_t unk_8;
-    uint32_t len_u64s;
 
     int64_t recv_ns;
 } ql_xrsp_hostinfo_pkt;
@@ -193,6 +197,7 @@ struct ql_hmd
 
     /* Temporary distortion values for mesh calc */
     struct u_panotools_values distortion_vals[2];
+    float ipd_meters;
 };
 
 typedef struct ql_system

@@ -69,6 +69,8 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     hmd->pose.orientation.y = headsetPose.getQuatY();
     hmd->pose.orientation.z = headsetPose.getQuatZ();
     hmd->pose.orientation.w = headsetPose.getQuatW();
+
+    hmd->ipd_meters = pose.getIpd();
 }
 
 }

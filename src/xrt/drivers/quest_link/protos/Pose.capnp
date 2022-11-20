@@ -75,7 +75,7 @@ struct PayloadPose {
     unk7p1 @15 :Float32;
     unk8p0 @16 :Float32;
     unk8p1 @17 :Float32;
-    unk9p0 @18 :Float32;
+    ipd @18 :Float32;
     unk9p1 @19 :Float32;
     unkAp0 @20 :Float32;
     unkAp1 @21 :Float32;

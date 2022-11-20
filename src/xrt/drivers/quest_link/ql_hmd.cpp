@@ -104,7 +104,15 @@ ql_get_view_poses(struct xrt_device *xdev,
                       struct xrt_fov *out_fovs,
                       struct xrt_pose *out_poses)
 {
-	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
+
+	static float test = 0.0;
+	//test += 0.001;
+	struct xrt_vec3 modify_eye_relation = *default_eye_relation;
+	modify_eye_relation.x = hmd->ipd_meters;
+	//printf("%f\n", modify_eye_relation.x);
+
+	u_device_get_view_poses(xdev, &modify_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
 	                        out_poses);
 }
 
@@ -124,6 +132,43 @@ ql_hmd_destroy(struct xrt_device *xdev)
 	u_var_remove_root(hmd);
 
 	u_device_free(&hmd->base);
+}
+
+void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps)
+{
+	auto eye_width = w;
+	auto eye_height = h;
+
+	// Setup info.
+	hmd->base.hmd->blend_modes[0] = XRT_BLEND_MODE_OPAQUE;
+	hmd->base.hmd->blend_mode_count = 1;
+	hmd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	hmd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+
+	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
+	hmd->base.hmd->screens[0].h_pixels = eye_height;
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / fps;
+
+	// Left
+	hmd->base.hmd->views[0].display.w_pixels = eye_width;
+	hmd->base.hmd->views[0].display.h_pixels = eye_height;
+	hmd->base.hmd->views[0].viewport.x_pixels = 0;
+	hmd->base.hmd->views[0].viewport.y_pixels = 0;
+	hmd->base.hmd->views[0].viewport.w_pixels = eye_width;
+	hmd->base.hmd->views[0].viewport.h_pixels = eye_height;
+	hmd->base.hmd->views[0].rot = u_device_rotation_ident;
+
+	// Right
+	hmd->base.hmd->views[1].display.w_pixels = eye_width;
+	hmd->base.hmd->views[1].display.h_pixels = eye_height;
+	hmd->base.hmd->views[1].viewport.x_pixels = eye_width;
+	hmd->base.hmd->views[1].viewport.y_pixels = 0;
+	hmd->base.hmd->views[1].viewport.w_pixels = eye_width;
+	hmd->base.hmd->views[1].viewport.h_pixels = eye_height;
+	hmd->base.hmd->views[1].rot = u_device_rotation_ident;
+
+	hmd->encode_width = eye_width * 2;
+	hmd->encode_height = eye_height;
 }
 
 struct ql_hmd *
@@ -175,50 +220,25 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->pose.orientation.z = 0.0f;
 	hmd->pose.orientation.w = 1.0f;
 
+
+
 	auto eye_width = 3616/2;
 	auto eye_height = 1920;
-
-	// Setup info.
-	hmd->base.hmd->blend_modes[0] = XRT_BLEND_MODE_OPAQUE;
-	hmd->base.hmd->blend_mode_count = 1;
-	hmd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
-	hmd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
-
-	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
-	hmd->base.hmd->screens[0].h_pixels = eye_height;
-	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / 72.0;
-
-	// Left
-	hmd->base.hmd->views[0].display.w_pixels = eye_width;
-	hmd->base.hmd->views[0].display.h_pixels = eye_height;
-	hmd->base.hmd->views[0].viewport.x_pixels = 0;
-	hmd->base.hmd->views[0].viewport.y_pixels = 0;
-	hmd->base.hmd->views[0].viewport.w_pixels = eye_width;
-	hmd->base.hmd->views[0].viewport.h_pixels = eye_height;
-	hmd->base.hmd->views[0].rot = u_device_rotation_ident;
-
-	// Right
-	hmd->base.hmd->views[1].display.w_pixels = eye_width;
-	hmd->base.hmd->views[1].display.h_pixels = eye_height;
-	hmd->base.hmd->views[1].viewport.x_pixels = eye_width;
-	hmd->base.hmd->views[1].viewport.y_pixels = 0;
-	hmd->base.hmd->views[1].viewport.w_pixels = eye_width;
-	hmd->base.hmd->views[1].viewport.h_pixels = eye_height;
-	hmd->base.hmd->views[1].rot = u_device_rotation_ident;
+	ql_hmd_set_per_eye_resolution(hmd, eye_width, eye_height, 72.0);
 
 	// Default FOV from Oculus Quest
+	hmd->base.hmd->distortion.fov[0].angle_up = 48 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[0].angle_down = -50 * M_PI / 180;
 	hmd->base.hmd->distortion.fov[0].angle_left = -52 * M_PI / 180;
-	hmd->base.hmd->distortion.fov[0].angle_right = 42 * M_PI / 180;
-	hmd->base.hmd->distortion.fov[0].angle_up = 47 * M_PI / 180;
-	hmd->base.hmd->distortion.fov[0].angle_down = -53 * M_PI / 180;
-
-	hmd->base.hmd->distortion.fov[1].angle_left = -42 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[0].angle_right = 45 * M_PI / 180;
+	
+	hmd->base.hmd->distortion.fov[1].angle_up = 48 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[1].angle_down = -50 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[1].angle_left = -45 * M_PI / 180;
 	hmd->base.hmd->distortion.fov[1].angle_right = 52 * M_PI / 180;
-	hmd->base.hmd->distortion.fov[1].angle_up = 47 * M_PI / 180;
-	hmd->base.hmd->distortion.fov[1].angle_down = -53 * M_PI / 180;
 
-	hmd->encode_width = eye_width * 2;
-	hmd->encode_height = eye_height;
+	hmd->ipd_meters = 0.063;
+
 
 #if 0
 	// Setup info.
