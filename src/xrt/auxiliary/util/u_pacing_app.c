@@ -250,12 +250,25 @@ predict_display_time(const struct pacing_app *pa, uint64_t now_ns, uint64_t peri
 static void
 do_tracing(struct pacing_app *pa, struct u_pa_frame *f)
 {
-#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 		return;
 	}
 
+#ifdef U_TRACE_TRACY // Uses Tracy specific things.
+	uint64_t cpu_ns = f->when.begin_ns - f->when.wait_woke_ns;
+	TracyCPlot("App CPU(ms)", time_ns_to_ms_f(cpu_ns));
 
+	uint64_t draw_ns = f->when.delivered_ns - f->when.begin_ns;
+	TracyCPlot("App Draw(ms)", time_ns_to_ms_f(draw_ns));
+
+	uint64_t gpu_ns = f->when.gpu_done_ns - f->when.delivered_ns;
+	TracyCPlot("App GPU(ms)", time_ns_to_ms_f(gpu_ns));
+
+	int64_t diff_ns = (int64_t)f->when.gpu_done_ns - (int64_t)f->predicted_gpu_done_time_ns;
+	TracyCPlot("App vs Expected(ms)", time_ns_to_ms_f(diff_ns));
+#endif
+
+#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 #define TE_BEG(TRACK, TIME, NAME) U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(timing, TRACK, TIME, NAME, PERCETTO_I(f->frame_id))
 #define TE_END(TRACK, TIME) U_TRACE_EVENT_END_ON_TRACK(timing, TRACK, TIME)
 

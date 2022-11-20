@@ -168,6 +168,11 @@ pc_info_gpu(
 #undef TE_END
 	}
 #endif
+
+#ifdef U_TRACE_TRACY
+	uint64_t diff_ns = gpu_end_ns - gpu_start_ns;
+	TracyCPlot("Compositor GPU(ms)", time_ns_to_ms_f(diff_ns));
+#endif
 }
 
 static void
