@@ -9,6 +9,7 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "server/ipc_server.h"
 #include "ipc_server_generated.h"
@@ -67,6 +68,8 @@ setup_epoll(volatile struct ipc_client_state *ics)
 static void
 client_loop(volatile struct ipc_client_state *ics)
 {
+	U_TRACE_SET_THREAD_NAME("IPC Client");
+
 	IPC_INFO(ics->server, "Client connected");
 
 	// Claim the client fd.
@@ -145,6 +148,8 @@ client_loop(volatile struct ipc_client_state *ics)
 static void
 client_loop(volatile struct ipc_client_state *ics)
 {
+	U_TRACE_SET_THREAD_NAME("IPC Client");
+
 	IPC_INFO(ics->server, "Client connected");
 
 	uint8_t buf[IPC_BUF_SIZE];
