@@ -26,6 +26,7 @@
 #endif
 
 #ifdef XRT_FEATURE_TRACING
+#define U_TRACE_PERCETTO
 #include <percetto.h>
 #endif
 
