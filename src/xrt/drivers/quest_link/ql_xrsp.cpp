@@ -1062,29 +1062,6 @@ ql_xrsp_write_thread(void *ptr)
 {
     DRV_TRACE_MARKER();
 
-    void* dat0_data[5];
-    size_t dat0_data_len[5];
-    void* dat1_data[5];
-    size_t dat1_data_len[5];
-    for (int i = 0; i < 5; i++)
-    {
-        void* dat0 = malloc(0x27);
-        void* dat1 = malloc(0x40000);
-
-        char tmp[0x200];
-        snprintf(tmp, sizeof(tmp), "test_frame/test_toblerone_%u.264", i+1);
-        FILE* f = fopen(tmp, "rb");
-        dat0_data_len[i] = fread(dat0, 1, 0x27, f);
-        fseek(f, 0x29A, SEEK_SET);
-        dat1_data_len[i] = fread(dat1, 1, 0x40000, f);
-        fclose(f);
-
-        dat0_data[i] = dat0;
-        dat1_data[i] = dat1;
-    }
-
-    int frame_idx = 0;
-
     struct ql_xrsp_host *host = (struct ql_xrsp_host *)ptr;
 
     os_thread_helper_lock(&host->write_thread);
@@ -1110,14 +1087,7 @@ ql_xrsp_write_thread(void *ptr)
         //printf("%zx\n", xrsp_ts_ns(host) - host->paired_ns);
         if (xrsp_ts_ns(host) - host->paired_ns > 5000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000
         {
-            //printf("aaa\n");
             host->ready_to_send_frames = true;
-
-            for (int i = 0; i < host->num_slices; i++)
-            {
-                //xrsp_send_video(host, i, frame_idx, (const uint8_t*)dat0_data[i], dat0_data_len[i], (const uint8_t*)dat1_data[i], dat1_data_len[i], i*(1920 / host->num_slices)); // i, frameIdx, dat0, dat1, (i % 5)*(1920 // xrsp_host.num_slices)
-            }
-            frame_idx += 1;
         }
         
         os_thread_helper_lock(&host->write_thread);
