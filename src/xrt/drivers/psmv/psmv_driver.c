@@ -27,6 +27,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "psmv_interface.h"
 
@@ -706,6 +707,8 @@ psmv_read_one_packet(struct psmv_device *psmv, uint8_t *buffer, size_t size)
 static void *
 psmv_run_thread(void *ptr)
 {
+	U_TRACE_SET_THREAD_NAME("PS Move");
+
 	struct psmv_device *psmv = (struct psmv_device *)ptr;
 
 	union {

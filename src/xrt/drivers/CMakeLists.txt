@@ -153,7 +153,7 @@ if(XRT_BUILD_DRIVER_PSMV)
 	add_library(drv_psmv STATIC psmv/psmv_driver.c psmv/psmv_interface.h)
 	target_link_libraries(
 		drv_psmv
-		PRIVATE xrt-interfaces
+		PRIVATE xrt-interfaces aux_util
 		PUBLIC aux_os aux_tracking
 		)
 	list(APPEND ENABLED_DRIVERS psmv)
