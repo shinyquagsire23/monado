@@ -131,7 +131,10 @@ ipc_handle_session_begin(volatile struct ipc_client_state *ics)
 		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
 	}
 
-	return xrt_comp_begin_session(ics->xc, 0);
+	//! @todo Pass the view type down.
+	enum xrt_view_type view_type = XRT_VIEW_TYPE_STEREO;
+
+	return xrt_comp_begin_session(ics->xc, view_type);
 }
 
 xrt_result_t
