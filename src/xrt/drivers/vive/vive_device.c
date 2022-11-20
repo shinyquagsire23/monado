@@ -466,6 +466,8 @@ vive_mainboard_run_thread(void *ptr)
 {
 	struct vive_device *d = (struct vive_device *)ptr;
 
+	U_TRACE_SET_THREAD_NAME("Vive: Mainboard");
+
 	os_thread_helper_lock(&d->mainboard_thread);
 	while (os_thread_helper_is_running_locked(&d->mainboard_thread)) {
 		os_thread_helper_unlock(&d->mainboard_thread);
@@ -735,6 +737,8 @@ vive_watchman_run_thread(void *ptr)
 {
 	struct vive_device *d = (struct vive_device *)ptr;
 
+	U_TRACE_SET_THREAD_NAME("Vive: Watchman");
+
 	os_thread_helper_lock(&d->watchman_thread);
 	while (os_thread_helper_is_running_locked(&d->watchman_thread)) {
 		os_thread_helper_unlock(&d->watchman_thread);
@@ -754,6 +758,8 @@ static void *
 vive_sensors_run_thread(void *ptr)
 {
 	struct vive_device *d = (struct vive_device *)ptr;
+
+	U_TRACE_SET_THREAD_NAME("Vive: Sensors");
 
 	os_thread_helper_lock(&d->sensors_thread);
 	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
