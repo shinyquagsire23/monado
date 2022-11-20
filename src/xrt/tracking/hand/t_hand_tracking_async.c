@@ -63,7 +63,7 @@ ht_async_impl(struct t_hand_tracking_async *base)
 static void *
 ht_async_mainloop(void *ptr)
 {
-	XRT_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("Hand Tracking: Async");
 
 	struct ht_async_impl *hta = (struct ht_async_impl *)ptr;
 
