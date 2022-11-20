@@ -207,7 +207,7 @@ compute_frame_size(struct wmr_camera *cam)
 static void *
 wmr_cam_usb_thread(void *ptr)
 {
-	DRV_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("WMR: USB-Camera");
 
 	struct wmr_camera *cam = ptr;
 
@@ -223,6 +223,7 @@ wmr_cam_usb_thread(void *ptr)
 	//! @todo Think this is not needed? what condition are we waiting for?
 	os_thread_helper_wait_locked(&cam->usb_thread);
 	os_thread_helper_unlock(&cam->usb_thread);
+
 	return NULL;
 }
 

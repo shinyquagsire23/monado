@@ -377,7 +377,7 @@ wmr_bt_controller_update_inputs(struct xrt_device *xdev)
 static void *
 wmr_bt_controller_run_thread(void *ptr)
 {
-	DRV_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("WMR: BT-Controller");
 
 	struct wmr_bt_controller *d = wmr_bt_controller(ptr);
 

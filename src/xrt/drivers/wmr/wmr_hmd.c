@@ -581,7 +581,7 @@ control_read_packets(struct wmr_hmd *wh)
 static void *
 wmr_run_thread(void *ptr)
 {
-	DRV_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("WMR: USB-HMD");
 
 	struct wmr_hmd *wh = (struct wmr_hmd *)ptr;
 
