@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "wivrn_comp_target.h"
+#include "ql_comp_target.h"
 #include "main/comp_compositor.h"
 #include "math/m_space.h"
 #include "util/u_pacing.h"
@@ -30,6 +30,11 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "ql_types.h"
+
+namespace xrt::drivers::quest_link
+{
+
 static const uint8_t image_free = 0;
 static const uint8_t image_acquired = 1;
 
@@ -41,14 +46,16 @@ struct pseudo_swapchain
 		VkDeviceMemory memory;
 		uint8_t status; // bitmask of consumer status, index 0 for acquired, the rest for each encoder
 		uint64_t frame_index;
-		to_headset::video_stream_data_shard::view_info_t view_info{};
+		xrt::drivers::wivrn::to_headset::video_stream_data_shard::view_info_t view_info{};
 	} * images{};
 	std::mutex mutex;
 	std::condition_variable cv;
 };
 
-struct wivrn_comp_target : public comp_target
+struct ql_comp_target : public comp_target
 {
+	ql_xrsp_host* host;
+
 	//! Compositor frame pacing helper
 	struct u_pacing_compositor * upc{};
 
@@ -79,21 +86,19 @@ struct wivrn_comp_target : public comp_target
 		}
 	};
 	std::list<encoder_thread> encoder_threads;
-	std::vector<std::shared_ptr<VideoEncoder>> encoders;
-
-	std::shared_ptr<xrt::drivers::wivrn::wivrn_session> cnx;
+	std::vector<std::shared_ptr<xrt::drivers::wivrn::VideoEncoder>> encoders;
 };
 
-static void target_init_semaphores(struct wivrn_comp_target * cn);
+static void target_init_semaphores(struct ql_comp_target * cn);
 
-static void target_fini_semaphores(struct wivrn_comp_target * cn);
+static void target_fini_semaphores(struct ql_comp_target * cn);
 
-static inline struct vk_bundle * get_vk(struct wivrn_comp_target * cn)
+static inline struct vk_bundle * get_vk(struct ql_comp_target * cn)
 {
 	return &cn->c->base.vk;
 }
 
-static void destroy_images(struct wivrn_comp_target * cn)
+static void destroy_images(struct ql_comp_target * cn)
 {
 	if (cn->images == NULL)
 	{
@@ -127,20 +132,20 @@ static void destroy_images(struct wivrn_comp_target * cn)
 
 struct encoder_thread_param
 {
-	wivrn_comp_target * cn;
-	wivrn_comp_target::encoder_thread * thread;
-	std::vector<std::shared_ptr<VideoEncoder>> encoders;
+	ql_comp_target * cn;
+	ql_comp_target::encoder_thread * thread;
+	std::vector<std::shared_ptr<xrt::drivers::wivrn::VideoEncoder>> encoders;
 };
 
-static void * comp_wivrn_present_thread(void * void_param);
+static void * comp_ql_present_thread(void * void_param);
 
-static void create_encoders(wivrn_comp_target * cn, std::vector<encoder_settings> & _settings)
+static void create_encoders(ql_comp_target * cn, std::vector<xrt::drivers::wivrn::encoder_settings> & _settings)
 {
 	auto vk = get_vk(cn);
 	assert(cn->encoders.empty());
 	assert(cn->encoder_threads.empty());
 
-	to_headset::video_stream_description desc{};
+	xrt::drivers::wivrn::to_headset::video_stream_description desc{};
 	desc.width = cn->width;
 	desc.height = cn->height;
 	desc.fps = cn->fps;
@@ -151,7 +156,8 @@ static void create_encoders(wivrn_comp_target * cn, std::vector<encoder_settings
 	{
 		uint8_t stream_index = cn->encoders.size();
 		auto & encoder = cn->encoders.emplace_back(
-		        VideoEncoder::Create(vk, settings, stream_index, desc.width, desc.height, desc.fps));
+		        xrt::drivers::wivrn::VideoEncoder::Create(vk, settings, stream_index, desc.width, desc.height, desc.fps));
+		encoder->SetXrspHost(cn->host);
 		desc.items.push_back(settings);
 
 		std::vector<VkImage> images(cn->image_count);
@@ -176,11 +182,11 @@ static void create_encoders(wivrn_comp_target * cn, std::vector<encoder_settings
 		thread.index = cn->encoder_threads.size() - 1;
 		params_ptr->thread = &thread;
 		params_ptr->cn = cn;
-		os_thread_helper_start(&thread.thread, comp_wivrn_present_thread, params_ptr);
+		os_thread_helper_start(&thread.thread, comp_ql_present_thread, params_ptr);
 		std::string name = "encoder " + std::to_string(group);
 		os_thread_helper_name(&thread.thread, name.c_str());
 	}
-	cn->cnx->send_control(desc);
+	//cn->cnx->send_control(desc);
 }
 
 class drm_image_modifier_helper
@@ -228,7 +234,7 @@ public:
 	}
 };
 
-static VkResult create_images(struct wivrn_comp_target * cn, VkImageUsageFlags flags, VkImageTiling tiling)
+static VkResult create_images(struct ql_comp_target * cn, VkImageUsageFlags flags, VkImageTiling tiling)
 {
 	struct vk_bundle * vk = get_vk(cn);
 
@@ -283,7 +289,7 @@ static VkResult create_images(struct wivrn_comp_target * cn, VkImageUsageFlags f
 		dedicated_allocate_info.image = image;
 
 		VkDeviceSize size;
-		res = vk_alloc_and_bind_image_memory(vk, image, -1, &dedicated_allocate_info, "wivrn_comp_target", &memory, &size);
+		res = vk_alloc_and_bind_image_memory(vk, image, -1, &dedicated_allocate_info, "ql_comp_target", &memory, &size);
 		vk_check_error("vk_alloc_and_bind_image_memory", res, res);
 
 		res = vk_create_view(          //
@@ -308,22 +314,22 @@ static VkResult create_images(struct wivrn_comp_target * cn, VkImageUsageFlags f
 	return VK_SUCCESS;
 }
 
-static bool comp_wivrn_init_pre_vulkan(struct comp_target * ct)
+static bool comp_ql_init_pre_vulkan(struct comp_target * ct)
 {
 	return true;
 }
 
-static bool comp_wivrn_init_post_vulkan(struct comp_target * ct, uint32_t preferred_width, uint32_t preferred_height)
+static bool comp_ql_init_post_vulkan(struct comp_target * ct, uint32_t preferred_width, uint32_t preferred_height)
 {
 	return true;
 }
 
-static bool comp_wivrn_check_ready(struct comp_target * ct)
+static bool comp_ql_check_ready(struct comp_target * ct)
 {
 	return true;
 }
 
-static void target_fini_semaphores(struct wivrn_comp_target * cn)
+static void target_fini_semaphores(struct ql_comp_target * cn)
 {
 	struct vk_bundle * vk = get_vk(cn);
 
@@ -340,7 +346,7 @@ static void target_fini_semaphores(struct wivrn_comp_target * cn)
 	}
 }
 
-static void target_init_semaphores(struct wivrn_comp_target * cn)
+static void target_init_semaphores(struct ql_comp_target * cn)
 {
 	struct vk_bundle * vk = get_vk(cn);
 	VkResult ret;
@@ -365,7 +371,7 @@ static void target_init_semaphores(struct wivrn_comp_target * cn)
 	}
 }
 
-static void comp_wivrn_create_images(struct comp_target * ct,
+static void comp_ql_create_images(struct comp_target * ct,
                                      uint32_t preferred_width,
                                      uint32_t preferred_height,
                                      VkFormat preferred_color_format,
@@ -373,7 +379,7 @@ static void comp_wivrn_create_images(struct comp_target * ct,
                                      VkImageUsageFlags image_usage,
                                      VkPresentModeKHR present_mode)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 
 	uint64_t now_ns = os_monotonic_get_ns();
 	if (cn->upc == NULL)
@@ -397,7 +403,7 @@ static void comp_wivrn_create_images(struct comp_target * ct,
 	cn->height = preferred_height;
 	cn->color_space = preferred_color_space;
 
-	auto settings = get_encoder_settings(get_vk(cn), cn->width, cn->height);
+	auto settings = xrt::drivers::wivrn::get_encoder_settings(get_vk(cn), cn->width, cn->height);
 
 	VkResult res = create_images(cn, image_usage, get_required_tiling(get_vk(cn), settings));
 	if (vk_has_error(res, "create_images", __FILE__, __LINE__))
@@ -417,14 +423,14 @@ static void comp_wivrn_create_images(struct comp_target * ct,
 	}
 }
 
-static bool comp_wivrn_has_images(struct comp_target * ct)
+static bool comp_ql_has_images(struct comp_target * ct)
 {
 	return ct->images;
 }
 
-static VkResult comp_wivrn_acquire(struct comp_target * ct, uint32_t * out_index)
+static VkResult comp_ql_acquire(struct comp_target * ct, uint32_t * out_index)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 	struct vk_bundle * vk = get_vk(cn);
 
 	VkSubmitInfo submit{};
@@ -462,10 +468,10 @@ static VkResult comp_wivrn_acquire(struct comp_target * ct, uint32_t * out_index
 	return res;
 }
 
-static void * comp_wivrn_present_thread(void * void_param)
+static void * comp_ql_present_thread(void * void_param)
 {
 	std::unique_ptr<encoder_thread_param> param((encoder_thread_param *)void_param);
-	struct wivrn_comp_target * cn = param->cn;
+	struct ql_comp_target * cn = param->cn;
 	struct vk_bundle * vk = get_vk(cn);
 	U_LOG_I("Starting encoder thread %d", param->thread->index);
 
@@ -514,7 +520,7 @@ static void * comp_wivrn_present_thread(void * void_param)
 			{
 				bool idr_requested = false;
 
-				encoder->Encode(&(*cn->cnx), psc_image.view_info, psc_image.frame_index, presenting_index, idr_requested);
+				encoder->Encode(nullptr, psc_image.view_info, psc_image.frame_index, presenting_index, idr_requested);
 			}
 		}
 		catch (...)
@@ -532,14 +538,14 @@ static void * comp_wivrn_present_thread(void * void_param)
 	return NULL;
 }
 
-static VkResult comp_wivrn_present(struct comp_target * ct,
+static VkResult comp_ql_present(struct comp_target * ct,
                                    VkQueue queue,
                                    uint32_t index,
                                    uint64_t timeline_semaphore_value,
                                    uint64_t desired_present_time_ns,
                                    uint64_t present_slop_ns)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 	struct vk_bundle * vk = get_vk(cn);
 
 	assert(index < cn->image_count);
@@ -572,6 +578,9 @@ static VkResult comp_wivrn_present(struct comp_target * ct,
 	res = vk->vkEndCommandBuffer(cmdBuffer);
 	vk_check_error("vkEndCommandBuffer", res, res);
 	cmdBuffers.push_back(cmdBuffer);
+
+	//if (cn->host)
+	//	cn->host->flush_stream(cn->host);
 
 	for (auto & encoder: cn->encoders)
 	{
@@ -606,7 +615,7 @@ static VkResult comp_wivrn_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = 1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};
@@ -622,19 +631,19 @@ static VkResult comp_wivrn_present(struct comp_target * ct,
 	return VK_SUCCESS;
 }
 
-static void comp_wivrn_flush(struct comp_target * ct)
+static void comp_ql_flush(struct comp_target * ct)
 {
 	(void)ct;
 }
 
-static void comp_wivrn_calc_frame_pacing(struct comp_target * ct,
+static void comp_ql_calc_frame_pacing(struct comp_target * ct,
                                          int64_t * out_frame_id,
                                          uint64_t * out_wake_up_time_ns,
                                          uint64_t * out_desired_present_time_ns,
                                          uint64_t * out_present_slop_ns,
                                          uint64_t * out_predicted_display_time_ns)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 
 	int64_t frame_id /*= ++cn->current_frame_id*/; //-1;
 	uint64_t desired_present_time_ns /*= cn->next_frame_timestamp*/;
@@ -668,12 +677,12 @@ static void comp_wivrn_calc_frame_pacing(struct comp_target * ct,
 	*out_present_slop_ns = present_slop_ns;
 }
 
-static void comp_wivrn_mark_timing_point(struct comp_target * ct,
+static void comp_ql_mark_timing_point(struct comp_target * ct,
                                          enum comp_target_timing_point point,
                                          int64_t frame_id,
                                          uint64_t when_ns)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 	assert(frame_id == cn->current_frame_id);
 
 	switch (point)
@@ -692,18 +701,18 @@ static void comp_wivrn_mark_timing_point(struct comp_target * ct,
 	}
 }
 
-static VkResult comp_wivrn_update_timings(struct comp_target * ct)
+static VkResult comp_ql_update_timings(struct comp_target * ct)
 {
 	// TODO
 	return VK_SUCCESS;
 }
 
-static void comp_wivrn_set_title(struct comp_target * ct, const char * title)
+static void comp_ql_set_title(struct comp_target * ct, const char * title)
 {}
 
-static void comp_wivrn_destroy(struct comp_target * ct)
+static void comp_ql_destroy(struct comp_target * ct)
 {
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 
 	vk_bundle * vk = get_vk(cn);
 	vk->vkDeviceWaitIdle(vk->device);
@@ -712,11 +721,11 @@ static void comp_wivrn_destroy(struct comp_target * ct)
 	delete cn;
 }
 
-static void comp_wivrn_info_gpu(struct comp_target * ct, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
+static void comp_ql_info_gpu(struct comp_target * ct, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
 {
 	COMP_TRACE_MARKER();
 
-	struct wivrn_comp_target * cn = (struct wivrn_comp_target *)ct;
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 
 	u_pc_info_gpu(cn->upc, frame_id, gpu_start_ns, gpu_end_ns, when_ns);
 }
@@ -727,26 +736,28 @@ static void comp_wivrn_info_gpu(struct comp_target * ct, int64_t frame_id, uint6
  *
  */
 
-comp_target * comp_target_wivrn_create(std::shared_ptr<xrt::drivers::wivrn::wivrn_session> cnx, float fps)
+extern "C" comp_target * comp_target_ql_create(struct ql_xrsp_host* host, float fps)
 {
-	wivrn_comp_target * cn = new wivrn_comp_target{};
+	ql_comp_target * cn = new ql_comp_target{};
 
-	cn->cnx = cnx;
-	cn->check_ready = comp_wivrn_check_ready;
-	cn->create_images = comp_wivrn_create_images;
-	cn->has_images = comp_wivrn_has_images;
-	cn->acquire = comp_wivrn_acquire;
-	cn->present = comp_wivrn_present;
-	cn->calc_frame_pacing = comp_wivrn_calc_frame_pacing;
-	cn->mark_timing_point = comp_wivrn_mark_timing_point;
-	cn->update_timings = comp_wivrn_update_timings;
-	cn->info_gpu = comp_wivrn_info_gpu;
-	cn->destroy = comp_wivrn_destroy;
-	cn->init_pre_vulkan = comp_wivrn_init_pre_vulkan;
-	cn->init_post_vulkan = comp_wivrn_init_post_vulkan;
-	cn->set_title = comp_wivrn_set_title;
-	cn->flush = comp_wivrn_flush;
+	cn->host = host;
+	//cn->cnx = NULL;
+	cn->check_ready = comp_ql_check_ready;
+	cn->create_images = comp_ql_create_images;
+	cn->has_images = comp_ql_has_images;
+	cn->acquire = comp_ql_acquire;
+	cn->present = comp_ql_present;
+	cn->calc_frame_pacing = comp_ql_calc_frame_pacing;
+	cn->mark_timing_point = comp_ql_mark_timing_point;
+	cn->update_timings = comp_ql_update_timings;
+	cn->info_gpu = comp_ql_info_gpu;
+	cn->destroy = comp_ql_destroy;
+	cn->init_pre_vulkan = comp_ql_init_pre_vulkan;
+	cn->init_post_vulkan = comp_ql_init_post_vulkan;
+	cn->set_title = comp_ql_set_title;
+	cn->flush = comp_ql_flush;
 	cn->fps = fps;
 
 	return cn;
+}
 }

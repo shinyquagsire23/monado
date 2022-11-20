@@ -41,6 +41,8 @@ int32_t ql_xrsp_hostinfo_pkt_create(struct ql_xrsp_hostinfo_pkt* pkt, struct ql_
         return -1;
     }
 
+    pkt->recv_ns = topic_pkt->recv_ns;
+
     xrsp_hostinfo_header* header = (xrsp_hostinfo_header*)topic_pkt->payload;
 
     if (header->message_type == BUILTIN_ECHO) {

@@ -32,7 +32,7 @@ typedef struct xrsp_topic_header
     uint16_t pad;
 } __attribute__((packed)) xrsp_topic_header;
 
-int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initial, int32_t initial_size);
+int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initial, int32_t initial_size, int64_t recv_ns);
 int32_t ql_xrsp_topic_pkt_append(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_data, int32_t data_size);
 void ql_xrsp_topic_pkt_destroy(struct ql_xrsp_topic_pkt* pkt);
 

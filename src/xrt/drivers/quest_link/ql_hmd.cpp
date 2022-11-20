@@ -43,9 +43,15 @@
 #include "ql_hmd.h"
 #include "ql_system.h"
 
+#include "ql_comp_target.h"
+
 static void
 ql_update_inputs(struct xrt_device *xdev)
 {}
+
+static void ql_hmd_create_compositor_target(struct xrt_device * xdev,
+                                               struct comp_compositor * comp,
+                                               struct comp_target ** out_target);
 
 static void
 ql_get_tracked_pose(struct xrt_device *xdev,
@@ -143,6 +149,7 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->base.update_inputs = ql_update_inputs;
 	hmd->base.get_tracked_pose = ql_get_tracked_pose;
 	hmd->base.get_view_poses = ql_get_view_poses;
+	hmd->base.create_compositor_target = ql_hmd_create_compositor_target;
 	hmd->base.destroy = ql_hmd_destroy;
 	hmd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hmd->base.device_type = XRT_DEVICE_TYPE_HMD;
@@ -168,10 +175,56 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->pose.orientation.z = 0.0f;
 	hmd->pose.orientation.w = 1.0f;
 
+	auto eye_width = 3616/2;
+	auto eye_height = 1920;
+
+	// Setup info.
+	hmd->base.hmd->blend_modes[0] = XRT_BLEND_MODE_OPAQUE;
+	hmd->base.hmd->blend_mode_count = 1;
+	hmd->base.hmd->distortion.models = XRT_DISTORTION_MODEL_NONE;
+	hmd->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_NONE;
+
+	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
+	hmd->base.hmd->screens[0].h_pixels = eye_height;
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / 72.0;
+
+	// Left
+	hmd->base.hmd->views[0].display.w_pixels = eye_width;
+	hmd->base.hmd->views[0].display.h_pixels = eye_height;
+	hmd->base.hmd->views[0].viewport.x_pixels = 0;
+	hmd->base.hmd->views[0].viewport.y_pixels = 0;
+	hmd->base.hmd->views[0].viewport.w_pixels = eye_width;
+	hmd->base.hmd->views[0].viewport.h_pixels = eye_height;
+	hmd->base.hmd->views[0].rot = u_device_rotation_ident;
+
+	// Right
+	hmd->base.hmd->views[1].display.w_pixels = eye_width;
+	hmd->base.hmd->views[1].display.h_pixels = eye_height;
+	hmd->base.hmd->views[1].viewport.x_pixels = eye_width;
+	hmd->base.hmd->views[1].viewport.y_pixels = 0;
+	hmd->base.hmd->views[1].viewport.w_pixels = eye_width;
+	hmd->base.hmd->views[1].viewport.h_pixels = eye_height;
+	hmd->base.hmd->views[1].rot = u_device_rotation_ident;
+
+	// Default FOV from Oculus Quest
+	hmd->base.hmd->distortion.fov[0].angle_left = -52 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[0].angle_right = 42 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[0].angle_up = 47 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[0].angle_down = -53 * M_PI / 180;
+
+	hmd->base.hmd->distortion.fov[1].angle_left = -42 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[1].angle_right = 52 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[1].angle_up = 47 * M_PI / 180;
+	hmd->base.hmd->distortion.fov[1].angle_down = -53 * M_PI / 180;
+
+	hmd->encode_width = eye_width * 2;
+	hmd->encode_height = eye_height;
+
+#if 0
 	// Setup info.
 	struct u_device_simple_info info;
-	info.display.w_pixels = 1280;
-	info.display.h_pixels = 720;
+	info.display.w_pixels = 3616;
+	info.display.h_pixels = 1920;
 	info.display.w_meters = 0.13f;
 	info.display.h_meters = 0.07f;
 	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
@@ -184,6 +237,7 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 		ql_hmd_destroy(&hmd->base);
 		return NULL;
 	}
+#endif
 
 	u_distortion_mesh_set_none(&hmd->base);
 	
@@ -199,3 +253,19 @@ cleanup:
 	ql_system_reference(&hmd->sys, NULL);
 	return NULL;
 }
+
+static void ql_hmd_create_compositor_target(struct xrt_device * xdev,
+                                               struct comp_compositor * comp,
+                                               struct comp_target ** out_target)
+{
+	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
+	while (!hmd->sys->xrsp_host.ready_to_send_frames) {
+		os_nanosleep(U_TIME_1MS_IN_NS * 10);
+	}
+
+	comp_target* target = comp_target_ql_create(&hmd->sys->xrsp_host, 72);
+
+	target->c = comp;
+	*out_target = target;
+}
+

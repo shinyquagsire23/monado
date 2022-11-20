@@ -324,6 +324,10 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		)
 	add_library(
 		drv_quest_link STATIC
+		quest_link/ql_comp_target.cpp
+		quest_link/ql_comp_target.h
+		#quest_link/video_encoder_ql.cpp
+		#quest_link/video_encoder_ql.h
 		quest_link/ql_interface.h
 		quest_link/ql_types.h
 		quest_link/ql_controller.cpp
@@ -340,6 +344,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_xrsp.h
 		quest_link/ql_xrsp_pose.cpp
 		quest_link/ql_xrsp_pose.h
+		quest_link/ql_xrsp_logging.cpp
+		quest_link/ql_xrsp_logging.h
 		quest_link/ql_xrsp_hostinfo.cpp
 		quest_link/ql_xrsp_hostinfo.h
 		quest_link/ql_xrsp_topic.cpp
@@ -350,7 +356,7 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_xrsp_types.h
 		${quest_link_proto_srcs}
 		)
-	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/quest_link/)
+	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/quest_link/ ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../compositor)
 	target_include_directories(drv_quest_link PUBLIC ${LIBUSB1_INCLUDE_DIRS})
 	target_link_libraries(drv_quest_link PRIVATE ${LIBUSB1_LIBRARIES} CapnProto::capnp)
 	target_link_libraries(
@@ -361,6 +367,7 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 			aux_math
 			xrt-external-cjson
 			xrt-external-tinyceres
+			drv_wivrn
 		)
 	list(APPEND ENABLED_HEADSET_DRIVERS quest-link)
 endif()

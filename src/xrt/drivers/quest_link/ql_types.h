@@ -51,6 +51,8 @@ typedef struct ql_xrsp_hostinfo_pkt
     uint32_t unk_4;
     uint32_t unk_8;
     uint32_t len_u64s;
+
+    int64_t recv_ns;
 } ql_xrsp_hostinfo_pkt;
 
 typedef struct ql_xrsp_topic_pkt
@@ -68,14 +70,19 @@ typedef struct ql_xrsp_topic_pkt
     uint32_t payload_valid;
     uint32_t remainder_offs;
     int32_t missing_bytes;
+
+    int64_t recv_ns;
 } ql_xrsp_topic_pkt;
+
+typedef struct ql_xrsp_host ql_xrsp_host;
 
 typedef struct ql_xrsp_host
 {
     struct ql_system* sys;
 
-    /* Packet processing thread */
-    struct os_thread_helper oth;
+    /* Packet processing threads */
+    struct os_thread_helper read_thread;
+    struct os_thread_helper write_thread;
 
     //struct ql_system* sys;
 
@@ -102,6 +109,30 @@ typedef struct ql_xrsp_host
     int64_t echo_req_recv_ns;
     int64_t echo_resp_sent_ns;
     int64_t echo_resp_recv_ns;
+    int64_t last_xmt;
+
+    int num_slices;
+    int64_t frame_sent_ns;
+    int64_t paired_ns;
+
+    struct os_mutex stream_mutex;
+    struct os_mutex usb_mutex;
+    bool ready_to_send_frames;
+    bool needs_flush;
+    int frame_idx;
+
+    //std::vector<uint8_t> csd_stream;
+    //std::vector<uint8_t> idr_stream;
+
+    uint8_t* csd_stream;
+    uint8_t* idr_stream;
+
+    size_t csd_stream_len;
+    size_t idr_stream_len;
+
+    void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
+    void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
+    void (*flush_stream)(struct ql_xrsp_host* host);
 } ql_xrsp_host;
 
 
@@ -156,9 +187,9 @@ struct ql_hmd
     uint32_t last_imu_timestamp32; /* 32-bit µS device timestamp */
     timepoint_ns last_imu_timestamp_ns;
 
-    /* Auxiliary state */
-    float temperature;
-    bool display_on;
+
+    int32_t encode_width;
+    int32_t encode_height;
 
     /* Temporary distortion values for mesh calc */
     struct u_panotools_values distortion_vals[2];

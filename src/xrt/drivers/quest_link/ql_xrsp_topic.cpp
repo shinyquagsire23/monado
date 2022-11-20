@@ -16,7 +16,7 @@
 #include "ql_types.h"
 #include "ql_utils.h"
 
-int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initial, int32_t initial_size)
+int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initial, int32_t initial_size, int64_t recv_ns)
 {
     *pkt = (struct ql_xrsp_topic_pkt){0};
 
@@ -26,6 +26,7 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
 
     xrsp_topic_header* header = (xrsp_topic_header*)p_initial;
 
+    pkt->recv_ns = recv_ns;
     pkt->has_alignment_padding = header->has_alignment_padding;
     pkt->packet_version_is_internal = header->packet_version_is_internal;
     pkt->packet_version_number = header->packet_version_number;
@@ -96,7 +97,7 @@ void ql_xrsp_topic_pkt_destroy(struct ql_xrsp_topic_pkt* pkt)
 
 void ql_xrsp_topic_pkt_dump(struct ql_xrsp_topic_pkt* pkt)
 {
-    uint8_t muted_topics[] = {TOPIC_AUI4A_ADV, TOPIC_HOSTINFO_ADV};
+    uint8_t muted_topics[] = {TOPIC_AUI4A_ADV, TOPIC_HOSTINFO_ADV, TOPIC_POSE, TOPIC_AUDIO, TOPIC_LOGGING};
 
     for (int i = 0; i < sizeof(muted_topics); i++)
     {

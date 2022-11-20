@@ -27,6 +27,7 @@ extern "C" {
  */
 
 #define META_PLATFORMS_TECH_LLC_VID 0x2833
+#define QUEST_SLEEPING_UMS_PID      0x0083
 #define QUEST_XRSP_PID              0x0137
 #define QUEST_MTP_XRSP_PID          0x0182
 #define QUEST_MTP_XRSP_ADB_PID      0x0183

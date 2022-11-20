@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Interface to quest_link XRSP protocol.
+ * @brief  quest_link XRSP hostinfo packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -18,9 +18,7 @@
 extern "C" {
 #endif
 
-int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num);
-void ql_xrsp_host_destroy(struct ql_xrsp_host* host);
-int64_t xrsp_ts_ns(struct ql_xrsp_host *host);
+void ql_xrsp_handle_logging(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt);
 
 #ifdef __cplusplus
 }

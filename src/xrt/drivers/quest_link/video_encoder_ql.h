@@ -28,38 +28,32 @@
 
 #include "encoder_settings.h"
 #include "wivrn_packets.h"
-#include "wivrn_session.h"
+//#include "wivrn_session.h"
 
-typedef struct ql_xrsp_host ql_xrsp_host;
-
-namespace xrt::drivers::wivrn
+namespace xrt::drivers::quest_link
 {
 
 inline const char * encoder_nvenc = "nvenc";
 inline const char * encoder_vaapi = "vaapi";
 inline const char * encoder_x264 = "x264";
 
-class VideoEncoder
+class VideoEncoderQl
 {
 	std::mutex mutex;
 	uint8_t stream_idx;
 	uint64_t frame_idx;
 
-	// temporary data
-	wivrn_session * cnx;
-	ql_xrsp_host* host;
-
-	std::vector<to_headset::video_stream_data_shard> shards;
+	std::vector<wivrn::to_headset::video_stream_data_shard> shards;
 
 public:
-	static std::unique_ptr<VideoEncoder> Create(vk_bundle * vk,
-	                                            encoder_settings & settings,
+	static std::unique_ptr<VideoEncoderQl> Create(vk_bundle * vk,
+	                                            wivrn::encoder_settings & settings,
 	                                            uint8_t stream_idx,
 	                                            int input_width,
 	                                            int input_height,
 	                                            float fps);
 
-	virtual ~VideoEncoder() = default;
+	virtual ~VideoEncoderQl() = default;
 
 	// set input images to be encoded.
 	// later referred by index only
@@ -75,26 +69,16 @@ public:
 	virtual void PresentImage(int index, VkCommandBuffer * out_buffer)
 	{}
 
-	void Encode(wivrn_session* cnx,
-	            const to_headset::video_stream_data_shard::view_info_t & view_info,
+	void Encode(const wivrn::to_headset::video_stream_data_shard::view_info_t & view_info,
 	            uint64_t frame_index,
 	            int index,
 	            bool idr);
-
-	void SetXrspHost(struct ql_xrsp_host* host)
-	{
-		this->host = host;
-	}
 
 protected:
 	// encode the image at provided index.
 	virtual void Encode(int index, bool idr, std::chrono::steady_clock::time_point target_timestamp) = 0;
 
-	void SendCSD(std::vector<uint8_t> && data, bool last);
-
-	void SendIDR(std::vector<uint8_t> && data);
-
-	void FlushFrame();
+	void SendData(std::vector<uint8_t> && data);
 
 private:
 	void PushShard(std::vector<uint8_t> && payload, uint8_t flags);

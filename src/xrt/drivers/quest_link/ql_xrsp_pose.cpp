@@ -27,7 +27,7 @@ extern "C"
 
 void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
 {
-    printf("Parse pose\n");
+    //printf("Parse pose\n");
 
     // TODO parse segment header
     if (pkt->payload_valid <= 8) {
@@ -45,7 +45,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     int idx = 0;
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
         struct ql_controller* ctrl = host->sys->controllers[idx++];
-        printf("%x\n", controller.getButtons());
+        //printf("%x\n", controller.getButtons());
         OvrPoseF::Reader controllerPose = controller.getPose();
 
         ctrl->pose.position.x = controllerPose.getPosX();

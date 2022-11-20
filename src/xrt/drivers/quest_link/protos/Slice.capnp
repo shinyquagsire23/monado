@@ -10,7 +10,7 @@ struct PayloadQuat {
 struct PayloadSlice {
   frameIdx @0 :UInt32;
   unk0p1 @1 :UInt32;
-  unk1p0 @2 :UInt32;
+  rectifyMeshId @2 :UInt32;
 
   poseQuatX @3 :Float32;
   poseQuatY @4 :Float32;
@@ -26,7 +26,7 @@ struct PayloadSlice {
   unk6p2 @13 :UInt8;
   unk6p3 @14 :UInt8;
   blitYPos @15 :UInt32;
-  unk7p0 @16 :UInt32;
+  cropBlocks @16 :UInt32;
   csdSize @17 :UInt32;
   videoSize @18 :UInt32;
   unk8p1 @19 :UInt32;
