@@ -434,9 +434,8 @@ update_session_state_locked(struct multi_system_compositor *msc)
 static int
 multi_main_loop(struct multi_system_compositor *msc)
 {
-	COMP_TRACE_MARKER();
-
-	os_thread_helper_name(&(msc->oth), "Multi-Compositor");
+	U_TRACE_SET_THREAD_NAME("Multi Client Module");
+	os_thread_helper_name(&msc->oth, "Multi Client Module");
 
 	struct xrt_compositor *xc = &msc->xcn->base;
 
