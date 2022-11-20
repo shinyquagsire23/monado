@@ -115,6 +115,11 @@ u_trace_marker_init(void);
 
 #define U_TRACE_CATEGORY_IS_ENABLED(_) (false)
 
+#define U_TRACE_SET_THREAD_NAME(STRING)                                                                                \
+	do {                                                                                                           \
+		(void)STRING;                                                                                          \
+	} while (false)
+
 /*!
  * Add to target c file to enable tracing, see @ref tracing.
  *
@@ -171,6 +176,11 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 #define U_TRACE_INSTANT_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                          \
 	TRACE_ANY_WITH_ARGS(PERCETTO_EVENT_INSTANT, CATEGORY, &g_percetto_track_##TRACK, TIME, NAME, 0)
 #define U_TRACE_DATA(fd, type, data) u_trace_data(fd, type, (void *)&(data), sizeof(data))
+
+#define U_TRACE_SET_THREAD_NAME(STRING)                                                                                \
+	do {                                                                                                           \
+		(void)STRING;                                                                                          \
+	} while (false)
 
 #define U_TRACE_TARGET_SETUP(WHICH)                                                                                    \
 	void __attribute__((constructor(101))) u_trace_marker_constructor(void);                                       \
