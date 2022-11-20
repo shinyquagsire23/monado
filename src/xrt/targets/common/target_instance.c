@@ -48,6 +48,8 @@ t_instance_create_system(struct xrt_instance *xinst,
                          struct xrt_system_devices **out_xsysd,
                          struct xrt_system_compositor **out_xsysc)
 {
+	XRT_TRACE_MARKER();
+
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
 	assert(out_xsysc == NULL || *out_xsysc == NULL);
@@ -117,6 +119,8 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 	struct xrt_prober *xp = NULL;
 
 	u_trace_marker_init();
+
+	XRT_TRACE_MARKER();
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {

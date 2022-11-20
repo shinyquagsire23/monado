@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_system.h"
+#include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
 #include "target_instance_parts.h"
 
@@ -19,6 +20,8 @@ t_instance_create_system(struct xrt_instance *xinst,
                          struct xrt_system_devices **out_xsysd,
                          struct xrt_system_compositor **out_xsysc)
 {
+	XRT_TRACE_MARKER();
+
 	struct xrt_system_devices *xsysd = NULL;
 	xrt_result_t xret = XRT_SUCCESS;
 
@@ -51,6 +54,8 @@ t_instance_create_system(struct xrt_instance *xinst,
 int
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {
+	XRT_TRACE_MARKER();
+
 	struct xrt_prober *xp = NULL;
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
