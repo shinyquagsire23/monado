@@ -180,7 +180,7 @@ os_ns_per_qpc_tick_get();
 static inline void
 os_nanosleep(int64_t nsec)
 {
-#if defined(XRT_OS_LINUX)
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN)
 	struct timespec spec;
 	spec.tv_sec = (nsec / U_1_000_000_000);
 	spec.tv_nsec = (nsec % U_1_000_000_000);
