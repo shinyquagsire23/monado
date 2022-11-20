@@ -1047,7 +1047,7 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	hgt->views[1].view = 1;
 
 	int num_threads = 4;
-	hgt->pool = u_worker_thread_pool_create(num_threads - 1, num_threads);
+	hgt->pool = u_worker_thread_pool_create(num_threads - 1, num_threads, "Hand Tracking");
 	hgt->group = u_worker_group_create(hgt->pool);
 
 	lm::optimizer_create(hgt->left_in_right, false, hgt->log_level, &hgt->kinematic_hands[0]);

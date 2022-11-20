@@ -20,7 +20,7 @@ using namespace xrt::auxiliary::util;
 
 TEST_CASE("TaskCollection")
 {
-	SharedThreadPool pool{2, 3};
+	SharedThreadPool pool{2, 3, "Test"};
 	bool calledA[] = {
 	    false,
 	    false,
