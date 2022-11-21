@@ -1357,3 +1357,41 @@ render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_st
 
 	return true;
 }
+
+bool
+render_resources_get_duration(struct render_resources *r, uint64_t *out_gpu_duration_ns)
+{
+	struct vk_bundle *vk = r->vk;
+	VkResult ret = VK_SUCCESS;
+
+	/*
+	 * Query how long things took.
+	 */
+
+	VkQueryResultFlags flags = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT;
+	uint64_t timestamps[2] = {0};
+
+	ret = vk->vkGetQueryPoolResults( //
+	    vk->device,                  // device
+	    r->query_pool,               // queryPool
+	    0,                           // firstQuery
+	    2,                           // queryCount
+	    sizeof(uint64_t) * 2,        // dataSize
+	    timestamps,                  // pData
+	    sizeof(uint64_t),            // stride
+	    flags);                      // flags
+
+	if (ret != VK_SUCCESS) {
+		return false;
+	}
+
+
+	/*
+	 * Convert from ticks to nanoseconds
+	 */
+
+	double duration_ticks = (double)(timestamps[1] - timestamps[0]);
+	*out_gpu_duration_ns = (uint64_t)(duration_ticks * vk->features.timestamp_period);
+
+	return true;
+}

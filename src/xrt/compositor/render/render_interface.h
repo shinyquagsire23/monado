@@ -435,6 +435,19 @@ render_ensure_scratch_image(struct render_resources *r, VkExtent2D extent);
 bool
 render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_start_ns, uint64_t *out_gpu_end_ns);
 
+/*!
+ * Returns the duration for the latest GPU work that was submitted using
+ * @ref render_gfx or @ref render_compute cmd buf builders.
+ *
+ * Behaviour for this function is undefined if the GPU has not completed before
+ * calling this function, so make sure to call vkQueueWaitIdle or wait on the
+ * fence that the work was submitted with have fully completed.
+ *
+ * @public @memberof render_resources
+ */
+bool
+render_resources_get_duration(struct render_resources *r, uint64_t *out_gpu_duration_ns);
+
 
 /*
  *
