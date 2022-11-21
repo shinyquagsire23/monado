@@ -304,8 +304,14 @@ do_tracing(struct pacing_app *pa, struct u_pa_frame *f)
 	uint64_t gpu_ns = f->when.gpu_done_ns - f->when.delivered_ns;
 	TracyCPlot("App GPU(ms)", time_ns_to_ms_f(gpu_ns));
 
-	int64_t diff_ns = (int64_t)f->when.gpu_done_ns - (int64_t)f->predicted_gpu_done_time_ns;
-	TracyCPlot("App vs Expected(ms)", time_ns_to_ms_f(diff_ns));
+	uint64_t frame_ns = f->when.gpu_done_ns - f->when.wait_woke_ns;
+	TracyCPlot("App Frame(ms)", time_ns_to_ms_f(frame_ns));
+
+	int64_t wake_diff_ns = (int64_t)f->when.wait_woke_ns - (int64_t)f->predicted_wake_up_time_ns;
+	TracyCPlot("App Wake Diff(ms)", time_ns_to_ms_f(wake_diff_ns));
+
+	int64_t gpu_diff_ns = (int64_t)f->when.gpu_done_ns - (int64_t)f->predicted_gpu_done_time_ns;
+	TracyCPlot("App Frame Diff(ms)", time_ns_to_ms_f(gpu_diff_ns));
 #endif
 
 #ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
@@ -394,6 +400,10 @@ pa_predict(struct u_pacing_app *upa,
 	f->predicted_display_time_ns = predict_ns;
 	f->predicted_display_period_ns = period_ns;
 	f->when.predicted_ns = now_ns;
+
+#ifdef U_TRACE_TRACY // Uses Tracy specific things.
+	TracyCPlot("App time(ms)", time_ns_to_ms_f(total_app_time_ns(pa)));
+#endif
 }
 
 static void
