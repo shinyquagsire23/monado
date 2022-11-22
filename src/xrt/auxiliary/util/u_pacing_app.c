@@ -57,14 +57,20 @@ struct u_pa_frame
 {
 	int64_t frame_id;
 
+	//! How long we thought the frame would take.
+	uint64_t predicted_frame_time_ns;
+
+	//! When we predicted the app should wake up.
+	uint64_t predicted_wake_up_time_ns;
+
+	//! When the client's GPU work should have completed.
+	uint64_t predicted_gpu_done_time_ns;
+
 	//! When we predicted this frame to be shown.
 	uint64_t predicted_display_time_ns;
 
 	//! The selected display period.
 	uint64_t predicted_display_period_ns;
-
-	//! When the client's GPU work should have completed.
-	uint64_t predicted_gpu_done_time_ns;
 
 	/*!
 	 * When the app told us to display this frame, can be different
@@ -328,6 +334,8 @@ pa_predict(struct u_pacing_app *upa,
 
 	uint64_t period_ns = calc_period(pa);
 	uint64_t predict_ns = predict_display_time(pa, now_ns, period_ns);
+	// How long we think the frame should take.
+	uint64_t frame_time_ns = total_app_time_ns(pa);
 	// When should the client wake up.
 	uint64_t wake_up_time_ns = predict_ns - total_app_and_compositor_time_ns(pa);
 	// When the client's GPU work should have completed.
@@ -346,6 +354,8 @@ pa_predict(struct u_pacing_app *upa,
 
 	f->state = U_RT_PREDICTED;
 	f->frame_id = frame_id;
+	f->predicted_frame_time_ns = frame_time_ns;
+	f->predicted_wake_up_time_ns = wake_up_time_ns;
 	f->predicted_gpu_done_time_ns = gpu_done_time_ns;
 	f->predicted_display_time_ns = predict_ns;
 	f->predicted_display_period_ns = period_ns;
