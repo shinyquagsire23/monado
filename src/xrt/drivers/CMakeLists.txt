@@ -232,6 +232,9 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 			xrt-external-cjson
 			xrt-external-tinyceres
 		)
+	if(XRT_BUILD_DRIVER_HANDTRACKING)
+		target_link_libraries(drv_rift_s PRIVATE drv_ht)
+	endif()
 	list(APPEND ENABLED_HEADSET_DRIVERS rift-s)
 endif()
 
