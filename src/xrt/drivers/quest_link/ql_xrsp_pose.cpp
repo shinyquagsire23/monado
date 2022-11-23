@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include <iostream>
 
+#include "math/m_api.h"
+#include "math/m_vec3.h"
+
 #include "ql_xrsp_pose.h"
 #include "ql_xrsp_hostinfo.h"
 #include "ql_xrsp_types.h"
@@ -71,6 +74,34 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     hmd->pose.orientation.w = headsetPose.getQuatW();
 
     hmd->ipd_meters = pose.getIpd();
+
+
+    // TODO: how is this even calculated??
+    // Quest 2:
+    // 58mm (0.057928182) angle_left -> -52deg
+    // 65mm (0.065298356) angle_left -> -49deg
+    // 68mm (0.068259589) angle_left -> -43deg
+    float angle_calc = hmd->fov_angle_left;
+
+    if (hmd->device_type == DEVICE_TYPE_QUEST_2)
+    {
+        if (hmd->ipd_meters <= 0.059)
+        {
+            angle_calc -= 0.0;
+        }
+        else if (hmd->ipd_meters <= 0.066)
+        {
+            angle_calc -= 3.0;
+        }
+        else {
+            angle_calc -= 9.0;
+        }
+    }
+
+    // Pull FOV information
+    hmd->base.hmd->distortion.fov[0].angle_left = -angle_calc * M_PI / 180;
+    hmd->base.hmd->distortion.fov[1].angle_right = angle_calc * M_PI / 180;
+    
 }
 
 }

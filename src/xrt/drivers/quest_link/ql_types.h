@@ -198,6 +198,8 @@ struct ql_hmd
     /* Temporary distortion values for mesh calc */
     struct u_panotools_values distortion_vals[2];
     float ipd_meters;
+    float fov_angle_left;
+    int device_type;
 };
 
 typedef struct ql_system

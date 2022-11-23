@@ -58,7 +58,7 @@ struct PoseStruct4 {
 
 struct PayloadPose {
     unk0p0 @0 :UInt32;
-    unk0p1 @1 :Float32;
+    userHeight @1 :Float32;
     unk1p0 @2 :Float32;
     unk1p1 @3 :Float32;
     unk2p0 @4 :Float32;

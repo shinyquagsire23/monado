@@ -701,7 +701,13 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
 
     // TODO mutex
 
+    hmd->device_type = description.getDeviceType();
     ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), description.getRefreshRateHz());
+
+    // Quest 2:
+    // 58mm (0.057928182) angle_left -> -52deg
+    // 65mm (0.065298356) angle_left -> -49deg
+    // 68mm (0.068259589) angle_left -> -43deg
 
     // Pull FOV information
     hmd->base.hmd->distortion.fov[0].angle_up = lensLeft.getAngleUp() * M_PI / 180;
@@ -713,6 +719,8 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
     hmd->base.hmd->distortion.fov[1].angle_down = -lensRight.getAngleDown() * M_PI / 180;
     hmd->base.hmd->distortion.fov[1].angle_left = -lensRight.getAngleLeft() * M_PI / 180;
     hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
+
+    hmd->fov_angle_left = lensLeft.getAngleLeft();
 }
 
 static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)

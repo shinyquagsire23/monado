@@ -108,6 +108,10 @@ extern "C" {
 #define PAIRINGSTATE_PAIRING     (2)
 #define PAIRINGSTATE_PAIRED      (3)
 
+#define DEVICE_TYPE_QUEST_1   (1)
+#define DEVICE_TYPE_QUEST_2   (2)
+#define DEVICE_TYPE_QUEST_PRO (3)
+
 const char* xrsp_topic_str(int idx);
 const char* xrsp_builtin_type_str(int idx);
 
