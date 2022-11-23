@@ -1,4 +1,4 @@
-# Tracing support {#tracing}
+# Tracing with Perfetto {#tracing-perfetto}
 
 <!--
 Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
