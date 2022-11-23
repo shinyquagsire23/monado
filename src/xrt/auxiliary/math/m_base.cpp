@@ -484,6 +484,34 @@ math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, stru
 	}
 }
 
+/*!
+ * Converts a quaternion to XY-swing and Z-twist
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+extern "C" void
+math_quat_to_swing_twist(const struct xrt_quat *in, struct xrt_vec2 *out_swing, float *out_twist)
+{
+	Eigen::Quaternionf rot = map_quat(*in);
+
+	Eigen::Vector3f our_z = rot * (Eigen::Vector3f::UnitZ());
+
+	Eigen::Quaternionf swing = Eigen::Quaternionf().setFromTwoVectors(Eigen::Vector3f::UnitZ(), our_z);
+
+	Eigen::Quaternionf twist = swing.inverse() * rot;
+
+	Eigen::AngleAxisf twist_aax = Eigen::AngleAxisf(twist);
+
+	Eigen::AngleAxisf swing_aax = Eigen::AngleAxisf(swing);
+
+	out_swing->x = swing_aax.axis().x() * swing_aax.angle();
+	out_swing->y = swing_aax.axis().y() * swing_aax.angle();
+	assert(swing_aax.axis().z() < 0.001);
+
+	*out_twist = twist_aax.axis().z() * twist_aax.angle();
+}
+
 /*
  *
  * Exported matrix functions.

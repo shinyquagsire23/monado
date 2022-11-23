@@ -413,6 +413,15 @@ math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result);
 void
 math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result);
 
+/*!
+ * Converts a quaternion to XY-swing and Z-twist
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_to_swing_twist(const struct xrt_quat *in, struct xrt_vec2 *out_swing, float *out_twist);
+
 /*
  *
  * Matrix functions
