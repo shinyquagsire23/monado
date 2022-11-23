@@ -568,7 +568,7 @@ sdl_compositor_init(struct sdl_program *sp)
 	c->frame.waited.id = -1;
 	c->frame.rendering.id = -1;
 	c->state = SDL_COMP_STATE_READY;
-	c->settings.frame_interval_ns = U_TIME_1S_IN_NS / 20; // 20 FPS
+	c->settings.frame_interval_ns = U_TIME_1S_IN_NS / 60; // 60 FPS
 
 	SC_DEBUG(c, "Doing init %p", (void *)c);
 
