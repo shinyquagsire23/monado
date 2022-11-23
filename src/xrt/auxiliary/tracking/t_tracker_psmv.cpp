@@ -357,7 +357,7 @@ run(TrackerPSMV &t)
 	while (os_thread_helper_is_running_locked(&t.oth)) {
 
 		// No data
-		if (!t.has_imu || t.frame == NULL) {
+		if (!t.has_imu && t.frame == NULL) {
 			os_thread_helper_wait_locked(&t.oth);
 
 			/*
