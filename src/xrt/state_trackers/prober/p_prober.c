@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_config_drivers.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_settings.h"
 
 #include "util/u_var.h"
@@ -831,6 +832,27 @@ find_builder_by_identifier(struct prober *p, const char *ident)
 	return NULL;
 }
 
+static void
+print_system_devices(u_pp_delegate_t dg, struct xrt_system_devices *xsysd)
+{
+	u_pp(dg, "\n\tGot devices:");
+
+	for (uint32_t i = 0; i < xsysd->xdev_count; i++) {
+		u_pp(dg, "\n\t\t%u: %s", i, xsysd->xdevs[i]->str);
+	}
+
+	u_pp(dg, "\n\tIn roles:");
+
+#define P(IDENT) u_pp(dg, "\n\t\t%s: %s", #IDENT, xsysd->roles.IDENT ? xsysd->roles.IDENT->str : "<none>")
+	P(head);
+	P(left);
+	P(right);
+	P(gamepad);
+	P(hand_tracking.left);
+	P(hand_tracking.right);
+#undef P
+}
+
 
 /*
  *
@@ -1041,6 +1063,11 @@ p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
 	if (select != NULL) {
 		u_pp(dg, "\n\tUsing builder %s: %s", select->identifier, select->name);
 		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd);
+
+		if (xret == XRT_SUCCESS) {
+			print_system_devices(dg, *out_xsysd);
+		}
+
 		u_pp(dg, "\n\tResult: ");
 		u_pp_xrt_result(dg, xret);
 	}
