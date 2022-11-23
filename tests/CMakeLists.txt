@@ -22,6 +22,7 @@ set(tests
     tests_pacing
     tests_quatexpmap
     tests_quat_change_of_basis
+    tests_quat_swing_twist
     tests_rational
     tests_vector
     tests_worker
@@ -66,8 +67,10 @@ target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
 target_link_libraries(tests_quat_change_of_basis PRIVATE aux_math)
+target_link_libraries(tests_quat_swing_twist PRIVATE aux_math)
 
 target_include_directories(tests_quat_change_of_basis SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+target_include_directories(tests_quat_swing_twist SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 if(XRT_BUILD_DRIVER_HANDTRACKING)
 	target_link_libraries(
