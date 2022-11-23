@@ -100,6 +100,8 @@ void VideoEncoder::Encode(wivrn_session* cnx,
                           bool idr)
 {
 	this->cnx = cnx;
+	if (this->cnx)
+		this->host = nullptr;
 	this->frame_idx = frame_index;
 	auto target_timestamp = std::chrono::steady_clock::time_point(std::chrono::nanoseconds(view_info.display_time));
 
@@ -201,7 +203,7 @@ void VideoEncoder::SendCSD(std::vector<uint8_t> && data, bool last)
 	auto & max_payload_size = to_headset::video_stream_data_shard::max_payload_size;
 	std::lock_guard lock(mutex);
 
-	hex_dump(data.data(), data.size());
+	//hex_dump(data.data(), data.size());
 
 	uint8_t flags = to_headset::video_stream_data_shard::start_of_slice;
 	if (data.size() <= max_payload_size)
@@ -233,7 +235,7 @@ void VideoEncoder::SendIDR(std::vector<uint8_t> && data)
 	auto & max_payload_size = to_headset::video_stream_data_shard::max_payload_size;
 	std::lock_guard lock(mutex);
 
-	hex_dump(data.data(), data.size());
+	//hex_dump(data.data(), data.size());
 
 	uint8_t flags = to_headset::video_stream_data_shard::start_of_slice;
 	if (data.size() <= max_payload_size)
