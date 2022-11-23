@@ -42,7 +42,13 @@ DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_APP_LOG", U_LOGGING_WARN)
  *
  */
 
-#define FRAME_COUNT (8)
+/*!
+ * This controls how many frames are in the allocation array.
+ *
+ * @todo The allocation code is not good, this is a work around for index reuse
+ *       causing asserts, change the code so we don't need it at all.
+ */
+#define FRAME_COUNT (128)
 
 enum u_pa_state
 {
