@@ -220,25 +220,84 @@ SwingToQuaternion(const Vec2<T> swing, Quat<T> &result)
 	}
 }
 
+
+// See
+// https://gitlab.freedesktop.org/slitcch/rotation_visualizer/-/blob/da5021d21600388b07c9c81000e866c4a2d015cb/lm_rotations_story.inl
+// for the derivation
 template <typename T>
 inline void
 SwingTwistToQuaternion(const Vec2<T> swing, const T twist, Quat<T> &result)
 {
-	//!@todo
-	// Rather than doing compound operations, we should derive it and collapse them.
-	Quat<T> swing_quat;
-	Quat<T> twist_quat;
 
-	Vec3<T> aax_twist;
+	T swing_x = swing.x;
+	T swing_y = swing.y;
 
-	aax_twist.x = (T)(0);
-	aax_twist.y = (T)(0);
-	aax_twist.z = twist;
+	T theta_squared_swing = swing_x * swing_x + swing_y * swing_y;
 
-	SwingToQuaternion(swing, swing_quat);
+	// So it turns out that we don't get any divisions by zero or nans in the
+	// differential part when twist is 0. I'm pretty sure we get lucky wrt. what cancels out
 
-	AngleAxisToQuaternion(aax_twist, twist_quat);
+	if (theta_squared_swing > T(0.0)) {
+		// theta_squared_swing is nonzero, so we the regular derived conversion.
 
-	QuaternionProduct(swing_quat, twist_quat, result);
+		T theta = sqrt(theta_squared_swing);
+
+		T half_theta = theta * T(0.5);
+
+		// the "other" theta
+		T half_twist = twist * T(0.5);
+
+		T cos_half_theta = cos(half_theta);
+		T cos_half_twist = cos(half_twist);
+
+		T sin_half_twist = sin(half_twist);
+
+		T sin_half_theta_over_theta = sin(half_theta) / theta;
+
+		result.w = cos_half_theta * cos_half_twist;
+
+		T x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		T x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result.x = x_part_1 + x_part_2;
+
+		T y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		T y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result.y = y_part_1 - y_part_2;
+
+		result.z = cos_half_theta * sin_half_twist;
+
+	} else {
+		// first: sin_half_theta/theta would be undefined, but
+		// the limit approaches 0.5.
+
+		// second: we only use theta to calculate sin_half_theta/theta
+		// and that function's derivative at theta=0 is 0, so this formulation is fine.
+
+		T half_twist = twist * T(0.5);
+
+		T cos_half_twist = cos(half_twist);
+
+		T sin_half_twist = sin(half_twist);
+
+		T sin_half_theta_over_theta = T(0.5);
+
+		// cos(0) is 1 so no cos_half_theta necessary
+		result.w = cos_half_twist;
+
+		T x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		T x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result.x = x_part_1 + x_part_2;
+
+		T y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		T y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result.y = y_part_1 - y_part_2;
+
+		result.z = sin_half_twist;
+	}
 }
+
 } // namespace xrt::tracking::hand::mercury::lm
