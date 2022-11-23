@@ -136,6 +136,9 @@ setup_pipeline(struct xrt_prober *xp, struct build_state *build)
 	t_psvr_create(build->xfctx, data, &build->psvr, &xsinks[2]);
 	// clang-format on
 
+	// No longer needed.
+	t_stereo_camera_calibration_reference(&data, NULL);
+
 	// Setup origin to the common one.
 	build->psvr->origin = build->origin;
 	build->psmv_red->origin = build->origin;
