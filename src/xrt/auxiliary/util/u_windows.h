@@ -31,6 +31,15 @@ extern "C" {
 const char *
 u_winerror(char *buffer, size_t size, DWORD err, bool remove_end);
 
+/*!
+ * Tries to grant the 'SeIncreaseBasePriorityPrivilege' privilege to this
+ * process. It is needed for HIGH and REALTIME priority Vulkan queues on NVIDIA.
+ *
+ * @param log_level Control the amount of logging this function does.
+ */
+bool
+u_win_grant_inc_base_priorty_base_privileges(enum u_logging_level log_level);
+
 
 #ifdef __cplusplus
 }
