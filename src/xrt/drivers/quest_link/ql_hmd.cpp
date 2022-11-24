@@ -154,7 +154,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 
 	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
 	hmd->base.hmd->screens[0].h_pixels = eye_height;
-	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / fps;
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps * 4); // HACK
 
 	// Left
 	hmd->base.hmd->views[0].display.w_pixels = eye_width;
@@ -176,6 +176,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 
 	hmd->encode_width = eye_width * 2;
 	hmd->encode_height = eye_height;
+	hmd->fps = fps;
 }
 
 struct ql_hmd *
@@ -290,7 +291,7 @@ static void ql_hmd_create_compositor_target(struct xrt_device * xdev,
 		os_nanosleep(U_TIME_1MS_IN_NS * 10);
 	}
 
-	comp_target* target = comp_target_ql_create(&hmd->sys->xrsp_host, 72);
+	comp_target* target = comp_target_ql_create(&hmd->sys->xrsp_host, hmd->fps);
 
 	target->c = comp;
 	*out_target = target;

@@ -47,16 +47,16 @@ static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t
 static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len);
 static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
+int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
 
 int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num)
 {
     int ret;
-    const struct libusb_interface_descriptor* pIf = NULL;
-    struct libusb_config_descriptor *config = NULL;
-    libusb_device *usb_dev = NULL;
 
     *host = (struct ql_xrsp_host){0};
     host->if_num = if_num;
+    host->vid = vid;
+    host->pid = pid;
 
     host->num_slices = 1;
 
@@ -107,54 +107,122 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
         goto cleanup;
     }
 
+    host->dev = NULL;
+
     ret = libusb_init(&host->ctx);
     if (ret < 0) {
         QUEST_LINK_ERROR("Failed libusb_init");
         goto cleanup;
     }
 
-    host->dev = libusb_open_device_with_vid_pid(host->ctx, vid, pid);
-    if (host->dev == NULL) {
-        QUEST_LINK_ERROR("Failed libusb_open_device_with_vid_pid");
+    ret = ql_xrsp_usb_init(host, false);
+    if (ret != 0) {
         goto cleanup;
     }
 
-#if 0
-    printf("Reset?\n");
-    ret = libusb_reset_device(host->dev);
-    if (ret == LIBUSB_ERROR_NOT_FOUND) {
-        // We're reconnecting anyhow.
-    }
-    else if (ret != LIBUSB_SUCCESS) {
-        QUEST_LINK_ERROR("Failed libusb_reset_device");
+    //printf("Endpoints %x %x\n", host->ep_out, host->ep_in);
+
+    host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
+    host->start_ns = os_monotonic_get_ns();
+    host->paired_ns = os_monotonic_get_ns()*2;
+    host->last_read_ns = 0;
+    xrsp_reset_echo(host);
+
+    host->send_csd = xrsp_send_csd;
+    host->send_idr = xrsp_send_idr;
+    host->flush_stream = xrsp_flush_stream;
+
+    // Start the packet reading thread
+    ret = os_thread_helper_start(&host->read_thread, ql_xrsp_read_thread, host);
+    if (ret != 0) {
+        QUEST_LINK_ERROR("Failed to start packet processing thread");
         goto cleanup;
     }
-    else {
+
+    // Start the packet reading thread
+    ret = os_thread_helper_start(&host->write_thread, ql_xrsp_write_thread, host);
+    if (ret != 0) {
+        QUEST_LINK_ERROR("Failed to start packet processing thread");
+        goto cleanup;
+    }
+
+    return 0;
+cleanup:
+    return -1;
+}
+
+int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
+{
+    int ret;
+    const struct libusb_interface_descriptor* pIf = NULL;
+    struct libusb_config_descriptor *config = NULL;
+    libusb_device *usb_dev = NULL;
+
+    QUEST_LINK_INFO("(Re)initializing Quest Link USB device...");
+
+    os_mutex_lock(&host->usb_mutex);
+
+    if (host->dev) {
         libusb_close(host->dev);
     }
 
-    
+    host->usb_valid = false;
+    host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
 
-    printf("Reset done?\n");
-
-    for (int i = 0; i < 10; i++)
-    {
-        // Re-initialize the device
-        host->dev = libusb_open_device_with_vid_pid(host->ctx, vid, pid);
-        if (host->dev) break;
-
-        os_nanosleep(U_TIME_1MS_IN_NS * 500);
-    }
-
+    host->dev = libusb_open_device_with_vid_pid(host->ctx, host->vid, host->pid);
     if (host->dev == NULL) {
-        QUEST_LINK_ERROR("Failed libusb_open_device_with_vid_pid");
+        QUEST_LINK_ERROR("Failed initial libusb_open_device_with_vid_pid");
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
         goto cleanup;
     }
+
+#if 1
+    if (do_reset) {
+        printf("Reset?\n");
+        ret = libusb_reset_device(host->dev);
+        if (ret == LIBUSB_ERROR_NOT_FOUND) {
+            // We're reconnecting anyhow.
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_INFO("Device needs reconnect...");
+        }
+        else if (ret != LIBUSB_SUCCESS) {
+            QUEST_LINK_ERROR("Failed libusb_reset_device");
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            goto cleanup;
+        }
+        else {
+            libusb_close(host->dev);
+        }
+
+        
+
+        printf("Reset done?\n");
+
+        for (int i = 0; i < 10; i++)
+        {
+            // Re-initialize the device
+            host->dev = libusb_open_device_with_vid_pid(host->ctx, host->vid, host->pid);
+            if (host->dev) break;
+
+            os_nanosleep(U_TIME_1MS_IN_NS * 500);
+        }
+
+        if (host->dev == NULL) {
+            QUEST_LINK_ERROR("Failed post-reset libusb_open_device_with_vid_pid");
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            goto cleanup;
+        }
+    }
+    
 #endif
 
     ret = libusb_claim_interface(host->dev, host->if_num);
     if (ret < 0) {
         QUEST_LINK_ERROR("Failed libusb_claim_interface");
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+
+        // Reset, there's probably something weird.
+        libusb_reset_device(host->dev);
         goto cleanup;
     }
 
@@ -164,6 +232,7 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     ret = libusb_get_active_config_descriptor(usb_dev, &config);
     if (ret < 0 || !config) {
         QUEST_LINK_ERROR("Failed libusb_get_active_config_descriptor");
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
         goto cleanup;
     }
 
@@ -173,7 +242,7 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
         const struct libusb_interface* pIfAlts = &config->interface[i];
         for (uint8_t j = 0; j < pIfAlts->num_altsetting; j++) {
             const struct libusb_interface_descriptor* pIfIt = &pIfAlts->altsetting[j];
-            if (pIfIt->bInterfaceNumber == if_num) {
+            if (pIfIt->bInterfaceNumber == host->if_num) {
                 pIf = pIfIt;
                 break;
             }
@@ -198,33 +267,13 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     libusb_clear_halt(host->dev, host->ep_in);
     libusb_clear_halt(host->dev, host->ep_out);
 
-    //printf("Endpoints %x %x\n", host->ep_out, host->ep_in);
+    host->usb_valid = true;
 
-    host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
-    host->start_ns = os_monotonic_get_ns();
-    host->paired_ns = os_monotonic_get_ns()*2;
-    xrsp_reset_echo(host);
-
-    host->send_csd = xrsp_send_csd;
-    host->send_idr = xrsp_send_idr;
-    host->flush_stream = xrsp_flush_stream;
-
-    // Start the packet reading thread
-    ret = os_thread_helper_start(&host->read_thread, ql_xrsp_read_thread, host);
-    if (ret != 0) {
-        QUEST_LINK_ERROR("Failed to start packet processing thread");
-        goto cleanup;
-    }
-
-    // Start the packet reading thread
-    ret = os_thread_helper_start(&host->write_thread, ql_xrsp_write_thread, host);
-    if (ret != 0) {
-        QUEST_LINK_ERROR("Failed to start packet processing thread");
-        goto cleanup;
-    }
-
+    os_mutex_unlock(&host->usb_mutex);
     return 0;
+
 cleanup:
+    os_mutex_unlock(&host->usb_mutex);
     return -1;
 }
 
@@ -316,10 +365,18 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
     //printf("Send to usb:\n");
     //hex_dump(data, data_size);
 
+    if (!host->usb_valid) return;
+
     int sent_len = 0;
-    int r = libusb_bulk_transfer(host->dev, host->ep_out, (uint8_t*)data, data_size, &sent_len, 0);
+    int r = libusb_bulk_transfer(host->dev, host->ep_out, (uint8_t*)data, data_size, &sent_len, 1000);
     if (r != 0 || !sent_len) {
-        printf("Faield to send %x bytes\n", sent_len);
+        QUEST_LINK_ERROR("Failed to send %x bytes", sent_len);
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+
+        if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_TIMEOUT) {
+           host->usb_valid = false;
+           host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
+        }
     }
     else {
         //printf("Sent %x bytes\n", sent_len);
@@ -532,6 +589,13 @@ static void xrsp_send_pairing_1(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     //xrsp_read_usb(host); // old
 }
 
+static void xrsp_trigger_bye(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
+{
+    const uint8_t request_video_idk[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    xrsp_send_to_topic_capnp_wrapped(host, TOPIC_VIDEO, 0, request_video_idk, sizeof(request_video_idk));
+}
+
 static void xrsp_finish_pairing_1(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t request_video_idk[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -550,7 +614,10 @@ static void xrsp_init_session_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     xrsp_reset_echo(host);
     xrsp_read_usb(host);
 
-    const uint8_t response_ok_2_payload[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x01, 0x00, 0x1F, 0x00, 0x00, 0x00, (uint8_t)(host->num_slices & 0xFF), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x33, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00};
+    struct ql_hmd* hmd = host->sys->hmd;
+
+    uint8_t fps = (uint8_t)hmd->fps;
+    const uint8_t response_ok_2_payload[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x03, 0x00, 0x01, 0x00, 0x1F, 0x00, 0x00, 0x00, (uint8_t)(host->num_slices & 0xFF), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, fps, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x33, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00};
     int32_t response_ok_2_len = 0;
     uint8_t* response_ok_2 = ql_xrsp_craft_capnp(BUILTIN_OK, 0x2C8, 1, response_ok_2_payload, sizeof(response_ok_2_payload), &response_ok_2_len);
 
@@ -746,7 +813,18 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
 
     os_mutex_lock(&host->pose_mutex);
     hmd->device_type = description.getDeviceType();
-    ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), description.getRefreshRateHz());
+
+    if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
+        hmd->fps = 120;
+    }
+    else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
+        hmd->fps = 90;
+    }
+    else {
+        hmd->fps = 72;
+    }
+
+    ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), /*description.getRefreshRateHz()*/ hmd->fps);
 
     // Quest 2:
     // 58mm (0.057928182) angle_left -> -52deg
@@ -843,16 +921,24 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     else if (pkt->topic == TOPIC_POSE)
     {
         ql_xrsp_handle_pose(host, pkt);
+        if (host->pairing_state != PAIRINGSTATE_PAIRED) {
+            xrsp_trigger_bye(host, NULL);
+        }
     }
     else if (pkt->topic == TOPIC_LOGGING)
     {
         ql_xrsp_handle_logging(host, pkt);
+        if (host->pairing_state != PAIRINGSTATE_PAIRED) {
+            xrsp_trigger_bye(host, NULL);
+        }
     }
 }
 
 static bool xrsp_read_usb(struct ql_xrsp_host *host)
 {
     int ret;
+
+    if (!host->usb_valid) return false;
 
     //os_mutex_lock(&host->usb_mutex);
     while (true)
@@ -863,8 +949,19 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
         int read_len = 0;
         int r = libusb_bulk_transfer(host->dev, host->ep_in, data, sizeof(data), &read_len, 1);
         if (r != 0 || !read_len) {
+            //printf("asdf %d %x\n", r, read_len);
+
+            if (r != LIBUSB_ERROR_TIMEOUT) {
+                QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+            }
+
+            if (r == LIBUSB_ERROR_NO_DEVICE) {
+                ql_xrsp_usb_init(host, true);
+            }
             break;
         }
+
+        host->last_read_ns = xrsp_ts_ns(host);
 
         //printf("Read %x bytes\n", read_len);
         //hex_dump(data, read_len);
@@ -1097,6 +1194,13 @@ ql_xrsp_read_thread(void *ptr)
     while (os_thread_helper_is_running_locked(&host->read_thread)) {
         os_thread_helper_unlock(&host->read_thread);
 
+        //printf("%x %x %x\n", xrsp_ts_ns(host) - host->last_read_ns > 1000000000, host->pairing_state == PAIRINGSTATE_WAIT_FIRST, host->usb_valid);
+        if (xrsp_ts_ns(host) - host->last_read_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_WAIT_FIRST && !host->usb_valid)
+        {
+            ql_xrsp_usb_init(host, false);
+            host->last_read_ns = xrsp_ts_ns(host);
+        }
+
         //printf(".\n");
         //os_mutex_lock(&host->usb_mutex);
         bool success = xrsp_read_usb(host); 
@@ -1162,6 +1266,12 @@ ql_xrsp_write_thread(void *ptr)
         if (xrsp_ts_ns(host) - host->paired_ns > 5000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000
         {
             host->ready_to_send_frames = true;
+        }
+
+        if (xrsp_ts_ns(host) - host->last_read_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_WAIT_FIRST && host->usb_valid)
+        {
+            xrsp_trigger_bye(host, NULL);
+            host->last_read_ns = xrsp_ts_ns(host);
         }
         
         os_thread_helper_lock(&host->write_thread);

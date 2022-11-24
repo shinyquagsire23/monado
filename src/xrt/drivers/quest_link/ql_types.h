@@ -93,7 +93,10 @@ typedef struct ql_xrsp_host
     libusb_context *ctx;
     libusb_device_handle *dev;
 
+    bool usb_valid;
     int if_num;
+    uint16_t vid;
+    uint16_t pid;
     uint8_t ep_out;
     uint8_t ep_in;
 
@@ -118,10 +121,11 @@ typedef struct ql_xrsp_host
     int num_slices;
     int64_t frame_sent_ns;
     int64_t paired_ns;
+    int64_t last_read_ns;
 
     struct os_mutex usb_mutex;
     struct os_mutex pose_mutex;
-    
+
     bool ready_to_send_frames;
     int frame_idx;
 
@@ -183,6 +187,7 @@ struct ql_hmd
     struct xrt_pose pose;
     struct xrt_vec3 center;
 
+    int64_t pose_ns;
     double created_ns;
 
     struct ql_system *sys;
@@ -199,6 +204,7 @@ struct ql_hmd
 
     int32_t encode_width;
     int32_t encode_height;
+    float fps;
 
     /* Temporary distortion values for mesh calc */
     struct u_panotools_values distortion_vals[2];

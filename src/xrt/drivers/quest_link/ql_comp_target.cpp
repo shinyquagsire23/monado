@@ -647,13 +647,13 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
 
 	int64_t frame_id = ++cn->current_frame_id; //-1;
-	uint64_t desired_present_time_ns = os_monotonic_get_ns() + (U_TIME_1S_IN_NS / 72);
+	uint64_t desired_present_time_ns = os_monotonic_get_ns() + (U_TIME_1S_IN_NS / cn->fps);
 	uint64_t wake_up_time_ns = desired_present_time_ns - 5 * U_TIME_1MS_IN_NS;
 	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_time_ns = desired_present_time_ns + 5 * U_TIME_1MS_IN_NS;
 
 #if 1
-	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (72);
+	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / cn->fps;
 	uint64_t min_display_period_ns = predicted_display_period_ns;
 	uint64_t now_ns = os_monotonic_get_ns();
 
