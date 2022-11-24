@@ -68,6 +68,7 @@ modules.
 * @ref vulkan-extensions
 * @ref howto-remote-driver
 * @ref tracing
+* @ref metrics
 
 ## Source layout
 
