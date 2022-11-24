@@ -164,6 +164,56 @@ try_to_grant_privilege(enum u_logging_level log_level, HANDLE hProcess, LPCTSTR 
 	return false;
 }
 
+static const char *
+get_priority_string(DWORD dwPriorityClass)
+{
+	switch (dwPriorityClass) {
+	case ABOVE_NORMAL_PRIORITY_CLASS: return "ABOVE_NORMAL_PRIORITY_CLASS";
+	case BELOW_NORMAL_PRIORITY_CLASS: return "BELOW_NORMAL_PRIORITY_CLASS";
+	case HIGH_PRIORITY_CLASS: return "HIGH_PRIORITY_CLASS";
+	case IDLE_PRIORITY_CLASS: return "IDLE_PRIORITY_CLASS";
+	case NORMAL_PRIORITY_CLASS: return "NORMAL_PRIORITY_CLASS";
+	case PROCESS_MODE_BACKGROUND_BEGIN: return "PROCESS_MODE_BACKGROUND_BEGIN";
+	case PROCESS_MODE_BACKGROUND_END: return "PROCESS_MODE_BACKGROUND_END";
+	case REALTIME_PRIORITY_CLASS: return "REALTIME_PRIORITY_CLASS";
+	default: return "Unknown";
+	}
+}
+
+static bool
+try_to_raise_priority(enum u_logging_level log_level, HANDLE hProcess)
+{
+	BOOL bRet;
+	char buf[512];
+
+	// Doesn't fail
+	DWORD dwPriClassAtStart = GetPriorityClass(hProcess);
+
+	if (dwPriClassAtStart == REALTIME_PRIORITY_CLASS) {
+		LOG_I("Already have priority 'REALTIME_PRIORITY_CLASS'.");
+		return true;
+	}
+
+	LOG_D("Trying to raise priority to 'REALTIME_PRIORITY_CLASS'.");
+
+	bRet = SetPriorityClass(hProcess, REALTIME_PRIORITY_CLASS);
+	if (bRet == FALSE) {
+		LOG_E("SetPriorityClass: %s", GET_LAST_ERROR_STR(buf));
+		return false;
+	}
+
+	// Doesn't fail
+	DWORD dwPriClassNow = GetPriorityClass(hProcess);
+
+	if (dwPriClassNow != dwPriClassAtStart) {
+		LOG_I("Raised priority class to '%s'", get_priority_string(dwPriClassNow));
+		return true;
+	} else {
+		LOG_W("Could not raise priority at all, is/was '%s'.", get_priority_string(dwPriClassNow));
+		return false;
+	}
+}
+
 
 /*
  *
@@ -219,4 +269,14 @@ u_win_grant_inc_base_priorty_base_privileges(enum u_logging_level log_level)
 
 	// Do not need to free hProcess.
 	return try_to_grant_privilege(log_level, hProcess, SE_INC_BASE_PRIORITY_NAME);
+}
+
+bool
+u_win_raise_cpu_priority(enum u_logging_level log_level)
+{
+	// Always succeeds
+	HANDLE hProcess = GetCurrentProcess();
+
+	// Do not need to free hProcess.
+	return try_to_raise_priority(log_level, hProcess);
 }

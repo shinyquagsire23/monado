@@ -40,6 +40,17 @@ u_winerror(char *buffer, size_t size, DWORD err, bool remove_end);
 bool
 u_win_grant_inc_base_priorty_base_privileges(enum u_logging_level log_level);
 
+/*!
+ * Tries to raise the CPU priority of the process as high as possible. Returns
+ * false if it could not raise the priority at all. Normal processes can raise
+ * themselves from NORMAL to HIGH, while REALTIME requires either administrator
+ * privileges or the 'SeIncreaseBasePriorityPrivilege' privilege to be granted.
+ *
+ * @param log_level Control the amount of logging this function does.
+ */
+bool
+u_win_raise_cpu_priority(enum u_logging_level log_level);
+
 
 #ifdef __cplusplus
 }
