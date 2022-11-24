@@ -30,6 +30,7 @@
 
 #elif defined(XRT_OS_WINDOWS)
 #include <time.h>
+#include <timeapi.h>
 #define XRT_HAVE_TIMESPEC
 
 #elif defined(XRT_DOXYGEN)
@@ -216,12 +217,14 @@ static inline void
 os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 {
 #if defined(XRT_OS_WINDOWS)
+	timeBeginPeriod(1);
 	if (ops->timer) {
 		LARGE_INTEGER timeperiod;
 		timeperiod.QuadPart = -(nsec / 100);
 		if (SetWaitableTimer(ops->timer, &timeperiod, 0, NULL, NULL, FALSE)) {
 			// OK we could set up the timer, now let's wait.
 			WaitForSingleObject(ops->timer, INFINITE);
+			timeEndPeriod(1);
 			return;
 		}
 	}
@@ -229,6 +232,10 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 	// If we fall through from an implementation, or there's no implementation needed for a platform, we
 	// delegate to the regular os_nanosleep.
 	os_nanosleep(nsec);
+
+#if defined(XRT_OS_WINDOWS)
+	timeEndPeriod(1);
+#endif
 }
 
 #if defined(XRT_HAVE_TIMESPEC)
