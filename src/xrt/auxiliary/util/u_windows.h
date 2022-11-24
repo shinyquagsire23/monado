@@ -51,6 +51,20 @@ u_win_grant_inc_base_priorty_base_privileges(enum u_logging_level log_level);
 bool
 u_win_raise_cpu_priority(enum u_logging_level log_level);
 
+/*!
+ * Small helper function that checks process arguments for which to try.
+ *
+ * The parsing is really simplistic and only looks at the first argument for the
+ * values `nothing`, `priority`, `privilege`, `both`. No argument at all implies
+ * the value `both` making the function try to set both.
+ *
+ * @param log_level Control the amount of logging this function does.
+ * @param argc      Number of arguments, as passed into main.
+ * @param argv      Array of argument strings, as passed into main.
+ */
+void
+u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char const *argv[]);
+
 
 #ifdef __cplusplus
 }

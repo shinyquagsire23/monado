@@ -280,3 +280,21 @@ u_win_raise_cpu_priority(enum u_logging_level log_level)
 	// Do not need to free hProcess.
 	return try_to_raise_priority(log_level, hProcess);
 }
+
+void
+u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char const *argv[])
+{
+	if (argc > 1 && strcmp(argv[1], "nothing") == 0) {
+		LOG_I("Not trying privileges or priority");
+	} else if (argc > 1 && strcmp(argv[1], "priv") == 0) {
+		LOG_I("Setting privileges");
+		u_win_grant_inc_base_priorty_base_privileges(log_level);
+	} else if (argc > 1 && strcmp(argv[1], "prio") == 0) {
+		LOG_I("Setting priority");
+		u_win_raise_cpu_priority(log_level);
+	} else {
+		LOG_I("Setting both privilege and priority");
+		u_win_grant_inc_base_priorty_base_privileges(log_level);
+		u_win_raise_cpu_priority(log_level);
+	}
+}
