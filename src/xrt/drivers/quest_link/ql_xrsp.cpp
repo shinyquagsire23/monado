@@ -83,6 +83,12 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
         QUEST_LINK_ERROR("Failed to init usb mutex");
         goto cleanup;
     }
+
+    ret = os_mutex_init(&host->pose_mutex);
+    if (ret != 0) {
+        QUEST_LINK_ERROR("Failed to init pose mutex");
+        goto cleanup;
+    }
     
 
     //
@@ -227,6 +233,7 @@ void ql_xrsp_host_destroy(struct ql_xrsp_host* host)
     libusb_release_interface(host->dev, host->if_num);
     libusb_close(host->dev);
 
+    os_mutex_destroy(&host->pose_mutex);
     os_mutex_destroy(&host->usb_mutex);
     for (int i = 0; i < 3; i++)
     {
@@ -660,7 +667,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, &send_cmd_camerastream, sizeof(send_cmd_camerastream));
@@ -737,6 +744,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
 
     // TODO mutex
 
+    os_mutex_lock(&host->pose_mutex);
     hmd->device_type = description.getDeviceType();
     ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), description.getRefreshRateHz());
 
@@ -757,6 +765,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
     hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
 
     hmd->fov_angle_left = lensLeft.getAngleLeft();
+    os_mutex_unlock(&host->pose_mutex);
 }
 
 static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
@@ -993,6 +1002,8 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
 
+
+    os_mutex_lock(&host->pose_mutex);
     int bits = 0;
     if (csd_len > 0)
         bits |= 1;
@@ -1050,6 +1061,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
 
     msg.setCsdSize(csd_len);
     msg.setVideoSize(video_len);
+    os_mutex_unlock(&host->pose_mutex);
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
 

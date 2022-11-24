@@ -120,6 +120,8 @@ typedef struct ql_xrsp_host
     int64_t paired_ns;
 
     struct os_mutex usb_mutex;
+    struct os_mutex pose_mutex;
+    
     bool ready_to_send_frames;
     int frame_idx;
 

@@ -60,11 +60,14 @@ ql_get_tracked_pose(struct xrt_device *xdev,
                         struct xrt_space_relation *out_relation)
 {
 	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
+	struct ql_xrsp_host *host = &hmd->sys->xrsp_host;
 
 	if (name != XRT_INPUT_GENERIC_HEAD_POSE) {
 		QUEST_LINK_ERROR("Unknown input name");
 		return;
 	}
+
+	os_mutex_lock(&host->pose_mutex);
 
 	U_ZERO(out_relation);
 
@@ -93,6 +96,7 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
 	//ql_tracker_get_tracked_pose(hmd->tracker, RIFT_S_TRACKER_POSE_DEVICE, at_timestamp_ns, out_relation);
+	os_mutex_unlock(&host->pose_mutex);
 }
 
 static void
@@ -105,15 +109,18 @@ ql_get_view_poses(struct xrt_device *xdev,
                       struct xrt_pose *out_poses)
 {
 	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
+	struct ql_xrsp_host *host = &hmd->sys->xrsp_host;
 
-	static float test = 0.0;
-	//test += 0.001;
+	//os_mutex_lock(&host->pose_mutex);
+
 	struct xrt_vec3 modify_eye_relation = *default_eye_relation;
 	modify_eye_relation.x = hmd->ipd_meters;
 	//printf("%f\n", modify_eye_relation.x);
 
 	u_device_get_view_poses(xdev, &modify_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
 	                        out_poses);
+
+	//os_mutex_unlock(&host->pose_mutex);
 }
 
 static void

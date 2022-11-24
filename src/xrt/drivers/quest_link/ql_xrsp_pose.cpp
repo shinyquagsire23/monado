@@ -37,6 +37,8 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
         return;
     }
 
+    os_mutex_lock(&host->pose_mutex);
+
     size_t num_words = pkt->payload_valid >> 3;
 
     kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)pkt->payload, num_words)};
@@ -102,6 +104,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     hmd->base.hmd->distortion.fov[0].angle_left = -angle_calc * M_PI / 180;
     hmd->base.hmd->distortion.fov[1].angle_right = angle_calc * M_PI / 180;
     
+    os_mutex_unlock(&host->pose_mutex);
 }
 
 }

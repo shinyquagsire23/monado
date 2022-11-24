@@ -154,8 +154,8 @@ VideoEncoderX264::VideoEncoderX264(
 	param.vui.i_sar_height = settings.height;
 	param.rc.i_rc_method = X264_RC_ABR;
 	param.rc.i_bitrate = settings.bitrate / 1000; // x264 uses kbit/s
-	param.i_keyint_min = 10;
-	param.i_keyint_max = 10;
+	param.i_keyint_min = 1;
+	param.i_keyint_max = 72*5;
 
 	x264_param_apply_profile(&param, "baseline");
 
