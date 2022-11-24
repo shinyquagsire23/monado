@@ -116,7 +116,7 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 {
     struct ql_controller *ctrl = (struct ql_controller *)(xdev);
 
-    printf("Get tracked %p %x\n", ctrl, name);
+    //printf("Get tracked %p %x\n", ctrl, name);
     if (name != XRT_INPUT_TOUCH_AIM_POSE && name != XRT_INPUT_TOUCH_GRIP_POSE) {
         QUEST_LINK_ERROR("Unknown input name");
         return;

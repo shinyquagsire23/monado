@@ -119,20 +119,23 @@ typedef struct ql_xrsp_host
     int64_t frame_sent_ns;
     int64_t paired_ns;
 
-    struct os_mutex stream_mutex;
     struct os_mutex usb_mutex;
     bool ready_to_send_frames;
-    bool needs_flush;
     int frame_idx;
 
     //std::vector<uint8_t> csd_stream;
     //std::vector<uint8_t> idr_stream;
 
-    uint8_t* csd_stream;
-    uint8_t* idr_stream;
+    struct os_mutex stream_mutex[3];
+    bool needs_flush[3];
+    int stream_write_idx;
+    int stream_read_idx;
 
-    size_t csd_stream_len;
-    size_t idr_stream_len;
+    uint8_t* csd_stream[3];
+    uint8_t* idr_stream[3];
+
+    size_t csd_stream_len[3];
+    size_t idr_stream_len[3];
 
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);

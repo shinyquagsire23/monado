@@ -31,6 +31,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "ql_types.h"
+#include "ql_xrsp.h"
 
 namespace xrt::drivers::quest_link
 {
@@ -486,7 +487,7 @@ static void * comp_ql_present_thread(void * void_param)
 		{
 			std::unique_lock lock(cn->psc.mutex);
 
-			uint64_t timestamp = 0;
+			uint64_t timestamp = xrsp_ts_ns(cn->host);
 
 			for (uint32_t i = 0; i < cn->image_count; i++)
 			{
@@ -615,7 +616,7 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = 1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = xrsp_ts_ns(cn->host) + desired_present_time_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};
@@ -652,7 +653,7 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	uint64_t predicted_display_time_ns /*= desired_present_time_ns + 5 * U_TIME_1MS_IN_NS*/;
 
 #if 1
-	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / 60;
+	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / 72;
 	uint64_t min_display_period_ns = predicted_display_period_ns;
 	uint64_t now_ns = os_monotonic_get_ns();
 

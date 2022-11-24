@@ -34,6 +34,19 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
     pkt->num_words = header->num_words;
     pkt->sequence_num = header->sequence_num;
 
+    if ((pkt->num_words == 0 && pkt->topic == 0 && pkt->sequence_num == 0)
+        || (pkt->topic > TOPIC_LOGGING))
+    {
+        pkt->payload_size = 0;
+        pkt->payload = NULL;
+        pkt->remainder_offs = 0;
+        pkt->payload_valid = 0;
+        //printf("Bad topic pkt?\n");
+        //hex_dump(p_initial, 0x10);
+        return -1;
+
+    }
+
     pkt->payload_size = (pkt->num_words - 1) * sizeof(uint32_t);
     pkt->payload = (uint8_t*)malloc(pkt->payload_size);
     pkt->remainder_offs = sizeof(xrsp_topic_header) + pkt->payload_size;
@@ -53,8 +66,15 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
         pkt->missing_bytes = 0;
     }
 
-    //printf("Payload: %x bytes, missing %x\n", consumed, pkt->missing_bytes);
-    //hex_dump(pkt->payload, consumed);
+    if (pkt->missing_bytes) 
+    {
+        //printf("Payload: %x bytes, missing %x, topic %x\n", consumed, pkt->missing_bytes, pkt->topic);
+        //hex_dump(p_initial, 0x10);
+    }
+    else {
+        //printf("Payload: %x bytes, missing %x, topic %x\n", consumed, pkt->missing_bytes, pkt->topic);
+        //hex_dump(p_initial, 0x10);
+    }
 
     return consumed + sizeof(xrsp_topic_header);
 }
