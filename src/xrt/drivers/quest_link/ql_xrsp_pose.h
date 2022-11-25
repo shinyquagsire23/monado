@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt);
+void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host);
 
 #ifdef __cplusplus
 }

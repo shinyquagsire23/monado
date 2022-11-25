@@ -26,6 +26,7 @@
 #include "ql_utils.h"
 #include "ql_xrsp_pose.h"
 #include "ql_xrsp_logging.h"
+#include "ql_xrsp_segmented_pkt.h"
 
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
@@ -519,6 +520,8 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
 
     host->frame_sent_ns = 0;
 
+    ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
+
     if (!host->sys) return;
 
     struct ql_hmd* hmd = host->sys->hmd;
@@ -754,7 +757,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
@@ -765,8 +768,8 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_COMMAND, send_cmd_dropframestate_toggle)
     //self.send_to_topic(TOPIC_COMMAND, send_cmd_camerastream)
 
-    //xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_hands, sizeof(send_cmd_hands))
-    //xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_body, sizeof(send_cmd_body))
+    xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_hands, sizeof(send_cmd_hands));
+    //xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_body, sizeof(send_cmd_body));
 
 }
 
@@ -951,7 +954,7 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     }
     else if (pkt->topic == TOPIC_POSE)
     {
-        ql_xrsp_handle_pose(host, pkt);
+        ql_xrsp_segpkt_consume(&host->pose_ctx, host, pkt);
         if (host->pairing_state != PAIRINGSTATE_PAIRED) {
             xrsp_trigger_bye(host, NULL);
         }

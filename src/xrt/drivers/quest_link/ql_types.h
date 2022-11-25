@@ -31,6 +31,26 @@ struct ql_hmd;
 struct ql_controller;
 struct ql_camera;
 
+typedef struct ql_xrsp_host ql_xrsp_host;
+typedef struct ql_xrsp_segpkt ql_xrsp_segpkt;
+
+typedef void (*ql_xrsp_segpkt_handler_t)(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host);
+
+typedef struct ql_xrsp_segpkt
+{
+    int state;
+    int type_idx;
+    int reading_idx;
+
+    int num_segs;
+    uint8_t* segs[3];
+    size_t segs_valid[3];
+    size_t segs_expected[3];
+    size_t segs_max[3];
+
+    ql_xrsp_segpkt_handler_t handler;
+} ql_xrsp_segpkt;
+
 typedef struct ql_xrsp_hostinfo_capnp_payload
 {
     uint32_t unk_8;
@@ -144,6 +164,8 @@ typedef struct ql_xrsp_host
     size_t csd_stream_len[3];
     size_t idr_stream_len[3];
     int64_t stream_started_ns[3];
+
+    struct ql_xrsp_segpkt pose_ctx;
 
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);

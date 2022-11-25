@@ -15,6 +15,7 @@
 #include "math/m_api.h"
 #include "math/m_vec3.h"
 
+#include "ql_xrsp_segmented_pkt.h"
 #include "ql_xrsp_pose.h"
 #include "ql_xrsp_hostinfo.h"
 #include "ql_xrsp_types.h"
@@ -28,20 +29,16 @@
 extern "C"
 {
 
-void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
+void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host)
 {
     //printf("Parse pose\n");
 
     // TODO parse segment header
-    if (pkt->payload_valid <= 8) {
-        return;
-    }
-
     os_mutex_lock(&host->pose_mutex);
 
-    size_t num_words = pkt->payload_valid >> 3;
+    size_t num_words = segpkt->segs_valid[0] >> 3;
 
-    kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)pkt->payload, num_words)};
+    kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)segpkt->segs[0], num_words)};
     capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
 
     PayloadPose::Reader pose = message.getRoot<PayloadPose>();

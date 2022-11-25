@@ -18,6 +18,9 @@
 extern "C" {
 #endif
 
+void ql_xrsp_segpkt_init(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host, int num_segs, ql_xrsp_segpkt_handler_t handler);
+void ql_xrsp_segpkt_consume(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt);
+
 
 #ifdef __cplusplus
 }
