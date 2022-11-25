@@ -213,18 +213,20 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 
 	struct multi_compositor volatile *v_mc = mc;
 
+	;
+
 	// Block here if the scheduled slot is not clear.
 	while (v_mc->scheduled.active) {
 
 		// This frame is for the next frame, drop the old one no matter what.
-		if (time_is_within_half_ms(mc->progress.display_time_ns, mc->slot_next_frame_display)) {
+		if (!mc->msc->xcn->base.never_repeat_frames && time_is_within_half_ms(mc->progress.display_time_ns, mc->slot_next_frame_display)) {
 			U_LOG_W("Dropping old missed frame in favour for completed new frame");
 			break;
 		}
 
 		// Replace the scheduled frame if it's in the past.
 		uint64_t now_ns = os_monotonic_get_ns();
-		if (v_mc->scheduled.display_time_ns < now_ns) {
+		if (!mc->msc->xcn->base.never_repeat_frames && v_mc->scheduled.display_time_ns < now_ns) {
 			break;
 		}
 

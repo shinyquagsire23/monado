@@ -311,10 +311,14 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
         host->needs_flush[stream_write_idx] = true;
         wait = true;
         host->stream_started_ns[stream_write_idx] = target_ns;
-        //static int64_t last_ns = 0;
-        //printf("%zx\n", host->stream_started_ns[stream_write_idx] - last_ns);
 
-        //last_ns = target_ns;
+#if 1
+        static int64_t last_ns = 0;
+        int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
+        printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
+
+        last_ns = target_ns;
+#endif
     }
     os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
 
@@ -849,6 +853,8 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         hmd->fps = 72;
     }
 
+    QUEST_LINK_INFO("HMD FPS is %f", hmd->fps);
+
     ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), /*description.getRefreshRateHz()*/ hmd->fps);
 
     // Quest 2:
@@ -1089,7 +1095,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     struct xrt_space_relation out_head_relation;
     U_ZERO(&out_head_relation);
 
-    xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
+    //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
 
     os_mutex_lock(&host->pose_mutex);
     int bits = 0;
@@ -1097,6 +1103,8 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
         bits |= 1;
     if (slice_idx == host->num_slices-1)
         bits |= 2;
+
+    out_head_relation.pose = hmd->last_req_poses[0];
 
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);

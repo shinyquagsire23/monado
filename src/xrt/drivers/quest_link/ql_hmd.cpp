@@ -85,9 +85,12 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 	timepoint_ns prediction_ns = at_timestamp_ns - hmd->pose_ns;
 	double prediction_s = time_ns_to_s(prediction_ns);
 
-	os_mutex_unlock(&host->pose_mutex);
-
 	m_predict_relation(&relation, prediction_s, out_relation);
+
+	hmd->last_req_poses[2] = hmd->last_req_poses[1];
+	hmd->last_req_poses[1] = hmd->last_req_poses[0];
+	hmd->last_req_poses[0] = out_relation->pose;
+	os_mutex_unlock(&host->pose_mutex);
 }
 
 static void
@@ -137,8 +140,8 @@ ql_hmd_destroy(struct xrt_device *xdev)
 
 void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps)
 {
-	auto eye_width = w;
-	auto eye_height = h;
+	auto eye_width = w/2;
+	auto eye_height = h/2;
 
 	// Setup info.
 	hmd->base.hmd->blend_modes[0] = XRT_BLEND_MODE_OPAQUE;
@@ -148,7 +151,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 
 	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
 	hmd->base.hmd->screens[0].h_pixels = eye_height;
-	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps * 8); // HACK
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps); // HACK
 
 	// Left
 	hmd->base.hmd->views[0].display.w_pixels = eye_width;
@@ -224,7 +227,7 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 
 	auto eye_width = 3616/2;
 	auto eye_height = 1920;
-	ql_hmd_set_per_eye_resolution(hmd, eye_width, eye_height, 72.0);
+	ql_hmd_set_per_eye_resolution(hmd, eye_width, eye_height, 10.0);
 
 	// Default FOV from Oculus Quest
 	hmd->base.hmd->distortion.fov[0].angle_up = 48 * M_PI / 180;

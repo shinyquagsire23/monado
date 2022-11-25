@@ -200,6 +200,8 @@ struct ql_hmd
     struct xrt_vec3 angvel;
     struct xrt_vec3 angacc;
 
+    struct xrt_pose last_req_poses[3];
+
     int64_t pose_ns;
     double created_ns;
 

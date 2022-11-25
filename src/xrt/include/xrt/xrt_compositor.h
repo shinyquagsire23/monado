@@ -750,6 +750,8 @@ struct xrt_compositor
 	 */
 	struct xrt_compositor_info info;
 
+	bool never_repeat_frames;
+
 	/*!
 	 * For a given @ref xrt_swapchain_create_info struct returns a filled
 	 * out @ref xrt_swapchain_create_properties.
