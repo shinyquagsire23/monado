@@ -58,7 +58,7 @@ void VideoEncoderX264::ProcessCb(x264_t * h, x264_nal_t * nal, void * opaque)
 			//self->SendData(std::move(data));
 			break;
 		case NAL_AUD:
-			self->FlushFrame();
+			self->FlushFrame(self->pic_in.i_pts);
 			break;
 	}
 }

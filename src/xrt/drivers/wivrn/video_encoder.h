@@ -94,7 +94,7 @@ protected:
 
 	void SendIDR(std::vector<uint8_t> && data);
 
-	void FlushFrame();
+	void FlushFrame(int64_t target_ns);
 
 private:
 	void PushShard(std::vector<uint8_t> && payload, uint8_t flags);

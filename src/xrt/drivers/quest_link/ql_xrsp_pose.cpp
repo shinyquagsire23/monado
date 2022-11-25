@@ -61,23 +61,50 @@ void ql_xrsp_handle_pose(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
         ctrl->pose.orientation.y = controllerPose.getQuatY();
         ctrl->pose.orientation.z = controllerPose.getQuatZ();
         ctrl->pose.orientation.w = controllerPose.getQuatW();
+
+        ctrl->vel = {controllerPose.getLinVelX(), controllerPose.getLinVelY(), controllerPose.getLinVelZ()};
+        ctrl->acc = {controllerPose.getLinAccX(), controllerPose.getLinAccY(), controllerPose.getLinAccZ()};
+        ctrl->angvel = {controllerPose.getAngVelX(), controllerPose.getAngVelY(), controllerPose.getAngVelZ()};
+        ctrl->angacc = {controllerPose.getAngAccX(), controllerPose.getAngAccY(), controllerPose.getAngAccZ()};
+    
+        int64_t pose_ns = controllerPose.getTimestamp() + host->ns_offset_from_target;
+        ctrl->pose_ns = pose_ns;
     }
 
     OvrPoseF::Reader headsetPose = pose.getHeadset();
     struct ql_hmd* hmd = host->sys->hmd;
 
-    hmd->pose.position.x = headsetPose.getPosX();
-    hmd->pose.position.y = headsetPose.getPosY();
-    hmd->pose.position.z = headsetPose.getPosZ();
+    int64_t pose_ns = headsetPose.getTimestamp() + host->ns_offset_from_target;
 
-    hmd->pose.orientation.x = headsetPose.getQuatX();
-    hmd->pose.orientation.y = headsetPose.getQuatY();
-    hmd->pose.orientation.z = headsetPose.getQuatZ();
-    hmd->pose.orientation.w = headsetPose.getQuatW();
+    //printf("%zx vs %zx/%zx\n", host->ns_offset, host->ns_offset_from_target, -host->ns_offset_from_target);
+    //if (pose_ns >= hmd->pose_ns) 
+    {
+        hmd->pose_ns = pose_ns;
+        hmd->pose.position.x = headsetPose.getPosX();
+        hmd->pose.position.y = headsetPose.getPosY();
+        hmd->pose.position.z = headsetPose.getPosZ();
 
-    hmd->ipd_meters = pose.getIpd();
+        hmd->pose.orientation.x = headsetPose.getQuatX();
+        hmd->pose.orientation.y = headsetPose.getQuatY();
+        hmd->pose.orientation.z = headsetPose.getQuatZ();
+        hmd->pose.orientation.w = headsetPose.getQuatW();
 
+        hmd->ipd_meters = pose.getIpd();
 
+        hmd->vel = {0.0, 0.0, 0.0};
+        hmd->acc = {0.0, 0.0, 0.0};
+        hmd->angvel = {0.0, 0.0, 0.0};
+        hmd->angacc = {0.0, 0.0, 0.0};
+
+        hmd->vel = {headsetPose.getLinVelX(), headsetPose.getLinVelY(), headsetPose.getLinVelZ()};
+        hmd->acc = {headsetPose.getLinAccX(), headsetPose.getLinAccY(), headsetPose.getLinAccZ()};
+        hmd->angvel = {headsetPose.getAngVelX(), headsetPose.getAngVelY(), headsetPose.getAngVelZ()};
+        hmd->angacc = {headsetPose.getAngAccX(), headsetPose.getAngAccY(), headsetPose.getAngAccZ()};
+        //printf("Pose is from %zd ns ago\n", os_monotonic_get_ns() - hmd->pose_ns);
+    
+        //hmd->angvel = {-headsetPose.getAngVelX(), -headsetPose.getAngVelY(), -headsetPose.getAngVelZ()};
+    }
+    
     // TODO: how is this even calculated??
     // Quest 2:
     // 58mm (0.057928182) angle_left -> -52deg

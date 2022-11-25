@@ -30,6 +30,8 @@
 
 #include "math/m_api.h"
 #include "math/m_vec3.h"
+#include "math/m_space.h"
+#include "math/m_predict.h"
 
 #include "os/os_time.h"
 
@@ -69,34 +71,23 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 
 	os_mutex_lock(&host->pose_mutex);
 
-	U_ZERO(out_relation);
+	struct xrt_space_relation relation;
+	U_ZERO(&relation);
 
-	const double time_s = time_ns_to_s(at_timestamp_ns - hmd->created_ns);
-	const double d = 0.05;//hmd->diameter_m;
-	const double d2 = d * 2;
-	const double t = 2.0;
-	const double t2 = t * 2;
-	const double t3 = t * 3;
-	const double t4 = t * 4;
-	const struct xrt_vec3 up = {0, 1, 0};
-
-	// Wobble time.
-	//hmd->pose.position.x = hmd->center.x + sin((time_s / t2) * M_PI) * d2 - d;
-	//hmd->pose.position.y = hmd->center.y + sin((time_s / t) * M_PI) * d;
+	relation.pose = hmd->pose;
+	relation.angular_velocity = hmd->angvel;
+	relation.linear_velocity = hmd->vel;
 	
-	/*hmd->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
-	hmd->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
-	hmd->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
-	hmd->pose.orientation.w = 1;*/
-	math_quat_normalize(&hmd->pose.orientation);
-
-	out_relation->pose = hmd->pose;
-	out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+	relation.relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
 	                                                               XRT_SPACE_RELATION_POSITION_VALID_BIT |
 	                                                               XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
-	//ql_tracker_get_tracked_pose(hmd->tracker, RIFT_S_TRACKER_POSE_DEVICE, at_timestamp_ns, out_relation);
+	timepoint_ns prediction_ns = at_timestamp_ns - hmd->pose_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
 	os_mutex_unlock(&host->pose_mutex);
+
+	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void
@@ -111,16 +102,19 @@ ql_get_view_poses(struct xrt_device *xdev,
 	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
 	struct ql_xrsp_host *host = &hmd->sys->xrsp_host;
 
-	//os_mutex_lock(&host->pose_mutex);
+	os_mutex_lock(&host->pose_mutex);
 
 	struct xrt_vec3 modify_eye_relation = *default_eye_relation;
 	modify_eye_relation.x = hmd->ipd_meters;
 	//printf("%f\n", modify_eye_relation.x);
 
+	//ql_hmd_get_interpolated_pose(hmd, at_timestamp_ns, NULL);
+
+	os_mutex_unlock(&host->pose_mutex);
 	u_device_get_view_poses(xdev, &modify_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
 	                        out_poses);
 
-	//os_mutex_unlock(&host->pose_mutex);
+	
 }
 
 static void
@@ -154,7 +148,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 
 	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
 	hmd->base.hmd->screens[0].h_pixels = eye_height;
-	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps * 4); // HACK
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps * 8); // HACK
 
 	// Left
 	hmd->base.hmd->views[0].display.w_pixels = eye_width;
@@ -217,18 +211,16 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->base.inputs[0].name = XRT_INPUT_GENERIC_HEAD_POSE;
 
 	hmd->created_ns = os_monotonic_get_ns();
+	hmd->pose_ns = hmd->created_ns;
 	hmd->last_imu_timestamp_ns = 0;
 
-	hmd->pose.position.x = 0.0f;
-	hmd->pose.position.y = 0.0f;
-	hmd->pose.position.z = 0.0f;
+	hmd->pose.position = {0.0f, 0.0f, 0.0f};
+	hmd->pose.orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
-	hmd->pose.orientation.x = 0.0f;
-	hmd->pose.orientation.y = 0.0f;
-	hmd->pose.orientation.z = 0.0f;
-	hmd->pose.orientation.w = 1.0f;
-
-
+	hmd->vel = {0.0f, 0.0f, 0.0f};
+	hmd->acc = {0.0f, 0.0f, 0.0f};
+	hmd->angvel = {0.0f, 0.0f, 0.0f};
+	hmd->angacc = {0.0f, 0.0f, 0.0f};
 
 	auto eye_width = 3616/2;
 	auto eye_height = 1920;

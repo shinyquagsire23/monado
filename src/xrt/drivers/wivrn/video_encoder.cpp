@@ -180,11 +180,11 @@ void VideoEncoder::Encode(wivrn_session* cnx,
 	}
 }
 
-void VideoEncoder::FlushFrame()
+void VideoEncoder::FlushFrame(int64_t target_ns)
 {
 	if (host)
 	{
-		host->flush_stream(host);
+		host->flush_stream(host, target_ns);
 		return;
 	}
 }

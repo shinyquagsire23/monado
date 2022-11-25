@@ -35,7 +35,8 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
     pkt->sequence_num = header->sequence_num;
 
     if ((pkt->num_words == 0 && pkt->topic == 0 && pkt->sequence_num == 0)
-        || (pkt->topic > TOPIC_LOGGING))
+        || (pkt->topic > TOPIC_LOGGING)
+        || (pkt->topic == TOPIC_AUI4A_ADV && pkt->num_words == 0xFFFF))
     {
         pkt->payload_size = 0;
         pkt->payload = NULL;
@@ -101,7 +102,7 @@ int32_t ql_xrsp_topic_pkt_append(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_data,
     pkt->missing_bytes -= consumed;
     pkt->payload_valid += consumed;
 
-    printf("Payload: consumed %x bytes, %x valid, missing %x\n", consumed, pkt->payload_valid, pkt->missing_bytes);
+    printf("Payload: consumed %x bytes, %x valid, missing %x (topic %x)\n", consumed, pkt->payload_valid, pkt->missing_bytes, pkt->topic);
 
     return consumed;
 }

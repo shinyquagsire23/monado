@@ -111,6 +111,7 @@ typedef struct ql_xrsp_host
     // Echo state
     int echo_idx;
     int64_t ns_offset;
+    int64_t ns_offset_from_target;
 
     int64_t echo_req_sent_ns;
     int64_t echo_req_recv_ns;
@@ -142,10 +143,11 @@ typedef struct ql_xrsp_host
 
     size_t csd_stream_len[3];
     size_t idr_stream_len[3];
+    int64_t stream_started_ns[3];
 
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
-    void (*flush_stream)(struct ql_xrsp_host* host);
+    void (*flush_stream)(struct ql_xrsp_host* host, int64_t target_ns);
 } ql_xrsp_host;
 
 
@@ -175,6 +177,12 @@ struct ql_controller
     struct xrt_pose pose;
     struct xrt_vec3 center;
 
+    struct xrt_vec3 vel;
+    struct xrt_vec3 acc;
+    struct xrt_vec3 angvel;
+    struct xrt_vec3 angacc;
+
+    int64_t pose_ns;
     double created_ns;
 
     struct ql_system *sys;
@@ -186,6 +194,11 @@ struct ql_hmd
 
     struct xrt_pose pose;
     struct xrt_vec3 center;
+
+    struct xrt_vec3 vel;
+    struct xrt_vec3 acc;
+    struct xrt_vec3 angvel;
+    struct xrt_vec3 angacc;
 
     int64_t pose_ns;
     double created_ns;

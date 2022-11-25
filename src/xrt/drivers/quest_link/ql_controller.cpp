@@ -30,6 +30,8 @@
 
 #include "math/m_api.h"
 #include "math/m_vec3.h"
+#include "math/m_space.h"
+#include "math/m_predict.h"
 
 #include "os/os_time.h"
 
@@ -122,14 +124,25 @@ ql_get_tracked_pose(struct xrt_device *xdev,
         return;
     }
 
-    U_ZERO(out_relation);
+    struct xrt_space_relation relation;
+    U_ZERO(&relation);
 
-    out_relation->pose = ctrl->pose;
-    out_relation->relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
+    relation.pose = ctrl->pose;
+    relation.angular_velocity = ctrl->angvel;
+    relation.linear_velocity = ctrl->vel;
+    //ql_controller_get_interpolated_pose(ctrl, at_timestamp_ns, &ctrl->pose, &out_relation->pose);
+
+    //out_relation->pose = ctrl->pose;
+    relation.relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
                                                                    XRT_SPACE_RELATION_POSITION_VALID_BIT |
                                                                    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
 
     //ql_tracker_get_tracked_pose(ctrl->tracker, RIFT_S_TRACKER_POSE_DEVICE, at_timestamp_ns, out_relation);
+
+    timepoint_ns prediction_ns = at_timestamp_ns - ctrl->pose_ns;
+    double prediction_s = time_ns_to_s(prediction_ns);
+
+    m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void

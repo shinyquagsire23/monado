@@ -42,7 +42,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
 static void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size);
 static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size);
 
-static void xrsp_flush_stream(struct ql_xrsp_host *host);
+static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns);
 static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len);
 static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len);
 static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
@@ -290,7 +290,7 @@ void ql_xrsp_host_destroy(struct ql_xrsp_host* host)
     }
 }
 
-static void xrsp_flush_stream(struct ql_xrsp_host *host)
+static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
 {
     if (!host->ready_to_send_frames) return;
 
@@ -310,12 +310,18 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host)
         //printf("Write %x -> %x\n", stream_write_idx, host->stream_write_idx);
         host->needs_flush[stream_write_idx] = true;
         wait = true;
+        host->stream_started_ns[stream_write_idx] = target_ns;
+        //static int64_t last_ns = 0;
+        //printf("%zx\n", host->stream_started_ns[stream_write_idx] - last_ns);
+
+        //last_ns = target_ns;
     }
     os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
 
     os_mutex_lock(&host->stream_mutex[host->stream_write_idx]);
     host->csd_stream_len[host->stream_write_idx] = 0;
     host->idr_stream_len[host->stream_write_idx] = 0;
+    //host->stream_started_ns[host->stream_write_idx] = target_ns; // TODO actually check the render time?
     host->needs_flush[host->stream_write_idx] = false;
     os_mutex_unlock(&host->stream_mutex[host->stream_write_idx]);
 
@@ -499,6 +505,7 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
 {
     host->echo_idx = 1;
     host->ns_offset = 0;
+    host->ns_offset_from_target = 0;
     host->last_xmt = 0;
 
     host->echo_req_sent_ns = 0; // client ns
@@ -507,16 +514,24 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
     host->echo_resp_recv_ns = 0; // server ns
 
     host->frame_sent_ns = 0;
+
+    if (!host->sys) return;
+
+    struct ql_hmd* hmd = host->sys->hmd;
+    if (hmd) {
+        hmd->pose_ns = os_monotonic_get_ns();
+    }
 }
        
 int64_t xrsp_target_ts_ns(struct ql_xrsp_host *host)
 {
-    return (os_monotonic_get_ns() - host->start_ns) + host->ns_offset;
+    //return (os_monotonic_get_ns()) + host->ns_offset;
+    return (os_monotonic_get_ns()) - host->ns_offset_from_target;
 }
 
 int64_t xrsp_ts_ns(struct ql_xrsp_host *host)
 {
-    return os_monotonic_get_ns() - host->start_ns;
+    return os_monotonic_get_ns();
 }
 
 static void xrsp_send_ping(struct ql_xrsp_host *host)
@@ -713,6 +728,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
         
     struct cmd_pkt_idk send_cmd_chemx_toggle = {0x0005EC94E91B9D4F, COMMAND_TOGGLE_CHEMX, 0, 0, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_asw_toggle = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 0, 0, 0, 0};
+    struct cmd_pkt_idk send_cmd_asw_disable = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 1, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_dropframestate_toggle = {0x0005EC94E91B9D83, COMMAND_DROP_FRAMES_STATE, 0, 0, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_camerastream = {0x0005EC94E91B9D83, COMMAND_ENABLE_CAMERA_STREAM, 0, 0, 0, 0, 0};
 
@@ -734,8 +750,9 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, &send_cmd_camerastream, sizeof(send_cmd_camerastream));
 
@@ -766,6 +783,10 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
 
         //printf("Pong get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
 
+        /*if (payload->offset) {
+            host->ns_offset_from_target = payload->offset;
+        }*/
+
         if (host->pairing_state == PAIRINGSTATE_PAIRED) {
             xrsp_send_ping(host);
         }
@@ -774,6 +795,10 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
     {
         //printf ("Ping! %x\n", self.ns_offset);
         host->last_xmt = payload->xmt;
+
+        if (payload->offset) {
+            host->ns_offset_from_target = payload->offset;
+        }
 
         //printf("Ping get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
 
@@ -968,7 +993,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
 
         if (!host->have_working_pkt) {
             //printf("Create pkt\n");
-            ret = ql_xrsp_topic_pkt_create(&host->working_pkt, data, read_len, xrsp_ts_ns(host));
+            ret = ql_xrsp_topic_pkt_create(&host->working_pkt, data, read_len, host->last_read_ns);
             if (ret < 0) {
                 // TODO
                 data_consumed += 0x8;
@@ -1034,7 +1059,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             }
             else if (remaining_data > 0) {
                 //printf("Create pkt 2 %x\n", read_len - data_consumed);
-                ret = ql_xrsp_topic_pkt_create(&host->working_pkt, &data[data_consumed], remaining_data, xrsp_ts_ns(host));
+                ret = ql_xrsp_topic_pkt_create(&host->working_pkt, &data[data_consumed], remaining_data, host->last_read_ns);
                 if (ret < 0) {
                     // TODO
                     data_consumed += 0x8;
@@ -1053,52 +1078,18 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
     return true;
 }
 
-/*
-while True:
-            try:
-                b = bytes(self.ep_in.read(0x200))
-
-                f.write(bytes(b))
-
-                if self.working_pkt is None:
-                    self.working_pkt = TopicPkt(self, b)
-                elif self.working_pkt.missing_bytes() == 0:
-                    
-                    
-                else:
-                    self.working_pkt.add_missing_bytes(b)
-
-                while self.working_pkt is not None and self.working_pkt.missing_bytes() == 0:
-                    self.handle_packet(self.working_pkt)
-                    remains = self.working_pkt.remainder_bytes()
-                    if len(remains) > 0 and len(remains) < 8:
-                        self.working_pkt = None
-                        print("Weird remainder!")
-                        hex_dump(remains)
-                    elif len(remains) > 0:
-                        self.working_pkt = TopicPkt(self, remains)
-                    else:
-                        self.working_pkt = None
-                break
-            except usb.core.USBTimeoutError as e:
-                print ("Failed read", e)
-                f.close()
-                return b
-            except usb.core.USBError as e:
-                print ("Failed read", e)
-                f.close()
-                return b
-
-        f.close()
-        return b
-*/
-
-static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
+static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos)
 {
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
 
+    struct ql_hmd* hmd = host->sys->hmd;
+
+    struct xrt_space_relation out_head_relation;
+    U_ZERO(&out_head_relation);
+
+    xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
 
     os_mutex_lock(&host->pose_mutex);
     int bits = 0;
@@ -1112,15 +1103,16 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     msg.setRectifyMeshId(1);
 
     // TODO mutex
-    struct ql_hmd* hmd = host->sys->hmd;
 
-    msg.setPoseQuatX(hmd->pose.orientation.x);
-    msg.setPoseQuatY(hmd->pose.orientation.y);
-    msg.setPoseQuatZ(hmd->pose.orientation.z);
-    msg.setPoseQuatW(hmd->pose.orientation.w);
-    msg.setPoseX(hmd->pose.position.x);
-    msg.setPoseY(hmd->pose.position.y);
-    msg.setPoseZ(hmd->pose.position.z);
+    //TODO: we need some way to know the pose as it was when the frame was rendered,
+    // so that the Quest can handle timewarp for us.
+    msg.setPoseQuatX(out_head_relation.pose.orientation.x);
+    msg.setPoseQuatY(out_head_relation.pose.orientation.y);
+    msg.setPoseQuatZ(out_head_relation.pose.orientation.z);
+    msg.setPoseQuatW(out_head_relation.pose.orientation.w);
+    msg.setPoseX(out_head_relation.pose.position.x);
+    msg.setPoseY(out_head_relation.pose.position.y);
+    msg.setPoseZ(out_head_relation.pose.position.z);
 
     /*msg.setPoseQuatX(0.0);
     msg.setPoseQuatY(0.0);
@@ -1245,7 +1237,7 @@ ql_xrsp_write_thread(void *ptr)
         if (host->needs_flush[host->stream_read_idx] && (host->csd_stream_len[host->stream_read_idx] || host->idr_stream_len[host->stream_read_idx])) { //  && (xrsp_ts_ns(host) - host->frame_sent_ns) >= 13890000
             //printf("Flush: %zx %zx\n", host->csd_stream_len, host->idr_stream_len);
             //if (host->csd_stream_len == 0x27)
-            xrsp_send_video(host, 0, host->frame_idx, (const uint8_t*)host->csd_stream[host->stream_read_idx], host->csd_stream_len[host->stream_read_idx], (const uint8_t*)host->idr_stream[host->stream_read_idx], host->idr_stream_len[host->stream_read_idx], 0);
+            xrsp_send_video(host, 0, host->frame_idx, host->stream_started_ns[host->stream_read_idx], (const uint8_t*)host->csd_stream[host->stream_read_idx], host->csd_stream_len[host->stream_read_idx], (const uint8_t*)host->idr_stream[host->stream_read_idx], host->idr_stream_len[host->stream_read_idx], 0);
             //printf("%zu\n", xrsp_ts_ns(host) - host->frame_sent_ns);
             host->frame_sent_ns = xrsp_ts_ns(host);
 
