@@ -312,7 +312,7 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
         wait = true;
         host->stream_started_ns[stream_write_idx] = target_ns;
 
-#if 1
+#if 0
         static int64_t last_ns = 0;
         int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
         printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
