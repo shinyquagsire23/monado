@@ -127,6 +127,13 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     // Pull FOV information
     hmd->base.hmd->distortion.fov[0].angle_left = -angle_calc * M_PI / 180;
     hmd->base.hmd->distortion.fov[1].angle_right = angle_calc * M_PI / 180;
+
+    {
+        struct ql_hands* ctrl = host->sys->hands;
+
+        //ctrl->poses[0] = host->sys->controllers[0]->pose;
+        //ctrl->poses[1] = host->sys->controllers[1]->pose;
+    }
     
     os_mutex_unlock(&host->pose_mutex);
 }

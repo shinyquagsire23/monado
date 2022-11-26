@@ -335,6 +335,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_controller.h
 		quest_link/ql_hmd.cpp
 		quest_link/ql_hmd.h
+		quest_link/ql_hands.cpp
+		quest_link/ql_hands.h
 		quest_link/ql_prober.cpp
 		quest_link/ql_prober.h
 		quest_link/ql_utils.cpp
@@ -345,6 +347,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_xrsp.h
 		quest_link/ql_xrsp_pose.cpp
 		quest_link/ql_xrsp_pose.h
+		quest_link/ql_xrsp_hands.cpp
+		quest_link/ql_xrsp_hands.h
 		quest_link/ql_xrsp_logging.cpp
 		quest_link/ql_xrsp_logging.h
 		quest_link/ql_xrsp_hostinfo.cpp

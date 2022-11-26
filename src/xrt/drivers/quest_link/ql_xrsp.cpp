@@ -25,6 +25,7 @@
 #include "ql_xrsp_types.h"
 #include "ql_utils.h"
 #include "ql_xrsp_pose.h"
+#include "ql_xrsp_hands.h"
 #include "ql_xrsp_logging.h"
 #include "ql_xrsp_segmented_pkt.h"
 
@@ -829,55 +830,61 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
 
     //size_t num_words = (pkt->stream_size - 8) >> 3;
 
-    kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)capnp_data, payload->len_u64s)};
-    capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
+    try
+    {
+        kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)capnp_data, payload->len_u64s)};
+        capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
 
-    PayloadHostInfo::Reader info = message.getRoot<PayloadHostInfo>();
+        PayloadHostInfo::Reader info = message.getRoot<PayloadHostInfo>();
 
-    HeadsetConfig::Reader config = info.getConfig();
-    HeadsetDescription::Reader description = config.getDescription();
-    HeadsetLens::Reader lensLeft = description.getLeftLens();
-    HeadsetLens::Reader lensRight = description.getRightLens();
+        HeadsetConfig::Reader config = info.getConfig();
+        HeadsetDescription::Reader description = config.getDescription();
+        HeadsetLens::Reader lensLeft = description.getLeftLens();
+        HeadsetLens::Reader lensRight = description.getRightLens();
 
-    struct ql_hmd* hmd = host->sys->hmd;
+        struct ql_hmd* hmd = host->sys->hmd;
 
-    // TODO mutex
+        // TODO mutex
 
-    os_mutex_lock(&host->pose_mutex);
-    hmd->device_type = description.getDeviceType();
+        os_mutex_lock(&host->pose_mutex);
+        hmd->device_type = description.getDeviceType();
 
-    if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
-        hmd->fps = 120;
+        if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
+            hmd->fps = 120;
+        }
+        else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
+            hmd->fps = 90;
+        }
+        else {
+            hmd->fps = 72;
+        }
+
+        QUEST_LINK_INFO("HMD FPS is %f", hmd->fps);
+
+        ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), /*description.getRefreshRateHz()*/ hmd->fps);
+
+        // Quest 2:
+        // 58mm (0.057928182) angle_left -> -52deg
+        // 65mm (0.065298356) angle_left -> -49deg
+        // 68mm (0.068259589) angle_left -> -43deg
+
+        // Pull FOV information
+        hmd->base.hmd->distortion.fov[0].angle_up = lensLeft.getAngleUp() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[0].angle_down = -lensLeft.getAngleDown() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[0].angle_left = -lensLeft.getAngleLeft() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[0].angle_right = lensLeft.getAngleRight() * M_PI / 180;
+        
+        hmd->base.hmd->distortion.fov[1].angle_up = lensRight.getAngleUp() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[1].angle_down = -lensRight.getAngleDown() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[1].angle_left = -lensRight.getAngleLeft() * M_PI / 180;
+        hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
+
+        hmd->fov_angle_left = lensLeft.getAngleLeft();
+        os_mutex_unlock(&host->pose_mutex);
     }
-    else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
-        hmd->fps = 90;
+    catch(...) {
+
     }
-    else {
-        hmd->fps = 72;
-    }
-
-    QUEST_LINK_INFO("HMD FPS is %f", hmd->fps);
-
-    ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), /*description.getRefreshRateHz()*/ hmd->fps);
-
-    // Quest 2:
-    // 58mm (0.057928182) angle_left -> -52deg
-    // 65mm (0.065298356) angle_left -> -49deg
-    // 68mm (0.068259589) angle_left -> -43deg
-
-    // Pull FOV information
-    hmd->base.hmd->distortion.fov[0].angle_up = lensLeft.getAngleUp() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[0].angle_down = -lensLeft.getAngleDown() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[0].angle_left = -lensLeft.getAngleLeft() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[0].angle_right = lensLeft.getAngleRight() * M_PI / 180;
-    
-    hmd->base.hmd->distortion.fov[1].angle_up = lensRight.getAngleUp() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[1].angle_down = -lensRight.getAngleDown() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[1].angle_left = -lensRight.getAngleLeft() * M_PI / 180;
-    hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
-
-    hmd->fov_angle_left = lensLeft.getAngleLeft();
-    os_mutex_unlock(&host->pose_mutex);
 }
 
 static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
@@ -955,16 +962,27 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     else if (pkt->topic == TOPIC_POSE)
     {
         ql_xrsp_segpkt_consume(&host->pose_ctx, host, pkt);
-        if (host->pairing_state != PAIRINGSTATE_PAIRED) {
-            xrsp_trigger_bye(host, NULL);
-        }
+    }
+    else if (pkt->topic == TOPIC_HANDS)
+    {
+        ql_xrsp_handle_hands(host, pkt);
+    }
+    else if (pkt->topic == TOPIC_SKELETON)
+    {
+        ql_xrsp_handle_skeleton(host, pkt);
+    }
+    else if (pkt->topic == TOPIC_BODY)
+    {
+        ql_xrsp_handle_body(host, pkt);
     }
     else if (pkt->topic == TOPIC_LOGGING)
     {
         ql_xrsp_handle_logging(host, pkt);
-        if (host->pairing_state != PAIRINGSTATE_PAIRED) {
-            xrsp_trigger_bye(host, NULL);
-        }
+    }
+
+    if ((pkt->topic == TOPIC_POSE || pkt->topic == TOPIC_LOGGING) && host->pairing_state != PAIRINGSTATE_PAIRED)
+    {
+        xrsp_trigger_bye(host, NULL);
     }
 }
 
@@ -1015,7 +1033,13 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
         }
         else if (host->working_pkt.missing_bytes == 0) {
             //printf("Handle pkt\n");
-            xrsp_handle_pkt(host);
+            try {
+                xrsp_handle_pkt(host);
+            }
+            catch(...) {
+                QUEST_LINK_ERROR("Exception while parsing packet...");
+            }
+            
 
             printf("Is remaining data possible?\n");
 

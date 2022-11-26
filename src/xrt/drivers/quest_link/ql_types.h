@@ -29,6 +29,7 @@ typedef struct libusb_context libusb_context;
 typedef struct libusb_device_handle libusb_device_handle;
 struct ql_hmd;
 struct ql_controller;
+struct ql_hands;
 struct ql_camera;
 
 typedef struct ql_xrsp_host ql_xrsp_host;
@@ -210,6 +211,74 @@ struct ql_controller
     struct ql_system *sys;
 };
 
+typedef struct ovr_pose_f
+{
+    struct xrt_quat orient;
+    struct xrt_vec3 pos;
+} ovr_pose_f;
+
+typedef struct ovr_capsule
+{
+    uint32_t idx;
+    struct xrt_vec3 pos1;
+    struct xrt_vec3 pos2;
+} ovr_capsule;
+
+enum ovr_hand_joint
+{
+    OVR_HAND_JOINT_WRIST = 0,
+    OVR_HAND_JOINT_FOREARM = 1,
+
+    OVR_HAND_JOINT_THUMB_TRAPEZIUM = 2, // extra
+    OVR_HAND_JOINT_THUMB_METACARPAL = 3,
+    OVR_HAND_JOINT_THUMB_PROXIMAL = 4,
+    OVR_HAND_JOINT_THUMB_DISTAL = 5,
+
+    // missing: OVR_HAND_JOINT_INDEX_METACARPAL
+    OVR_HAND_JOINT_INDEX_PROXIMAL = 6,
+    OVR_HAND_JOINT_INDEX_INTERMEDIATE = 7,
+    OVR_HAND_JOINT_INDEX_DISTAL = 8,
+
+    // missing: OVR_HAND_JOINT_MIDDLE_METACARPAL
+    OVR_HAND_JOINT_MIDDLE_PROXIMAL = 9,
+    OVR_HAND_JOINT_MIDDLE_INTERMEDIATE = 10,
+    OVR_HAND_JOINT_MIDDLE_DISTAL = 11,
+    
+    // missing: OVR_HAND_JOINT_RING_METACARPAL
+    OVR_HAND_JOINT_RING_PROXIMAL = 12,
+    OVR_HAND_JOINT_RING_INTERMEDIATE = 13,
+    OVR_HAND_JOINT_RING_DISTAL = 14,
+    
+    OVR_HAND_JOINT_LITTLE_METACARPAL = 15,
+    OVR_HAND_JOINT_LITTLE_PROXIMAL = 16,
+    OVR_HAND_JOINT_LITTLE_INTERMEDIATE = 17,
+    OVR_HAND_JOINT_LITTLE_DISTAL = 18,
+    
+    OVR_HAND_JOINT_THUMB_TIP = 19,
+    OVR_HAND_JOINT_INDEX_TIP = 20,
+    OVR_HAND_JOINT_MIDDLE_TIP = 21,
+    OVR_HAND_JOINT_RING_TIP = 22,
+    OVR_HAND_JOINT_LITTLE_TIP = 23,
+
+    OVR_HAND_JOINT_MAX_ENUM = 0x7FFFFFFF
+};
+
+struct ql_hands
+{
+    struct xrt_device base;
+
+    struct xrt_pose poses[2];
+
+    struct ovr_pose_f bones_last[24*2];
+    struct ovr_pose_f bones_last_raw[24*2];
+    int16_t bone_parent_idx[24*2];
+
+    int64_t pose_ns;
+    double created_ns;
+
+    struct ql_system *sys;
+};
+
 struct ql_hmd
 {
     struct xrt_device base;
@@ -278,6 +347,8 @@ typedef struct ql_system
 
     /* Controller devices */
     struct ql_controller *controllers[MAX_TRACKED_DEVICES];
+
+    struct ql_hands *hands;
 
     /* Video feed handling */
     struct xrt_frame_context xfctx;

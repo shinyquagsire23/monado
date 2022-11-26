@@ -35,33 +35,41 @@ void ql_xrsp_handle_logging(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt*
         return;
     }
 
-    size_t num_words = pkt->payload_valid >> 3;
+    try
+    {
+        size_t num_words = pkt->payload_valid >> 3;
 
-    kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)pkt->payload, num_words)};
-    capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
+        kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)pkt->payload, num_words)};
+        capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
 
-    PayloadLogging::Reader logging = message.getRoot<PayloadLogging>();
+        PayloadLogging::Reader logging = message.getRoot<PayloadLogging>();
 
-    //std::cout << logging << "\n";
-    for (LogEntry::Reader entry: logging.getError()) {
-        std::string out = entry.getData();
-        QUEST_LINK_ERROR("%s", out.c_str());
+        //std::cout << logging << "\n";
+        for (LogEntry::Reader entry: logging.getError()) {
+            std::string out = entry.getData();
+            QUEST_LINK_ERROR("%s", out.c_str());
+        }
+
+        for (LogEntry::Reader entry: logging.getWarn()) {
+            std::string out = entry.getData();
+            QUEST_LINK_WARN("%s", out.c_str());
+        }
+
+        for (LogEntry::Reader entry: logging.getDebug()) {
+            std::string out = entry.getData();
+            QUEST_LINK_DEBUG("%s", out.c_str());
+        }
+
+        for (LogEntry::Reader entry: logging.getInfo()) {
+            std::string out = entry.getData();
+            QUEST_LINK_INFO("%s", out.c_str());
+        }
     }
-
-    for (LogEntry::Reader entry: logging.getWarn()) {
-        std::string out = entry.getData();
-        QUEST_LINK_WARN("%s", out.c_str());
+    catch (...)
+    {
+        QUEST_LINK_ERROR("Failed to parse logging pkt");
     }
-
-    for (LogEntry::Reader entry: logging.getDebug()) {
-        std::string out = entry.getData();
-        QUEST_LINK_DEBUG("%s", out.c_str());
-    }
-
-    for (LogEntry::Reader entry: logging.getInfo()) {
-        std::string out = entry.getData();
-        QUEST_LINK_INFO("%s", out.c_str());
-    }
+    
 
 }
 

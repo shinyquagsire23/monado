@@ -104,8 +104,9 @@ init_ql_usb(struct xrt_prober *xp,
 	out_vdev[0] = &d->hmd->base;
 	out_vdev[1] = &d->controllers[0]->base;
 	out_vdev[2] = &d->controllers[1]->base;
+	out_vdev[3] = &d->hands->base;
 
-	return 3;
+	return 4;
 }
 
 int

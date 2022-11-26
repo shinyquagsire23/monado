@@ -102,7 +102,7 @@ int32_t ql_xrsp_topic_pkt_append(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_data,
     pkt->missing_bytes -= consumed;
     pkt->payload_valid += consumed;
 
-    printf("Payload: consumed %x bytes, %x valid, missing %x (topic %x)\n", consumed, pkt->payload_valid, pkt->missing_bytes, pkt->topic);
+    //printf("Payload: consumed %x bytes, %x valid, missing %x (topic %x)\n", consumed, pkt->payload_valid, pkt->missing_bytes, pkt->topic);
 
     return consumed;
 }
@@ -118,7 +118,7 @@ void ql_xrsp_topic_pkt_destroy(struct ql_xrsp_topic_pkt* pkt)
 
 void ql_xrsp_topic_pkt_dump(struct ql_xrsp_topic_pkt* pkt)
 {
-    uint8_t muted_topics[] = {TOPIC_AUI4A_ADV, TOPIC_HOSTINFO_ADV, TOPIC_POSE, TOPIC_AUDIO, TOPIC_LOGGING};
+    uint8_t muted_topics[] = {TOPIC_AUI4A_ADV, TOPIC_HOSTINFO_ADV, TOPIC_POSE, TOPIC_HANDS, TOPIC_AUDIO, TOPIC_LOGGING};
 
     for (int i = 0; i < sizeof(muted_topics); i++)
     {
