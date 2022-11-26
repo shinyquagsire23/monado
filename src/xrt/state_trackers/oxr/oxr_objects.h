@@ -796,7 +796,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 XrResult
 oxr_session_apply_force_feedback(struct oxr_logger *log,
                                  struct oxr_hand_tracker *hand_tracker,
-                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations);
+                                 const XrForceFeedbackCurlApplyLocationsMNDX *locations);
 
 /*
  *

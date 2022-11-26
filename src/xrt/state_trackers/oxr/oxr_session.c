@@ -1022,7 +1022,7 @@ xr_hand_to_force_feedback_output(XrHandEXT hand)
 XrResult
 oxr_session_apply_force_feedback(struct oxr_logger *log,
                                  struct oxr_hand_tracker *hand_tracker,
-                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations)
+                                 const XrForceFeedbackCurlApplyLocationsMNDX *locations)
 {
 	struct xrt_device *xdev = hand_tracker->xdev;
 

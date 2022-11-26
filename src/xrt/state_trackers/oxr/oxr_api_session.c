@@ -480,7 +480,7 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 #ifdef XR_MNDX_force_feedback_curl
 
 XrResult
-oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrApplyForceFeedbackCurlLocationsMNDX *locations)
+oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrForceFeedbackCurlApplyLocationsMNDX *locations)
 {
 	OXR_TRACE_MARKER();
 

@@ -450,8 +450,8 @@ typedef enum XrStructureType {
     XR_TYPE_VULKAN_SWAPCHAIN_CREATE_INFO_META = 1000227000,
     XR_TYPE_PERFORMANCE_METRICS_STATE_META = 1000232001,
     XR_TYPE_PERFORMANCE_METRICS_COUNTER_META = 1000232002,
-    XR_TYPE_SYSTEM_FORCE_FEEDBACK_CURL_PROPERTIES_MNDX = 1000375002,
-    XR_TYPE_FORCE_FEEDBACK_CURL_APPLY_LOCATIONS_MNDX = 1000375003,
+    XR_TYPE_SYSTEM_FORCE_FEEDBACK_CURL_PROPERTIES_MNDX = 1000375000,
+    XR_TYPE_FORCE_FEEDBACK_CURL_APPLY_LOCATIONS_MNDX = 1000375001,
     XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR = XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR,
     XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR,
     XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR = XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR,
@@ -4582,11 +4582,11 @@ XRAPI_ATTR XrResult XRAPI_CALL xrQueryPerformanceMetricsCounterMETA(
 #define XR_MNDX_FORCE_FEEDBACK_CURL_EXTENSION_NAME "XR_MNDX_force_feedback_curl"
 
 typedef enum XrForceFeedbackCurlLocationMNDX {
-    XR_FORCE_FEEDBACK_CURL_LOCATION_FINGER_THUMB_CURL_MNDX = 0,
-    XR_FORCE_FEEDBACK_CURL_LOCATION_FINGER_INDEX_CURL_MNDX = 1,
-    XR_FORCE_FEEDBACK_CURL_LOCATION_FINGER_MIDDLE_CURL_MNDX = 2,
-    XR_FORCE_FEEDBACK_CURL_LOCATION_FINGER_RING_CURL_MNDX = 3,
-    XR_FORCE_FEEDBACK_CURL_LOCATION_FINGER_LITTLE_CURL_MNDX = 4,
+    XR_FORCE_FEEDBACK_CURL_LOCATION_THUMB_CURL_MNDX = 0,
+    XR_FORCE_FEEDBACK_CURL_LOCATION_INDEX_CURL_MNDX = 1,
+    XR_FORCE_FEEDBACK_CURL_LOCATION_MIDDLE_CURL_MNDX = 2,
+    XR_FORCE_FEEDBACK_CURL_LOCATION_RING_CURL_MNDX = 3,
+    XR_FORCE_FEEDBACK_CURL_LOCATION_LITTLE_CURL_MNDX = 4,
     XR_FORCE_FEEDBACK_CURL_LOCATION_MAX_ENUM_MNDX = 0x7FFFFFFF
 } XrForceFeedbackCurlLocationMNDX;
 // XrSystemForceFeedbackCurlPropertiesMNDX extends XrSystemProperties
@@ -4596,25 +4596,25 @@ typedef struct XrSystemForceFeedbackCurlPropertiesMNDX {
     XrBool32              supportsForceFeedbackCurl;
 } XrSystemForceFeedbackCurlPropertiesMNDX;
 
-typedef struct XrApplyForceFeedbackCurlLocationMNDX {
+typedef struct XrForceFeedbackCurlApplyLocationMNDX {
     XrForceFeedbackCurlLocationMNDX    location;
     float                              value;
-} XrApplyForceFeedbackCurlLocationMNDX;
+} XrForceFeedbackCurlApplyLocationMNDX;
 
-typedef struct XrApplyForceFeedbackCurlLocationsMNDX {
+typedef struct XrForceFeedbackCurlApplyLocationsMNDX {
     XrStructureType                          type;
     const void* XR_MAY_ALIAS                 next;
-    XrApplyForceFeedbackCurlLocationMNDX*    locations;
+    XrForceFeedbackCurlApplyLocationMNDX*    locations;
     uint32_t                                 locationCount;
-} XrApplyForceFeedbackCurlLocationsMNDX;
+} XrForceFeedbackCurlApplyLocationsMNDX;
 
-typedef XrResult (XRAPI_PTR *PFN_xrApplyForceFeedbackCurlMNDX)(XrHandTrackerEXT handTracker, const XrApplyForceFeedbackCurlLocationsMNDX* locations);
+typedef XrResult (XRAPI_PTR *PFN_xrApplyForceFeedbackCurlMNDX)(XrHandTrackerEXT handTracker, const XrForceFeedbackCurlApplyLocationsMNDX* locations);
 
 #ifndef XR_NO_PROTOTYPES
 #ifdef XR_EXTENSION_PROTOTYPES
 XRAPI_ATTR XrResult XRAPI_CALL xrApplyForceFeedbackCurlMNDX(
     XrHandTrackerEXT                            handTracker,
-    const XrApplyForceFeedbackCurlLocationsMNDX* locations);
+    const XrForceFeedbackCurlApplyLocationsMNDX* locations);
 #endif /* XR_EXTENSION_PROTOTYPES */
 #endif /* !XR_NO_PROTOTYPES */
 
