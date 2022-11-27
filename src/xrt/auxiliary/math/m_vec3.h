@@ -110,6 +110,7 @@ m_vec3_angle(struct xrt_vec3 l, struct xrt_vec3 r)
 	if (lengths == 0) {
 		return 0;
 	}
+	lengths = sqrtf(lengths);
 
 	return acosf(dot / lengths);
 }
