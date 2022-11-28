@@ -229,7 +229,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         goto cleanup;
     }
 
-    libusb_set_interface_alt_setting(host->dev, host->if_num, 1);
+    //libusb_set_interface_alt_setting(host->dev, host->if_num, 1);
 
     usb_dev = libusb_get_device(host->dev);
     ret = libusb_get_active_config_descriptor(usb_dev, &config);

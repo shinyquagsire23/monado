@@ -174,6 +174,8 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 	hmd->encode_width = eye_width * 2;
 	hmd->encode_height = eye_height;
 	hmd->fps = fps;
+	
+	u_distortion_mesh_fill_in_compute(&hmd->base);
 }
 
 struct ql_hmd *

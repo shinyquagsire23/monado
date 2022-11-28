@@ -526,13 +526,15 @@ compositor_check_and_prepare_xdev(struct comp_compositor *c, struct xrt_device *
 	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,     \
 	VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,  \
 	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, \
-	VK_KHR_SURFACE_EXTENSION_NAME, \
-	"VK_MVK_macos_surface"
+	VK_KHR_SURFACE_EXTENSION_NAME
 
 // clang-format on
 
 static const char *instance_extensions_common[] = {
     COMP_INSTANCE_EXTENSIONS_COMMON,
+#ifdef XRT_OS_DARWIN
+    "VK_MVK_macos_surface",
+#endif
 };
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
@@ -925,7 +927,12 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 		return false;
 	}
 
-	const char *extension_names[] = {COMP_INSTANCE_EXTENSIONS_COMMON};
+	const char *extension_names[] = {
+	    COMP_INSTANCE_EXTENSIONS_COMMON
+#ifdef XRT_OS_DARWIN
+        "VK_MVK_macos_surface",
+#endif
+	};
 
 
 	VkInstanceCreateInfo instance_create_info = {
