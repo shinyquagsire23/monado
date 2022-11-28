@@ -196,7 +196,6 @@ void ql_xrsp_handle_hands(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* p
                 math_quat_rotate(&hand->bone_rots[parent - shift], &accum, &accum);
                 ovr_pose_add(&ctrl->bones_last[idx], &tmp);
 
-                
                 parent = ctrl->bone_parent_idx[parent];
             }
 

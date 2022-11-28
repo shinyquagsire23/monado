@@ -168,6 +168,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         libusb_close(host->dev);
     }
 
+    host->usb_speed = LIBUSB_SPEED_LOW;
     host->usb_valid = false;
     host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
 
@@ -262,6 +263,34 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         else if (!host->ep_in && (pEp->bEndpointAddress & LIBUSB_ENDPOINT_IN)) {
             host->ep_in = pEp->bEndpointAddress;
         }
+    }
+
+    host->usb_slow_cable = false;
+    host->usb_speed = libusb_get_device_speed(usb_dev);
+    switch (host->usb_speed)
+    {
+    case LIBUSB_SPEED_LOW:
+        host->usb_slow_cable = true;
+        QUEST_LINK_ERROR("Headset is operating at 1.5Mbit/s");
+        break;
+    case LIBUSB_SPEED_FULL:
+        host->usb_slow_cable = true;
+        QUEST_LINK_ERROR("Headset is operating at 12Mbit/s");
+        break;
+    case LIBUSB_SPEED_HIGH:
+        host->usb_slow_cable = true;
+        QUEST_LINK_ERROR("Headset is operating at 480Mbit/s");
+        break;
+    case LIBUSB_SPEED_SUPER:
+        QUEST_LINK_INFO("Headset is operating at 5000Mbit/s");
+        break;
+    case LIBUSB_SPEED_SUPER_PLUS:
+        QUEST_LINK_INFO("Headset is operating at 10000Mbit/s");
+        break;
+    default:
+        host->usb_slow_cable = true;
+        QUEST_LINK_ERROR("libusb_get_device_speed returned unknown value!");
+        break;
     }
 
     libusb_clear_halt(host->dev, host->ep_in);
@@ -859,9 +888,15 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 72;
         }
 
-        QUEST_LINK_INFO("HMD FPS is %f", hmd->fps);
+        float scale = 1.0;
+        if (host->usb_slow_cable) {
+            scale = 0.5;
+            hmd->fps = 72;
+        }
 
-        ql_hmd_set_per_eye_resolution(hmd, description.getResolutionWidth(), description.getResolutionHeight(), /*description.getRefreshRateHz()*/ hmd->fps);
+        QUEST_LINK_INFO("HMD FPS is %f, scale is %f", hmd->fps, scale);
+
+        ql_hmd_set_per_eye_resolution(hmd, (int)((float)description.getResolutionWidth() * scale), (int)((float)description.getResolutionHeight() * scale), /*description.getRefreshRateHz()*/ hmd->fps);
 
         // Quest 2:
         // 58mm (0.057928182) angle_left -> -52deg

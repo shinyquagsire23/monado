@@ -140,8 +140,8 @@ ql_hmd_destroy(struct xrt_device *xdev)
 
 void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps)
 {
-	auto eye_width = w/2;
-	auto eye_height = h/2;
+	auto eye_width = w;
+	auto eye_height = h;
 
 	// Setup info.
 	hmd->base.hmd->blend_modes[0] = XRT_BLEND_MODE_OPAQUE;

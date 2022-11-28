@@ -115,6 +115,8 @@ typedef struct ql_xrsp_host
     libusb_device_handle *dev;
 
     bool usb_valid;
+    bool usb_slow_cable;
+    int usb_speed;
     int if_num;
     uint16_t vid;
     uint16_t pid;
