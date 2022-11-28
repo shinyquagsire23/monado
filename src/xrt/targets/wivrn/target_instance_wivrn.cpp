@@ -122,7 +122,7 @@ wivrn_xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **ou
 	return XRT_SUCCESS;
 }
 
-#ifdef XRT_FEATURE_SERVICE
+#ifdef XRT_FEATURE_SERVICE_WIVRN
 xrt_result_t
 xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xinst)
 {

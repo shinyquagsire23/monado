@@ -5,6 +5,7 @@
 add_library(monado-wivrn-mdnssvc STATIC mdnssvc/mdns.c mdnssvc/mdns.h mdnssvc/mdnsd.c mdnssvc/mdnssvc.h)
 
 add_library(monado-wivrn-target STATIC target_instance_wivrn.cpp hostname.cpp mdns_publisher.cpp)
+add_library(monado-wivrn-target-2 STATIC target_instance_wivrn.cpp hostname.cpp mdns_publisher.cpp)
 
 target_include_directories(monado-wivrn-target SYSTEM PRIVATE /opt/homebrew/include)
 target_link_libraries(
@@ -17,6 +18,18 @@ target_link_libraries(
 		monado-wivrn-mdnssvc
 	)
 
+target_include_directories(monado-wivrn-target-2 SYSTEM PRIVATE /opt/homebrew/include)
+target_link_libraries(
+	monado-wivrn-target-2
+	PRIVATE
+		aux_util
+		drv_wivrn
+		comp_main
+		#PkgConfig::AVAHI
+		monado-wivrn-mdnssvc
+	)
+target_compile_definitions(monado-wivrn-target-2 PUBLIC XRT_FEATURE_SERVICE_WIVRN)
+
 add_executable(monado-wivrn main.cpp)
 
 add_sanitizers(monado-wivrn)
@@ -26,7 +39,7 @@ target_link_libraries(
 	PRIVATE
 		aux_util
 		drv_wivrn
-		monado-wivrn-target
+		monado-wivrn-target-2
 	)
 
 if(XRT_HAVE_AVAHI)

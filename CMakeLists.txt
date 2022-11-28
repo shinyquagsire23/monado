@@ -177,13 +177,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
-		pkg_check_modules(
-			FFMPEG
-			IMPORTED_TARGET
-			libavcodec
-			libavutil
-			libavfilter
-			)
+		#pkg_check_modules(
+		#	FFMPEG
+		#	IMPORTED_TARGET
+		#	libavcodec
+		#	libavutil
+		#	libavfilter
+		#	)
 		if(XRT_ENABLE_GPL)
 			pkg_check_modules(X264 IMPORTED_TARGET x264)
 		endif()
@@ -361,7 +361,7 @@ option_with_deps(XRT_BUILD_DRIVER_VIVE "Enable driver for HTC Vive, Vive Pro, Va
 option_with_deps(XRT_BUILD_DRIVER_WMR "Enable Windows Mixed Reality driver" DEPENDS "NOT WIN32" "NOT XRT_HAVE_DARWIN")
 if(NOT ${CMAKE_VERSION} VERSION_LESS 3.11)
 	option_with_deps(XRT_BUILD_DRIVER_WIVRN "Enable WiVRn streaming driver"
-		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" "XRT_HAVE_AVAHI OR XRT_HAVE_DARWIN" ) #XRT_HAVE_SYSTEMD
+		DEPENDS "XRT_HAVE_FFMPEG OR XRT_HAVE_CUDA OR XRT_HAVE_X264" ) #XRT_HAVE_SYSTEMD
 else()
 	set(XRT_BUILD_DRIVER_WIVRN OFF)
 endif()
