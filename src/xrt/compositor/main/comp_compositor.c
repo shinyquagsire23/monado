@@ -928,7 +928,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 	}
 
 	const char *extension_names[] = {
-	    COMP_INSTANCE_EXTENSIONS_COMMON
+	    COMP_INSTANCE_EXTENSIONS_COMMON,
 #ifdef XRT_OS_DARWIN
         "VK_MVK_macos_surface",
 #endif
