@@ -210,6 +210,18 @@ struct ql_controller
     int64_t pose_ns;
     double created_ns;
 
+    uint8_t features;
+    uint8_t battery;
+    uint32_t feat_2;
+
+    uint32_t buttons;
+    uint32_t capacitance;
+    float joystick_x;
+    float joystick_y;
+    float grip_z;
+    float trigger_z;
+    float stylus_pressure;
+
     struct ql_system *sys;
 };
 
@@ -263,6 +275,97 @@ enum ovr_hand_joint
     OVR_HAND_JOINT_LITTLE_TIP = 23,
 
     OVR_HAND_JOINT_MAX_ENUM = 0x7FFFFFFF
+};
+
+// Physical buttons
+enum ovr_touch_btn
+{
+    OVR_TOUCH_BTN_A       = 0x00000001,
+    OVR_TOUCH_BTN_B       = 0x00000002,
+    OVR_TOUCH_BTN_STICK_R = 0x00000004,
+    OVR_TOUCH_BTN_8       = 0x00000008,
+    OVR_TOUCH_BTN_10      = 0x00000010,
+    OVR_TOUCH_BTN_20      = 0x00000020,
+    OVR_TOUCH_BTN_40      = 0x00000040,
+    OVR_TOUCH_BTN_80      = 0x00000080,
+
+    OVR_TOUCH_BTN_X       = 0x00000100,
+    OVR_TOUCH_BTN_Y       = 0x00000200,
+    OVR_TOUCH_BTN_STICK_L = 0x00000400,
+    OVR_TOUCH_BTN_800     = 0x00000800,
+    OVR_TOUCH_BTN_1000    = 0x00001000,
+    OVR_TOUCH_BTN_2000    = 0x00002000,
+    OVR_TOUCH_BTN_4000    = 0x00004000,
+    OVR_TOUCH_BTN_8000    = 0x00008000,
+
+    OVR_TOUCH_BTN_10000    = 0x00010000,
+    OVR_TOUCH_BTN_20000    = 0x00020000,
+    OVR_TOUCH_BTN_40000    = 0x00040000,
+    OVR_TOUCH_BTN_80000    = 0x00080000,
+
+    OVR_TOUCH_BTN_100000   = 0x00100000,
+    OVR_TOUCH_BTN_200000   = 0x00200000,
+    OVR_TOUCH_BTN_400000   = 0x00400000,
+    OVR_TOUCH_BTN_800000   = 0x00800000,
+
+    OVR_TOUCH_BTN_SYSTEM   = 0x01000000,
+    OVR_TOUCH_BTN_2000000  = 0x02000000,
+    OVR_TOUCH_BTN_4000000  = 0x04000000,
+    OVR_TOUCH_BTN_8000000  = 0x08000000,
+
+    OVR_TOUCH_BTN_10000000 = 0x10000000,
+    OVR_TOUCH_BTN_20000000 = 0x20000000,
+    OVR_TOUCH_BTN_MENU     = 0x40000000,
+    OVR_TOUCH_BTN_STICKS   = 0x80000000,
+};
+
+// Capacitive sensors
+enum ovr_touch_cap
+{
+    OVR_TOUCH_CAP_A_X       = 0x00000001,
+    OVR_TOUCH_CAP_B_Y       = 0x00000002,
+    OVR_TOUCH_CAP_STICK     = 0x00000004,
+    OVR_TOUCH_CAP_TRIGGER   = 0x00000008,
+    OVR_TOUCH_CAP_THUMB_NEAR = 0x00000010,
+    OVR_TOUCH_CAP_POINTING  = 0x00000020,
+    OVR_TOUCH_CAP_TOUCHPAD  = 0x00000040,
+    OVR_TOUCH_CAP_80        = 0x00000080,
+
+    OVR_TOUCH_CAP_100       = 0x00000100,
+    OVR_TOUCH_CAP_200       = 0x00000200,
+    OVR_TOUCH_CAP_400       = 0x00000400,
+    OVR_TOUCH_CAP_800       = 0x00000800,
+    OVR_TOUCH_CAP_1000      = 0x00001000,
+    OVR_TOUCH_CAP_2000      = 0x00002000,
+    OVR_TOUCH_CAP_4000      = 0x00004000,
+    OVR_TOUCH_CAP_8000      = 0x00008000,
+
+    OVR_TOUCH_CAP_10000     = 0x00010000,
+    OVR_TOUCH_CAP_20000     = 0x00020000,
+    OVR_TOUCH_CAP_40000     = 0x00040000,
+    OVR_TOUCH_CAP_80000     = 0x00080000,
+
+    OVR_TOUCH_CAP_100000    = 0x00100000,
+    OVR_TOUCH_CAP_200000    = 0x00200000,
+    OVR_TOUCH_CAP_400000    = 0x00400000,
+    OVR_TOUCH_CAP_800000    = 0x00800000,
+
+    OVR_TOUCH_CAP_1000000   = 0x01000000,
+    OVR_TOUCH_CAP_2000000   = 0x02000000,
+    OVR_TOUCH_CAP_4000000   = 0x04000000,
+    OVR_TOUCH_CAP_8000000   = 0x08000000,
+
+    OVR_TOUCH_CAP_10000000  = 0x10000000,
+    OVR_TOUCH_CAP_20000000  = 0x20000000,
+    OVR_TOUCH_CAP_40000000  = 0x40000000,
+    OVR_TOUCH_CAP_80000000  = 0x80000000,
+};
+
+// Quest Pro Left: 00036100, 0035f00?
+// Quest Pro Right: 00035e01, 0035c01?
+enum ovr_touch_feature
+{
+    OVR_TOUCH_FEAT_RIGHT = 0x00000001,
 };
 
 struct ql_hands

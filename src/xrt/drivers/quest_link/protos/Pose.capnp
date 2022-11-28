@@ -34,7 +34,7 @@ struct PoseStruct1 {
 }
 
 struct PoseTrackedController {
-    unk0p0 @0 :UInt32;
+    features @0 :UInt32;
     buttons @1 :UInt32;
     capacitance @2 :UInt32;
     triggerZ @3 :Float32;

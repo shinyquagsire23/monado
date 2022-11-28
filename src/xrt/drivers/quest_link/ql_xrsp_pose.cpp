@@ -44,10 +44,14 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     PayloadPose::Reader pose = message.getRoot<PayloadPose>();
 
     //std::cout << pose << "\n";
-    int idx = 0;
+    
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
+        int idx = 0;
+        if (controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT) {
+            idx = 1;
+        }
+
         struct ql_controller* ctrl = host->sys->controllers[idx++];
-        //printf("%x\n", controller.getButtons());
         OvrPoseF::Reader controllerPose = controller.getPose();
 
         ctrl->pose.position.x = controllerPose.getPosX();
@@ -66,6 +70,35 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     
         int64_t pose_ns = controllerPose.getTimestamp() + host->ns_offset_from_target;
         ctrl->pose_ns = pose_ns;
+
+        /*
+        capacitance @2 :UInt32;
+        triggerZ @3 :Float32;
+        gripZ @4 :Float32;
+        stickX @5 :Float32;
+        stickY @6 :Float32;
+        touchpadX @7 :Float32;
+        touchpadY @8 :Float32;
+        touchpadPressure @9 :Float32;
+        stylusPressure @10 :Float32;
+        triggerCovered @11 :Float32;
+        triggerFingerCurl @12 :Float32;
+        */
+
+        uint32_t features_raw = controller.getFeatures();
+
+        ctrl->features = features_raw & 0xFF;
+        ctrl->battery = (features_raw >> 8) & 0x7F;
+        ctrl->feat_2 = (features_raw >> 15);
+        ctrl->buttons = controller.getButtons();
+        ctrl->capacitance = controller.getCapacitance();
+        ctrl->joystick_x = controller.getStickX();
+        ctrl->joystick_y = controller.getStickY();
+        ctrl->grip_z = controller.getGripZ();
+        ctrl->trigger_z = controller.getTriggerZ();
+        ctrl->stylus_pressure = controller.getStylusPressure();
+
+        //printf("%02x bat=%02d %04x: %08x %08x\n", ctrl->features, ctrl->battery, ctrl->feat_2, ctrl->buttons, ctrl->capacitance);
     }
 
     OvrPoseF::Reader headsetPose = pose.getHeadset();

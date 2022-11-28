@@ -106,9 +106,60 @@ enum touch_controller_input_index
     u_var_add_f32((d), &(d)->base.inputs[OCULUS_TOUCH_##NAME].value.vec2.x, label1);                               \
     u_var_add_f32((d), &(d)->base.inputs[OCULUS_TOUCH_##NAME].value.vec2.y, label2)
 
+
+static void
+ql_update_input_bool(struct ql_controller *ctrl, int index, int64_t when_ns, int val)
+{
+    ctrl->base.inputs[index].timestamp = when_ns;
+    ctrl->base.inputs[index].value.boolean = (val != 0);
+}
+
+static void
+ql_update_input_analog(struct ql_controller *ctrl, int index, int64_t when_ns, float val)
+{
+    ctrl->base.inputs[index].timestamp = when_ns;
+    ctrl->base.inputs[index].value.vec1.x = val;
+}
+
+static void
+ql_update_input_vec2(struct ql_controller *ctrl, int index, int64_t when_ns, float x, float y)
+{
+    ctrl->base.inputs[index].timestamp = when_ns;
+    ctrl->base.inputs[index].value.vec2.x = x;
+    ctrl->base.inputs[index].value.vec2.y = y;
+}
+
 static void
 ql_update_inputs(struct xrt_device *xdev)
-{}
+{
+    struct ql_controller *ctrl = (struct ql_controller *)(xdev);
+
+    if (ctrl->features & OVR_TOUCH_FEAT_RIGHT) {
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_A_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_A);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_B_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_B);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_SYSTEM_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_SYSTEM);
+
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_A_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_A_X);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_B_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_B_Y);
+    }
+    else {
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_X_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_X);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_Y_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_Y);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_MENU_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_MENU);
+
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_X_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_A_X);
+        ql_update_input_bool(ctrl, OCULUS_TOUCH_Y_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_B_Y);
+    }
+    
+    ql_update_input_analog(ctrl, OCULUS_TOUCH_SQUEEZE_VALUE, ctrl->pose_ns, ctrl->grip_z);
+    ql_update_input_analog(ctrl, OCULUS_TOUCH_TRIGGER_VALUE, ctrl->pose_ns, ctrl->trigger_z);
+    ql_update_input_bool(ctrl, OCULUS_TOUCH_TRIGGER_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_TRIGGER);
+
+    ql_update_input_bool(ctrl, OCULUS_TOUCH_THUMBSTICK_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_STICKS);
+    ql_update_input_bool(ctrl, OCULUS_TOUCH_THUMBSTICK_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_STICK);
+
+    ql_update_input_vec2(ctrl, OCULUS_TOUCH_THUMBSTICK, ctrl->pose_ns, ctrl->joystick_x, ctrl->joystick_y);
+}
 
 static void
 ql_get_tracked_pose(struct xrt_device *xdev,
