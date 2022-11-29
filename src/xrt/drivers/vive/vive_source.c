@@ -7,6 +7,7 @@
  * @ingroup drv_vive
  */
 
+#include "math/m_clock_offset.h"
 #include "os/os_threading.h"
 #include "util/u_deque.h"
 #include "util/u_logging.h"
@@ -45,26 +46,6 @@ struct vive_source
 	time_duration_ns hw2mono; //!< Estimated offset from IMU to monotonic clock
 	time_duration_ns hw2v4l2; //!< Estimated offset from IMU to V4L2 clock
 };
-
-//! Given a sample from two timestamp domains a and b that should have been
-//! sampled as close as possible, together with an estimate of the offset
-//! between a clock and b clock (or zero), it applies a smoothing average on the
-//! estimated offset and returns a in b clock.
-//! @todo Copy of clock_hw2mono in wmr_source.c, unify into a utility.
-static inline timepoint_ns
-clock_offset_a2b(double freq, timepoint_ns a, timepoint_ns b, time_duration_ns *inout_a2b)
-{
-	// Totally arbitrary way of computing alpha, if you have a better one, replace it
-	const double alpha = 1.0 - 12.5 / freq; // Weight to put on accumulated a2b
-	time_duration_ns old_a2b = *inout_a2b;
-	time_duration_ns got_a2b = b - a;
-	time_duration_ns new_a2b = old_a2b * alpha + got_a2b * (1.0 - alpha);
-	if (old_a2b == 0) { // a2b has not been set yet
-		new_a2b = got_a2b;
-	}
-	*inout_a2b = new_a2b;
-	return a + new_a2b;
-}
 
 /*
  *
@@ -126,7 +107,7 @@ vive_source_try_convert_v4l2_timestamp(struct vive_source *vs, struct xrt_frame 
 	vs->waiting_for_first_nonempty_frame = false;
 
 	// Update estimate of hw2v4l2 clock offset, only used for matching timestamps
-	clock_offset_a2b(CAMERA_FREQUENCY, vive_timestamp, xf->timestamp, &vs->hw2v4l2);
+	m_clock_offset_a2b(CAMERA_FREQUENCY, vive_timestamp, xf->timestamp, &vs->hw2v4l2);
 
 	// Use vive_timestamp and put it in monotonic clock
 	xf->timestamp = vive_timestamp + vs->hw2mono; // Notice that we don't use hw2v4l2
@@ -156,7 +137,7 @@ static void
 vive_source_receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct vive_source *vs = container_of(sink, struct vive_source, imu_sink);
-	s->timestamp_ns = clock_offset_a2b(IMU_FREQUENCY, s->timestamp_ns, os_monotonic_get_ns(), &vs->hw2mono);
+	s->timestamp_ns = m_clock_offset_a2b(IMU_FREQUENCY, s->timestamp_ns, os_monotonic_get_ns(), &vs->hw2mono);
 	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;

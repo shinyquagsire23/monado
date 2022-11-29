@@ -12,6 +12,7 @@
 #include "wmr_protocol.h"
 
 #include "math/m_api.h"
+#include "math/m_clock_offset.h"
 #include "math/m_filter_fifo.h"
 #include "util/u_debug.h"
 #include "util/u_sink.h"
@@ -84,44 +85,12 @@ struct wmr_source
  *
  */
 
-/*!
- * Convert a hardware timestamp into monotonic clock. Updates offset estimate.
- * @note Only used with IMU samples as they have the smallest USB transmission time.
- *
- * @param ws wmr_source
- * @param[in, out] ts Hardware timestamp, gets converted to monotonic clock.
- */
-static inline void
-clock_hw2mono(struct wmr_source *ws, timepoint_ns *ts)
-{
-	const double alpha = 0.95; // Weight to put on accumulated hw2mono clock offset
-	timepoint_ns mono = os_monotonic_get_ns();
-	timepoint_ns hw = *ts;
-	time_duration_ns old_hw2mono = ws->hw2mono;
-	time_duration_ns got_hw2mono = mono - hw;
-	time_duration_ns new_hw2mono = old_hw2mono * alpha + got_hw2mono * (1.0 - alpha);
-	if (old_hw2mono == 0) { // hw2mono was not set for the first time yet
-		new_hw2mono = got_hw2mono;
-	}
-	ws->hw2mono = new_hw2mono;
-	*ts = hw + new_hw2mono;
-}
-
-//! Camera specific logic for clock conversion
-static inline void
-clock_cam_hw2mono(struct wmr_source *ws, struct xrt_frame *xf, bool is_left)
-{
-	if (is_left) {
-		ws->cam_hw2mono = ws->hw2mono; // Cache last hw2mono used for right frame
-	}
-	xf->timestamp += ws->cam_hw2mono;
-}
-
 static void
 receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, left_sink);
-	clock_cam_hw2mono(ws, xf, true);
+	ws->cam_hw2mono = ws->hw2mono; // We want the right frame to use the same offset
+	xf->timestamp += ws->cam_hw2mono;
 	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
 	if (ws->out_sinks.left && ws->first_imu_received) {
@@ -133,7 +102,7 @@ static void
 receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, right_sink);
-	clock_cam_hw2mono(ws, xf, false);
+	xf->timestamp += ws->cam_hw2mono;
 	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
 	if (ws->out_sinks.right && ws->first_imu_received) {
@@ -145,8 +114,14 @@ static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, imu_sink);
-	clock_hw2mono(ws, &s->timestamp_ns);
-	timepoint_ns ts = s->timestamp_ns;
+
+	// Convert hardware timestamp into monotonic clock. Update offset estimate hw2mono.
+	// Note this is only done with IMU samples as they have the smallest USB transmission time.
+	const double IMU_FREQ = 250; //!< @todo use 1000 if "average_imus" is false
+	timepoint_ns now_hw = s->timestamp_ns;
+	timepoint_ns now_mono = (timepoint_ns)os_monotonic_get_ns();
+	timepoint_ns ts = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
+
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	WMR_TRACE(ws, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);

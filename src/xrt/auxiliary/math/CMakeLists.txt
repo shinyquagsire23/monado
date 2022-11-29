@@ -5,6 +5,7 @@ add_library(
 	aux_math STATIC
 	m_api.h
 	m_base.cpp
+	m_clock_offset.h
 	m_eigen_interop.hpp
 	m_filter_fifo.c
 	m_filter_fifo.h
