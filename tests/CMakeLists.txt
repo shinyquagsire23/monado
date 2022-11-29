@@ -27,6 +27,7 @@ set(tests
     tests_vector
     tests_worker
     tests_pose
+    tests_vec3_angle
 	)
 if(XRT_HAVE_D3D11)
 	list(APPEND tests tests_aux_d3d_d3d11 tests_comp_client_d3d11)
@@ -68,6 +69,7 @@ target_link_libraries(tests_rational PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
 target_link_libraries(tests_quat_change_of_basis PRIVATE aux_math)
 target_link_libraries(tests_quat_swing_twist PRIVATE aux_math)
+target_link_libraries(tests_vec3_angle PRIVATE aux_math)
 
 target_include_directories(tests_quat_change_of_basis SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 target_include_directories(tests_quat_swing_twist SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
