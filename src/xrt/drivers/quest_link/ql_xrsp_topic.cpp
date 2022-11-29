@@ -136,4 +136,8 @@ void ql_xrsp_topic_pkt_dump(struct ql_xrsp_topic_pkt* pkt)
     printf("sequence_num: %x\n",  pkt->sequence_num);
     //printf("pad: %x\n",  pkt->pad);
     printf("------\n");
+
+    if (pkt->topic == TOPIC_RUNTIME_IPC) {
+        hex_dump(pkt->payload, pkt->payload_valid);
+    }
 }

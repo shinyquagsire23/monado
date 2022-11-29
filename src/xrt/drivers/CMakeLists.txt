@@ -347,6 +347,8 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/ql_xrsp.h
 		quest_link/ql_xrsp_pose.cpp
 		quest_link/ql_xrsp_pose.h
+		quest_link/ql_xrsp_ipc.cpp
+		quest_link/ql_xrsp_ipc.h
 		quest_link/ql_xrsp_hands.cpp
 		quest_link/ql_xrsp_hands.h
 		quest_link/ql_xrsp_logging.cpp

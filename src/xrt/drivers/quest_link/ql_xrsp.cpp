@@ -25,6 +25,7 @@
 #include "ql_xrsp_types.h"
 #include "ql_utils.h"
 #include "ql_xrsp_pose.h"
+#include "ql_xrsp_ipc.h"
 #include "ql_xrsp_hands.h"
 #include "ql_xrsp_logging.h"
 #include "ql_xrsp_segmented_pkt.h"
@@ -33,6 +34,7 @@
 #include <capnp/serialize-packed.h>
 #include "protos/HostInfo.capnp.h"
 #include "protos/Slice.capnp.h"
+#include "protos/RuntimeIPC.capnp.h"
 
 static void *
 ql_xrsp_read_thread(void *ptr);
@@ -50,6 +52,8 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
 static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
+
+static void xrsp_send_ripc_cmd(struct ql_xrsp_host* host, uint32_t cmd_idx, uint32_t client_id, uint32_t unk, const uint8_t* data, int32_t data_size, const uint8_t* extra_data, int32_t extra_data_size);
 
 int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num)
 {
@@ -133,6 +137,7 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     host->send_csd = xrsp_send_csd;
     host->send_idr = xrsp_send_idr;
     host->flush_stream = xrsp_flush_stream;
+    host->client_id = 0x4a60dcca;
 
     // Start the packet reading thread
     ret = os_thread_helper_start(&host->read_thread, ql_xrsp_read_thread, host);
@@ -431,6 +436,39 @@ static void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t 
     xrsp_send_to_topic(host, topic, data, data_size);
 }    
 
+typedef struct ripc_capnp
+{
+    uint64_t data_info;
+    uint32_t a;
+    uint32_t b;
+    uint32_t c;
+    uint32_t d;
+    uint64_t end_info;
+} ripc_capnp;
+
+static void xrsp_send_ripc_cmd(struct ql_xrsp_host* host, uint32_t cmd_idx, uint32_t client_id, uint32_t unk, const uint8_t* data, int32_t data_size, const uint8_t* extra_data, int32_t extra_data_size)
+{
+
+    ::capnp::MallocMessageBuilder message;
+    PayloadRuntimeIPC::Builder msg = message.initRoot<PayloadRuntimeIPC>();
+
+    msg.setCmdId(cmd_idx);
+    msg.setNextSize(data_size);
+    msg.setClientId(client_id);
+    msg.setUnk(unk);
+    if (extra_data && extra_data_size) {
+        msg.setData(kj::arrayPtr(extra_data, extra_data_size));
+    }
+
+    kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
+
+    uint8_t* packed_data = (uint8_t*)out[0].begin();
+    size_t packed_data_size = out[0].size()*sizeof(uint64_t);
+
+    xrsp_send_to_topic_capnp_wrapped(host, TOPIC_RUNTIME_IPC, 0, packed_data, packed_data_size);
+    xrsp_send_to_topic(host, TOPIC_RUNTIME_IPC, data, data_size);
+}
+
 static void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size)
 {
     //printf("Send to topic %s\n", xrsp_topic_str(topic));
@@ -550,7 +588,10 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
 
     host->frame_sent_ns = 0;
 
+    host->gotten_ipcs = 0;
+
     ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
+    //ql_xrsp_segpkt_init(&host->ipc_ctx, host, 1, ql_xrsp_handle_ipc);
 
     if (!host->sys) return;
 
@@ -759,6 +800,12 @@ typedef struct audio_pkt_idk
     uint32_t g;
 } audio_pkt_idk;
 
+typedef struct body_pkt_idk
+{
+    uint32_t a;
+    uint32_t b;
+} body_pkt_idk;
+
 static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     struct audio_pkt_idk send_audiocontrol_idk = {0, 2, 1, 1, 0, 0, 0};
@@ -771,6 +818,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     struct audio_pkt_idk send_cmd_body = {0, 2, 2, 1, 0, 0, 0};
     struct audio_pkt_idk send_cmd_hands = {0, 2, 1, 1, 0, 0, 0};
+    struct body_pkt_idk send_idk_body = {0,0};
 
 
     printf("Echo send\n");
@@ -787,7 +835,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
@@ -800,6 +848,26 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_hands, sizeof(send_cmd_hands));
     //xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_body, sizeof(send_cmd_body));
+    //xrsp_send_to_topic(host, TOPIC_BODY, (uint8_t*)&send_idk_body, sizeof(send_idk_body));
+    //send_idk_body.a = 1;
+    //xrsp_send_to_topic(host, TOPIC_BODY, (uint8_t*)&send_idk_body, sizeof(send_idk_body));
+    //send_idk_body.a = 2;
+    //xrsp_send_to_topic(host, TOPIC_BODY, (uint8_t*)&send_idk_body, sizeof(send_idk_body));
+
+    // Packages?
+    // com.oculus.systemdriver
+    // com.facebook.spatial_persistence_service
+    // com.oculus.bodyapiservice
+    // com.oculus.qplservice
+    // com.oculus.presence
+    // com.oculus.os.dialoghost
+
+
+    const uint8_t ripc_test3[] = {0x1B, 0x00, 0x00, 0x00, 0x28, 0x9F, 0x04, 0xC1, 0x17, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6D, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x30, 0x00, 0x00, 0x00, 0x00, 0xDE, 0xFE, 0x74, 0x2C, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x76, 0x72, 0x72, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2E, 0x56, 0x72, 0x52, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x00, 0x00, 0x00, 0x00};
+    const uint8_t ripc_test4[] = {0x1B, 0x00, 0x00, 0x00, 0x28, 0x9F, 0x04, 0xC1, 0x17, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6D, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x1F, 0x00, 0x00, 0x00, 0xFB, 0x18, 0x63, 0x6A, 0x1B, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x76, 0x72, 0x72, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x18, 0x00, 0x00, 0x00, 0xF3, 0x44, 0x77, 0x98, 0x14, 0x00, 0x00, 0x00, 0x52, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x00, 0x00, 0x00, 0x00};
+
+    xrsp_send_ripc_cmd(host, RIPC_MSG_ENSURE_SERVICE_STARTED, host->client_id, 0x3, (uint8_t*)&ripc_test3, sizeof(ripc_test3), NULL, 0);
+    xrsp_send_ripc_cmd(host, RIPC_MSG_CONNECT_TO_REMOTE_SERVER, 0xF0000004, 0x4, (uint8_t*)&ripc_test4, sizeof(ripc_test4), NULL, 0);
 
 }
 
@@ -1015,6 +1083,30 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     else if (pkt->topic == TOPIC_LOGGING)
     {
         ql_xrsp_handle_logging(host, pkt);
+    }
+    else if (pkt->topic == TOPIC_RUNTIME_IPC)
+    {
+        if (host->gotten_ipcs == 3) {
+            const uint8_t ripc_test4[] = {0x1B, 0x00, 0x00, 0x00, 0x28, 0x9F, 0x04, 0xC1, 0x17, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6D, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x1F, 0x00, 0x00, 0x00, 0xFB, 0x18, 0x63, 0x6A, 0x1B, 0x00, 0x00, 0x00, 0x63, 0x6F, 0x6D, 0x2E, 0x6F, 0x63, 0x75, 0x6C, 0x75, 0x73, 0x2E, 0x76, 0x72, 0x72, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x18, 0x00, 0x00, 0x00, 0xF3, 0x44, 0x77, 0x98, 0x14, 0x00, 0x00, 0x00, 0x52, 0x75, 0x6E, 0x74, 0x69, 0x6D, 0x65, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x00, 0x00, 0x00, 0x00};
+            xrsp_send_ripc_cmd(host, RIPC_MSG_CONNECT_TO_REMOTE_SERVER, host->client_id, 0x4, (uint8_t*)&ripc_test4, sizeof(ripc_test4), NULL, 0);
+        }
+        else if (host->gotten_ipcs < 20) {
+            //hash_djb2("SendSwitchToHandsNotif") ^ hash_djb2("Void") ^ hash_djb2("bool")
+            uint8_t ripc_SendSwitchToHandsNotif[] = {0x02, 0x00, 0xF4, 0xAC, 0x64, 0xB1, 0x00, 0x01};
+            
+            uint8_t ripc_SystemButtonEventRequest[] = {0x02, 0x00, 0x37, 0xCB, 0x58, 0xF1, 0x00, 0x01};
+            uint8_t ripc_EnableEyeTrackingForPCLink[] = {0x02, 0x00, 0x8C, 0xDE, 0x80, 0xD0, 0x00, 0x01};
+            uint8_t ripc_EnableFaceTrackingForPCLink[] = {0x02, 0x00, 0x50, 0x41, 0x9C, 0xB7, 0x00, 0x01};
+            //uint8_t ripc_test5[] = {0x02, 0x00, 0x0A, 0xC3, 0x0C, 0x68, 0x00, 0x01};
+            //uint8_t ripc_test5[] = {0x02, 0x00, 0xBE, 0x3B, 0xD8, 0x3E, 0x00, 0x01};
+            //uint8_t ripc_test5[] = {0x02, 0x00, 0xF1, 0x58, 0xCB, 0x37, 0x00, 0x01};
+            uint8_t ripc_extra[] = {0x01, 0x00, 0x00, 0x00, 0xe5, 0x62, 0xb7, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00}; // 0x1, 0x38b762e4, 0x0
+
+            xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_EnableEyeTrackingForPCLink, sizeof(ripc_EnableEyeTrackingForPCLink), ripc_extra, sizeof(ripc_extra)); 
+            xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_EnableFaceTrackingForPCLink, sizeof(ripc_EnableFaceTrackingForPCLink), ripc_extra, sizeof(ripc_extra));
+
+        }
+        host->gotten_ipcs++;
     }
 
     if ((pkt->topic == TOPIC_POSE || pkt->topic == TOPIC_LOGGING) && host->pairing_state != PAIRINGSTATE_PAIRED)
@@ -1245,6 +1337,26 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
 
     //hex_dump((uint8_t*)out[0].begin(), );
     //printf("%x\n", out[0].size());
+
+    static int idk = 0;
+    if (idk >= 20) return;
+
+    idk++;
+    //hash_djb2("SendSwitchToHandsNotif") ^ hash_djb2("Void") ^ hash_djb2("bool")
+    uint8_t ripc_SendSwitchToHandsNotif[] = {0x02, 0x00, 0xF4, 0xAC, 0x64, 0xB1, 0x00, 0x01};
+    
+    uint8_t ripc_SystemButtonEventRequest[] = {0x02, 0x00, 0x37, 0xCB, 0x58, 0xF1, 0x00, 0x01};
+    uint8_t ripc_EnableEyeTrackingForPCLink[] = {0x02, 0x00, 0x8C, 0xDE, 0x80, 0xD0, 0x00, 0x01};
+    uint8_t ripc_EnableFaceTrackingForPCLink[] = {0x02, 0x00, 0x50, 0x41, 0x9C, 0xB7, 0x00, 0x01};
+    //uint8_t ripc_test5[] = {0x02, 0x00, 0x0A, 0xC3, 0x0C, 0x68, 0x00, 0x01};
+    //uint8_t ripc_test5[] = {0x02, 0x00, 0xBE, 0x3B, 0xD8, 0x3E, 0x00, 0x01};
+    //uint8_t ripc_test5[] = {0x02, 0x00, 0xF1, 0x58, 0xCB, 0x37, 0x00, 0x01};
+    uint8_t ripc_extra[] = {0x01, 0x00, 0x00, 0x00, 0xe5, 0x62, 0xb7, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00}; // 0x1, 0x38b762e4, 0x0
+
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_EnableEyeTrackingForPCLink, sizeof(ripc_EnableEyeTrackingForPCLink), ripc_extra, sizeof(ripc_extra)); 
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_EnableFaceTrackingForPCLink, sizeof(ripc_EnableFaceTrackingForPCLink), ripc_extra, sizeof(ripc_extra));
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_SendSwitchToHandsNotif, sizeof(ripc_SendSwitchToHandsNotif), ripc_extra, sizeof(ripc_extra));
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, host->client_id, 4, (uint8_t*)&ripc_SystemButtonEventRequest, sizeof(ripc_SystemButtonEventRequest), ripc_extra, sizeof(ripc_extra));
 }
 
 static void *

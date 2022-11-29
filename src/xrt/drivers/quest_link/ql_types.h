@@ -123,6 +123,9 @@ typedef struct ql_xrsp_host
     uint8_t ep_out;
     uint8_t ep_in;
 
+    uint32_t gotten_ipcs;
+    uint32_t client_id;
+
     // Parsing state
     bool have_working_pkt;
     ql_xrsp_topic_pkt working_pkt;
