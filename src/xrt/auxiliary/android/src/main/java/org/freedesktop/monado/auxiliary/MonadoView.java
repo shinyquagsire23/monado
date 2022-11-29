@@ -11,6 +11,7 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -166,12 +167,13 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @Keep
     public @Nullable
     SurfaceHolder waitGetSurfaceHolder(int wait_ms) {
-        long currentTime = Calendar.getInstance().getTimeInMillis();
+        long currentTime = SystemClock.uptimeMillis();
         long timeout = currentTime + wait_ms;
         SurfaceHolder ret = null;
         synchronized (currentSurfaceHolderSync) {
+            ret = currentSurfaceHolder;
             while (currentSurfaceHolder == null
-                    && Calendar.getInstance().getTimeInMillis() < timeout) {
+                    && SystemClock.uptimeMillis() < timeout) {
                 try {
                     currentSurfaceHolderSync.wait(wait_ms, 0);
                     ret = currentSurfaceHolder;
