@@ -138,8 +138,17 @@ comp_window_android_init_swapchain(struct comp_target *ct, uint32_t width, uint3
 		/* In process: Creating surface from activity */
 		window = _create_android_window(cwa);
 	} else {
-		/* Out of process: Getting cached surface */
-		window = (struct ANativeWindow *)android_globals_get_window();
+		/* Out of process: Getting cached surface.
+		 * This loop polls for a surface created by Client.java in blockingConnect.
+		 * TODO: change java code to callback native code to notify Session lifecycle progress, instead of
+		 * polling here
+		 */
+		for (int i = 0; i < 100; i++) {
+			window = (struct ANativeWindow *)android_globals_get_window();
+			if (window)
+				break;
+			os_nanosleep(20 * U_TIME_1MS_IN_NS);
+		}
 	}
 
 	if (window == NULL) {
@@ -215,7 +224,7 @@ struct comp_target_factory comp_target_factory_android = {
     .name = "Android",
     .identifier = "android",
     .requires_vulkan_for_create = false,
-    .is_deferred = false,
+    .is_deferred = true,
     .required_instance_extensions = instance_extensions,
     .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
     .detect = detect,

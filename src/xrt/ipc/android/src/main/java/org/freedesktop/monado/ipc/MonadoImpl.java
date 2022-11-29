@@ -65,6 +65,7 @@ public class MonadoImpl extends IMonado.Stub {
 
     @Override
     public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
+        nativeStartServer();
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
         if (nativeAddClient(fd) != 0) {

@@ -161,40 +161,48 @@ public class Client implements ServiceConnection {
             return -1;
         }
 
-        boolean surfaceCreated = false;
-        Activity activity = null;
-        if (context_ instanceof Activity) {
-            activity = (Activity) context_;
-        }
+        // This block of code asynchronously create a MonadoView attached to activity and
+        // waits for Surface creation. Native code (comp_window_android_init_swapchain() method)
+        // will poll for ANativeWindow created from this Surface.
+        // TODO: just initiate MonadoView attachement and add callback to native code to
+        // notify about Surface status and pass it to OpenXR application as a Session lifecycle
+        // (ready ... synchronized ... visible ... focused)
+        new Thread(()-> {
+            boolean surfaceCreated = false;
+            Activity activity = null;
+            if (context_ instanceof Activity) {
+                activity = (Activity) context_;
+            }
 
-        try {
-            // Determine whether runtime or client should create surface
-            if (monado.canDrawOverOtherApps()) {
-                WindowManager wm = (WindowManager) context_.getSystemService(Context.WINDOW_SERVICE);
-                surfaceCreated = monado.createSurface(wm.getDefaultDisplay().getDisplayId(), false);
-            } else {
-                if (activity != null) {
-                    Surface surface = attachViewAndGetSurface(activity);
-                    surfaceCreated = (surface != null);
-                    if (surfaceCreated) {
-                        monado.passAppSurface(surface);
+            try {
+                // Determine whether runtime or client should create surface
+                if (monado.canDrawOverOtherApps()) {
+                    WindowManager wm = (WindowManager) context_.getSystemService(Context.WINDOW_SERVICE);
+                    surfaceCreated = monado.createSurface(wm.getDefaultDisplay().getDisplayId(), false);
+                } else {
+                    if (activity != null) {
+                        Surface surface = attachViewAndGetSurface(activity);
+                        surfaceCreated = (surface != null);
+                        if (surfaceCreated) {
+                            monado.passAppSurface(surface);
+                        }
                     }
                 }
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
 
-        if (!surfaceCreated) {
-            Log.e(TAG, "Failed to create surface");
-            handleFailure();
-            return -1;
-        }
+            if (!surfaceCreated) {
+                Log.e(TAG, "Failed to create surface");
+                handleFailure();
+                return;
+            }
 
-        if (activity != null) {
-            systemUiController = new SystemUiController(activity);
-            systemUiController.hide();
-        }
+            if (activity != null) {
+                systemUiController = new SystemUiController(activity);
+                systemUiController.hide();
+            }
+        }).start();
 
         // Create socket pair
         ParcelFileDescriptor theirs;
