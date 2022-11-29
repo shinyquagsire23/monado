@@ -160,6 +160,7 @@ android {
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=OFF"
             externalNativeBuild.cmake.targets "openxr_monado"
 
+            buildConfigField "boolean", "inProcess", "true"
             resValue "string", "app_name", "Monado XR"
         }
         outOfProcess {
@@ -168,6 +169,7 @@ android {
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=ON"
             externalNativeBuild.cmake.targets "openxr_monado", "monado-service"
 
+            buildConfigField "boolean", "inProcess", "false"
             resValue "string", "app_name", "Monado XR (Out-of-Proc)"
         }
     }

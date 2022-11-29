@@ -19,15 +19,15 @@ import dagger.hilt.android.HiltAndroidApp;
  */
 @HiltAndroidApp
 public class MonadoOpenXrApplication extends Application {
-    static {
-        System.loadLibrary("monado-service");
-    }
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        nativeStoreContext(getApplicationContext());
+        if (!BuildConfig.inProcess) {
+            System.loadLibrary("monado-service");
+            nativeStoreContext(getApplicationContext());
+        }
     }
 
     private native void nativeStoreContext(@NonNull Context context);
