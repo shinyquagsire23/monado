@@ -774,13 +774,11 @@ error_msg_with_list(struct comp_compositor *c, const char *msg)
 static bool
 compositor_check_deferred(struct comp_compositor *c, struct comp_target_factory *ctf)
 {
-	struct comp_target *ct = NULL;
-
 	if (!ctf->is_deferred) {
 		return false; // It is not deferred but that's okay.
 	}
 
-	COMP_DEBUG(c, "Deferred target backend %s selected!", ct->name);
+	COMP_DEBUG(c, "Deferred target backend %s selected!", ctf->name);
 
 	c->target_factory = ctf;
 	c->deferred_surface = true;
