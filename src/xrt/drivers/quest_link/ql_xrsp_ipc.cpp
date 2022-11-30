@@ -192,7 +192,52 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
 
 void ql_xrsp_ipc_handle_face(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, uint8_t* read_ptr)
 {
+    read_ptr += 0xC; // size thing
+    read_ptr += 0x2; // version
+    read_ptr += 0x4; // unk hash
 
+    read_ptr += 0x4; // size, 0x100
+    //printf("%08x\n", *(uint32_t*)(read_ptr));
+    if (*(uint32_t*)(read_ptr) != 0x446955AD) return;
+    read_ptr += 0x4; // unk hash
+    read_ptr += 0x4; // num elements, 0x3F
+
+    // weights_
+    float* weights = (float*)read_ptr;
+    read_ptr += 0x100-4;
+
+    read_ptr += 0x4; // size, 0x100
+    //printf("%08x\n", *(uint32_t*)(read_ptr));
+    if (*(uint32_t*)(read_ptr) != 0xBE1EE75B) return;
+    read_ptr += 0x4; // unk hash
+    read_ptr += 0x4; // num elements, 0x3F
+
+    // weightConfidences_
+    float* weights_confidences = (float*)read_ptr; 
+
+    read_ptr += 0x8; // size, unk hash "isValid"
+    uint8_t is_valid = *read_ptr;
+    read_ptr += 0x8; // size, unk hash "isEyeFollowingBlendshapesValid"
+    uint8_t is_eye_following_blendshapes_valid = *read_ptr;
+
+    //printf("Brows: %f %f\n", weights[OVR_EXPRESSION_BROW_LOWERER_L], weights[OVR_EXPRESSION_BROW_LOWERER_R]);
+#if 0
+    {
+        struct ql_controller* ctrl = host->sys->controllers[0];
+
+        ctrl->pose_add.x = 0.0f;
+        ctrl->pose_add.y = (1.0 - weights[OVR_EXPRESSION_BROW_LOWERER_L]) * 0.4;
+        ctrl->pose_add.z = 0.0f;
+    }
+
+    {
+        struct ql_controller* ctrl = host->sys->controllers[1];
+
+        ctrl->pose_add.x = 0.0f;
+        ctrl->pose_add.y = (1.0 - weights[OVR_EXPRESSION_BROW_LOWERER_R]) * 0.4;
+        ctrl->pose_add.z = 0.0f;
+    }
+#endif
 }
 
 typedef struct ovrOneEyeGaze
@@ -209,8 +254,8 @@ void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
     ovrOneEyeGaze* eye_l = (ovrOneEyeGaze*) read_ptr;
     ovrOneEyeGaze* eye_r = eye_l + 1;
 
-    printf("Left:  %f %f %f %f, %f %f %f, %f, %u\n", eye_l->pose.orient.x, eye_l->pose.orient.y, eye_l->pose.orient.z, eye_l->pose.orient.w, eye_l->pose.pos.x, eye_l->pose.pos.y, eye_l->pose.pos.z, eye_l->confidence, eye_l->is_valid);
-    printf("Right: %f %f %f %f, %f %f %f, %f, %u\n", eye_r->pose.orient.x, eye_r->pose.orient.y, eye_r->pose.orient.z, eye_r->pose.orient.w, eye_r->pose.pos.x, eye_r->pose.pos.y, eye_r->pose.pos.z, eye_r->confidence, eye_r->is_valid);
+    //printf("Left:  %f %f %f %f, %f %f %f, %f, %u\n", eye_l->pose.orient.x, eye_l->pose.orient.y, eye_l->pose.orient.z, eye_l->pose.orient.w, eye_l->pose.pos.x, eye_l->pose.pos.y, eye_l->pose.pos.z, eye_l->confidence, eye_l->is_valid);
+    //printf("Right: %f %f %f %f, %f %f %f, %f, %u\n", eye_r->pose.orient.x, eye_r->pose.orient.y, eye_r->pose.orient.z, eye_r->pose.orient.w, eye_r->pose.pos.x, eye_r->pose.pos.y, eye_r->pose.pos.z, eye_r->confidence, eye_r->is_valid);
 
 #if 0
     {

@@ -209,10 +209,6 @@ typedef struct ql_xrsp_host
 
 #define MAX_TRACKED_DEVICES 2
 
-#define HMD_HID 0
-#define STATUS_HID 1
-#define CONTROLLER_HID 2
-
 /* All HMD Configuration / calibration info */
 struct ql_hmd_config
 {
@@ -237,6 +233,8 @@ struct ql_controller
     struct xrt_vec3 acc;
     struct xrt_vec3 angvel;
     struct xrt_vec3 angacc;
+
+    struct xrt_vec3 pose_add;
 
     int64_t pose_ns;
     double created_ns;
@@ -397,6 +395,74 @@ enum ovr_touch_cap
 enum ovr_touch_feature
 {
     OVR_TOUCH_FEAT_RIGHT = 0x00000001,
+};
+
+enum ovr_face_expression
+{
+    OVR_EXPRESSION_BROW_LOWERER_L         = 0,
+    OVR_EXPRESSION_BROW_LOWERER_R         = 1,
+    OVR_EXPRESSION_CHEEK_PUFF_L           = 2,
+    OVR_EXPRESSION_CHEEK_PUFF_R           = 3,
+    OVR_EXPRESSION_CHEEK_RAISER_L         = 4,
+    OVR_EXPRESSION_CHEEK_RAISER_R         = 5,
+    OVR_EXPRESSION_CHEEK_SUCK_L           = 6,
+    OVR_EXPRESSION_CHEEK_SUCK_R           = 7,
+    OVR_EXPRESSION_CHIN_RAISER_B          = 8,
+    OVR_EXPRESSION_CHIN_RAISER_T          = 9,
+    OVR_EXPRESSION_DIMPLER_L              = 10,
+    OVR_EXPRESSION_DIMPLER_R              = 11,
+    OVR_EXPRESSION_EYES_CLOSED_L          = 12,
+    OVR_EXPRESSION_EYES_CLOSED_R          = 13,
+    OVR_EXPRESSION_EYES_LOOK_DOWN_L       = 14,
+    OVR_EXPRESSION_EYES_LOOK_DOWN_R       = 15,
+    OVR_EXPRESSION_EYES_LOOK_LEFT_L       = 16,
+    OVR_EXPRESSION_EYES_LOOK_LEFT_R       = 17,
+    OVR_EXPRESSION_EYES_LOOK_RIGHT_L      = 18,
+    OVR_EXPRESSION_EYES_LOOK_RIGHT_R      = 19,
+    OVR_EXPRESSION_EYES_LOOK_UP_L         = 20,
+    OVR_EXPRESSION_EYES_LOOK_UP_R         = 21,
+    OVR_EXPRESSION_INNER_BROW_RAISER_L    = 22,
+    OVR_EXPRESSION_INNER_BROW_RAISER_R    = 23,
+    OVR_EXPRESSION_JAW_DROP               = 24,
+    OVR_EXPRESSION_JAW_SIDEWAYS_LEFT      = 25,
+    OVR_EXPRESSION_JAW_SIDEWAYS_RIGHT     = 26,
+    OVR_EXPRESSION_JAW_THRUST             = 27,
+    OVR_EXPRESSION_LID_TIGHTENER_L        = 28,
+    OVR_EXPRESSION_LID_TIGHTENER_R        = 29,
+    OVR_EXPRESSION_LIP_CORNER_DEPRESSOR_L = 30,
+    OVR_EXPRESSION_LIP_CORNER_DEPRESSOR_R = 31,
+    OVR_EXPRESSION_LIP_CORNER_PULLER_L    = 32,
+    OVR_EXPRESSION_LIP_CORNER_PULLER_R    = 33,
+    OVR_EXPRESSION_LIP_FUNNELER_LB        = 34,
+    OVR_EXPRESSION_LIP_FUNNELER_LT        = 35,
+    OVR_EXPRESSION_LIP_FUNNELER_RB        = 36,
+    OVR_EXPRESSION_LIP_FUNNELER_RT        = 37,
+    OVR_EXPRESSION_LIP_PRESSOR_L          = 38,
+    OVR_EXPRESSION_LIP_PRESSOR_R          = 39,
+    OVR_EXPRESSION_LIP_PUCKER_L           = 40,
+    OVR_EXPRESSION_LIP_PUCKER_R           = 41,
+    OVR_EXPRESSION_LIP_STRETCHER_L        = 42,
+    OVR_EXPRESSION_LIP_STRETCHER_R        = 43,
+    OVR_EXPRESSION_LIP_SUCK_LB            = 44,
+    OVR_EXPRESSION_LIP_SUCK_LT            = 45,
+    OVR_EXPRESSION_LIP_SUCK_RB            = 46,
+    OVR_EXPRESSION_LIP_SUCK_RT            = 47,
+    OVR_EXPRESSION_LIP_TIGHTENER_L        = 48,
+    OVR_EXPRESSION_LIP_TIGHTENER_R        = 49,
+    OVR_EXPRESSION_LIPS_TOWARD            = 50,
+    OVR_EXPRESSION_LOWER_LIP_DEPRESSOR_L  = 51,
+    OVR_EXPRESSION_LOWER_LIP_DEPRESSOR_R  = 52,
+    OVR_EXPRESSION_MOUTH_LEFT             = 53,
+    OVR_EXPRESSION_MOUTH_RIGHT            = 54,
+    OVR_EXPRESSION_NOSE_WRINKLER_L        = 55,
+    OVR_EXPRESSION_NOSE_WRINKLER_R        = 56,
+    OVR_EXPRESSION_OUTER_BROW_RAISER_L    = 57,
+    OVR_EXPRESSION_OUTER_BROW_RAISER_R    = 58,
+    OVR_EXPRESSION_UPPER_LID_RAISER_L     = 59,
+    OVR_EXPRESSION_UPPER_LID_RAISER_R     = 60,
+    OVR_EXPRESSION_UPPER_LIP_RAISER_L     = 61,
+    OVR_EXPRESSION_UPPER_LIP_RAISER_R     = 62,
+    OVR_EXPRESSION_MAX                    = 63,
 };
 
 struct ql_hands

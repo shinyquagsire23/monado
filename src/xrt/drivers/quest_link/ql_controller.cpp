@@ -179,6 +179,7 @@ ql_get_tracked_pose(struct xrt_device *xdev,
     U_ZERO(&relation);
 
     relation.pose = ctrl->pose;
+    relation.pose.position += ctrl->pose_add;
     relation.angular_velocity = ctrl->angvel;
     relation.linear_velocity = ctrl->vel;
     //ql_controller_get_interpolated_pose(ctrl, at_timestamp_ns, &ctrl->pose, &out_relation->pose);

@@ -187,12 +187,6 @@ ql_system_reference(struct ql_system **dst, struct ql_system *src)
 	}
 }
 
-struct os_hid_device *
-ql_system_hid_handle(struct ql_system *sys)
-{
-	return sys->handles[HMD_HID];
-}
-
 struct xrt_device *
 ql_system_get_hmd(struct ql_system *sys)
 {
