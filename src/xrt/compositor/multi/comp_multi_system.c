@@ -223,7 +223,7 @@ log_frame_time_diff(uint64_t frame_time_ns, uint64_t display_time_ns)
 		late = true;
 	}
 
-	U_LOG_W("Frame %s by %.2fms!", late ? "late" : "early", time_ns_to_ms_f(diff_ns));
+	//U_LOG_W("Frame %s by %.2fms!", late ? "late" : "early", time_ns_to_ms_f(diff_ns));
 }
 
 static void
