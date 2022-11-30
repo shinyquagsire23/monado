@@ -23,3 +23,14 @@ void hex_dump(const uint8_t* b, size_t amt)
     printf("\n");
 }
 
+uint32_t hash_djb2(const char* s)
+{
+    uint32_t hash = 5381;
+    uint32_t len = strlen(s);
+    for (int i = 0; i < len; i++)
+    {
+        hash = ((hash << 5) + hash) + s[i];
+    }
+    return hash;
+}
+

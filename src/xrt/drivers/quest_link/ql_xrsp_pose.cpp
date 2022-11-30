@@ -41,7 +41,17 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     kj::ArrayPtr<const capnp::word> dataptr[1] = {kj::arrayPtr((capnp::word*)segpkt->segs[0], num_words)};
     capnp::SegmentArrayMessageReader message(kj::arrayPtr(dataptr, 1));
 
-    PayloadPose::Reader pose = message.getRoot<PayloadPose>();
+    PayloadPose::Reader pose;
+
+    try
+    {
+        pose = message.getRoot<PayloadPose>();
+    }
+    catch(...)
+    {
+        return;
+    }
+    
 
     //std::cout << pose << "\n";
     

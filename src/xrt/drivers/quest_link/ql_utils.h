@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 void hex_dump(const uint8_t* b, size_t amt);
+uint32_t hash_djb2(const char* s);
 
 #ifdef __cplusplus
 }

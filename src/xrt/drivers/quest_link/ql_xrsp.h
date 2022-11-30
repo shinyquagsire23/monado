@@ -22,6 +22,9 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
 void ql_xrsp_host_destroy(struct ql_xrsp_host* host);
 int64_t xrsp_ts_ns(struct ql_xrsp_host *host);
 
+void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size);
+void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size);
+
 #ifdef __cplusplus
 }
 #endif
