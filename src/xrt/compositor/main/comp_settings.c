@@ -51,7 +51,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 		 * https://vulkan.gpuinfo.org/listsurfaceformats.php?platform=android
 		 */
 		s->color_format = VK_FORMAT_R8G8B8A8_SRGB;
-#elif defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS) || defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_LINUX) || defined(XRT_OS_WINDOWS) || defined(XRT_OS_APPLE)
 		/*
 		 * On Linux the most ubiquitous sRGB format is B8G8R8A8_SRGB.
 		 * https://vulkan.gpuinfo.org/listsurfaceformats.php?platform=linux

@@ -10,7 +10,7 @@ if(NOT MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
 endif()
 
-if(NOT WIN32 AND NOT XRT_HAVE_DARWIN)
+if(NOT WIN32 AND NOT XRT_HAVE_APPLE)
 	# Even clang's gnu-style driver on windows doesn't accept this argument.
 
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")

@@ -12,7 +12,7 @@
 #include "xrt/xrt_config_os.h"
 #include "util/u_file.h"
 
-#ifdef XRT_OS_DARWIN
+#ifdef XRT_OS_APPLE
 #define fopen_s(pFile,filename,mode) ((*(pFile))=fopen((filename),  (mode)))==NULL
 #endif
 

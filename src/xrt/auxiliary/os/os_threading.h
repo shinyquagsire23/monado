@@ -22,7 +22,7 @@
 #include <semaphore.h>
 #include <assert.h>
 #define OS_THREAD_HAVE_SETNAME
-#elif defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_APPLE)
 #include <pthread.h>
 //#include <semaphore.h>
 #include <assert.h>

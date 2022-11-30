@@ -35,7 +35,7 @@ else()
 		)
 endif()
 
-if(NOT WIN32 AND NOT XRT_HAVE_DARWIN)
+if(NOT WIN32 AND NOT XRT_HAVE_APPLE)
 	# Force the main "negotiate" symbol's inclusion
 	# and use a version script to ensure that's the only one we expose.
 	set_property(
@@ -53,7 +53,7 @@ if(NOT WIN32 AND NOT XRT_HAVE_DARWIN)
 		)
 endif()
 
-if (XRT_HAVE_DARWIN)
+if (XRT_HAVE_APPLE)
 	set_property(
 		TARGET ${RUNTIME_TARGET}
 		APPEND_STRING

@@ -35,7 +35,7 @@
 #endif
 
 #if defined(__APPLE__)
-#define XRT_OS_DARWIN
+#define XRT_OS_APPLE
 #define XRT_OS_UNIX
 #define XRT_OS_WAS_AUTODETECTED
 #endif

@@ -142,7 +142,7 @@ client_loop(volatile struct ipc_client_state *ics)
 	ipc_server_deactivate_session(ics);
 }
 
-#elif defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_APPLE)
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>

@@ -264,7 +264,7 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
  */
 #define XRT_GRAPHICS_BUFFER_HANDLE_INVALID (-1)
 
-#elif defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_APPLE)
 
 /*!
  * The type underlying buffers shared between compositor clients and the main
@@ -349,7 +349,7 @@ xrt_graphics_buffer_is_valid(xrt_graphics_buffer_handle_t handle)
 #error "Not yet implemented for this platform"
 #endif
 
-#if defined(XRT_OS_UNIX) && !defined(XRT_OS_DARWIN)
+#if defined(XRT_OS_UNIX) && !defined(XRT_OS_APPLE)
 
 
 /*
@@ -394,7 +394,7 @@ xrt_graphics_sync_handle_is_valid(xrt_graphics_sync_handle_t handle)
  */
 #define XRT_GRAPHICS_SYNC_HANDLE_INVALID (-1)
 
-#elif defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_APPLE)
 
 /*
  *

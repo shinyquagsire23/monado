@@ -37,7 +37,7 @@
 #define XRT_HAVE_TIMESPEC
 #define XRT_HAVE_TIMEVAL
 
-#elif defined(XRT_OS_DARWIN)
+#elif defined(XRT_OS_APPLE)
 #include <time.h>
 #include <sys/time.h>
 #define XRT_HAVE_TIMESPEC
@@ -180,7 +180,7 @@ os_ns_per_qpc_tick_get();
 static inline void
 os_nanosleep(int64_t nsec)
 {
-#if defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN)
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_APPLE)
 	struct timespec spec;
 	spec.tv_sec = (nsec / U_1_000_000_000);
 	spec.tv_nsec = (nsec % U_1_000_000_000);
@@ -256,7 +256,7 @@ os_ns_to_timespec(uint64_t ns, struct timespec *spec)
 #endif // XRT_HAVE_TIMESPEC
 
 
-#if defined(XRT_HAVE_TIMEVAL) && (defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN))
+#if defined(XRT_HAVE_TIMEVAL) && (defined(XRT_OS_LINUX) || defined(XRT_OS_APPLE))
 
 #define OS_NS_PER_USEC (1000)
 
@@ -288,7 +288,7 @@ os_ns_per_qpc_tick_get()
 static inline uint64_t
 os_monotonic_get_ns(void)
 {
-#if defined(XRT_OS_LINUX) || defined(XRT_OS_DARWIN)
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_APPLE)
 	struct timespec ts;
 	int ret = clock_gettime(CLOCK_MONOTONIC, &ts);
 	if (ret != 0) {

@@ -40,7 +40,7 @@ __declspec(dllexport) XRAPI_ATTR XrResult XRAPI_CALL
                                       XrNegotiateRuntimeRequest *runtimeRequest);
 #endif
 
-#ifdef XRT_OS_DARWIN
+#ifdef XRT_OS_APPLE
 __attribute__ ((visibility ("default"))) XRAPI_ATTR XrResult XRAPI_CALL
     xrNegotiateLoaderRuntimeInterface(const XrNegotiateLoaderInfo *loaderInfo,
                                       XrNegotiateRuntimeRequest *runtimeRequest);

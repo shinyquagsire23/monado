@@ -6,7 +6,7 @@
 
 #include "xrt/xrt_config_os.h"
 
-#if defined(XRT_OS_DARWIN) || defined(XRT_OS_LINUX)
+#if defined(XRT_OS_APPLE) || defined(XRT_OS_LINUX)
 #include <unistd.h>
 
 std::string

@@ -21,7 +21,7 @@
 #define PATH_MAX MAX_PATH
 #endif
 
-#ifdef XRT_OS_DARWIN
+#ifdef XRT_OS_APPLE
 #include <sys/syslimits.h>
 #endif
 

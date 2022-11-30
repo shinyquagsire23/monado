@@ -532,7 +532,7 @@ compositor_check_and_prepare_xdev(struct comp_compositor *c, struct xrt_device *
 
 static const char *instance_extensions_common[] = {
     COMP_INSTANCE_EXTENSIONS_COMMON,
-#ifdef XRT_OS_DARWIN
+#ifdef XRT_OS_APPLE
     "VK_MVK_macos_surface",
 #endif
 };
@@ -929,7 +929,7 @@ compositor_check_vulkan_caps(struct comp_compositor *c)
 
 	const char *extension_names[] = {
 	    COMP_INSTANCE_EXTENSIONS_COMMON,
-#ifdef XRT_OS_DARWIN
+#ifdef XRT_OS_APPLE
         "VK_MVK_macos_surface",
 #endif
 	};
@@ -1050,7 +1050,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c, struct xrt_device *
 			return true;
 		}
 #endif
-#if defined(VK_USE_PLATFORM_XCB_KHR) && !defined(XRT_OS_DARWIN)
+#if defined(VK_USE_PLATFORM_XCB_KHR) && !defined(XRT_OS_APPLE)
 		if (compositor_try_window(c, comp_window_xcb_create(c))) {
 			c->settings.window_type = WINDOW_XCB;
 			COMP_DEBUG(c, "Using VK_PRESENT_MODE_IMMEDIATE_KHR for xcb window")
