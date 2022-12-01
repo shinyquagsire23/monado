@@ -75,7 +75,9 @@ class SystemUiController(activity: Activity) {
         override fun hide() {
             activity.runOnUiThread {
                 val controller = activity.window.insetsController
-                controller!!.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller!!.hide(WindowInsets.Type.displayCutout()
+                        or WindowInsets.Type.statusBars()
+                        or WindowInsets.Type.navigationBars())
                 controller.systemBarsBehavior =
                     WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
@@ -84,7 +86,10 @@ class SystemUiController(activity: Activity) {
         init {
             runOnUiThread {
                 activity.window.insetsController!!.addOnControllableInsetsChangedListener { _: WindowInsetsController?, typeMask: Int ->
-                    if (typeMask and WindowInsets.Type.statusBars() == 1 || typeMask and WindowInsets.Type.navigationBars() == 1) {
+                    if (typeMask and WindowInsets.Type.displayCutout() == 1
+                        || typeMask and WindowInsets.Type.statusBars() == 1
+                        || typeMask and WindowInsets.Type.navigationBars() == 1
+                    ) {
                         hide()
                     }
                 }

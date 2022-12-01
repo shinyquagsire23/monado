@@ -11,6 +11,7 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -47,12 +48,16 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     @Nullable
     private SurfaceHolder currentSurfaceHolder = null;
 
+    private SystemUiController systemUiController = null;
+
     public MonadoView(Context context) {
         super(context);
         this.context = context;
         Activity activity;
         if (context instanceof Activity) {
             activity = (Activity) context;
+            systemUiController = new SystemUiController(activity);
+            systemUiController.hide();
         } else {
             activity = null;
         }
@@ -63,6 +68,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         super(activity);
         this.context = activity;
         this.activity = activity;
+        systemUiController = new SystemUiController(activity);
+        systemUiController.hide();
     }
 
     private MonadoView(Activity activity, long nativePointer) {
@@ -141,6 +148,10 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
                 lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                lp.layoutInDisplayCutoutMode =
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
             }
             windowManager.addView(this, lp);
             if (focusable) {

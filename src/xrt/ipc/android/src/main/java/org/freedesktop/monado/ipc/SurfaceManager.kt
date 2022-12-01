@@ -10,6 +10,7 @@ package org.freedesktop.monado.ipc
 
 import android.content.Context
 import android.hardware.display.DisplayManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -183,6 +184,10 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
             val lp = WindowManager.LayoutParams()
             lp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             lp.flags = if (focusable) VIEW_FLAG_FOCUSABLE else VIEW_FLAG_NOT_FOCUSABLE
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                lp.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            }
 
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             wm.addView(v, lp)
