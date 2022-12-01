@@ -212,8 +212,7 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
             @Suppress("DEPRECATION")
             private const val VIEW_FLAG_NOT_FOCUSABLE =
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         }
     }
 

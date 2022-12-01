@@ -146,8 +146,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
                 // 1. Navigation bar won't go away because view gets focus.
                 // 2. Underlying activity lost focus and cannot receive input.
                 lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 lp.layoutInDisplayCutoutMode =
