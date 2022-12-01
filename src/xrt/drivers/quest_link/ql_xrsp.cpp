@@ -842,6 +842,12 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     xrsp_ripc_ensure_service_started(host, host->client_id+2, "com.oculus.bodyapiservice", "com.oculus.eyetrackingservice.EyeTrackingService");
     xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_3, "com.oculus.bodyapiservice", "com.oculus.eyetrackingservice", "EyeTrackingServiceServer");
+
+    //xrsp_ripc_ensure_service_started(host, host->client_id+4, "com.oculus.vrshell", "com.oculus.panelapp.dogfood.DogfoodPanelService");
+    //xrsp_ripc_ensure_service_started(host, host->client_id+4, "com.oculus.vrshell", "com.oculus.panelapp.debug.ShellDebugMultiInstanceService");
+
+    //xrsp_ripc_ensure_service_started(host, host->client_id+3, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost.DialogHostService");
+    xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_4, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
 }
 
 static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
@@ -929,7 +935,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 72;
         }
 
-        float scale = 1.0;
+        float scale = 0.5;
         if (host->usb_slow_cable) {
             scale = 0.5;
             if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
@@ -1096,7 +1102,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
 
         int amt_to_read = 0x400;
         if (host->have_working_pkt) {
-            amt_to_read = 0x200;
+            amt_to_read = 0x400;
         }
 
         int read_len = 0;
@@ -1305,29 +1311,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     //printf("Send vid %x\n", video_len);
     if (video_len)
         xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat, video_len);
-    //printf("done\n");
-
-    //hex_dump((uint8_t*)out[0].begin(), );
-    //printf("%x\n", out[0].size());
-
-    static int idk = 0;
-    if (idk >= 400) return;
-
-    idk++;
-
-    static int connected_services = 0;
-    if (!connected_services) {
-        connected_services = 1;
-    }
-
-    //if (idk < 200) return;
-
-    for (int i = 0; i < 10; i++)
-    {
-        //xrsp_ripc_eye_cmd(host, host->client_id+2, i);
-    }
-    idk = 400;
-    
+    //printf("done\n");    
 
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");

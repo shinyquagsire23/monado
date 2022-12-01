@@ -200,6 +200,7 @@ typedef struct ql_xrsp_host
     bool runtime_connected;
     bool bodyapi_connected;
     bool eyetrack_connected;
+    bool shell_connected;
 
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);

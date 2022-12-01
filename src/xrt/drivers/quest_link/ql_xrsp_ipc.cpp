@@ -30,6 +30,8 @@
 extern "C"
 {
 
+void xrsp_ripc_panel_cmd(struct ql_xrsp_host* host, uint32_t client_id);
+
 void ql_xrsp_ipc_segpkt_init(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, ql_xrsp_ipc_segpkt_handler_t handler)
 {
     segpkt->num_segs = 2;
@@ -145,7 +147,6 @@ void ql_xrsp_ipc_segpkt_consume(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrs
 
 void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host)
 {
-    
     if (segpkt->client_id == RIPC_FAKE_CLIENT_1 && !host->runtime_connected) {
         xrsp_ripc_connect_to_remote_server(host, host->client_id, "com.oculus.systemdriver", "com.oculus.vrruntimeservice", "RuntimeServiceServer");
         //host->runtime_connected = true;
@@ -157,6 +158,18 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
     else if (segpkt->client_id == RIPC_FAKE_CLIENT_3 && !host->eyetrack_connected) {
         xrsp_ripc_connect_to_remote_server(host, host->client_id+2, "com.oculus.bodyapiservice", "com.oculus.eyetrackingservice", "EyeTrackingServiceServer");
         //host->eyetrack_connected = true;
+    }
+    else if (segpkt->client_id == RIPC_FAKE_CLIENT_4 && !host->shell_connected)
+    {
+        xrsp_ripc_connect_to_remote_server(host, host->client_id+3, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
+    }
+
+    //xrsp_ripc_panel_cmd(host, RIPC_FAKE_CLIENT_4);
+    //xrsp_ripc_panel_cmd(host, host->client_id+3);
+
+    if (host->shell_connected) {
+        //xrsp_ripc_panel_cmd(host, RIPC_FAKE_CLIENT_4);
+        //xrsp_ripc_void_bool_cmd(host, host->client_id+3, "EnableEyeTrackingForPCLink"); 
     }
 
     if (segpkt->client_id == host->client_id) {
@@ -174,6 +187,15 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
     else if (segpkt->client_id == host->client_id+2) {
         host->eyetrack_connected = true;
         ql_xrsp_handle_eyetrack_ipc(segpkt, host);
+    }
+    else if (segpkt->client_id == host->client_id+3) {
+        host->shell_connected = true;
+        //ql_xrsp_handle_eyetrack_ipc(segpkt, host);
+        printf("Got IPC payload from client %08x, cmd %08x, unk %08x\n", segpkt->client_id, segpkt->cmd_id, segpkt->unk);
+        hex_dump(segpkt->segs[1], segpkt->segs_valid[1]);
+
+        //xrsp_ripc_panel_cmd(host, host->client_id+3);
+        //xrsp_ripc_void_bool_cmd(host, host->client_id+3, "EnableEyeTrackingForPCLink"); 
     }
     else if (segpkt->client_id == RIPC_FAKE_CLIENT_1) {
         ql_xrsp_handle_runtimeservice_events(segpkt, host);
@@ -283,7 +305,7 @@ void ql_xrsp_ipc_handle_body(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
 
 }
 
-void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, const char* name, uint8_t* read_ptr)
+void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, const char* name, uint8_t* read_ptr, uint32_t read_len)
 {
     if (!strcmp(name, "expressionWeights_"))
     {
@@ -300,6 +322,7 @@ void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_
     else
     {
         printf("Unhandled state: %s\n", name);
+        hex_dump(read_ptr, read_len);
     }
 }
 
@@ -308,7 +331,7 @@ uint8_t* ql_xrsp_ipc_parse_state(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xr
     char name_tmp[64];
     memset(name_tmp, 0, sizeof(name_tmp));
 
-    if (*(uint32_t*)(read_ptr + 4) != 0xE6E8C835) return NULL;
+    if (*(uint32_t*)(read_ptr + 4) != ripc_field_hash("std::string", "MemoryName")) return NULL;
 
     uint32_t to_copy = *(uint32_t*)(read_ptr + 8);
     if (to_copy >= 63) to_copy = 63;
@@ -324,7 +347,7 @@ uint8_t* ql_xrsp_ipc_parse_state(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xr
     uint32_t to_skip = *(uint32_t*)(read_ptr + 8) + 0x10;
     read_ptr += 0xC;
 
-    ql_xrsp_ipc_handle_state_data(segpkt, host, name_tmp, read_ptr);
+    ql_xrsp_ipc_handle_state_data(segpkt, host, name_tmp, read_ptr, to_skip);
 
 
     return read_ptr + to_skip;
@@ -332,7 +355,7 @@ uint8_t* ql_xrsp_ipc_parse_state(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xr
 
 void ql_xrsp_ipc_parse_states(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host)
 {
-    if (*(uint32_t*)(segpkt->segs[1] + 4) != 0xF47BAAEA) return;
+    if (*(uint32_t*)(segpkt->segs[1] + 4) != ripc_field_hash("bool", "Success")) return;
 
     uint32_t num_states = *(uint32_t*)(segpkt->segs[1] + 0x11);
     uint8_t* read_ptr = segpkt->segs[1] + 0x15;
@@ -428,7 +451,7 @@ void xrsp_ripc_ensure_service_started(struct ql_xrsp_host* host, uint32_t client
 
     *(uint32_t*)(&tmp[idx]) = strlen(package_name) + sizeof(uint32_t);
     idx += sizeof(uint32_t);
-    *(uint32_t*)(&tmp[idx]) = 0xC1049F28;
+    *(uint32_t*)(&tmp[idx]) = ripc_field_hash("std::string", "PackageName");
     idx += sizeof(uint32_t);
     *(uint32_t*)(&tmp[idx]) = strlen(package_name);
     idx += sizeof(uint32_t);
@@ -437,7 +460,7 @@ void xrsp_ripc_ensure_service_started(struct ql_xrsp_host* host, uint32_t client
 
     *(uint32_t*)(&tmp[idx]) = strlen(service_component_name) + sizeof(uint32_t);
     idx += sizeof(uint32_t);
-    *(uint32_t*)(&tmp[idx]) = 0x74FEDE00;
+    *(uint32_t*)(&tmp[idx]) = ripc_field_hash("std::string", "ServiceComponentName");
     idx += sizeof(uint32_t);
     *(uint32_t*)(&tmp[idx]) = strlen(service_component_name);
     idx += sizeof(uint32_t);
@@ -458,7 +481,7 @@ void xrsp_ripc_connect_to_remote_server(struct ql_xrsp_host* host, uint32_t clie
 
     *(uint32_t*)(&tmp[idx]) = strlen(package_name) + sizeof(uint32_t);
     idx += sizeof(uint32_t);
-    *(uint32_t*)(&tmp[idx]) = 0xC1049F28;
+    *(uint32_t*)(&tmp[idx]) = ripc_field_hash("std::string", "PackageName");
     idx += sizeof(uint32_t);
     *(uint32_t*)(&tmp[idx]) = strlen(package_name);
     idx += sizeof(uint32_t);
@@ -467,7 +490,7 @@ void xrsp_ripc_connect_to_remote_server(struct ql_xrsp_host* host, uint32_t clie
 
     *(uint32_t*)(&tmp[idx]) = strlen(process_name) + sizeof(uint32_t);
     idx += sizeof(uint32_t);
-    *(uint32_t*)(&tmp[idx]) = 0x6A6318FB;
+    *(uint32_t*)(&tmp[idx]) = ripc_field_hash("std::string", "ProcessName");
     idx += sizeof(uint32_t);
     *(uint32_t*)(&tmp[idx]) = strlen(process_name);
     idx += sizeof(uint32_t);
@@ -476,7 +499,7 @@ void xrsp_ripc_connect_to_remote_server(struct ql_xrsp_host* host, uint32_t clie
 
     *(uint32_t*)(&tmp[idx]) = strlen(server_name) + sizeof(uint32_t);
     idx += sizeof(uint32_t);
-    *(uint32_t*)(&tmp[idx]) = 0x987744F3;
+    *(uint32_t*)(&tmp[idx]) = ripc_field_hash("std::string", "ServerName");
     idx += sizeof(uint32_t);
     *(uint32_t*)(&tmp[idx]) = strlen(server_name);
     idx += sizeof(uint32_t);
@@ -505,9 +528,18 @@ void xrsp_ripc_void_bool_cmd(struct ql_xrsp_host* host, uint32_t client_id, cons
     *(uint8_t*)(&tmp[idx]) = 0x00;
     idx += sizeof(uint8_t);
 
-    //uint8_t ripc_extra[] = {0x01, 0x00, 0x00, 0x00, 0xe5, 0x62, 0xb7, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00}; // 0x1, 0x38b762e4, 0x0
+    uint8_t tmp2[0x10];
+    uint32_t idx2 = 0;
+    *(uint32_t*)(&tmp2[idx]) = 1;
+    idx2 += sizeof(uint32_t);
+    *(uint32_t*)(&tmp2[idx]) = ripc_field_hash("bool", "oneWay");
+    idx2 += sizeof(uint32_t);
+    *(uint8_t*)(&tmp2[idx]) = 0;
+    idx2 += sizeof(uint8_t);
+    *(uint32_t*)(&tmp2[idx]) = hash;
+    idx2 += sizeof(uint32_t);
 
-    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, client_id, host->session_idx, tmp, idx, NULL, 0); // ripc_extra, sizeof(ripc_extra)
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, client_id, host->session_idx, tmp, idx, tmp2, idx2); // ripc_extra, sizeof(ripc_extra)
 }
 
 void xrsp_ripc_eye_cmd(struct ql_xrsp_host* host, uint32_t client_id, uint32_t cmd)
@@ -535,9 +567,58 @@ void xrsp_ripc_eye_cmd(struct ql_xrsp_host* host, uint32_t client_id, uint32_t c
     //*(uint32_t*)(&tmp[idx]) = 0;
     //idx += sizeof(uint32_t);
 
-    uint8_t ripc_extra[] = {0x01, 0x00, 0x00, 0x00, 0xe5, 0x62, 0xb7, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00}; // 0x1, 0x38b762e4, 0x0
+    uint8_t tmp2[0x10];
+    uint32_t idx2 = 0;
+    *(uint32_t*)(&tmp2[idx]) = 1;
+    idx2 += sizeof(uint32_t);
+    *(uint32_t*)(&tmp2[idx]) = ripc_field_hash("bool", "oneWay");
+    idx2 += sizeof(uint32_t);
+    *(uint8_t*)(&tmp2[idx]) = 0;
+    idx2 += sizeof(uint8_t);
+    *(uint32_t*)(&tmp2[idx]) = hash;
+    idx2 += sizeof(uint32_t);
 
-    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, client_id, host->session_idx, tmp, idx, ripc_extra, sizeof(ripc_extra)); // 
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, client_id, host->session_idx, tmp, idx, tmp2, idx2); // 
+}
+
+void xrsp_ripc_panel_cmd(struct ql_xrsp_host* host, uint32_t client_id)
+{
+    uint32_t arg_hash = hash_djb2("ripc::com::oculus::os::dialoghost::ShowPanelDialogRequest");
+    uint32_t hash = hash_djb2("showPanelDialoggg");
+    hash ^= arg_hash;
+    hash ^= hash_djb2("bool");
+
+    uint8_t tmp[0x100];
+    uint32_t idx = 0;
+
+    *(uint16_t*)(&tmp[idx]) = 2;
+    idx += sizeof(uint16_t);
+    *(uint32_t*)(&tmp[idx]) = hash;
+    idx += sizeof(uint32_t);
+    //*(uint8_t*)(&tmp[idx]) = 0x00;
+    //idx += sizeof(uint8_t);
+    *(uint32_t*)(&tmp[idx]) = 0x04;
+    idx += sizeof(uint32_t);
+    //*(uint32_t*)(&tmp[idx]) = hash_djb2("std::string");
+    //idx += sizeof(uint32_t);
+    *(uint32_t*)(&tmp[idx]) = 0x0;
+    idx += sizeof(uint32_t);
+
+    memset(tmp, 0, sizeof(tmp));
+    idx = 4;
+
+    uint8_t tmp2[0x10];
+    uint32_t idx2 = 0;
+    *(uint32_t*)(&tmp2[idx]) = 1;
+    idx2 += sizeof(uint32_t);
+    *(uint32_t*)(&tmp2[idx]) = ripc_field_hash("bool", "oneWay");
+    idx2 += sizeof(uint32_t);
+    *(uint8_t*)(&tmp2[idx]) = 1;
+    idx2 += sizeof(uint8_t);
+    *(uint32_t*)(&tmp2[idx]) = hash;
+    idx2 += sizeof(uint32_t);
+
+    xrsp_send_ripc_cmd(host, RIPC_MSG_RPC, client_id, host->session_idx, tmp, idx, tmp2, idx2); // 
 }
 
 }

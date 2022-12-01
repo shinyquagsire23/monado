@@ -23,9 +23,9 @@ void hex_dump(const uint8_t* b, size_t amt)
     printf("\n");
 }
 
-uint32_t hash_djb2(const char* s)
+uint32_t hash_djb2_(const char* s, uint32_t h)
 {
-    uint32_t hash = 5381;
+    uint32_t hash = h;
     uint32_t len = strlen(s);
     for (int i = 0; i < len; i++)
     {
