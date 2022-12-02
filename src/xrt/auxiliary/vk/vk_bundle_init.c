@@ -422,6 +422,59 @@ fill_in_external_object_properties(struct vk_bundle *vk)
  *
  */
 
+static int
+device_type_priority(VkPhysicalDeviceType device_type)
+{
+	switch (device_type) {
+	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return 4;
+	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return 3;
+	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return 2;
+	case VK_PHYSICAL_DEVICE_TYPE_CPU: return 1;
+	default: return 0;
+	}
+}
+
+static bool
+device_is_preferred(VkPhysicalDeviceProperties *l_device, VkPhysicalDeviceProperties *r_device)
+{
+	int l_priority = device_type_priority(l_device->deviceType);
+	int r_priority = device_type_priority(r_device->deviceType);
+
+	if (l_priority > r_priority)
+		return true;
+
+	return false;
+}
+
+static int
+select_preferred_device(struct vk_bundle *vk, VkPhysicalDevice *devices, uint32_t device_count)
+{
+	uint32_t gpu_index = -1;
+	VkPhysicalDeviceProperties gpu_properties;
+	for (uint32_t i = 0; i < device_count; i++) {
+		VkPhysicalDeviceProperties pdp;
+		vk->vkGetPhysicalDeviceProperties(devices[i], &pdp);
+
+		char title[20];
+		snprintf(title, 20, "GPU index %d\n", i);
+		vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
+
+		if (gpu_index < 0) {
+			gpu_index = i;
+			gpu_properties = pdp;
+			continue;
+		}
+
+		// Prefer devices based on device type priority, with preference to equal devices with smaller index
+		if (device_is_preferred(&pdp, &gpu_properties)) {
+			gpu_index = i;
+			gpu_properties = pdp;
+		}
+	}
+
+	return gpu_index;
+}
+
 static VkResult
 select_physical_device(struct vk_bundle *vk, int forced_index)
 {
@@ -440,10 +493,6 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 		return VK_ERROR_DEVICE_LOST;
 	}
 
-	if (gpu_count > 1) {
-		VK_DEBUG(vk, "Cannot deal well with multiple devices.");
-	}
-
 	VK_DEBUG(vk, "Choosing Vulkan device index");
 	uint32_t gpu_index = 0;
 	if (forced_index > -1) {
@@ -456,20 +505,7 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 		VK_DEBUG(vk, "Forced use of Vulkan device index %d.", gpu_index);
 	} else {
 		VK_DEBUG(vk, "Available GPUs");
-		// as a first-step to 'intelligent' selection, prefer a
-		// 'discrete' gpu if it is present
-		for (uint32_t i = 0; i < gpu_count; i++) {
-			VkPhysicalDeviceProperties pdp;
-			vk->vkGetPhysicalDeviceProperties(physical_devices[i], &pdp);
-
-			char title[20];
-			snprintf(title, 20, "GPU index %d\n", i);
-			vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
-
-			if (pdp.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-				gpu_index = i;
-			}
-		}
+		gpu_index = select_preferred_device(vk, physical_devices, gpu_count);
 	}
 
 	vk->physical_device = physical_devices[gpu_index];
