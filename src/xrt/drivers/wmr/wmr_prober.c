@@ -51,60 +51,46 @@ DEBUG_GET_ONCE_LOG_OPTION(wmr_log, "WMR_LOG", U_LOGGING_INFO)
 static bool
 check_and_get_interface(struct xrt_prober_device *device,
                         enum u_logging_level log_level,
-                        enum wmr_headset_type *out_hmd_type,
-                        int *out_interface)
+                        enum wmr_headset_type *out_hmd_type)
 {
 	switch (device->vendor_id) {
 	case HP_VID:
-		if (device->product_id != REVERB_G1_PID && device->product_id != REVERB_G2_PID &&
-		    device->product_id != VR1000_PID) {
-			return false;
+		U_LOG_IFL_T(log_level, "HP_VID");
+
+		switch (device->product_id) {
+		case REVERB_G1_PID: *out_hmd_type = WMR_HEADSET_REVERB_G1; return true;
+		case REVERB_G2_PID: *out_hmd_type = WMR_HEADSET_REVERB_G2; return true;
+		case VR1000_PID: *out_hmd_type = WMR_HEADSET_HP_VR1000; return true;
+		default: U_LOG_IFL_T(log_level, "No matching PID!"); return false;
 		}
-
-
-		if (device->product_id == REVERB_G1_PID)
-			*out_hmd_type = WMR_HEADSET_REVERB_G1;
-		else if (device->product_id == REVERB_G2_PID)
-			*out_hmd_type = WMR_HEADSET_REVERB_G2;
-		else if (device->product_id == VR1000_PID)
-			*out_hmd_type = WMR_HEADSET_HP_VR1000;
-		else
-			return false;
-
-		*out_interface = 0;
-		return true;
 
 	case LENOVO_VID:
-		if (device->product_id != EXPLORER_PID) {
-			return false;
+		U_LOG_IFL_T(log_level, "LENOVO_VID");
+
+		switch (device->product_id) {
+		case EXPLORER_PID: *out_hmd_type = WMR_HEADSET_LENOVO_EXPLORER; return true;
+		default: U_LOG_IFL_T(log_level, "No matching PID!"); return false;
 		}
 
-		*out_hmd_type = WMR_HEADSET_LENOVO_EXPLORER;
-		*out_interface = 0;
-		return true;
-
 	case SAMSUNG_VID:
-		if (device->product_id == ODYSSEY_PLUS_PID) {
-			*out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA;
-			*out_interface = 0;
-			return true;
-		} else if (device->product_id == ODYSSEY_PID) {
+		U_LOG_IFL_T(log_level, "SAMSUNG_VID");
+
+		switch (device->product_id) {
+		case ODYSSEY_PLUS_PID: *out_hmd_type = WMR_HEADSET_SAMSUNG_800ZAA; return true;
+		case ODYSSEY_PID:
 			U_LOG_IFL_W(log_level, "Original Odyssey may not be well-supported - continuing anyway.");
 			*out_hmd_type = WMR_HEADSET_SAMSUNG_XE700X3AI;
-			*out_interface = 0;
 			return true;
-		} else {
-			return false;
+		default: U_LOG_IFL_T(log_level, "No matching PID!"); return false;
 		}
 
 	case QUANTA_VID:
-		if (device->product_id != MEDION_ERAZER_X1000_PID) {
-			return false;
-		}
+		U_LOG_IFL_T(log_level, "QUANTA_VID");
 
-		*out_hmd_type = WMR_HEADSET_MEDION_ERAZER_X1000;
-		*out_interface = 0;
-		return true;
+		switch (device->product_id) {
+		case MEDION_ERAZER_X1000_PID: *out_hmd_type = WMR_HEADSET_MEDION_ERAZER_X1000; return true;
+		default: U_LOG_IFL_T(log_level, "No matching PID!"); return false;
+		}
 
 	default: return false;
 	}
@@ -116,11 +102,9 @@ find_companion_device(struct xrt_prober *xp,
                       size_t device_count,
                       enum u_logging_level log_level,
                       enum wmr_headset_type *out_hmd_type,
-                      struct xrt_prober_device **out_device,
-                      int *out_interface)
+                      struct xrt_prober_device **out_device)
 {
 	struct xrt_prober_device *dev = NULL;
-	int interface = 0;
 
 	for (size_t i = 0; i < device_count; i++) {
 		bool match = false;
@@ -129,7 +113,7 @@ find_companion_device(struct xrt_prober *xp,
 			continue;
 		}
 
-		match = check_and_get_interface(devices[i], log_level, out_hmd_type, &interface);
+		match = check_and_get_interface(devices[i], log_level, out_hmd_type);
 
 		if (!match) {
 			continue;
@@ -155,7 +139,6 @@ find_companion_device(struct xrt_prober *xp,
 
 
 	*out_device = dev;
-	*out_interface = interface;
 
 	return dev != NULL;
 }
@@ -182,8 +165,8 @@ wmr_found(struct xrt_prober *xp,
 	struct xrt_prober_device *dev_holo = devices[index];
 	struct xrt_prober_device *dev_companion = NULL;
 	enum wmr_headset_type hmd_type = WMR_HEADSET_GENERIC;
-	int interface_holo = 2;
-	int interface_companion = 0;
+	const int interface_holo = 2;
+	const int interface_companion = 0;
 
 	unsigned char buf[256] = {0};
 	int result = xrt_prober_get_string_descriptor(xp, dev_holo, XRT_PROBER_STRING_PRODUCT, buf, sizeof(buf));
@@ -198,8 +181,7 @@ wmr_found(struct xrt_prober *xp,
 	            MS_HOLOLENS_MANUFACTURER_STRING, MS_HOLOLENS_PRODUCT_STRING, dev_holo->vendor_id,
 	            dev_holo->product_id);
 
-	if (!find_companion_device(xp, devices, device_count, log_level, &hmd_type, &dev_companion,
-	                           &interface_companion)) {
+	if (!find_companion_device(xp, devices, device_count, log_level, &hmd_type, &dev_companion)) {
 		U_LOG_IFL_E(log_level, "Did not find HoloLens Sensors' companion device");
 		return -1;
 	}
