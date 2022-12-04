@@ -200,6 +200,10 @@ wait_semaphore(struct xrt_compositor_semaphore **xcsem_ptr, uint64_t value)
 	} while (true);
 
 	xrt_compositor_semaphore_reference(xcsem_ptr, NULL);
+
+	if (ret != XRT_SUCCESS) {
+		U_LOG_E("Semaphore waiting failed!");
+	}
 }
 
 static void
