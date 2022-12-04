@@ -112,7 +112,11 @@ client_loop(volatile struct ipc_client_state *ics)
 
 		// Check the first 4 bytes of the message and dispatch.
 		ipc_command_t *ipc_command = (ipc_command_t *)buf;
+
+		IPC_TRACE_BEGIN(ipc_dispatch);
 		xrt_result_t result = ipc_dispatch(ics, ipc_command);
+		IPC_TRACE_END(ipc_dispatch);
+
 		if (result != XRT_SUCCESS) {
 			IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
 			break;
@@ -171,7 +175,11 @@ client_loop(volatile struct ipc_client_state *ics)
 		} else {
 			// Check the first 4 bytes of the message and dispatch.
 			ipc_command_t *ipc_command = (ipc_command_t *)buf;
+
+			IPC_TRACE_BEGIN(ipc_dispatch);
 			xrt_result_t result = ipc_dispatch(ics, ipc_command);
+			IPC_TRACE_END(ipc_dispatch);
+
 			if (result != XRT_SUCCESS) {
 				IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
 				break;
