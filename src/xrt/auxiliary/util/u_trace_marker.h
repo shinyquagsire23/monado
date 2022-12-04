@@ -75,20 +75,43 @@ u_trace_marker_init(void);
 
 #define VK_TRACE_MARKER() U_TRACE_FUNC(vk)
 #define VK_TRACE_IDENT(IDENT) U_TRACE_IDENT(vk, IDENT)
+#define VK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(vk, IDENT)
+#define VK_TRACE_END(IDENT) U_TRACE_END(vk, IDENT)
+
 #define XRT_TRACE_MARKER() U_TRACE_FUNC(xrt)
 #define XRT_TRACE_IDENT(IDENT) U_TRACE_IDENT(xrt, IDENT)
+#define XRT_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(xrt, IDENT)
+#define XRT_TRACE_END(IDENT) U_TRACE_END(xrt, IDENT)
+
 #define DRV_TRACE_MARKER() U_TRACE_FUNC(drv)
 #define DRV_TRACE_IDENT(IDENT) U_TRACE_IDENT(drv, IDENT)
+#define DRV_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(drv, IDENT)
+#define DRV_TRACE_END(IDENT) U_TRACE_END(drv, IDENT)
+
 #define IPC_TRACE_MARKER() U_TRACE_FUNC(ipc)
 #define IPC_TRACE_IDENT(IDENT) U_TRACE_IDENT(ipc, IDENT)
+#define IPC_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(ipc, IDENT)
+#define IPC_TRACE_END(IDENT) U_TRACE_END(ipc, IDENT)
+
 #define OXR_TRACE_MARKER() U_TRACE_FUNC(oxr)
 #define OXR_TRACE_IDENT(IDENT) U_TRACE_IDENT(oxr, IDENT)
+#define OXR_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(oxr, IDENT)
+#define OXR_TRACE_END(IDENT) U_TRACE_END(oxr, IDENT)
+
 #define COMP_TRACE_MARKER() U_TRACE_FUNC(comp)
 #define COMP_TRACE_IDENT(IDENT) U_TRACE_IDENT(comp, IDENT)
+#define COMP_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(comp, IDENT)
+#define COMP_TRACE_END(IDENT) U_TRACE_END(comp, IDENT)
+
 #define SINK_TRACE_MARKER() U_TRACE_FUNC(sink)
 #define SINK_TRACE_IDENT(IDENT) U_TRACE_IDENT(sink, IDENT)
+#define SINK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(sink, IDENT)
+#define SINK_TRACE_END(IDENT) U_TRACE_END(sink, IDENT)
+
 #define TRACK_TRACE_MARKER() U_TRACE_FUNC(track)
 #define TRACK_TRACE_IDENT(IDENT) U_TRACE_IDENT(track, IDENT)
+#define TRACK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(track, IDENT)
+#define TRACK_TRACE_END(IDENT) U_TRACE_END(track, IDENT)
 
 
 /*
@@ -106,6 +129,16 @@ u_trace_marker_init(void);
 
 #define U_TRACE_IDENT(CATEGORY, IDENT)                                                                                 \
 	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_BEGIN(CATEGORY, IDENT)                                                                                 \
+	int __trace_##IDENT = 0; /* To ensure they are balanced */                                                     \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_END(CATEGORY, IDENT)                                                                                   \
+	do {                                                                                                           \
+		(void)__trace_##IDENT; /* To ensure they are balanced */                                               \
 	} while (false)
 
 #define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
@@ -190,6 +223,8 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 
 #endif // !XRT_OS_WINDOWS && !__cplusplus
 
+#define U_TRACE_BEGIN(CATEGORY, IDENT) TracyCZoneN(__trace_##IDENT, #IDENT, true)
+#define U_TRACE_END(CATEGORY, IDENT) TracyCZoneEnd(__trace_##IDENT)
 
 #define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
 	do {                                                                                                           \
@@ -259,6 +294,8 @@ PERCETTO_TRACK_DECLARE(pa_wait);
 
 #define U_TRACE_FUNC(CATEGORY) TRACE_EVENT(CATEGORY, __func__)
 #define U_TRACE_IDENT(CATEGORY, IDENT) TRACE_EVENT(CATEGORY, #IDENT)
+#define U_TRACE_BEGIN(CATEGORY, IDENT) TRACE_EVENT_BEGIN(CATEGORY, #IDENT)
+#define U_TRACE_END(CATEGORY, IDENT) TRACE_EVENT_END(CATEGORY)
 #define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
 	TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)
 #define U_TRACE_EVENT_BEGIN_ON_TRACK_DATA(CATEGORY, TRACK, TIME, NAME, ...)                                            \
