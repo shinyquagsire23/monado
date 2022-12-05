@@ -156,7 +156,8 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
         CMSampleBufferRef sampleBuffer ) 
 {
     VideoEncoderVT* ctx = (VideoEncoderVT*)outputCallbackRefCon;
-    self_encode_params* encode_params = (self_encode_params*)sourceFrameRefCon;
+    EncodeContext* encode_ctx = (EncodeContext*)sourceFrameRefCon;
+    self_encode_params* encode_params = &ctx->encode_params;
 
     // Frame skipped
     if (!sampleBuffer) return;
@@ -254,7 +255,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
 
     CopyNals(ctx, bb_data, bb_size, nal_size_field_bytes);
 
-    ctx->FlushFrame(0);
+    ctx->FlushFrame(encode_ctx->display_ns);
 }
 
 
@@ -285,6 +286,8 @@ VideoEncoderVT::VideoEncoderVT(
 
     encode_params.frameW = settings.width;
     encode_params.frameH = settings.height;
+
+    frame_idx = 0;
 
     converter =
 	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height), 1}, settings.offset_x, settings.offset_y, input_width, input_height);
@@ -417,14 +420,22 @@ void VideoEncoderVT::PresentImage(int index, VkCommandBuffer * out_buffer)
 
 void VideoEncoderVT::Encode(int index, bool idr, std::chrono::steady_clock::time_point pts)
 {
-	CMTime pts_ = CMTimeMake(1000*(index*4), (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), 1); // (1.0/fps) * index
-    CMTime duration = CMTimeMake(1000, (int)(fps* 4 * 1000));//CMTimeMakeWithSeconds(1.0/fps, 1);
+	int64_t ns_display = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point_cast<std::chrono::nanoseconds>(pts).time_since_epoch()).count();
 
-    VTCompressionSessionEncodeFrame(compression_session, pixelBuffer, pts_, duration, (CFDictionaryRef)(idr ? doIdrDict : doNoIdrDict), &encode_params, NULL);
+	EncodeContext* ctx = &encode_contexts[index];
+	ctx->display_ns = ns_display;
+	ctx->index = index;
+	ctx->ctx = this;
 
+	//CMTimeMake(1000*(index*4), (int)(fps * 4 * 1000));//
+	CMTime pts_ = CMTimeMake(1000*(frame_idx) * 4, (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), (int)(fps* 4 * 1000)); // (1.0/fps) * index
+    CMTime duration = CMTimeMake(1000, (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(1.0/fps, 1);
+
+    VTCompressionSessionEncodeFrame(compression_session, pixelBuffer, pts_, duration, (CFDictionaryRef)(idr ? doIdrDict : doNoIdrDict), &ctx, NULL);
+    frame_idx++;
     
     // This causes stuttering
-    //VTCompressionSessionCompleteFrames(compression_session, kCMTimeInvalid);
+    VTCompressionSessionCompleteFrames(compression_session, pts_);
 }
 
 VideoEncoderVT::~VideoEncoderVT()

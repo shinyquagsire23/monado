@@ -84,13 +84,15 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 
 	timepoint_ns prediction_ns = at_timestamp_ns - hmd->pose_ns;
 	double prediction_s = time_ns_to_s(prediction_ns);
+	os_mutex_unlock(&host->pose_mutex);
 
 	m_predict_relation(&relation, prediction_s, out_relation);
 
-	hmd->last_req_poses[2] = hmd->last_req_poses[1];
-	hmd->last_req_poses[1] = hmd->last_req_poses[0];
-	hmd->last_req_poses[0] = out_relation->pose;
-	os_mutex_unlock(&host->pose_mutex);
+	//os_mutex_lock(&host->pose_mutex);
+	//hmd->last_req_poses[2] = hmd->last_req_poses[1];
+	//hmd->last_req_poses[1] = hmd->last_req_poses[0];
+	//hmd->last_req_poses[0] = out_relation->pose;
+	//os_mutex_unlock(&host->pose_mutex);
 }
 
 static void

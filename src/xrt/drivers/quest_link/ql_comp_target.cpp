@@ -616,7 +616,7 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = xrsp_ts_ns(cn->host) + desired_present_time_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = desired_present_time_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};

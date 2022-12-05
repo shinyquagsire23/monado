@@ -193,6 +193,7 @@ typedef struct ql_xrsp_host
     size_t csd_stream_len[3];
     size_t idr_stream_len[3];
     int64_t stream_started_ns[3];
+    struct xrt_pose stream_poses[3];
 
     struct ql_xrsp_segpkt pose_ctx;
     struct ql_xrsp_ipc_segpkt ipc_ctx;

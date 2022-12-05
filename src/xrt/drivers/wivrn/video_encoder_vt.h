@@ -28,19 +28,18 @@
 static const char kAnnexBHeaderBytes[4] = {0, 0, 0, 1};
 #define kCMFormatDescriptionBridgeError_InvalidParameter  (-12712)
 
-
 typedef struct self_encode_params
 {
     int frameW;
     int frameH;
 } self_encode_params;
 
-typedef struct AnnexBBuffer
+typedef struct EncodeContext
 {
-    void* ptr;
-    size_t len;
-    size_t max;
-} AnnexBBuffer;
+	void* ctx; // VideoEncoderVT
+	int index;
+	int64_t display_ns;
+} EncodeContext;
 
 typedef struct OpaqueVTCompressionSession* VTCompressionSessionRef;
 typedef struct __CVBuffer* CVPixelBufferRef;
@@ -77,6 +76,8 @@ class VideoEncoderVT : public VideoEncoder
     std::mutex mutex;
 	int next_mb;
 	std::list<pending_nal> pending_nals;
+
+	EncodeContext encode_contexts[3];
 
 public:
 	VideoEncoderVT(vk_bundle * vk, encoder_settings & settings, int input_width, int input_height, float fps);

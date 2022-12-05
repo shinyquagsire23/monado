@@ -350,6 +350,17 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
         wait = true;
         host->stream_started_ns[stream_write_idx] = target_ns;
 
+        struct ql_hmd* hmd = host->sys->hmd;
+        struct xrt_space_relation out_head_relation;
+        U_ZERO(&out_head_relation);
+
+        //printf("a %llx\n", frame_started_ns);
+
+
+        xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
+        host->stream_poses[stream_write_idx] = out_head_relation.pose;
+        os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
+
 #if 0
         static int64_t last_ns = 0;
         int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
@@ -358,7 +369,10 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
         last_ns = target_ns;
 #endif
     }
-    os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
+    else {
+        os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
+    }
+    
 
     os_mutex_lock(&host->stream_mutex[host->stream_write_idx]);
     host->csd_stream_len[host->stream_write_idx] = 0;
@@ -937,7 +951,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 72;
         }
 
-        float scale = 0.6;
+        float scale = 0.5;
         if (host->usb_slow_cable) {
             scale = 0.5;
             if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
@@ -1231,6 +1245,8 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     struct xrt_space_relation out_head_relation;
     U_ZERO(&out_head_relation);
 
+    //printf("a %llx\n", frame_started_ns);
+
     //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
 
     os_mutex_lock(&host->pose_mutex);
@@ -1240,7 +1256,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     if (slice_idx == host->num_slices-1)
         bits |= 2;
 
-    out_head_relation.pose = hmd->last_req_poses[0];
+    out_head_relation.pose = host->stream_poses[host->stream_read_idx];
 
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);
