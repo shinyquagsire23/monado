@@ -305,7 +305,7 @@ os_monotonic_get_ns(void)
 #endif
 }
 
-#ifdef XRT_OS_LINUX
+#if defined(XRT_OS_LINUX) || defined(XRT_OS_APPLE)
 static inline uint64_t
 os_realtime_get_ns(void)
 {
