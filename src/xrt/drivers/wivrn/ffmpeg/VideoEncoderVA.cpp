@@ -32,7 +32,7 @@ extern "C"
 #include <libavfilter/buffersrc.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/hwcontext_drm.h>
-#include <libavutil/hwcontext_vaapi.h>
+//#include <libavutil/hwcontext_vaapi.h>
 #include <libavutil/opt.h>
 }
 

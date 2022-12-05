@@ -140,7 +140,15 @@ ql_hmd_destroy(struct xrt_device *xdev)
 
 void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps)
 {
-	auto eye_width = w;
+	// Align up to macroblocks
+	if (w % 16 != 0) {
+		w += (w % 16);
+	}
+	if (h % 16 != 0) {
+		h += (h % 16);
+	}
+
+	auto eye_width = w/2;
 	auto eye_height = h;
 
 	// Setup info.

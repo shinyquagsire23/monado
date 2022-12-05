@@ -35,7 +35,7 @@
 using namespace xrt::drivers::wivrn;
 
 // TODO: size independent bitrate
-static const uint64_t default_bitrate = 5'000'000'000;
+static const uint64_t default_bitrate = 2'500'000'000;
 
 static bool is_nvidia(vk_bundle * vk)
 {
@@ -56,6 +56,9 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 	{
 #ifdef WIVRN_HAVE_CUDA
 		settings.encoder_name = encoder_nvenc;
+#elif defined(XRT_HAVE_VT)
+		settings.encoder_name = encoder_vt;
+		settings.codec = xrt::drivers::wivrn::h264;
 #elif defined(WIVRN_HAVE_X264)
 		settings.encoder_name = encoder_x264;
 		settings.codec = xrt::drivers::wivrn::h264;
@@ -69,6 +72,9 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 	{
 #ifdef WIVRN_HAVE_FFMPEG
 		settings.encoder_name = encoder_vaapi;
+#elif defined(XRT_HAVE_VT)
+		settings.encoder_name = encoder_vt;
+		settings.codec = xrt::drivers::wivrn::h264;
 #elif defined(WIVRN_HAVE_X264)
 		settings.encoder_name = encoder_x264;
 		settings.codec = xrt::drivers::wivrn::h264;

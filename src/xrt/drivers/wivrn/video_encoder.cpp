@@ -36,6 +36,9 @@
 #ifdef WIVRN_HAVE_X264
 #include "video_encoder_x264.h"
 #endif
+#ifdef XRT_HAVE_VT
+#include "video_encoder_vt.h"
+#endif
 
 #include <stdio.h>
 
@@ -64,6 +67,12 @@ std::unique_ptr<VideoEncoder> VideoEncoder::Create(
 {
 	using namespace std::string_literals;
 	std::unique_ptr<VideoEncoder> res;
+#ifdef XRT_HAVE_VT
+	if (settings.encoder_name == encoder_vt)
+	{
+		res = std::make_unique<VideoEncoderVT>(vk, settings, input_width, input_height, fps);
+	}
+#endif
 #ifdef WIVRN_HAVE_X264
 	if (settings.encoder_name == encoder_x264)
 	{

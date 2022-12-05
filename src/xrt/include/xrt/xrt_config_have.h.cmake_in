@@ -41,3 +41,4 @@
 #cmakedefine XRT_HAVE_WIL
 #cmakedefine XRT_HAVE_WINRT
 #cmakedefine XRT_HAVE_X264
+#cmakedefine XRT_HAVE_VT

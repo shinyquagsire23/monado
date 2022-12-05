@@ -332,6 +332,7 @@ option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOU
 option_with_deps(XRT_HAVE_ONNXRUNTIME "Enable ONNX runtime support" DEPENDS ONNXRUNTIME_FOUND)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
 option_with_deps(XRT_HAVE_X264 "Enable software video encoding (wivrn driver)" DEPENDS X264_FOUND)
+option_with_deps(XRT_HAVE_VT "Enable VideoToolbox video encoding (wivrn driver)" DEPENDS XRT_HAVE_APPLE)
 
 # Drivers to build (sorted)
 option_with_deps(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" DEPENDS ANDROID)

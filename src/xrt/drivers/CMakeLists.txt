@@ -131,6 +131,15 @@ if(XRT_BUILD_DRIVER_WIVRN)
 		target_sources(drv_wivrn PRIVATE wivrn/video_encoder_x264.cpp)
 		target_link_libraries(drv_wivrn PRIVATE PkgConfig::X264)
 	endif()
+	if(XRT_HAVE_VT)
+		target_sources(drv_wivrn PRIVATE 
+			wivrn/video_encoder_vt.cpp
+		)
+		target_link_libraries(drv_wivrn PRIVATE "-framework VideoToolbox")
+		target_link_libraries(drv_wivrn PRIVATE "-framework CoreServices")
+		target_link_libraries(drv_wivrn PRIVATE "-framework CoreMedia")
+		target_link_libraries(drv_wivrn PRIVATE "-framework CoreVideo")
+	endif()
 
 	if(XRT_HAVE_XCB)
 			target_include_directories(drv_wivrn SYSTEM PRIVATE ${XCB_INCLUDE_DIRS})

@@ -36,6 +36,7 @@ namespace xrt::drivers::quest_link
 inline const char * encoder_nvenc = "nvenc";
 inline const char * encoder_vaapi = "vaapi";
 inline const char * encoder_x264 = "x264";
+inline const char * encoder_vt = "vt";
 
 class VideoEncoderQl
 {

@@ -174,8 +174,8 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
 
     if (segpkt->client_id == host->client_id) {
         if (!host->runtime_connected) {
-            xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
-            xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
+            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
+            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
         }
         host->runtime_connected = true;
         ql_xrsp_handle_runtimeservice_ipc(segpkt, host);

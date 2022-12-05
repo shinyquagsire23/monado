@@ -87,7 +87,7 @@ void VideoEncoderFFMPEG::Encode(int index, bool idr, std::chrono::steady_clock::
 	int err = avcodec_receive_packet(encoder_ctx.get(), enc_pkt);
 	if (err == 0)
 	{
-		SendData({enc_pkt->data, enc_pkt->data + enc_pkt->size});
+		SendIDR({enc_pkt->data, enc_pkt->data + enc_pkt->size});
 		av_packet_free(&enc_pkt);
 	}
 	if (err == AVERROR(EAGAIN))
