@@ -20,6 +20,7 @@ target_link_libraries(
 	PRIVATE
 		xrt-external-imgui-sdl2
 		aux_os
+		aux_vk
 		aux_ogl
 		aux_util
 		comp_util
@@ -31,7 +32,7 @@ target_link_libraries(
 	)
 
 if(WIN32)
-	target_link_libraries(gui PRIVATE SDL2::SDL2main)
+	target_link_libraries(sdl-test PRIVATE SDL2::SDL2main)
 endif()
 
 install(TARGETS sdl-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
