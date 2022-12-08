@@ -31,6 +31,9 @@
 #endif
 
 #if defined(XRT_FEATURE_TRACING) && defined(XRT_HAVE_TRACY)
+#ifndef TRACY_ENABLE
+#define TRACY_ENABLE
+#endif // TRACY_ENABLE
 #define U_TRACE_TRACY
 #include "tracy/TracyC.h"
 #ifdef __cplusplus
