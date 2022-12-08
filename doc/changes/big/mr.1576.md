@@ -2,6 +2,7 @@
 - mr.1576
 - mr.1577
 - mr.1579
+- mr.1598
 ---
 
 Added [Tracy](https://github.com/wolfpld/tracy) as a supported tracing backend,
