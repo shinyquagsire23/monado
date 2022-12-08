@@ -378,11 +378,6 @@ endif()
 # Flags
 ###
 
-if(XRT_HAVE_TRACY)
-	# Needed to fully enable.
-	add_definitions(-DTRACY_ENABLE)
-endif()
-
 if(XRT_HAVE_TRACY AND XRT_HAVE_PERCETTO)
 	message(FATAL_ERROR "Max one tracing backend, XRT_HAVE_TRACY and XRT_HAVE_PERCETTO enabled")
 endif()

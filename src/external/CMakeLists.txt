@@ -164,4 +164,5 @@ if(XRT_HAVE_TRACY)
 	target_include_directories(
 		xrt-external-tracy SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tracy
 		)
+	target_compile_definitions(xrt-external-tracy PRIVATE TRACY_ENABLE)
 endif()
