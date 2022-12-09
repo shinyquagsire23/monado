@@ -80,6 +80,8 @@
 
 #define WINDOW_TITLE "Monado"
 
+DEBUG_GET_ONCE_BOOL_OPTION(disable_deferred, "XRT_COMPOSITOR_DISABLE_DEFERRED", false)
+
 
 /*
  *
@@ -774,6 +776,11 @@ error_msg_with_list(struct comp_compositor *c, const char *msg)
 static bool
 compositor_check_deferred(struct comp_compositor *c, struct comp_target_factory *ctf)
 {
+	if (debug_get_bool_option_disable_deferred()) {
+		COMP_DEBUG(c, "Deferred window initialization globally disabled!");
+		return false;
+	}
+
 	if (!ctf->is_deferred) {
 		return false; // It is not deferred but that's okay.
 	}
