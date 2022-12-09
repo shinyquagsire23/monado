@@ -858,11 +858,9 @@ select_target_factory_by_detecting(struct comp_compositor *c, struct comp_target
 }
 
 static bool
-compositor_init_window_pre_vulkan(struct comp_compositor *c)
+compositor_init_window_pre_vulkan(struct comp_compositor *c, struct comp_target_factory *selected_ctf)
 {
 	COMP_TRACE_MARKER();
-
-	struct comp_target_factory *selected_ctf = NULL;
 
 	if (selected_ctf == NULL && !select_target_factory_from_settings(c, &selected_ctf)) {
 		return false; // Error!
@@ -985,7 +983,9 @@ compositor_init_renderer(struct comp_compositor *c)
 }
 
 xrt_result_t
-comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc)
+comp_main_create_system_compositor(struct xrt_device *xdev,
+                                   struct comp_target_factory *ctf,
+                                   struct xrt_system_compositor **out_xsysc)
 {
 	COMP_TRACE_MARKER();
 
@@ -1041,7 +1041,7 @@ comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_co
 
 	// clang-format off
 	if (!compositor_check_and_prepare_xdev(c, xdev) ||
-	    !compositor_init_window_pre_vulkan(c) ||
+	    !compositor_init_window_pre_vulkan(c, ctf) ||
 	    !compositor_init_vulkan(c) ||
 	    !compositor_init_render_resources(c)) {
 		COMP_ERROR(c, "Failed to init compositor %p", (void *)c);

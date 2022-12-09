@@ -86,7 +86,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 
 #ifdef XRT_FEATURE_COMPOSITOR_MAIN
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
-		xret = comp_main_create_system_compositor(head, &xsysc);
+		xret = comp_main_create_system_compositor(head, NULL, &xsysc);
 	}
 #else
 	if (!use_null) {

@@ -14,6 +14,8 @@
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_compositor.h"
 
+struct comp_target_factory;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,9 +27,16 @@ extern "C" {
  *
  * @ingroup comp_main
  * @relates xrt_system_compositor
+ *
+ * @param xdev The head device
+ * @param ctf A compositor target factory to force the output device, must remain valid for the lifetime of the
+ * compositor. If NULL, factory is automatically selected
+ * @param out_xsysc The output compositor
  */
 xrt_result_t
-comp_main_create_system_compositor(struct xrt_device *xdev, struct xrt_system_compositor **out_xsysc);
+comp_main_create_system_compositor(struct xrt_device *xdev,
+                                   struct comp_target_factory *ctf,
+                                   struct xrt_system_compositor **out_xsysc);
 
 
 #ifdef __cplusplus
