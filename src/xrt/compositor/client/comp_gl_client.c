@@ -382,10 +382,10 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 
 	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
-	xrt_result_t xret = c->context_begin(xc);
+	xrt_result_t xret = client_gl_compositor_context_begin(xc);
 	if (xret == XRT_SUCCESS) {
 		sync_handle = handle_fencing_or_finish(c);
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc);
 	}
 
 	COMP_TRACE_IDENT(layer_commit);
@@ -411,7 +411,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 	xrt_result_t xret = XRT_SUCCESS;
 
-	xret = c->context_begin(xc);
+	xret = client_gl_compositor_context_begin(xc);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -420,7 +420,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
 			U_LOG_E("Only one array layer is supported with OpenGL ES 2");
-			c->context_end(xc);
+			client_gl_compositor_context_end(xc);
 			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
@@ -428,7 +428,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	int64_t vk_format = gl_format_to_vk(info->format);
 	if (vk_format == 0) {
 		U_LOG_E("Invalid format!");
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc);
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 
@@ -439,7 +439,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 
 	if (xret != XRT_SUCCESS) {
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc);
 		return xret;
 	}
 	assert(xscn != NULL);
@@ -458,13 +458,13 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
 		// Drop our reference, does NULL checking.
 		xrt_swapchain_reference(&xsc, NULL);
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc);
 		return XRT_ERROR_OPENGL;
 	}
 
 	if (sc == NULL) {
 		U_LOG_E("Could not create OpenGL swapchain.");
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -483,7 +483,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	glBindTexture(tex_target, prev_texture);
 
-	c->context_end(xc);
+	client_gl_compositor_context_end(xc);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;
@@ -520,13 +520,13 @@ client_gl_compositor_close(struct client_gl_compositor *c)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_context_begin_func_t context_begin,
-                          client_gl_context_end_func_t context_end,
+                          client_gl_context_begin_locked_func_t context_begin_locked,
+                          client_gl_context_end_locked_func_t context_end_locked,
                           client_gl_swapchain_create_func_t create_swapchain,
                           client_gl_insert_fence_func_t insert_fence)
 {
-	assert(context_begin != NULL);
-	assert(context_end != NULL);
+	assert(context_begin_locked != NULL);
+	assert(context_end_locked != NULL);
 
 	c->base.base.get_swapchain_create_properties = client_gl_compositor_get_swapchain_create_properties;
 	c->base.base.create_swapchain = client_gl_swapchain_create;
@@ -546,8 +546,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
-	c->context_begin = context_begin;
-	c->context_end = context_end;
+	c->context_begin_locked = context_begin_locked;
+	c->context_end_locked = context_end_locked;
 	c->create_swapchain = create_swapchain;
 	c->insert_fence = insert_fence;
 	c->xcn = xcn;

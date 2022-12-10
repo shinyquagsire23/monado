@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -53,20 +53,32 @@ struct client_gl_swapchain
 };
 
 /*!
- * Fetches the OpenGL context that is current on this thread and makes the OpenGL context given in the graphics binding
- * current instead. Only one thread at a time can operate on the sections between @ref client_gl_context_begin_func_t
- * and
- * @ref client_gl_context_end_func_t, therefore client_gl_context_end_func_t MUST be called to avoid blocking the next
- * thread calling @ref client_gl_context_begin_func_t.
+ * Fetches the OpenGL context that is current on this thread and makes the
+ * OpenGL context given in the graphics binding current instead. Only one thread
+ * at a time can operate on the sections between
+ * @ref client_gl_context_begin_locked_func_t and
+ * @ref client_gl_context_end_locked_func_t,
+ * therefore @ref client_gl_context_end_locked_func_t MUST be called to avoid
+ * blocking the next thread calling @ref client_gl_context_begin_locked_func_t.
  *
- * If the return value is not XRT_SUCCESS, @ref client_gl_context_end_func_t should not be called.
+ * This function must be called with the context_mutex locked held, that is
+ * handled by the helper function @ref client_gl_compositor_context_begin.
+ *
+ * If the return value is not XRT_SUCCESS,
+ * @ref client_gl_context_end_locked_func_t should not be called.
  */
-typedef xrt_result_t (*client_gl_context_begin_func_t)(struct xrt_compositor *xc);
+typedef xrt_result_t (*client_gl_context_begin_locked_func_t)(struct xrt_compositor *xc);
 
 /*!
- * Makes the OpenGL context current that was current before @ref client_gl_context_begin_func_t was called.
+ * Makes the OpenGL context current that was current before
+ * @ref client_gl_context_begin_locked_func_t was called.
+ *
+ * This function must be called with the context_mutex locked held, successful
+ * call to @ref client_gl_compositor_context_begin will ensure that. The lock is
+ * not released by this function, but @ref client_gl_compositor_context_end does
+ * release it.
  */
-typedef void (*client_gl_context_end_func_t)(struct xrt_compositor *xc);
+typedef void (*client_gl_context_end_locked_func_t)(struct xrt_compositor *xc);
 
 /*!
  * The type of a swapchain create constructor.
@@ -113,12 +125,12 @@ struct client_gl_compositor
 	/*!
 	 * Function pointer for making the OpenGL context current.
 	 */
-	client_gl_context_begin_func_t context_begin;
+	client_gl_context_begin_locked_func_t context_begin_locked;
 
 	/*!
 	 * Function pointer for restoring prior OpenGL context.
 	 */
-	client_gl_context_end_func_t context_end;
+	client_gl_context_end_locked_func_t context_end_locked;
 
 	/*!
 	 * Function pointer for creating the client swapchain.
@@ -172,8 +184,8 @@ client_gl_compositor(struct xrt_compositor *xc)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_context_begin_func_t context_begin,
-                          client_gl_context_end_func_t context_end,
+                          client_gl_context_begin_locked_func_t context_begin,
+                          client_gl_context_end_locked_func_t context_end,
                           client_gl_swapchain_create_func_t create_swapchain,
                           client_gl_insert_fence_func_t insert_fence);
 
@@ -186,6 +198,45 @@ client_gl_compositor_init(struct client_gl_compositor *c,
  */
 void
 client_gl_compositor_close(struct client_gl_compositor *c);
+
+/*!
+ * @copydoc client_gl_context_begin_locked_func_t
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof client_gl_compositor
+ */
+static inline xrt_result_t
+client_gl_compositor_context_begin(struct xrt_compositor *xc)
+{
+	struct client_gl_compositor *cgc = client_gl_compositor(xc);
+
+	os_mutex_lock(&cgc->context_mutex);
+
+	xrt_result_t xret = cgc->context_begin_locked(xc);
+	if (xret != XRT_SUCCESS) {
+		os_mutex_unlock(&cgc->context_mutex);
+	}
+
+	return xret;
+}
+
+/*!
+ * @copydoc client_gl_context_end_locked_func_t
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof client_gl_compositor
+ */
+static inline void
+client_gl_compositor_context_end(struct xrt_compositor *xc)
+{
+	struct client_gl_compositor *cgc = client_gl_compositor(xc);
+
+	cgc->context_end_locked(xc);
+
+	os_mutex_unlock(&cgc->context_mutex);
+}
 
 
 #ifdef __cplusplus
