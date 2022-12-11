@@ -123,6 +123,10 @@ typedef struct ql_xrsp_topic_pkt
 
 typedef struct ql_xrsp_host ql_xrsp_host;
 
+#define QL_SWAPCHAIN_DEPTH (3)
+#define QL_NUM_SLICES (5)
+#define QL_IDX_SLICE(_slice_idx, _frame_idx) ((_slice_idx*QL_SWAPCHAIN_DEPTH)+_frame_idx)
+
 typedef struct ql_xrsp_host
 {
     struct ql_system* sys;
@@ -182,18 +186,24 @@ typedef struct ql_xrsp_host
     //std::vector<uint8_t> csd_stream;
     //std::vector<uint8_t> idr_stream;
 
-    struct os_mutex stream_mutex[3];
-    bool needs_flush[3];
+    struct os_mutex stream_mutex[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    bool needs_flush[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     int stream_write_idx;
     int stream_read_idx;
 
-    uint8_t* csd_stream[3];
-    uint8_t* idr_stream[3];
+    uint8_t* csd_stream[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    uint8_t* idr_stream[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
 
-    size_t csd_stream_len[3];
-    size_t idr_stream_len[3];
-    int64_t stream_started_ns[3];
-    struct xrt_pose stream_poses[3];
+    size_t csd_stream_len[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    size_t idr_stream_len[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t stream_started_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    struct xrt_pose stream_poses[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t encode_started_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t encode_done_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t encode_duration_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t tx_started_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t tx_done_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t tx_duration_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
 
     struct ql_xrsp_segpkt pose_ctx;
     struct ql_xrsp_ipc_segpkt ipc_ctx;
@@ -203,9 +213,10 @@ typedef struct ql_xrsp_host
     bool eyetrack_connected;
     bool shell_connected;
 
-    void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
-    void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len);
-    void (*flush_stream)(struct ql_xrsp_host* host, int64_t target_ns);
+    void (*start_encode)(struct ql_xrsp_host* host,  int64_t target_ns, int index, int slice_idx);
+    void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
+    void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
+    void (*flush_stream)(struct ql_xrsp_host* host, int64_t target_ns, int index, int slice_idx);
 } ql_xrsp_host;
 
 
@@ -532,7 +543,6 @@ typedef struct ql_system
 
     /* Packet processing thread */
     struct os_thread_helper oth;
-    struct os_hid_device *handles[3];
     uint64_t last_keep_alive;
 
     /* state tracking for tracked devices on our radio link */

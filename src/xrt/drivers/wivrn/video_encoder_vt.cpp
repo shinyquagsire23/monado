@@ -109,7 +109,8 @@ static CFDictionaryRef CreateCFTypeDictionary(CFTypeRef* keys,
 void VideoEncoderVT::CopyNals(VideoEncoderVT* ctx,
 				      char* avcc_buffer,
                       const size_t avcc_size,
-                      size_t size_len) {
+                      size_t size_len,
+                      int index) {
     size_t nal_size;
 
     size_t bytes_left = avcc_size;
@@ -142,7 +143,7 @@ void VideoEncoderVT::CopyNals(VideoEncoderVT* ctx,
 
         memcpy(reinterpret_cast<char*>(data.data()), (void*)kAnnexBHeaderBytes, sizeof(kAnnexBHeaderBytes));
         memcpy(reinterpret_cast<char*>(data.data())+sizeof(kAnnexBHeaderBytes), (char*)avcc_buffer, nal_size);
-        ctx->SendIDR(std::move(data));
+        ctx->SendIDR(std::move(data), index);
 
         bytes_left -= nal_size;
         avcc_buffer += nal_size;
@@ -155,24 +156,37 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
         VTEncodeInfoFlags infoFlags,
         CMSampleBufferRef sampleBuffer ) 
 {
+	bool keyframe;
+	CFDictionaryRef sample_attachments;
+	CMBlockBufferRef bb;
+	CMFormatDescriptionRef fdesc;
+	size_t bb_size, total_bytes, pset_count;
+	int nal_size_field_bytes;
+
     VideoEncoderVT* ctx = (VideoEncoderVT*)outputCallbackRefCon;
     EncodeContext* encode_ctx = (EncodeContext*)sourceFrameRefCon;
     self_encode_params* encode_params = &ctx->encode_params;
 
+    if (!encode_ctx)  {
+    	printf("UHHHHHHHH???\n");
+    	return; // shouldn't happen
+    }
+
     // Frame skipped
-    if (!sampleBuffer) return;
+    if (!sampleBuffer) {
+    	goto cleanup;
+    }
 
-
-    CFDictionaryRef sample_attachments = (CFDictionaryRef)CFArrayGetValueAtIndex(CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, true), 0);
-    bool keyframe = !CFDictionaryContainsKey(sample_attachments, kCMSampleAttachmentKey_NotSync);
+    sample_attachments = (CFDictionaryRef)CFArrayGetValueAtIndex(CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, true), 0);
+    keyframe = !CFDictionaryContainsKey(sample_attachments, kCMSampleAttachmentKey_NotSync);
 
     // Get the sample buffer's block buffer and format description.
-    CMBlockBufferRef bb = CMSampleBufferGetDataBuffer(sampleBuffer);
-    CMFormatDescriptionRef fdesc = CMSampleBufferGetFormatDescription(sampleBuffer);
-    size_t bb_size = CMBlockBufferGetDataLength(bb);
-    size_t total_bytes = bb_size;
-    size_t pset_count;
-    int nal_size_field_bytes;
+    bb = CMSampleBufferGetDataBuffer(sampleBuffer);
+    fdesc = CMSampleBufferGetFormatDescription(sampleBuffer);
+    bb_size = CMBlockBufferGetDataLength(bb);
+    total_bytes = bb_size;
+    pset_count;
+    
     status = CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(fdesc, 0, NULL, NULL, &pset_count, &nal_size_field_bytes);
     if (status == kCMFormatDescriptionBridgeError_InvalidParameter) 
     {
@@ -182,7 +196,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
     else if (status != noErr) 
     {
         printf("CMVideoFormatDescriptionGetHEVCParameterSetAtIndex failed\n");
-        return;
+        goto cleanup;
     }
     
     // Get the total size of the parameter sets
@@ -193,7 +207,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
             status = CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(fdesc, pset_i, &pset, &pset_size, NULL, NULL);
             if (status != noErr) {
               printf("CMVideoFormatDescriptionGetHEVCParameterSetAtIndex failed\n");
-              return;
+              goto cleanup;
             }
             total_bytes += pset_size + nal_size_field_bytes;
         }
@@ -208,7 +222,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
             status = CMVideoFormatDescriptionGetHEVCParameterSetAtIndex(fdesc, pset_i, &pset, &pset_size, NULL, NULL);
             if (status != noErr) {
                 printf("CMVideoFormatDescriptionGetHEVCParameterSetAtIndex failed\n");
-                return;
+                goto cleanup;
             }
 
             int type = (pset[0] & 0x7E) >> 1;
@@ -221,7 +235,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
             memcpy(reinterpret_cast<char*>(data.data()), startcode_4, sizeof(startcode_4));
             memcpy(reinterpret_cast<char*>(data.data())+sizeof(startcode_4), (char*)pset, pset_size);
             //hex_dump(data.data(), sizeof(startcode_4)+pset_size);
-            ctx->SendCSD(std::move(data), false);
+            ctx->SendCSD(std::move(data), encode_ctx->index);
         }
     }
 
@@ -236,7 +250,7 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
         if (status != noErr) {
             printf("CMBlockBufferCreateContiguous failed\n");
             //DLOG(ERROR) << " CMBlockBufferCreateContiguous failed: " << status;
-            return;
+            goto cleanup;
         }
     }
     else {
@@ -250,12 +264,14 @@ void VideoEncoderVT::vtCallback(void *outputCallbackRefCon,
     status = CMBlockBufferGetDataPointer(contiguous_bb, 0, NULL, NULL, &bb_data);
     if (status != noErr) {
         printf("CMBlockBufferGetDataPointer failed\n");
-        return;
+        goto cleanup;
     }
 
-    CopyNals(ctx, bb_data, bb_size, nal_size_field_bytes);
+    CopyNals(ctx, bb_data, bb_size, nal_size_field_bytes, encode_ctx->index);
 
-    ctx->FlushFrame(encode_ctx->display_ns);
+    ctx->FlushFrame(encode_ctx->display_ns, encode_ctx->index);
+cleanup:
+    os_mutex_unlock(&encode_ctx->wait_mutex);
 }
 
 
@@ -268,6 +284,8 @@ VideoEncoderVT::VideoEncoderVT(
         encoder_settings & settings,
         int input_width,
         int input_height,
+        int slice_idx,
+        int num_slices,
         float fps) :
         vk(vk),
         fps(fps)
@@ -285,12 +303,14 @@ VideoEncoderVT::VideoEncoderVT(
 	settings.height += settings.height % 2;
 
     encode_params.frameW = settings.width;
-    encode_params.frameH = settings.height;
+    encode_params.frameH = settings.height / num_slices;
+    memset(encode_contexts, 0, sizeof(encode_contexts));
 
+    this->slice_idx = slice_idx;
+    this->num_slices = num_slices;
     frame_idx = 0;
-
     converter =
-	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height), 1}, settings.offset_x, settings.offset_y, input_width, input_height);
+	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height / num_slices), 1}, settings.offset_x, settings.offset_y, input_width, input_height, slice_idx, num_slices);
 
     settings.range = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
 	settings.color_model = VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709;
@@ -310,13 +330,15 @@ VideoEncoderVT::VideoEncoderVT(
     
     // we need the encoder to pick up the pace, so we lie and say we're at 4x framerate (but only ever feed the real fps)
     int32_t framerate = (int)fps * 4;
-    int32_t maxkeyframe = (int)fps * 5;
+    int32_t maxkeyframe = (int)fps * 4 * 5;
     int32_t bitrate = (int32_t)settings.bitrate;
     int32_t frames = 1;
+    int32_t numslices = 1;
     CFNumberRef cfFPS = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &framerate);
     CFNumberRef cfMaxKeyframe = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &maxkeyframe);
     CFNumberRef cfBitrate = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &bitrate);
     CFNumberRef cfFrames = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &frames);
+    CFNumberRef cfNumSlices = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &numslices);
 
     //CFNumberRef cfBaseFps = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &v);
 
@@ -350,11 +372,11 @@ VideoEncoderVT::VideoEncoderVT(
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AverageBitRate, cfBitrate);
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxFrameDelayCount, cfFrames);
 
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue);
+    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_RealTime, kCFBooleanFalse);
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowTemporalCompression, kCFBooleanTrue);
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowOpenGOP, kCFBooleanFalse);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxFrameDelayCount, cfMaxKeyframe);
+    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxKeyFrameInterval, cfMaxKeyframe);
 	VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, kCFBooleanTrue);
 
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ColorPrimaries, kCVImageBufferColorPrimaries_ITU_R_709_2);
@@ -363,18 +385,22 @@ VideoEncoderVT::VideoEncoderVT(
 
     VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ProfileLevel, kVTProfileLevel_HEVC_Main_AutoLevel);
 
+    // Secret keys
+    VTSessionSetProperty(compression_session, CFSTR("LowLatencyMode"), CFSTR("Minimum"));
+    VTSessionSetProperty(compression_session, CFSTR("NumberOfSlices"), cfNumSlices); 
+
     VTCompressionSessionPrepareToEncodeFrames(compression_session);
 
     //VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_YCbCrMatrix, kCVImageBufferYCbCrMatrix_ITU_R_601_4);
 
     if(err == noErr) {
         //comp_session = session;
-        printf("Made session!\n");
+        //printf("Made session!\n");
     }
 
     void* planes[2] = {(void *)converter->y.mapped_memory, (void *)converter->uv.mapped_memory};
     size_t planes_w[2] = {size_t(settings.width), size_t(settings.width)};
-    size_t planes_h[2] = {size_t(settings.height), size_t(settings.height)};
+    size_t planes_h[2] = {size_t(settings.height / num_slices), size_t(settings.height / num_slices)};
     size_t planes_stride[2] = {size_t(converter->y.stride), size_t(converter->uv.stride)};
 
     //CVPixelBufferCreate(kCFAllocatorDefault, encode_params.frameW, encode_params.frameH, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, NULL, &pixelBuffer);
@@ -406,6 +432,14 @@ VideoEncoderVT::VideoEncoderVT(
     CFRelease(cfMaxKeyframe);
     CFRelease(cfBitrate);
     CFRelease(cfFrames);
+
+    for (int i = 0; i < 3; i++)
+    {
+    	int ret = os_mutex_init(&encode_contexts[i].wait_mutex);
+	    if (ret != 0) {
+	        printf("Failed to init wait mutex\n");
+	    }
+    }
 }
 
 void VideoEncoderVT::SetImages(int width, int height, VkFormat format, int num_images, VkImage * images, VkImageView * views, VkDeviceMemory * memory)
@@ -415,27 +449,45 @@ void VideoEncoderVT::SetImages(int width, int height, VkFormat format, int num_i
 
 void VideoEncoderVT::PresentImage(int index, VkCommandBuffer * out_buffer)
 {
+	EncodeContext* ctx = &encode_contexts[index];
+	os_mutex_lock(&ctx->wait_mutex);
 	*out_buffer = converter->command_buffers[index];
+	os_mutex_unlock(&ctx->wait_mutex);
 }
 
 void VideoEncoderVT::Encode(int index, bool idr, std::chrono::steady_clock::time_point pts)
 {
 	int64_t ns_display = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point_cast<std::chrono::nanoseconds>(pts).time_since_epoch()).count();
 
+	if (index >= 3 || index < 0) {
+		printf("Weird index! %x\n", index);
+		index = 0;
+	}
+
+
 	EncodeContext* ctx = &encode_contexts[index];
+	os_mutex_lock(&ctx->wait_mutex);
+
 	ctx->display_ns = ns_display;
 	ctx->index = index;
 	ctx->ctx = this;
 
+	//idr = (frame_idx % (500) == 0);
+
+	//printf("Frame number %u, idr=%x\n", frame_idx, idr);
+
 	//CMTimeMake(1000*(index*4), (int)(fps * 4 * 1000));//
-	CMTime pts_ = CMTimeMake(1000*(frame_idx) * 4, (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), (int)(fps* 4 * 1000)); // (1.0/fps) * index
+	CMTime pts_ = CMTimeMake(1000*(frame_idx * 4), (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), (int)(fps* 4 * 1000)); // (1.0/fps) * index
+	//CMTime pts_ = CMTimeMake((double)(ns_display / 4000), (int)(fps* 4 * 1000)); // (1.0/fps) * index
     CMTime duration = CMTimeMake(1000, (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(1.0/fps, 1);
 
-    VTCompressionSessionEncodeFrame(compression_session, pixelBuffer, pts_, duration, (CFDictionaryRef)(idr ? doIdrDict : doNoIdrDict), &ctx, NULL);
+    VTCompressionSessionEncodeFrame(compression_session, pixelBuffer, pts_, duration, (CFDictionaryRef)(idr ? doIdrDict : doNoIdrDict), ctx, NULL);
     frame_idx++;
     
-    // This causes stuttering
-    VTCompressionSessionCompleteFrames(compression_session, pts_);
+    // This causes stuttering if done for every frame
+    if (slice_idx == num_slices-1) {
+    	VTCompressionSessionCompleteFrames(compression_session, pts_);
+    }
 }
 
 VideoEncoderVT::~VideoEncoderVT()

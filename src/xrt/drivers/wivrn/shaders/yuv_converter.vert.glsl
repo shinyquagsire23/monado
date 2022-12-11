@@ -19,9 +19,25 @@
 
 #version 450
 
+/*
+layout (binding = 0) uniform yuv_ubo {
+    vec4 uvs;
+} ubo;
+*/
+
 layout (location = 0) out vec2 outUV;
 
 void main() {
-    outUV = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2); // [(0, 0), (2, 0), (0, 2)]
-    gl_Position = vec4(outUV * 2.0f + -1.0f, 0.0f, 1.0f); // [(-1, -1), (3, -1), (-1, 3)]
+    int num_slices = (gl_VertexIndex >> 4) & 0xF;
+    int slice_idx = (gl_VertexIndex >> 8) & 0xF;
+    int vtx_idx = (gl_VertexIndex & 0xF);
+
+    float f_num_slices = float(num_slices);
+    float f_slice_idx = float(slice_idx);
+
+    vec2 outUV_base = vec2((vtx_idx << 1) & 2, vtx_idx & 2); // [(0, 0), (2, 0), (0, 2)]
+    vec2 outUV_sliced = vec2(outUV_base.x, (outUV_base.y / f_num_slices) + ((1.0/f_num_slices) * f_slice_idx));
+    
+    outUV = outUV_sliced;
+    gl_Position = vec4(outUV_base * 2.0f + -1.0f, 0.0f, 1.0f); // [(-1, -1), (3, -1), (-1, 3)]
 }

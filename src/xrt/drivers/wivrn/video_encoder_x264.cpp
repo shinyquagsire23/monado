@@ -58,7 +58,7 @@ void VideoEncoderX264::ProcessCb(x264_t * h, x264_nal_t * nal, void * opaque)
 			//self->SendData(std::move(data));
 			break;
 		case NAL_AUD:
-			self->FlushFrame(self->pic_in.i_pts);
+			self->FlushFrame(self->pic_in.i_pts, 0); // TODO
 			break;
 	}
 }
@@ -69,7 +69,7 @@ void VideoEncoderX264::ProcessNal(pending_nal && nal)
 	if (nal.first_mb == next_mb)
 	{
 		next_mb = nal.last_mb + 1;
-		SendIDR(std::move(nal.data));
+		SendIDR(std::move(nal.data), 0); // TODO
 		//hex_dump(nal.data.data(), nal.data.size());
 	}
 	else
@@ -78,7 +78,7 @@ void VideoEncoderX264::ProcessNal(pending_nal && nal)
 	}
 	while ((not pending_nals.empty()) and pending_nals.front().first_mb == next_mb)
 	{
-		SendIDR(std::move(pending_nals.front().data));
+		SendIDR(std::move(pending_nals.front().data), 0); // TODO
 		next_mb = pending_nals.front().last_mb + 1;
 		pending_nals.pop_front();
 		//printf("pop!\n");
@@ -105,6 +105,8 @@ VideoEncoderX264::VideoEncoderX264(
         encoder_settings & settings,
         int input_width,
         int input_height,
+        int slice_idx,
+        int num_slices,
         float fps) :
         vk(vk)
 {
@@ -120,8 +122,10 @@ VideoEncoderX264::VideoEncoderX264(
 
 	printf("%ux%u, %ux%u\n", settings.width, settings.height, input_width, input_height);
 
+	this->slice_idx = slice_idx;
+    	this->num_slices = num_slices;
 	converter =
-	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height), 1}, settings.offset_x, settings.offset_y, input_width, input_height);
+	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height), 1}, settings.offset_x, settings.offset_y, input_width, input_height, slice_idx, num_slices);
 
 	x264_param_default_preset(&param, "ultrafast", "zerolatency");
 	param.nalu_process = &ProcessCb;

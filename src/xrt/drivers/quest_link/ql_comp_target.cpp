@@ -32,6 +32,7 @@
 
 #include "ql_types.h"
 #include "ql_xrsp.h"
+#include "ql_system.h"
 
 namespace xrt::drivers::quest_link
 {
@@ -63,6 +64,9 @@ struct ql_comp_target : public comp_target
 	float fps;
 
 	int64_t current_frame_id;
+
+	int64_t last_avg_tx;
+	int64_t last_avg_enc;
 
 	// Monotonic counter, for video stream
 	uint64_t frame_index = 0;
@@ -151,29 +155,38 @@ static void create_encoders(ql_comp_target * cn, std::vector<xrt::drivers::wivrn
 	desc.height = cn->height;
 	desc.fps = cn->fps;
 
+	cn->last_avg_tx = 0;
+	cn->last_avg_enc = 0;
+
 	std::map<int, encoder_thread_param> thread_params;
 
 	for (auto & settings: _settings)
 	{
 		uint8_t stream_index = cn->encoders.size();
-		auto & encoder = cn->encoders.emplace_back(
-		        xrt::drivers::wivrn::VideoEncoder::Create(vk, settings, stream_index, desc.width, desc.height, desc.fps));
-		encoder->SetXrspHost(cn->host);
-		desc.items.push_back(settings);
 
-		std::vector<VkImage> images(cn->image_count);
-		std::vector<VkDeviceMemory> memory(cn->image_count);
-		std::vector<VkImageView> views(cn->image_count);
-
-		for (size_t j = 0; j < cn->image_count; j++)
+		int slice_w = desc.width;
+		int slice_h = desc.height / QL_NUM_SLICES;
+		for (int slice_num = 0; slice_num < QL_NUM_SLICES; slice_num++)
 		{
-			images[j] = cn->images[j].handle;
-			memory[j] = cn->psc.images[j].memory;
-			views[j] = cn->images[j].view;
-		}
-		encoder->SetImages(cn->width, cn->height, cn->format, cn->image_count, images.data(), views.data(), memory.data());
+			auto & encoder = cn->encoders.emplace_back(
+			        xrt::drivers::wivrn::VideoEncoder::Create(vk, settings, stream_index, slice_num, QL_NUM_SLICES, slice_w, slice_h, desc.fps));
+			encoder->SetXrspHost(cn->host);
 
-		thread_params[settings.group].encoders.emplace_back(encoder);
+			std::vector<VkImage> images(cn->image_count);
+			std::vector<VkDeviceMemory> memory(cn->image_count);
+			std::vector<VkImageView> views(cn->image_count);
+
+			for (size_t j = 0; j < cn->image_count; j++)
+			{
+				images[j] = cn->images[j].handle;
+				memory[j] = cn->psc.images[j].memory;
+				views[j] = cn->images[j].view;
+			}
+			encoder->SetImages(cn->width, cn->height, cn->format, cn->image_count, images.data(), views.data(), memory.data());
+			thread_params[settings.group].encoders.emplace_back(encoder);
+		}
+
+		desc.items.push_back(settings);
 	}
 
 	for (auto & [group, params]: thread_params)
@@ -452,6 +465,8 @@ static VkResult comp_ql_acquire(struct comp_target * ct, uint32_t * out_index)
 
 	while (res != VK_SUCCESS)
 	{
+		std::this_thread::yield();
+
 		std::lock_guard lock(cn->psc.mutex);
 		for (uint32_t i = 0; i < ct->image_count; i++)
 		{
@@ -464,6 +479,7 @@ static VkResult comp_ql_acquire(struct comp_target * ct, uint32_t * out_index)
 				break;
 			}
 		}
+		//printf("Not Acquire?\n");
 	};
 
 	return res;
@@ -493,12 +509,14 @@ static void * comp_ql_present_thread(void * void_param)
 			{
 				if (cn->psc.images[i].status & status_bit)
 				{
-					if (timestamp < cn->psc.images[i].view_info.display_time)
+					//printf("%llx %llx\n", timestamp, cn->psc.images[i].view_info.display_time);
+					//if (timestamp < cn->psc.images[i].view_info.display_time)
 					{
 						presenting_index = i;
 					}
 					indices[nb_fences] = i;
 					fences[nb_fences++] = cn->psc.images[i].fence;
+					break;
 				}
 			}
 
@@ -507,6 +525,7 @@ static void * comp_ql_present_thread(void * void_param)
 				// condition variable is not notified when we want to stop thread,
 				// use a timeout, but longer than a typical frame
 				cn->psc.cv.wait_for(lock, std::chrono::milliseconds(50));
+				//std::this_thread::yield();
 				continue;
 			}
 		}
@@ -515,12 +534,19 @@ static void * comp_ql_present_thread(void * void_param)
 		vk_check_error("vkWaitForFences", res, NULL);
 
 		const auto & psc_image = cn->psc.images[presenting_index];
+#if 1
+		for (int i = 0; i < QL_NUM_SLICES; i++) {
+			//cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
+		}
+#endif
+
 		try
 		{
 			for (auto & encoder: param->encoders)
 			{
 				bool idr_requested = false;
 
+				cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, encoder->slice_idx);
 				encoder->Encode(nullptr, psc_image.view_info, psc_image.frame_index, presenting_index, idr_requested);
 			}
 		}
@@ -528,6 +554,11 @@ static void * comp_ql_present_thread(void * void_param)
 		{
 			// Ignore errors
 		}
+#if 0
+		for (int i = 0; i < QL_NUM_SLICES; i++) {
+			cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
+		}
+#endif
 
 		std::lock_guard lock(cn->psc.mutex);
 		for (int i = 0; i < nb_fences; i++)
@@ -616,7 +647,7 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = desired_present_time_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = desired_present_time_ns + present_slop_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};
@@ -644,18 +675,72 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
                                          uint64_t * out_present_slop_ns,
                                          uint64_t * out_predicted_display_time_ns)
 {
-	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
+	struct ql_comp_target* cn = (struct ql_comp_target *)ct;
+
+	// Weighted slightly heavier towards larger amounts, so if the user is rotating 
+	// their head a lot, we will err towards longer encodes/transmits
+	int64_t avg_encode = cn->last_avg_enc;
+	for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
+	{
+		int64_t largest_enc_diff = 0;
+		for (int j = 0; j < QL_NUM_SLICES; j++)
+		{
+			int64_t enc_diff = cn->host->encode_duration_ns[QL_IDX_SLICE(j,i)];//cn->host->encode_done_ns[i] - cn->host->encode_started_ns[i];
+			if (enc_diff > largest_enc_diff) {
+				largest_enc_diff = enc_diff;
+			}
+		}
+		avg_encode += largest_enc_diff;
+		avg_encode /= 2;
+	}
+
+	int64_t avg_tx = cn->last_avg_tx;
+	for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
+	{
+		int64_t largest_tx_diff = 0;
+		for (int j = 0; j < QL_NUM_SLICES; j++)
+		{
+			int64_t tx_diff = cn->host->tx_duration_ns[QL_IDX_SLICE(j,i)];
+			if (tx_diff > largest_tx_diff) {
+				largest_tx_diff = tx_diff;
+			}
+		}
+		avg_tx += largest_tx_diff;
+		avg_tx /= 2;
+	}
+
+	if (avg_tx < 0)
+		avg_tx = 0;
+	if (avg_encode < 0)
+		avg_encode = 0;
+	if (avg_tx > U_TIME_1S_IN_NS)
+		avg_tx = U_TIME_HALF_MS_IN_NS;
+	if (avg_encode > U_TIME_1S_IN_NS)
+		avg_encode = (5 * U_TIME_1MS_IN_NS);
+
+	cn->last_avg_tx = avg_tx;
+	cn->last_avg_enc = avg_encode;
+	
+	static int limit_info = 0;
+	if (++limit_info > 100) {
+		//QUEST_LINK_INFO("Avg: tx %fms, encode %fms", (double)avg_tx / 1000000.0, (double)avg_encode / 1000000.0);
+		limit_info = 0;
+	}
+
+	int64_t encode_display_delay = avg_encode + avg_tx + (1 * U_TIME_HALF_MS_IN_NS) + (5 * U_TIME_1MS_IN_NS);
+	//printf("%f\n", (double)encode_display_delay / 1000000.0);
 
 	int64_t frame_id = ++cn->current_frame_id; //-1;
 	uint64_t desired_present_time_ns = os_monotonic_get_ns() + (U_TIME_1S_IN_NS / (cn->fps));
 	uint64_t wake_up_time_ns = desired_present_time_ns - 5 * U_TIME_1MS_IN_NS;
-	uint64_t present_slop_ns = U_TIME_HALF_MS_IN_NS;
-	uint64_t predicted_display_time_ns = desired_present_time_ns + 5 * U_TIME_1MS_IN_NS;
+	uint64_t present_slop_ns = encode_display_delay;//U_TIME_HALF_MS_IN_NS;
+	uint64_t predicted_display_time_ns = desired_present_time_ns + encode_display_delay;
 
-#if 1
-	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (cn->fps);
+	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (cn->fps) + encode_display_delay;
 	uint64_t min_display_period_ns = predicted_display_period_ns;
 	uint64_t now_ns = os_monotonic_get_ns();
+
+	//u_pc_update_present_offset(cn->upc, frame_id, encode_display_delay);
 
 	u_pc_predict(cn->upc,                      //
 	             now_ns,                       //
@@ -668,8 +753,6 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	             &min_display_period_ns);      //
 
 	cn->current_frame_id = frame_id;
-
-#endif
 
 	*out_frame_id = frame_id;
 	*out_wake_up_time_ns = wake_up_time_ns;

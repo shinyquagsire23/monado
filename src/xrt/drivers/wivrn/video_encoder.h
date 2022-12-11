@@ -53,9 +53,13 @@ class VideoEncoder
 	std::vector<to_headset::video_stream_data_shard> shards;
 
 public:
+	uint8_t slice_idx;
+	uint8_t num_slices;
 	static std::unique_ptr<VideoEncoder> Create(vk_bundle * vk,
 	                                            encoder_settings & settings,
 	                                            uint8_t stream_idx,
+	                                            uint8_t slice_idx,
+	                                            uint8_t num_slices,
 	                                            int input_width,
 	                                            int input_height,
 	                                            float fps);
@@ -91,11 +95,11 @@ protected:
 	// encode the image at provided index.
 	virtual void Encode(int index, bool idr, std::chrono::steady_clock::time_point target_timestamp) = 0;
 
-	void SendCSD(std::vector<uint8_t> && data, bool last);
+	void SendCSD(std::vector<uint8_t> && data, int index);
 
-	void SendIDR(std::vector<uint8_t> && data);
+	void SendIDR(std::vector<uint8_t> && data, int index);
 
-	void FlushFrame(int64_t target_ns);
+	void FlushFrame(int64_t target_ns, int index);
 
 private:
 	void PushShard(std::vector<uint8_t> && payload, uint8_t flags);

@@ -128,8 +128,8 @@ static void destroy_all(YuvConverter * ptr)
 			throw std::runtime_error(fun "failed"); \
 	} while (0)
 
-YuvConverter::YuvConverter(vk_bundle * vk, VkExtent3D extent, int offset_x, int offset_y, int input_width, int input_height) :
-        vk(*vk)
+YuvConverter::YuvConverter(vk_bundle * vk, VkExtent3D extent, int offset_x, int offset_y, int input_width, int input_height, int slice_idx, int num_slices) :
+        vk(*vk), slice_idx(slice_idx), num_slices(num_slices)
 {
 	std::unique_ptr<YuvConverter, decltype(&destroy_all)> deleter(this, destroy_all);
 
@@ -379,7 +379,7 @@ void YuvConverter::SetImages(int num_images, VkImage * images, VkImageView * vie
 			vk.vkCmdBeginRenderPass(cmdBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 			vk.vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, comp.pipeline);
 			vk.vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_set, 0, nullptr);
-			vk.vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+			vk.vkCmdDraw(cmdBuffer, 3, 1, (num_slices << 4) | (slice_idx << 8) | 0, 0);
 			vk.vkCmdEndRenderPass(cmdBuffer);
 
 			if (comp.buffer != VK_NULL_HANDLE)

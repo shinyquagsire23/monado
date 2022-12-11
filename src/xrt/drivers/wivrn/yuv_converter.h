@@ -39,14 +39,24 @@ public:
 		VkShaderModule frag = VK_NULL_HANDLE;
 		VkPipeline pipeline = VK_NULL_HANDLE;
 		VkExtent2D extent;
+		VkExtent2D extent_clipped;
 		int stride;
 	};
+
+	struct yuv_ubo {
+	    float uvs[4];
+	};
+
 	vk_bundle & vk;
 	image_bundle y;
 	image_bundle uv;
 	VkSampler sampler = VK_NULL_HANDLE;
 	VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
 	VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+
+	VkBuffer ubo_buf;
+	VkDeviceMemory ubo_mem;
+	yuv_ubo ubo_uvs;
 
 	VkShaderModule vert = VK_NULL_HANDLE;
 
@@ -55,7 +65,10 @@ public:
 	std::vector<VkCommandBuffer> command_buffers;
 	std::vector<VkDescriptorSet> descriptor_sets;
 
-	YuvConverter(vk_bundle * vk, VkExtent3D extent, int offset_x, int offset_y, int input_width, int input_height);
+	int slice_idx;
+	int num_slices;
+
+	YuvConverter(vk_bundle * vk, VkExtent3D extent, int offset_x, int offset_y, int input_width, int input_height, int slice_idx, int num_slices);
 	~YuvConverter();
 
 	void SetImages(int num_images, VkImage * images, VkImageView * views);

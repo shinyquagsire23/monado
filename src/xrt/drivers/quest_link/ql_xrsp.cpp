@@ -45,9 +45,10 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host);
 static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_t data_size);
 static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size);
 
-static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns);
-static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len);
-static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len);
+static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int index, int slice_idx);
+static void xrsp_start_encode(struct ql_xrsp_host *host,  int64_t target_ns, int index, int slice_idx);
+static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx);
+static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx);
 static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
@@ -61,22 +62,33 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     host->vid = vid;
     host->pid = pid;
 
-    host->num_slices = 1;
+    host->num_slices = QL_NUM_SLICES;
 
     host->ready_to_send_frames = false;
     host->stream_read_idx = 0;
     host->stream_write_idx = 0;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
     {
-        host->csd_stream[i] = (uint8_t*)malloc(0x1000000);
-        host->idr_stream[i] = (uint8_t*)malloc(0x1000000);
-        host->csd_stream_len[i] = 0;
-        host->idr_stream_len[i] = 0;
+        for (int j = 0; j < QL_NUM_SLICES; j++)
+        {
+            host->csd_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x100000);
+            host->idr_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x100000);
+            host->csd_stream_len[QL_IDX_SLICE(j, i)] = 0;
+            host->idr_stream_len[QL_IDX_SLICE(j, i)] = 0;
 
-        ret = os_mutex_init(&host->stream_mutex[i]);
-        if (ret != 0) {
-            QUEST_LINK_ERROR("Failed to init usb mutex");
-            goto cleanup;
+            host->stream_started_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->encode_started_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->encode_done_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->encode_duration_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->tx_started_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->tx_done_ns[QL_IDX_SLICE(j, i)] = 0;
+            host->tx_duration_ns[QL_IDX_SLICE(j, i)] = 0;
+
+            ret = os_mutex_init(&host->stream_mutex[QL_IDX_SLICE(j, i)]);
+            if (ret != 0) {
+                QUEST_LINK_ERROR("Failed to init usb mutex");
+                goto cleanup;
+            }
         }
     }
     
@@ -131,6 +143,7 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     host->last_read_ns = 0;
     xrsp_reset_echo(host);
 
+    host->start_encode = xrsp_start_encode;
     host->send_csd = xrsp_send_csd;
     host->send_idr = xrsp_send_idr;
     host->flush_stream = xrsp_flush_stream;
@@ -322,30 +335,29 @@ void ql_xrsp_host_destroy(struct ql_xrsp_host* host)
 
     os_mutex_destroy(&host->pose_mutex);
     os_mutex_destroy(&host->usb_mutex);
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
     {
-        os_mutex_destroy(&host->stream_mutex[i]);
+        for (int j = 0; j < QL_NUM_SLICES; j++)
+        {
+            free(host->csd_stream[QL_IDX_SLICE(j, i)]);
+            free(host->idr_stream[QL_IDX_SLICE(j, i)]);
+            os_mutex_destroy(&host->stream_mutex[QL_IDX_SLICE(j, i)]);
+        }
     }
 }
 
-static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
+static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int index, int slice_idx)
 {
     if (!host->ready_to_send_frames) return;
 
-    /*while (host->needs_flush) {
-        os_nanosleep(U_TIME_1MS_IN_NS / 2);
-    }*/
-    //printf("Flush 1? %zx %zx\n", host->csd_stream_len[host->stream_write_idx], host->idr_stream_len[host->stream_write_idx]);
+    int stream_write_idx = QL_IDX_SLICE(slice_idx, index);
+    host->encode_done_ns[stream_write_idx] = xrsp_ts_ns(host);
 
     bool wait = false;
-    int stream_write_idx = host->stream_write_idx;
     os_mutex_lock(&host->stream_mutex[stream_write_idx]);
 
     if (host->csd_stream_len[stream_write_idx] || host->idr_stream_len[stream_write_idx]) {
-        host->stream_write_idx++;
-        if (host->stream_write_idx >= 3)
-            host->stream_write_idx = 0;
-        //printf("Write %x -> %x\n", stream_write_idx, host->stream_write_idx);
+        //printf("Write idx %x slice %x\n", index, slice_idx);
         host->needs_flush[stream_write_idx] = true;
         wait = true;
         host->stream_started_ns[stream_write_idx] = target_ns;
@@ -355,71 +367,79 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns)
         U_ZERO(&out_head_relation);
 
         //printf("a %llx\n", frame_started_ns);
+        host->encode_duration_ns[stream_write_idx] = host->encode_done_ns[stream_write_idx] - host->encode_started_ns[stream_write_idx];
 
-
-        xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
-        host->stream_poses[stream_write_idx] = out_head_relation.pose;
-        os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
-
-#if 0
+#if 1
         static int64_t last_ns = 0;
         int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
-        printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
+        //printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
+
+        /*if (delta <= 10000) {
+            host->csd_stream_len[stream_write_idx] = 0;
+            host->idr_stream_len[stream_write_idx] = 0;
+        }*/
 
         last_ns = target_ns;
 #endif
+
+        //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
+        //host->stream_poses[stream_write_idx] = out_head_relation.pose;
+        os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
+
+
     }
     else {
         os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
     }
-    
-
-    os_mutex_lock(&host->stream_mutex[host->stream_write_idx]);
-    host->csd_stream_len[host->stream_write_idx] = 0;
-    host->idr_stream_len[host->stream_write_idx] = 0;
-    //host->stream_started_ns[host->stream_write_idx] = target_ns; // TODO actually check the render time?
-    host->needs_flush[host->stream_write_idx] = false;
-    os_mutex_unlock(&host->stream_mutex[host->stream_write_idx]);
-
-    /*while (wait && host->needs_flush) {
-        os_nanosleep(U_TIME_1MS_IN_NS / 2);
-    }*/
-    //printf("Flush 2? %zx %zx\n", host->csd_stream_len, host->idr_stream_len);
-    //printf("Flush!\n");
 }
 
-static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len)
+static void xrsp_start_encode(struct ql_xrsp_host *host, int64_t target_ns, int index, int slice_idx)
 {
+    int write_index = QL_IDX_SLICE(slice_idx, index);
+
+    os_mutex_lock(&host->stream_mutex[write_index]);
+    host->encode_started_ns[write_index] = xrsp_ts_ns(host);
+
+    struct ql_hmd* hmd = host->sys->hmd;
+    struct xrt_space_relation out_head_relation;
+    U_ZERO(&out_head_relation);
+
+    xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
+    host->stream_poses[write_index] = out_head_relation.pose;
+    os_mutex_unlock(&host->stream_mutex[write_index]);
+}
+
+static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx)
+{
+    int write_index = QL_IDX_SLICE(slice_idx, index);
     //printf("CSD\n");
     //if (!host->ready_to_send_frames) return;
-    os_mutex_lock(&host->stream_mutex[host->stream_write_idx]);
+    os_mutex_lock(&host->stream_mutex[write_index]);
     //bool success = xrsp_read_usb(host); 
     
     //printf("CSD: %x into %x\n", data_len, host->csd_stream_len);
     //hex_dump(data, data_len);
 
-    if (host->csd_stream_len[host->stream_write_idx] + data_len < 0x1000000) {
-        memcpy(host->csd_stream[host->stream_write_idx] + host->csd_stream_len[host->stream_write_idx], data, data_len);
-        host->csd_stream_len[host->stream_write_idx] += data_len;
+    if (host->csd_stream_len[write_index] + data_len < 0x100000) {
+        memcpy(host->csd_stream[write_index] + host->csd_stream_len[write_index], data, data_len);
+        host->csd_stream_len[write_index] += data_len;
     }
 
-    os_mutex_unlock(&host->stream_mutex[host->stream_write_idx]);
+    os_mutex_unlock(&host->stream_mutex[write_index]);
 }
 
-static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len)
+static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx)
 {
-    //printf("IDR\n");
-    //if (!host->ready_to_send_frames) return;
-    os_mutex_lock(&host->stream_mutex[host->stream_write_idx]);
-    //printf("IDR: %x into %x\n", data_len, host->idr_stream_len);
-    //hex_dump(data, data_len);
+    int write_index = QL_IDX_SLICE(slice_idx, index);
 
-    if (host->idr_stream_len[host->stream_write_idx] + data_len < 0x1000000) {
-        memcpy(host->idr_stream[host->stream_write_idx] + host->idr_stream_len[host->stream_write_idx], data, data_len);
-        host->idr_stream_len[host->stream_write_idx] += data_len;
+    os_mutex_lock(&host->stream_mutex[write_index]);
+
+    if (host->idr_stream_len[write_index] + data_len < 0x100000) {
+        memcpy(host->idr_stream[write_index] + host->idr_stream_len[write_index], data, data_len);
+        host->idr_stream_len[write_index] += data_len;
     }
     
-    os_mutex_unlock(&host->stream_mutex[host->stream_write_idx]);
+    os_mutex_unlock(&host->stream_mutex[write_index]);
 }
 
 static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_t data_size)
@@ -822,8 +842,8 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     //print ("2 sends")
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
-    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, &send_cmd_camerastream, sizeof(send_cmd_camerastream));
 
@@ -1098,9 +1118,10 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
         }
     }
 
-    if ((pkt->topic == TOPIC_POSE || pkt->topic == TOPIC_LOGGING) && host->pairing_state != PAIRINGSTATE_PAIRED)
+    if ((pkt->topic == TOPIC_POSE || pkt->topic == TOPIC_SKELETON || pkt->topic == TOPIC_LOGGING) && host->pairing_state != PAIRINGSTATE_PAIRED)
     {
         xrsp_trigger_bye(host, NULL);
+        ql_xrsp_usb_init(host, true);
     }
 }
 
@@ -1234,11 +1255,13 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
     return true;
 }
 
-static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
+static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos)
 {
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
+
+    int read_index = QL_IDX_SLICE(slice_idx, index);
 
     struct ql_hmd* hmd = host->sys->hmd;
 
@@ -1256,7 +1279,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     if (slice_idx == host->num_slices-1)
         bits |= 2;
 
-    out_head_relation.pose = host->stream_poses[host->stream_read_idx];
+    out_head_relation.pose = host->stream_poses[QL_IDX_SLICE(0, index)]; // always pull slice 0's pose
 
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);
@@ -1287,7 +1310,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
     msg.setUnk6p1(bits); 
     msg.setUnk6p2(0);
     msg.setUnk6p3(0);
-    msg.setBlitYPos(blit_y_pos);
+    msg.setBlitYPos((hmd->encode_height / host->num_slices) * slice_idx);
     msg.setCropBlocks((hmd->encode_height/16) / host->num_slices); // 24 for slice count 5
     
     msg.setUnk8p1(0);
@@ -1321,6 +1344,8 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
 
     //printf("adsf %zx %zx\n", csd_len, video_len);
 
+    uint64_t ts_before = xrsp_ts_ns(host);
+
     //printf("Send capnp\n");
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_SLICE_0+slice_idx, 0, packed_data, packed_data_size);
     //printf("Send csd %x\n", csd_len);
@@ -1331,6 +1356,15 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_
         xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat, video_len);
     //printf("done\n");    
 
+    uint64_t ts_after = xrsp_ts_ns(host);
+
+    host->tx_started_ns[read_index] = ts_before;
+    host->tx_done_ns[read_index] = ts_after;
+
+    int64_t ts_diff = ts_after - ts_before;
+    host->tx_duration_ns[read_index] = ts_diff;
+
+    
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "SendSwitchToHandsNotif");
@@ -1394,27 +1428,63 @@ ql_xrsp_write_thread(void *ptr)
     while (os_thread_helper_is_running_locked(&host->write_thread)) {
         os_thread_helper_unlock(&host->write_thread);
 
-        os_mutex_lock(&host->stream_mutex[host->stream_read_idx]);
+        
 
-        if (host->needs_flush[host->stream_read_idx] && (host->csd_stream_len[host->stream_read_idx] || host->idr_stream_len[host->stream_read_idx])) { //  && (xrsp_ts_ns(host) - host->frame_sent_ns) >= 13890000
-            //printf("Flush: %zx %zx\n", host->csd_stream_len, host->idr_stream_len);
-            //if (host->csd_stream_len == 0x27)
-            xrsp_send_video(host, 0, host->frame_idx, host->stream_started_ns[host->stream_read_idx], (const uint8_t*)host->csd_stream[host->stream_read_idx], host->csd_stream_len[host->stream_read_idx], (const uint8_t*)host->idr_stream[host->stream_read_idx], host->idr_stream_len[host->stream_read_idx], 0);
-            //printf("%zu\n", xrsp_ts_ns(host) - host->frame_sent_ns);
-            host->frame_sent_ns = xrsp_ts_ns(host);
+        int64_t present_ns = 0x7FFFFFFFFFFFFFFF;
+        int to_present = -1;
+        for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
+        {
+            bool all_slices_present = true;
+            for (int j = 0; j < QL_NUM_SLICES; j++)
+            {
+                int full_idx = QL_IDX_SLICE(j, i);
+                os_mutex_lock(&host->stream_mutex[full_idx]);
+                //printf("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
+                if (!host->needs_flush[full_idx]) {
+                    all_slices_present = false;
+                }
+                os_mutex_unlock(&host->stream_mutex[full_idx]);
+            }
 
-            host->frame_idx++;
-            host->csd_stream_len[host->stream_read_idx] = 0;
-            host->idr_stream_len[host->stream_read_idx] = 0;
-            host->needs_flush[host->stream_read_idx] = false;
-
-            host->stream_read_idx++;
-            if (host->stream_read_idx >= 3)
-                host->stream_read_idx = 0;
-            //printf("Flush: %x\n", host->stream_read_idx);
+            int first_idx = QL_IDX_SLICE(0, i);
+            os_mutex_lock(&host->stream_mutex[first_idx]);
+            //printf("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
+            if (all_slices_present && host->stream_started_ns[first_idx] < present_ns) {
+                //printf("asdf %x\n", i);
+                present_ns = host->stream_started_ns[first_idx];
+                to_present = i;
+            }
+            os_mutex_unlock(&host->stream_mutex[first_idx]);
         }
 
-        os_mutex_unlock(&host->stream_mutex[host->stream_read_idx]);
+
+
+        // TODO: merge frames together if needed
+        if (to_present >= 0) { //  && (xrsp_ts_ns(host) - host->frame_sent_ns) >= 13890000
+            
+            for (int slice = 0; slice < QL_NUM_SLICES; slice++)
+            {
+                int to_present_idx = QL_IDX_SLICE(slice, to_present);
+                os_mutex_lock(&host->stream_mutex[to_present_idx]);
+                //printf("Flush: %x\n", to_present);
+                
+                if (host->csd_stream_len[to_present_idx] || host->idr_stream_len[to_present_idx])
+                    xrsp_send_video(host, to_present, slice, host->frame_idx, present_ns, (const uint8_t*)host->csd_stream[to_present_idx], host->csd_stream_len[to_present_idx], (const uint8_t*)host->idr_stream[to_present_idx], host->idr_stream_len[to_present_idx], 0);
+    
+                if (!slice)
+                    host->frame_sent_ns = xrsp_ts_ns(host);
+
+                host->csd_stream_len[to_present_idx] = 0;
+                host->idr_stream_len[to_present_idx] = 0;
+                host->needs_flush[to_present_idx] = false;
+
+                //printf("Flush: %x\n", host->stream_read_idx);
+                os_mutex_unlock(&host->stream_mutex[to_present_idx]);
+            }
+            host->frame_idx++;
+        }
+
+        
 
         //printf("%zx\n", xrsp_ts_ns(host) - host->paired_ns);
         if (xrsp_ts_ns(host) - host->paired_ns > 5000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000

@@ -39,6 +39,8 @@ typedef struct EncodeContext
 	void* ctx; // VideoEncoderVT
 	int index;
 	int64_t display_ns;
+	int64_t start_encode_ns;
+	struct os_mutex wait_mutex;
 } EncodeContext;
 
 typedef struct OpaqueVTCompressionSession* VTCompressionSessionRef;
@@ -73,14 +75,13 @@ class VideoEncoderVT : public VideoEncoder
     VTCompressionSessionRef compression_session;
     CVPixelBufferRef pixelBuffer;
 
-    std::mutex mutex;
 	int next_mb;
 	std::list<pending_nal> pending_nals;
 
 	EncodeContext encode_contexts[3];
 
 public:
-	VideoEncoderVT(vk_bundle * vk, encoder_settings & settings, int input_width, int input_height, float fps);
+	VideoEncoderVT(vk_bundle * vk, encoder_settings & settings, int input_width, int input_height, int slice_idx, int num_slices, float fps);
 
 	void SetImages(int width,
 	               int height,
@@ -106,7 +107,8 @@ private:
 	static void CopyNals(VideoEncoderVT* ctx, 
 					  char* avcc_buffer,
                       const size_t avcc_size,
-                      size_t size_len);
+                      size_t size_len,
+                      int index);
 };
 
 } // namespace xrt::drivers::wivrn

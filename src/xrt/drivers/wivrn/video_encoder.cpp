@@ -61,6 +61,8 @@ std::unique_ptr<VideoEncoder> VideoEncoder::Create(
         vk_bundle * vk,
         encoder_settings & settings,
         uint8_t stream_idx,
+        uint8_t slice_idx,
+        uint8_t num_slices,
         int input_width,
         int input_height,
         float fps)
@@ -70,13 +72,13 @@ std::unique_ptr<VideoEncoder> VideoEncoder::Create(
 #ifdef XRT_HAVE_VT
 	if (settings.encoder_name == encoder_vt)
 	{
-		res = std::make_unique<VideoEncoderVT>(vk, settings, input_width, input_height, fps);
+		res = std::make_unique<VideoEncoderVT>(vk, settings, input_width, input_height, slice_idx, num_slices, fps);
 	}
 #endif
 #ifdef WIVRN_HAVE_X264
 	if (settings.encoder_name == encoder_x264)
 	{
-		res = std::make_unique<VideoEncoderX264>(vk, settings, input_width, input_height, fps);
+		res = std::make_unique<VideoEncoderX264>(vk, settings, input_width, input_height, slice_idx, num_slices, fps);
 	}
 #endif
 #ifdef WIVRN_HAVE_CUDA
@@ -94,6 +96,8 @@ std::unique_ptr<VideoEncoder> VideoEncoder::Create(
 	if (res)
 	{
 		res->stream_idx = stream_idx;
+		res->slice_idx = slice_idx;
+		res->num_slices = num_slices;
 	}
 	else
 	{
@@ -189,24 +193,20 @@ void VideoEncoder::Encode(wivrn_session* cnx,
 	}
 }
 
-void VideoEncoder::FlushFrame(int64_t target_ns)
+void VideoEncoder::FlushFrame(int64_t target_ns, int index)
 {
 	if (host)
 	{
-		host->flush_stream(host, target_ns);
+		host->flush_stream(host, target_ns, index, slice_idx);
 		return;
 	}
 }
 
-void VideoEncoder::SendCSD(std::vector<uint8_t> && data, bool last)
+void VideoEncoder::SendCSD(std::vector<uint8_t> && data, int index)
 {
 	if (host)
 	{
-		if (last) {
-			//host->flush_stream(host);
-		}
-		//hex_dump(data.data(), data.size());
-		host->send_csd(host, data.data(), data.size());
+		host->send_csd(host, data.data(), data.size(), index, slice_idx);
 		return;
 	}
 	auto & max_payload_size = to_headset::video_stream_data_shard::max_payload_size;
@@ -234,11 +234,11 @@ void VideoEncoder::SendCSD(std::vector<uint8_t> && data, bool last)
 	}
 }
 
-void VideoEncoder::SendIDR(std::vector<uint8_t> && data)
+void VideoEncoder::SendIDR(std::vector<uint8_t> && data, int index)
 {
 	if (host)
 	{
-		host->send_idr(host, data.data(), data.size());
+		host->send_idr(host, data.data(), data.size(), index, slice_idx);
 		return;
 	}
 	auto & max_payload_size = to_headset::video_stream_data_shard::max_payload_size;
