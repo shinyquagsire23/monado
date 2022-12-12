@@ -4,12 +4,14 @@
  * @file
  * @brief  Low-pass IIR filter for integers - C wrapper
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
+ * @author Malek Hodroj <pocmalek@gmail.com>
  * @ingroup aux_math
  */
 
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
