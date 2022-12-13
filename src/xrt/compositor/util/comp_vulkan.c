@@ -468,11 +468,13 @@ comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, stru
 	
 	// HACK
 	_formats->has_R8G8B8A8_UNORM = true;
+	_formats->has_R8G8B8A8_SRGB = true;
 	//if (info->format_count == 0) {
 	info->formats[0] = VK_FORMAT_R8G8B8A8_UNORM;
-	info->format_count = 1;
+	info->formats[1] = VK_FORMAT_R8G8B8A8_SRGB;
+	info->format_count = 2;
 	//}
-	format_count = 1;
+	format_count = 2;
 
 #define ADD_IF_SUPPORTED(FORMAT)                                                                                       \
 	if (formats->has_##FORMAT) {                                                                                   \

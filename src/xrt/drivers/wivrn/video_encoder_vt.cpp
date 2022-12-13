@@ -329,8 +329,8 @@ VideoEncoderVT::VideoEncoderVT(
     CFMutableDictionaryRef encoder_specs = CFDictionaryCreateMutable(NULL, 6, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     
     // we need the encoder to pick up the pace, so we lie and say we're at 4x framerate (but only ever feed the real fps)
-    int32_t framerate = (int)fps * 4;
-    int32_t maxkeyframe = (int)fps * 4 * 5;
+    int32_t framerate = (int)fps;
+    int32_t maxkeyframe = (int)fps * 5;
     int32_t bitrate = (int32_t)settings.bitrate;
     int32_t frames = 1;
     int32_t numslices = 1;
@@ -477,9 +477,9 @@ void VideoEncoderVT::Encode(int index, bool idr, std::chrono::steady_clock::time
 	//printf("Frame number %u, idr=%x\n", frame_idx, idr);
 
 	//CMTimeMake(1000*(index*4), (int)(fps * 4 * 1000));//
-	CMTime pts_ = CMTimeMake(1000*(frame_idx * 4), (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), (int)(fps* 4 * 1000)); // (1.0/fps) * index
+	CMTime pts_ = CMTimeMake(1000*(frame_idx), (int)(fps * 1000));//CMTimeMakeWithSeconds(std::chrono::duration<double>(pts.time_since_epoch()).count(), (int)(fps* 4 * 1000)); // (1.0/fps) * index
 	//CMTime pts_ = CMTimeMake((double)(ns_display / 4000), (int)(fps* 4 * 1000)); // (1.0/fps) * index
-    CMTime duration = CMTimeMake(1000, (int)(fps * 4 * 1000));//CMTimeMakeWithSeconds(1.0/fps, 1);
+    CMTime duration = CMTimeMake(1000, (int)(fps * 1000));//CMTimeMakeWithSeconds(1.0/fps, 1);
 
     VTCompressionSessionEncodeFrame(compression_session, pixelBuffer, pts_, duration, (CFDictionaryRef)(idr ? doIdrDict : doNoIdrDict), ctx, NULL);
     frame_idx++;

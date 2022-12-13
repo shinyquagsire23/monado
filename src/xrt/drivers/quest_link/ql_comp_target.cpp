@@ -713,9 +713,9 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 		avg_tx = 0;
 	if (avg_encode < 0)
 		avg_encode = 0;
-	if (avg_tx > U_TIME_1S_IN_NS)
+	if (avg_tx > U_TIME_1MS_IN_NS * 10)
 		avg_tx = U_TIME_HALF_MS_IN_NS;
-	if (avg_encode > U_TIME_1S_IN_NS)
+	if (avg_encode > U_TIME_1MS_IN_NS * 10)
 		avg_encode = (5 * U_TIME_1MS_IN_NS);
 
 	cn->last_avg_tx = avg_tx;
@@ -723,7 +723,7 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	
 	static int limit_info = 0;
 	if (++limit_info > 100) {
-		//QUEST_LINK_INFO("Avg: tx %fms, encode %fms", (double)avg_tx / 1000000.0, (double)avg_encode / 1000000.0);
+		QUEST_LINK_INFO("Avg: tx %fms, encode %fms", (double)avg_tx / 1000000.0, (double)avg_encode / 1000000.0);
 		limit_info = 0;
 	}
 

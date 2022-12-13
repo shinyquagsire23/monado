@@ -149,7 +149,6 @@ typedef struct ql_xrsp_host
     uint8_t ep_out;
     uint8_t ep_in;
 
-    uint32_t gotten_ipcs;
     uint32_t client_id;
     uint32_t session_idx;
 
@@ -198,6 +197,8 @@ typedef struct ql_xrsp_host
     size_t idr_stream_len[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     int64_t stream_started_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     struct xrt_pose stream_poses[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+    int64_t stream_pose_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
+
     int64_t encode_started_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     int64_t encode_done_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     int64_t encode_duration_ns[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
@@ -506,8 +507,6 @@ struct ql_hmd
     struct xrt_vec3 angvel;
     struct xrt_vec3 angacc;
 
-    struct xrt_pose last_req_poses[3];
-
     int64_t pose_ns;
     double created_ns;
 
@@ -517,10 +516,6 @@ struct ql_hmd
 
     /* Pose tracker provided by the system */
     struct ql_tracker *tracker;
-
-    /* Tracking to extend 32-bit HMD time to 64-bit nanoseconds */
-    uint32_t last_imu_timestamp32; /* 32-bit µS device timestamp */
-    timepoint_ns last_imu_timestamp_ns;
 
 
     int32_t encode_width;

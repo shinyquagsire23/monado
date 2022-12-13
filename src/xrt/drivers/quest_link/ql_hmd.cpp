@@ -87,12 +87,6 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 	os_mutex_unlock(&host->pose_mutex);
 
 	m_predict_relation(&relation, prediction_s, out_relation);
-
-	//os_mutex_lock(&host->pose_mutex);
-	//hmd->last_req_poses[2] = hmd->last_req_poses[1];
-	//hmd->last_req_poses[1] = hmd->last_req_poses[0];
-	//hmd->last_req_poses[0] = out_relation->pose;
-	//os_mutex_unlock(&host->pose_mutex);
 }
 
 static void
@@ -227,7 +221,6 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 
 	hmd->created_ns = os_monotonic_get_ns();
 	hmd->pose_ns = hmd->created_ns;
-	hmd->last_imu_timestamp_ns = 0;
 
 	hmd->pose.position = {0.0f, 0.0f, 0.0f};
 	hmd->pose.orientation = {0.0f, 0.0f, 0.0f, 1.0f};

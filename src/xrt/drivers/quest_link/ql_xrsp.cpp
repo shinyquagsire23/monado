@@ -366,10 +366,8 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int 
         struct xrt_space_relation out_head_relation;
         U_ZERO(&out_head_relation);
 
-        //printf("a %llx\n", frame_started_ns);
         host->encode_duration_ns[stream_write_idx] = host->encode_done_ns[stream_write_idx] - host->encode_started_ns[stream_write_idx];
 
-#if 1
         static int64_t last_ns = 0;
         int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
         //printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
@@ -380,7 +378,6 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int 
         }*/
 
         last_ns = target_ns;
-#endif
 
         //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
         //host->stream_poses[stream_write_idx] = out_head_relation.pose;
@@ -406,6 +403,7 @@ static void xrsp_start_encode(struct ql_xrsp_host *host, int64_t target_ns, int 
 
     xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
     host->stream_poses[write_index] = out_head_relation.pose;
+    host->stream_pose_ns[write_index] = target_ns;
     os_mutex_unlock(&host->stream_mutex[write_index]);
 }
 
@@ -591,8 +589,6 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
 
     host->frame_sent_ns = 0;
 
-    host->gotten_ipcs = 0;
-
     ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
     ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, host, ql_xrsp_handle_ipc);
 
@@ -603,11 +599,18 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
         hmd->pose_ns = os_monotonic_get_ns();
     }
 }
-       
+
+int64_t xrsp_ts_ns_to_target(struct ql_xrsp_host *host, int64_t ts)
+{
+    int64_t option_1 = (ts) + host->ns_offset;
+    int64_t option_2 = (ts) - host->ns_offset_from_target;
+    //return option_1;
+    return (option_1+option_2)>>1;
+}
+   
 int64_t xrsp_target_ts_ns(struct ql_xrsp_host *host)
 {
-    //return (os_monotonic_get_ns()) + host->ns_offset;
-    return (os_monotonic_get_ns()) - host->ns_offset_from_target;
+    return xrsp_ts_ns_to_target(host, xrsp_ts_ns(host));
 }
 
 int64_t xrsp_ts_ns(struct ql_xrsp_host *host)
@@ -740,19 +743,6 @@ static void xrsp_send_codegen_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     free(response_codegen);
 
     printf("Codegen read #2\n");
-
-    //xrsp_read_usb(host); // old
-
-/*
-request_codegen_2_payload = bytes([])
-request_codegen_2 = HostInfoPkt.craft_capnp(self, BUILTIN_CODE_GENERATION, result=0xC8, unk_4=1, payload=request_codegen_2_payload).to_bytes()
-
-print ("Codegen send #2")
-self.send_to_topic(TOPIC_HOSTINFO_ADV, request_codegen_2)
-
-print ("Codegen read #2")
-self.old_read_xrsp()
-*/
 }
 
 static void xrsp_send_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
@@ -766,19 +756,6 @@ static void xrsp_send_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     free(response_pairing);
 
     printf("Pairing read #2\n");
-
-    //xrsp_read_usb(host); // old
-
-/*
-request_pairing_2_payload = bytes([])
-request_pairing_2 = HostInfoPkt.craft_capnp(self, BUILTIN_PAIRING, result=0xC8, unk_4=1, payload=request_pairing_2_payload).to_bytes()
-
-print ("Pairing send #2")
-self.send_to_topic(TOPIC_HOSTINFO_ADV, request_pairing_2)
-
-print ("Pairing read #2")
-self.old_read_xrsp()
-*/
 }
 
 typedef struct cmd_pkt_idk
@@ -1102,20 +1079,6 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     else if (pkt->topic == TOPIC_RUNTIME_IPC)
     {
         ql_xrsp_ipc_segpkt_consume(&host->ipc_ctx, host, pkt);
-
-        host->gotten_ipcs++;
-
-        if (host->gotten_ipcs == 3) {
-            //xrsp_ripc_connect_to_remote_server(host, host->client_id, "com.oculus.systemdriver", "com.oculus.vrruntimeservice", "RuntimeServiceServer");
-            //xrsp_ripc_connect_to_remote_server(host, host->client_id+1, "com.oculus.bodyapiservice", "com.oculus.bodyapiservice", "BodyApiServiceServer");
-            //xrsp_ripc_connect_to_remote_server(host, host->client_id+2, "com.oculus.bodyapiservice", "com.oculus.eyetrackingservice", "EyeTrackingServiceServer");
-        }
-        else if (pkt->payload_valid != 0x8 && pkt->payload_valid != 0x20) {
-            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
-            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
-            //xrsp_ripc_void_bool_cmd(host, host->client_id, "SendSwitchToHandsNotif");
-            //xrsp_ripc_eye_cmd(host, host->client_id+2, 0);
-        }
     }
 
     if ((pkt->topic == TOPIC_POSE || pkt->topic == TOPIC_SKELETON || pkt->topic == TOPIC_LOGGING) && host->pairing_state != PAIRINGSTATE_PAIRED)
@@ -1265,21 +1228,22 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     struct ql_hmd* hmd = host->sys->hmd;
 
-    struct xrt_space_relation out_head_relation;
-    U_ZERO(&out_head_relation);
+    struct xrt_pose sending_pose;
+    U_ZERO(&sending_pose);
 
     //printf("a %llx\n", frame_started_ns);
 
     //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
 
-    os_mutex_lock(&host->pose_mutex);
+    //os_mutex_lock(&host->pose_mutex);
     int bits = 0;
     if (csd_len > 0)
         bits |= 1;
     if (slice_idx == host->num_slices-1)
         bits |= 2;
 
-    out_head_relation.pose = host->stream_poses[QL_IDX_SLICE(0, index)]; // always pull slice 0's pose
+    sending_pose = host->stream_poses[QL_IDX_SLICE(0, index)]; // always pull slice 0's pose
+    int64_t sending_pose_ns = host->stream_pose_ns[QL_IDX_SLICE(0, index)];
 
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);
@@ -1289,13 +1253,13 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     //TODO: we need some way to know the pose as it was when the frame was rendered,
     // so that the Quest can handle timewarp for us.
-    msg.setPoseQuatX(out_head_relation.pose.orientation.x);
-    msg.setPoseQuatY(out_head_relation.pose.orientation.y);
-    msg.setPoseQuatZ(out_head_relation.pose.orientation.z);
-    msg.setPoseQuatW(out_head_relation.pose.orientation.w);
-    msg.setPoseX(out_head_relation.pose.position.x);
-    msg.setPoseY(out_head_relation.pose.position.y);
-    msg.setPoseZ(out_head_relation.pose.position.z);
+    msg.setPoseQuatX(sending_pose.orientation.x);
+    msg.setPoseQuatY(sending_pose.orientation.y);
+    msg.setPoseQuatZ(sending_pose.orientation.z);
+    msg.setPoseQuatW(sending_pose.orientation.w);
+    msg.setPoseX(sending_pose.position.x);
+    msg.setPoseY(sending_pose.position.y);
+    msg.setPoseZ(sending_pose.position.z);
 
     /*msg.setPoseQuatX(0.0);
     msg.setPoseQuatY(0.0);
@@ -1305,35 +1269,37 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(0.0);
     msg.setPoseZ(0.0);*/
 
-    msg.setTimestamp05(xrsp_target_ts_ns(host)+41540173); // Deadline //18278312488115 // xrsp_ts_ns(host)
+    msg.setTimestamp05(sending_pose_ns + host->ns_offset + 13415134);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
     msg.setSliceNum(slice_idx);
-    msg.setUnk6p1(bits); 
+    msg.setUnk6p1(bits);
     msg.setUnk6p2(0);
     msg.setUnk6p3(0);
     msg.setBlitYPos((hmd->encode_height / host->num_slices) * slice_idx);
     msg.setCropBlocks((hmd->encode_height/16) / host->num_slices); // 24 for slice count 5
     
     msg.setUnk8p1(0);
-    msg.setTimestamp09(xrsp_target_ts_ns(host));//18787833654115
-    msg.setUnkA(29502900);
+    msg.setTimestamp09(xrsp_target_ts_ns(host) - 13415134);//18787833654115 transmission start?
+    msg.setUnkA(29502900); // pipeline prediction delta MA?
     msg.setTimestamp0B(xrsp_target_ts_ns(host)+28713475);////18278296859411
     msg.setTimestamp0C(xrsp_target_ts_ns(host)+23714318);////18278292486840
     msg.setTimestamp0D(xrsp_target_ts_ns(host)+9415134);//18787848654114
     //printf("%x\n", host->ns_offset);
 
-    msg.getQuat1().setX(0);
-    msg.getQuat1().setY(0);
-    msg.getQuat1().setZ(0);
-    msg.getQuat1().setW(0);
+    // left eye orientation? for foveated compression weirdness?
+    msg.getQuat1().setX(0.0);
+    msg.getQuat1().setY(0.0);
+    msg.getQuat1().setZ(0.0);
+    msg.getQuat1().setW(1.0);
 
-    msg.getQuat1().setX(0);
-    msg.getQuat2().setY(0);
-    msg.getQuat2().setZ(0);
-    msg.getQuat2().setW(0);
+    // right eye orientation? for foveated compression weirdness?
+    msg.getQuat1().setX(0.0);
+    msg.getQuat2().setY(0.0);
+    msg.getQuat2().setZ(0.0);
+    msg.getQuat2().setW(1.0);
 
     msg.setCsdSize(csd_len);
     msg.setVideoSize(video_len);
-    os_mutex_unlock(&host->pose_mutex);
+    //os_mutex_unlock(&host->pose_mutex);
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
 
