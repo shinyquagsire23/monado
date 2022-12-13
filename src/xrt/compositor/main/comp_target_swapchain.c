@@ -13,6 +13,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_pacing.h"
+#include "util/u_pretty_print.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_target_swapchain.h"
@@ -237,10 +238,19 @@ find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkS
 		return false;
 	}
 
-	// Dump formats
-	for (uint32_t i = 0; i < format_count; i++) {
-		COMP_DEBUG(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_format_string(formats[i].format),
-		           vk_color_space_string(formats[i].colorSpace));
+	{
+		struct u_pp_sink_stack_only sink;
+		u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+		u_pp(dg, "VkSurfaceKHR returned VkSurfaceFormatKHR:");
+
+		// Dump formats
+		for (uint32_t i = 0; i < format_count; i++) {
+			u_pp(dg, "\n\t%i [%s, %s]", i, vk_format_string(formats[i].format),
+			     vk_color_space_string(formats[i].colorSpace));
+		}
+
+		COMP_DEBUG(cts->base.c, "%s", sink.buffer);
 	}
 
 	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
