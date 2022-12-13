@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -559,6 +559,15 @@ static const char *instance_extensions_common[] = {
     COMP_INSTANCE_EXTENSIONS_COMMON,
 };
 
+static const char *optional_instance_extensions[] = {
+#ifdef VK_EXT_swapchain_colorspace
+    VK_EXT_SWAPCHAIN_COLORSPACE_EXTENSION_NAME,
+#endif
+#ifdef VK_EXT_display_surface_counter
+    VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME,
+#endif
+};
+
 // Note: Keep synchronized with comp_vk_glue - we should have everything they
 // do, plus VK_KHR_SWAPCHAIN_EXTENSION_NAME
 static const char *required_device_extensions[] = {
@@ -639,50 +648,65 @@ static const char *optional_device_extensions[] = {
 #endif
 };
 
-static VkResult
-select_instances_extensions(struct comp_compositor *c, struct u_string_list *required, struct u_string_list *optional)
-{
-	assert(c->target_factory != NULL);
-
-	u_string_list_append_array(                                //
-	    required,                                              //
-	    c->target_factory->required_instance_extensions,       //
-	    c->target_factory->required_instance_extension_count); //
-
-#ifdef VK_EXT_display_surface_counter
-	u_string_list_append(optional, VK_EXT_DISPLAY_SURFACE_COUNTER_EXTENSION_NAME);
-#endif
-
-	return VK_SUCCESS;
-}
-
 static bool
 compositor_init_vulkan(struct comp_compositor *c)
 {
 	COMP_TRACE_MARKER();
 
+	assert(c->target_factory != NULL);
+
 	struct vk_bundle *vk = get_vk(c);
-	VkResult ret;
 
-	// every backend needs at least the common extensions
-	struct u_string_list *required_instance_ext_list =
-	    u_string_list_create_from_array(instance_extensions_common, ARRAY_SIZE(instance_extensions_common));
 
+	/*
+	 * Instance extensions.
+	 */
+
+	struct u_string_list *required_instance_ext_list = u_string_list_create();
 	struct u_string_list *optional_instance_ext_list = u_string_list_create();
 
-	ret = select_instances_extensions(c, required_instance_ext_list, optional_instance_ext_list);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "select_instances_extensions", "Failed to select instance extensions.", ret);
-		u_string_list_destroy(&required_instance_ext_list);
-		u_string_list_destroy(&optional_instance_ext_list);
-		return ret;
-	}
+	// Every backend needs at least the common extensions.
+	u_string_list_append_array(                  //
+	    required_instance_ext_list,              //
+	    instance_extensions_common,              //
+	    ARRAY_SIZE(instance_extensions_common)); //
 
-	struct u_string_list *required_device_extension_list =
-	    u_string_list_create_from_array(required_device_extensions, ARRAY_SIZE(required_device_extensions));
+	// Add per target required extensions.
+	u_string_list_append_array(                                //
+	    required_instance_ext_list,                            //
+	    c->target_factory->required_instance_extensions,       //
+	    c->target_factory->required_instance_extension_count); //
 
-	struct u_string_list *optional_device_extension_list =
-	    u_string_list_create_from_array(optional_device_extensions, ARRAY_SIZE(optional_device_extensions));
+	// Optional instance extensions.
+	u_string_list_append_array(                    //
+	    optional_instance_ext_list,                //
+	    optional_instance_extensions,              //
+	    ARRAY_SIZE(optional_instance_extensions)); //
+
+
+	/*
+	 * Device extensions.
+	 */
+
+	struct u_string_list *required_device_extension_list = u_string_list_create();
+	struct u_string_list *optional_device_extension_list = u_string_list_create();
+
+	// Required device extensions.
+	u_string_list_append_array(                  //
+	    required_device_extension_list,          //
+	    required_device_extensions,              //
+	    ARRAY_SIZE(required_device_extensions)); //
+
+	// Optional device extensions.
+	u_string_list_append_array(                  //
+	    optional_device_extension_list,          //
+	    optional_device_extensions,              //
+	    ARRAY_SIZE(optional_device_extensions)); //
+
+
+	/*
+	 * Create the device.
+	 */
 
 	struct comp_vulkan_arguments vk_args = {
 	    .get_instance_proc_address = vkGetInstanceProcAddr,
