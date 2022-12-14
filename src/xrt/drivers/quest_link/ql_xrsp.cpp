@@ -71,8 +71,8 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
     {
         for (int j = 0; j < QL_NUM_SLICES; j++)
         {
-            host->csd_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x100000);
-            host->idr_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x100000);
+            host->csd_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x1000000);
+            host->idr_stream[QL_IDX_SLICE(j, i)] = (uint8_t*)malloc(0x1000000);
             host->csd_stream_len[QL_IDX_SLICE(j, i)] = 0;
             host->idr_stream_len[QL_IDX_SLICE(j, i)] = 0;
 
@@ -415,10 +415,10 @@ static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t
     os_mutex_lock(&host->stream_mutex[write_index]);
     //bool success = xrsp_read_usb(host); 
     
-    //printf("CSD: %x into %x\n", data_len, host->csd_stream_len);
+    //printf("CSD: %x into %x\n", data_len, host->csd_stream_len[write_index]);
     //hex_dump(data, data_len);
 
-    if (host->csd_stream_len[write_index] + data_len < 0x100000) {
+    if (host->csd_stream_len[write_index] + data_len < 0x1000000) {
         memcpy(host->csd_stream[write_index] + host->csd_stream_len[write_index], data, data_len);
         host->csd_stream_len[write_index] += data_len;
     }
@@ -432,7 +432,9 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
 
     os_mutex_lock(&host->stream_mutex[write_index]);
 
-    if (host->idr_stream_len[write_index] + data_len < 0x100000) {
+    //printf("IDR: %x into %x\n", data_len, host->idr_stream_len[write_index]);
+
+    if (host->idr_stream_len[write_index] + data_len < 0x1000000) {
         memcpy(host->idr_stream[write_index] + host->idr_stream_len[write_index], data, data_len);
         host->idr_stream_len[write_index] += data_len;
     }
@@ -450,7 +452,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
     int sent_len = 0;
     int r = libusb_bulk_transfer(host->dev, host->ep_out, (uint8_t*)data, data_size, &sent_len, 1000);
     if (r != 0 || !sent_len) {
-        QUEST_LINK_ERROR("Failed to send %x bytes", sent_len);
+        QUEST_LINK_ERROR("Failed to send %x bytes (sent %x)", data_size, sent_len);
         QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
 
         if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_TIMEOUT) {
@@ -588,6 +590,7 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
     host->echo_resp_recv_ns = 0; // server ns
 
     host->frame_sent_ns = 0;
+    host->add_test = 0;
 
     ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
     ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, host, ql_xrsp_handle_ipc);
@@ -600,12 +603,20 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
     }
 }
 
+int64_t xrsp_ts_ns_from_target(struct ql_xrsp_host *host, int64_t ts)
+{
+    int64_t option_1 = (ts) - host->ns_offset;
+    int64_t option_2 = (ts) + host->ns_offset_from_target;
+    return option_1;
+    //return (option_1+option_2)>>1;
+}
+
 int64_t xrsp_ts_ns_to_target(struct ql_xrsp_host *host, int64_t ts)
 {
     int64_t option_1 = (ts) + host->ns_offset;
     int64_t option_2 = (ts) - host->ns_offset_from_target;
-    //return option_1;
-    return (option_1+option_2)>>1;
+    return option_1;
+    //return (option_1+option_2)>>1;
 }
    
 int64_t xrsp_target_ts_ns(struct ql_xrsp_host *host)
@@ -818,7 +829,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
@@ -873,8 +884,17 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
         host->echo_resp_recv_ns = pkt->recv_ns; // client rx ns
         host->echo_req_sent_ns = xrsp_ts_ns(host);
 
-        host->ns_offset = ((host->echo_req_recv_ns-host->echo_req_sent_ns) + (host->echo_resp_sent_ns-pkt->recv_ns)) >> 1; // 2
+        int64_t calc_ns_offset = ((host->echo_req_recv_ns-host->echo_req_sent_ns) + (host->echo_resp_sent_ns-pkt->recv_ns)) >> 1; // 2
         //self.ns_offset = self.ns_offset & 0xFFFFFFFFFFFFFFFF
+
+        if (!host->ns_offset) {
+            host->ns_offset = calc_ns_offset;
+        }
+        else {
+            //host->ns_offset = calc_ns_offset;
+            host->ns_offset += calc_ns_offset;
+            host->ns_offset /= 2;
+        }
 
         //printf("Ping offs: %x", self.ns_offset);
 
@@ -895,6 +915,8 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
 
         if (payload->offset) {
             host->ns_offset_from_target = payload->offset;
+            //host->ns_offset -= host->ns_offset_from_target;
+            //host->ns_offset /= 2;
         }
 
         //printf("Ping get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
@@ -1269,7 +1291,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(0.0);
     msg.setPoseZ(0.0);*/
 
-    msg.setTimestamp05(sending_pose_ns + host->ns_offset + 13415134);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
+    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns)-29502900);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
     msg.setSliceNum(slice_idx);
     msg.setUnk6p1(bits);
     msg.setUnk6p2(0);
@@ -1278,8 +1300,8 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setCropBlocks((hmd->encode_height/16) / host->num_slices); // 24 for slice count 5
     
     msg.setUnk8p1(0);
-    msg.setTimestamp09(xrsp_target_ts_ns(host) - 13415134);//18787833654115 transmission start?
-    msg.setUnkA(29502900); // pipeline prediction delta MA?
+    msg.setTimestamp09(xrsp_target_ts_ns(host)-29502900);//18787833654115 transmission start?
+    msg.setUnkA(29502900); // pipeline prediction delta MA? 29502900
     msg.setTimestamp0B(xrsp_target_ts_ns(host)+28713475);////18278296859411
     msg.setTimestamp0C(xrsp_target_ts_ns(host)+23714318);////18278292486840
     msg.setTimestamp0D(xrsp_target_ts_ns(host)+9415134);//18787848654114
@@ -1289,13 +1311,13 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.getQuat1().setX(0.0);
     msg.getQuat1().setY(0.0);
     msg.getQuat1().setZ(0.0);
-    msg.getQuat1().setW(1.0);
+    msg.getQuat1().setW(0.0);
 
     // right eye orientation? for foveated compression weirdness?
     msg.getQuat1().setX(0.0);
     msg.getQuat2().setY(0.0);
     msg.getQuat2().setZ(0.0);
-    msg.getQuat2().setW(1.0);
+    msg.getQuat2().setW(0.0);
 
     msg.setCsdSize(csd_len);
     msg.setVideoSize(video_len);
@@ -1373,7 +1395,7 @@ ql_xrsp_read_thread(void *ptr)
         //}
 
         if (os_thread_helper_is_running_locked(&host->read_thread)) {
-            os_nanosleep(U_TIME_1MS_IN_NS / 2);
+            os_nanosleep(U_TIME_1MS_IN_NS / 10);
         }
     }
     os_thread_helper_unlock(&host->read_thread);
@@ -1432,7 +1454,7 @@ ql_xrsp_write_thread(void *ptr)
             {
                 int to_present_idx = QL_IDX_SLICE(slice, to_present);
                 os_mutex_lock(&host->stream_mutex[to_present_idx]);
-                //printf("Flush: %x\n", to_present);
+                //printf("Flush: %x %x\n", slice, to_present);
                 
                 if (host->csd_stream_len[to_present_idx] || host->idr_stream_len[to_present_idx])
                     xrsp_send_video(host, to_present, slice, host->frame_idx, present_ns, (const uint8_t*)host->csd_stream[to_present_idx], host->csd_stream_len[to_present_idx], (const uint8_t*)host->idr_stream[to_present_idx], host->idr_stream_len[to_present_idx], 0);

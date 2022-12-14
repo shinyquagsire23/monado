@@ -42,23 +42,23 @@ void VideoEncoderX264::ProcessCb(x264_t * h, x264_nal_t * nal, void * opaque)
 	std::vector<uint8_t> data(nal->i_payload * 3 / 2 + 5 + 64, 0);
 	x264_nal_encode(h, data.data(), nal);
 	data.resize(nal->i_payload);
-	//printf("%x\n", nal->i_type);
+	//printf("%x/%x\n", self->current_index, nal->i_type);
 	switch (nal->i_type)
 	{
 		case NAL_SPS:
 		case NAL_PPS:
-			self->SendCSD(std::move(data), false);
+			self->SendCSD(std::move(data), self->current_index);
 			break;
 		case NAL_SLICE:
 		case NAL_SLICE_DPA:
 		case NAL_SLICE_DPB:
 		case NAL_SLICE_DPC:
 		case NAL_SLICE_IDR:
-			self->ProcessNal({nal->i_first_mb, nal->i_last_mb, std::move(data)});
+			self->ProcessNal({nal->i_first_mb, nal->i_last_mb, self->current_index, std::move(data)});
 			//self->SendData(std::move(data));
 			break;
 		case NAL_AUD:
-			self->FlushFrame(self->pic_in.i_pts, 0); // TODO
+			self->FlushFrame(self->pic_in.i_pts, self->current_index);
 			break;
 	}
 }
@@ -69,7 +69,7 @@ void VideoEncoderX264::ProcessNal(pending_nal && nal)
 	if (nal.first_mb == next_mb)
 	{
 		next_mb = nal.last_mb + 1;
-		SendIDR(std::move(nal.data), 0); // TODO
+		SendIDR(std::move(nal.data), nal.index);
 		//hex_dump(nal.data.data(), nal.data.size());
 	}
 	else
@@ -78,7 +78,7 @@ void VideoEncoderX264::ProcessNal(pending_nal && nal)
 	}
 	while ((not pending_nals.empty()) and pending_nals.front().first_mb == next_mb)
 	{
-		SendIDR(std::move(pending_nals.front().data), 0); // TODO
+		SendIDR(std::move(pending_nals.front().data), nal.index);
 		next_mb = pending_nals.front().last_mb + 1;
 		pending_nals.pop_front();
 		//printf("pop!\n");
@@ -117,22 +117,22 @@ VideoEncoderX264::VideoEncoderX264(
 	}
 
 	// encoder requires width and height to be even
-	//settings.width += settings.width % 2;
-	//settings.height += settings.height % 2;
+	settings.width += settings.width % 2;
+	settings.height += settings.height % 2;
 
 	printf("%ux%u, %ux%u\n", settings.width, settings.height, input_width, input_height);
 
 	this->slice_idx = slice_idx;
     	this->num_slices = num_slices;
 	converter =
-	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height), 1}, settings.offset_x, settings.offset_y, input_width, input_height, slice_idx, num_slices);
+	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height / num_slices), 1}, settings.offset_x, settings.offset_y, input_width, input_height, slice_idx, num_slices);
 
 	x264_param_default_preset(&param, "ultrafast", "zerolatency");
 	param.nalu_process = &ProcessCb;
 	// param.i_slice_max_size = 1300;
 	param.i_slice_count = 1; // host->num_slices, 5
 	param.i_width = settings.width;
-	param.i_height = settings.height;
+	param.i_height = settings.height / num_slices;
 	param.i_log_level = X264_LOG_WARNING;
 	param.i_fps_num = fps * 1'000'000;
 	param.i_fps_den = 1'000'000;
@@ -146,16 +146,16 @@ VideoEncoderX264::VideoEncoderX264(
 	// colour definitions, actually ignored by decoder
 	param.vui.i_vidformat = 5;
 	param.vui.b_fullrange = 1;
-	param.vui.i_colorprim = 2; // BT.709
-	param.vui.i_transfer = 2; // sRGB
-	param.vui.i_colmatrix = 5; // BT.709
+	param.vui.i_colorprim = 1; // BT.709
+	param.vui.i_transfer = 1; // sRGB
+	param.vui.i_colmatrix = 1; // BT.709
 	param.vui.i_chroma_loc = 1;
 
 	param.analyse.i_chroma_qp_offset = -2;
 	
 
 	param.vui.i_sar_width = settings.width;
-	param.vui.i_sar_height = settings.height;
+	param.vui.i_sar_height = settings.height / num_slices;
 	param.rc.i_rc_method = X264_RC_ABR;
 	param.rc.i_bitrate = settings.bitrate / 1000; // x264 uses kbit/s
 	param.i_keyint_min = 1;
@@ -201,6 +201,7 @@ void VideoEncoderX264::Encode(int index, bool idr, std::chrono::steady_clock::ti
 	pic_in.i_pts = pts.time_since_epoch().count();
 	next_mb = 0;
 	assert(pending_nals.empty());
+	current_index = index;
 	int size = x264_encoder_encode(enc, &nal, &num_nal, &pic_in, &pic_out);
 	if (size < 0)
 	{

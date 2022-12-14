@@ -175,6 +175,7 @@ typedef struct ql_xrsp_host
     int64_t frame_sent_ns;
     int64_t paired_ns;
     int64_t last_read_ns;
+    int64_t add_test;
 
     struct os_mutex usb_mutex;
     struct os_mutex pose_mutex;
@@ -264,6 +265,8 @@ struct ql_controller
     float grip_z;
     float trigger_z;
     float stylus_pressure;
+
+    struct os_mutex pose_mutex;
 
     struct ql_system *sys;
 };

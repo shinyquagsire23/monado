@@ -58,7 +58,7 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 		settings.encoder_name = encoder_nvenc;
 #elif defined(XRT_HAVE_VT)
 		settings.encoder_name = encoder_vt;
-		settings.codec = xrt::drivers::wivrn::h264;
+		settings.codec = xrt::drivers::wivrn::hevc;
 #elif defined(WIVRN_HAVE_X264)
 		settings.encoder_name = encoder_x264;
 		settings.codec = xrt::drivers::wivrn::h264;
@@ -74,7 +74,9 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 		settings.encoder_name = encoder_vaapi;
 #elif defined(XRT_HAVE_VT)
 		settings.encoder_name = encoder_vt;
-		settings.codec = xrt::drivers::wivrn::h264;
+		settings.codec = xrt::drivers::wivrn::hevc;
+		//settings.encoder_name = encoder_x264;
+		//settings.codec = xrt::drivers::wivrn::h264;
 #elif defined(WIVRN_HAVE_X264)
 		settings.encoder_name = encoder_x264;
 		settings.codec = xrt::drivers::wivrn::h264;

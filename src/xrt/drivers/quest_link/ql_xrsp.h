@@ -20,6 +20,9 @@ extern "C" {
 
 int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num);
 void ql_xrsp_host_destroy(struct ql_xrsp_host* host);
+
+int64_t xrsp_ts_ns_from_target(struct ql_xrsp_host *host, int64_t ts);
+int64_t xrsp_ts_ns_to_target(struct ql_xrsp_host *host, int64_t ts);
 int64_t xrsp_ts_ns(struct ql_xrsp_host *host);
 
 void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size);

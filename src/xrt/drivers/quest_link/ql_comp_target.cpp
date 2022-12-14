@@ -536,7 +536,7 @@ static void * comp_ql_present_thread(void * void_param)
 		const auto & psc_image = cn->psc.images[presenting_index];
 #if 1
 		for (int i = 0; i < QL_NUM_SLICES; i++) {
-			//cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
+			cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
 		}
 #endif
 
@@ -546,7 +546,7 @@ static void * comp_ql_present_thread(void * void_param)
 			{
 				bool idr_requested = false;
 
-				cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, encoder->slice_idx);
+				//cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, encoder->slice_idx);
 				encoder->Encode(nullptr, psc_image.view_info, psc_image.frame_index, presenting_index, idr_requested);
 			}
 		}
@@ -647,7 +647,7 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = desired_present_time_ns + present_slop_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = desired_present_time_ns+present_slop_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};
@@ -668,6 +668,18 @@ static void comp_ql_flush(struct comp_target * ct)
 	(void)ct;
 }
 
+// Helper function for clamping the time averages
+static int64_t comp_ql_clamp_delta_ts(int64_t ts, int64_t min_ts, int64_t max_ts, int64_t max_ts_sub)
+{
+	if (ts < min_ts) {
+		return min_ts;
+	}
+	if (ts > max_ts) {
+		return max_ts_sub;
+	}
+	return ts;
+}
+
 static void comp_ql_calc_frame_pacing(struct comp_target * ct,
                                          int64_t * out_frame_id,
                                          uint64_t * out_wake_up_time_ns,
@@ -677,8 +689,12 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 {
 	struct ql_comp_target* cn = (struct ql_comp_target *)ct;
 
+	//
 	// Weighted slightly heavier towards larger amounts, so if the user is rotating 
 	// their head a lot, we will err towards longer encodes/transmits
+	//
+
+	// For encoding, we take the longest start-end difference
 	int64_t avg_encode = cn->last_avg_enc;
 	for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
 	{
@@ -694,52 +710,49 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 		avg_encode /= 2;
 	}
 
+	// For transmission, we sum all of the transmission times across slices
 	int64_t avg_tx = cn->last_avg_tx;
 	for (int i = 0; i < QL_SWAPCHAIN_DEPTH; i++)
 	{
-		int64_t largest_tx_diff = 0;
+		int64_t full_tx_time = 0;
 		for (int j = 0; j < QL_NUM_SLICES; j++)
 		{
 			int64_t tx_diff = cn->host->tx_duration_ns[QL_IDX_SLICE(j,i)];
-			if (tx_diff > largest_tx_diff) {
-				largest_tx_diff = tx_diff;
-			}
+			full_tx_time += tx_diff;
 		}
-		avg_tx += largest_tx_diff;
+		avg_tx += full_tx_time;
 		avg_tx /= 2;
 	}
 
-	if (avg_tx < 0)
-		avg_tx = 0;
-	if (avg_encode < 0)
-		avg_encode = 0;
-	if (avg_tx > U_TIME_1MS_IN_NS * 10)
-		avg_tx = U_TIME_HALF_MS_IN_NS;
-	if (avg_encode > U_TIME_1MS_IN_NS * 10)
-		avg_encode = (5 * U_TIME_1MS_IN_NS);
+	// If tx or enc takes longer than 10ms, weight lower so that
+	// it hopefully recovers to a normal value quicker?
+	avg_tx = comp_ql_clamp_delta_ts(avg_tx, 0, U_TIME_1MS_IN_NS * 10, 5 * U_TIME_1MS_IN_NS);
+	avg_encode = comp_ql_clamp_delta_ts(avg_encode, 0, U_TIME_1MS_IN_NS * 10, 5 * U_TIME_1MS_IN_NS);
 
 	cn->last_avg_tx = avg_tx;
 	cn->last_avg_enc = avg_encode;
 	
-	static int limit_info = 0;
-	if (++limit_info > 100) {
-		QUEST_LINK_INFO("Avg: tx %fms, encode %fms", (double)avg_tx / 1000000.0, (double)avg_encode / 1000000.0);
-		limit_info = 0;
+	//static int64_t add_test = 0;
+	static int limit_info_spam = 0;
+	if (++limit_info_spam > 100) {
+		QUEST_LINK_INFO("Avg: tx %fms, encode %fms, add %fms", (double)avg_tx / 1000000.0, (double)avg_encode / 1000000.0, (double)cn->host->add_test / 1000000.0);
+		limit_info_spam = 0;
+
+		//add_test += (1 * U_TIME_HALF_MS_IN_NS);
 	}
 
-	int64_t encode_display_delay = avg_encode + avg_tx + (1 * U_TIME_HALF_MS_IN_NS) + (5 * U_TIME_1MS_IN_NS);
-	//printf("%f\n", (double)encode_display_delay / 1000000.0);
+	int64_t encode_display_delay = avg_encode + avg_tx + cn->host->add_test;// + (1 * U_TIME_HALF_MS_IN_NS) + (5 * U_TIME_1MS_IN_NS);
 
 	int64_t frame_id = ++cn->current_frame_id; //-1;
-	uint64_t desired_present_time_ns = os_monotonic_get_ns() + (U_TIME_1S_IN_NS / (cn->fps));
-	uint64_t wake_up_time_ns = desired_present_time_ns - 5 * U_TIME_1MS_IN_NS;
+	uint64_t now_ns = os_monotonic_get_ns();
+	uint64_t desired_present_time_ns = now_ns + (U_TIME_1S_IN_NS / (cn->fps));
+	uint64_t wake_up_time_ns = desired_present_time_ns - 5 * U_TIME_1MS_IN_NS - encode_display_delay;
 	uint64_t present_slop_ns = encode_display_delay;//U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_time_ns = desired_present_time_ns + encode_display_delay;
 
 	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (cn->fps) + encode_display_delay;
 	uint64_t min_display_period_ns = predicted_display_period_ns;
-	uint64_t now_ns = os_monotonic_get_ns();
-
+	
 	//u_pc_update_present_offset(cn->upc, frame_id, encode_display_delay);
 
 	u_pc_predict(cn->upc,                      //

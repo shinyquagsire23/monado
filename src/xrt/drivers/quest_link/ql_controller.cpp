@@ -174,10 +174,12 @@ ql_get_tracked_pose(struct xrt_device *xdev,
         QUEST_LINK_ERROR("Unknown input name");
         return;
     }
+    struct ql_xrsp_host *host = &ctrl->sys->xrsp_host;
 
     struct xrt_space_relation relation;
     U_ZERO(&relation);
 
+    os_mutex_lock(&host->pose_mutex);
     relation.pose = ctrl->pose;
     relation.pose.position += ctrl->pose_add;
     relation.angular_velocity = ctrl->angvel;
@@ -193,6 +195,7 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 
     timepoint_ns prediction_ns = at_timestamp_ns - ctrl->pose_ns;
     double prediction_s = time_ns_to_s(prediction_ns);
+    os_mutex_unlock(&host->pose_mutex);
 
     m_predict_relation(&relation, prediction_s, out_relation);
 }

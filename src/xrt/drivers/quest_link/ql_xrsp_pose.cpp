@@ -19,6 +19,7 @@
 #include "ql_xrsp_pose.h"
 #include "ql_xrsp_hostinfo.h"
 #include "ql_xrsp_types.h"
+#include "ql_xrsp.h"
 #include "ql_types.h"
 #include "ql_utils.h"
 
@@ -57,7 +58,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
         int idx = 0;
-        if (controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT) {
+        if (!(controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT)) {
             idx = 1;
         }
 
@@ -78,7 +79,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
         ctrl->angvel = {controllerPose.getAngVelX(), controllerPose.getAngVelY(), controllerPose.getAngVelZ()};
         ctrl->angacc = {controllerPose.getAngAccX(), controllerPose.getAngAccY(), controllerPose.getAngAccZ()};
     
-        int64_t pose_ns = controllerPose.getTimestamp() + host->ns_offset_from_target;
+        int64_t pose_ns = xrsp_ts_ns_from_target(host, controllerPose.getTimestamp());
         ctrl->pose_ns = pose_ns;
 
         /*
@@ -108,13 +109,18 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
         ctrl->trigger_z = controller.getTriggerZ();
         ctrl->stylus_pressure = controller.getStylusPressure();
 
+        if (idx == 1) {
+            //printf("%f %f\n", ctrl->joystick_y, ctrl->joystick_y * (double)U_TIME_HALF_MS_IN_NS);
+            //host->add_test += (int64_t)(ctrl->joystick_y * (double)U_TIME_HALF_MS_IN_NS * 0.001);
+        }
+
         //printf("%02x bat=%02d %04x: %08x %08x\n", ctrl->features, ctrl->battery, ctrl->feat_2, ctrl->buttons, ctrl->capacitance);
     }
 
     OvrPoseF::Reader headsetPose = pose.getHeadset();
     struct ql_hmd* hmd = host->sys->hmd;
 
-    int64_t pose_ns = headsetPose.getTimestamp() + host->ns_offset_from_target;
+    int64_t pose_ns = xrsp_ts_ns_from_target(host, headsetPose.getTimestamp());
 
     //printf("%zx vs %zx/%zx\n", host->ns_offset, host->ns_offset_from_target, -host->ns_offset_from_target);
     //if (pose_ns >= hmd->pose_ns) 

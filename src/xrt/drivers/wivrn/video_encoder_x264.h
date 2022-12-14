@@ -43,12 +43,14 @@ class VideoEncoderX264 : public VideoEncoder
 	{
 		int first_mb;
 		int last_mb;
+		int index;
 		std::vector<uint8_t> data;
 	};
 
 	std::mutex mutex;
 	int next_mb;
 	std::list<pending_nal> pending_nals;
+	int current_index;
 
 public:
 	VideoEncoderX264(vk_bundle * vk, encoder_settings & settings, int input_width, int input_height, int slice_idx, int num_slices, float fps);
