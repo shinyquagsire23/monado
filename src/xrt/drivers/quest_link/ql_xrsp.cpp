@@ -49,7 +49,7 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int 
 static void xrsp_start_encode(struct ql_xrsp_host *host,  int64_t target_ns, int index, int slice_idx);
 static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx);
 static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx);
-static void xrsp_send_video(struct ql_xrsp_host *host, int slice_idx, int frame_idx, const uint8_t* csd_dat, size_t csd_len,
+static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
 
@@ -394,6 +394,9 @@ static void xrsp_start_encode(struct ql_xrsp_host *host, int64_t target_ns, int 
 {
     int write_index = QL_IDX_SLICE(slice_idx, index);
 
+    while (host->needs_flush[write_index]) {
+        os_nanosleep(U_TIME_1MS_IN_NS / 10);
+    }
     os_mutex_lock(&host->stream_mutex[write_index]);
     host->encode_started_ns[write_index] = xrsp_ts_ns(host);
 
@@ -412,6 +415,9 @@ static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t
     int write_index = QL_IDX_SLICE(slice_idx, index);
     //printf("CSD\n");
     //if (!host->ready_to_send_frames) return;
+    while (host->needs_flush[write_index]) {
+        os_nanosleep(U_TIME_1MS_IN_NS / 10);
+    }
     os_mutex_lock(&host->stream_mutex[write_index]);
     //bool success = xrsp_read_usb(host); 
     
@@ -430,9 +436,12 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
 {
     int write_index = QL_IDX_SLICE(slice_idx, index);
 
+    while (host->needs_flush[write_index]) {
+        os_nanosleep(U_TIME_1MS_IN_NS / 10);
+    }
     os_mutex_lock(&host->stream_mutex[write_index]);
 
-    //printf("IDR: %x into %x\n", data_len, host->idr_stream_len[write_index]);
+    //printf("IDR: %x into %x for slice %x, index %x\n", data_len, host->idr_stream_len[write_index], slice_idx, index);
 
     if (host->idr_stream_len[write_index] + data_len < 0x1000000) {
         memcpy(host->idr_stream[write_index] + host->idr_stream_len[write_index], data, data_len);

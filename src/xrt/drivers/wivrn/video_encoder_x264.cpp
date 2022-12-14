@@ -58,7 +58,7 @@ void VideoEncoderX264::ProcessCb(x264_t * h, x264_nal_t * nal, void * opaque)
 			//self->SendData(std::move(data));
 			break;
 		case NAL_AUD:
-			self->FlushFrame(self->pic_in.i_pts, self->current_index);
+			//self->FlushFrame(self->pic_in.i_pts, self->current_index);
 			break;
 	}
 }
@@ -203,6 +203,7 @@ void VideoEncoderX264::Encode(int index, bool idr, std::chrono::steady_clock::ti
 	assert(pending_nals.empty());
 	current_index = index;
 	int size = x264_encoder_encode(enc, &nal, &num_nal, &pic_in, &pic_out);
+	FlushFrame(pic_in.i_pts, current_index);
 	if (size < 0)
 	{
 		U_LOG_W("x264_encoder_encode failed: %d", size);
