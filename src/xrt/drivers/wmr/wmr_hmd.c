@@ -67,6 +67,9 @@
 //! Specifies whether the user wants to use a SLAM tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 
+//! Specifies whether the user wants to use a SLAM tracker.
+DEBUG_GET_ONCE_NUM_OPTION(sleep_seconds, "WMR_DISPLAY_INIT_SLEEP_SECONDS", 4)
+
 //! Specifies whether the user wants to use the hand tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 
@@ -680,8 +683,9 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 	         "Sleep until the HMD display is powered up so, the available displays can be enumerated by the host "
 	         "system.");
 
-	// Two seconds seems to be needed, 1 was not enough.
-	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
+	// Get the sleep amount, then sleep. One or two seconds was not enough.
+	uint64_t seconds = debug_get_num_option_sleep_seconds();
+	os_nanosleep(U_TIME_1S_IN_NS * seconds);
 
 	return 0;
 }
