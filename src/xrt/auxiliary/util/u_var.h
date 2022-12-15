@@ -162,6 +162,7 @@ enum u_var_kind
 	U_VAR_KIND_U16,
 	U_VAR_KIND_U64,
 	U_VAR_KIND_I32,
+	U_VAR_KIND_I64,
 	U_VAR_KIND_F32,
 	U_VAR_KIND_DRAGGABLE_F32,
 	U_VAR_KIND_F64,
@@ -273,6 +274,7 @@ u_var_force_on(void);
 	ADD_FUNC(u16, uint16_t, U16)                                                                                   \
 	ADD_FUNC(u64, uint64_t, U64)                                                                                   \
 	ADD_FUNC(i32, int32_t, I32)                                                                                    \
+	ADD_FUNC(i64, int64_t, I64)                                                                                    \
 	ADD_FUNC(f32, float, F32)                                                                                      \
 	ADD_FUNC(f64, double, F64)                                                                                     \
 	ADD_FUNC(f32_arr, struct u_var_f32_arr, F32_ARR)                                                               \
