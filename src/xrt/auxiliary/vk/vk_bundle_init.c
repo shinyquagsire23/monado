@@ -641,6 +641,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	// Reset before filling out.
 	vk->has_KHR_external_fence_fd = false;
 	vk->has_KHR_external_semaphore_fd = false;
+	vk->has_KHR_format_feature_flags2 = false;
 	vk->has_KHR_global_priority = false;
 	vk->has_KHR_image_format_list = false;
 	vk->has_KHR_maintenance1 = false;
@@ -675,6 +676,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_KHR_external_semaphore_fd)
+
+#if defined(VK_KHR_format_feature_flags2)
+		if (strcmp(ext, VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME) == 0) {
+			vk->has_KHR_format_feature_flags2 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_format_feature_flags2)
 
 #if defined(VK_KHR_global_priority)
 		if (strcmp(ext, VK_KHR_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
