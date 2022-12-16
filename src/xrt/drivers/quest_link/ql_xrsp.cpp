@@ -35,6 +35,7 @@
 #include "protos/HostInfo.capnp.h"
 #include "protos/Slice.capnp.h"
 #include "protos/RuntimeIPC.capnp.h"
+#include "protos/Mesh.capnp.h"
 
 static void *
 ql_xrsp_read_thread(void *ptr);
@@ -479,7 +480,16 @@ void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, 
     uint32_t preamble[2] = {idx, static_cast<uint32_t>(data_size) >> 3};
     xrsp_send_to_topic(host, topic, (uint8_t*)preamble, sizeof(uint32_t) * 2);
     xrsp_send_to_topic(host, topic, data, data_size);
-}    
+}
+
+void xrsp_send_to_topic_capnp_wrapped_3(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size, const uint8_t* data2, int32_t data2_size, const uint8_t* data3, int32_t data3_size)
+{
+    uint32_t preamble[4] = {idx, static_cast<uint32_t>(data_size) >> 3, static_cast<uint32_t>(data2_size) >> 3, static_cast<uint32_t>(data3_size) >> 3};
+    xrsp_send_to_topic(host, topic, (uint8_t*)preamble, sizeof(uint32_t) * 4);
+    xrsp_send_to_topic(host, topic, data, data_size);
+    xrsp_send_to_topic(host, topic, data2, data2_size);
+    xrsp_send_to_topic(host, topic, data3, data3_size);
+}
 
 void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size)
 {
@@ -497,7 +507,7 @@ void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t*
     {
         if (idx >= to_send) break;
 
-        int32_t amt = 0xFFF8;
+        int32_t amt = 0x7FFF8; // FFF8?
         if (idx+amt >= to_send) {
             amt = to_send - idx;
         }
@@ -524,6 +534,7 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
 
     //printf("align up %x, %x, %x\n", align_up_bytes, data_size, real_len);
 
+    // TODO place this in a fixed buffer?
     uint8_t* msg = (uint8_t*)malloc(data_size + align_up_bytes + sizeof(xrsp_topic_header) + 0x400);
     uint8_t* msg_payload = msg + sizeof(xrsp_topic_header);
     int32_t msg_size = data_size + align_up_bytes + sizeof(xrsp_topic_header);
@@ -565,7 +576,7 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
     int32_t to_fill = 0x400 - ((msg_size + 0x400) & 0x3FF) - 8;
     int32_t final_size = (msg_size + 8 + to_fill);
     //printf("final_size=%x, to_fill=%x, msg_size=%x\n", final_size, to_fill, msg_size);
-    if (to_fill < 0x3f8 && to_fill >= 0 && final_size <= 0x10000) {
+    if (to_fill < 0x3f8 && to_fill >= 0) { // && final_size <= 0x10000
         xrsp_topic_header* fill_header = (xrsp_topic_header*)msg_end;
         fill_header->version_maybe = 0;
         fill_header->has_alignment_padding = 0;
@@ -578,6 +589,10 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
         fill_header->sequence_num = host->increment;
         fill_header->pad = 0;
         msg_size += to_fill + sizeof(xrsp_topic_header);
+    }
+
+    if (topic == TOPIC_MESH) {
+        //hex_dump(msg, msg_size);
     }
 
     xrsp_send_usb(host, msg, msg_size);
@@ -600,6 +615,7 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
 
     host->frame_sent_ns = 0;
     host->add_test = 0;
+    host->sent_mesh = false;
 
     ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
     ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, host, ql_xrsp_handle_ipc);
@@ -988,9 +1004,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         }
 
         QUEST_LINK_INFO("HMD FPS is %f, scale is %f", hmd->fps, scale);
-
-        ql_hmd_set_per_eye_resolution(hmd, (int)((float)description.getResolutionWidth() * scale), (int)((float)description.getResolutionHeight() * scale), /*description.getRefreshRateHz()*/ hmd->fps);
-
+        
         // Quest 2:
         // 58mm (0.057928182) angle_left -> -52deg
         // 65mm (0.065298356) angle_left -> -49deg
@@ -1008,6 +1022,9 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         hmd->base.hmd->distortion.fov[1].angle_right = lensRight.getAngleRight() * M_PI / 180;
 
         hmd->fov_angle_left = lensLeft.getAngleLeft();
+
+        ql_hmd_set_per_eye_resolution(hmd, (int)((float)description.getResolutionWidth() * scale), (int)((float)description.getResolutionHeight() * scale), /*description.getRefreshRateHz()*/ hmd->fps);
+
         os_mutex_unlock(&host->pose_mutex);
     }
     catch(...) {
@@ -1249,11 +1266,70 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
     return true;
 }
 
+static void xrsp_send_mesh(struct ql_xrsp_host *host)
+{
+    struct ql_hmd* hmd = host->sys->hmd;
+
+    ::capnp::MallocMessageBuilder message;
+    PayloadRectifyMesh::Builder msg = message.initRoot<PayloadRectifyMesh>();
+
+    // TODO how are the resolutions determined?
+    msg.setMeshId(QL_MESH_FOVEATED);
+    msg.setInputResX(hmd->encode_width); // 3680
+    msg.setInputResY(hmd->encode_height); // 1920
+    msg.setOutputResX(hmd->encode_width); // 4128
+    msg.setOutputResY(hmd->encode_height); // 2096
+    msg.setUnk2p1(0);
+
+    ::capnp::List<MeshVtx>::Builder vertices = msg.initVertices(hmd->quest_vtx_count);
+    ::capnp::List<uint16_t>::Builder indices = msg.initIndices(hmd->quest_index_count);
+
+    for (int i = 0; i < hmd->quest_vtx_count; i++)
+    {
+        vertices[i].setU1(hmd->quest_vertices[(i*4)+0]);
+        vertices[i].setV1(hmd->quest_vertices[(i*4)+1]);
+        vertices[i].setU2(hmd->quest_vertices[(i*4)+2]);
+        vertices[i].setV2(hmd->quest_vertices[(i*4)+3]);
+    }
+
+    //msg.setIndices(kj::arrayPtr(hmd->quest_indices, hmd->quest_index_count));
+
+    for (int i = 0; i < hmd->quest_index_count; i++)
+    {
+        indices.set(i, hmd->quest_indices[i]);
+    }
+
+    kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
+
+    uint8_t* packed_data_0 = (uint8_t*)out[0].begin();
+    size_t packed_data_0_size = out[0].size()*sizeof(uint64_t);
+
+    uint8_t* packed_data_1 = (uint8_t*)out[1].begin();
+    size_t packed_data_1_size = out[1].size()*sizeof(uint64_t);
+
+    uint8_t* packed_data_2 = (uint8_t*)out[2].begin();
+    size_t packed_data_2_size = out[2].size()*sizeof(uint64_t);
+
+    //hex_dump(packed_data_0, packed_data_0_size);
+    //hex_dump(packed_data_1, packed_data_1_size);
+    //hex_dump(packed_data_2, packed_data_2_size);
+    //printf("Sizes: %x %x %x\n", packed_data_0_size, packed_data_1_size, packed_data_2_size);
+
+    xrsp_send_to_topic_capnp_wrapped_3(host, TOPIC_MESH, 2, packed_data_0, packed_data_0_size, packed_data_1, packed_data_1_size, packed_data_2, packed_data_2_size);
+
+    host->sent_mesh = true;
+}
+
 static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos)
 {
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
+
+    if (!host->sent_mesh)
+    {
+        xrsp_send_mesh(host);
+    }
 
     int read_index = QL_IDX_SLICE(slice_idx, index);
 
@@ -1278,7 +1354,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);
-    msg.setRectifyMeshId(1);
+    msg.setRectifyMeshId(QL_MESH_FOVEATED); // QL_MESH_NONE
 
     // TODO mutex
 

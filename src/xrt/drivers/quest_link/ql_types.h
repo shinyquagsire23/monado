@@ -1,5 +1,5 @@
 // Copyright 2022, Collabora, Ltd.
-// Copyright 2022 Max Thomas
+// Copyright 2022, Max Thomas
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -123,6 +123,11 @@ typedef struct ql_xrsp_topic_pkt
 
 typedef struct ql_xrsp_host ql_xrsp_host;
 
+#define MAX_TRACKED_DEVICES 2
+
+#define QL_MESH_NONE (1)
+#define QL_MESH_FOVEATED (1002)
+
 #define QL_SWAPCHAIN_DEPTH (3)
 #define QL_NUM_SLICES (5)
 #define QL_IDX_SLICE(_slice_idx, _frame_idx) ((_slice_idx*QL_SWAPCHAIN_DEPTH)+_frame_idx)
@@ -214,15 +219,13 @@ typedef struct ql_xrsp_host
     bool bodyapi_connected;
     bool eyetrack_connected;
     bool shell_connected;
+    bool sent_mesh;
 
     void (*start_encode)(struct ql_xrsp_host* host,  int64_t target_ns, int index, int slice_idx);
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
     void (*flush_stream)(struct ql_xrsp_host* host, int64_t target_ns, int index, int slice_idx);
 } ql_xrsp_host;
-
-
-#define MAX_TRACKED_DEVICES 2
 
 /* All HMD Configuration / calibration info */
 struct ql_hmd_config
@@ -498,6 +501,20 @@ struct ql_hands
     struct ql_system *sys;
 };
 
+struct ql_foveation_parameter_item
+{
+    double center;
+    double scale;
+    double a;
+    double b;
+};
+
+struct ql_foveation_parameter
+{
+    struct ql_foveation_parameter_item x;
+    struct ql_foveation_parameter_item y;
+};
+
 struct ql_hmd
 {
     struct xrt_device base;
@@ -520,10 +537,16 @@ struct ql_hmd
     /* Pose tracker provided by the system */
     struct ql_tracker *tracker;
 
+    struct ql_foveation_parameter foveation_parameters[2];
 
     int32_t encode_width;
     int32_t encode_height;
     float fps;
+
+    int quest_vtx_count;
+    int quest_index_count;
+    float* quest_vertices;
+    int16_t* quest_indices;
 
     /* Temporary distortion values for mesh calc */
     struct u_panotools_values distortion_vals[2];
@@ -542,10 +565,6 @@ typedef struct ql_system
     /* Packet processing thread */
     struct os_thread_helper oth;
     uint64_t last_keep_alive;
-
-    /* state tracking for tracked devices on our radio link */
-    int num_active_tracked_devices;
-    struct ql_tracked_device tracked_device[MAX_TRACKED_DEVICES];
 
     /* Device lock protects device access */
     struct os_mutex dev_mutex;

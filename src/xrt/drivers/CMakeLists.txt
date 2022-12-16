@@ -328,6 +328,7 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		quest_link/protos/CameraStream.capnp
 		quest_link/protos/HostInfo.capnp
 		quest_link/protos/Logging.capnp
+		quest_link/protos/Mesh.capnp
 		quest_link/protos/Pose.capnp
 		quest_link/protos/RuntimeIPC.capnp
 		quest_link/protos/Slice.capnp
