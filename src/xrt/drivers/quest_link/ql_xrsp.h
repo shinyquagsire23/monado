@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num);
+int ql_xrsp_host_create(struct ql_xrsp_host* host, struct ql_system* sys, uint16_t vid, uint16_t pid, int if_num);
 void ql_xrsp_host_destroy(struct ql_xrsp_host* host);
 
 int64_t xrsp_ts_ns_from_target(struct ql_xrsp_host *host, int64_t ts);

@@ -58,7 +58,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
         int idx = 0;
-        if (!(controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT)) {
+        if (controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT) {
             idx = 1;
         }
 

@@ -54,11 +54,12 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
 
-int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num)
+int ql_xrsp_host_create(struct ql_xrsp_host* host, struct ql_system* sys, uint16_t vid, uint16_t pid, int if_num)
 {
     int ret;
 
     *host = (struct ql_xrsp_host){0};
+    host->sys = sys;
     host->if_num = if_num;
     host->vid = vid;
     host->pid = pid;
@@ -196,7 +197,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     host->dev = libusb_open_device_with_vid_pid(host->ctx, host->vid, host->pid);
     if (host->dev == NULL) {
         QUEST_LINK_ERROR("Failed initial libusb_open_device_with_vid_pid");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
         goto cleanup;
     }
 
@@ -206,12 +207,12 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         ret = libusb_reset_device(host->dev);
         if (ret == LIBUSB_ERROR_NOT_FOUND) {
             // We're reconnecting anyhow.
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             QUEST_LINK_INFO("Device needs reconnect...");
         }
         else if (ret != LIBUSB_SUCCESS) {
             QUEST_LINK_ERROR("Failed libusb_reset_device");
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             goto cleanup;
         }
         else {
@@ -233,7 +234,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
 
         if (host->dev == NULL) {
             QUEST_LINK_ERROR("Failed post-reset libusb_open_device_with_vid_pid");
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             goto cleanup;
         }
     }
@@ -243,7 +244,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     ret = libusb_claim_interface(host->dev, host->if_num);
     if (ret < 0) {
         QUEST_LINK_ERROR("Failed libusb_claim_interface");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
 
         // Reset, there's probably something weird.
         libusb_reset_device(host->dev);
@@ -256,7 +257,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     ret = libusb_get_active_config_descriptor(usb_dev, &config);
     if (ret < 0 || !config) {
         QUEST_LINK_ERROR("Failed libusb_get_active_config_descriptor");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
         goto cleanup;
     }
 
@@ -463,7 +464,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
     int r = libusb_bulk_transfer(host->dev, host->ep_out, (uint8_t*)data, data_size, &sent_len, 1000);
     if (r != 0 || !sent_len) {
         QUEST_LINK_ERROR("Failed to send %x bytes (sent %x)", data_size, sent_len);
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
 
         if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_TIMEOUT) {
            host->usb_valid = false;
@@ -754,7 +755,7 @@ static void xrsp_init_session_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     uint8_t fps = (uint8_t)hmd->fps;
     uint8_t session_type = 0x03;
     uint8_t error_code = 0x01;
-    uint8_t encoding_type = 0x1; // 0x0 = AVC/H264, 0x1 = HEVC/H265 TODO TODO get this from the video encoder!
+    uint8_t encoding_type = 0x0; // 0x0 = AVC/H264, 0x1 = HEVC/H265 TODO TODO get this from the video encoder!
     uint8_t response_ok_2_payload[] = {0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, session_type, 0x00, error_code, 0x00, 0x1F, 0x00, encoding_type, 0x00, (uint8_t)(host->num_slices & 0xF), 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, fps, 0x00, /* invalid certs?*/0x00, /* invalid certs?*/0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x55, 0x53, 0x42, 0x33, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00};
     int32_t response_ok_2_len = 0;
     uint8_t* response_ok_2 = ql_xrsp_craft_capnp(BUILTIN_OK, 0x2C8, 1, response_ok_2_payload, sizeof(response_ok_2_payload), &response_ok_2_len);
@@ -986,7 +987,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         hmd->device_type = description.getDeviceType();
 
         if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
-            hmd->fps = 120;
+            hmd->fps = 90;
         }
         else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
             hmd->fps = 90;
@@ -1159,7 +1160,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             //printf("asdf %d %x\n", r, read_len);
 
             if (r != LIBUSB_ERROR_TIMEOUT) {
-                QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+                QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
             }
 
             if (r == LIBUSB_ERROR_NO_DEVICE) {

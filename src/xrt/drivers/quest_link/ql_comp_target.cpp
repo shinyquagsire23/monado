@@ -407,14 +407,14 @@ static void comp_ql_create_images(struct comp_target * ct,
 	target_init_semaphores(cn);
 
 	ct->format = preferred_color_format;
-	ct->width = preferred_width;
-	ct->height = preferred_height;
+	ct->width = cn->host->sys->hmd->encode_width;//preferred_width;
+	ct->height = cn->host->sys->hmd->encode_height;//preferred_height;
 	ct->surface_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
 	cn->image_count = 3;
 	cn->format = preferred_color_format;
-	cn->width = preferred_width;
-	cn->height = preferred_height;
+	cn->width = cn->host->sys->hmd->encode_width;//preferred_width;
+	cn->height = cn->host->sys->hmd->encode_height;//preferred_height;
 	cn->color_space = preferred_color_space;
 
 	auto settings = xrt::drivers::wivrn::get_encoder_settings(get_vk(cn), cn->width, cn->height);

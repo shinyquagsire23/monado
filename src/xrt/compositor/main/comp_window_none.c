@@ -14,8 +14,7 @@
 #include "vk/vk_helpers.h"
 
 #include "main/comp_window_direct.h"
-#include <SDL.h>
-#include <SDL_vulkan.h>
+
 
 
 

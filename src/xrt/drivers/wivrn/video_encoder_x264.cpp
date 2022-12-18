@@ -40,13 +40,17 @@ void VideoEncoderX264::ProcessCb(x264_t * h, x264_nal_t * nal, void * opaque)
 {
 	VideoEncoderX264 * self = (VideoEncoderX264 *)opaque;
 	std::vector<uint8_t> data(nal->i_payload * 3 / 2 + 5 + 64, 0);
-	x264_nal_encode(h, data.data(), nal);
+	memset(data.data(), 0, data.size());
+	memcpy(data.data(), nal->p_payload, nal->i_payload);
+	//x264_nal_encode(h, data.data(), nal);
 	data.resize(nal->i_payload);
-	//printf("%x/%x\n", self->current_index, nal->i_type);
+	//hex_dump(data.data(), data.size());
 	switch (nal->i_type)
 	{
 		case NAL_SPS:
 		case NAL_PPS:
+		  hex_dump(data.data(), data.size());
+		  //hex_dump(nal->p_payload, nal->i_payload);
 			self->SendCSD(std::move(data), self->current_index);
 			break;
 		case NAL_SLICE:
@@ -117,8 +121,8 @@ VideoEncoderX264::VideoEncoderX264(
 	}
 
 	// encoder requires width and height to be even
-	settings.width += settings.width % 2;
-	settings.height += settings.height % 2;
+	settings.width += settings.width % 16;
+	settings.height += settings.height % 16;
 
 	printf("%ux%u, %ux%u\n", settings.width, settings.height, input_width, input_height);
 
@@ -127,8 +131,12 @@ VideoEncoderX264::VideoEncoderX264(
 	converter =
 	        std::make_unique<YuvConverter>(vk, VkExtent3D{uint32_t(settings.width), uint32_t(settings.height / num_slices), 1}, settings.offset_x, settings.offset_y, input_width, input_height, slice_idx, num_slices);
 
+  param = {};
+  pic_in = {};
+  pic_out = {};
+
 	x264_param_default_preset(&param, "ultrafast", "zerolatency");
-	param.nalu_process = &ProcessCb;
+	//param.nalu_process = &ProcessCb;
 	// param.i_slice_max_size = 1300;
 	param.i_slice_count = 1; // host->num_slices, 5
 	param.i_width = settings.width;
@@ -137,7 +145,7 @@ VideoEncoderX264::VideoEncoderX264(
 	param.i_fps_num = fps * 1'000'000;
 	param.i_fps_den = 1'000'000;
 	param.b_repeat_headers = 1;
-	param.b_aud = 1;
+	param.b_aud = 0;
 	param.b_annexb = 1;
 
 	settings.range = VK_SAMPLER_YCBCR_RANGE_ITU_FULL;
@@ -176,6 +184,9 @@ VideoEncoderX264::VideoEncoderX264(
 	pic.opaque = this;
 	pic.img.i_csp = X264_CSP_NV12;
 	pic.img.i_plane = 2;
+	
+	//converter->y.mapped_memory = malloc(0x200000);
+	//converter->uv.mapped_memory = malloc(0x200000);
 
 	pic.img.i_stride[0] = converter->y.stride;
 	pic.img.plane[0] = (uint8_t *)converter->y.mapped_memory;
@@ -203,6 +214,10 @@ void VideoEncoderX264::Encode(int index, bool idr, std::chrono::steady_clock::ti
 	assert(pending_nals.empty());
 	current_index = index;
 	int size = x264_encoder_encode(enc, &nal, &num_nal, &pic_in, &pic_out);
+	for (int i = 0; i < num_nal; i++)
+	{
+	  ProcessCb(enc, &nal[i], this);
+	}
 	FlushFrame(pic_in.i_pts, current_index);
 	if (size < 0)
 	{

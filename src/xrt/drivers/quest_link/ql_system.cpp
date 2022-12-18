@@ -114,13 +114,11 @@ ql_system_create(struct xrt_prober *xp,
         goto cleanup;
     }
 
-	ret = ql_xrsp_host_create(&sys->xrsp_host, dev->vendor_id, dev->product_id, if_num);
+	ret = ql_xrsp_host_create(&sys->xrsp_host, sys, dev->vendor_id, dev->product_id, if_num);
 	if (ret != 0) {
 		QUEST_LINK_ERROR("Failed to init XRSP");
 		goto cleanup;
 	}
-
-	sys->xrsp_host.sys = sys;
 
 	while (!hmd->sys->xrsp_host.ready_to_send_frames) {
 		os_nanosleep(U_TIME_1MS_IN_NS * 10);

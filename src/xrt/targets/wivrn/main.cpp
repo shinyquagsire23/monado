@@ -92,9 +92,11 @@ main(int argc, char *argv[])
 			std::cerr << "Server exited, exit status " << WEXITSTATUS(wstatus) << std::endl;
 			if (WIFSIGNALED(wstatus)) {
 #ifndef XRT_OS_APPLE
+#if 0
 				std::cerr << "Received signal " << sigabbrev_np(WTERMSIG(wstatus)) << " ("
 				          << strsignal(WTERMSIG(wstatus)) << ")"
 				          << (WCOREDUMP(wstatus) ? ", core dumped" : "") << std::endl;
+#endif
 #endif
 			}
 		}
