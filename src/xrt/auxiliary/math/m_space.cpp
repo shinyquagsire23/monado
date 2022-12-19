@@ -195,6 +195,8 @@ apply_relation(const struct xrt_space_relation *a,
 		nf.has_linear_velocity = true;
 		angular_velocity += b->angular_velocity;
 
+		// handle tangential velocity AKA "lever arm" effect on velocity:
+		// an angular velocity at the origin produces a linear velocity everywhere else
 		struct xrt_vec3 rotated_position = XRT_VEC3_ZERO;
 		struct xrt_vec3 position = XRT_VEC3_ZERO;
 		struct xrt_quat orientation = XRT_QUAT_IDENTITY;
