@@ -837,6 +837,18 @@ verify_equirect2_layer(struct xrt_compositor *xc,
  *
  */
 
+/**
+ * Turn the poses supplied with a composition layer into the poses the compositor wants.
+ *
+ * @param log logger
+ * @param sess session
+ * @param spc space that @p pose_ptr is supplied in
+ * @param pose_ptr pose supplied with layer
+ * @param inv_offset inverse of the tracking origin offset
+ * @param timestamp timestamp for pose
+ * @param[out] out_pose Resulting view-space pose
+ * @return true if successfully transformed into a view space pose
+ */
 static bool
 handle_space(struct oxr_logger *log,
              struct oxr_session *sess,
