@@ -1,0 +1,27 @@
+# Copyright 2022, Collabora, Ltd.
+#
+# SPDX-License-Identifier: BSL-1.0
+"""Configuration for "copybara" <https://github.com/google/copybara> to update vendored source"""
+
+gitlab_url = "git@gitlab.freedesktop.org:ryan.pavlik/monado.git"
+
+# update-stb: Update STB libraries
+core.workflow(
+    name = "update-stb",
+    origin = git.github_origin(
+        url = "https://github.com/nothings/stb.git",
+        ref = "master",
+    ),
+    destination = git.destination(
+        url = gitlab_url,
+        fetch = "main",
+        push = "update-stb",
+    ),
+    destination_files = glob(["src/external/stb/*.h"]),
+    origin_files = glob(["stb_image_write.h"]),
+    authoring = authoring.pass_thru("Ryan Pavlik <ryan.pavlik@collabora.com>"),
+    transformations = [
+        metadata.replace_message("external/stb: Update stb libraries from upstream"),
+        core.move("", "src/external/stb/"),
+    ],
+)
