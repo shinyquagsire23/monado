@@ -8,6 +8,8 @@
 
 #include "sdl_internal.h"
 
+#include "math/m_mathinclude.h"
+
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 
