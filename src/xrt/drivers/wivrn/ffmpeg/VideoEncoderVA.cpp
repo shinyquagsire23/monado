@@ -93,7 +93,7 @@ get_render_device(vk_bundle * vk)
 		U_LOG_E("Failed to find render DRM device");
 		throw std::runtime_error("Failed to find render DRM device");
 	}
-	return "/dev/dri/renderD" + std::to_string(drmProps.renderMinor);
+	return "/dev/dri/renderD129" + std::to_string(drmProps.renderMinor);
 }
 
 } // namespace
@@ -143,7 +143,7 @@ VideoEncoderVA::VideoEncoderVA(vk_bundle * vk, const encoder_settings & settings
 	switch (this->codec)
 	{
 		case Codec::h264:
-			encoder_ctx->profile = FF_PROFILE_H264_MAIN;
+			encoder_ctx->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
 			break;
 		case Codec::h265:
 			encoder_ctx->profile = FF_PROFILE_HEVC_MAIN;

@@ -54,7 +54,10 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 
 	if (is_nvidia(vk))
 	{
-#if defined(XRT_HAVE_VT)
+#if defined(WIVRN_HAVE_FFMPEG)
+		settings.encoder_name = encoder_vaapi;
+		settings.codec = xrt::drivers::wivrn::h264;
+#elif defined(XRT_HAVE_VT)
 		settings.encoder_name = encoder_vt;
 		settings.codec = xrt::drivers::wivrn::hevc;
 #elif defined(WIVRN_HAVE_X264)
@@ -70,6 +73,7 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 	{
 #ifdef WIVRN_HAVE_FFMPEG
 		settings.encoder_name = encoder_vaapi;
+		settings.codec = xrt::drivers::wivrn::h264;
 #elif defined(XRT_HAVE_VT)
 		settings.encoder_name = encoder_vt;
 		settings.codec = xrt::drivers::wivrn::hevc;

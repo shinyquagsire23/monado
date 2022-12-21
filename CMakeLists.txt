@@ -153,7 +153,7 @@ if(PKGCONFIG_FOUND AND NOT ANDROID)
 	pkg_check_modules(LIBUVC libuvc)
 
 	# @TODO Turn into a find_package FFMPEG file.
-	#pkg_check_modules(FFMPEG libavcodec)
+	pkg_check_modules(FFMPEG libavcodec)
 
 	#pkg_check_modules(AVAHI IMPORTED_TARGET avahi-client)
 	find_package(nlohmann_json REQUIRED)
@@ -177,13 +177,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		pkg_search_module(WAYLAND_SCANNER wayland-scanner)
 		pkg_search_module(WAYLAND_PROTOCOLS wayland-protocols)
 		pkg_search_module(LIBDRM IMPORTED_TARGET libdrm)
-		#pkg_check_modules(
-		#	FFMPEG
-		#	IMPORTED_TARGET
-		#	libavcodec
-		#	libavutil
-		#	libavfilter
-		#	)
+		pkg_check_modules(
+			FFMPEG
+			IMPORTED_TARGET
+			libavcodec
+			libavutil
+			libavfilter
+			)
 		if(XRT_ENABLE_GPL)
 			pkg_check_modules(X264 IMPORTED_TARGET x264)
 		endif()

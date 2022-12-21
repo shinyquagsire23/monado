@@ -33,6 +33,9 @@ public:
 	void
 	Encode(int index, bool idr, std::chrono::steady_clock::time_point target_timestamp) override;
 
+private:
+  void filter_NAL_ql(const uint8_t * input, size_t input_size, int index);
+
 protected:
 	virtual void
 	PushFrame(uint32_t frame_index, bool idr, std::chrono::steady_clock::time_point pts) = 0;
