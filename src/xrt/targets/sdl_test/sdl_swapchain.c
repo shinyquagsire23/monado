@@ -12,6 +12,8 @@
 #include "util/u_handles.h"
 #include "ogl/ogl_helpers.h"
 
+#include <inttypes.h>
+
 
 static int64_t
 vk_format_to_gl(int64_t format)
