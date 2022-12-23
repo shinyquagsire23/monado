@@ -12,55 +12,39 @@
 
 /*
  *
- * Config checking.
+ * Config checking, sorted alphabetically.
  *
  */
 
-#if defined(XRT_BUILD_DRIVER_PSMV) || defined(XRT_BUILD_DRIVER_PSVR) || defined(XRT_DOXYGEN)
-#define T_BUILDER_RGB_TRACKING
-#endif
-
-#if defined(XRT_BUILD_DRIVER_REMOTE) || defined(XRT_DOXYGEN)
-#define T_BUILDER_REMOTE
-#endif
+// Always enabled.
+#define T_BUILDER_LEGACY
 
 #if defined(XRT_BUILD_DRIVER_SURVIVE) || defined(XRT_BUILD_DRIVER_VIVE) || defined(XRT_DOXYGEN)
 #define T_BUILDER_LIGHTHOUSE
-#endif
-
-#if defined(XRT_BUILD_DRIVER_SIMULAVR) || defined(XRT_DOXYGEN)
-#define T_BUILDER_SIMULAVR
 #endif
 
 #if defined(XRT_BUILD_DRIVER_NS)
 #define T_BUILDER_NS
 #endif
 
-// Always enabled.
-#define T_BUILDER_LEGACY
+#if defined(XRT_BUILD_DRIVER_REMOTE) || defined(XRT_DOXYGEN)
+#define T_BUILDER_REMOTE
+#endif
+
+#if defined(XRT_BUILD_DRIVER_PSMV) || defined(XRT_BUILD_DRIVER_PSVR) || defined(XRT_DOXYGEN)
+#define T_BUILDER_RGB_TRACKING
+#endif
+
+#if defined(XRT_BUILD_DRIVER_SIMULAVR) || defined(XRT_DOXYGEN)
+#define T_BUILDER_SIMULAVR
+#endif
 
 
 /*
  *
- * Setter upper creation functions.
+ * Setter upper creation functions, sorted alphabetically.
  *
  */
-
-#ifdef T_BUILDER_RGB_TRACKING
-/*!
- * RGB tracking based drivers, like @ref drv_psmv and @ref drv_psvr.
- */
-struct xrt_builder *
-t_builder_rgb_tracking_create(void);
-#endif
-
-#ifdef T_BUILDER_REMOTE
-/*!
- * The remote driver builder.
- */
-struct xrt_builder *
-t_builder_remote_create(void);
-#endif
 
 #ifdef T_BUILDER_LEGACY
 /*!
@@ -78,18 +62,34 @@ struct xrt_builder *
 t_builder_lighthouse_create(void);
 #endif
 
-#ifdef T_BUILDER_SIMULAVR
-/*!
- * Builder for SimulaVR headsets
- */
-struct xrt_builder *
-t_builder_simula_create(void);
-#endif
-
 #ifdef T_BUILDER_NS
 /*!
  * Builder for NorthStar headsets
  */
 struct xrt_builder *
 t_builder_north_star_create(void);
+#endif
+
+#ifdef T_BUILDER_REMOTE
+/*!
+ * The remote driver builder.
+ */
+struct xrt_builder *
+t_builder_remote_create(void);
+#endif
+
+#ifdef T_BUILDER_RGB_TRACKING
+/*!
+ * RGB tracking based drivers, like @ref drv_psmv and @ref drv_psvr.
+ */
+struct xrt_builder *
+t_builder_rgb_tracking_create(void);
+#endif
+
+#ifdef T_BUILDER_SIMULAVR
+/*!
+ * Builder for SimulaVR headsets
+ */
+struct xrt_builder *
+t_builder_simula_create(void);
 #endif
