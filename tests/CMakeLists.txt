@@ -24,6 +24,7 @@ set(tests
     tests_quat_change_of_basis
     tests_quat_swing_twist
     tests_rational
+    tests_relation_chain
     tests_vector
     tests_worker
     tests_pose
@@ -66,6 +67,7 @@ target_link_libraries(tests_lowpass_float PRIVATE aux_math)
 target_link_libraries(tests_lowpass_integer PRIVATE aux_math)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
+target_link_libraries(tests_relation_chain PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
 target_link_libraries(tests_quat_change_of_basis PRIVATE aux_math)
 target_link_libraries(tests_quat_swing_twist PRIVATE aux_math)
