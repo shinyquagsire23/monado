@@ -1,5 +1,5 @@
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,16 +11,32 @@
 
 #pragma once
 
+#include "xrt/xrt_prober.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /*!
  * @defgroup drv_wmr Windows Mixed Reality driver
  * @ingroup drv
  *
  * @brief Windows Mixed Reality driver.
+ */
+
+/*!
+ * @dir drivers/wmr
+ *
+ * @brief @ref drv_wmr files.
+ */
+
+
+/*
+ *
+ * Found functions.
+ *
  */
 
 /*!
@@ -37,7 +53,6 @@ wmr_found(struct xrt_prober *xp,
           cJSON *attached_data,
           struct xrt_device **out_xdev);
 
-
 /*!
  * Probing function for Bluetooth WMR motion controllers.
  *
@@ -50,13 +65,6 @@ wmr_bt_controller_found(struct xrt_prober *xp,
                         size_t index,
                         cJSON *attached_data,
                         struct xrt_device **out_xdev);
-
-
-/*!
- * @dir drivers/wmr
- *
- * @brief @ref drv_wmr files.
- */
 
 
 #ifdef __cplusplus

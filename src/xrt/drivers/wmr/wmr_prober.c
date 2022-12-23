@@ -146,7 +146,7 @@ find_companion_device(struct xrt_prober *xp,
 
 /*
  *
- * Exported functions.
+ * 'Exported' found functions.
  *
  */
 
