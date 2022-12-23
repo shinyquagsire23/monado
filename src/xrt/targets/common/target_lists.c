@@ -94,7 +94,7 @@
 xrt_builder_create_func_t target_builder_list[] = {
 #ifdef XRT_BUILD_DRIVER_RIFT_S
     rift_s_builder_create,
-#endif
+#endif // XRT_BUILD_DRIVER_RIFT_S
 
 #ifdef T_BUILDER_RGB_TRACKING
     t_builder_rgb_tracking_create,
@@ -102,7 +102,7 @@ xrt_builder_create_func_t target_builder_list[] = {
 
 #ifdef T_BUILDER_SIMULAVR
     t_builder_simula_create,
-#endif
+#endif // T_BUILDER_SIMULAVR
 
 #ifdef T_BUILDER_LIGHTHOUSE
     t_builder_lighthouse_create,
@@ -114,10 +114,12 @@ xrt_builder_create_func_t target_builder_list[] = {
 
 #ifdef T_BUILDER_NS
     t_builder_north_star_create,
-#endif
+#endif // T_BUILDER_NS
+
 #ifdef T_BUILDER_LEGACY
     t_builder_legacy_create,
 #endif // T_BUILDER_LEGACY
+
     NULL,
 };
 
