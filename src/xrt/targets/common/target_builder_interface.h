@@ -87,6 +87,9 @@ t_builder_simula_create(void);
 #endif
 
 #ifdef T_BUILDER_NS
+/*!
+ * Builder for NorthStar headsets
+ */
 struct xrt_builder *
 t_builder_north_star_create(void);
 #endif
