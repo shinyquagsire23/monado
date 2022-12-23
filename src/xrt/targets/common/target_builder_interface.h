@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -41,6 +41,10 @@
 
 #if defined(XRT_BUILD_DRIVER_SIMULAVR) || defined(XRT_DOXYGEN)
 #define T_BUILDER_SIMULAVR
+#endif
+
+#if defined(XRT_BUILD_DRIVER_WMR) || defined(XRT_DOXYGEN)
+#define T_BUILDER_WMR
 #endif
 
 
@@ -105,4 +109,12 @@ t_builder_simulated_create(void);
  */
 struct xrt_builder *
 t_builder_simula_create(void);
+#endif
+
+#ifdef T_BUILDER_WMR
+/*!
+ * Builder for Windows Mixed Reality headsets
+ */
+struct xrt_builder *
+t_builder_wmr_create(void);
 #endif

@@ -45,6 +45,11 @@ if(XRT_BUILD_DRIVER_NS)
 	target_link_libraries(target_lists PRIVATE drv_ns)
 endif()
 
+if(XRT_BUILD_DRIVER_WMR)
+	target_sources(target_lists PRIVATE target_builder_wmr.c)
+	target_link_libraries(target_lists PRIVATE drv_wmr)
+endif()
+
 ###
 # Drivers
 #

@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -123,6 +123,10 @@ xrt_builder_create_func_t target_builder_list[] = {
 #ifdef T_BUILDER_NS
     t_builder_north_star_create,
 #endif // T_BUILDER_NS
+
+#ifdef T_BUILDER_WMR
+    t_builder_wmr_create,
+#endif // T_BUILDER_WMR
 
 #ifdef T_BUILDER_LEGACY
     t_builder_legacy_create,
