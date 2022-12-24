@@ -264,7 +264,7 @@ apply_relation(const struct xrt_space_relation *a,
  *
  */
 
-void
+extern "C" void
 m_relation_chain_resolve(const struct xrt_relation_chain *xrc, struct xrt_space_relation *out_relation)
 {
 	if (xrc->step_count == 0 || has_step_with_no_pose(xrc)) {
