@@ -17,40 +17,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-extern "C" void
-m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_relation *out_relation)
-{
-	assert(relation != NULL);
-	assert(out_relation != NULL);
-
-	out_relation->relation_flags = relation->relation_flags;
-	math_pose_invert(&relation->pose, &out_relation->pose);
-	out_relation->linear_velocity = m_vec3_mul_scalar(relation->linear_velocity, -1);
-	out_relation->angular_velocity = m_vec3_mul_scalar(relation->angular_velocity, -1);
-}
-
-extern "C" void
-m_space_relation_interpolate(struct xrt_space_relation *a,
-                             struct xrt_space_relation *b,
-                             float t,
-                             enum xrt_space_relation_flags flags,
-                             struct xrt_space_relation *out_relation)
-{
-	out_relation->relation_flags = flags;
-
-	if (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
-		math_quat_slerp(&a->pose.orientation, &b->pose.orientation, t, &out_relation->pose.orientation);
-	}
-	if (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
-		out_relation->pose.position = m_vec3_lerp(a->pose.position, b->pose.position, t);
-	}
-	if (flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) {
-		out_relation->linear_velocity = m_vec3_lerp(a->linear_velocity, b->linear_velocity, t);
-	}
-	if (flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
-		out_relation->angular_velocity = m_vec3_lerp(a->angular_velocity, b->angular_velocity, t);
-	}
-}
 
 /*
  *
@@ -323,4 +289,39 @@ m_relation_chain_resolve(const struct xrt_relation_chain *xrc, struct xrt_space_
 	math_quat_normalize(&r.pose.orientation);
 
 	*out_relation = r;
+}
+
+extern "C" void
+m_space_relation_invert(struct xrt_space_relation *relation, struct xrt_space_relation *out_relation)
+{
+	assert(relation != NULL);
+	assert(out_relation != NULL);
+
+	out_relation->relation_flags = relation->relation_flags;
+	math_pose_invert(&relation->pose, &out_relation->pose);
+	out_relation->linear_velocity = m_vec3_mul_scalar(relation->linear_velocity, -1);
+	out_relation->angular_velocity = m_vec3_mul_scalar(relation->angular_velocity, -1);
+}
+
+extern "C" void
+m_space_relation_interpolate(struct xrt_space_relation *a,
+                             struct xrt_space_relation *b,
+                             float t,
+                             enum xrt_space_relation_flags flags,
+                             struct xrt_space_relation *out_relation)
+{
+	out_relation->relation_flags = flags;
+
+	if (flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) {
+		math_quat_slerp(&a->pose.orientation, &b->pose.orientation, t, &out_relation->pose.orientation);
+	}
+	if (flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
+		out_relation->pose.position = m_vec3_lerp(a->pose.position, b->pose.position, t);
+	}
+	if (flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) {
+		out_relation->linear_velocity = m_vec3_lerp(a->linear_velocity, b->linear_velocity, t);
+	}
+	if (flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) {
+		out_relation->angular_velocity = m_vec3_lerp(a->angular_velocity, b->angular_velocity, t);
+	}
 }
