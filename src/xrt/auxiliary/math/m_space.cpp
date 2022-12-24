@@ -212,27 +212,31 @@ apply_relation(const struct xrt_space_relation *a,
 	// Pose will be undefined if we don't have at least rotation.
 	math_pose_transform(&base_pose, &body_pose, &pose);
 
+
 	/*
 	 * Write everything out.
 	 */
 
 	int new_flags = 0;
-	// Make sure to not drop a orientation, even if only one is valid.
-	if (af.has_orientation || bf.has_orientation) {
-		new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
-	}
 
 	/*
-	 * Make sure to not drop a position, even if only one is valid.
+	 * Make sure to not drop a space relation, even if only either position
+	 * or orintation is valid. We should not be getting here if neither
+	 * position and orintation is valid.
 	 *
 	 * When position is valid, always set orientation valid to "upgrade"
 	 * poses with valid position but invalid orientation to fully valid
 	 * pose using identity quat, @see make_valid_pose.
+	 *
+	 * When orientation is valid, always set position valid to "upgrade"
+	 * poses with valid orientation but invalid position to fully valid
+	 * pose using identity vec3, @see make_valid_pose.
 	 */
-	if (af.has_position || bf.has_position) {
-		new_flags |= XRT_SPACE_RELATION_POSITION_VALID_BIT;
-		new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
-	}
+	assert(af.has_position || af.has_orientation);
+	assert(bf.has_position || bf.has_orientation);
+
+	new_flags |= XRT_SPACE_RELATION_POSITION_VALID_BIT;
+	new_flags |= XRT_SPACE_RELATION_ORIENTATION_VALID_BIT;
 
 	//! @todo combining these flags with OR is probably okay for now
 	if (af.has_tracked_position || bf.has_tracked_position) {
