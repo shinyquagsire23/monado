@@ -140,6 +140,21 @@ apply_relation(const struct xrt_space_relation *a,
 
 
 	/*
+	 * Pose.
+	 */
+
+	struct xrt_pose body_pose = XRT_POSE_IDENTITY; // aka valid_a_pose
+	struct xrt_pose base_pose = XRT_POSE_IDENTITY; // aka valid_b_pose
+
+	// Only valid poses handled in chain. Flags are determined later.
+	make_valid_pose(af, &a->pose, &body_pose);
+	make_valid_pose(bf, &b->pose, &base_pose);
+
+	// Pose will be undefined if we don't have at least rotation.
+	math_pose_transform(&base_pose, &body_pose, &pose);
+
+
+	/*
 	 * Linear velocity.
 	 */
 
@@ -196,21 +211,6 @@ apply_relation(const struct xrt_space_relation *a,
 
 		linear_velocity += tangental_velocity;
 	}
-
-
-	/*
-	 * Apply the pose part.
-	 */
-
-	struct xrt_pose body_pose = XRT_POSE_IDENTITY;
-	struct xrt_pose base_pose = XRT_POSE_IDENTITY;
-
-	// Only valid poses handled in chain. Flags are determined later.
-	make_valid_pose(af, &a->pose, &body_pose);
-	make_valid_pose(bf, &b->pose, &base_pose);
-
-	// Pose will be undefined if we don't have at least rotation.
-	math_pose_transform(&base_pose, &body_pose, &pose);
 
 
 	/*
