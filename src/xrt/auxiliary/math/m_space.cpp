@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2022, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -216,7 +216,7 @@ apply_relation(const struct xrt_space_relation *a,
 
 
 	/*
-	 * Write everything out.
+	 * Flags.
 	 */
 
 	int new_flags = 0;
@@ -253,6 +253,11 @@ apply_relation(const struct xrt_space_relation *a,
 	if (nf.has_angular_velocity) {
 		new_flags |= XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT;
 	}
+
+
+	/*
+	 * Write everything out.
+	 */
 
 	struct xrt_space_relation tmp = {};
 	tmp.relation_flags = (enum xrt_space_relation_flags)new_flags;
