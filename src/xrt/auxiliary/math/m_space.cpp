@@ -161,9 +161,11 @@ apply_relation(const struct xrt_space_relation *a,
 	if (af.has_linear_velocity) {
 		nf.has_linear_velocity = true;
 		struct xrt_vec3 tmp = XRT_VEC3_ZERO;
-		math_quat_rotate_vec3(&b->pose.orientation, // Base rotation
-		                      &a->linear_velocity,  // In base space
-		                      &tmp);                // Output
+
+		math_quat_rotate_vec3(&base_pose.orientation, // Base rotation
+		                      &a->linear_velocity,    // In base space
+		                      &tmp);                  // Output
+
 		linear_velocity += tmp;
 	}
 
@@ -181,9 +183,9 @@ apply_relation(const struct xrt_space_relation *a,
 		nf.has_angular_velocity = true;
 		struct xrt_vec3 tmp = XRT_VEC3_ZERO;
 
-		math_quat_rotate_derivative(&b->pose.orientation, // Base rotation
-		                            &a->angular_velocity, // In base space
-		                            &tmp);                // Output
+		math_quat_rotate_derivative(&base_pose.orientation, // Base rotation
+		                            &a->angular_velocity,   // In base space
+		                            &tmp);                  // Output
 
 		angular_velocity += tmp;
 	}
@@ -198,8 +200,8 @@ apply_relation(const struct xrt_space_relation *a,
 		struct xrt_quat orientation = XRT_QUAT_IDENTITY;
 		struct xrt_vec3 tangental_velocity = XRT_VEC3_ZERO;
 
-		position = a->pose.position;       // In the base space
-		orientation = b->pose.orientation; // Base space
+		position = body_pose.position;       // In the base space
+		orientation = base_pose.orientation; // Base space
 
 		math_quat_rotate_vec3(&orientation,       // Rotation
 		                      &position,          // Vector
