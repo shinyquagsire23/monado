@@ -148,8 +148,9 @@ teardown_all(struct ipc_server *s)
 
 	ipc_server_mainloop_deinit(&s->ml);
 
-	os_mutex_destroy(&s->global_state.lock);
 	u_process_destroy(s->process);
+
+	os_mutex_destroy(&s->global_state.lock);
 }
 
 static int
@@ -450,6 +451,13 @@ init_all(struct ipc_server *s)
 	xrt_result_t xret;
 	int ret;
 
+	ret = os_mutex_init(&s->global_state.lock);
+	if (ret < 0) {
+		IPC_ERROR(s, "Global state lock mutex failed to init!");
+		teardown_all(s);
+		return ret;
+	}
+
 	s->process = u_process_create_if_not_running();
 
 	if (!s->process) {
@@ -501,13 +509,6 @@ init_all(struct ipc_server *s)
 	ret = ipc_server_mainloop_init(&s->ml);
 	if (ret < 0) {
 		IPC_ERROR(s, "Failed to init ipc main loop!");
-		teardown_all(s);
-		return ret;
-	}
-
-	ret = os_mutex_init(&s->global_state.lock);
-	if (ret < 0) {
-		IPC_ERROR(s, "Global state lock mutex failed to inti!");
 		teardown_all(s);
 		return ret;
 	}
