@@ -100,12 +100,16 @@ private:
 	waitForStartupComplete()
 	{
 		std::unique_lock<std::mutex> lock{server_mutex};
-		bool completed = startup_cond.wait_for(lock, START_TIMEOUT_SECONDS,
-		                                       [&]() { return server != NULL && startup_complete; });
+		bool completed = startup_cond.wait_for(lock, START_TIMEOUT_SECONDS, [&]() { return startup_complete; });
+
+		if (!server) {
+			U_LOG_E("Failed to create ipc server");
+		}
+
 		if (!completed) {
 			U_LOG_E("Server startup timeout!");
 		}
-		return completed;
+		return server && completed;
 	}
 
 	//! Reference to the ipc_server, managed by ipc_server_process

@@ -11,14 +11,13 @@
 package org.freedesktop.monado.ipc;
 
 import android.os.ParcelFileDescriptor;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -64,7 +63,7 @@ public class MonadoImpl extends IMonado.Stub {
     }
 
     @Override
-    public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
+    public void connect(@NonNull ParcelFileDescriptor parcelFileDescriptor) throws RemoteException {
         nativeStartServer();
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
@@ -75,6 +74,9 @@ public class MonadoImpl extends IMonado.Stub {
             } catch (IOException e) {
                 // do nothing, probably already closed.
             }
+
+            // throw an exception so that client can gracefully fail
+            throw new IllegalStateException("server not available");
         } else {
             Log.i(TAG, "connect: fd ownership transferred");
             parcelFileDescriptor.detachFd();

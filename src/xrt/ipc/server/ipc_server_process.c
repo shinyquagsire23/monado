@@ -832,6 +832,7 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 	int ret = init_all(s);
 	if (ret < 0) {
 		free(s);
+		startup_complete_callback(data);
 		return ret;
 	}
 
