@@ -4,7 +4,6 @@
 # Mercury hand tracking library!
 
 add_subdirectory(kine_lm)
-add_subdirectory(kine_ccdik)
 
 add_library(t_ht_mercury_model STATIC hg_model.cpp)
 
@@ -37,7 +36,6 @@ target_link_libraries(
 		aux_util
 		ONNXRuntime::ONNXRuntime
 		t_ht_mercury_kine_lm
-		t_ht_mercury_kine_ccdik
 		t_ht_mercury_model
 		# ncnn # Soon...
 		${OpenCV_LIBRARIES}

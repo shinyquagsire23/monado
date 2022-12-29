@@ -46,7 +46,6 @@
 
 #include "kine_common.hpp"
 #include "kine_lm/lm_interface.hpp"
-#include "kine_ccdik/ccdik_interface.hpp"
 
 
 
@@ -240,7 +239,6 @@ public:
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
 	lm::KinematicHandLM *kinematic_hands[2];
-	ccdik::KinematicHandCCDIK *kinematic_hands_ccdik[2];
 
 	// struct hand_detection_state_tracker st_det[2] = {};
 	bool hand_seen_before[2] = {false, false};
@@ -277,7 +275,6 @@ public:
 		bool scribble_keypoint_model_outputs = false;
 		bool scribble_optimizer_outputs = true;
 		bool always_run_detection_model = false;
-		bool use_ccdik = false;
 		int max_num_outside_view = 3;
 	} tuneable_values;
 

@@ -664,9 +664,6 @@ HandTracking::~HandTracking()
 	lm::optimizer_destroy(&this->kinematic_hands[0]);
 	lm::optimizer_destroy(&this->kinematic_hands[1]);
 
-	ccdik::free_kinematic_hand(&this->kinematic_hands_ccdik[0]);
-	ccdik::free_kinematic_hand(&this->kinematic_hands_ccdik[1]);
-
 	u_var_remove_root((void *)&this->base);
 	u_frame_times_widget_teardown(&this->ft_widget);
 }
@@ -886,50 +883,39 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 
 		struct xrt_hand_joint_set *put_in_set = out_xrt_hands[hand_idx];
 
-		if (__builtin_expect(!hgt->tuneable_values.use_ccdik, true)) {
-			lm::KinematicHandLM *hand = hgt->kinematic_hands[hand_idx];
+		lm::KinematicHandLM *hand = hgt->kinematic_hands[hand_idx];
 
-			//!@todo
-			// ABOUT TWO MINUTES OF THOUGHT WERE PUT INTO THIS VALUE
-			float reprojection_error_threshold = 0.35f;
+		//!@todo
+		// ABOUT TWO MINUTES OF THOUGHT WERE PUT INTO THIS VALUE
+		float reprojection_error_threshold = 0.35f;
 
-			float out_hand_size;
+		float out_hand_size;
 
-			//!@todo Optimize:  We can have one of these on each thread
-			float reprojection_error;
-			lm::optimizer_run(hand,                                            //
-			                  input,                                           //
-			                  !hgt->last_frame_hand_detected[hand_idx],        //
-			                  optimize_hand_size,                              //
-			                  hgt->target_hand_size,                           //
-			                  hgt->refinement.hand_size_refinement_schedule_y, //
-			                  *put_in_set,                                     //
-			                  out_hand_size,                                   //
-			                  reprojection_error);
+		//!@todo Optimize:  We can have one of these on each thread
+		float reprojection_error;
+		lm::optimizer_run(hand,                                            //
+		                  input,                                           //
+		                  !hgt->last_frame_hand_detected[hand_idx],        //
+		                  optimize_hand_size,                              //
+		                  hgt->target_hand_size,                           //
+		                  hgt->refinement.hand_size_refinement_schedule_y, //
+		                  *put_in_set,                                     //
+		                  out_hand_size,                                   //
+		                  reprojection_error);
 
-			avg_hand_size += out_hand_size;
-			num_hands++;
+		avg_hand_size += out_hand_size;
+		num_hands++;
 
-			if (reprojection_error > reprojection_error_threshold) {
-				HG_DEBUG(hgt, "Reprojection error above threshold!");
-				hgt->this_frame_hand_detected[hand_idx] = false;
+		if (reprojection_error > reprojection_error_threshold) {
+			HG_DEBUG(hgt, "Reprojection error above threshold!");
+			hgt->this_frame_hand_detected[hand_idx] = false;
 
-				continue;
-			}
-			if (!any_hands_are_only_visible_in_one_view) {
-				hgt->refinement.hand_size_refinement_schedule_x +=
-				    hand_confidence_value(reprojection_error, input);
-			}
-
-		} else {
-			ccdik::KinematicHandCCDIK *hand = hgt->kinematic_hands_ccdik[hand_idx];
-			if (!hgt->last_frame_hand_detected[hand_idx]) {
-				ccdik::init_hardcoded_statics(hand, hgt->target_hand_size);
-			}
-			ccdik::optimize_new_frame(hand, input, *put_in_set);
+			continue;
 		}
-
-
+		if (!any_hands_are_only_visible_in_one_view) {
+			hgt->refinement.hand_size_refinement_schedule_x +=
+			    hand_confidence_value(reprojection_error, input);
+		}
 
 		u_hand_joints_apply_joint_width(put_in_set);
 
@@ -1053,9 +1039,6 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	lm::optimizer_create(hgt->left_in_right, false, hgt->log_level, &hgt->kinematic_hands[0]);
 	lm::optimizer_create(hgt->left_in_right, true, hgt->log_level, &hgt->kinematic_hands[1]);
 
-	ccdik::alloc_kinematic_hand(hgt->left_in_right, false, &hgt->kinematic_hands_ccdik[0]);
-	ccdik::alloc_kinematic_hand(hgt->left_in_right, true, &hgt->kinematic_hands_ccdik[1]);
-
 	u_frame_times_widget_init(&hgt->ft_widget, 10.0f, 10.0f);
 
 	u_var_add_root(hgt, "Camera-based Hand Tracker", true);
@@ -1100,8 +1083,6 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_keypoint_model_outputs, "Scribble keypoint model output");
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_optimizer_outputs, "Scribble kinematic optimizer output");
 	u_var_add_bool(hgt, &hgt->tuneable_values.always_run_detection_model, "Always run detection model");
-	u_var_add_bool(hgt, &hgt->tuneable_values.use_ccdik,
-	               "Use IK optimizer (may put tracking in unexpected state, use with care)");
 
 
 	u_var_add_sink_debug(hgt, &hgt->debug_sink_ann, "Annotated camera feeds");
