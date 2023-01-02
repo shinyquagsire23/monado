@@ -120,8 +120,9 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	const double IMU_FREQ = 250; //!< @todo use 1000 if "average_imus" is false
 	timepoint_ns now_hw = s->timestamp_ns;
 	timepoint_ns now_mono = (timepoint_ns)os_monotonic_get_ns();
-	timepoint_ns ts = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
+	s->timestamp_ns = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
 
+	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	WMR_TRACE(ws, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
