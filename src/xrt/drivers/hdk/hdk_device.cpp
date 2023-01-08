@@ -476,9 +476,16 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	// XRT_DISTORTION_MODEL_PANOTOOLS;
 	// }
 
+	int ret = os_thread_helper_init(&hd->imu_thread);
+	if (ret != 0) {
+		HDK_ERROR(hd, "Failed to start imu thread!");
+		hdk_device_destroy((struct xrt_device *)hd);
+		return 0;
+	}
+
 	if (hd->dev) {
 		// Mutex before thread.
-		int ret = os_mutex_init(&hd->lock);
+		ret = os_mutex_init(&hd->lock);
 		if (ret != 0) {
 			HDK_ERROR(hd, "Failed to init mutex!");
 			hdk_device_destroy(&hd->base);
