@@ -50,7 +50,7 @@
 #define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
-DEBUG_GET_ONCE_BOOL_OPTION(depthai_want_floodlight, "DEPTHAI_WANT_FLOODLIGHT", true)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_floodlight_brightness, "DEPTHAI_FLOODLIGHT_BRIGHTNESS", 1000)
 DEBUG_GET_ONCE_NUM_OPTION(depthai_startup_wait_frames, "DEPTHAI_STARTUP_WAIT_FRAMES", 0)
 
 
@@ -151,8 +151,12 @@ struct depthai_fs
 	bool interleaved;
 	bool oak_d_lite;
 
-	bool has_floodlight;
-	bool want_floodlight;
+	struct
+	{
+		float mA;
+		bool has;
+	} floodlights;
+
 
 	bool want_cameras;
 	bool want_imu;
@@ -272,15 +276,16 @@ void
 depthai_guess_ir_drivers(struct depthai_fs *depthai)
 {
 	std::vector<std::tuple<std::string, int, int>> list_of_drivers = depthai->device->getIrDrivers();
-	depthai->has_floodlight = false;
+	depthai->floodlights.has = false;
 
 	for (std::tuple<std::string, int, int> elem : list_of_drivers) {
 		if (std::get<0>(elem) == "LM3644") {
 			DEPTHAI_DEBUG(depthai, "DepthAI: Found an IR floodlight");
-			depthai->has_floodlight = true;
+			depthai->floodlights.has = true;
 		}
 	}
-	if (!depthai->has_floodlight) {
+
+	if (!depthai->floodlights.has) {
 		DEPTHAI_DEBUG(depthai, "DepthAI: Didn't find any IR illuminators");
 	}
 }
@@ -749,8 +754,17 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 	depthai->control_queue = depthai->device->getInputQueue("control").get();
 
-	if (depthai->has_floodlight && depthai->want_floodlight) {
-		depthai->device->setIrFloodLightBrightness(1500);
+	if (depthai->floodlights.has) {
+		float mA = depthai->floodlights.mA;
+
+		if (mA > 1500.0f) {
+			DEPTHAI_ERROR(depthai, "Can not set brightness to more then 1500mA, clamping!");
+			mA = 1500.0f;
+		}
+
+		if (mA > 0.0f) {
+			depthai->device->setIrFloodLightBrightness(mA);
+		}
 	}
 
 	//!@todo This code will turn the exposure time down, but you may not want it. Or we may want to rework Monado's
@@ -980,7 +994,7 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
 	depthai->log_level = debug_get_log_option_depthai_log();
-	depthai->want_floodlight = debug_get_bool_option_depthai_want_floodlight();
+	depthai->floodlights.mA = debug_get_num_option_depthai_floodlight_brightness();
 	depthai->device = d;
 
 	u_var_add_root(depthai, "DepthAI Source", 0);
