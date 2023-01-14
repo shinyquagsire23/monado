@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -212,6 +212,14 @@ gui_scene_tracking_overrides(struct gui_program *p);
  */
 void
 gui_scene_debug(struct gui_program *p);
+
+/*!
+ * Small hand-tracking demo.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_hand_tracking_demo(struct gui_program *p);
 
 /*!
  * Create a recording view scene.
