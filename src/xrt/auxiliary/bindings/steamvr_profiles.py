@@ -33,14 +33,6 @@ def open_file(args, fname):
     f = open(fname, "w")
     return f
 
-
-def steamvr_subpath_name(component):
-    if component.subpath_type == "pose":
-        return component.identifier_json_path.replace("/input/", "/pose/")
-
-    return component.identifier_json_path
-
-
 def get_required_components(path_type):
     if path_type == "button":
         return ["click", "touch"]
@@ -81,7 +73,7 @@ def main():
 
         component: Component
         for idx, component in enumerate(p.components):
-            subpath_name = steamvr_subpath_name(component)
+            subpath_name = component.steamvr_path
 
             input_source[subpath_name] = {
                 "type": component.subpath_type,
@@ -100,7 +92,7 @@ def main():
             "driver_name": "monado",
             # "legacy_binding": None, # TODO
             "input_bindingui_mode": "controller_handed",
-            "should_show_binidng_errors": True,
+            "should_show_binding_errors": True,
             "input_bindingui_left": {
                 "image": "{indexcontroller}/icons/indexcontroller_left.svg"  # TODO
             },

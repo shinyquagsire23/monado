@@ -130,6 +130,7 @@
 				},
 				"/input/menu": {
 					"type": "button",
+					"steamvr_path": "/input/application_menu",
 					"localized_name": "Menu",
 					"components": ["click"],
 					"monado_bindings": {
@@ -756,6 +757,7 @@
 				},
 				"/input/thumbstick": {
 					"type": "joystick",
+					"steamvr_path": "/input/thumbstick",
 					"localized_name": "Thumbstick",
 					"components": ["click", "touch", "position"],
 					"dpad_emulation": {

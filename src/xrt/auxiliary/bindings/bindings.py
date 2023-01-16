@@ -19,6 +19,17 @@ def find_component_in_list_by_name(name, component_list, subaction_path=None, id
             return component
     return None
 
+def steamvr_subpath_name(steamvr_path, subpath_type):
+    if subpath_type == "pose":
+        return steamvr_path.replace("/input/", "/pose/")
+
+    if subpath_type == "trigger" or subpath_type == "button":
+        return steamvr_path.replace("squeeze", "grip")
+
+    if subpath_type == "joystick":
+        return steamvr_path.replace("thumbstick", "joystick")
+
+    return steamvr_path
 
 class PathsByLengthCollector:
     """Helper class to sort paths by length, useful for creating fast path
@@ -119,8 +130,13 @@ class Component:
             if component_name in monado_bindings:
                 monado_binding = monado_bindings[component_name]
 
+            steamvr_path = steamvr_subpath_name(identifier_json_path, json_subpath["type"])
+            if "steamvr_path" in json_subpath:
+                steamvr_path = json_subpath["steamvr_path"]
+
             c = Component(subaction_path,
                           identifier_json_path,
+                          steamvr_path,
                           json_subpath["localized_name"],
                           json_subpath["type"],
                           component_name,
@@ -134,6 +150,7 @@ class Component:
     def __init__(self,
                  subaction_path,
                  identifier_json_path,
+                 steamvr_path,
                  subpath_localized_name,
                  subpath_type,
                  component_name,
@@ -142,6 +159,7 @@ class Component:
                  components_for_subpath):
         self.subaction_path = subaction_path
         self.identifier_json_path = identifier_json_path  # note: starts with a slash
+        self.steamvr_path = steamvr_path
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
@@ -382,8 +400,7 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            json_path = component.identifier_json_path
-            steamvr_path = json_path # @todo Doesn't handle pose yet.
+            steamvr_path = component.steamvr_path # @todo Doesn't handle pose yet.
             if component.component_name in ["click", "touch", "force", "value"]:
                 steamvr_path += "/" + component.component_name
 
