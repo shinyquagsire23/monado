@@ -205,7 +205,7 @@ oh_device_destroy(struct xrt_device *xdev)
 
 #define CASE_VEC1(OHMD_CONTROL)                                                                                        \
 	case OHMD_CONTROL:                                                                                             \
-		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+		if (ohd->controls_mapping[OHMD_CONTROL] == INPUT_INDICES_LAST) {                                       \
 			break;                                                                                         \
 		}                                                                                                      \
 		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
@@ -216,7 +216,7 @@ oh_device_destroy(struct xrt_device *xdev)
 
 #define CASE_VEC1_OR_DIGITAL(OHMD_CONTROL, MAKE_DIGITAL)                                                               \
 	case OHMD_CONTROL:                                                                                             \
-		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+		if (ohd->controls_mapping[OHMD_CONTROL] == INPUT_INDICES_LAST) {                                       \
 			break;                                                                                         \
 		}                                                                                                      \
 		if (MAKE_DIGITAL) {                                                                                    \
@@ -236,7 +236,7 @@ oh_device_destroy(struct xrt_device *xdev)
 
 #define CASE_DIGITAL(OHMD_CONTROL, THRESHOLD)                                                                          \
 	case OHMD_CONTROL:                                                                                             \
-		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+		if (ohd->controls_mapping[OHMD_CONTROL] == INPUT_INDICES_LAST) {                                       \
 			break;                                                                                         \
 		}                                                                                                      \
 		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
@@ -248,7 +248,7 @@ oh_device_destroy(struct xrt_device *xdev)
 
 #define CASE_VEC2_X(OHMD_CONTROL)                                                                                      \
 	case OHMD_CONTROL:                                                                                             \
-		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+		if (ohd->controls_mapping[OHMD_CONTROL] == INPUT_INDICES_LAST) {                                       \
 			break;                                                                                         \
 		}                                                                                                      \
 		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
@@ -259,7 +259,7 @@ oh_device_destroy(struct xrt_device *xdev)
 
 #define CASE_VEC2_Y(OHMD_CONTROL)                                                                                      \
 	case OHMD_CONTROL:                                                                                             \
-		if (ohd->controls_mapping[OHMD_CONTROL] == 0) {                                                        \
+		if (ohd->controls_mapping[OHMD_CONTROL] == INPUT_INDICES_LAST) {                                       \
 			break;                                                                                         \
 		}                                                                                                      \
 		if (control_state[i] != ohd->last_control_state[i]) {                                                  \
@@ -1076,7 +1076,7 @@ create_controller(ohmd_context *ctx, int device_idx, int device_flags, enum xrt_
 	ohd->enable_finite_difference = debug_get_bool_option_ohmd_finite_diff();
 
 	for (int i = 0; i < CONTROL_MAPPING_SIZE; i++) {
-		ohd->controls_mapping[i] = 0;
+		ohd->controls_mapping[i] = INPUT_INDICES_LAST;
 	}
 
 	if (device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER ||
