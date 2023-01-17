@@ -3,6 +3,7 @@
 		"/interaction_profiles/khr/simple_controller": {
 			"title": "Khronos Simple Controller",
 			"type": "tracked_controller",
+			"steamvr_controllertype": "khr_simple_controller",
 			"monado_device": "XRT_DEVICE_SIMPLE_CONTROLLER",
 			"subaction_paths": [
 				"/user/hand/left",
@@ -106,6 +107,7 @@
 		"/interaction_profiles/htc/vive_controller": {
 			"title": "HTC Vive Controller",
 			"type": "tracked_controller",
+			"steamvr_controllertype": "vive_controller",
 			"monado_device": "XRT_DEVICE_VIVE_WAND",
 			"subaction_paths": [
 				"/user/hand/left",
@@ -191,6 +193,7 @@
 		"/interaction_profiles/htc/vive_pro": {
 			"title": "HTC Vive Pro",
 			"type": "tracked_hmd",
+			"steamvr_controllertype": "vive_pro",
 			"monado_device": "XRT_DEVICE_VIVE_PRO",
 			"subaction_paths": [
 				"/user/head"
@@ -234,6 +237,7 @@
 		"/interaction_profiles/microsoft/motion_controller": {
 			"title": "Microsoft Mixed Reality Motion Controller",
 			"type": "tracked_controller",
+			"steamvr_controllertype": "holographic_controller",
 			"monado_device": "XRT_DEVICE_WMR_CONTROLLER",
 			"subaction_paths": [
 				"/user/hand/left",
@@ -322,6 +326,7 @@
 		"/interaction_profiles/microsoft/xbox_controller": {
 			"title": "Microsoft Xbox Controller",
 			"type": "untracked_controller",
+			"steamvr_controllertype": "gamepad",
 			"monado_device": "XRT_DEVICE_XBOX_CONTROLLER",
 			"subaction_paths": [
 				"/user/gamepad"
@@ -570,6 +575,7 @@
 		"/interaction_profiles/oculus/touch_controller": {
 			"title": "Oculus Touch Controller",
 			"type": "tracked_controller",
+			"steamvr_controllertype": "oculus_touch",
 			"monado_device": "XRT_DEVICE_TOUCH_CONTROLLER",
 			"subaction_paths": [
 				"/user/hand/left",
@@ -703,6 +709,7 @@
 		"/interaction_profiles/valve/index_controller": {
 			"title": "Valve Index Controller",
 			"type": "tracked_controller",
+			"steamvr_controllertype": "knuckles",
 			"monado_device": "XRT_DEVICE_INDEX_CONTROLLER",
 			"subaction_paths": [
 				"/user/hand/left",

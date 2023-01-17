@@ -273,6 +273,10 @@ class Profile:
         self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
         self.identifiers = Identifer.parse_identifiers(json_profile)
 
+        self.steamvr_controller_type = None
+        if "steamvr_controllertype" in json_profile:
+            self.steamvr_controller_type = json_profile["steamvr_controllertype"]
+
         self.components = []
         for identifier in self.identifiers:
             for component in identifier.components:

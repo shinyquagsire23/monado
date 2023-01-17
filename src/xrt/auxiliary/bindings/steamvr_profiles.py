@@ -54,6 +54,9 @@ def main():
         'bindings', help='Bindings file to use')
     parser.add_argument(
         'output', type=str, help='Output directory')
+    parser.add_argument(
+        '-s', '--steamvr', action='store_true',
+        help='Use SteamVR standard controller type names')
     args = parser.parse_args()
 
     bindings = Bindings.load_and_parse(args.bindings)
@@ -68,6 +71,10 @@ def main():
             continue
 
         profile_type, vendor_name, fname = names(p)
+
+        controller_type = "monado_" + vendor_name + "_" + profile_type
+        if args.steamvr == True and p.steamvr_controller_type is not None:
+            controller_type = p.steamvr_controller_type
 
         input_source = {}
 
@@ -86,7 +93,7 @@ def main():
 
         j = {
             "json_id": "input_profile",
-            "controller_type": "monado_" + vendor_name + "_" + profile_type,
+            "controller_type": controller_type,
             "device_class": device_class,
             "resource_root": "steamvr-monado",
             "driver_name": "monado",
