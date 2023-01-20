@@ -194,6 +194,8 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 		return ret;
 	}
 
+	vk->version = vk_args->required_instance_version;
+
 	u_string_list_destroy(&instance_ext_list);
 
 	ret = vk_get_instance_functions(vk);

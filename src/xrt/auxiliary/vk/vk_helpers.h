@@ -50,6 +50,7 @@ struct vk_bundle
 	enum u_logging_level log_level;
 
 	VkInstance instance;
+	uint32_t version;
 	VkPhysicalDevice physical_device;
 	int physical_device_index;
 	VkDevice device;
