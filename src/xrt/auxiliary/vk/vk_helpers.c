@@ -1166,6 +1166,10 @@ vk_create_view_usage(struct vk_bundle *vk,
 {
 	VkBaseInStructure *next_chain = NULL;
 
+	/*
+	 * @todo Handle Vulkan 1.0 instance without VK_KHR_maintenance2 on GPUs that don't support srgb with storage
+	 * usage.
+	 */
 #ifdef VK_KHR_maintenance2
 	VkImageViewUsageCreateInfo image_view_usage_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
@@ -1173,10 +1177,11 @@ vk_create_view_usage(struct vk_bundle *vk,
 	    .usage = image_usage,
 	};
 
-	if (vk->has_KHR_maintenance2) {
+	if (vk->has_KHR_maintenance2 || vk->version >= VK_VERSION_1_1) {
 		CHAIN(image_view_usage_create_info, next_chain);
 	} else {
-		VK_WARN(vk, "VK_KHR_maintenance2 not supported can't use usage image view");
+		VK_WARN(vk,
+		        "Using Vulkan 1.0 instance without VK_KHR_maintenance2 support, can't use usage image view.");
 	}
 #endif
 
