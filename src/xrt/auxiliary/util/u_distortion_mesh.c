@@ -342,22 +342,42 @@ u_compute_distortion_ns_meshgrid(
 	float v_index_frac = (v * v_edge_num) - v_index_int;
 
 	// Imagine this like a ray coming out of your eye with x, y coordinate bearing and z coordinate -1.0f
-	struct xrt_vec2 bearing;
+	struct xrt_vec2 bearing = {0};
 
 	int stride = values->num_grid_points_u;
 
+	float eps = 0.000001;
 
-	if (u_index_frac > 0.000001 || v_index_frac > 0.000001) {
+	struct xrt_vec2 *grid = values->grid[view];
+	int topleft_i = (v_index_int * stride) + u_index_int;
+	int topright_i = (v_index_int * stride) + u_index_int + 1;
+	int bottomleft_i = ((v_index_int + 1) * stride) + u_index_int;
+	int bottomright_i = ((v_index_int + 1) * stride) + u_index_int + 1;
+
+	if (u_index_frac > eps && v_index_frac > eps) {
+		// Usual case - we're in the middle of a cell
 		// {top,bottom}-{left,right} notation might be inaccurate. The code *works* right now but don't take its
 		// word when reading
-		struct xrt_vec2 topleft = values->grid[view][(v_index_int * stride) + u_index_int];
-		struct xrt_vec2 topright = values->grid[view][(v_index_int * stride) + u_index_int + 1];
-		struct xrt_vec2 bottomleft = values->grid[view][((v_index_int + 1) * stride) + u_index_int];
-		struct xrt_vec2 bottomright = values->grid[view][((v_index_int + 1) * stride) + u_index_int + 1];
+		struct xrt_vec2 topleft = grid[topleft_i];
+		struct xrt_vec2 topright = grid[topright_i];
+		struct xrt_vec2 bottomleft = grid[bottomleft_i];
+		struct xrt_vec2 bottomright = grid[bottomright_i];
+
 		struct xrt_vec2 left_point_on_line_segment = m_vec2_lerp(topleft, bottomleft, v_index_frac);
 		struct xrt_vec2 right_point_on_line_segment = m_vec2_lerp(topright, bottomright, v_index_frac);
 
 		bearing = m_vec2_lerp(left_point_on_line_segment, right_point_on_line_segment, u_index_frac);
+
+	} else if (v_index_frac > eps) {
+		// We're on a vertical edge
+		struct xrt_vec2 top = values->grid[view][topleft_i];
+		struct xrt_vec2 bottom = values->grid[view][bottomleft_i];
+		bearing = m_vec2_lerp(top, bottom, v_index_frac);
+	} else if (u_index_frac > eps) {
+		// We're on a horizontal edge
+		struct xrt_vec2 left = values->grid[view][topleft_i];
+		struct xrt_vec2 right = values->grid[view][topright_i];
+		bearing = m_vec2_lerp(left, right, u_index_frac);
 	} else {
 		int acc_idx = (v_index_int * stride) + u_index_int;
 		bearing = values->grid[view][acc_idx];
