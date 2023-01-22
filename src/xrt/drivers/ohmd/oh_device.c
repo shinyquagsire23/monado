@@ -1306,7 +1306,5 @@ oh_device_create(ohmd_context *ctx, bool no_hmds, struct xrt_device **out_xdevs)
 		}
 	}
 
-	ohmd_device_settings_destroy(settings);
-
 	return created;
 }
