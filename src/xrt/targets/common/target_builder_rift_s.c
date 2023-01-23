@@ -46,6 +46,10 @@ enum u_logging_level rift_s_log_level;
 
 DEBUG_GET_ONCE_LOG_OPTION(rift_s_log, "RIFT_S_LOG", U_LOGGING_WARN)
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+DEBUG_GET_ONCE_BOOL_OPTION(rift_s_hand_tracking_as_controller, "RIFT_S_HAND_TRACKING_AS_CONTROLLERS", false)
+#endif
+
 static xrt_result_t
 rift_s_estimate_system(struct xrt_builder *xb,
                        cJSON *config,
@@ -172,6 +176,11 @@ rift_s_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 
 		usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[0];
 		usysd->base.xdevs[usysd->base.xdev_count++] = two_hands[1];
+
+		if (debug_get_bool_option_rift_s_hand_tracking_as_controller()) {
+			usysd->base.roles.left = two_hands[0];
+			usysd->base.roles.right = two_hands[1];
+		}
 	}
 #endif
 
