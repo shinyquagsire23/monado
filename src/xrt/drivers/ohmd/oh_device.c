@@ -53,8 +53,7 @@ enum input_indices
 	GRIP_POSE,
 	AIM_POSE,
 
-	// longest list of aliased enums has to start last for INPUT_INDICES_LAST to get the biggest value
-	OCULUS_TOUCH_X_CLICK = 0,
+	OCULUS_TOUCH_X_CLICK,
 	OCULUS_TOUCH_X_TOUCH,
 	OCULUS_TOUCH_Y_CLICK,
 	OCULUS_TOUCH_Y_TOUCH,
