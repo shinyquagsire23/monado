@@ -680,7 +680,7 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 
 	// Allow time for enumeration of available displays by host system, so the compositor can select among them.
 	WMR_INFO(wh,
-	         "Sleep until the HMD display is powered up so, the available displays can be enumerated by the host "
+	         "Sleep until the HMD display is powered up, so the available displays can be enumerated by the host "
 	         "system.");
 
 	// Get the sleep amount, then sleep. One or two seconds was not enough.
