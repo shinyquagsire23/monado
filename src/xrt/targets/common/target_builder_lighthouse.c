@@ -158,9 +158,9 @@ valve_index_slam_track(struct lighthouse_system *lhs,
 {
 	struct xrt_slam_sinks *sinks = NULL;
 
+#ifdef XRT_FEATURE_SLAM
 	struct vive_device *d = (struct vive_device *)lhs->devices->base.roles.head;
 
-#ifdef XRT_FEATURE_SLAM
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
 	config.stereo_calib = stereo_calib; // Won't hold stereo_calib so no refcount
