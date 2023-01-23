@@ -249,6 +249,39 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 		subpath_fn = oxr_verify_valve_index_controller_subpath;
 		dpad_path_fn = oxr_verify_valve_index_controller_dpad_path;
 		dpad_emulator_fn = oxr_verify_valve_index_controller_dpad_emulator;
+	} else if (ip == inst->path_cache.hp_mixed_reality_controller) {
+		if (!inst->extensions.EXT_hp_mixed_reality_controller) {
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->interactionProfile == \"%s\") used but "
+			                 "XR_EXT_hp_mixed_reality_controller not enabled",
+			                 ip_str);
+		}
+
+		subpath_fn = oxr_verify_hp_mixed_reality_controller_subpath;
+		dpad_path_fn = oxr_verify_hp_mixed_reality_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_hp_mixed_reality_controller_dpad_emulator;
+	} else if (ip == inst->path_cache.samsung_odyssey_controller) {
+		if (!inst->extensions.EXT_samsung_odyssey_controller) {
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->interactionProfile == \"%s\") used but "
+			                 "XR_EXT_samsung_odyssey_controller not enabled",
+			                 ip_str);
+		}
+
+		subpath_fn = oxr_verify_samsung_odyssey_controller_subpath;
+		dpad_path_fn = oxr_verify_samsung_odyssey_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_samsung_odyssey_controller_dpad_emulator;
+	} else if (ip == inst->path_cache.ml_ml2_controller) {
+		if (!inst->extensions.ML_ml2_controller_interaction) {
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->interactionProfile == \"%s\") used but "
+			                 "XR_ML_ml2_controller not enabled",
+			                 ip_str);
+		}
+
+		subpath_fn = oxr_verify_ml_ml2_controller_subpath;
+		dpad_path_fn = oxr_verify_ml_ml2_controller_dpad_path;
+		dpad_emulator_fn = oxr_verify_ml_ml2_controller_dpad_emulator;
 	} else if (ip == inst->path_cache.mndx_ball_on_a_stick_controller) {
 		subpath_fn = oxr_verify_mndx_ball_on_a_stick_controller_subpath;
 		dpad_path_fn = oxr_verify_mndx_ball_on_a_stick_controller_dpad_path;

@@ -258,6 +258,30 @@
 
 
 /*
+ * XR_EXT_hp_mixed_reality_controller
+ */
+#if defined(XR_EXT_hp_mixed_reality_controller)
+#define OXR_HAVE_EXT_hp_mixed_reality_controller
+#define OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_)                                                       \
+	_(EXT_hp_mixed_reality_controller, EXT_HP_MIXED_REALITY_CONTROLLER)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_)
+#endif
+
+
+/*
+ * XR_EXT_samsung_odyssey_controller
+ */
+#if defined(XR_EXT_samsung_odyssey_controller)
+#define OXR_HAVE_EXT_samsung_odyssey_controller
+#define OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_)                                                        \
+	_(EXT_samsung_odyssey_controller, EXT_SAMSUNG_ODYSSEY_CONTROLLER)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_)
+#endif
+
+
+/*
  * XR_FB_display_refresh_rate
  */
 #if defined(XR_FB_display_refresh_rate)
@@ -265,6 +289,18 @@
 #define OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_) _(FB_display_refresh_rate, FB_DISPLAY_REFRESH_RATE)
 #else
 #define OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_)
+#endif
+
+
+/*
+ * XR_ML_ml2_controller_interaction
+ */
+#if defined(XR_ML_ml2_controller_interaction)
+#define OXR_HAVE_ML_ml2_controller_interaction
+#define OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_)                                                         \
+	_(ML_ml2_controller_interaction, ML_ML2_CONTROLLER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_)
 #endif
 
 
@@ -380,7 +416,10 @@
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \
+    OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_) \
+    OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_) \
     OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_) \
+    OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \

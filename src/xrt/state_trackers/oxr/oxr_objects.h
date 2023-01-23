@@ -1487,6 +1487,9 @@ struct oxr_instance
 		XrPath oculus_go_controller;
 		XrPath oculus_touch_controller;
 		XrPath valve_index_controller;
+		XrPath hp_mixed_reality_controller;
+		XrPath samsung_odyssey_controller;
+		XrPath ml_ml2_controller;
 		XrPath mndx_ball_on_a_stick_controller;
 		XrPath msft_hand_interaction;
 	} path_cache;

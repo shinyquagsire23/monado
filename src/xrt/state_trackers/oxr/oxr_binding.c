@@ -328,6 +328,9 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_GO_CONTROLLER: FIND_PROFILE(oculus_go_controller); return;
 	case XRT_DEVICE_VIVE_PRO: FIND_PROFILE(htc_vive_pro); return;
 	case XRT_DEVICE_XBOX_CONTROLLER: FIND_PROFILE(microsoft_xbox_controller); return;
+	case XRT_DEVICE_HP_REVERB_G2_CONTROLLER: FIND_PROFILE(hp_mixed_reality_controller); return;
+	case XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER: FIND_PROFILE(samsung_odyssey_controller); return;
+	case XRT_DEVICE_ML2_CONTROLLER: FIND_PROFILE(ml_ml2_controller); return;
 	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
 
 	// no interaction
