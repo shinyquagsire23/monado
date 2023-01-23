@@ -122,7 +122,7 @@ static constexpr uint8_t MSG_LEN_SMALL = 16;
 static int
 hdk_device_update(struct hdk_device *hd)
 {
-	uint8_t buffer[MSG_LEN_LARGE];
+	uint8_t buffer[MSG_LEN_LARGE]{};
 
 	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 100);
 	if (bytesRead == -1) {
