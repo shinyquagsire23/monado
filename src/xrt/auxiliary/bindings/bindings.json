@@ -819,6 +819,117 @@
 			}
 		},
 
+		"/interaction_profiles/hp/mixed_reality_controller": {
+			"title": "HP Reverb G2 Controller",
+			"type": "tracked_controller",
+			"monado_device": "XRT_DEVICE_HP_REVERB_G2_CONTROLLER",
+			"extension": "XR_EXT_hp_mixed_reality_controller",
+			"subaction_paths": [
+				"/user/hand/left",
+				"/user/hand/right"
+			],
+			"subpaths": {
+				"/input/x": {
+					"type": "button",
+					"localized_name": "X",
+					"components": ["click"],
+					"side": "left",
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_X_CLICK"
+					}
+				},
+				"/input/y": {
+					"type": "button",
+					"localized_name": "Y",
+					"components": ["click"],
+					"side": "left",
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_Y_CLICK"
+					}
+				},
+				"/input/a": {
+					"type": "button",
+					"localized_name": "A",
+					"components": ["click"],
+					"side": "right",
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_A_CLICK"
+					}
+				},
+				"/input/b": {
+					"type": "button",
+					"localized_name": "B",
+					"components": ["click"],
+					"side": "right",
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_B_CLICK"
+					}
+				},
+				"/input/menu": {
+					"type": "button",
+					"localized_name": "Menu",
+					"components": ["click"],
+					"side": "left",
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_MENU_CLICK"
+					}
+				},
+				"/input/squeeze": {
+					"type": "trigger",
+					"localized_name": "Squeeze",
+					"components": ["value"],
+					"monado_bindings": {
+						"value": "XRT_INPUT_G2_CONTROLLER_SQUEEZE_VALUE"
+					}
+				},
+				"/input/trigger": {
+					"type": "trigger",
+					"localized_name": "Trigger",
+					"components": ["value"],
+					"monado_bindings": {
+						"value": "XRT_INPUT_G2_CONTROLLER_TRIGGER_VALUE"
+					}
+				},
+				"/input/thumbstick": {
+					"type": "joystick",
+					"localized_name": "Thumbstick",
+					"components": ["click", "position"],
+					"dpad_emulation": {
+						"position": "position",
+						"center": false
+					},
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_THUMBSTICK_CLICK",
+						"position": "XRT_INPUT_G2_CONTROLLER_THUMBSTICK"
+					}
+				},
+				"/input/grip": {
+					"type": "pose",
+					"localized_name": "Grip",
+					"components": ["pose"],
+					"monado_bindings": {
+						"pose": "XRT_INPUT_G2_CONTROLLER_GRIP_POSE"
+					}
+				},
+				"/input/aim": {
+					"type": "pose",
+					"localized_name": "Aim",
+					"components": ["pose"],
+					"monado_bindings": {
+						"pose": "XRT_INPUT_G2_CONTROLLER_AIM_POSE"
+					}
+				},
+				"/output/haptic": {
+					"type": "vibration",
+					"localized_name": "Haptic",
+					"components": ["haptic"],
+					"monado_bindings": {
+						"haptic": "XRT_OUTPUT_NAME_G2_CONTROLLER_HAPTIC"
+					}
+				}
+			}
+		},
+
 		"/interaction_profiles/microsoft/hand_interaction": {
 			"title": "Microsoft hand interaction",
 			"type": "tracked_controller",
