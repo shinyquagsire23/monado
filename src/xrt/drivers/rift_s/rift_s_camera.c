@@ -248,7 +248,7 @@ rift_s_camera_create(struct xrt_prober *xp,
 	u_var_add_draggable_u16(cam, &cam->exposure_ui, "Exposure");
 	u_var_add_u8(cam, &cam->target_gain, "Gain");
 	u_var_add_gui_header(cam, NULL, "Auto exposure and gain control");
-	u_autoexpgain_add_vars(cam->aeg, cam);
+	u_autoexpgain_add_vars(cam->aeg, cam, "");
 
 	u_var_add_gui_header(cam, NULL, "Camera Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");

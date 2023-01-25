@@ -39,7 +39,7 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, int 
 
 //! Setup UI for the AEG algorithm
 void
-u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root);
+u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root, char *prefix);
 
 //! Update the AEG with a frame
 void
