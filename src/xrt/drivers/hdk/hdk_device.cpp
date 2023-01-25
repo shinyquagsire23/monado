@@ -135,6 +135,9 @@ hdk_device_update(struct hdk_device *hd)
 		}
 		hd->quat_valid = false;
 		return 0;
+	} else if (bytesRead == 0) {
+		HDK_WARN(hd, "Read 0 bytes from device");
+		return 1;
 	}
 	while (bytesRead > 0) {
 		if (bytesRead != MSG_LEN_LARGE && bytesRead != MSG_LEN_SMALL) {
