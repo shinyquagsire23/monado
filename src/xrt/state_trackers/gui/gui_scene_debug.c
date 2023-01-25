@@ -111,11 +111,13 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 	math_quat_normalize(q);
 }
 
+#define MAX_HEADER_NESTING 256
 struct draw_state
 {
 	struct gui_program *p;
 	struct debug_scene *ds;
-	bool hidden;
+	bool vis_stack[MAX_HEADER_NESTING]; //!< Visibility stack for nested headers
+	int vis_i;
 };
 
 struct plot_state
@@ -306,7 +308,8 @@ static void
 on_root_enter(const char *name, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
-	state->hidden = false;
+	state->vis_i = 0;
+	state->vis_stack[0] = true;
 
 	igBegin(name, NULL, 0);
 }
@@ -326,7 +329,20 @@ on_elem(struct u_var_info *info, void *priv)
 	enum u_var_kind kind = info->kind;
 
 	struct draw_state *state = (struct draw_state *)priv;
-	if (state->hidden && kind != U_VAR_KIND_GUI_HEADER) {
+
+	bool visible = state->vis_stack[state->vis_i];
+
+	if (kind == U_VAR_KIND_GUI_HEADER_BEGIN) {
+		state->vis_i++;
+		state->vis_stack[state->vis_i] = visible;
+	} else if (kind == U_VAR_KIND_GUI_HEADER_END) {
+		state->vis_i--;
+	}
+
+	// Check balanced GUI_HEADER_BEGIN/END pairs
+	assert(state->vis_i >= 0 && state->vis_i < MAX_HEADER_NESTING);
+
+	if (!visible && kind != U_VAR_KIND_GUI_HEADER) {
 		return;
 	}
 
@@ -429,7 +445,21 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_RO_QUAT_F32: igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_FF_VEC3_F32: on_ff_vec3_var(info, state->p); break;
 	case U_VAR_KIND_GUI_HEADER: {
-		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);
+		assert(state->vis_i == 0 && "Do not mix GUI_HEADER with GUI_HEADER_BEGIN/END");
+		state->vis_stack[state->vis_i] = igCollapsingHeaderBoolPtr(name, NULL, 0);
+		break;
+	}
+	case U_VAR_KIND_GUI_HEADER_BEGIN: {
+		bool is_open = igCollapsingHeaderBoolPtr(name, NULL, 0);
+		state->vis_stack[state->vis_i] = is_open;
+		if (is_open) {
+			igIndent(8.0f);
+		}
+		break;
+	}
+	case U_VAR_KIND_GUI_HEADER_END: {
+		igDummy((ImVec2){0, 8.0f});
+		igUnindent(8.0f);
 		break;
 	}
 	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
@@ -448,7 +478,9 @@ static void
 on_root_exit(const char *name, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
-	state->hidden = false;
+	assert(state->vis_i == 0 && "Unbalanced GUI_HEADER_BEGIN/END pairs");
+	state->vis_i = 0;
+	state->vis_stack[0] = false;
 
 	igEnd();
 }
@@ -513,7 +545,7 @@ static void
 scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
-	struct draw_state state = {p, ds, false};
+	struct draw_state state = {p, ds, {0}, 0};
 
 	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
 }

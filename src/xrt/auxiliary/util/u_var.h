@@ -187,6 +187,8 @@ enum u_var_kind
 	U_VAR_KIND_RO_FF_F64,
 	U_VAR_KIND_RO_FF_VEC3_F32,
 	U_VAR_KIND_GUI_HEADER,
+	U_VAR_KIND_GUI_HEADER_BEGIN,
+	U_VAR_KIND_GUI_HEADER_END,
 	U_VAR_KIND_BUTTON,
 	U_VAR_KIND_COMBO,
 	U_VAR_KIND_HISTOGRAM_F32,
@@ -298,6 +300,8 @@ u_var_force_on(void);
 	ADD_FUNC(ro_ff_f64, struct m_ff_f64, RO_FF_F64)                                                                \
 	ADD_FUNC(ro_ff_vec3_f32, struct m_ff_vec3_f32, RO_FF_VEC3_F32)                                                 \
 	ADD_FUNC(gui_header, bool, GUI_HEADER)                                                                         \
+	ADD_FUNC(gui_header_begin, bool, GUI_HEADER_BEGIN)                                                             \
+	ADD_FUNC(gui_header_end, bool, GUI_HEADER_END)                                                                 \
 	ADD_FUNC(button, struct u_var_button, BUTTON)                                                                  \
 	ADD_FUNC(combo, struct u_var_combo, COMBO)                                                                     \
 	ADD_FUNC(draggable_f32, struct u_var_draggable_f32, DRAGGABLE_F32)                                             \
