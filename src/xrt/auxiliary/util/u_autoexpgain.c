@@ -42,7 +42,7 @@ DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
 #define INITIAL_BRIGHTNESS 0.5
 #define INITIAL_MAX_BRIGHTNESS_STEP 0.1
 #define INITIAL_THRESHOLD 0.1
-#define GRID_COLS 40 //!< Amount of columns for the histogram sample grid
+#define GRID_COLS 32 //!< Amount of columns for the histogram sample grid
 
 //! AEG State machine states
 enum u_aeg_state

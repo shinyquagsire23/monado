@@ -305,7 +305,7 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 	ws->in_sinks.left = &ws->left_sink;
 	ws->in_sinks.right = &ws->right_sink;
 	ws->in_sinks.imu = &ws->imu_sink;
-	ws->camera = wmr_camera_open(dev_holo, ws->in_sinks.left, ws->in_sinks.right, ws->log_level);
+	ws->camera = wmr_camera_open(dev_holo, ws->in_sinks.left, ws->in_sinks.right, cfg.n_cameras, ws->log_level);
 	ws->config = cfg;
 
 	// Setup UI

@@ -24,14 +24,18 @@
 #include "util/u_frame.h"
 #include "util/u_trace_marker.h"
 
+#include "wmr_config.h"
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
 
 //! Specifies whether the user wants to enable autoexposure from the start.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_autoexposure, "WMR_AUTOEXPOSURE", true)
 
+//! Specifies whether the user wants to use the same exp/gain values for all cameras
+DEBUG_GET_ONCE_BOOL_OPTION(wmr_unify_expgain, "WMR_UNIFY_EXPGAIN", false)
+
 static int
-update_expgain(struct wmr_camera *cam, struct xrt_frame *xf);
+update_expgain(struct wmr_camera *cam, struct xrt_frame **frames);
 
 /*
  *
@@ -97,11 +101,15 @@ struct wmr_camera
 
 	struct libusb_transfer *xfers[NUM_XFERS];
 
-	bool manual_control; //!< Whether to control exp/gain manually or with aeg
-	uint16_t last_exposure, exposure;
-	uint8_t last_gain, gain;
-	struct u_var_draggable_u16 exposure_ui; //! Widget to control `exposure` value
-	struct u_autoexpgain *aeg;
+	struct wmr_camera_expgain
+	{
+		bool manual_control; //!< Whether to control exp/gain manually or with aeg
+		uint16_t last_exposure, exposure;
+		uint8_t last_gain, gain;
+		struct u_var_draggable_u16 exposure_ui; //! Widget to control `exposure` value
+		struct u_autoexpgain *aeg;
+	} ceg[WMR_MAX_CAMERAS]; //!< Camera exposure-gain control
+	bool unify_expgains;    //!< Whether to use the same exposure/gain values for all cameras
 
 	struct u_sink_debug debug_sinks[2];
 
@@ -370,7 +378,8 @@ img_xfer_cb(struct libusb_transfer *xfer)
 		u_frame_create_roi(xf, cam->configs[0].roi, &xf_left);
 		u_frame_create_roi(xf, cam->configs[1].roi, &xf_right);
 
-		update_expgain(cam, xf_left);
+		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {xf_left, xf_right, NULL, NULL};
+		update_expgain(cam, frames);
 
 		if (cam->left_sink != NULL) {
 			xrt_sink_push_frame(cam->left_sink, xf_left);
@@ -401,6 +410,7 @@ struct wmr_camera *
 wmr_camera_open(struct xrt_prober_device *dev_holo,
                 struct xrt_frame_sink *left_sink,
                 struct xrt_frame_sink *right_sink,
+                int camera_count,
                 enum u_logging_level log_level)
 {
 	DRV_TRACE_MARKER();
@@ -410,8 +420,6 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	int i;
 
 	cam->log_level = log_level;
-	cam->exposure = DEFAULT_EXPOSURE;
-	cam->gain = DEFAULT_GAIN;
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -450,24 +458,58 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 
 	bool enable_aeg = debug_get_bool_option_wmr_autoexposure();
 	int frame_delay = 3; // WMR takes about three frames until the cmd changes the image
-	cam->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
+	cam->unify_expgains = debug_get_bool_option_wmr_unify_expgain();
 
-	cam->exposure_ui.val = &cam->exposure;
-	cam->exposure_ui.max = WMR_MAX_EXPOSURE;
-	cam->exposure_ui.min = WMR_MIN_EXPOSURE;
-	cam->exposure_ui.step = 25;
+	for (int i = 0; i < camera_count; i++) {
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+		ceg->manual_control = false;
+		ceg->last_exposure = DEFAULT_EXPOSURE;
+		ceg->exposure = DEFAULT_EXPOSURE;
+		ceg->last_gain = DEFAULT_GAIN;
+		ceg->gain = DEFAULT_GAIN;
+		ceg->exposure_ui.val = &ceg->exposure;
+		ceg->exposure_ui.max = WMR_MAX_EXPOSURE;
+		ceg->exposure_ui.min = WMR_MIN_EXPOSURE;
+		ceg->exposure_ui.step = 25;
+		ceg->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
+	}
 
 	u_sink_debug_init(&cam->debug_sinks[0]);
 	u_sink_debug_init(&cam->debug_sinks[1]);
 	u_var_add_root(cam, "WMR Camera", true);
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
-	u_var_add_bool(cam, &cam->manual_control, "Manual exposure and gain control");
-	u_var_add_draggable_u16(cam, &cam->exposure_ui, "Exposure (usec)");
-	u_var_add_u8(cam, &cam->gain, "Gain");
-	u_autoexpgain_add_vars(cam->aeg, cam, "");
-	u_var_add_gui_header(cam, NULL, "Camera Streams");
+
+	u_var_add_gui_header_begin(cam, NULL, "Camera Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
+	u_var_add_gui_header_end(cam, NULL, NULL);
+
+	u_var_add_gui_header_begin(cam, NULL, "Exposure and gain control");
+	u_var_add_bool(cam, &cam->unify_expgains, "Use same values");
+
+	for (int i = 0; i < camera_count; i++) {
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+		char label[256] = {0};
+
+		(void)snprintf(label, sizeof(label), "Control for camera %d", i);
+		u_var_add_gui_header_begin(cam, NULL, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Manual exposure and gain control", i);
+		u_var_add_bool(cam, &ceg->manual_control, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Exposure (usec)", i);
+		u_var_add_draggable_u16(cam, &ceg->exposure_ui, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Gain", i);
+		u_var_add_u8(cam, &ceg->gain, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] ", i);
+		u_autoexpgain_add_vars(ceg->aeg, cam, label);
+
+		u_var_add_gui_header_end(cam, NULL, NULL);
+	}
+
+	u_var_add_gui_header_end(cam, NULL, "Auto exposure and gain control END");
 
 	cam->left_sink = left_sink;
 	cam->right_sink = right_sink;
@@ -614,31 +656,39 @@ fail:
 }
 
 static int
-update_expgain(struct wmr_camera *cam, struct xrt_frame *xf)
+update_expgain(struct wmr_camera *cam, struct xrt_frame **frames)
 {
-	if (!cam->manual_control && xf != NULL) {
-		u_autoexpgain_update(cam->aeg, xf);
-		cam->exposure = u_autoexpgain_get_exposure(cam->aeg);
-		cam->gain = u_autoexpgain_get_gain(cam->aeg);
-	}
-
-	if (cam->last_exposure == cam->exposure && cam->last_gain == cam->gain) {
-		return 0;
-	}
-	cam->last_exposure = cam->exposure;
-	cam->last_gain = cam->gain;
-
 	int res = 0;
 	for (int i = 0; i < cam->config_count; i++) {
 		const struct wmr_camera_config *config = &cam->configs[i];
 		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
 			continue;
 		}
-		res = wmr_camera_set_exposure_gain(cam, config->location, cam->exposure, cam->gain);
-		if (res != 0) {
-			WMR_CAM_ERROR(cam, "Failed to set exposure and gain for camera %d", i);
-			return res;
+
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+
+		if (!ceg->manual_control && frames != NULL && frames[i] != NULL) {
+			if (!cam->unify_expgains || i == 0) {
+				u_autoexpgain_update(ceg->aeg, frames[i]);
+				ceg->exposure = (uint16_t)u_autoexpgain_get_exposure(ceg->aeg);
+				ceg->gain = (uint8_t)u_autoexpgain_get_gain(ceg->aeg);
+			} else {
+				ceg->exposure = cam->ceg[0].exposure;
+				ceg->gain = cam->ceg[0].gain;
+			}
 		}
+
+		if (ceg->last_exposure == ceg->exposure && ceg->last_gain == ceg->gain) {
+			continue;
+		}
+		ceg->last_exposure = ceg->exposure;
+		ceg->last_gain = ceg->gain;
+
+		bool status = wmr_camera_set_exposure_gain(cam, config->location, ceg->exposure, ceg->gain);
+		if (status != 0) {
+			WMR_CAM_ERROR(cam, "Failed to set exposure and gain for camera %d", i);
+		}
+		res |= status;
 	}
 	return res;
 }
