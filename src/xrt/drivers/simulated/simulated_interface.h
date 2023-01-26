@@ -67,6 +67,27 @@ simulated_create_auto_prober(void);
 struct xrt_device *
 simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *center);
 
+/*!
+ * Create a simulated controller.
+ *
+ * Supported configs:
+ *
+ * * XRT_DEVICE_SIMPLE_CONTROLLER
+ *    * XRT_DEVICE_TYPE_ANY_CONTROLLER
+ * * XRT_DEVICE_WMR_CONTROLLER
+ *    * XRT_DEVICE_TYPE_LEFT_CONTROLLER
+ *    * XRT_DEVICE_TYPE_RIGHT_CONTROLLER
+ * * XRT_DEVICE_ML2_CONTROLLER
+ *    * XRT_DEVICE_TYPE_ANY_CONTROLLER
+ *
+ * @ingroup drv_simulated
+ */
+struct xrt_device *
+simulated_create_controller(enum xrt_device_name name,
+                            enum xrt_device_type type,
+                            const struct xrt_pose *center,
+                            struct xrt_tracking_origin *origin);
+
 
 #ifdef __cplusplus
 }
