@@ -429,28 +429,6 @@ math_quat_to_swing_twist(const struct xrt_quat *in, struct xrt_vec2 *out_swing, 
  */
 
 /*!
- * Multiply Matrix2x2.
- *
- * @relates xrt_matrix_2x2
- * @ingroup aux_math
- */
-void
-math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
-                         const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result_out);
-
-/*!
- * Transform a vec2 by a 2x2 matrix
- *
- * @see xrt_matrix_2x2
- * @ingroup aux_math
- */
-void
-math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
-                               const struct xrt_vec2 *right,
-                               struct xrt_vec2 *result_out);
-
-/*!
  * Initialize a 3x3 matrix to the identity matrix
  *
  * @see xrt_matrix_3x3

@@ -20,6 +20,7 @@
 #include "math/m_api.h"
 #include "math/m_vec3.h"
 #include "math/m_matrix_4x4_f64.h"
+#include "math/m_matrix_2x2.h"
 #include "math/m_space.h"
 
 #include "util/u_misc.h"

@@ -10,6 +10,7 @@
 
 #include "xrt/xrt_device.h"
 #include "math/m_api.h"
+#include "math/m_matrix_2x2.h"
 #include "math/m_vec2.h"
 #include "render/render_interface.h"
 
