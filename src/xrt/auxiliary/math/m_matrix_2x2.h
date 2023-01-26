@@ -47,6 +47,16 @@ math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
 	*result_out = result;
 }
 
+static inline void
+math_matrix_2x2_invert(const struct xrt_matrix_2x2 *matrix, struct xrt_matrix_2x2 *invertedMatrix)
+{
+	float determinant = matrix->v[0] * matrix->v[3] - matrix->v[1] * matrix->v[2];
+	invertedMatrix->v[0] = matrix->v[3] / determinant;
+	invertedMatrix->v[1] = -matrix->v[1] / determinant;
+	invertedMatrix->v[2] = -matrix->v[2] / determinant;
+	invertedMatrix->v[3] = matrix->v[0] / determinant;
+}
+
 #ifdef __cplusplus
 }
 #endif
