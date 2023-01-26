@@ -294,11 +294,10 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
-	int create_status = ht_device_create(&usysd->xfctx,        //
-	                                     calib,                //
-	                                     HT_ALGORITHM_MERCURY, //
-	                                     extra_camera_info,    //
-	                                     &hand_sinks,          //
+	int create_status = ht_device_create(&usysd->xfctx,     //
+	                                     calib,             //
+	                                     extra_camera_info, //
+	                                     &hand_sinks,       //
 	                                     out_hand_device);
 	t_stereo_camera_calibration_reference(&calib, NULL);
 	if (create_status != 0) {

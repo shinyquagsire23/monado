@@ -36,7 +36,6 @@ extern "C" {
  *
  * @param xfctx Frame context to attach the tracker to
  * @param calib Calibration struct for stereo camera
- * @param algorithm_choice Which algorithm to use for hand tracking
  * @param out_sinks Sinks to stream camera data to
  * @param out_device Newly created hand tracker "device"
  * @return int 0 on success
@@ -44,7 +43,6 @@ extern "C" {
 int
 ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
-                 enum t_hand_tracking_algorithm algorithm_choice,
                  struct t_camera_extra_info extra_camera_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device);

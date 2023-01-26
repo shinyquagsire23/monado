@@ -1,7 +1,6 @@
 # Copyright 2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-add_subdirectory(old_rgb)
 add_subdirectory(mercury)
 
 ###

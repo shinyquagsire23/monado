@@ -80,7 +80,6 @@ gui_scene_hand_tracking_demo(struct gui_program *p)
 	int create_status = ht_device_create( //
 	    &usysd->xfctx,                    //
 	    calib,                            //
-	    HT_ALGORITHM_MERCURY,             //
 	    extra_camera_info,                //
 	    &hand_sinks,                      //
 	    &ht_dev);                         //

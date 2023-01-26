@@ -59,7 +59,6 @@ DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_slam, "VIVE_SLAM", false)
 DEBUG_GET_ONCE_TRISTATE_OPTION(lh_handtracking, "LH_HANDTRACKING")
-DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
 #define LH_TRACE(...) U_LOG_IFL_T(debug_get_log_option_lh_log(), __VA_ARGS__)
 #define LH_DEBUG(...) U_LOG_IFL_D(debug_get_log_option_lh_log(), __VA_ARGS__)
@@ -220,13 +219,9 @@ valve_index_hand_track(struct lighthouse_system *lhs,
 	info.views[0].boundary.circle.normalized_radius = 0.55;
 	info.views[1].boundary.circle.normalized_radius = 0.55;
 
-	bool old_rgb = debug_get_bool_option_ht_use_old_rgb();
-	enum t_hand_tracking_algorithm ht_algorithm = old_rgb ? HT_ALGORITHM_OLD_RGB : HT_ALGORITHM_MERCURY;
-
 	struct xrt_device *ht_device = NULL;
 	int create_status = ht_device_create(&lhs->devices->xfctx, //
 	                                     stereo_calib,         //
-	                                     ht_algorithm,         //
 	                                     info,                 //
 	                                     &sinks,               //
 	                                     &ht_device);
@@ -419,23 +414,13 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	struct xrt_frame_sink *entry_left_sink = NULL;
 	struct xrt_frame_sink *entry_right_sink = NULL;
 	struct xrt_frame_sink *entry_sbs_sink = NULL;
-	bool old_rgb_ht = debug_get_bool_option_ht_use_old_rgb();
 
-	if (slam_enabled && hand_enabled && !old_rgb_ht) {
+	if (slam_enabled && hand_enabled) {
 		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
 		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
-	} else if (slam_enabled && hand_enabled && old_rgb_ht) {
-		struct xrt_frame_sink *hand_sbs = NULL;
-		struct xrt_frame_sink *slam_sbs = NULL;
-		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, hand_sinks->left, hand_sinks->right,
-		                                     &hand_sbs);
-		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, slam_sinks->left, slam_sinks->right,
-		                                     &slam_sbs);
-		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, slam_sbs, &slam_sbs);
-		u_sink_split_create(&lhs->devices->xfctx, slam_sbs, hand_sbs, &entry_sbs_sink);
 	} else if (slam_enabled) {
 		entry_left_sink = slam_sinks->left;
 		entry_right_sink = slam_sinks->right;
@@ -443,12 +428,11 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else if (hand_enabled) {
-		enum xrt_format fmt = old_rgb_ht ? XRT_FORMAT_R8G8B8 : XRT_FORMAT_L8;
 		entry_left_sink = hand_sinks->left;
 		entry_right_sink = hand_sinks->right;
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
-		u_sink_create_format_converter(&lhs->devices->xfctx, fmt, entry_sbs_sink, &entry_sbs_sink);
+		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else {
 		LH_WARN("No visual trackers were set");
 		return false;

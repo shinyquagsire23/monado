@@ -256,9 +256,8 @@ rift_s_create_hand_tracker(struct rift_s_tracker *t,
 	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_90;
 	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_90;
 
-	int create_status = ht_device_create(xfctx,                //
-	                                     t->stereo_calib,      //
-	                                     HT_ALGORITHM_MERCURY, //
+	int create_status = ht_device_create(xfctx,           //
+	                                     t->stereo_calib, //
 	                                     extra_camera_info,
 	                                     &sinks, //
 	                                     &device);
