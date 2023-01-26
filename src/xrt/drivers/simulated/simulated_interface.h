@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,9 +9,13 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /*!
  * @defgroup drv_simulated Simulated driver
@@ -19,6 +23,24 @@ extern "C" {
  *
  * @brief Simple do-nothing simulated driver.
  */
+
+/*!
+ * @dir drivers/simulated
+ *
+ * @brief @ref drv_simulated files.
+ */
+
+/*!
+ * What type of movement should the simulated device do.
+ *
+ * @ingroup drv_simulated
+ */
+enum simulated_movement
+{
+	SIMULATED_MOVEMENT_WOBBLE,
+	SIMULATED_MOVEMENT_ROTATE,
+	SIMULATED_MOVEMENT_STATIONARY,
+};
 
 /*!
  * Create a auto prober for simulated devices.
@@ -34,13 +56,7 @@ simulated_create_auto_prober(void);
  * @ingroup drv_simulated
  */
 struct xrt_device *
-simulated_hmd_create(void);
-
-/*!
- * @dir drivers/simulated
- *
- * @brief @ref drv_simulated files.
- */
+simulated_hmd_create(enum simulated_movement movement);
 
 
 #ifdef __cplusplus

@@ -340,7 +340,7 @@ rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 		}
 #endif
 	} else {
-		head = simulated_hmd_create();
+		head = simulated_hmd_create(SIMULATED_MOVEMENT_WOBBLE);
 	}
 
 

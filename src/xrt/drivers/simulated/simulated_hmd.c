@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -22,6 +22,8 @@
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
 
+#include "simulated_interface.h"
+
 #include <stdio.h>
 
 
@@ -30,13 +32,6 @@
  * Structs and defines.
  *
  */
-
-enum simulated_movement
-{
-	SIMULATED_WOBBLE,
-	SIMULATED_ROTATE,
-};
-
 
 /*!
  * A example HMD device.
@@ -71,7 +66,6 @@ simulated_hmd(struct xrt_device *xdev)
 }
 
 DEBUG_GET_ONCE_LOG_OPTION(simulated_log, "SIMULATED_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(simulated_rotate, "SIMULATED_ROTATE", false)
 
 #define DH_TRACE(p, ...) U_LOG_XDEV_IFL_T(&dh->base, dh->log_level, __VA_ARGS__)
 #define DH_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&dh->base, dh->log_level, __VA_ARGS__)
@@ -118,7 +112,7 @@ simulated_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	switch (dh->movement) {
 	default:
-	case SIMULATED_WOBBLE:
+	case SIMULATED_MOVEMENT_WOBBLE:
 		// Wobble time.
 		dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
 		dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
@@ -128,12 +122,16 @@ simulated_hmd_get_tracked_pose(struct xrt_device *xdev,
 		dh->pose.orientation.w = 1;
 		math_quat_normalize(&dh->pose.orientation);
 		break;
-	case SIMULATED_ROTATE:
+	case SIMULATED_MOVEMENT_ROTATE:
 		// Reset position.
 		dh->pose.position = dh->center;
 
 		// Rotate around the up vector.
 		math_quat_from_angle_vector(time_s / 4, &up, &dh->pose.orientation);
+		break;
+	case SIMULATED_MOVEMENT_STATIONARY:
+		// Reset pose.
+		dh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
 		break;
 	}
 
@@ -157,7 +155,7 @@ simulated_hmd_get_view_poses(struct xrt_device *xdev,
 }
 
 struct xrt_device *
-simulated_hmd_create(void)
+simulated_hmd_create(enum simulated_movement movement)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -172,6 +170,7 @@ simulated_hmd_create(void)
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05f;
 	dh->log_level = debug_get_log_option_simulated_log();
+	dh->movement = movement;
 
 	// Print name.
 	snprintf(dh->base.str, XRT_DEVICE_NAME_LEN, "Simulated HMD");
@@ -195,12 +194,6 @@ simulated_hmd_create(void)
 		DH_ERROR(dh, "Failed to setup basic device info");
 		simulated_hmd_destroy(&dh->base);
 		return NULL;
-	}
-
-	// Select the type of movement.
-	dh->movement = SIMULATED_WOBBLE;
-	if (debug_get_bool_option_simulated_rotate()) {
-		dh->movement = SIMULATED_ROTATE;
 	}
 
 	// Setup variable tracker.

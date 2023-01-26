@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -16,6 +16,9 @@
 #include "util/u_debug.h"
 
 #include "simulated_interface.h"
+
+
+DEBUG_GET_ONCE_BOOL_OPTION(simulated_rotate, "SIMULATED_ROTATE", false)
 
 /*!
  * @implements xrt_auto_prober
@@ -57,7 +60,14 @@ simulated_prober_autoprobe(struct xrt_auto_prober *xap,
 		return 0;
 	}
 
-	out_xdevs[0] = simulated_hmd_create();
+	// Select the type of movement.
+	enum simulated_movement movement = SIMULATED_MOVEMENT_WOBBLE;
+	if (debug_get_bool_option_simulated_rotate()) {
+		movement = SIMULATED_MOVEMENT_ROTATE;
+	}
+
+	out_xdevs[0] = simulated_hmd_create(movement);
+
 	return 1;
 }
 

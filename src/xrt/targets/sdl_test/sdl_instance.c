@@ -97,7 +97,7 @@ sdl_system_devices_init(struct sdl_program *sp)
 	sp->xsysd_base.destroy = sdl_system_devices_destroy;
 
 #ifdef USE_SIMULATED
-	struct xrt_device *head = simulated_hmd_create();
+	struct xrt_device *head = simulated_hmd_create(SIMULATED_MOVEMENT_WOBBLE);
 #else
 	struct xrt_device *head = &sp->xdev_base;
 #endif
