@@ -18,9 +18,9 @@ extern "C" {
 #endif
 
 static inline void
-math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
-                         const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result_out)
+m_mat2x2_multiply(const struct xrt_matrix_2x2 *left,
+                  const struct xrt_matrix_2x2 *right,
+                  struct xrt_matrix_2x2 *result_out)
 {
 	const struct xrt_matrix_2x2 l = *left;
 	const struct xrt_matrix_2x2 r = *right;
@@ -37,9 +37,7 @@ math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
 }
 
 static inline void
-math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
-                               const struct xrt_vec2 *right,
-                               struct xrt_vec2 *result_out)
+m_mat2x2_transform_vec2(const struct xrt_matrix_2x2 *left, const struct xrt_vec2 *right, struct xrt_vec2 *result_out)
 {
 	const struct xrt_matrix_2x2 l = *left;
 	const struct xrt_vec2 r = *right;
@@ -48,7 +46,7 @@ math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
 }
 
 static inline void
-math_matrix_2x2_invert(const struct xrt_matrix_2x2 *matrix, struct xrt_matrix_2x2 *invertedMatrix)
+m_mat2x2_invert(const struct xrt_matrix_2x2 *matrix, struct xrt_matrix_2x2 *invertedMatrix)
 {
 	float determinant = matrix->v[0] * matrix->v[3] - matrix->v[1] * matrix->v[2];
 	invertedMatrix->v[0] = matrix->v[3] / determinant;

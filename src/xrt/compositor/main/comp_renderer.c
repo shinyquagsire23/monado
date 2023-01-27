@@ -299,12 +299,12 @@ renderer_build_rendering(struct comp_renderer *r,
 	}};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&distortion_data[0].vertex_rot,  //
-		                         &rotation_90_cw,                 //
-		                         &distortion_data[0].vertex_rot); //
-		math_matrix_2x2_multiply(&distortion_data[1].vertex_rot,  //
-		                         &rotation_90_cw,                 //
-		                         &distortion_data[1].vertex_rot); //
+		m_mat2x2_multiply(&distortion_data[0].vertex_rot,  //
+		                  &rotation_90_cw,                 //
+		                  &distortion_data[0].vertex_rot); //
+		m_mat2x2_multiply(&distortion_data[1].vertex_rot,  //
+		                  &rotation_90_cw,                 //
+		                  &distortion_data[1].vertex_rot); //
 	}
 
 	render_gfx_update_distortion(rr,                   //

@@ -602,7 +602,7 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 	}};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&rot, &rotation_90_cw, &rot);
+		m_mat2x2_multiply(&rot, &rotation_90_cw, &rot);
 	}
 
 	VkDeviceSize size = sizeof(struct texture);
@@ -631,7 +631,7 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 
 			// These need to go from -0.5 to 0.5 for the rotation
 			struct xrt_vec2 uv = {u - 0.5f, v - 0.5f};
-			math_matrix_2x2_transform_vec2(&rot, &uv, &uv);
+			m_mat2x2_transform_vec2(&rot, &uv, &uv);
 			uv.x += 0.5f;
 			uv.y += 0.5f;
 
