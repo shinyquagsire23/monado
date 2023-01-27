@@ -35,6 +35,10 @@
 #define T_BUILDER_RGB_TRACKING
 #endif
 
+#if defined(XRT_BUILD_DRIVER_SIMULATED) || defined(XRT_DOXYGEN)
+#define T_BUILDER_SIMULATED
+#endif
+
 #if defined(XRT_BUILD_DRIVER_SIMULAVR) || defined(XRT_DOXYGEN)
 #define T_BUILDER_SIMULAVR
 #endif
@@ -85,6 +89,15 @@ t_builder_remote_create(void);
 struct xrt_builder *
 t_builder_rgb_tracking_create(void);
 #endif
+
+#ifdef T_BUILDER_SIMULATED
+/*!
+ * Builder for @drv_simulated devices.
+ */
+struct xrt_builder *
+t_builder_simulated_create(void);
+#endif
+
 
 #ifdef T_BUILDER_SIMULAVR
 /*!
