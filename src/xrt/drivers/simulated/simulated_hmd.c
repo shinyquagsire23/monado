@@ -43,7 +43,7 @@ struct simulated_hmd
 	struct xrt_device base;
 
 	struct xrt_pose pose;
-	struct xrt_vec3 center;
+	struct xrt_pose center;
 
 	uint64_t created_ns;
 	float diameter_m;
@@ -112,26 +112,32 @@ simulated_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	switch (dh->movement) {
 	default:
-	case SIMULATED_MOVEMENT_WOBBLE:
+	case SIMULATED_MOVEMENT_WOBBLE: {
+		struct xrt_pose tmp = XRT_POSE_IDENTITY;
+
 		// Wobble time.
-		dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
-		dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
-		dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
-		dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
-		dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
-		dh->pose.orientation.w = 1;
-		math_quat_normalize(&dh->pose.orientation);
-		break;
-	case SIMULATED_MOVEMENT_ROTATE:
-		// Reset position.
-		dh->pose.position = dh->center;
+		tmp.position.x = sin((time_s / t2) * M_PI) * d2 - d;
+		tmp.position.y = sin((time_s / t) * M_PI) * d;
+		tmp.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
+		tmp.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
+		tmp.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
+		math_quat_normalize(&tmp.orientation);
+
+		// Transform with center to set it.
+		math_pose_transform(&dh->center, &tmp, &dh->pose);
+	} break;
+	case SIMULATED_MOVEMENT_ROTATE: {
+		struct xrt_pose tmp = XRT_POSE_IDENTITY;
 
 		// Rotate around the up vector.
 		math_quat_from_angle_vector(time_s / 4, &up, &dh->pose.orientation);
-		break;
+
+		// Transform with center to set it.
+		math_pose_transform(&dh->center, &tmp, &dh->pose);
+	} break;
 	case SIMULATED_MOVEMENT_STATIONARY:
 		// Reset pose.
-		dh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+		dh->pose = dh->center;
 		break;
 	}
 
@@ -155,7 +161,7 @@ simulated_hmd_get_view_poses(struct xrt_device *xdev,
 }
 
 struct xrt_device *
-simulated_hmd_create(enum simulated_movement movement)
+simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *center)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -167,6 +173,7 @@ simulated_hmd_create(enum simulated_movement movement)
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
 	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
+	dh->center = *center;
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05f;
 	dh->log_level = debug_get_log_option_simulated_log();
@@ -199,7 +206,7 @@ simulated_hmd_create(enum simulated_movement movement)
 	// Setup variable tracker.
 	u_var_add_root(dh, "Simulated HMD", true);
 	u_var_add_pose(dh, &dh->pose, "pose");
-	u_var_add_vec3_f32(dh, &dh->center, "center");
+	u_var_add_pose(dh, &dh->center, "center");
 	u_var_add_f32(dh, &dh->diameter_m, "diameter_m");
 	u_var_add_log_level(dh, &dh->log_level, "log_level");
 

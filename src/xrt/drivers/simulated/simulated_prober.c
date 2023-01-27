@@ -66,7 +66,8 @@ simulated_prober_autoprobe(struct xrt_auto_prober *xap,
 		movement = SIMULATED_MOVEMENT_ROTATE;
 	}
 
-	out_xdevs[0] = simulated_hmd_create(movement);
+	const struct xrt_pose center = XRT_POSE_IDENTITY;
+	out_xdevs[0] = simulated_hmd_create(movement, &center);
 
 	return 1;
 }

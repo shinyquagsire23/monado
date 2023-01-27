@@ -56,7 +56,7 @@ simulated_create_auto_prober(void);
  * @ingroup drv_simulated
  */
 struct xrt_device *
-simulated_hmd_create(enum simulated_movement movement);
+simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *center);
 
 
 #ifdef __cplusplus
