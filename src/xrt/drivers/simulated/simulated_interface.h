@@ -10,6 +10,7 @@
 #pragma once
 
 #include "xrt/xrt_compiler.h"
+#include "util/u_logging.h"
 
 
 #ifdef __cplusplus
@@ -41,6 +42,14 @@ enum simulated_movement
 	SIMULATED_MOVEMENT_ROTATE,
 	SIMULATED_MOVEMENT_STATIONARY,
 };
+
+/*!
+ * Return the logging level that we want for the simulated related code.
+ *
+ * @ingroup drv_simulated
+ */
+enum u_logging_level
+simulated_log_level(void);
 
 /*!
  * Create a auto prober for simulated devices.

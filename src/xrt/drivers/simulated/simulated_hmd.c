@@ -160,6 +160,19 @@ simulated_hmd_get_view_poses(struct xrt_device *xdev,
 	                        out_poses);
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+enum u_logging_level
+simulated_log_level(void)
+{
+	return debug_get_log_option_simulated_log();
+}
+
 struct xrt_device *
 simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *center)
 {
@@ -176,7 +189,7 @@ simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *ce
 	dh->center = *center;
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05f;
-	dh->log_level = debug_get_log_option_simulated_log();
+	dh->log_level = simulated_log_level();
 	dh->movement = movement;
 
 	// Print name.
