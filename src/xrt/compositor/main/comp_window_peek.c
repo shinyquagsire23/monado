@@ -14,12 +14,34 @@
 
 #include "util/u_debug.h"
 
+#ifdef XRT_HAVE_SDL2
+#include <SDL2/SDL.h>
+#else
+#error "comp_window_peek.h requires SDL2"
+#endif
 #include <SDL2/SDL_vulkan.h>
 
 
 DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)
 
 #define PEEK_IMAGE_USAGE (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+
+struct comp_window_peek
+{
+	struct comp_target_swapchain base;
+	struct comp_compositor *c;
+
+	enum comp_window_peek_eye eye;
+	SDL_Window *window;
+	uint32_t width, height;
+	bool running;
+	bool hidden;
+
+	VkCommandBuffer cmd;
+
+	struct os_thread_helper oth;
+};
+
 
 static inline struct vk_bundle *
 get_vk(struct comp_window_peek *w)
@@ -391,4 +413,10 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 		VK_ERROR(vk, "Error: could not present to queue.\n");
 		return;
 	}
+}
+
+enum comp_window_peek_eye
+comp_window_peek_get_eye(struct comp_window_peek *w)
+{
+	return w->eye;
 }

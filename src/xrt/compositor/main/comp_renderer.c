@@ -1933,7 +1933,7 @@ comp_renderer_draw(struct comp_renderer *r)
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 	if (c->peek) {
-		switch (c->peek->eye) {
+		switch (comp_window_peek_get_eye(c->peek)) {
 		case COMP_WINDOW_PEEK_EYE_LEFT:
 			comp_window_peek_blit(c->peek, r->lr->framebuffers[0].image, r->lr->extent.width,
 			                      r->lr->extent.height);

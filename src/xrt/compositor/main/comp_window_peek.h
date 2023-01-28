@@ -17,12 +17,6 @@
 
 #include "os/os_threading.h"
 
-#ifdef XRT_HAVE_SDL2
-#include <SDL2/SDL.h>
-#else
-#error "comp_window_peek.h requires SDL2"
-#endif
-
 struct comp_compositor;
 struct comp_renderer;
 
@@ -37,21 +31,7 @@ enum comp_window_peek_eye
 	COMP_WINDOW_PEEK_EYE_BOTH = 2,
 };
 
-struct comp_window_peek
-{
-	struct comp_target_swapchain base;
-	struct comp_compositor *c;
-
-	enum comp_window_peek_eye eye;
-	SDL_Window *window;
-	uint32_t width, height;
-	bool running;
-	bool hidden;
-
-	VkCommandBuffer cmd;
-
-	struct os_thread_helper oth;
-};
+struct comp_window_peek;
 
 struct comp_window_peek *
 comp_window_peek_create(struct comp_compositor *c);
@@ -61,6 +41,18 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr);
 
 void
 comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, int32_t height);
+
+/*!
+ *
+ * Getter for the peek window's eye enum.
+ * This is a getter function so that struct comp_window_peek can be private.
+ *
+ * @param[in] w The peek window struct this compositor has.
+ * @return The eye that the peek window wants to display.
+ *
+ */
+enum comp_window_peek_eye
+comp_window_peek_get_eye(struct comp_window_peek *w);
 
 #ifdef __cplusplus
 }
