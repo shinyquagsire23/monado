@@ -222,7 +222,7 @@ convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct 
 	tcc->intrinsics[0][2] = rift_s_cam->projection.cx;
 	tcc->intrinsics[1][2] = rift_s_cam->projection.cy;
 	tcc->intrinsics[2][2] = 1.0;
-	tcc->use_fisheye = true;
+	tcc->distortion_model = T_DISTORTION_FISHEYE_KB4;
 
 	TargetPoint xy[STEPS * STEPS];
 
@@ -271,8 +271,10 @@ convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct 
 		TinySolver<AutoDiffDistortParamKB4Function> solver;
 		solver.Solve(f, &kb4_distort_params);
 
-		for (int i = 0; i < 4; i++)
-			tcc->distortion_fisheye[i] = kb4_distort_params[i];
+		tcc->kb4.k1 = kb4_distort_params[0];
+		tcc->kb4.k2 = kb4_distort_params[1];
+		tcc->kb4.k3 = kb4_distort_params[2];
+		tcc->kb4.k4 = kb4_distort_params[3];
 	}
 
 	return true;
@@ -290,7 +292,7 @@ struct t_stereo_camera_calibration *
 rift_s_create_stereo_camera_calib_rotated(struct rift_s_camera_calibration_block *camera_calibration)
 {
 	struct t_stereo_camera_calibration *calib = NULL;
-	t_stereo_camera_calibration_alloc(&calib, 8);
+	t_stereo_camera_calibration_alloc(&calib, T_DISTORTION_FISHEYE_KB4);
 
 	struct rift_s_camera_calibration *left = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_LEFT];
 	struct rift_s_camera_calibration *right = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_RIGHT];

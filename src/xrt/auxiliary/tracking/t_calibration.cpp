@@ -575,13 +575,10 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	cv::Size image_size(cols, rows);
 	cv::Size new_image_size(cols, rows);
 
-	StereoCameraCalibrationWrapper wrapped = {5}; // We only use five distortion parameters.
+	StereoCameraCalibrationWrapper wrapped(c.use_fisheye ? T_DISTORTION_FISHEYE_KB4 : T_DISTORTION_OPENCV_RADTAN_5);
 	wrapped.view[0].image_size_pixels.w = image_size.width;
 	wrapped.view[0].image_size_pixels.h = image_size.height;
 	wrapped.view[1].image_size_pixels = wrapped.view[0].image_size_pixels;
-
-	wrapped.view[0].use_fisheye = c.use_fisheye;
-	wrapped.view[1].use_fisheye = c.use_fisheye;
 
 
 	float rp_error = 0.0f;
@@ -591,16 +588,16 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 		flags |= cv::fisheye::CALIB_RECOMPUTE_EXTRINSIC;
 
 		// fisheye version
-		rp_error = cv::fisheye::stereoCalibrate(c.state.board_models_f64,               // objectPoints
-		                                        c.state.view[0].measured_f64,           // inagePoints1
-		                                        c.state.view[1].measured_f64,           // imagePoints2
-		                                        wrapped.view[0].intrinsics_mat,         // cameraMatrix1
-		                                        wrapped.view[0].distortion_fisheye_mat, // distCoeffs1
-		                                        wrapped.view[1].intrinsics_mat,         // cameraMatrix2
-		                                        wrapped.view[1].distortion_fisheye_mat, // distCoeffs2
-		                                        image_size,                             // imageSize
-		                                        wrapped.camera_rotation_mat,            // R
-		                                        wrapped.camera_translation_mat,         // T
+		rp_error = cv::fisheye::stereoCalibrate(c.state.board_models_f64,       // objectPoints
+		                                        c.state.view[0].measured_f64,   // inagePoints1
+		                                        c.state.view[1].measured_f64,   // imagePoints2
+		                                        wrapped.view[0].intrinsics_mat, // cameraMatrix1
+		                                        wrapped.view[0].distortion_mat, // distCoeffs1
+		                                        wrapped.view[1].intrinsics_mat, // cameraMatrix2
+		                                        wrapped.view[1].distortion_mat, // distCoeffs2
+		                                        image_size,                     // imageSize
+		                                        wrapped.camera_rotation_mat,    // R
+		                                        wrapped.camera_translation_mat, // T
 		                                        flags);
 	} else {
 		// non-fisheye version
@@ -645,20 +642,12 @@ process_stereo_samples(class Calibration &c, int cols, int rows)
 	}
 	to_stdout("disparity_to_depth", maps.disparity_to_depth_mat);
 	std::cout << "#####\n";
-	if (c.use_fisheye) {
-		to_stdout("view[0].distortion_fisheye", wrapped.view[0].distortion_fisheye_mat);
-	} else {
-		to_stdout("view[0].distortion", wrapped.view[0].distortion_mat);
-	}
+	to_stdout("view[0].distortion", wrapped.view[0].distortion_mat);
 	to_stdout("view[0].intrinsics", wrapped.view[0].intrinsics_mat);
 	to_stdout("view[0].projection", maps.view[0].projection_mat);
 	to_stdout("view[0].rotation", maps.view[0].rotation_mat);
 	std::cout << "#####\n";
-	if (c.use_fisheye) {
-		to_stdout("view[1].distortion_fisheye", wrapped.view[1].distortion_fisheye_mat);
-	} else {
-		to_stdout("view[1].distortion", wrapped.view[1].distortion_mat);
-	}
+	to_stdout("view[1].distortion", wrapped.view[1].distortion_mat);
 	to_stdout("view[1].intrinsics", wrapped.view[1].intrinsics_mat);
 	to_stdout("view[1].projection", maps.view[1].projection_mat);
 	to_stdout("view[1].rotation", maps.view[1].rotation_mat);
@@ -681,7 +670,6 @@ process_view_samples(class Calibration &c, struct ViewState &view, int cols, int
 	cv::Mat intrinsics_mat = {};
 	cv::Mat new_intrinsics_mat = {};
 	cv::Mat distortion_mat = {};
-	cv::Mat distortion_fisheye_mat = {};
 
 	if (c.dump_measurements) {
 		U_LOG_RAW("...measured = (ArrayOfMeasurements){");
@@ -712,7 +700,7 @@ process_view_samples(class Calibration &c, struct ViewState &view, int cols, int
 		                                  view.measured_f64,        // imagePoints
 		                                  image_size,               // image_size
 		                                  intrinsics_mat,           // K (cameraMatrix 3x3)
-		                                  distortion_fisheye_mat,   // D (distCoeffs 4x1)
+		                                  distortion_mat,           // D (distCoeffs 4x1)
 		                                  cv::noArray(),            // rvecs
 		                                  cv::noArray(),            // tvecs
 		                                  flags,                    // flags
@@ -720,12 +708,12 @@ process_view_samples(class Calibration &c, struct ViewState &view, int cols, int
 
 		double balance = 0.1f;
 
-		cv::fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsics_mat,         // K
-		                                                        distortion_fisheye_mat, // D
-		                                                        image_size,             // image_size
-		                                                        cv::Matx33d::eye(),     // R
-		                                                        new_intrinsics_mat,     // P
-		                                                        balance);               // balance
+		cv::fisheye::estimateNewCameraMatrixForUndistortRectify(intrinsics_mat,     // K
+		                                                        distortion_mat,     // D
+		                                                        image_size,         // image_size
+		                                                        cv::Matx33d::eye(), // R
+		                                                        new_intrinsics_mat, // P
+		                                                        balance);           // balance
 
 		// Probably a busted work-around for busted function.
 		new_intrinsics_mat.at<double>(0, 2) = (cols - 1) / 2.0;
@@ -768,22 +756,18 @@ process_view_samples(class Calibration &c, struct ViewState &view, int cols, int
 	std::cout << "rp_error: " << rp_error << "\n";
 	std::cout << "intrinsics_mat:\n" << intrinsics_mat << "\n";
 	std::cout << "new_intrinsics_mat:\n" << new_intrinsics_mat << "\n";
-	if (c.use_fisheye) {
-		std::cout << "distortion_fisheye_mat:\n" << distortion_fisheye_mat << "\n";
-	} else {
 		std::cout << "distortion_mat:\n" << distortion_mat << "\n";
-	}
 	// clang-format on
 
 	if (c.use_fisheye) {
-		cv::fisheye::initUndistortRectifyMap(intrinsics_mat,         // K
-		                                     distortion_fisheye_mat, // D
-		                                     cv::Matx33d::eye(),     // R
-		                                     new_intrinsics_mat,     // P
-		                                     image_size,             // size
-		                                     CV_32FC1,               // m1type
-		                                     view.map1,              // map1
-		                                     view.map2);             // map2
+		cv::fisheye::initUndistortRectifyMap(intrinsics_mat,     // K
+		                                     distortion_mat,     // D
+		                                     cv::Matx33d::eye(), // R
+		                                     new_intrinsics_mat, // P
+		                                     image_size,         // size
+		                                     CV_32FC1,           // m1type
+		                                     view.map1,          // map1
+		                                     view.map2);         // map2
 
 		// Set the maps as valid.
 		view.maps_valid = true;

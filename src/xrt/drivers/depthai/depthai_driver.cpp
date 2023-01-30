@@ -215,16 +215,17 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 	 * Copy to the Monado calibration struct.
 	 */
 
-	uint32_t num_dist = 14;
 
 	// Good enough assumption that they're using the same distortion model
-	bool use_fisheye = calibData.getDistortionModel(dai::CameraBoardSocket::LEFT) == dai::CameraModel::Fisheye;
-	if (use_fisheye) {
-		num_dist = 4;
+	enum t_camera_distortion_model type = T_DISTORTION_OPENCV_RADTAN_14;
+	if (calibData.getDistortionModel(dai::CameraBoardSocket::LEFT) == dai::CameraModel::Fisheye) {
+		type = T_DISTORTION_FISHEYE_KB4;
 	}
 
+	uint32_t num_dist = t_num_params_from_distortion_model(type);
+
 	struct t_stereo_camera_calibration *c = NULL;
-	t_stereo_camera_calibration_alloc(&c, num_dist);
+	t_stereo_camera_calibration_alloc(&c, type);
 
 	// Copy intrinsics
 	c->view[0].image_size_pixels.w = left.width;
@@ -238,17 +239,11 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 		}
 	}
 
-	// Copy distortion
-	c->view[0].use_fisheye = use_fisheye;
-	c->view[1].use_fisheye = use_fisheye;
+	c->view[0].distortion_model = type;
+	c->view[1].distortion_model = type;
 	for (uint32_t i = 0; i < num_dist; i++) {
-		if (use_fisheye) {
-			c->view[0].distortion_fisheye[i] = left.distortion[i];
-			c->view[1].distortion_fisheye[i] = right.distortion[i];
-		} else {
-			c->view[0].distortion[i] = left.distortion[i];
-			c->view[1].distortion[i] = right.distortion[i];
-		}
+		c->view[0].distortion_parameters_as_array[i] = left.distortion[i];
+		c->view[1].distortion_parameters_as_array[i] = right.distortion[i];
 	}
 
 	// Copy translation

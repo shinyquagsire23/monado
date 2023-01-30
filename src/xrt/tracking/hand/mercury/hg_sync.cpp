@@ -36,18 +36,21 @@ static const enum xrt_space_relation_flags valid_flags_ht = (enum xrt_space_rela
  */
 
 static bool
-getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibration)
+getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration &calibration)
 {
-	xrt::auxiliary::tracking::StereoCameraCalibrationWrapper wrap(calibration);
-	xrt_vec3 trans = {(float)wrap.camera_translation_mat(0, 0), (float)wrap.camera_translation_mat(1, 0),
-	                  (float)wrap.camera_translation_mat(2, 0)};
+	xrt::auxiliary::tracking::StereoCameraCalibrationWrapper wrap(&calibration);
+	xrt_vec3 trans = {
+	    (float)calibration.camera_translation[0],
+	    (float)calibration.camera_translation[1],
+	    (float)calibration.camera_translation[2],
+	};
 	hgt->baseline = m_vec3_len(trans);
 	HG_DEBUG(hgt, "I think the baseline is %f meters!", hgt->baseline);
 	// Note, this assumes camera 0 is the left camera and camera 1 is the right camera.
 	// If you find one with the opposite arrangement, you'll need to invert hgt->baseline, and look at
 	// hgJointDisparityMath
 
-	hgt->use_fisheye = wrap.view[0].use_fisheye;
+	hgt->use_fisheye = wrap.view[0].distortion_model == T_DISTORTION_FISHEYE_KB4;
 
 	if (hgt->use_fisheye) {
 		HG_DEBUG(hgt, "I think the cameras are fisheye!");
@@ -66,20 +69,28 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibratio
 		s.v[1] = wrap.camera_rotation_mat(1, 0);
 		s.v[2] = wrap.camera_rotation_mat(2, 0);
 
-		s.v[3] = wrap.camera_rotation_mat(0, 1);
-		s.v[4] = wrap.camera_rotation_mat(1, 1);
-		s.v[5] = wrap.camera_rotation_mat(2, 1);
+		s.v[0] = (float)calibration.camera_rotation[0][0];
+		s.v[1] = (float)calibration.camera_rotation[1][0];
+		s.v[2] = (float)calibration.camera_rotation[2][0];
 
-		s.v[6] = wrap.camera_rotation_mat(0, 2);
-		s.v[7] = wrap.camera_rotation_mat(1, 2);
-		s.v[8] = wrap.camera_rotation_mat(2, 2);
+		s.v[3] = (float)calibration.camera_rotation[0][1];
+		s.v[4] = (float)calibration.camera_rotation[1][1];
+		s.v[5] = (float)calibration.camera_rotation[2][1];
+
+		s.v[6] = (float)calibration.camera_rotation[0][2];
+		s.v[7] = (float)calibration.camera_rotation[1][2];
+		s.v[8] = (float)calibration.camera_rotation[2][2];
 
 		xrt_pose left_in_right;
-		left_in_right.position.x = wrap.camera_translation_mat(0);
+		left_in_right.position = trans;
 		left_in_right.position.y = wrap.camera_translation_mat(1);
 		left_in_right.position.z = wrap.camera_translation_mat(2);
 
 		math_quat_from_matrix_3x3(&s, &left_in_right.orientation);
+
+		//! @todo what are these magic values?
+		//! they're probably turning the OpenCV formalism into OpenXR, but especially what gives with negating
+		//! orientation.x?
 		left_in_right.orientation.x = -left_in_right.orientation.x;
 		left_in_right.position.y = -left_in_right.position.y;
 		left_in_right.position.z = -left_in_right.position.z;
@@ -97,12 +108,7 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration *calibratio
 	//* Good enough guess that view 0 and view 1 are the same size.
 	for (int i = 0; i < 2; i++) {
 		hgt->views[i].cameraMatrix = wrap.view[i].intrinsics_mat;
-
-		if (hgt->use_fisheye) {
-			hgt->views[i].distortion = wrap.view[i].distortion_fisheye_mat;
-		} else {
-			hgt->views[i].distortion = wrap.view[i].distortion_mat;
-		}
+		hgt->views[i].distortion = wrap.view[i].distortion_mat;
 
 		if (hgt->log_level <= U_LOGGING_DEBUG) {
 			HG_DEBUG(hgt, "K%d ->", i);
@@ -1009,7 +1015,7 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	hgt->calib = NULL;
 	// We have to reference it, getCalibration points at it.
 	t_stereo_camera_calibration_reference(&hgt->calib, calib);
-	getCalibration(hgt, calib);
+	getCalibration(hgt, *calib);
 	getModelsFolder(hgt);
 
 

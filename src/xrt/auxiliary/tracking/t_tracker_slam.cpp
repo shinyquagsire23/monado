@@ -1021,16 +1021,45 @@ add_camera_calibration(const TrackerSlam &t,
 		params->cx = view.intrinsics[0][2];
 		params->cy = view.intrinsics[1][2];
 
-		params->distortion_model = view.use_fisheye ? "kb4" : string{"rt"} + to_string(view.distortion_num);
-		if (view.use_fisheye) { // Kannala-brandt pinhole (OpenCV's "fisheye")
-			params->distortion.assign(view.distortion_fisheye, std::end(view.distortion_fisheye));
+		switch (view.distortion_model) {
+		case T_DISTORTION_OPENCV_RADTAN_8:
+			params->distortion_model = "rt8";
+			params->distortion.push_back(view.rt8.k1);
+			params->distortion.push_back(view.rt8.k2);
+			params->distortion.push_back(view.rt8.p1);
+			params->distortion.push_back(view.rt8.p2);
+			params->distortion.push_back(view.rt8.k3);
+			params->distortion.push_back(view.rt8.k4);
+			params->distortion.push_back(view.rt8.k5);
+			params->distortion.push_back(view.rt8.k6);
+			// -1 metric radius tells Basalt to calculate the metric radius on its own.
+			params->distortion.push_back(-1.0);
+			SLAM_ASSERT_(params->distortion.size() == 9);
+			break;
+		case T_DISTORTION_WMR:
+			params->distortion_model = "rt8";
+			params->distortion.push_back(view.wmr.k1);
+			params->distortion.push_back(view.wmr.k2);
+			params->distortion.push_back(view.wmr.p1);
+			params->distortion.push_back(view.wmr.p2);
+			params->distortion.push_back(view.wmr.k3);
+			params->distortion.push_back(view.wmr.k4);
+			params->distortion.push_back(view.wmr.k5);
+			params->distortion.push_back(view.wmr.k6);
+			params->distortion.push_back(view.wmr.rpmax);
+			SLAM_ASSERT_(params->distortion.size() == 9);
+			break;
+		case T_DISTORTION_FISHEYE_KB4:
+			params->distortion_model = "kb4";
+			params->distortion.push_back(view.kb4.k1);
+			params->distortion.push_back(view.kb4.k2);
+			params->distortion.push_back(view.kb4.k3);
+			params->distortion.push_back(view.kb4.k4);
 			SLAM_ASSERT_(params->distortion.size() == 4);
-		} else { // Radial-tangential pinhole
-			params->distortion.assign(view.distortion, view.distortion + view.distortion_num);
-
-			if (params->distortion_model == "rt8") { // rt8 has a ninth parameter rpmax ("metric_radius")
-				params->distortion.push_back(extra.rpmax);
-			}
+			break;
+		default:
+			SLAM_ASSERT(false, "SLAM doesn't support distortion type %s",
+			            t_stringify_camera_distortion_model(view.distortion_model));
 		}
 
 		xrt_matrix_4x4 T; // Row major T_imu_cam

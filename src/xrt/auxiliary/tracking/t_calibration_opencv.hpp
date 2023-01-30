@@ -22,6 +22,18 @@
 
 namespace xrt::auxiliary::tracking {
 
+static inline size_t
+t_num_opencv_params_from_distortion_model(const enum t_camera_distortion_model model)
+{
+	switch (model) {
+	case T_DISTORTION_WMR:
+		// OpenCV doesn't know what to do with codx, cody or rpmax. We reinterpret it as
+		// T_DISTORTION_OPENCV_RADTAN_8.
+		return t_num_params_from_distortion_model(T_DISTORTION_OPENCV_RADTAN_8);
+		break;
+	default: return t_num_params_from_distortion_model(model);
+	}
+}
 /*!
  * @brief Essential calibration data wrapped for C++.
  *
@@ -35,16 +47,21 @@ struct CameraCalibrationWrapper
 	const cv::Size image_size_pixels_cv;
 	cv::Mat_<double> intrinsics_mat;
 	cv::Mat_<double> distortion_mat;
-	cv::Mat_<double> distortion_fisheye_mat;
-	bool &use_fisheye;
+	enum t_camera_distortion_model &distortion_model;
 
 	CameraCalibrationWrapper(t_camera_calibration &calib)
-	    : base(calib), image_size_pixels(calib.image_size_pixels),
-	      image_size_pixels_cv(calib.image_size_pixels.w, calib.image_size_pixels.h),
-	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),
-	      distortion_mat(base.distortion_num, 1, &calib.distortion[0]),
-	      distortion_fisheye_mat(4, 1, &calib.distortion_fisheye[0]), use_fisheye(calib.use_fisheye)
+	    : base(calib),                                                                //
+	      image_size_pixels(calib.image_size_pixels),                                 //
+	      image_size_pixels_cv(calib.image_size_pixels.w, calib.image_size_pixels.h), //
+	      intrinsics_mat(3, 3, &calib.intrinsics[0][0]),                              //
+	      distortion_mat(t_num_opencv_params_from_distortion_model(base.distortion_model),
+	                     1,
+	                     &calib.distortion_parameters_as_array[0]), //
+	      distortion_model(calib.distortion_model)
 	{
+		if (base.distortion_model == T_DISTORTION_WMR) {
+			U_LOG_W("Reinterpreting T_DISTORTION_WMR model as T_DISTORTION_OPENCV_RADTAN_8!");
+		}
 		assert(isDataStorageValid());
 	}
 
@@ -54,12 +71,10 @@ struct CameraCalibrationWrapper
 	{
 		return intrinsics_mat.size() == cv::Size(3, 3) &&
 		       (double *)intrinsics_mat.data == &(base.intrinsics[0][0]) &&
-
-		       distortion_mat.size() == cv::Size(1, base.distortion_num) &&
-		       (double *)distortion_mat.data == &(base.distortion[0]) &&
-
-		       distortion_fisheye_mat.size() == cv::Size(1, 4) &&
-		       (double *)distortion_fisheye_mat.data == &(base.distortion_fisheye[0]);
+		       (base.distortion_model != T_DISTORTION_FISHEYE_KB4 || distortion_mat.size() == cv::Size(1, 4)) &&
+		       distortion_mat.size() ==
+		           cv::Size(1, t_num_opencv_params_from_distortion_model(base.distortion_model)) &&
+		       (double *)distortion_mat.data == &(base.distortion_parameters_as_array[0]);
 	}
 };
 
@@ -81,10 +96,10 @@ struct StereoCameraCalibrationWrapper
 
 
 	static t_stereo_camera_calibration *
-	allocData(uint32_t distortion_num)
+	allocData(enum t_camera_distortion_model distortion_model)
 	{
 		t_stereo_camera_calibration *data_ptr = NULL;
-		t_stereo_camera_calibration_alloc(&data_ptr, distortion_num);
+		t_stereo_camera_calibration_alloc(&data_ptr, distortion_model);
 		return data_ptr;
 	}
 
@@ -102,8 +117,8 @@ struct StereoCameraCalibrationWrapper
 		assert(isDataStorageValid());
 	}
 
-	StereoCameraCalibrationWrapper(uint32_t distortion_num)
-	    : StereoCameraCalibrationWrapper(allocData(distortion_num))
+	StereoCameraCalibrationWrapper(enum t_camera_distortion_model distortion_model)
+	    : StereoCameraCalibrationWrapper(allocData(distortion_model))
 	{
 
 		// The function allocData returns with a ref count of one,

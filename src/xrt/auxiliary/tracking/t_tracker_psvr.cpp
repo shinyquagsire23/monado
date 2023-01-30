@@ -137,8 +137,7 @@ struct View
 
 	cv::Matx33d intrinsics;
 	cv::Mat distortion; // size may vary
-	cv::Vec4d distortion_fisheye;
-	bool use_fisheye;
+	enum t_camera_distortion_model distortion_model;
 
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -150,8 +149,7 @@ struct View
 		CameraCalibrationWrapper wrap(calib);
 		intrinsics = wrap.intrinsics_mat;
 		distortion = wrap.distortion_mat.clone();
-		distortion_fisheye = wrap.distortion_fisheye_mat;
-		use_fisheye = wrap.use_fisheye;
+		distortion_model = wrap.distortion_model;
 
 		undistort_rectify_map_x = rectification.remap_x;
 		undistort_rectify_map_y = rectification.remap_y;

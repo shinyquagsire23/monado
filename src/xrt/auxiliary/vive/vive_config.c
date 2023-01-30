@@ -300,7 +300,7 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	struct index_camera *cameras = d->cameras.view;
 	struct t_stereo_camera_calibration *calib = NULL;
 
-	t_stereo_camera_calibration_alloc(&calib, 5);
+	t_stereo_camera_calibration_alloc(&calib, T_DISTORTION_FISHEYE_KB4);
 
 	for (int i = 0; i < 2; i++) {
 		calib->view[i].image_size_pixels.w = cameras[i].intrinsics.image_size_pixels.w;
@@ -319,11 +319,10 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 		calib->view[i].intrinsics[2][1] = 0.0f;
 		calib->view[i].intrinsics[2][2] = 1.0f;
 
-		calib->view[i].use_fisheye = true;
-		calib->view[i].distortion_fisheye[0] = cameras[i].intrinsics.distortion[0];
-		calib->view[i].distortion_fisheye[1] = cameras[i].intrinsics.distortion[1];
-		calib->view[i].distortion_fisheye[2] = cameras[i].intrinsics.distortion[2];
-		calib->view[i].distortion_fisheye[3] = cameras[i].intrinsics.distortion[3];
+		calib->view[i].kb4.k1 = cameras[i].intrinsics.distortion[0];
+		calib->view[i].kb4.k2 = cameras[i].intrinsics.distortion[1];
+		calib->view[i].kb4.k3 = cameras[i].intrinsics.distortion[2];
+		calib->view[i].kb4.k4 = cameras[i].intrinsics.distortion[3];
 	}
 
 	struct xrt_vec3 pos = d->cameras.opencv.position;

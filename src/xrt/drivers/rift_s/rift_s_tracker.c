@@ -189,12 +189,10 @@ rift_s_create_extra_slam_calib(struct rift_s_hmd_config *hmd_config)
 	            {
 	                .frequency = CAMERA_FREQUENCY,
 	                .T_imu_cam = T_imu_left_cam,
-	                .rpmax = 0.0,
 	            },
 	            {
 	                .frequency = CAMERA_FREQUENCY,
 	                .T_imu_cam = T_imu_right_cam,
-	                .rpmax = 0.0,
 	            },
 	        },
 	};

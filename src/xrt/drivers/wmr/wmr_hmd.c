@@ -1300,15 +1300,15 @@ compute_distortion_bounds(struct wmr_hmd *wh,
  * 2. The terms that use the tangential parameters, p1 and p2, aren't multiplied by 2
  * 3. There is a "metric radius" that delimits a valid area of distortion/undistortion
  *
- * Thankfully, parameters of points 1 and 2 tend to be almost zero in practice and we
- * only do unprojections (for hand tracking) in very safe camera regions so 3
- * doesn't bother us that much either.
+ * Thankfully, parameters of points 1 and 2 tend to be almost zero in practice. For 3, we place metric_radius into
+ * the calibration struct so that downstream tracking algorithms can use it as needed.
  */
 XRT_MAYBE_UNUSED static struct t_stereo_camera_calibration *
 wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 {
 	struct t_stereo_camera_calibration *calib = NULL;
-	t_stereo_camera_calibration_alloc(&calib, 8);
+	t_stereo_camera_calibration_alloc(&calib, T_DISTORTION_WMR);
+
 
 	// Intrinsics
 	for (int view = 0; view < 2; view++) { // Assuming that cameras[0-1] are HT0 and HT1
@@ -1324,15 +1324,21 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 		tcc->intrinsics[1][2] = intr->params.cy * (double)cam->roi.extent.h;
 		tcc->intrinsics[2][2] = 1.0;
 
-		tcc->distortion[0] = intr->params.k[0];
-		tcc->distortion[1] = intr->params.k[1];
-		tcc->distortion[2] = intr->params.p1;
-		tcc->distortion[3] = intr->params.p2;
-		tcc->distortion[4] = intr->params.k[2];
-		tcc->distortion[5] = intr->params.k[3];
-		tcc->distortion[6] = intr->params.k[4];
-		tcc->distortion[7] = intr->params.k[5];
-		tcc->use_fisheye = false;
+		tcc->wmr.k1 = intr->params.k[0];
+		tcc->wmr.k2 = intr->params.k[1];
+		tcc->wmr.p1 = intr->params.p1;
+		tcc->wmr.p2 = intr->params.p2;
+		tcc->wmr.k3 = intr->params.k[2];
+		tcc->wmr.k4 = intr->params.k[3];
+		tcc->wmr.k5 = intr->params.k[4];
+		tcc->wmr.k6 = intr->params.k[5];
+
+		tcc->wmr.codx = intr->params.dist_x;
+		tcc->wmr.cody = intr->params.dist_y;
+
+		tcc->wmr.rpmax = intr->params.metric_radius;
+
+		tcc->distortion_model = T_DISTORTION_WMR;
 	}
 
 	// Extrinsics
@@ -1391,11 +1397,8 @@ wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
 XRT_MAYBE_UNUSED static struct t_slam_calib_extras
 wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
 {
-	struct wmr_camera_config *ht0 = &wh->config.cameras[0];
-	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
-
 	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_ht1_ht0 = ht1->pose;
+	struct xrt_pose P_ht1_ht0 = wh->config.cameras[1].pose;
 	struct xrt_pose P_ht0_ht1;
 	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
 	struct xrt_pose P_imu_ht1;
@@ -1416,12 +1419,10 @@ wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
 	            {
 	                .frequency = CAMERA_FREQUENCY,
 	                .T_imu_cam = T_imu_ht0,
-	                .rpmax = ht0->distortion6KT.params.metric_radius,
 	            },
 	            {
 	                .frequency = CAMERA_FREQUENCY,
 	                .T_imu_cam = T_imu_ht1,
-	                .rpmax = ht1->distortion6KT.params.metric_radius,
 	            },
 	        },
 	};
