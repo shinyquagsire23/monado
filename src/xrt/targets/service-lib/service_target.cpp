@@ -88,6 +88,7 @@ public:
 			server_thread->join();
 			server_thread.reset(nullptr);
 			server = NULL;
+			startup_complete = false;
 		}
 
 		return 0;
