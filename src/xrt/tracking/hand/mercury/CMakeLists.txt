@@ -24,6 +24,25 @@ target_link_libraries(
 		ONNXRuntime::ONNXRuntime
 	)
 
+add_library(t_ht_mercury_distorter STATIC hg_image_distorter.cpp)
+
+target_link_libraries(t_ht_mercury_distorter PRIVATE aux_math aux_tracking aux_os aux_util)
+
+target_include_directories(
+	t_ht_mercury_distorter SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR}
+	)
+
+target_link_libraries(
+	t_ht_mercury_distorter
+	PRIVATE
+		aux_math
+		aux_tracking
+		aux_os
+		aux_util
+		${OpenCV_LIBRARIES}
+		ONNXRuntime::ONNXRuntime # no, wrong
+	)
+
 add_library(t_ht_mercury STATIC hg_sync.cpp hg_sync.hpp hg_interface.h kine_common.hpp)
 
 target_link_libraries(
@@ -37,7 +56,7 @@ target_link_libraries(
 		ONNXRuntime::ONNXRuntime
 		t_ht_mercury_kine_lm
 		t_ht_mercury_model
-		# ncnn # Soon...
+		t_ht_mercury_distorter
 		${OpenCV_LIBRARIES}
 	)
 

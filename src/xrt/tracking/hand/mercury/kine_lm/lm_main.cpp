@@ -26,6 +26,8 @@
 #include "lm_optimizer_params_packer.inl"
 #include "lm_defines.hpp"
 
+#include "../hg_numerics_checker.hpp"
+
 /*
 
 Some notes:
@@ -37,9 +39,29 @@ namespace xrt::tracking::hand::mercury::lm {
 
 template <typename T> struct StereographicObservation
 {
-	// T obs[kNumNNJoints][2];
 	Vec2<T> obs[kNumNNJoints];
 };
+
+
+template <typename T> struct DepthObservation
+{
+	T depth_value[kNumNNJoints];
+};
+
+template <typename T> struct ResidualTracker
+{
+	T *out_residual = nullptr;
+	size_t out_residual_idx = {};
+
+	ResidualTracker(T *residual) : out_residual(residual) {}
+
+	void
+	AddValue(T const &value)
+	{
+		this->out_residual[out_residual_idx++] = value;
+	}
+};
+
 
 struct KinematicHandLM
 {
@@ -47,39 +69,40 @@ struct KinematicHandLM
 	bool use_stability = false;
 	bool optimize_hand_size = true;
 	bool is_right = false;
+	float smoothing_factor;
 	int num_observation_views = 0;
-	one_frame_input *observation;
+	one_frame_input *observation = nullptr;
 
-	HandScalar target_hand_size;
-	HandScalar hand_size_err_mul;
-	u_logging_level log_level;
+	HandScalar target_hand_size = {};
+	HandScalar hand_size_err_mul = {};
+	HandScalar depth_err_mul = {};
 
 
-	StereographicObservation<HandScalar> sgo[2];
+	u_logging_level log_level = U_LOGGING_INFO;
 
-	Quat<HandScalar> last_frame_pre_rotation;
-	OptimizerHand<HandScalar> last_frame;
+	Quat<HandScalar> last_frame_pre_rotation = {};
+	OptimizerHand<HandScalar> last_frame = {};
 
 	// The pose that will take you from the right camera's space to the left camera's space.
-	xrt_pose left_in_right;
+	xrt_pose left_in_right = {};
 
 	// The translation part of the same pose, just easier for Ceres to consume
-	Vec3<HandScalar> left_in_right_translation;
+	Vec3<HandScalar> left_in_right_translation = {};
 
 	// The orientation part of the same pose, just easier for Ceres to consume
-	Quat<HandScalar> left_in_right_orientation;
+	Quat<HandScalar> left_in_right_orientation = {};
 
-	Eigen::Matrix<HandScalar, calc_input_size(true), 1> TinyOptimizerInput;
+	Eigen::Matrix<HandScalar, calc_input_size(true), 1> TinyOptimizerInput = {};
 };
 
 template <typename T> struct Translations55
 {
-	Vec3<T> t[kNumFingers][kNumJointsInFinger];
+	Vec3<T> t[kNumFingers][kNumJointsInFinger] = {};
 };
 
 template <typename T> struct Orientations54
 {
-	Quat<T> q[kNumFingers][kNumJointsInFinger];
+	Quat<T> q[kNumFingers][kNumJointsInFinger] = {};
 };
 
 template <bool optimize_hand_size> struct CostFunctor
@@ -217,6 +240,7 @@ eval_hand_set_rel_orientations(const OptimizerHand<T> &opt, Orientations54<T> &r
 
 	// Finger orientations
 	for (int i = 0; i < 4; i++) {
+		//!@todo: In this version of our tracking, this is always constant.
 		SwingTwistToQuaternion(opt.finger[i].metacarpal.swing, //
 		                       opt.finger[i].metacarpal.twist, //
 		                       rel_orientations.q[i + 1][0]);
@@ -234,7 +258,7 @@ eval_hand_set_rel_orientations(const OptimizerHand<T> &opt, Orientations54<T> &r
 template <typename T>
 void
 eval_hand_with_orientation(const OptimizerHand<T> &opt,
-                           bool is_right,
+                           const bool is_right,
                            Translations55<T> &translations_absolute,
                            Orientations54<T> &orientations_absolute)
 
@@ -242,16 +266,16 @@ eval_hand_with_orientation(const OptimizerHand<T> &opt,
 	XRT_TRACE_MARKER();
 
 
-	Translations55<T> rel_translations; //[kNumFingers][kNumJointsInFinger];
-	Orientations54<T> rel_orientations; //[kNumFingers][kNumOrientationsInFinger];
+	Translations55<T> rel_translations = {};
+	Orientations54<T> rel_orientations = {};
 
 	eval_hand_set_rel_orientations(opt, rel_orientations);
 
 	eval_hand_set_rel_translations(opt, rel_translations);
 
-	Quat<T> orientation_root;
+	Quat<T> orientation_root = {};
 
-	Quat<T> post_orientation_quat;
+	Quat<T> post_orientation_quat = {};
 
 	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_orientation_quat);
 
@@ -305,27 +329,65 @@ eval_hand_with_orientation(const OptimizerHand<T> &opt,
 	}
 }
 
+float
+get_avg_curl_value(const one_frame_input &obs, const int finger)
+{
+	float avg = 0;
+	float sum = 0;
+	for (int view = 0; view < 2; view++) {
+		const one_frame_one_view &inp = obs.views[view];
+		if (!inp.active) {
+			continue;
+		}
+		float conf = 1 / inp.curls[finger].variance; // Can't divide by 0, variance is always >0
+		float val = inp.curls[finger].value;
+		avg += val * conf;
+		sum += conf;
+	}
+	return avg / sum;
+}
+
+HandScalar
+calc_stability_curl_multiplier(const OptimizerFinger<HandScalar> &finger_last, HandScalar obs_curl)
+{
+	HandScalar last_curl_sum = HandScalar(finger_last.proximal_swing.x + finger_last.rots[0] + finger_last.rots[1]);
+	//!@todo Use the neural net's output variance somehow
+	HandScalar curl_disagreement = abs(obs_curl - last_curl_sum);
+
+	HandScalar curl_sub_mul = 1.0f - curl_disagreement;
+	curl_sub_mul += 0.2;
+
+
+	curl_sub_mul = std::max<HandScalar>(curl_sub_mul, 0);
+	curl_sub_mul = std::min<HandScalar>(curl_sub_mul, 1.0);
+
+	return curl_sub_mul;
+}
+
 template <typename T>
 void
-computeResidualStability_Finger(const OptimizerFinger<T> &finger,
-                                const OptimizerFinger<HandScalar> &finger_last,
+computeResidualStability_Finger(const one_frame_input &observation,
+                                const HandStability &stab,
+                                const OptimizerHand<T> &hand,
+                                const OptimizerHand<HandScalar> &last_hand,
+                                int finger_idx,
                                 ResidualHelper<T> &helper)
 {
-	helper.AddValue((finger.metacarpal.swing.x - finger_last.metacarpal.swing.x) * kStabilityFingerMCPSwing);
-
-	helper.AddValue((finger.metacarpal.swing.y - finger_last.metacarpal.swing.y) * kStabilityFingerMCPSwing);
-
+	const OptimizerFinger<T> &finger = hand.finger[finger_idx];
+	const OptimizerFinger<HandScalar> &finger_last = last_hand.finger[finger_idx];
 
 
-	helper.AddValue((finger.metacarpal.twist - finger_last.metacarpal.twist) * kStabilityFingerMCPTwist);
+	HandScalar obs_curl = HandScalar(get_avg_curl_value(observation, finger_idx + 1));
+	HandScalar curl_sub_mul = calc_stability_curl_multiplier(finger_last, obs_curl);
 
 
+	helper.AddValue((finger.proximal_swing.x - finger_last.proximal_swing.x) * //
+	                stab.stabilityFingerPXMSwingX * curl_sub_mul);
+	helper.AddValue((finger.proximal_swing.y - finger_last.proximal_swing.y) * //
+	                stab.stabilityFingerPXMSwingY);
 
-	helper.AddValue((finger.proximal_swing.x - finger_last.proximal_swing.x) * kStabilityFingerPXMSwingX);
-	helper.AddValue((finger.proximal_swing.y - finger_last.proximal_swing.y) * kStabilityFingerPXMSwingY);
-
-	helper.AddValue((finger.rots[0] - finger_last.rots[0]) * kStabilityCurlRoot);
-	helper.AddValue((finger.rots[1] - finger_last.rots[1]) * kStabilityCurlRoot);
+	helper.AddValue((finger.rots[0] - finger_last.rots[0]) * stab.stabilityCurlRoot * curl_sub_mul);
+	helper.AddValue((finger.rots[1] - finger_last.rots[1]) * stab.stabilityCurlRoot * curl_sub_mul);
 
 #ifdef USE_HAND_PLAUSIBILITY
 	if (finger.rots[0] < finger.rots[1]) {
@@ -340,35 +402,40 @@ template <bool optimize_hand_size, typename T>
 void
 computeResidualStability(const OptimizerHand<T> &hand,
                          const OptimizerHand<HandScalar> &last_hand,
-                         KinematicHandLM &state,
+                         const KinematicHandLM &state,
                          ResidualHelper<T> &helper)
 {
+	HandStability stab(state.smoothing_factor);
+
 
 	if constexpr (optimize_hand_size) {
 		helper.AddValue( //
-		    (hand.hand_size - state.target_hand_size) * (T)(kStabilityHandSize * state.hand_size_err_mul));
+		    (hand.hand_size - state.target_hand_size) * (T)(stab.stabilityHandSize * state.hand_size_err_mul));
 	}
+
 	if (state.first_frame) {
 		return;
 	}
 
-	helper.AddValue((last_hand.wrist_location.x - hand.wrist_location.x) * kStabilityRootPosition);
-	helper.AddValue((last_hand.wrist_location.y - hand.wrist_location.y) * kStabilityRootPosition);
-	helper.AddValue((last_hand.wrist_location.z - hand.wrist_location.z) * kStabilityRootPosition);
+	helper.AddValue((last_hand.wrist_location.x - hand.wrist_location.x) * stab.stabilityRootPosition);
+	helper.AddValue((last_hand.wrist_location.y - hand.wrist_location.y) * stab.stabilityRootPosition);
+	helper.AddValue((last_hand.wrist_location.z - hand.wrist_location.z) * stab.stabilityRootPosition);
 
 
-	helper.AddValue((hand.wrist_post_orientation_aax.x) * (T)(kStabilityHandOrientation));
-	helper.AddValue((hand.wrist_post_orientation_aax.y) * (T)(kStabilityHandOrientation));
-	helper.AddValue((hand.wrist_post_orientation_aax.z) * (T)(kStabilityHandOrientation));
+	helper.AddValue((hand.wrist_post_orientation_aax.x) * (T)(stab.stabilityHandOrientationXY));
+	helper.AddValue((hand.wrist_post_orientation_aax.y) * (T)(stab.stabilityHandOrientationXY));
+	helper.AddValue((hand.wrist_post_orientation_aax.z) * (T)(stab.stabilityHandOrientationZ));
 
 
 
-	helper.AddValue((hand.thumb.metacarpal.swing.x - last_hand.thumb.metacarpal.swing.x) * kStabilityThumbMCPSwing);
-	helper.AddValue((hand.thumb.metacarpal.swing.y - last_hand.thumb.metacarpal.swing.y) * kStabilityThumbMCPSwing);
-	helper.AddValue((hand.thumb.metacarpal.twist - last_hand.thumb.metacarpal.twist) * kStabilityThumbMCPTwist);
+	helper.AddValue((hand.thumb.metacarpal.swing.x - last_hand.thumb.metacarpal.swing.x) *
+	                stab.stabilityThumbMCPSwing);
+	helper.AddValue((hand.thumb.metacarpal.swing.y - last_hand.thumb.metacarpal.swing.y) *
+	                stab.stabilityThumbMCPSwing);
+	helper.AddValue((hand.thumb.metacarpal.twist - last_hand.thumb.metacarpal.twist) * stab.stabilityThumbMCPTwist);
 
-	helper.AddValue((hand.thumb.rots[0] - last_hand.thumb.rots[0]) * kStabilityCurlRoot);
-	helper.AddValue((hand.thumb.rots[1] - last_hand.thumb.rots[1]) * kStabilityCurlRoot);
+	helper.AddValue((hand.thumb.rots[0] - last_hand.thumb.rots[0]) * stab.stabilityCurlRoot);
+	helper.AddValue((hand.thumb.rots[1] - last_hand.thumb.rots[1]) * stab.stabilityCurlRoot);
 #ifdef USE_HAND_PLAUSIBILITY
 	helper.AddValue((hand.finger[1].proximal_swing.x - hand.finger[2].proximal_swing.x) *
 	                kPlausibilityProximalSimilarity);
@@ -378,11 +445,7 @@ computeResidualStability(const OptimizerHand<T> &hand,
 
 
 	for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
-		const OptimizerFinger<HandScalar> &finger_last = last_hand.finger[finger_idx];
-
-		const OptimizerFinger<T> &finger = hand.finger[finger_idx];
-
-		computeResidualStability_Finger(finger, finger_last, helper);
+		computeResidualStability_Finger<T>(*state.observation, stab, hand, last_hand, finger_idx, helper);
 	}
 }
 
@@ -424,10 +487,11 @@ template <typename T>
 static inline void
 unit_xrt_vec3_stereographic_projection(const xrt_vec3 in, Vec2<T> &out)
 {
-	Vec3<T> vec;
-	vec.x = (T)(in.x);
-	vec.y = (T)(in.y);
-	vec.z = (T)(in.z);
+	Vec3<T> vec = {
+	    (T)(in.x),
+	    (T)(in.y),
+	    (T)(in.z),
+	};
 
 	normalize_vector_inplace(vec);
 
@@ -436,101 +500,256 @@ unit_xrt_vec3_stereographic_projection(const xrt_vec3 in, Vec2<T> &out)
 
 template <typename T>
 static void
-diff(const Vec3<T> &model_joint_pos,
-     const Vec3<T> &move_joint_translation,
-     const Quat<T> &move_joint_orientation,
-     const StereographicObservation<HandScalar> &observation,
-     const HandScalar *confidences,
-     const HandScalar amount_we_care,
-     int &hand_joint_idx,
-     ResidualHelper<T> &helper)
+calc_joint_rel_camera(const Vec3<T> &model_joint_pos,
+                      const Vec3<T> &move_joint_translation,
+                      const Quat<T> &move_joint_orientation,
+                      const Quat<T> &after_orientation,
+                      Vec3<T> &out_position)
 {
+	// Should be uninitialized until here.
+	out_position = Vec3<T>::Zero();
+	UnitQuaternionRotatePoint(move_joint_orientation, model_joint_pos, out_position);
+	out_position.x += move_joint_translation.x;
+	out_position.y += move_joint_translation.y;
+	out_position.z += move_joint_translation.z;
 
-	Vec3<T> model_joint_dir_rel_camera;
-	UnitQuaternionRotatePoint(move_joint_orientation, model_joint_pos, model_joint_dir_rel_camera);
+	UnitQuaternionRotatePoint(after_orientation, out_position, out_position);
+}
 
-	model_joint_dir_rel_camera.x = model_joint_dir_rel_camera.x + move_joint_translation.x;
-	model_joint_dir_rel_camera.y = model_joint_dir_rel_camera.y + move_joint_translation.y;
-	model_joint_dir_rel_camera.z = model_joint_dir_rel_camera.z + move_joint_translation.z;
-
-	normalize_vector_inplace(model_joint_dir_rel_camera);
-
+template <typename T>
+static void
+diff_stereographic(const Vec3<T> &model_joint_pos_rel_camera_,
+                   const vec2_5 &observed_ray_sg,
+                   const HandScalar confidence_xy,
+                   const HandScalar stereographic_radius,
+                   ResidualHelper<T> &helper)
+{
+	Vec3<T> model_joint_pos_rel_camera = model_joint_pos_rel_camera_;
+	normalize_vector_inplace(model_joint_pos_rel_camera);
 	Vec2<T> stereographic_model_dir;
-	unit_vector_stereographic_projection(model_joint_dir_rel_camera, stereographic_model_dir);
+	unit_vector_stereographic_projection(model_joint_pos_rel_camera, stereographic_model_dir);
 
-
-	const HandScalar confidence = confidences[hand_joint_idx] * amount_we_care;
-	const Vec2<T> &observed_ray_sg = observation.obs[hand_joint_idx];
-
-	helper.AddValue((stereographic_model_dir.x - (T)(observed_ray_sg.x)) * confidence);
-	helper.AddValue((stereographic_model_dir.y - (T)(observed_ray_sg.y)) * confidence);
-
-	hand_joint_idx++;
+	helper.AddValue((stereographic_model_dir.x - (T)(observed_ray_sg.pos_2d.x * stereographic_radius)) *
+	                confidence_xy);
+	helper.AddValue((stereographic_model_dir.y - (T)(observed_ray_sg.pos_2d.y * stereographic_radius)) *
+	                confidence_xy);
 }
 
 
 
 template <typename T>
 void
-CostFunctor_PositionsPart(OptimizerHand<T> &hand, KinematicHandLM &state, ResidualHelper<T> &helper)
+cjrc(const KinematicHandLM &state,                   //
+     const OptimizerHand<T> &hand,                   //
+     const Translations55<T> &translations_absolute, //
+     const int view,                                 //
+     Vec3<T> out_model_joints_rel_camera[21])
+{
+	Vec3<T> move_direction;
+	Quat<T> move_orientation;
+
+	Quat<T> after_orientation;
+
+	if (view == 0) {
+		move_direction = Vec3<T>::Zero();
+		move_orientation = Quat<T>::Identity();
+	} else {
+		move_direction.x = T(state.left_in_right_translation.x);
+		move_direction.y = T(state.left_in_right_translation.y);
+		move_direction.z = T(state.left_in_right_translation.z);
+
+		move_orientation.w = T(state.left_in_right_orientation.w);
+		move_orientation.x = T(state.left_in_right_orientation.x);
+		move_orientation.y = T(state.left_in_right_orientation.y);
+		move_orientation.z = T(state.left_in_right_orientation.z);
+	}
+
+
+
+	xrt_quat extra_rot = state.observation->views[view].look_dir;
+
+
+#if 1
+	math_quat_invert(&extra_rot, &extra_rot);
+#endif
+
+
+	after_orientation.w = T(extra_rot.w);
+	after_orientation.x = T(extra_rot.x);
+	after_orientation.y = T(extra_rot.y);
+	after_orientation.z = T(extra_rot.z);
+
+
+	int joint_acc_idx = 0;
+
+	calc_joint_rel_camera(hand.wrist_location, move_direction, move_orientation, after_orientation,
+	                      out_model_joints_rel_camera[joint_acc_idx++]);
+
+	for (int finger_idx = 0; finger_idx < 5; finger_idx++) {
+		for (int joint_idx = 0; joint_idx < 4; joint_idx++) {
+			calc_joint_rel_camera(translations_absolute.t[finger_idx][joint_idx + 1], move_direction,
+			                      move_orientation, after_orientation,
+			                      out_model_joints_rel_camera[joint_acc_idx++]);
+		}
+	}
+}
+
+
+template <typename T>
+void
+CostFunctor_PositionsPart(const OptimizerHand<T> &hand,
+                          const Translations55<T> &translations_absolute,
+                          //   Orientations54<T> &orientations_absolute,
+                          const KinematicHandLM &state,
+                          ResidualHelper<T> &helper)
+{
+	for (int view = 0; view < 2; view++) {
+		if (!state.observation->views[view].active) {
+			continue;
+		}
+		HandScalar stereographic_radius = state.observation->views[view].stereographic_radius;
+		Vec3<T> model_joints_rel_camera[21] = {};
+
+		cjrc(state, hand, translations_absolute, view, model_joints_rel_camera);
+		MLOutput2D &out = state.observation->views[view].keypoints_in_scaled_stereographic;
+
+		T middlepxmdepth = model_joints_rel_camera[Joint21::INDX_PXM].norm();
+
+		int djai = 0;
+
+		for (int i = 0; i < 21; i++) {
+
+			diff_stereographic<T>(model_joints_rel_camera[i],                                          //
+			                      state.observation->views[view].keypoints_in_scaled_stereographic[i], //
+			                      out[i].confidence_xy,                                                //
+			                      stereographic_radius,                                                //
+			                      helper);
+
+
+			if (i == Joint21::MIDL_PXM) {
+				continue;
+			}
+			// depth part!
+			T rel_depth = model_joints_rel_camera[i].norm() - middlepxmdepth;
+			rel_depth /= hand.hand_size;
+
+
+
+			T obs_depth = T(out[i].depth_relative_to_midpxm);
+
+			T relative_diff = rel_depth - obs_depth;
+
+			if (state.first_frame) {
+				// Depth on the first frame was causing local minima. We need simulated annealing.
+				helper.AddValue(T(0));
+			} else {
+				helper.AddValue(relative_diff * T(pow(out[i].confidence_depth, 3)) * T(1.0f) *
+				                state.depth_err_mul);
+			}
+
+			djai++;
+		}
+	}
+}
+
+template <typename T>
+static void
+diff_stereographic_reprojection_error(const Vec3<T> &model_joint_pos_rel_camera_,
+                                      const vec2_5 &observed_ray_sg,
+                                      const HandScalar confidence_xy,
+                                      const HandScalar stereographic_radius,
+                                      ResidualHelper<T> &helper)
+{
+	Vec3<T> model_joint_pos_rel_camera = model_joint_pos_rel_camera_;
+	normalize_vector_inplace(model_joint_pos_rel_camera);
+	Vec2<T> stereographic_model_dir;
+	unit_vector_stereographic_projection(model_joint_pos_rel_camera, stereographic_model_dir);
+
+	stereographic_model_dir.x /= stereographic_radius;
+	stereographic_model_dir.y /= stereographic_radius;
+
+	//!@todo This works well but we can get a way more "rooted in math" way of increasing repro error with
+	//! low-confidence measurements than this.
+	HandScalar mul = 1 / (0.2 + confidence_xy);
+
+	helper.AddValue((stereographic_model_dir.x - (T)(observed_ray_sg.pos_2d.x)) * mul);
+	helper.AddValue((stereographic_model_dir.y - (T)(observed_ray_sg.pos_2d.y)) * mul);
+}
+
+// A much simpler reprojection error function for evaluating the final "goodness" so we can drop badly optimized hands.
+template <typename T>
+void
+simple_reprojection_error(const OptimizerHand<T> &hand,
+                          const Translations55<T> &translations_absolute,
+                          const Orientations54<T> &orientations_absolute,
+                          const KinematicHandLM &state,
+
+                          ResidualHelper<T> &helper)
 {
 
-	Translations55<T> translations_absolute;
-	Orientations54<T> orientations_absolute;
-
-	HandScalar we_care_joint[] = {1.3, 0.9, 0.9, 1.3};
-	HandScalar we_care_finger[] = {1.0, 1.0, 0.8, 0.8, 0.8};
-
-	eval_hand_with_orientation(hand, state.is_right, translations_absolute, orientations_absolute);
 
 	for (int view = 0; view < 2; view++) {
 		if (!state.observation->views[view].active) {
 			continue;
 		}
-		Vec3<T> move_direction;
-		Quat<T> move_orientation;
 
-		if (view == 0) {
-			move_direction = Vec3<T>::Zero();
-			move_orientation = Quat<T>::Identity();
-		} else {
-			move_direction.x = T(state.left_in_right_translation.x);
-			move_direction.y = T(state.left_in_right_translation.y);
-			move_direction.z = T(state.left_in_right_translation.z);
+		HandScalar stereographic_radius = state.observation->views[view].stereographic_radius;
+		Vec3<T> model_joints_rel_camera[21] = {};
+		cjrc(state, hand, translations_absolute, view, model_joints_rel_camera);
 
-			move_orientation.w = T(state.left_in_right_orientation.w);
-			move_orientation.x = T(state.left_in_right_orientation.x);
-			move_orientation.y = T(state.left_in_right_orientation.y);
-			move_orientation.z = T(state.left_in_right_orientation.z);
-		}
-		int joint_acc_idx = 0;
-
-		HandScalar *confidences = state.observation->views[view].confidences;
-
-		diff<T>(hand.wrist_location, move_direction, move_orientation, state.sgo[view], confidences, 1.5,
-		        joint_acc_idx, helper);
-
-		for (int finger_idx = 0; finger_idx < 5; finger_idx++) {
-			for (int joint_idx = 0; joint_idx < 4; joint_idx++) {
-				diff<T>(translations_absolute.t[finger_idx][joint_idx + 1], move_direction,
-				        move_orientation, state.sgo[view], confidences,
-				        we_care_finger[finger_idx] * we_care_joint[joint_idx], joint_acc_idx, helper);
-			}
+		for (int i = 0; i < 21; i++) {
+			diff_stereographic_reprojection_error(
+			    model_joints_rel_camera[i],                                          //
+			    state.observation->views[view].keypoints_in_scaled_stereographic[i], //
+			    1.0f,                                                                //
+			    stereographic_radius,                                                //
+			    helper);
 		}
 	}
 }
 
-// template <typename T>
-// void CostFunctor_HandSizePart(OptimizerHand<T> &hand, KinematicHandLM &state, T *residual, size_t &out_residual_idx)
-// {
+#ifdef USE_HAND_CURLS
+template <typename T>
+void
+CostFunctor_MatchCurls(OptimizerHand<T> &hand, KinematicHandLM &state, ResidualHelper<T> &helper)
+{
+	for (int view = 0; view < 2; view++) {
+		one_frame_one_view &inp = state.observation->views[view];
+		if (!inp.active) {
+			continue;
+		}
 
-// }
+		for (int finger = 0; finger < 4; finger++) {
+			OptimizerFinger<T> fing = hand.finger[finger];
+
+			T sum = fing.proximal_swing.x + fing.rots[0] + fing.rots[1];
+
+			T target = T(inp.curls[finger + 1].value);
+
+			T diff = (sum - target) * T(1 / inp.curls[finger + 1].variance);
+
+			helper.AddValue(diff);
+		}
+	}
+}
+#endif
+
+
+template <typename T>
+void
+print_residual_part(T *residual, int residual_size)
+{
+	for (int i = 0; i < residual_size; i++) {
+		std::cout << residual[i] << std::endl;
+	}
+}
 
 template <bool optimize_hand_size>
 template <typename T>
 bool
 CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 {
+
 	struct KinematicHandLM &state = this->parent;
 	OptimizerHand<T> hand = {};
 	// ??? should I do the below? probably.
@@ -543,23 +762,37 @@ CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 
 // When you're hacking, you want to set the residuals to always-0 so that any of them you forget to touch keep their 0
 // gradient.
-// But then later this just becomes a waste.
-#if 0
+#ifdef RESIDUALS_HACKING
 	for (size_t i = 0; i < residual_size; i++) {
 		residual[i] = (T)(0);
 	}
 #endif
 
+
 	ResidualHelper<T> helper(residual);
 
-	CostFunctor_PositionsPart(hand, state, helper);
+
+	Translations55<T> translations_absolute = {};
+	Orientations54<T> orientations_absolute = {};
+	eval_hand_with_orientation(hand, state.is_right, translations_absolute, orientations_absolute);
+
+
+	CostFunctor_PositionsPart<T>(hand, translations_absolute, state, helper);
 	computeResidualStability<optimize_hand_size, T>(hand, state.last_frame, state, helper);
 
-	// Bounds checking - we should have written exactly to the end.
-	// U_LOG_E("%zu %zu", helper.out_residual_idx, residual_size);
+#ifdef USE_HAND_CURLS
+	CostFunctor_MatchCurls<T>(hand, state, helper);
+#endif
+
+// Bounds checking - we should have written exactly to the end.
+// If you're hacking on the optimizer, just increase the residual size a lot and don't worry.
+#ifndef RESIDUALS_HACKING
+	if (helper.out_residual_idx != residual_size) {
+		LM_ERROR(state, "Residual size was wrong! Residual size was %zu, but out_residual_idx was %zu",
+		         residual_size, helper.out_residual_idx);
+	}
 	assert(helper.out_residual_idx == residual_size);
-	// If you're hacking, feel free to turn this off; just remember to not write off the end, and to initialize
-	// everything somewhere (maybe change the above to an #if 1? )
+#endif
 
 	return true;
 }
@@ -633,35 +866,24 @@ zldtt(Vec3<T> &trans, Quat<T> &orientation, bool is_right, xrt_space_relation &o
 }
 
 static void
-eval_to_viz_hand(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand)
+eval_to_viz_hand(KinematicHandLM &state,
+                 OptimizerHand<HandScalar> &opt,
+                 Translations55<HandScalar> translations_absolute,
+                 Orientations54<HandScalar> orientations_absolute,
+                 xrt_hand_joint_set &out_viz_hand)
 {
 	XRT_TRACE_MARKER();
 
-	//!@todo It's _probably_ fine to have the bigger size?
-	Eigen::Matrix<HandScalar, calc_input_size(true), 1> pose = state.TinyOptimizerInput.cast<HandScalar>();
-
-	OptimizerHand<HandScalar> opt = {};
-	OptimizerHandInit(opt, state.last_frame_pre_rotation);
-	OptimizerHandUnpackFromVector(pose.data(), state.optimize_hand_size, state.target_hand_size, opt);
-
-	Translations55<HandScalar> translations_absolute;
-	Orientations54<HandScalar> orientations_absolute;
-	// Vec3<HandScalar> translations_absolute[kNumFingers][kNumJointsInFinger];
-	// Quat<HandScalar> orientations_absolute[kNumFingers][kNumOrientationsInFinger];
-
 	eval_hand_with_orientation(opt, state.is_right, translations_absolute, orientations_absolute);
 
-	Quat<HandScalar> post_wrist_orientation;
+	Quat<HandScalar> post_wrist_orientation = {};
 
 	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_wrist_orientation);
 
 	Quat<HandScalar> pre_wrist_orientation = state.last_frame_pre_rotation;
 
-	// for (int i = 0; i < 4; i++) {
-	// 	pre_wrist_orientation[i] = state.last_frame_pre_rotation[i];
-	// }
 
-	Quat<HandScalar> final_wrist_orientation;
+	Quat<HandScalar> final_wrist_orientation = {};
 
 	QuaternionProduct(pre_wrist_orientation, post_wrist_orientation, final_wrist_orientation);
 
@@ -689,7 +911,7 @@ eval_to_viz_hand(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand)
 			if (finger == 0 && joint == 0) {
 				continue;
 			}
-			Quat<HandScalar> *orientation;
+			Quat<HandScalar> *orientation = nullptr;
 			if (joint != 4) {
 				orientation = &orientations_absolute.q[finger][joint];
 			} else {
@@ -700,111 +922,6 @@ eval_to_viz_hand(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand)
 		}
 	}
 	out_viz_hand.is_active = true;
-}
-
-//!@todo
-// This reprojection error thing is probably the wrong way of doing it.
-// I think that the right way is to hack (?) TinySolver such that we get the last set of residuals back, and use those
-// somehow. Maybe scale them simply by the spread of the input hand rays? What about handling stereographic projections?
-// worth it? The main bit is that we should just use the last set of residuals somehow, calculating all this is a waste
-// of cycles when we have something that already should work.
-
-static void
-repro_error_make_joint_ray(const xrt_hand_joint_value &joint, const xrt_pose &cam_pose, xrt_vec3 &out_ray)
-{
-	// by VALUE
-	xrt_vec3 position = joint.relation.pose.position;
-
-	math_quat_rotate_vec3(&cam_pose.orientation, &position, &position);
-	position = position + cam_pose.position;
-
-	out_ray = m_vec3_normalize(position);
-}
-
-static enum xrt_hand_joint
-joint_from_21(int finger, int joint)
-{
-	if (finger > 0) {
-		return xrt_hand_joint(2 + (finger * 5) + joint);
-	} else {
-		return xrt_hand_joint(joint + 3);
-	}
-}
-
-static inline float
-simple_vec3_difference(const xrt_vec3 one, const xrt_vec3 two)
-{
-	return (1.0 - m_vec3_dot(one, two));
-}
-
-float
-reprojection_error_2d(KinematicHandLM &state, const one_frame_input &observation, const xrt_hand_joint_set &set)
-{
-	float final_err = 0;
-	int views_looked_at = 0;
-	for (int view = 0; view < 2; view++) {
-		if (!observation.views[view].active) {
-			continue;
-		}
-		views_looked_at++;
-		xrt_pose move_amount;
-
-		if (view == 0) {
-			// left camera.
-			move_amount = XRT_POSE_IDENTITY;
-		} else {
-			move_amount = state.left_in_right;
-		}
-
-		xrt_vec3 lm_rays[21];
-		const xrt_vec3 *obs_rays = observation.views[view].rays;
-
-
-		int acc_idx = 0;
-
-		repro_error_make_joint_ray(set.values.hand_joint_set_default[XRT_HAND_JOINT_WRIST], move_amount,
-		                           lm_rays[acc_idx++]);
-
-		for (int finger = 0; finger < 5; finger++) {
-			for (int joint = 0; joint < 4; joint++) {
-				repro_error_make_joint_ray(
-				    set.values.hand_joint_set_default[joint_from_21(finger, joint)], move_amount,
-				    lm_rays[acc_idx++]);
-			}
-		}
-
-		xrt_vec3 obs_center = {};
-		xrt_vec3 lm_center = {};
-
-		float err = 0;
-		float obs_spread = 0;
-		float lm_spread = 0;
-
-		for (int i = 0; i < 21; i++) {
-			obs_center += obs_rays[i];
-			lm_center += lm_rays[i];
-			err += simple_vec3_difference(lm_rays[i], obs_rays[i]);
-		}
-
-		math_vec3_scalar_mul(1.0f / 21.0f, &obs_center);
-		math_vec3_scalar_mul(1.0f / 21.0f, &lm_center);
-
-		for (int i = 0; i < 21; i++) {
-			obs_spread += simple_vec3_difference(obs_center, obs_rays[i]);
-		}
-		for (int i = 0; i < 21; i++) {
-			lm_spread += simple_vec3_difference(lm_center, lm_rays[i]);
-		}
-
-
-
-		// std::cout << err << std::endl;
-		// std::cout << err / (obs_spread + lm_spread) << std::endl;
-
-		// return ;
-		final_err += err / (obs_spread + lm_spread);
-	}
-	return final_err / (float)views_looked_at;
 }
 
 template <bool optimize_hand_size>
@@ -825,14 +942,17 @@ opt_run(KinematicHandLM &state, one_frame_input &observation, xrt_hand_joint_set
 
 	AutoDiffCostFunctor f(cf);
 
-
-	// Okay I have no idea if this should be {}-initialized or not. Previous me seems to have thought no, but it
-	// works either way.
 	ceres::TinySolver<AutoDiffCostFunctor> solver = {};
-	solver.options.max_num_iterations = 50;
-	// We need to do a parameter sweep for the trust region and see what's fastest.
-	// solver.options.initial_trust_region_radius = 1e3;
-	solver.options.function_tolerance = 1e-6;
+	solver.options.max_num_iterations = 30;
+
+	//!@todo We don't yet know what "good" termination conditions are.
+	// Instead of trying to guess without good offline datasets, just disable _all_ termination conditions and have
+	// it run for 30 iterations no matter what.
+	solver.options.gradient_tolerance = 0;
+	solver.options.function_tolerance = 0;
+	solver.options.parameter_tolerance = 0;
+
+	//!@todo We need to do a parameter sweep on initial_trust_region_radius.
 
 	Eigen::Matrix<HandScalar, input_size, 1> inp = state.TinyOptimizerInput.head<input_size>();
 
@@ -848,7 +968,7 @@ opt_run(KinematicHandLM &state, one_frame_input &observation, xrt_hand_joint_set
 		uint64_t diff = end - start;
 		double time_taken = (double)diff / (double)U_TIME_1MS_IN_NS;
 
-		const char *status = "UNDEFINED";
+		const char *status = nullptr;
 
 		switch (summary.status) {
 		case 0: {
@@ -866,6 +986,7 @@ opt_run(KinematicHandLM &state, one_frame_input &observation, xrt_hand_joint_set
 		case 4: {
 			status = "COST_CHANGE_TOO_SMALL";
 		} break;
+		default: assert(false);
 		}
 
 		LM_DEBUG(state, "Status: %s, num_iterations %d, max_norm %E, gtol %E", status, summary.iterations,
@@ -878,15 +999,60 @@ opt_run(KinematicHandLM &state, one_frame_input &observation, xrt_hand_joint_set
 	return 0;
 }
 
+void
+optimizer_finish(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand, float &out_reprojection_error)
+{
+
+	// Postfix - unpack,
+
+	OptimizerHand<HandScalar> &final_hand = state.last_frame;
+
+	Translations55<HandScalar> translations_absolute;
+	Orientations54<HandScalar> orientations_absolute;
+	eval_hand_with_orientation<HandScalar>(final_hand, state.is_right, translations_absolute,
+	                                       orientations_absolute);
+
+	eval_to_viz_hand(state, final_hand, translations_absolute, orientations_absolute, out_viz_hand);
+
+
+	// CALCULATE REPROJECTION ERROR
+
+	// Let's make space calc_residual_sizefor two views, even though we may only use one.
+	Eigen::Matrix<HandScalar, kHandResidualOneSideXY * 2, 1> mat; //= mat.Zero();
+	mat.setConstant(0);
+
+	ResidualHelper<HandScalar> helper(mat.data());
+
+
+
+	simple_reprojection_error<HandScalar>(final_hand, translations_absolute, orientations_absolute, state, helper);
+
+	HandScalar sum = mat.squaredNorm();
+
+	sum /= state.num_observation_views;
+
+	out_reprojection_error = sum;
+}
+
 
 void
 hand_was_untracked(KinematicHandLM *hand)
 {
 	hand->first_frame = true;
+#if 0
 	hand->last_frame_pre_rotation.w = 1.0;
 	hand->last_frame_pre_rotation.x = 0.0;
 	hand->last_frame_pre_rotation.y = 0.0;
 	hand->last_frame_pre_rotation.z = 0.0;
+#else
+	// Rotated 90 degrees so that the palm is facing the user and the fingers are up.
+	// The _idea_ is that having the palm be "in" the camera's plane will reduce initial local minima due to flat
+	// things having multiple possible unprojections.
+	hand->last_frame_pre_rotation.w = sqrt(2) / 2;
+	hand->last_frame_pre_rotation.x = -sqrt(2) / 2;
+	hand->last_frame_pre_rotation.y = 0.0;
+	hand->last_frame_pre_rotation.z = 0.0;
+#endif
 
 	OptimizerHandInit(hand->last_frame, hand->last_frame_pre_rotation);
 	OptimizerHandPackIntoVector(hand->last_frame, hand->optimize_hand_size, hand->TinyOptimizerInput.data());
@@ -896,14 +1062,19 @@ void
 optimizer_run(KinematicHandLM *hand,
               one_frame_input &observation,
               bool hand_was_untracked_last_frame,
+              float smoothing_factor, //!<- Unused if this is the first frame
               bool optimize_hand_size,
               float target_hand_size,
               float hand_size_err_mul,
+              float amt_use_depth,
               xrt_hand_joint_set &out_viz_hand,
               float &out_hand_size,
               float &out_reprojection_error) // NOLINT(bugprone-easily-swappable-parameters)
 {
+	numerics_checker::set_floating_exceptions();
+
 	KinematicHandLM &state = *hand;
+	state.smoothing_factor = smoothing_factor;
 
 	if (hand_was_untracked_last_frame) {
 		hand_was_untracked(hand);
@@ -919,24 +1090,58 @@ optimizer_run(KinematicHandLM *hand,
 	state.optimize_hand_size = optimize_hand_size;
 	state.target_hand_size = target_hand_size;
 	state.hand_size_err_mul = hand_size_err_mul;
+	state.depth_err_mul = amt_use_depth;
 
 	state.use_stability = !state.first_frame;
 
 	state.observation = &observation;
 
-	for (int i = 0; i < 21; i++) {
-		for (int view = 0; view < 2; view++) {
-			unit_xrt_vec3_stereographic_projection(observation.views[view].rays[i], state.sgo[view].obs[i]);
-		}
+
+
+	// This code is disabled because I can't convince myself that it helps (I will be able to once we have good
+	// validation datasets.)
+
+	// What it does: Update each finger's "initial" curl value to match what the neural net thought the curl was,
+	// so that the optimizer hopefully starts in the valley that contains the true global minimum.
+#if 0
+
+	OptimizerHand<HandScalar> blah = {};
+	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state.optimize_hand_size, state.target_hand_size,
+	                              blah);
+
+	for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
+		// int finger_idx = 0;
+		int curl_idx = finger_idx + 1;
+
+
+		OptimizerFinger fing = blah.finger[finger_idx];
+		HandScalar sum = fing.proximal_swing.x + fing.rots[0] + fing.rots[1];
+
+		HandScalar target = get_avg_curl_value(observation, curl_idx);
+
+
+		HandScalar move = target - sum;
+
+		fing.proximal_swing.x += move / 3;
+		fing.rots[0] += move / 3;
+		fing.rots[1] += move / 3;
+
 	}
 
+	OptimizerHandPackIntoVector(blah, state.optimize_hand_size, state.TinyOptimizerInput.data());
 
-	// For now, we have to statically instantiate different versions of the optimizer depending on how many input
-	// parameters there are. For now, there are only two cases - either we are optimizing the hand size or we are
-	// not optimizing it.
-	// !@todo Can we make a magic template that automatically instantiates the right one, and also make it so we can
-	// decide to either make the residual size dynamic or static? Currently, it's dynamic, which is easier for us
-	// and makes compile times a lot lower, but it probably makes things some amount slower at runtime.
+
+
+#endif
+
+
+	// For now, we have to statically instantiate different versions of the optimizer depending on
+	// how many input parameters there are. For now, there are only two cases - either we are
+	// optimizing the hand size or we are not optimizing it.
+	// !@todo Can we make a magic template that automatically instantiates the right one, and also
+	// make it so we can decide to either make the residual size dynamic or static? Currently, it's
+	// dynamic, which is easier for us and makes compile times a lot lower, but it probably makes
+	// things some amount slower at runtime.
 
 	if (optimize_hand_size) {
 		opt_run<true>(state, observation, out_viz_hand);
@@ -955,18 +1160,16 @@ optimizer_run(KinematicHandLM *hand,
 	// Squash the orientations
 	OptimizerHandSquashRotations(state.last_frame, state.last_frame_pre_rotation);
 
-	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're using sin/asin.
+	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're
+	// using sin/asin.
 	OptimizerHandPackIntoVector(state.last_frame, hand->optimize_hand_size, state.TinyOptimizerInput.data());
 
-
-
-	eval_to_viz_hand(state, out_viz_hand);
+	optimizer_finish(state, out_viz_hand, out_reprojection_error);
 
 	state.first_frame = false;
 
 	out_hand_size = state.last_frame.hand_size;
-
-	out_reprojection_error = reprojection_error_2d(state, observation, out_viz_hand);
+	numerics_checker::remove_floating_exceptions();
 }
 
 
@@ -974,7 +1177,7 @@ optimizer_run(KinematicHandLM *hand,
 void
 optimizer_create(xrt_pose left_in_right, bool is_right, u_logging_level log_level, KinematicHandLM **out_kinematic_hand)
 {
-	KinematicHandLM *hand = new KinematicHandLM;
+	KinematicHandLM *hand = new KinematicHandLM();
 
 	hand->is_right = is_right;
 	hand->left_in_right = left_in_right;

@@ -8,11 +8,8 @@
  */
 #pragma once
 
-// #include <Eigen/Core>
-// #include <Eigen/Geometry>
 #include "math/m_mathinclude.h"
 #include "../kine_common.hpp"
-#include <type_traits>
 
 namespace xrt::tracking::hand::mercury::lm {
 
@@ -48,17 +45,21 @@ static constexpr size_t kNumOrientationsInFinger = 4;
 
 // Not tested/tuned well enough; might make tracking slow.
 #undef USE_HAND_PLAUSIBILITY
+// Should work, but our neural nets aren't good enough yet.
+#undef USE_HAND_CURLS
+
+#undef RESIDUALS_HACKING
 
 static constexpr size_t kMetacarpalBoneDim = 3;
 static constexpr size_t kProximalBoneDim = 2;
-static constexpr size_t kFingerDim = kProximalBoneDim + kMetacarpalBoneDim + 2;
+static constexpr size_t kFingerDim = kProximalBoneDim + 2;
 static constexpr size_t kThumbDim = kMetacarpalBoneDim + 2;
 static constexpr size_t kHandSizeDim = 1;
 static constexpr size_t kHandTranslationDim = 3;
 static constexpr size_t kHandOrientationDim = 3;
 
 
-
+// HRTC = Hand Residual Temporal Consistency
 static constexpr size_t kHRTC_HandSize = 1;
 static constexpr size_t kHRTC_RootBoneTranslation = 3;
 static constexpr size_t kHRTC_RootBoneOrientation = 3; // Direct difference between the two angle-axis rotations. This
@@ -69,12 +70,21 @@ static constexpr size_t kHRTC_ThumbCurls = 2;
 
 static constexpr size_t kHRTC_ProximalSimilarity = 2;
 
-static constexpr size_t kHRTC_FingerMCPSwingTwist = 3;
+static constexpr size_t kHRTC_FingerMCPSwingTwist = 0;
 static constexpr size_t kHRTC_FingerPXMSwing = 2;
 static constexpr size_t kHRTC_FingerCurls = 2;
 static constexpr size_t kHRTC_CurlSimilarity = 1;
 
-static constexpr size_t kHandResidualOneSideSize = 21 * 2;
+
+static constexpr size_t kHandResidualOneSideXY = (kNumNNJoints * 2);
+static constexpr size_t kHandResidualOneSideDepth = 20; // one less because midxpm joint isn't used
+#ifdef USE_HAND_CURLS
+static constexpr size_t kHandResidualOneSideMatchCurls = 4;
+#else
+static constexpr size_t kHandResidualOneSideMatchCurls = 0;
+#endif
+static constexpr size_t kHandResidualOneSideSize =
+    kHandResidualOneSideXY + kHandResidualOneSideDepth + kHandResidualOneSideMatchCurls;
 
 static constexpr size_t kHandResidualTemporalConsistencyOneFingerSize = //
     kHRTC_FingerMCPSwingTwist +                                         //
@@ -97,27 +107,49 @@ static constexpr size_t kHandResidualTemporalConsistencySize = //
     0;
 
 
-// Factors to multiply different values by to get a smooth hand trajectory without introducing too much latency
+class HandStability
+{
+public:
+	HandScalar stabilityRoot;
+	HandScalar stabilityCurlRoot;
+	HandScalar stabilityOtherRoot;
 
-// 1.0 is good, a little jittery.
-// Anything above 3.0 generally breaks.
-static constexpr HandScalar kStabilityRoot = 1.0;
-static constexpr HandScalar kStabilityCurlRoot = kStabilityRoot * 0.03f;
-static constexpr HandScalar kStabilityOtherRoot = kStabilityRoot * 0.03f;
+	HandScalar stabilityThumbMCPSwing;
+	HandScalar stabilityThumbMCPTwist;
 
-static constexpr HandScalar kStabilityThumbMCPSwing = kStabilityCurlRoot * 1.5f;
-static constexpr HandScalar kStabilityThumbMCPTwist = kStabilityCurlRoot * 1.5f;
+	HandScalar stabilityFingerMCPSwing;
+	HandScalar stabilityFingerMCPTwist;
 
-static constexpr HandScalar kStabilityFingerMCPSwing = kStabilityCurlRoot * 3.0f;
-static constexpr HandScalar kStabilityFingerMCPTwist = kStabilityCurlRoot * 3.0f;
+	HandScalar stabilityFingerPXMSwingX;
+	HandScalar stabilityFingerPXMSwingY;
 
-static constexpr HandScalar kStabilityFingerPXMSwingX = kStabilityCurlRoot * 1.0f;
-static constexpr HandScalar kStabilityFingerPXMSwingY = kStabilityCurlRoot * 1.6f;
+	HandScalar stabilityRootPosition;
+	HandScalar stabilityHandSize;
 
-static constexpr HandScalar kStabilityRootPosition = kStabilityOtherRoot * 30;
-static constexpr HandScalar kStabilityHandSize = kStabilityOtherRoot * 1000;
+	HandScalar stabilityHandOrientationZ;
+	HandScalar stabilityHandOrientationXY;
+	HandStability(float root = 15.0f)
+	{
+		this->stabilityRoot = root;
+		this->stabilityCurlRoot = this->stabilityRoot * 0.03f;
+		this->stabilityOtherRoot = this->stabilityRoot * 0.03f;
 
-static constexpr HandScalar kStabilityHandOrientation = kStabilityOtherRoot * 3;
+		this->stabilityThumbMCPSwing = this->stabilityCurlRoot * 1.5f;
+		this->stabilityThumbMCPTwist = this->stabilityCurlRoot * 1.5f;
+
+		this->stabilityFingerMCPSwing = this->stabilityCurlRoot * 3.0f;
+		this->stabilityFingerMCPTwist = this->stabilityCurlRoot * 3.0f;
+
+		this->stabilityFingerPXMSwingX = this->stabilityCurlRoot * 0.6f;
+		this->stabilityFingerPXMSwingY = this->stabilityCurlRoot * 1.6f;
+
+		this->stabilityRootPosition = this->stabilityOtherRoot * 25;
+		this->stabilityHandSize = this->stabilityOtherRoot * 1000;
+
+		this->stabilityHandOrientationZ = this->stabilityOtherRoot * 0.5;
+		this->stabilityHandOrientationXY = this->stabilityOtherRoot * 0.8;
+	}
+};
 
 
 static constexpr HandScalar kPlausibilityRoot = 1.0;
@@ -154,7 +186,6 @@ calc_input_size(bool optimize_hand_size)
 	return out;
 }
 
-
 constexpr size_t
 calc_residual_size(bool stability, bool optimize_hand_size, int num_views)
 {
@@ -179,10 +210,10 @@ calc_residual_size(bool stability, bool optimize_hand_size, int num_views)
 
 template <typename Scalar> struct Quat
 {
-	Scalar x;
-	Scalar y;
-	Scalar z;
-	Scalar w;
+	Scalar x = {};
+	Scalar y = {};
+	Scalar z = {};
+	Scalar w = {};
 
 	/// Default constructor - DOES NOT INITIALIZE VALUES
 	constexpr Quat() {}
@@ -221,9 +252,9 @@ template <typename Scalar> struct Vec3
 {
 	// Note that these are not initialized, for performance reasons.
 	// If you want them initialized, use Zero() or something else
-	Scalar x;
-	Scalar y;
-	Scalar z;
+	Scalar x = {};
+	Scalar y = {};
+	Scalar z = {};
 
 	/// Default constructor - DOES NOT INITIALIZE VALUES
 	constexpr Vec3() {}
@@ -254,12 +285,26 @@ template <typename Scalar> struct Vec3
 	{
 		return Vec3(0.f, 0.f, 0.f);
 	}
+
+	// Norm, vector length, whatever.
+	Scalar
+	norm()
+	{
+		Scalar len = (Scalar)(0);
+
+		len += this->x * this->x;
+		len += this->y * this->y;
+		len += this->z * this->z;
+
+		len = sqrt(len);
+		return len;
+	}
 };
 
 template <typename Scalar> struct Vec2
 {
-	Scalar x;
-	Scalar y;
+	Scalar x = {};
+	Scalar y = {};
 
 	/// Default constructor - DOES NOT INITIALIZE VALUES
 	constexpr Vec2() noexcept {}
@@ -298,7 +343,7 @@ template <typename Scalar> struct Vec2
 
 template <typename T> struct ResidualHelper
 {
-	T *out_residual;
+	T *out_residual = nullptr;
 	size_t out_residual_idx = 0;
 
 	ResidualHelper(T *residual) : out_residual(residual)
@@ -312,7 +357,4 @@ template <typename T> struct ResidualHelper
 		this->out_residual[out_residual_idx++] = value;
 	}
 };
-
-
-
 } // namespace xrt::tracking::hand::mercury::lm

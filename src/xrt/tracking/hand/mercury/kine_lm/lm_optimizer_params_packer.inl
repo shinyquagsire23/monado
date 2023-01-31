@@ -8,48 +8,46 @@
  * @ingroup tracking
  */
 
+// #include <iostream>
+// #include <cmath>
 #include "util/u_logging.h"
 #include "math/m_api.h"
 
 #include "lm_interface.hpp"
 #include "lm_defines.hpp"
-#include <cmath>
-#include <iostream>
-
-// #include "lm_rotations.hpp"
 
 namespace xrt::tracking::hand::mercury::lm {
 
 template <typename T> struct OptimizerMetacarpalBone
 {
-	Vec2<T> swing;
-	T twist;
+	Vec2<T> swing = {};
+	T twist = {};
 };
 
 template <typename T> struct OptimizerFinger
 {
-	OptimizerMetacarpalBone<T> metacarpal;
-	Vec2<T> proximal_swing;
+	OptimizerMetacarpalBone<T> metacarpal = {};
+	Vec2<T> proximal_swing = {};
 	// Not Vec2.
-	T rots[2];
+	T rots[2] = {};
 };
 
 template <typename T> struct OptimizerThumb
 {
-	OptimizerMetacarpalBone<T> metacarpal;
+	OptimizerMetacarpalBone<T> metacarpal = {};
 	// Again not Vec2.
-	T rots[2];
+	T rots[2] = {};
 };
 
 template <typename T> struct OptimizerHand
 {
 	T hand_size;
-	Vec3<T> wrist_location;
+	Vec3<T> wrist_location = {};
 	// This is constant, a ceres::Rotation.h quat,, taken from last frame.
-	Quat<T> wrist_pre_orientation_quat;
+	Quat<T> wrist_pre_orientation_quat = {};
 	// This is optimized - angle-axis rotation vector. Starts at 0, loss goes up the higher it goes because it
 	// indicates more of a rotation.
-	Vec3<T> wrist_post_orientation_aax;
+	Vec3<T> wrist_post_orientation_aax = {};
 	OptimizerThumb<T> thumb = {};
 	OptimizerFinger<T> finger[4] = {};
 };
@@ -77,16 +75,18 @@ public:
 class HandLimit
 {
 public:
-	minmax hand_size;
+	minmax hand_size = {};
 
-	minmax thumb_mcp_swing_x, thumb_mcp_swing_y, thumb_mcp_twist;
-	minmax thumb_curls[2];
+	minmax thumb_mcp_swing_x = {};
+	minmax thumb_mcp_swing_y = {};
+	minmax thumb_mcp_twist = {};
+	minmax thumb_curls[2] = {};
 
-	FingerLimit fingers[4];
+	FingerLimit fingers[4] = {};
 
 	HandLimit()
 	{
-		hand_size = {0.095 - 0.03, 0.095 + 0.03};
+		hand_size = {MIN_HAND_SIZE, MAX_HAND_SIZE};
 
 		thumb_mcp_swing_x = {rad<HandScalar>(-60), rad<HandScalar>(60)};
 		thumb_mcp_swing_y = {rad<HandScalar>(-60), rad<HandScalar>(60)};
@@ -97,25 +97,31 @@ public:
 		}
 
 
-		constexpr double margin = 0.09;
+		HandScalar margin = 0.0001;
 
-		fingers[0].mcp_swing_y = {-0.19 - margin, -0.19 + margin};
-		fingers[1].mcp_swing_y = {0.00 - margin, 0.00 + margin};
-		fingers[2].mcp_swing_y = {0.19 - margin, 0.19 + margin};
-		fingers[3].mcp_swing_y = {0.38 - margin, 0.38 + margin};
+		fingers[0].mcp_swing_y = {HandScalar(-0.19) - margin, HandScalar(-0.19) + margin};
+		fingers[1].mcp_swing_y = {HandScalar(0.00) - margin, HandScalar(0.00) + margin};
+		fingers[2].mcp_swing_y = {HandScalar(0.19) - margin, HandScalar(0.19) + margin};
+		fingers[3].mcp_swing_y = {HandScalar(0.38) - margin, HandScalar(0.38) + margin};
+
+
+		fingers[0].mcp_swing_x = {HandScalar(-0.02) - margin, HandScalar(-0.02) + margin};
+		fingers[1].mcp_swing_x = {HandScalar(0.00) - margin, HandScalar(0.00) + margin};
+		fingers[2].mcp_swing_x = {HandScalar(0.02) - margin, HandScalar(0.02) + margin};
+		fingers[3].mcp_swing_x = {HandScalar(0.04) - margin, HandScalar(0.04) + margin};
 
 
 		for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
 			FingerLimit &finger = fingers[finger_idx];
 
-			finger.mcp_swing_x = {rad<HandScalar>(-10), rad<HandScalar>(10)};
+			// finger.mcp_swing_x = {rad<HandScalar>(-0.0001), rad<HandScalar>(0.0001)};
 			finger.mcp_twist = {rad<HandScalar>(-4), rad<HandScalar>(4)};
 
 			finger.pxm_swing_x = {rad<HandScalar>(-100), rad<HandScalar>(20)}; // ??? why is it reversed
 			finger.pxm_swing_y = {rad<HandScalar>(-20), rad<HandScalar>(20)};
 
 			for (int i = 0; i < 2; i++) {
-				finger.curls[i] = {rad<HandScalar>(-90), rad<HandScalar>(10)};
+				finger.curls[i] = {rad<HandScalar>(-90), rad<HandScalar>(0)};
 			}
 		}
 	}
@@ -123,9 +129,6 @@ public:
 
 static const class HandLimit the_limit = {};
 
-
-constexpr HandScalar hand_size_min = 0.095 - 0.03;
-constexpr HandScalar hand_size_max = 0.095 + 0.03;
 
 template <typename T>
 inline T
@@ -169,17 +172,7 @@ OptimizerHandUnpackFromVector(const T *in, bool use_hand_size, T hand_size, Opti
 	out.thumb.rots[1] = LMToModel(in[acc_idx++], the_limit.thumb_curls[1]);
 
 	for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
-
-		out.finger[finger_idx].metacarpal.swing.x =
-		    LMToModel(in[acc_idx++], the_limit.fingers[finger_idx].mcp_swing_x);
-
-		out.finger[finger_idx].metacarpal.swing.y =
-		    LMToModel(in[acc_idx++], the_limit.fingers[finger_idx].mcp_swing_y);
-
-		out.finger[finger_idx].metacarpal.twist =
-		    LMToModel(in[acc_idx++], the_limit.fingers[finger_idx].mcp_twist);
-
-
+		// Note that we are not unpacking the metacarpal swing/twist as it is constant.
 		out.finger[finger_idx].proximal_swing.x =
 		    LMToModel(in[acc_idx++], the_limit.fingers[finger_idx].pxm_swing_x);
 		out.finger[finger_idx].proximal_swing.y =
@@ -224,13 +217,7 @@ OptimizerHandPackIntoVector(OptimizerHand<T> &in, bool use_hand_size, T *out)
 	out[acc_idx++] = ModelToLM(in.thumb.rots[1], the_limit.thumb_curls[1]);
 
 	for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
-		out[acc_idx++] =
-		    ModelToLM(in.finger[finger_idx].metacarpal.swing.x, the_limit.fingers[finger_idx].mcp_swing_x);
-		out[acc_idx++] =
-		    ModelToLM(in.finger[finger_idx].metacarpal.swing.y, the_limit.fingers[finger_idx].mcp_swing_y);
-		out[acc_idx++] =
-		    ModelToLM(in.finger[finger_idx].metacarpal.twist, the_limit.fingers[finger_idx].mcp_twist);
-
+		// Note that we are not packing the metacarpal swing/twist as it is constant.
 		out[acc_idx++] =
 		    ModelToLM(in.finger[finger_idx].proximal_swing.x, the_limit.fingers[finger_idx].pxm_swing_x);
 		out[acc_idx++] =
@@ -252,18 +239,14 @@ template <typename T>
 void
 OptimizerHandInit(OptimizerHand<T> &opt, Quat<T> &pre_rotation)
 {
-	opt.hand_size = (T)(0.095);
+	opt.hand_size = (T)STANDARD_HAND_SIZE;
 
 	opt.wrist_post_orientation_aax.x = (T)(0);
 	opt.wrist_post_orientation_aax.y = (T)(0);
 	opt.wrist_post_orientation_aax.z = (T)(0);
 
-	// opt.store_wrist_pre_orientation_quat = pre_rotation;
 
-	opt.wrist_pre_orientation_quat.w = (T)pre_rotation.w;
-	opt.wrist_pre_orientation_quat.x = (T)pre_rotation.x;
-	opt.wrist_pre_orientation_quat.y = (T)pre_rotation.y;
-	opt.wrist_pre_orientation_quat.z = (T)pre_rotation.z;
+	opt.wrist_pre_orientation_quat = pre_rotation;
 
 	opt.wrist_location.x = (T)(0);
 	opt.wrist_location.y = (T)(0);
@@ -275,22 +258,27 @@ OptimizerHandInit(OptimizerHand<T> &opt, Quat<T> &pre_rotation)
 		opt.finger[i].metacarpal.swing.x = T(0);
 		opt.finger[i].metacarpal.twist = T(0);
 
-		opt.finger[i].proximal_swing.x = rad<T>((T)(15));
-		opt.finger[i].rots[0] = rad<T>((T)(-5));
-		opt.finger[i].rots[1] = rad<T>((T)(-5));
+		opt.finger[i].proximal_swing.x = T(rad<HandScalar>(15.0f));
+		opt.finger[i].rots[0] = T(rad<HandScalar>(-5));
+		opt.finger[i].rots[1] = T(rad<HandScalar>(-5));
 	}
 
 	opt.thumb.metacarpal.swing.x = (T)(0);
 	opt.thumb.metacarpal.swing.y = (T)(0);
 	opt.thumb.metacarpal.twist = (T)(0);
 
-	opt.thumb.rots[0] = rad<T>((T)(-5));
-	opt.thumb.rots[1] = rad<T>((T)(-59));
+	opt.thumb.rots[0] = T(rad<HandScalar>(-5));
+	opt.thumb.rots[1] = T(rad<HandScalar>(-59));
 
 	opt.finger[0].metacarpal.swing.y = (T)(-0.19);
 	opt.finger[1].metacarpal.swing.y = (T)(0);
 	opt.finger[2].metacarpal.swing.y = (T)(0.19);
 	opt.finger[3].metacarpal.swing.y = (T)(0.38);
+
+	opt.finger[0].metacarpal.swing.x = (T)(-0.02);
+	opt.finger[1].metacarpal.swing.x = (T)(0);
+	opt.finger[2].metacarpal.swing.x = (T)(0.02);
+	opt.finger[3].metacarpal.swing.x = (T)(0.04);
 
 	opt.finger[0].proximal_swing.y = (T)(-0.01);
 	opt.finger[1].proximal_swing.y = (T)(0);
@@ -312,11 +300,11 @@ OptimizerHandSquashRotations(OptimizerHand<T> &opt, Quat<T> &out_orientation)
 
 	Quat<T> &pre_rotation = opt.wrist_pre_orientation_quat;
 
-	Quat<T> post_rotation;
+	Quat<T> post_rotation = {};
 
 	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_rotation);
 
-	Quat<T> tmp_new_pre_rotation;
+	Quat<T> tmp_new_pre_rotation = {};
 
 	QuaternionProduct(pre_rotation, post_rotation, tmp_new_pre_rotation);
 

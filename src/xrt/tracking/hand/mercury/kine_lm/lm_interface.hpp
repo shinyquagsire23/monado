@@ -48,9 +48,11 @@ void
 optimizer_run(KinematicHandLM *hand,
               one_frame_input &observation,
               bool hand_was_untracked_last_frame,
+              float smoothing_factor, //!<- Unused if this is the first frame
               bool optimize_hand_size,
               float target_hand_size,
               float hand_size_err_mul,
+              float amt_use_depth,
               xrt_hand_joint_set &out_hand,
               float &out_hand_size,
               float &out_reprojection_error);

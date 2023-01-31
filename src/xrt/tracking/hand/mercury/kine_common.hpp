@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include <array>
 #include "xrt/xrt_defines.h"
 namespace xrt::tracking::hand::mercury {
 
@@ -17,14 +18,35 @@ namespace xrt::tracking::hand::mercury {
 // Different from `Scalar` in lm_* templates - those can be `Ceres::Jet`s too.
 typedef float HandScalar;
 
+// Used for "2.5D" joint locations, with a 2D ray direction in stereographic-space and a 1D depth relative to the
+// middle-proximal joint.
+struct vec2_5
+{
+	xrt_vec2 pos_2d;
+	float depth_relative_to_midpxm;
+
+	float confidence_xy;
+	float confidence_depth;
+};
+
+// Using the compiler to stop me from getting 2D space mixed up with 3D space.
+using MLOutput2D = std::array<vec2_5, 21>;
+
+struct one_curl
+{
+	float value;
+	float variance;
+};
 
 // Inputs to kinematic optimizers
 //!@todo Ask Ryan if adding `= {}` only does something if we do one_frame_one_view bla = {}.
 struct one_frame_one_view
 {
 	bool active = true;
-	xrt_vec3 rays[21] = {};
-	HandScalar confidences[21] = {};
+	xrt_quat look_dir;
+	float stereographic_radius;
+	MLOutput2D keypoints_in_scaled_stereographic;
+	one_curl curls[5];
 };
 
 struct one_frame_input
@@ -63,5 +85,10 @@ namespace Joint21 {
 		LITL_TIP = 20
 	};
 }
+
+//!@todo These are not backed up by real anthropometry data; they are just guesstimates. Patches welcome!
+constexpr HandScalar MIN_HAND_SIZE = 0.06;
+constexpr HandScalar STANDARD_HAND_SIZE = 0.09;
+constexpr HandScalar MAX_HAND_SIZE = 0.12;
 
 } // namespace xrt::tracking::hand::mercury

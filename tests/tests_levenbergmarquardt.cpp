@@ -34,14 +34,6 @@ TEST_CASE("LevenbergMarquardt")
 
 	struct one_frame_input input = {};
 
-	for (int i = 0; i < 21; i++) {
-
-		input.views[0].rays[i] = m_vec3_normalize({0, (float)i, -1}); //{0,(float)i,-1};
-		input.views[1].rays[i] = m_vec3_normalize({(float)i, 0, -1});
-		input.views[0].confidences[i] = 1;
-		input.views[1].confidences[i] = 1;
-	}
-
 	lm::KinematicHandLM *hand;
 
 	xrt_pose left_in_right = XRT_POSE_IDENTITY;
@@ -53,7 +45,17 @@ TEST_CASE("LevenbergMarquardt")
 	xrt_hand_joint_set out;
 	float out_hand_size;
 	float out_reprojection_error;
-	lm::optimizer_run(hand, input, true, true, 0.09, 0.5, out, out_hand_size, out_reprojection_error);
+	lm::optimizer_run(hand,          //
+	                  input,         //
+	                  true,          //
+	                  2.0f,          //
+	                  true,          //
+	                  0.09,          //
+	                  0.5,           //
+	                  0.5f,          //
+	                  out,           //
+	                  out_hand_size, //
+	                  out_reprojection_error);
 
 	CHECK(std::isfinite(out_reprojection_error));
 	CHECK(std::isfinite(out_hand_size));
