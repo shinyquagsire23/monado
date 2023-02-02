@@ -386,7 +386,7 @@ sdl_instance_init(struct sdl_program *sp);
  * @ingroup sdl_test
  */
 struct sdl_program *
-sdl_program_plus_create();
+sdl_program_plus_create(void);
 
 /*!
  * Render a frame, called by the compositor when layers have been committed.

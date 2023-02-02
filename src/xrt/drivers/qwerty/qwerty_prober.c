@@ -73,7 +73,7 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
 }
 
 struct xrt_auto_prober *
-qwerty_create_auto_prober()
+qwerty_create_auto_prober(void)
 {
 	struct qwerty_prober *qp = U_TYPED_CALLOC(struct qwerty_prober);
 	qp->base.name = "Qwerty";

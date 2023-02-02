@@ -94,7 +94,7 @@ rift_s_tracker_switch_method_cb(void *t_ptr)
 }
 
 XRT_MAYBE_UNUSED struct t_imu_calibration
-rift_s_create_slam_imu_calib()
+rift_s_create_slam_imu_calib(void)
 {
 	/* FIXME: Validate these hard coded standard deviations against
 	 * some actual at-rest IMU measurements */

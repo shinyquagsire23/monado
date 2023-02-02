@@ -11,7 +11,7 @@
 
 
 int
-u_silence_pedantic_warning()
+u_silence_pedantic_warning(void)
 {
 	return 42;
 }

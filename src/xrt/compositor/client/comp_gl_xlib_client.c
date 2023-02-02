@@ -118,7 +118,7 @@ client_gl_context_end_locked(struct xrt_compositor *xc)
 	}
 }
 
-typedef void (*void_ptr_func)();
+typedef void (*void_ptr_func)(void);
 
 #ifdef __cplusplus
 extern "C"

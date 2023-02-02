@@ -72,7 +72,7 @@ euroc_prober_autoprobe(struct xrt_auto_prober *xap,
 }
 
 struct xrt_auto_prober *
-euroc_create_auto_prober()
+euroc_create_auto_prober(void)
 {
 	// `ep` var name used for euroc_player, let's use `epr` instead
 	struct euroc_prober *epr = U_TYPED_CALLOC(struct euroc_prober);

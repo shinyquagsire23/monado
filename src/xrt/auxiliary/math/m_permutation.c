@@ -130,7 +130,7 @@ printArray(const uint32_t *array, uint32_t num)
 }
 
 void
-m_do_the_thing()
+m_do_the_thing(void)
 {
 	struct m_permutator mp = {0};
 	uint32_t elements[7];

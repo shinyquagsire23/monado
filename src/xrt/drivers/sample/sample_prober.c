@@ -60,7 +60,7 @@ sample_auto_prober_autoprobe(struct xrt_auto_prober *xap,
 }
 
 struct xrt_auto_prober *
-sample_create_auto_prober()
+sample_create_auto_prober(void)
 {
 	struct sample_auto_prober *sap = U_TYPED_CALLOC(struct sample_auto_prober);
 	sap->base.name = "Sample";

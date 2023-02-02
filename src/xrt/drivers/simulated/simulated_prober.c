@@ -73,7 +73,7 @@ simulated_prober_autoprobe(struct xrt_auto_prober *xap,
 }
 
 struct xrt_auto_prober *
-simulated_create_auto_prober()
+simulated_create_auto_prober(void)
 {
 	struct simulated_prober *dp = U_TYPED_CALLOC(struct simulated_prober);
 	dp->base.name = "Simulated";

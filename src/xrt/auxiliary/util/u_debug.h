@@ -48,7 +48,7 @@ enum u_logging_level
 debug_get_log_option(const char *name, enum u_logging_level _default);
 
 #define DEBUG_GET_ONCE_OPTION(suffix, name, _default)                                                                  \
-	static const char *debug_get_option_##suffix()                                                                 \
+	static const char *debug_get_option_##suffix(void)                                                             \
 	{                                                                                                              \
 		static bool gotten = false;                                                                            \
 		static const char *stored;                                                                             \
@@ -60,7 +60,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_TRISTATE_OPTION(suffix, name)                                                                   \
-	static enum debug_tristate_option debug_get_tristate_option_##suffix()                                         \
+	static enum debug_tristate_option debug_get_tristate_option_##suffix(void)                                     \
 	{                                                                                                              \
 		static bool gotten = false;                                                                            \
 		static enum debug_tristate_option stored;                                                              \
@@ -72,7 +72,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_BOOL_OPTION(suffix, name, _default)                                                             \
-	static bool debug_get_bool_option_##suffix()                                                                   \
+	static bool debug_get_bool_option_##suffix(void)                                                               \
 	{                                                                                                              \
 		static bool gotten = false;                                                                            \
 		static bool stored;                                                                                    \
@@ -84,7 +84,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_NUM_OPTION(suffix, name, _default)                                                              \
-	static long debug_get_num_option_##suffix()                                                                    \
+	static long debug_get_num_option_##suffix(void)                                                                \
 	{                                                                                                              \
 		static long gotten = false;                                                                            \
 		static long stored;                                                                                    \
@@ -96,7 +96,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_FLOAT_OPTION(suffix, name, _default)                                                            \
-	static float debug_get_float_option_##suffix()                                                                 \
+	static float debug_get_float_option_##suffix(void)                                                             \
 	{                                                                                                              \
 		static long gotten = false;                                                                            \
 		static float stored;                                                                                   \
@@ -108,7 +108,7 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 	}
 
 #define DEBUG_GET_ONCE_LOG_OPTION(suffix, name, _default)                                                              \
-	static enum u_logging_level debug_get_log_option_##suffix()                                                    \
+	static enum u_logging_level debug_get_log_option_##suffix(void)                                                \
 	{                                                                                                              \
 		static long gotten = false;                                                                            \
 		static enum u_logging_level stored;                                                                    \

@@ -49,7 +49,7 @@ struct u_process
 };
 
 struct u_process *
-u_process_create_if_not_running()
+u_process_create_if_not_running(void)
 {
 #ifdef XRT_HAVE_LIBBSD
 

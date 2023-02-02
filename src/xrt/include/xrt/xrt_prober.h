@@ -722,7 +722,7 @@ struct xrt_prober_entry
  *
  * @ingroup xrt_iface
  */
-typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
+typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)(void);
 
 /*!
  * @interface xrt_auto_prober

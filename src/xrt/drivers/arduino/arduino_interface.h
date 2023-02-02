@@ -30,7 +30,7 @@ struct os_ble_device;
  * @ingroup drv_arduino
  */
 struct xrt_auto_prober *
-arduino_create_auto_prober();
+arduino_create_auto_prober(void);
 
 /*!
  * Create a arduino device from a ble notify.

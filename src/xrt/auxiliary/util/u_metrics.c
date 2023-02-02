@@ -79,7 +79,7 @@ write_version(uint32_t major, uint32_t minor)
  */
 
 void
-u_metrics_init()
+u_metrics_init(void)
 {
 	const char *str = debug_get_option_metrics_file();
 	if (str == NULL) {
@@ -103,7 +103,7 @@ u_metrics_init()
 }
 
 void
-u_metrics_close()
+u_metrics_close(void)
 {
 	if (!g_metrics_initialized) {
 		return;

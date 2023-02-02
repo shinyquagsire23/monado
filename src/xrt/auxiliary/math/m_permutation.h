@@ -40,7 +40,7 @@ m_permutator_reset(struct m_permutator *mp);
 
 
 void
-m_do_the_thing();
+m_do_the_thing(void);
 
 
 #ifdef __cplusplus

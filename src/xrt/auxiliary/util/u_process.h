@@ -27,7 +27,7 @@ struct u_process;
  * @ingroup aux_util
  */
 struct u_process *
-u_process_create_if_not_running();
+u_process_create_if_not_running(void);
 
 /*!
  * Releases the unique handle of the operating system user.

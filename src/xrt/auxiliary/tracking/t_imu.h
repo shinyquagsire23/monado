@@ -26,7 +26,7 @@ struct imu_fusion;
  * @ingroup aux_tracking
  */
 struct imu_fusion *
-imu_fusion_create();
+imu_fusion_create(void);
 
 
 /*!

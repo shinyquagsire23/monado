@@ -97,7 +97,7 @@ ns_to_ms(int64_t ns)
 }
 
 static double
-ts_ms()
+ts_ms(void)
 {
 	int64_t monotonic = os_monotonic_get_ns();
 	return ns_to_ms(monotonic);

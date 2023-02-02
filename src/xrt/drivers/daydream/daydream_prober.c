@@ -101,7 +101,7 @@ daydream_prober_autoprobe(struct xrt_auto_prober *xap,
  */
 
 struct xrt_auto_prober *
-daydream_create_auto_prober()
+daydream_create_auto_prober(void)
 {
 	struct daydream_prober *pdaydream = U_TYPED_CALLOC(struct daydream_prober);
 	pdaydream->base.name = "DayDream";
