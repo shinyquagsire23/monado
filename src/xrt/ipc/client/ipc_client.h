@@ -12,11 +12,12 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_config_os.h"
-#include "shared/ipc_protocol.h"
-#include "shared/ipc_utils.h"
 
 #include "util/u_threading.h"
 #include "util/u_logging.h"
+
+#include "shared/ipc_protocol.h"
+#include "shared/ipc_utils.h"
 
 #include <stdio.h>
 

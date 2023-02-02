@@ -16,8 +16,9 @@
 #include "xrt/xrt_config_os.h"
 #include "xrt/xrt_config_android.h"
 
-#include "util/u_misc.h"
 #include "util/u_var.h"
+#include "util/u_misc.h"
+#include "util/u_file.h"
 #include "util/u_debug.h"
 #include "util/u_git_tag.h"
 #include "util/u_system_helpers.h"
@@ -25,7 +26,6 @@
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
 #include "ipc_client_generated.h"
-#include "util/u_file.h"
 
 #include <stdio.h>
 #if !defined(XRT_OS_WINDOWS)
@@ -34,7 +34,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include <sys/un.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>

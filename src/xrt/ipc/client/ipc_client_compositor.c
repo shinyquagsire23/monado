@@ -13,14 +13,12 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_config_os.h"
 
-#include "util/u_misc.h"
-#include "util/u_handles.h"
-#include "util/u_trace_marker.h"
 
 #include "os/os_time.h"
 
-#include "util/u_wait.h"
 #include "util/u_misc.h"
+#include "util/u_wait.h"
+#include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 
 #include "shared/ipc_protocol.h"
