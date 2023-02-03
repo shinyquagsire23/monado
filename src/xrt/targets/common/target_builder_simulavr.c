@@ -197,7 +197,7 @@ svr_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 		goto end;
 	}
 
-	struct xrt_device *t265_dev = rs_create_tracked_device_internal_slam(xp);
+	struct xrt_device *t265_dev = rs_create_tracked_device_internal_slam();
 
 	struct xrt_device *svr_dev = svr_hmd_create(&sb->display_distortion);
 
