@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -454,24 +454,23 @@ device_is_preferred(VkPhysicalDeviceProperties *l_device, VkPhysicalDeviceProper
 	return false;
 }
 
-static int
+static uint32_t
 select_preferred_device(struct vk_bundle *vk, VkPhysicalDevice *devices, uint32_t device_count)
 {
-	uint32_t gpu_index = -1;
+	assert(device_count > 0);
+
+	// Default to first if there is only one.
+	uint32_t gpu_index = 0;
 	VkPhysicalDeviceProperties gpu_properties;
-	for (uint32_t i = 0; i < device_count; i++) {
+	vk->vkGetPhysicalDeviceProperties(devices[0], &gpu_properties);
+
+	for (uint32_t i = 1; i < device_count; i++) {
 		VkPhysicalDeviceProperties pdp;
 		vk->vkGetPhysicalDeviceProperties(devices[i], &pdp);
 
 		char title[20];
 		snprintf(title, 20, "GPU index %d\n", i);
 		vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
-
-		if (gpu_index < 0) {
-			gpu_index = i;
-			gpu_properties = pdp;
-			continue;
-		}
 
 		// Prefer devices based on device type priority, with preference to equal devices with smaller index
 		if (device_is_preferred(&pdp, &gpu_properties)) {
@@ -503,13 +502,14 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 
 	VK_DEBUG(vk, "Choosing Vulkan device index");
 	uint32_t gpu_index = 0;
-	if (forced_index > -1) {
-		if ((uint32_t)forced_index + 1 > gpu_count) {
-			VK_ERROR(vk, "Attempted to force GPU index %d, but only %d GPUs are available", forced_index,
+	if (forced_index >= 0) {
+		uint32_t uint_index = (uint32_t)forced_index;
+		if (uint_index + 1 > gpu_count) {
+			VK_ERROR(vk, "Attempted to force GPU index %d, but only %d GPUs are available", uint_index,
 			         gpu_count);
 			return VK_ERROR_DEVICE_LOST;
 		}
-		gpu_index = forced_index;
+		gpu_index = uint_index;
 		VK_DEBUG(vk, "Forced use of Vulkan device index %d.", gpu_index);
 	} else {
 		VK_DEBUG(vk, "Available GPUs");
