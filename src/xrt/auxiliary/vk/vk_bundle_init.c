@@ -469,7 +469,7 @@ select_preferred_device(struct vk_bundle *vk, VkPhysicalDevice *devices, uint32_
 		vk->vkGetPhysicalDeviceProperties(devices[i], &pdp);
 
 		char title[20];
-		snprintf(title, 20, "GPU index %d\n", i);
+		(void)snprintf(title, sizeof(title), "GPU index %u\n", i);
 		vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
 
 		// Prefer devices based on device type priority, with preference to equal devices with smaller index
@@ -495,7 +495,7 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 		return ret;
 	}
 
-	if (gpu_count < 1) {
+	if (gpu_count == 0) {
 		VK_DEBUG(vk, "No physical device found!");
 		return VK_ERROR_DEVICE_LOST;
 	}
@@ -505,12 +505,12 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 	if (forced_index >= 0) {
 		uint32_t uint_index = (uint32_t)forced_index;
 		if (uint_index + 1 > gpu_count) {
-			VK_ERROR(vk, "Attempted to force GPU index %d, but only %d GPUs are available", uint_index,
+			VK_ERROR(vk, "Attempted to force GPU index %u, but only %u GPUs are available", uint_index,
 			         gpu_count);
 			return VK_ERROR_DEVICE_LOST;
 		}
 		gpu_index = uint_index;
-		VK_DEBUG(vk, "Forced use of Vulkan device index %d.", gpu_index);
+		VK_DEBUG(vk, "Forced use of Vulkan device index %u.", gpu_index);
 	} else {
 		VK_DEBUG(vk, "Available GPUs");
 		gpu_index = select_preferred_device(vk, physical_devices, gpu_count);
@@ -523,7 +523,7 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 	vk->vkGetPhysicalDeviceProperties(physical_devices[gpu_index], &pdp);
 
 	char title[20];
-	snprintf(title, 20, "Selected GPU: %d\n", gpu_index);
+	(void)snprintf(title, sizeof(title), "Selected GPU: %u\n", gpu_index);
 	vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, gpu_index, title);
 
 	char *tegra_substr = strstr(pdp.deviceName, "Tegra");
