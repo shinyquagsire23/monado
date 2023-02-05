@@ -207,6 +207,14 @@ void
 math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, struct xrt_quat *result);
 
 /*!
+ * Create a rotation from euler angles to a quaternion
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_from_euler_angles(const struct xrt_vec3 *angles, struct xrt_quat *result);
+
+/*!
  * Create a rotation from a 3x3 rotation (row major) matrix.
  *
  * @relates xrt_quat
