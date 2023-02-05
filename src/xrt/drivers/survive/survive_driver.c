@@ -49,7 +49,7 @@
 
 #include "vive/vive_config.h"
 #include "vive/vive_bindings.h"
-
+#include "vive/vive_poses.h"
 
 #include "util/u_trace_marker.h"
 
@@ -331,7 +331,16 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	m_relation_history_get(survive->relation_hist, at_timestamp_ns, out_relation);
+	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
+	vive_poses_get_pose_offset(survive->base.name, survive->base.device_type, name, &pose_offset);
+
+	struct xrt_space_relation space_relation;
+	m_relation_history_get(survive->relation_hist, at_timestamp_ns, &space_relation);
+
+	struct xrt_relation_chain relation_chain = {0};
+	m_relation_chain_push_pose(&relation_chain, &pose_offset);
+	m_relation_chain_push_relation(&relation_chain, &space_relation);
+	m_relation_chain_resolve(&relation_chain, out_relation);
 
 	struct xrt_pose *p = &out_relation->pose;
 	SURVIVE_TRACE(survive, "GET_POSITION (%f %f %f) GET_ORIENTATION (%f, %f, %f, %f)", p->position.x, p->position.y,
