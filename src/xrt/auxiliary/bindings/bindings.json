@@ -869,7 +869,6 @@
 					"type": "button",
 					"localized_name": "Menu",
 					"components": ["click"],
-					"side": "left",
 					"monado_bindings": {
 						"click": "XRT_INPUT_G2_CONTROLLER_MENU_CLICK"
 					}
