@@ -1143,6 +1143,11 @@ xrt_reference_inc(struct xrt_reference *xref)
 	xrt_atomic_s32_inc_return(&xref->count);
 }
 
+enum xrt_form_factor
+{
+	XRT_FORM_FACTOR_HMD,     //!< Head mounted display.
+	XRT_FORM_FACTOR_HANDHELD //!< Handheld display.
+};
 
 #ifdef __cplusplus
 }
