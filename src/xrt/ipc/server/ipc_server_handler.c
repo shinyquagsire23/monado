@@ -1155,3 +1155,16 @@ ipc_handle_device_set_output(volatile struct ipc_client_state *ics,
 
 	return XRT_SUCCESS;
 }
+
+xrt_result_t
+ipc_handle_device_is_form_factor_available(volatile struct ipc_client_state *ics,
+                                           uint32_t id,
+                                           enum xrt_form_factor form_factor,
+                                           bool *out_available)
+{
+	// To make the code a bit more readable.
+	uint32_t device_id = id;
+	struct xrt_device *xdev = get_xdev(ics, device_id);
+	*out_available = xrt_device_is_form_factor_available(xdev, form_factor);
+	return XRT_SUCCESS;
+}

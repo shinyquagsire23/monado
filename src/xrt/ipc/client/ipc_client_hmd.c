@@ -139,6 +139,17 @@ ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
 	}
 }
 
+static bool
+ipc_client_hmd_is_form_factor_available(struct xrt_device *xdev, enum xrt_form_factor form_factor)
+{
+	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	bool available = false;
+	xrt_result_t r = ipc_call_device_is_form_factor_available(ich->ipc_c, ich->device_id, form_factor, &available);
+	if (r != XRT_SUCCESS) {
+		IPC_ERROR(ich->ipc_c, "Error calling is available!");
+	}
+	return available;
+}
 
 /*!
  * @public @memberof ipc_client_hmd
@@ -159,6 +170,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->base.get_tracked_pose = ipc_client_hmd_get_tracked_pose;
 	ich->base.get_view_poses = ipc_client_hmd_get_view_poses;
 	ich->base.destroy = ipc_client_hmd_destroy;
+	ich->base.is_form_factor_available = ipc_client_hmd_is_form_factor_available;
 
 	// Start copying the information from the isdev.
 	ich->base.tracking_origin = xtrack;
@@ -213,6 +225,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->base.device_type = isdev->device_type;
 	ich->base.hand_tracking_supported = isdev->hand_tracking_supported;
 	ich->base.force_feedback_supported = isdev->force_feedback_supported;
+	ich->base.form_factor_check_supported = isdev->form_factor_check_supported;
 
 	return &ich->base;
 }

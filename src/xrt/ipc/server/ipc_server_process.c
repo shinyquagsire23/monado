@@ -288,6 +288,7 @@ init_shm(struct ipc_server *s)
 		isdev->device_type = xdev->device_type;
 		isdev->hand_tracking_supported = xdev->hand_tracking_supported;
 		isdev->force_feedback_supported = xdev->force_feedback_supported;
+		isdev->form_factor_check_supported = xdev->form_factor_check_supported;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {

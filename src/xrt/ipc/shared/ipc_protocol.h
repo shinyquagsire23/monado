@@ -125,6 +125,7 @@ struct ipc_shared_device
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
 	bool force_feedback_supported;
+	bool form_factor_check_supported;
 };
 
 /*!

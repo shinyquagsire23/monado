@@ -252,5 +252,15 @@
 			{"name": "name", "type": "enum xrt_output_name"},
 			{"name": "value", "type": "union xrt_output_value"}
 		]
+	},
+
+	"device_is_form_factor_available": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "form_factor", "type": "enum xrt_form_factor"}
+		],
+		"out": [
+			{"name": "available", "type": "bool"}
+		]
 	}
 }
