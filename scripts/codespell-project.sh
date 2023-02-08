@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2019, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 # Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -19,14 +19,14 @@
 set -e
 
 # Comma-delimited list of words for codespell to not try to correct.
-IGNORE_WORDS_LIST="ang,sinc,sie,inout,stoll,wil,daa,localy,od"
+IGNORE_WORDS_LIST="ang,sinc,sie,inout,stoll,wil,daa,localy,od,ser,unknwn,parm"
 
-SCRIPTDIR=$(cd $(dirname $0) && pwd)
+SCRIPTDIR=$(cd "$(dirname "$0")" && pwd)
 
 (
-        cd $SCRIPTDIR/..
+        cd "$SCRIPTDIR/.."
         find \
-                *.md \
+                ./*.md \
                 doc \
                 scripts/format-*.sh \
                 src/xrt \
@@ -36,9 +36,14 @@ SCRIPTDIR=$(cd $(dirname $0) && pwd)
                 -o -name "*.hpp" \
                 -o -name "*.sh" \
                 -o -name "*.md" \
+                -o -name "*.comp" \
+                -o -name "*.py" \
+                -o -name "*.java" \
+                -o -name "*.kt" \
+                -o -name "*.gradle" \
                 -o -name "CMakeLists.txt" \) \
                 -exec codespell \
-                        --exclude-file=${SCRIPTDIR}/monado-codespell.exclude \
+                    "--exclude-file=${SCRIPTDIR}/monado-codespell.exclude" \
                     --ignore-words-list="${IGNORE_WORDS_LIST}" \
                     -w \
                     "$@" \
