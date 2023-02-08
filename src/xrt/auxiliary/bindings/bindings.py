@@ -201,10 +201,10 @@ class Component:
         return not self.is_input()
 
 
-class Identifer:
+class Identifier:
     """A Identifier is a OpenXR identifier with a user path, such as button
     X, a trackpad, a pose such as aim. It can have one or more features, even
-    tho outputs doesn't include a component/feature path a output indentifier
+    tho outputs doesn't include a component/feature path a output identifier
     will have a haptic output feature.
     """
 
@@ -238,7 +238,7 @@ class Identifer:
                                            component_list,
                                            json_subpath["dpad_emulation"])
 
-                i = Identifer(subaction_path,
+                i = Identifier(subaction_path,
                               identifier_path,
                               json_path,
                               component_list,
@@ -271,7 +271,7 @@ class Profile:
         self.profile_type = json_profile["type"]
         self.monado_device_enum = json_profile["monado_device"]
         self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
-        self.identifiers = Identifer.parse_identifiers(json_profile)
+        self.identifiers = Identifier.parse_identifiers(json_profile)
 
         self.steamvr_controller_type = None
         if "steamvr_controllertype" in json_profile:
