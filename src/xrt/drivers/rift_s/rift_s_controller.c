@@ -527,11 +527,9 @@ rift_s_controller_get_fusion_pose(struct rift_s_controller *ctrl,
 	out_relation->linear_velocity.z = 0.0f;
 
 	/*!
-	 * @todo This is hack, fusion reports angvel relative to the device bu
-
+	 * @todo This is hack, fusion reports angvel relative to the device but
 	 * it needs to be in relation to the base space. Rotating it with the
-	 * device orientation is enough to get it into the right space, angula
-
+	 * device orientation is enough to get it into the right space, angular
 	 * velocity is a derivative so needs a special rotation.
 	 */
 	math_quat_rotate_derivative(&ctrl->pose.orientation, &ctrl->fusion.last.gyro, &out_relation->angular_velocity);
