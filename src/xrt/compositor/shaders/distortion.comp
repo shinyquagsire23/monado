@@ -44,7 +44,7 @@ vec2 position_to_uv(ivec2 extent, uint ix, uint iy)
 
 
 	// To correctly sample we need to put position (0, 0) in the
-	// middle of the (0, 0) texel in the distortion texures. That's why we
+	// middle of the (0, 0) texel in the distortion textures. That's why we
 	// offset with half the texel size, pushing all samples into the middle
 	// of each texels, a kin to a vertex buffer. We need to put uv coord
 	// (1, 1) in the middle of the last texel, that pixel is (size - 1)
@@ -75,7 +75,7 @@ vec2 transform_uv_timewarp(vec2 uv, uint iz)
 {
 	vec4 values = vec4(uv, -1, 1);
 
-	// From uv to tan angle (tanget space).
+	// From uv to tan angle (tangent space).
 	values.xy = values.xy * ubo.pre_transform[iz].zw + ubo.pre_transform[iz].xy;
 	values.y = -values.y; // Flip to OpenXR coordinate system.
 
@@ -126,7 +126,7 @@ void main()
 	g_uv = transform_uv(g_uv, iz);
 	b_uv = transform_uv(b_uv, iz);
 
-	// Sample the source with distorted and chromatic abberation corrected samples.
+	// Sample the source with distorted and chromatic-aberration corrected samples.
 	vec4 colour = vec4(
 		texture(source[iz], r_uv).r,
 		texture(source[iz], g_uv).g,

@@ -91,7 +91,7 @@ vec2 transform_uv_timewarp(vec2 uv, uint view_index, uint layer)
 {
 	vec4 values = vec4(uv, -1, 1);
 
-	// From uv to tan angle (tanget space).
+	// From uv to tan angle (tangent space).
 	values.xy = values.xy * ubo.pre_transform[view_index].zw + ubo.pre_transform[view_index].xy;
 	values.y = -values.y; // Flip to OpenXR coordinate system.
 
@@ -166,7 +166,7 @@ vec4 do_quad(uint view_index, vec2 view_uv, uint layer)
 	vec2 uv = view_uv;
 
 	/*
-	* To fill in the view_uv texel on the target texture, animaginary ray is shot hrough texels on the target
+	* To fill in the view_uv texel on the target texture, an imaginary ray is shot through texels on the target
 	* texture. When this imaginary ray hits a quad layer, it means that when the respective color at the hit
 	* intersection is picked for the current view_uv texel, the final image as seen through the headset will
 	* show this view_uv texel at the respective location.
