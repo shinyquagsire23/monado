@@ -79,7 +79,7 @@ public class Client implements ServiceConnection {
      */
     private Context runtimePackageContext = null;
     /**
-     * Controll system ui visibility
+     * Control system ui visibility
      */
     private SystemUiController systemUiController = null;
 
@@ -164,7 +164,7 @@ public class Client implements ServiceConnection {
         // This block of code asynchronously create a MonadoView attached to activity and
         // waits for Surface creation. Native code (comp_window_android_init_swapchain() method)
         // will poll for ANativeWindow created from this Surface.
-        // TODO: just initiate MonadoView attachement and add callback to native code to
+        // TODO: just initiate MonadoView attachment and add callback to native code to
         // notify about Surface status and pass it to OpenXR application as a Session lifecycle
         // (ready ... synchronized ... visible ... focused)
         new Thread(()-> {

@@ -170,7 +170,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
      * <p>
      * Called by native code!
      *
-     * @param wait_ms Max duration you prefer to wait, in millseconds. Spurious wakeups mean this
+     * @param wait_ms Max duration you prefer to wait, in milliseconds. Spurious wakeups mean this
      *                not be totally precise.
      * @return A SurfaceHolder or null.
      */
