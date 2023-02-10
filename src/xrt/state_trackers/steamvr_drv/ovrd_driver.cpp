@@ -631,6 +631,8 @@ public:
 		case XRT_DEVICE_HAND_TRACKER: break;      // shouldn't happen
 		case XRT_DEVICE_GENERIC_HMD:
 		case XRT_DEVICE_VIVE_PRO: break; // no
+
+		default: break;
 		}
 	}
 
