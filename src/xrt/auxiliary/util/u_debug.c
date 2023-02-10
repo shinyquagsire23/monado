@@ -152,22 +152,28 @@ debug_get_tristate_option(const char *name)
 }
 
 long
+debug_string_to_num(const char *raw, long _default)
+{
+	if (raw == NULL) {
+		return _default;
+	}
+
+	char *endptr;
+	long ret = strtol(raw, &endptr, 0);
+
+	// Restore the default value when no digits were found.
+	if (raw == endptr) {
+		ret = _default;
+	}
+
+	return ret;
+}
+
+long
 debug_get_num_option(const char *name, long _default)
 {
 	const char *raw = os_getenv(name);
-	long ret;
-
-	if (raw == NULL) {
-		ret = _default;
-	} else {
-		char *endptr;
-
-		ret = strtol(raw, &endptr, 0);
-		// Restore the default value when no digits were found.
-		if (raw == endptr) {
-			ret = _default;
-		}
-	}
+	long ret = debug_string_to_num(raw, _default);
 
 	if (debug_get_bool_option_print()) {
 		U_LOG_RAW("%s=%li (%s)", name, ret, raw == NULL ? "nil" : raw);

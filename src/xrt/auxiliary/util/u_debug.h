@@ -39,6 +39,9 @@ bool
 debug_get_bool_option(const char *name, bool _default);
 
 long
+debug_string_to_num(const char *string, long _default);
+
+long
 debug_get_num_option(const char *name, long _default);
 
 float
