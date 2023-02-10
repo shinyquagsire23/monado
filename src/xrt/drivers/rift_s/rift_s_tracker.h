@@ -101,8 +101,7 @@ struct rift_s_tracker
 
 	/* Stereo calibration for the front 2 cameras */
 	struct t_stereo_camera_calibration *stereo_calib;
-	struct t_imu_calibration slam_imu_calib;
-	struct t_slam_calib_extras slam_extra_calib;
+	struct t_slam_calibration slam_calib;
 
 	/* Input sinks that the camera delivers SLAM frames to */
 	struct xrt_slam_sinks in_slam_sinks;

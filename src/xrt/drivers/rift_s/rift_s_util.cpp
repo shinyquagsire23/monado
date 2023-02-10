@@ -211,18 +211,20 @@ struct DistortParamKB4CostFunctor
 };
 
 #define STEPS 21
-static bool
-convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct t_camera_calibration *tcc)
+struct t_camera_calibration
+rift_s_get_cam_calib(struct rift_s_camera_calibration_block *camera_calibration, enum rift_s_camera_id cam_id)
 {
+	struct t_camera_calibration tcc;
 
-	tcc->image_size_pixels.h = rift_s_cam->roi.extent.h;
-	tcc->image_size_pixels.w = rift_s_cam->roi.extent.w;
-	tcc->intrinsics[0][0] = rift_s_cam->projection.fx;
-	tcc->intrinsics[1][1] = rift_s_cam->projection.fy;
-	tcc->intrinsics[0][2] = rift_s_cam->projection.cx;
-	tcc->intrinsics[1][2] = rift_s_cam->projection.cy;
-	tcc->intrinsics[2][2] = 1.0;
-	tcc->distortion_model = T_DISTORTION_FISHEYE_KB4;
+	struct rift_s_camera_calibration *rift_s_cam = &camera_calibration->cameras[cam_id];
+	tcc.image_size_pixels.h = rift_s_cam->roi.extent.h;
+	tcc.image_size_pixels.w = rift_s_cam->roi.extent.w;
+	tcc.intrinsics[0][0] = rift_s_cam->projection.fx;
+	tcc.intrinsics[1][1] = rift_s_cam->projection.fy;
+	tcc.intrinsics[0][2] = rift_s_cam->projection.cx;
+	tcc.intrinsics[1][2] = rift_s_cam->projection.cy;
+	tcc.intrinsics[2][2] = 1.0;
+	tcc.distortion_model = T_DISTORTION_FISHEYE_KB4;
 
 	TargetPoint xy[STEPS * STEPS];
 
@@ -238,8 +240,8 @@ convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct 
 	 * project onto the points of grid spaced across the pixel image plane */
 	for (int y_index = 0; y_index < STEPS; y_index++) {
 		for (int x_index = 0; x_index < STEPS; x_index++) {
-			int x = x_index * (tcc->image_size_pixels.w - 1) / (STEPS - 1);
-			int y = y_index * (tcc->image_size_pixels.h - 1) / (STEPS - 1);
+			int x = x_index * (tcc.image_size_pixels.w - 1) / (STEPS - 1);
+			int y = y_index * (tcc.image_size_pixels.h - 1) / (STEPS - 1);
 			TargetPoint *p = &xy[(y_index * STEPS) + x_index];
 
 			p->distorted[0] = x;
@@ -248,7 +250,7 @@ convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct 
 			Eigen::Matrix<double, 2, 1> result(0, 0);
 
 			using AutoDiffUndistortFunction = TinySolverAutoDiffFunction<UndistortCostFunctor, 2, 2>;
-			UndistortCostFunctor undistort_functor(tcc, fisheye62_distort_params, p->distorted);
+			UndistortCostFunctor undistort_functor(&tcc, fisheye62_distort_params, p->distorted);
 			AutoDiffUndistortFunction f(undistort_functor);
 
 			TinySolver<AutoDiffUndistortFunction> solver;
@@ -265,19 +267,19 @@ convert_camera_calibration(struct rift_s_camera_calibration *rift_s_cam, struct 
 
 		using AutoDiffDistortParamKB4Function =
 		    TinySolverAutoDiffFunction<DistortParamKB4CostFunctor, 2 * STEPS * STEPS, N_KB4_DISTORT_PARAMS>;
-		DistortParamKB4CostFunctor distort_param_kb4_functor(tcc, STEPS, xy);
+		DistortParamKB4CostFunctor distort_param_kb4_functor(&tcc, STEPS, xy);
 		AutoDiffDistortParamKB4Function f(distort_param_kb4_functor);
 
 		TinySolver<AutoDiffDistortParamKB4Function> solver;
 		solver.Solve(f, &kb4_distort_params);
 
-		tcc->kb4.k1 = kb4_distort_params[0];
-		tcc->kb4.k2 = kb4_distort_params[1];
-		tcc->kb4.k3 = kb4_distort_params[2];
-		tcc->kb4.k4 = kb4_distort_params[3];
-	}
+		tcc.kb4.k1 = kb4_distort_params[0];
+		tcc.kb4.k2 = kb4_distort_params[1];
+		tcc.kb4.k3 = kb4_distort_params[2];
+		tcc.kb4.k4 = kb4_distort_params[3];
 
-	return true;
+		return tcc;
+	}
 }
 
 /*!
@@ -299,17 +301,8 @@ rift_s_create_stereo_camera_calib_rotated(struct rift_s_camera_calibration_block
 
 	// Intrinsics
 	for (int view = 0; view < 2; view++) {
-		struct t_camera_calibration *tcc = &calib->view[view];
-		struct rift_s_camera_calibration *cam_config;
-
-		if (view == 0) {
-			cam_config = left;
-		} else {
-			cam_config = right;
-		}
-
-		if (!convert_camera_calibration(cam_config, tcc))
-			goto fail;
+		enum rift_s_camera_id cam_id = view == 0 ? RIFT_S_CAMERA_FRONT_LEFT : RIFT_S_CAMERA_FRONT_RIGHT;
+		calib->view[view] = rift_s_get_cam_calib(camera_calibration, cam_id);
 	}
 
 	struct xrt_pose device_from_left, device_from_right;
@@ -347,8 +340,4 @@ rift_s_create_stereo_camera_calib_rotated(struct rift_s_camera_calibration_block
 	calib->camera_rotation[2][2] = right_from_left_rot.v[8];
 
 	return calib;
-
-fail:
-	t_stereo_camera_calibration_reference(&calib, NULL);
-	return NULL;
 }

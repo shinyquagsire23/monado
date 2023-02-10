@@ -81,7 +81,6 @@ namespace xrt::auxiliary::tracking::slam {
 constexpr int UI_TIMING_POSE_COUNT = 192;
 constexpr int UI_FEATURES_POSE_COUNT = 192;
 constexpr int UI_GTDIFF_POSE_COUNT = 192;
-constexpr int NUM_CAMS = 2; //!< This should be used as little as possible to allow setups that are not stereo
 
 using std::deque;
 using std::ifstream;
@@ -1008,89 +1007,84 @@ setup_ui(TrackerSlam &t)
 }
 
 static void
-add_camera_calibration(const TrackerSlam &t,
-                       const t_stereo_camera_calibration *stereo_calib,
-                       const t_slam_calib_extras *extra_calib)
+add_camera_calibration(const TrackerSlam &t, const t_slam_camera_calibration *calib, int cam_index)
 {
-	for (int i = 0; i < NUM_CAMS; i++) {
-		const t_camera_calibration &view = stereo_calib->view[i];
-		const auto &extra = extra_calib->cams[i];
-		const auto params = make_shared<FPARAMS_ACC>();
+	const t_camera_calibration &view = calib->base;
+	const auto params = make_shared<FPARAMS_ACC>();
 
-		params->cam_index = i;
-		params->width = view.image_size_pixels.w;
-		params->height = view.image_size_pixels.h;
-		params->frequency = extra.frequency;
+	params->cam_index = cam_index;
+	params->width = view.image_size_pixels.w;
+	params->height = view.image_size_pixels.h;
+	params->frequency = calib->frequency;
 
-		params->fx = view.intrinsics[0][0];
-		params->fy = view.intrinsics[1][1];
-		params->cx = view.intrinsics[0][2];
-		params->cy = view.intrinsics[1][2];
+	params->fx = view.intrinsics[0][0];
+	params->fy = view.intrinsics[1][1];
+	params->cx = view.intrinsics[0][2];
+	params->cy = view.intrinsics[1][2];
 
-		switch (view.distortion_model) {
-		case T_DISTORTION_OPENCV_RADTAN_8:
-			params->distortion_model = "rt8";
-			params->distortion.push_back(view.rt8.k1);
-			params->distortion.push_back(view.rt8.k2);
-			params->distortion.push_back(view.rt8.p1);
-			params->distortion.push_back(view.rt8.p2);
-			params->distortion.push_back(view.rt8.k3);
-			params->distortion.push_back(view.rt8.k4);
-			params->distortion.push_back(view.rt8.k5);
-			params->distortion.push_back(view.rt8.k6);
-			// -1 metric radius tells Basalt to calculate the metric radius on its own.
-			params->distortion.push_back(-1.0);
-			SLAM_ASSERT_(params->distortion.size() == 9);
-			break;
-		case T_DISTORTION_WMR:
-			params->distortion_model = "rt8";
-			params->distortion.push_back(view.wmr.k1);
-			params->distortion.push_back(view.wmr.k2);
-			params->distortion.push_back(view.wmr.p1);
-			params->distortion.push_back(view.wmr.p2);
-			params->distortion.push_back(view.wmr.k3);
-			params->distortion.push_back(view.wmr.k4);
-			params->distortion.push_back(view.wmr.k5);
-			params->distortion.push_back(view.wmr.k6);
-			params->distortion.push_back(view.wmr.rpmax);
-			SLAM_ASSERT_(params->distortion.size() == 9);
-			break;
-		case T_DISTORTION_FISHEYE_KB4:
-			params->distortion_model = "kb4";
-			params->distortion.push_back(view.kb4.k1);
-			params->distortion.push_back(view.kb4.k2);
-			params->distortion.push_back(view.kb4.k3);
-			params->distortion.push_back(view.kb4.k4);
-			SLAM_ASSERT_(params->distortion.size() == 4);
-			break;
-		default:
-			SLAM_ASSERT(false, "SLAM doesn't support distortion type %s",
-			            t_stringify_camera_distortion_model(view.distortion_model));
-		}
-
-		xrt_matrix_4x4 T; // Row major T_imu_cam
-		math_matrix_4x4_transpose(&extra.T_imu_cam, &T);
-		params->t_imu_cam = cv::Matx<float, 4, 4>{T.v};
-
-		shared_ptr<FRESULT_ACC> result{};
-		t.slam->use_feature(F_ADD_CAMERA_CALIBRATION, params, result);
+	switch (view.distortion_model) {
+	case T_DISTORTION_OPENCV_RADTAN_8:
+		params->distortion_model = "rt8";
+		params->distortion.push_back(view.rt8.k1);
+		params->distortion.push_back(view.rt8.k2);
+		params->distortion.push_back(view.rt8.p1);
+		params->distortion.push_back(view.rt8.p2);
+		params->distortion.push_back(view.rt8.k3);
+		params->distortion.push_back(view.rt8.k4);
+		params->distortion.push_back(view.rt8.k5);
+		params->distortion.push_back(view.rt8.k6);
+		// -1 metric radius tells Basalt to estimate the metric radius on its own.
+		params->distortion.push_back(-1.0);
+		SLAM_ASSERT_(params->distortion.size() == 9);
+		break;
+	case T_DISTORTION_WMR:
+		params->distortion_model = "rt8";
+		params->distortion.push_back(view.wmr.k1);
+		params->distortion.push_back(view.wmr.k2);
+		params->distortion.push_back(view.wmr.p1);
+		params->distortion.push_back(view.wmr.p2);
+		params->distortion.push_back(view.wmr.k3);
+		params->distortion.push_back(view.wmr.k4);
+		params->distortion.push_back(view.wmr.k5);
+		params->distortion.push_back(view.wmr.k6);
+		params->distortion.push_back(view.wmr.rpmax);
+		SLAM_ASSERT_(params->distortion.size() == 9);
+		break;
+	case T_DISTORTION_FISHEYE_KB4:
+		params->distortion_model = "kb4";
+		params->distortion.push_back(view.kb4.k1);
+		params->distortion.push_back(view.kb4.k2);
+		params->distortion.push_back(view.kb4.k3);
+		params->distortion.push_back(view.kb4.k4);
+		SLAM_ASSERT_(params->distortion.size() == 4);
+		break;
+	default:
+		SLAM_ASSERT(false, "SLAM doesn't support distortion type %s",
+		            t_stringify_camera_distortion_model(view.distortion_model));
 	}
+
+	xrt_matrix_4x4 T; // Row major T_imu_cam
+	math_matrix_4x4_transpose(&calib->T_imu_cam, &T);
+	params->t_imu_cam = cv::Matx<float, 4, 4>{T.v};
+
+	shared_ptr<FRESULT_ACC> result{};
+	t.slam->use_feature(F_ADD_CAMERA_CALIBRATION, params, result);
 }
 
 static void
-add_imu_calibration(const TrackerSlam &t, const t_imu_calibration *imu_calib, const t_slam_calib_extras *extra_calib)
+add_imu_calibration(const TrackerSlam &t, const t_slam_imu_calibration *imu_calib)
 {
 	const auto params = make_shared<FPARAMS_AIC>();
 	params->imu_index = 0; // Multiple IMU setups unsupported
-	params->frequency = extra_calib->imu_frequency;
+	params->frequency = imu_calib->frequency;
 
-	const t_inertial_calibration &accel = imu_calib->accel;
+	const t_inertial_calibration &accel = imu_calib->base.accel;
 	params->accel.transform = cv::Matx<double, 3, 3>{&accel.transform[0][0]};
 	params->accel.offset = cv::Matx<double, 3, 1>{&accel.offset[0]};
 	params->accel.bias_std = cv::Matx<double, 3, 1>{&accel.bias_std[0]};
 	params->accel.noise_std = cv::Matx<double, 3, 1>{&accel.noise_std[0]};
 
-	const t_inertial_calibration &gyro = imu_calib->gyro;
+	const t_inertial_calibration &gyro = imu_calib->base.gyro;
 	params->gyro.transform = cv::Matx<double, 3, 3>{&gyro.transform[0][0]};
 	params->gyro.offset = cv::Matx<double, 3, 1>{&gyro.offset[0]};
 	params->gyro.bias_std = cv::Matx<double, 3, 1>{&gyro.bias_std[0]};
@@ -1101,20 +1095,22 @@ add_imu_calibration(const TrackerSlam &t, const t_imu_calibration *imu_calib, co
 }
 
 static void
-send_calibration(const TrackerSlam &t, const t_slam_tracker_config &c)
+send_calibration(const TrackerSlam &t, const t_slam_calibration &c)
 {
 	// Try to send camera calibration data to the SLAM system
-	if (c.stereo_calib && c.extra_calib && t.slam->supports_feature(F_ADD_CAMERA_CALIBRATION)) {
-		SLAM_INFO("Sending Camera calibration from Monado");
-		add_camera_calibration(t, c.stereo_calib, c.extra_calib);
-	} else {
-		SLAM_INFO("Cameras will use the calibration provided by the SLAM_CONFIG file");
+	for (int i = 0; i < c.cam_count; i++) {
+		if (t.slam->supports_feature(F_ADD_CAMERA_CALIBRATION)) {
+			SLAM_INFO("Sending Camera %d calibration from Monado", i);
+			add_camera_calibration(t, &c.cams[i], i);
+		} else {
+			SLAM_INFO("Camera %d will use the calibration provided by the SLAM_CONFIG file", i);
+		}
 	}
 
 	// Try to send IMU calibration data to the SLAM system
-	if (c.imu_calib && c.extra_calib && t.slam->supports_feature(F_ADD_IMU_CALIBRATION)) {
+	if (t.slam->supports_feature(F_ADD_IMU_CALIBRATION)) {
 		SLAM_INFO("Sending IMU calibration from Monado");
-		add_imu_calibration(t, c.imu_calib, c.extra_calib);
+		add_imu_calibration(t, &c.imu);
 	} else {
 		SLAM_INFO("The IMU will use the calibration provided by the SLAM_CONFIG file");
 	}
@@ -1318,8 +1314,7 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 	config->timing_stat = debug_get_bool_option_slam_timing_stat();
 	config->features_stat = debug_get_bool_option_slam_features_stat();
 	config->cam_count = int(debug_get_num_option_slam_cam_count());
-	config->imu_calib = NULL;
-	config->extra_calib = NULL;
+	config->slam_calib = NULL;
 }
 
 extern "C" int
@@ -1352,7 +1347,7 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	// Check the user has provided a SLAM_CONFIG file
 	const char *config_file = config->slam_config;
-	bool some_calib = config->stereo_calib || config->imu_calib;
+	bool some_calib = config->slam_calib != nullptr;
 	if (!config_file && !some_calib) {
 		U_LOG_IFL_W(log_level, "Unable to determine sensor calibration, did you forget to set SLAM_CONFIG?");
 		return -1;
@@ -1372,7 +1367,7 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	if (!config_file) {
 		SLAM_INFO("Using calibration from driver and default pipeline settings");
-		send_calibration(t, *config);
+		send_calibration(t, *config->slam_calib); // Not null because of `some_calib`
 	} else {
 		SLAM_INFO("Using sensor calibration provided by the SLAM_CONFIG file");
 	}

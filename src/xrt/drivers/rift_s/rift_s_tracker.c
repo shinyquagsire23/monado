@@ -93,8 +93,8 @@ rift_s_tracker_switch_method_cb(void *t_ptr)
 	}
 }
 
-XRT_MAYBE_UNUSED struct t_imu_calibration
-rift_s_create_slam_imu_calib(void)
+XRT_MAYBE_UNUSED void
+rift_s_fill_slam_imu_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
 {
 	/* FIXME: Validate these hard coded standard deviations against
 	 * some actual at-rest IMU measurements */
@@ -107,7 +107,7 @@ rift_s_create_slam_imu_calib(void)
 	/* we pass already corrected accel and gyro
 	 * readings to Basalt, so the transforms and
 	 * offsets are just identity / zero matrices */
-	struct t_imu_calibration calib = {
+	struct t_imu_calibration imu_calib = {
 	    .accel =
 	        {
 	            .transform =
@@ -140,12 +140,17 @@ rift_s_create_slam_imu_calib(void)
 	        },
 	};
 
-	return calib;
+	struct t_slam_imu_calibration calib = {
+	    .base = imu_calib,
+	    .frequency = hmd_config->imu_config_info.imu_hz,
+	};
+
+	t->slam_calib.imu = calib;
 }
 
-//! IMU extrinsics, frequency
-static struct t_slam_calib_extras
-rift_s_create_extra_slam_calib(struct rift_s_hmd_config *hmd_config)
+//! Extended camera calibration for SLAM
+static void
+rift_s_fill_slam_cameras_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
 {
 	/* SLAM frames are every 2nd frame of 60Hz camera feed */
 	const int CAMERA_FREQUENCY = 30;
@@ -180,23 +185,28 @@ rift_s_create_extra_slam_calib(struct rift_s_hmd_config *hmd_config)
 	             P_imu_right_cam.position.y, P_imu_right_cam.position.z, P_imu_right_cam.orientation.x,
 	             P_imu_right_cam.orientation.y, P_imu_right_cam.orientation.z, P_imu_right_cam.orientation.w);
 
-	double imu_frequency = hmd_config->imu_config_info.imu_hz;
-
-	struct t_slam_calib_extras calib = {
-	    .imu_frequency = imu_frequency,
-	    .cams =
-	        {
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_left_cam,
-	            },
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_right_cam,
-	            },
-	        },
+	struct t_slam_camera_calibration calib0 = {
+	    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, RIFT_S_CAMERA_FRONT_LEFT),
+	    .frequency = CAMERA_FREQUENCY,
+	    .T_imu_cam = T_imu_left_cam,
 	};
-	return calib;
+
+	struct t_slam_camera_calibration calib1 = {
+	    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, RIFT_S_CAMERA_FRONT_RIGHT),
+	    .frequency = CAMERA_FREQUENCY,
+	    .T_imu_cam = T_imu_right_cam,
+	};
+
+	t->slam_calib.cam_count = 2;
+	t->slam_calib.cams[0] = calib0;
+	t->slam_calib.cams[1] = calib1;
+}
+
+static void
+rift_s_fill_slam_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
+{
+	rift_s_fill_slam_imu_calibration(t, hmd_config);
+	rift_s_fill_slam_cameras_calibration(t, hmd_config);
 }
 
 static struct xrt_slam_sinks *
@@ -212,8 +222,7 @@ rift_s_create_slam_tracker(struct rift_s_tracker *t, struct xrt_frame_context *x
 
 	/* No need to refcount these parameters */
 	config.cam_count = 2;
-	config.imu_calib = &t->slam_imu_calib;
-	config.extra_calib = &t->slam_extra_calib;
+	config.slam_calib = &t->slam_calib;
 
 	int create_status = t_slam_create(xfctx, &config, &t->tracking.slam, &sinks);
 	if (create_status != 0) {
@@ -375,8 +384,8 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 
 	assert(slam_status != NULL && hand_status != NULL);
 
-	snprintf(t->gui.slam_status, sizeof(t->gui.slam_status), "%s", slam_status);
-	snprintf(t->gui.hand_status, sizeof(t->gui.hand_status), "%s", hand_status);
+	(void)snprintf(t->gui.slam_status, sizeof(t->gui.slam_status), "%s", slam_status);
+	(void)snprintf(t->gui.hand_status, sizeof(t->gui.hand_status), "%s", hand_status);
 
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&t->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
@@ -385,8 +394,7 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 
 	// Construct the stereo camera calibration for the front cameras
 	t->stereo_calib = rift_s_create_stereo_camera_calib_rotated(&hmd_config->camera_calibration);
-	t->slam_imu_calib = rift_s_create_slam_imu_calib();
-	t->slam_extra_calib = rift_s_create_extra_slam_calib(hmd_config);
+	rift_s_fill_slam_calibration(t, hmd_config);
 
 	// Initialize the input sinks for the camera to send to
 

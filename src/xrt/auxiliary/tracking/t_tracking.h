@@ -15,6 +15,7 @@
 #include "util/u_logging.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
+#include "xrt/xrt_tracking.h"
 #include "util/u_misc.h"
 
 #include <stdio.h>
@@ -602,19 +603,38 @@ enum t_slam_prediction_type
 };
 
 /*!
- * This struct complements calibration data from @ref
- * t_stereo_camera_calibration and @ref t_imu_calibration
+ * Extension to camera calibration for SLAM tracking
  *
  * @see xrt_tracked_slam
  */
-struct t_slam_calib_extras
+struct t_slam_camera_calibration
 {
-	double imu_frequency; //! IMU samples per second
-	struct
-	{
-		double frequency;                //!< Camera FPS
-		struct xrt_matrix_4x4 T_imu_cam; //!< Transform IMU to camera. Column major.
-	} cams[2];
+	struct t_camera_calibration base;
+	struct xrt_matrix_4x4 T_imu_cam; //!< Transform IMU to camera. Column major.
+	double frequency;                //!< Camera FPS
+};
+
+/*!
+ * Extension to IMU calibration for SLAM tracking
+ *
+ * @see xrt_tracked_slam
+ */
+struct t_slam_imu_calibration
+{
+	struct t_imu_calibration base;
+	double frequency;
+};
+
+/*!
+ * Calibration information necessary for SLAM tracking.
+ *
+ * @see xrt_tracked_slam
+ */
+struct t_slam_calibration
+{
+	struct t_slam_imu_calibration imu;                                 //!< IMU calibration data
+	struct t_slam_camera_calibration cams[XRT_TRACKING_MAX_SLAM_CAMS]; //!< Calib data of `cam_count` cams
+	int cam_count;                                                     //!< Number of cameras
 };
 
 /*!
@@ -635,10 +655,8 @@ struct t_slam_tracker_config
 	bool timing_stat;                       //!< Enable timing metric in external system
 	bool features_stat;                     //!< Enable feature metric in external system
 
-	// Instead of a slam_config file you can set custom calibration data
-	const struct t_stereo_camera_calibration *stereo_calib; //!< Camera calibration data
-	const struct t_imu_calibration *imu_calib;              //!< IMU calibration data
-	const struct t_slam_calib_extras *extra_calib;          //!< Extra calibration data
+	//!< Instead of a slam_config file you can set custom calibration data
+	const struct t_slam_calibration *slam_calib;
 };
 
 /*!

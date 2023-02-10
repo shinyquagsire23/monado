@@ -1289,6 +1289,37 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 	*out_angle_up = -atanf(tanangle_up);
 }
 
+XRT_MAYBE_UNUSED static struct t_camera_calibration
+wmr_hmd_get_cam_calib(struct wmr_hmd *wh, int cam_index)
+{
+	struct t_camera_calibration res;
+	struct wmr_camera_config *wcalib = &wh->config.cameras[cam_index];
+	struct wmr_distortion_6KT *intr = &wcalib->distortion6KT;
+
+	res.image_size_pixels.h = wcalib->roi.extent.h;
+	res.image_size_pixels.w = wcalib->roi.extent.w;
+	res.intrinsics[0][0] = intr->params.fx * (double)wcalib->roi.extent.w;
+	res.intrinsics[1][1] = intr->params.fy * (double)wcalib->roi.extent.h;
+	res.intrinsics[0][2] = intr->params.cx * (double)wcalib->roi.extent.w;
+	res.intrinsics[1][2] = intr->params.cy * (double)wcalib->roi.extent.h;
+	res.intrinsics[2][2] = 1.0;
+
+	res.distortion_model = T_DISTORTION_WMR;
+	res.wmr.k1 = intr->params.k[0];
+	res.wmr.k2 = intr->params.k[1];
+	res.wmr.p1 = intr->params.p1;
+	res.wmr.p2 = intr->params.p2;
+	res.wmr.k3 = intr->params.k[2];
+	res.wmr.k4 = intr->params.k[3];
+	res.wmr.k5 = intr->params.k[4];
+	res.wmr.k6 = intr->params.k[5];
+	res.wmr.codx = intr->params.dist_x;
+	res.wmr.cody = intr->params.dist_y;
+	res.wmr.rpmax = intr->params.metric_radius;
+
+	return res;
+}
+
 /*!
  * Creates an OpenCV-compatible @ref t_stereo_camera_calibration pointer from
  * the WMR config.
@@ -1311,34 +1342,8 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 
 
 	// Intrinsics
-	for (int view = 0; view < 2; view++) { // Assuming that cameras[0-1] are HT0 and HT1
-		struct t_camera_calibration *tcc = &calib->view[view];
-		struct wmr_camera_config *cam = &wh->config.cameras[view];
-		struct wmr_distortion_6KT *intr = &cam->distortion6KT;
-
-		tcc->image_size_pixels.h = wh->config.cameras[view].roi.extent.h;
-		tcc->image_size_pixels.w = wh->config.cameras[view].roi.extent.w;
-		tcc->intrinsics[0][0] = intr->params.fx * (double)cam->roi.extent.w;
-		tcc->intrinsics[1][1] = intr->params.fy * (double)cam->roi.extent.h;
-		tcc->intrinsics[0][2] = intr->params.cx * (double)cam->roi.extent.w;
-		tcc->intrinsics[1][2] = intr->params.cy * (double)cam->roi.extent.h;
-		tcc->intrinsics[2][2] = 1.0;
-
-		tcc->wmr.k1 = intr->params.k[0];
-		tcc->wmr.k2 = intr->params.k[1];
-		tcc->wmr.p1 = intr->params.p1;
-		tcc->wmr.p2 = intr->params.p2;
-		tcc->wmr.k3 = intr->params.k[2];
-		tcc->wmr.k4 = intr->params.k[3];
-		tcc->wmr.k5 = intr->params.k[4];
-		tcc->wmr.k6 = intr->params.k[5];
-
-		tcc->wmr.codx = intr->params.dist_x;
-		tcc->wmr.cody = intr->params.dist_y;
-
-		tcc->wmr.rpmax = intr->params.metric_radius;
-
-		tcc->distortion_model = T_DISTORTION_WMR;
+	for (int i = 0; i < 2; i++) { // Assuming that cameras[0-1] are HT0 and HT1
+		calib->view[i] = wmr_hmd_get_cam_calib(wh, i);
 	}
 
 	// Extrinsics
@@ -1361,8 +1366,41 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 	return calib;
 }
 
+//! Extended camera calibration info for SLAM
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_cams_calibration(struct wmr_hmd *wh)
+{
+	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
+	struct xrt_pose P_ht1_ht0 = wh->config.cameras[1].pose;
+	struct xrt_pose P_ht0_ht1;
+	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
+	struct xrt_pose P_imu_ht1;
+	math_pose_transform(&P_imu_ht0, &P_ht0_ht1, &P_imu_ht1);
+
+	struct xrt_matrix_4x4 T_imu_ht0;
+	struct xrt_matrix_4x4 T_imu_ht1;
+	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
+	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
+
+	struct t_slam_camera_calibration calib0 = {
+	    .base = wmr_hmd_get_cam_calib(wh, 0),
+	    .T_imu_cam = T_imu_ht0,
+	    .frequency = CAMERA_FREQUENCY,
+	};
+
+	struct t_slam_camera_calibration calib1 = {
+	    .base = wmr_hmd_get_cam_calib(wh, 1),
+	    .T_imu_cam = T_imu_ht1,
+	    .frequency = CAMERA_FREQUENCY,
+	};
+
+	wh->tracking.slam_calib.cam_count = 2;
+	wh->tracking.slam_calib.cams[0] = calib0;
+	wh->tracking.slam_calib.cams[1] = calib1;
+}
+
 XRT_MAYBE_UNUSED static struct t_imu_calibration
-wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
+wmr_hmd_get_imu_calib(struct wmr_hmd *wh)
 {
 	float *at = wh->config.sensors.accel.mix_matrix.v;
 	struct xrt_vec3 ao = wh->config.sensors.accel.bias_offsets;
@@ -1393,40 +1431,26 @@ wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
 	return calib;
 }
 
-//! IMU extrinsics, frequencies, and rpmax
-XRT_MAYBE_UNUSED static struct t_slam_calib_extras
-wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
+//! Extended IMU calibration data for SLAM
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_imu_calibration(struct wmr_hmd *wh)
 {
-	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_ht1_ht0 = wh->config.cameras[1].pose;
-	struct xrt_pose P_ht0_ht1;
-	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
-	struct xrt_pose P_imu_ht1;
-	math_pose_transform(&P_imu_ht0, &P_ht0_ht1, &P_imu_ht1);
-
-	struct xrt_matrix_4x4 T_imu_ht0;
-	struct xrt_matrix_4x4 T_imu_ht1;
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
-
-	//! @note This might change during runtime but the calibration data will be already submitted
+	//! @note `average_imus` might change during runtime but the calibration data will be already submitted
 	double imu_frequency = wh->average_imus ? IMU_FREQUENCY / IMU_SAMPLES_PER_PACKET : IMU_FREQUENCY;
 
-	struct t_slam_calib_extras calib = {
-	    .imu_frequency = imu_frequency,
-	    .cams =
-	        {
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_ht0,
-	            },
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_ht1,
-	            },
-	        },
+	struct t_slam_imu_calibration imu_calib = {
+	    .base = wmr_hmd_get_imu_calib(wh),
+	    .frequency = imu_frequency,
 	};
-	return calib;
+
+	wh->tracking.slam_calib.imu = imu_calib;
+}
+
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_calibration(struct wmr_hmd *wh)
+{
+	wmr_hmd_fill_slam_imu_calibration(wh);
+	wmr_hmd_fill_slam_cams_calibration(wh);
 }
 
 static void
@@ -1450,10 +1474,7 @@ wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 }
 
 static struct xrt_slam_sinks *
-wmr_hmd_slam_track(struct wmr_hmd *wh,
-                   struct t_stereo_camera_calibration *stereo_calib,
-                   struct t_imu_calibration *imu_calib,
-                   struct t_slam_calib_extras *extra_calib)
+wmr_hmd_slam_track(struct wmr_hmd *wh)
 {
 	DRV_TRACE_MARKER();
 
@@ -1463,8 +1484,7 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
 	config.cam_count = 2;
-	config.imu_calib = imu_calib;
-	config.extra_calib = extra_calib;
+	config.slam_calib = &wh->tracking.slam_calib;
 	if (debug_get_option_slam_submit_from_start() == NULL) {
 		config.submit_from_start = true;
 	}
@@ -1669,12 +1689,11 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 
 	assert(slam_status != NULL && hand_status != NULL);
 
-	snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
-	snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
+	(void)snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
+	(void)snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
 
 	struct t_stereo_camera_calibration *stereo_calib = wmr_hmd_create_stereo_camera_calib(wh);
-	struct t_imu_calibration imu_calib = wmr_hmd_create_imu_calib(wh);
-	struct t_slam_calib_extras extra_calib = wmr_hmd_create_extra_calib(wh);
+	wmr_hmd_fill_slam_calibration(wh);
 
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
@@ -1682,7 +1701,7 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (wh->tracking.slam_enabled) {
-		slam_sinks = wmr_hmd_slam_track(wh, stereo_calib, &imu_calib, &extra_calib);
+		slam_sinks = wmr_hmd_slam_track(wh);
 		if (slam_sinks == NULL) {
 			WMR_WARN(wh, "Unable to setup the SLAM tracker");
 			return false;

@@ -224,12 +224,16 @@ bool
 vive_get_stereo_camera_calibration(struct vive_config *d,
                                    struct t_stereo_camera_calibration **calibration_ptr_to_ref,
                                    struct xrt_pose *out_head_in_left_camera);
+void
+vive_get_slam_cams_calib(struct vive_config *d,
+                         struct t_slam_camera_calibration *out_calib0,
+                         struct t_slam_camera_calibration *out_calib1);
 
 struct t_imu_calibration
 vive_get_imu_calibration(struct vive_config *d);
 
-struct t_slam_calib_extras
-vive_get_extra_calibration(struct vive_config *d);
+struct t_slam_imu_calibration
+vive_get_slam_imu_calibration(struct vive_config *d);
 
 #ifdef __cplusplus
 } // extern "C"

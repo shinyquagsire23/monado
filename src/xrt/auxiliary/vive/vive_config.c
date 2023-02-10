@@ -287,6 +287,36 @@ _get_cameras(struct vive_config *d, const cJSON *cameras_json)
 	return true;
 }
 
+static struct t_camera_calibration
+vive_get_camera_calibration(struct vive_config *d, int cam_index)
+{
+	struct t_camera_calibration calib;
+
+	struct index_camera *camera = &d->cameras.view[cam_index];
+	calib.image_size_pixels.w = camera->intrinsics.image_size_pixels.w;
+	calib.image_size_pixels.h = camera->intrinsics.image_size_pixels.h;
+
+	calib.intrinsics[0][0] = camera->intrinsics.focal_x;
+	calib.intrinsics[0][1] = 0.0f;
+	calib.intrinsics[0][2] = camera->intrinsics.center_x;
+
+	calib.intrinsics[1][0] = 0.0f;
+	calib.intrinsics[1][1] = camera->intrinsics.focal_y;
+	calib.intrinsics[1][2] = camera->intrinsics.center_y;
+
+	calib.intrinsics[2][0] = 0.0f;
+	calib.intrinsics[2][1] = 0.0f;
+	calib.intrinsics[2][2] = 1.0f;
+
+	calib.distortion_model = T_DISTORTION_FISHEYE_KB4;
+	calib.kb4.k1 = camera->intrinsics.distortion[0];
+	calib.kb4.k2 = camera->intrinsics.distortion[1];
+	calib.kb4.k3 = camera->intrinsics.distortion[2];
+	calib.kb4.k4 = camera->intrinsics.distortion[3];
+
+	return calib;
+}
+
 bool
 vive_get_stereo_camera_calibration(struct vive_config *d,
                                    struct t_stereo_camera_calibration **calibration_ptr_to_ref,
@@ -297,32 +327,12 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 		return false;
 	}
 
-	struct index_camera *cameras = d->cameras.view;
 	struct t_stereo_camera_calibration *calib = NULL;
 
 	t_stereo_camera_calibration_alloc(&calib, T_DISTORTION_FISHEYE_KB4);
 
 	for (int i = 0; i < 2; i++) {
-		calib->view[i].image_size_pixels.w = cameras[i].intrinsics.image_size_pixels.w;
-		calib->view[i].image_size_pixels.h = cameras[i].intrinsics.image_size_pixels.h;
-
-		// This better be row-major!
-		calib->view[i].intrinsics[0][0] = cameras[i].intrinsics.focal_x;
-		calib->view[i].intrinsics[0][1] = 0.0f;
-		calib->view[i].intrinsics[0][2] = cameras[i].intrinsics.center_x;
-
-		calib->view[i].intrinsics[1][0] = 0.0f;
-		calib->view[i].intrinsics[1][1] = cameras[i].intrinsics.focal_y;
-		calib->view[i].intrinsics[1][2] = cameras[i].intrinsics.center_y;
-
-		calib->view[i].intrinsics[2][0] = 0.0f;
-		calib->view[i].intrinsics[2][1] = 0.0f;
-		calib->view[i].intrinsics[2][2] = 1.0f;
-
-		calib->view[i].kb4.k1 = cameras[i].intrinsics.distortion[0];
-		calib->view[i].kb4.k2 = cameras[i].intrinsics.distortion[1];
-		calib->view[i].kb4.k3 = cameras[i].intrinsics.distortion[2];
-		calib->view[i].kb4.k4 = cameras[i].intrinsics.distortion[3];
+		calib->view[i] = vive_get_camera_calibration(d, i);
 	}
 
 	struct xrt_vec3 pos = d->cameras.opencv.position;
@@ -358,41 +368,15 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 	return true;
 }
 
-struct t_imu_calibration
-vive_get_imu_calibration(struct vive_config *d)
+//! Camera calibrations for SLAM
+void
+vive_get_slam_cams_calib(struct vive_config *d,
+                         struct t_slam_camera_calibration *out_calib0,
+                         struct t_slam_camera_calibration *out_calib1)
 {
-
-	struct xrt_vec3 ab = d->imu.acc_bias;
-	struct xrt_vec3 as = d->imu.acc_scale;
-	struct xrt_vec3 gb = d->imu.gyro_bias;
-	struct xrt_vec3 gs = d->imu.gyro_scale;
-
-	struct t_imu_calibration calib = {
-	    .accel =
-	        {
-	            .transform = {{as.x, 0, 0}, {0, as.y, 0}, {0, 0, as.z}},
-	            .offset = {-ab.x, -ab.y, -ab.z}, // negative because slam system will add, not subtract
-	            .bias_std = {0.001, 0.001, 0.001},
-	            .noise_std = {0.016, 0.016, 0.016},
-	        },
-	    .gyro =
-	        {
-	            .transform = {{gs.x, 0, 0}, {0, gs.y, 0}, {0, 0, gs.z}},
-	            .offset = {-gb.x, -gb.y, -gb.z}, // negative because slam system will add, not subtract
-	            .bias_std = {0.0001, 0.0001, 0.0001},
-	            .noise_std = {0.000282, 0.000282, 0.000282},
-	        },
-	};
-	return calib;
-}
-
-//! IMU extrinsics and frequencies
-struct t_slam_calib_extras
-vive_get_extra_calibration(struct vive_config *d)
-{
-	VIVE_ERROR(d, "Using default factory extrinsics data for vive driver.");
-	VIVE_ERROR(d, "The rotations of the sensors in the factory data are off.");
-	VIVE_ERROR(d, "Use a custom calibration instead whenever possible.");
+	VIVE_WARN(d, "Using default factory extrinsics data for vive driver.");
+	VIVE_WARN(d, "The rotations of the sensors in the factory data are off.");
+	VIVE_WARN(d, "Use a custom calibration instead whenever possible.");
 
 	struct xrt_pose P_tr_imu = d->imu.trackref;
 	struct xrt_pose P_tr_cam0 = d->cameras.view[0].trackref;
@@ -469,18 +453,60 @@ vive_get_extra_calibration(struct vive_config *d)
 	math_matrix_4x4_isometry_from_pose(&P_imuxr_cam0slam, &T_imu_cam0);
 	math_matrix_4x4_isometry_from_pose(&P_imuxr_cam1slam, &T_imu_cam1);
 
-	// Can we avoid hardcoding these?
+	// Can we avoid hardcoding camera frequency?
 	const int CAMERA_FREQUENCY = 54;
-	const int IMU_FREQUENCY = 1000;
 
-	struct t_slam_calib_extras calib = {
-	    .imu_frequency = IMU_FREQUENCY,
-	    .cams =
+	struct t_slam_camera_calibration calib0 = {
+	    .base = vive_get_camera_calibration(d, 0),
+	    .frequency = CAMERA_FREQUENCY,
+	    .T_imu_cam = T_imu_cam0,
+	};
+
+	struct t_slam_camera_calibration calib1 = {
+	    .base = vive_get_camera_calibration(d, 1),
+	    .frequency = CAMERA_FREQUENCY,
+	    .T_imu_cam = T_imu_cam1,
+	};
+
+	*out_calib0 = calib0;
+	*out_calib1 = calib1;
+}
+
+struct t_imu_calibration
+vive_get_imu_calibration(struct vive_config *d)
+{
+
+	struct xrt_vec3 ab = d->imu.acc_bias;
+	struct xrt_vec3 as = d->imu.acc_scale;
+	struct xrt_vec3 gb = d->imu.gyro_bias;
+	struct xrt_vec3 gs = d->imu.gyro_scale;
+
+	struct t_imu_calibration calib = {
+	    .accel =
 	        {
-	            {.frequency = CAMERA_FREQUENCY, .T_imu_cam = T_imu_cam0},
-	            {.frequency = CAMERA_FREQUENCY, .T_imu_cam = T_imu_cam1},
+	            .transform = {{as.x, 0, 0}, {0, as.y, 0}, {0, 0, as.z}},
+	            .offset = {-ab.x, -ab.y, -ab.z}, // negative because slam system will add, not subtract
+	            .bias_std = {0.001, 0.001, 0.001},
+	            .noise_std = {0.016, 0.016, 0.016},
+	        },
+	    .gyro =
+	        {
+	            .transform = {{gs.x, 0, 0}, {0, gs.y, 0}, {0, 0, gs.z}},
+	            .offset = {-gb.x, -gb.y, -gb.z}, // negative because slam system will add, not subtract
+	            .bias_std = {0.0001, 0.0001, 0.0001},
+	            .noise_std = {0.000282, 0.000282, 0.000282},
 	        },
 	};
+	return calib;
+}
+
+struct t_slam_imu_calibration
+vive_get_slam_imu_calibration(struct vive_config *d)
+{
+	struct t_slam_imu_calibration calib;
+	const int IMU_FREQUENCY = 1000;
+	calib.base = vive_get_imu_calibration(d);
+	calib.frequency = IMU_FREQUENCY;
 	return calib;
 }
 

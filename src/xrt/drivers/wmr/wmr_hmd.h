@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "tracking/t_tracking.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_prober.h"
@@ -156,6 +157,9 @@ struct wmr_hmd
 		//! trackers. In particular, we have a @ref xrt_tracked_slam field but not
 		//! an equivalent for hand tracking.
 		struct xrt_tracked_slam *slam;
+
+		//! Calibration data for SLAM
+		struct t_slam_calibration slam_calib;
 
 		//! Set at start. Whether the SLAM tracker was initialized.
 		bool slam_enabled;

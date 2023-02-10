@@ -100,6 +100,7 @@ struct lighthouse_system
 	struct vive_tracking_status vive_tstatus; //!< Visual tracking status for Index under Vive driver
 	struct xrt_fs *xfs;                       //!< Frameserver for Valve Index camera, if we have one.
 	struct vive_config *hmd_config;
+	struct t_slam_calibration slam_calib; //!< Calibration data for SLAM
 };
 
 
@@ -150,10 +151,7 @@ on_video_device(struct xrt_prober *xp,
 }
 
 static struct xrt_slam_sinks *
-valve_index_slam_track(struct lighthouse_system *lhs,
-                       struct t_stereo_camera_calibration *stereo_calib,
-                       struct t_imu_calibration *imu_calib,
-                       struct t_slam_calib_extras *extra_calib)
+valve_index_slam_track(struct lighthouse_system *lhs)
 {
 	struct xrt_slam_sinks *sinks = NULL;
 
@@ -163,9 +161,7 @@ valve_index_slam_track(struct lighthouse_system *lhs,
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
 	config.cam_count = 2;
-	config.stereo_calib = stereo_calib; // Won't hold stereo_calib so no refcount
-	config.imu_calib = imu_calib;
-	config.extra_calib = extra_calib;
+	config.slam_calib = &lhs->slam_calib;
 
 	int create_status = t_slam_create(&lhs->devices->xfctx, &config, &d->tracking.slam, &sinks);
 	if (create_status != 0) {
@@ -373,16 +369,20 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	bool slam_enabled = lhs->vive_tstatus.slam_enabled;
 	bool hand_enabled = lhs->vive_tstatus.hand_enabled;
 
+	// Hand tracking calibration
 	struct t_stereo_camera_calibration *stereo_calib = NULL;
 	struct xrt_pose head_in_left_cam;
 	vive_get_stereo_camera_calibration(lhs->hmd_config, &stereo_calib, &head_in_left_cam);
-	struct t_imu_calibration imu_calib = vive_get_imu_calibration(lhs->hmd_config);
-	struct t_slam_calib_extras extra_calib = vive_get_extra_calibration(lhs->hmd_config);
+
+	// SLAM calibration
+	lhs->slam_calib.cam_count = 2;
+	vive_get_slam_cams_calib(lhs->hmd_config, &lhs->slam_calib.cams[0], &lhs->slam_calib.cams[1]);
+	lhs->slam_calib.imu = vive_get_slam_imu_calibration(lhs->hmd_config);
 
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (slam_enabled) {
-		slam_sinks = valve_index_slam_track(lhs, stereo_calib, &imu_calib, &extra_calib);
+		slam_sinks = valve_index_slam_track(lhs);
 		if (slam_sinks == NULL) {
 			lhs->vive_tstatus.slam_enabled = false;
 			slam_enabled = false;
