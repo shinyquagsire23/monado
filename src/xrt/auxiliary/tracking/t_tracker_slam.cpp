@@ -1357,6 +1357,7 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	slam_config system_config = {};
 	system_config.config_file = config_file ? make_shared<string>(config_file) : nullptr;
+	system_config.cam_count = NUM_CAMS;
 	system_config.show_ui = config->slam_ui;
 	t.slam = new slam_tracker{system_config};
 

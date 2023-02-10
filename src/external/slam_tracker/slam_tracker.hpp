@@ -29,7 +29,7 @@ namespace xrt::auxiliary::tracking::slam {
 
 // For implementation: same as IMPLEMENTATION_VERSION_*
 // For user: expected IMPLEMENTATION_VERSION_*. Should be checked in runtime.
-constexpr int HEADER_VERSION_MAJOR = 5; //!< API Breakages
+constexpr int HEADER_VERSION_MAJOR = 6; //!< API Breakages
 constexpr int HEADER_VERSION_MINOR = 0; //!< Backwards compatible API changes
 constexpr int HEADER_VERSION_PATCH = 0; //!< Backw. comp. .h-implemented changes
 
@@ -81,10 +81,10 @@ struct imu_sample {
 struct img_sample {
   std::int64_t timestamp;
   cv::Mat img;
-  bool is_left;
+  int cam_index;
   img_sample() = default;
-  img_sample(std::int64_t timestamp, const cv::Mat &img, bool is_left)
-      : timestamp(timestamp), img(img), is_left(is_left) {}
+  img_sample(std::int64_t timestamp, const cv::Mat &img, int cam_index)
+      : timestamp(timestamp), img(img), cam_index(cam_index) {}
 };
 
 /*!
@@ -94,8 +94,11 @@ struct slam_config {
   //! Path to a implementation-specific config file. If null, use defaults.
   std::shared_ptr<std::string> config_file;
 
+  //! Number of cameras to use. Required.
+  int cam_count = -1;
+
   //! If supported, whether to open the system's UI.
-  bool show_ui;
+  bool show_ui = false;
 };
 
 /*!
@@ -132,8 +135,8 @@ struct slam_tracker {
    * @brief Push an image sample into the tracker.
    *
    * Same conditions as @ref push_imu_sample apply.
-   * When using stereo frames, they must be pushed in a left-right order.
-   * The consecutive left-right pair must have the same timestamps.
+   * When using N>1 cameras, the N frames must be pushed following cam_id order.
+   * The bundle of N frames must have the same timestamps.
    */
   void push_frame(const img_sample &sample);
 
