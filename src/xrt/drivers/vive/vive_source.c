@@ -128,8 +128,8 @@ vive_source_receive_sbs_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 
 	VIVE_TRACE(vs, "sbs img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 
-	if (vs->out_sinks.left) { // The split into left right will happen downstream
-		xrt_sink_push_frame(vs->out_sinks.left, xf);
+	if (vs->out_sinks.cams[0]) { // The split into left right will happen downstream
+		xrt_sink_push_frame(vs->out_sinks.cams[0], xf);
 	}
 }
 
@@ -178,8 +178,8 @@ vive_source_create(struct xrt_frame_context *xfctx)
 	// Setup sinks
 	vs->sbs_sink.push_frame = vive_source_receive_sbs_frame;
 	vs->imu_sink.push_imu = vive_source_receive_imu_sample;
-	vs->in_sinks.left = &vs->sbs_sink;
-	vs->in_sinks.right = NULL;
+	vs->in_sinks.cam_count = 1;
+	vs->in_sinks.cams[0] = &vs->sbs_sink;
 	vs->in_sinks.imu = &vs->imu_sink;
 
 	vs->timestamps_have_been_zero_until_now = true;
@@ -219,5 +219,6 @@ void
 vive_source_hook_into_sinks(struct vive_source *vs, struct xrt_slam_sinks *sinks)
 {
 	vs->out_sinks = *sinks;
-	sinks->left = vs->in_sinks.left;
+	sinks->cam_count = 1;
+	sinks->cams[0] = vs->in_sinks.cams[0];
 }

@@ -419,15 +419,13 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 		struct xrt_frame_sink *entry_left_sink = NULL;
 		struct xrt_frame_sink *entry_right_sink = NULL;
 
-		u_sink_split_create(xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-		u_sink_split_create(xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
 
-		entry_sinks = (struct xrt_slam_sinks){
-		    .left = entry_left_sink,
-		    .right = entry_right_sink,
-		    .imu = slam_sinks->imu,
-		    .gt = slam_sinks->gt,
-		};
+		entry_sinks = *slam_sinks;
+		entry_sinks.cam_count = 2;
+		entry_sinks.cams[0] = entry_left_sink;
+		entry_sinks.cams[1] = entry_right_sink;
 	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
 	} else if (hand_enabled) {
@@ -595,14 +593,14 @@ rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
 	t->last_frame_time = frame_time;
 	os_mutex_unlock(&t->mutex);
 
-	if (t->slam_sinks.left) {
+	if (t->slam_sinks.cams[0]) {
 		left_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.left, left_frame);
+		xrt_sink_push_frame(t->slam_sinks.cams[0], left_frame);
 	}
 
-	if (t->slam_sinks.right) {
+	if (t->slam_sinks.cams[1]) {
 		right_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.right, right_frame);
+		xrt_sink_push_frame(t->slam_sinks.cams[1], right_frame);
 	}
 }
 

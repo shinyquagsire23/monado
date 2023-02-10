@@ -10,6 +10,7 @@
 #pragma once
 
 #define XRT_TRACKING_NAME_LEN 256
+#define XRT_TRACKING_MAX_SLAM_CAMS 5
 
 #include "xrt/xrt_defines.h"
 
@@ -173,8 +174,8 @@ struct xrt_pose_sink
  */
 struct xrt_slam_sinks
 {
-	struct xrt_frame_sink *left;
-	struct xrt_frame_sink *right;
+	int cam_count;
+	struct xrt_frame_sink *cams[XRT_TRACKING_MAX_SLAM_CAMS];
 	struct xrt_imu_sink *imu;
 	struct xrt_pose_sink *gt; //!< Can receive ground truth poses if available
 };

@@ -638,8 +638,8 @@ handle_frameset(struct rs_source *rs, rs2_frame *frames)
 			xf_left->timestamp = ts;
 			xf_right->timestamp = ts;
 
-			xrt_sink_push_frame(rs->in_sinks.left, xf_left);
-			xrt_sink_push_frame(rs->in_sinks.right, xf_right);
+			xrt_sink_push_frame(rs->in_sinks.cams[0], xf_left);
+			xrt_sink_push_frame(rs->in_sinks.cams[1], xf_right);
 		} else {
 			// This usually happens only once at start and never again
 			RS_WARN(rs, "Realsense device sent left and right frames with different timestamps %ld != %ld",
@@ -648,7 +648,7 @@ handle_frameset(struct rs_source *rs, rs2_frame *frames)
 
 		xrt_frame_reference(&xf_right, NULL);
 	} else {
-		xrt_sink_push_frame(rs->in_sinks.left, xf_left);
+		xrt_sink_push_frame(rs->in_sinks.cams[0], xf_left);
 	}
 
 	xrt_frame_reference(&xf_left, NULL);
@@ -872,11 +872,12 @@ rs_source_stream_start(struct xrt_fs *xfs,
 {
 	struct rs_source *rs = rs_source_from_xfs(xfs);
 	if (xs == NULL && capture_type == XRT_FS_CAPTURE_TYPE_TRACKING) {
-		RS_ASSERT(rs->out_sinks.left != NULL, "No left sink provided");
+		RS_ASSERT(rs->out_sinks.cams[0] != NULL, "No left sink provided");
 		RS_INFO(rs, "Starting RealSense stream in tracking mode");
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
 		RS_INFO(rs, "Starting RealSense stream in calibration mode, will stream only left frames");
-		rs->out_sinks.left = xs;
+		rs->out_sinks.cam_count = 1;
+		rs->out_sinks.cams[0] = xs;
 	} else {
 		RS_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
 		return false;
@@ -915,8 +916,8 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	struct rs_source *rs = container_of(sink, struct rs_source, left_sink);
 	RS_TRACE(rs, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&rs->ui_left_sink, xf);
-	if (rs->out_sinks.left) {
-		xrt_sink_push_frame(rs->out_sinks.left, xf);
+	if (rs->out_sinks.cams[0]) {
+		xrt_sink_push_frame(rs->out_sinks.cams[0], xf);
 	}
 }
 
@@ -926,8 +927,8 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	struct rs_source *rs = container_of(sink, struct rs_source, right_sink);
 	RS_TRACE(rs, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&rs->ui_right_sink, xf);
-	if (rs->out_sinks.right) {
-		xrt_sink_push_frame(rs->out_sinks.right, xf);
+	if (rs->out_sinks.cams[1]) {
+		xrt_sink_push_frame(rs->out_sinks.cams[1], xf);
 	}
 }
 
@@ -1096,8 +1097,9 @@ rs_source_create(struct xrt_frame_context *xfctx, int device_idx)
 	rs->left_sink.push_frame = receive_left_frame;
 	rs->right_sink.push_frame = receive_right_frame;
 	rs->imu_sink.push_imu = receive_imu_sample;
-	rs->in_sinks.left = &rs->left_sink;
-	rs->in_sinks.right = &rs->right_sink;
+	rs->in_sinks.cam_count = 2;
+	rs->in_sinks.cams[0] = &rs->left_sink;
+	rs->in_sinks.cams[1] = &rs->right_sink;
 	rs->in_sinks.imu = &rs->imu_sink;
 
 	// Prepare UI

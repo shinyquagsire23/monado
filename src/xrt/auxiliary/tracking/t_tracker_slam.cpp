@@ -1224,18 +1224,20 @@ extern "C" void
 t_slam_frame_sink_push_left(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 {
 	auto &t = *container_of(sink, TrackerSlam, left_sink);
-	push_frame(t, frame, true);
+	int cam_id = 0;
+	push_frame(t, frame, cam_id);
 	u_sink_debug_push_frame(&t.ui_left_sink, frame);
-	xrt_sink_push_frame(t.euroc_recorder->left, frame);
+	xrt_sink_push_frame(t.euroc_recorder->cams[0], frame);
 }
 
 extern "C" void
 t_slam_frame_sink_push_right(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 {
 	auto &t = *container_of(sink, TrackerSlam, right_sink);
-	push_frame(t, frame, false);
+	int cam_id = 1;
+	push_frame(t, frame, cam_id);
 	u_sink_debug_push_frame(&t.ui_right_sink, frame);
-	xrt_sink_push_frame(t.euroc_recorder->right, frame);
+	xrt_sink_push_frame(t.euroc_recorder->cams[1], frame);
 }
 
 extern "C" void
@@ -1372,8 +1374,9 @@ t_slam_create(struct xrt_frame_context *xfctx,
 	t.imu_sink.push_imu = t_slam_imu_sink_push;
 	t.gt_sink.push_pose = t_slam_gt_sink_push;
 
-	t.sinks.left = &t.left_sink;
-	t.sinks.right = &t.right_sink;
+	t.sinks.cam_count = NUM_CAMS;
+	t.sinks.cams[0] = &t.left_sink;
+	t.sinks.cams[1] = &t.right_sink;
 	t.sinks.imu = &t.imu_sink;
 	t.sinks.gt = &t.gt_sink;
 

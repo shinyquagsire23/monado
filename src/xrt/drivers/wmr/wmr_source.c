@@ -93,8 +93,8 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	xf->timestamp += ws->cam_hw2mono;
 	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
-	if (ws->out_sinks.left && ws->first_imu_received) {
-		xrt_sink_push_frame(ws->out_sinks.left, xf);
+	if (ws->out_sinks.cams[0] && ws->first_imu_received) {
+		xrt_sink_push_frame(ws->out_sinks.cams[0], xf);
 	}
 }
 
@@ -105,8 +105,8 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	xf->timestamp += ws->cam_hw2mono;
 	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
-	if (ws->out_sinks.right && ws->first_imu_received) {
-		xrt_sink_push_frame(ws->out_sinks.right, xf);
+	if (ws->out_sinks.cams[1] && ws->first_imu_received) {
+		xrt_sink_push_frame(ws->out_sinks.cams[1], xf);
 	}
 }
 
@@ -206,7 +206,8 @@ wmr_source_stream_start(struct xrt_fs *xfs,
 		WMR_INFO(ws, "Starting WMR stream in tracking mode");
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
 		WMR_INFO(ws, "Starting WMR stream in calibration mode, will stream only left frames");
-		ws->out_sinks.left = xs;
+		ws->out_sinks.cam_count = 1;
+		ws->out_sinks.cams[0] = xs;
 	} else {
 		WMR_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
 		return false;
@@ -302,10 +303,12 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 	ws->left_sink.push_frame = receive_left_frame;
 	ws->right_sink.push_frame = receive_right_frame;
 	ws->imu_sink.push_imu = receive_imu_sample;
-	ws->in_sinks.left = &ws->left_sink;
-	ws->in_sinks.right = &ws->right_sink;
+	ws->in_sinks.cam_count = 2;
+	ws->in_sinks.cams[0] = &ws->left_sink;
+	ws->in_sinks.cams[1] = &ws->right_sink;
 	ws->in_sinks.imu = &ws->imu_sink;
-	ws->camera = wmr_camera_open(dev_holo, ws->in_sinks.left, ws->in_sinks.right, cfg.n_cameras, ws->log_level);
+	ws->camera =
+	    wmr_camera_open(dev_holo, ws->in_sinks.cams[0], ws->in_sinks.cams[1], cfg.n_cameras, ws->log_level);
 	ws->config = cfg;
 
 	// Setup UI

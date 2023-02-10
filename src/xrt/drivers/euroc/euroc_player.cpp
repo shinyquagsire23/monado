@@ -463,9 +463,9 @@ euroc_player_push_next_frame(struct euroc_player *ep)
 	}
 	ep->img_seq++;
 
-	xrt_sink_push_frame(ep->in_sinks.left, left_xf);
+	xrt_sink_push_frame(ep->in_sinks.cams[0], left_xf);
 	if (stereo) {
-		xrt_sink_push_frame(ep->in_sinks.right, right_xf);
+		xrt_sink_push_frame(ep->in_sinks.cams[1], right_xf);
 	}
 
 	xrt_frame_reference(&left_xf, NULL);
@@ -662,8 +662,8 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	struct euroc_player *ep = container_of(sink, struct euroc_player, left_sink);
 	EUROC_TRACE(ep, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ep->ui_left_sink, xf);
-	if (ep->out_sinks.left) {
-		xrt_sink_push_frame(ep->out_sinks.left, xf);
+	if (ep->out_sinks.cams[0]) {
+		xrt_sink_push_frame(ep->out_sinks.cams[0], xf);
 	}
 }
 
@@ -673,8 +673,8 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	struct euroc_player *ep = container_of(sink, struct euroc_player, right_sink);
 	EUROC_TRACE(ep, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ep->ui_right_sink, xf);
-	if (ep->out_sinks.right) {
-		xrt_sink_push_frame(ep->out_sinks.right, xf);
+	if (ep->out_sinks.cams[1]) {
+		xrt_sink_push_frame(ep->out_sinks.cams[1], xf);
 	}
 }
 
@@ -714,7 +714,7 @@ euroc_player_stream_start(struct xrt_fs *xfs,
 
 	if (xs == NULL && capture_type == XRT_FS_CAPTURE_TYPE_TRACKING) {
 		EUROC_INFO(ep, "Starting Euroc Player in tracking mode");
-		if (ep->out_sinks.left == NULL) {
+		if (ep->out_sinks.cams[0] == NULL) {
 			EUROC_WARN(ep, "No left sink provided, will keep running but tracking is unlikely to work");
 		}
 		if (ep->playback.play_from_start) {
@@ -722,7 +722,7 @@ euroc_player_stream_start(struct xrt_fs *xfs,
 		}
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
 		EUROC_INFO(ep, "Starting Euroc Player in calibration mode, will stream only left frames right away");
-		ep->out_sinks.left = xs;
+		ep->out_sinks.cams[0] = xs;
 		euroc_player_start_btn_cb(ep);
 	} else {
 		EUROC_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
@@ -970,10 +970,10 @@ euroc_player_create(struct xrt_frame_context *xfctx, const char *path, struct eu
 	ep->left_sink.push_frame = receive_left_frame;
 	ep->right_sink.push_frame = receive_right_frame;
 	ep->imu_sink.push_imu = receive_imu_sample;
-	ep->in_sinks.left = &ep->left_sink;
-	ep->in_sinks.right = &ep->right_sink;
+	ep->in_sinks.cam_count = 2;
+	ep->in_sinks.cams[0] = &ep->left_sink;
+	ep->in_sinks.cams[1] = &ep->right_sink;
 	ep->in_sinks.imu = &ep->imu_sink;
-	ep->out_sinks = {0, 0, 0, 0};
 
 	struct xrt_fs *xfs = &ep->base;
 	xfs->enumerate_modes = euroc_player_enumerate_modes;

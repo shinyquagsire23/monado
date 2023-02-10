@@ -416,20 +416,20 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	struct xrt_frame_sink *entry_sbs_sink = NULL;
 
 	if (slam_enabled && hand_enabled) {
-		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
+		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else if (slam_enabled) {
-		entry_left_sink = slam_sinks->left;
-		entry_right_sink = slam_sinks->right;
+		entry_left_sink = slam_sinks->cams[0];
+		entry_right_sink = slam_sinks->cams[1];
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else if (hand_enabled) {
-		entry_left_sink = hand_sinks->left;
-		entry_right_sink = hand_sinks->right;
+		entry_left_sink = hand_sinks->cams[0];
+		entry_right_sink = hand_sinks->cams[1];
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
@@ -441,8 +441,8 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	u_sink_simple_queue_create(&lhs->devices->xfctx, entry_sbs_sink, &entry_sbs_sink);
 
 	struct xrt_slam_sinks entry_sinks = {
-	    .left = entry_sbs_sink,
-	    .right = NULL, // v4l2 streams a single SBS frame so we ignore the right sink
+	    .cam_count = 1,
+	    .cams = {entry_sbs_sink},
 	    .imu = slam_enabled ? slam_sinks->imu : NULL,
 	    .gt = slam_enabled ? slam_sinks->gt : NULL,
 	};
@@ -479,7 +479,7 @@ stream_data_sources(struct lighthouse_system *lhs, struct xrt_prober *xp, struct
 		vive_source_hook_into_sinks(vs, &sinks);
 	}
 
-	success = xrt_fs_stream_start(lhs->xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
+	success = xrt_fs_stream_start(lhs->xfs, sinks.cams[0], XRT_FS_CAPTURE_TYPE_TRACKING, mode);
 
 	if (!success) {
 		LH_ERROR("Unable to start data streaming");

@@ -274,7 +274,7 @@ euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bo
 	xrt_frame *copy = nullptr;
 	u_frame_clone(src_frame, &copy);
 
-	xrt_sink_push_frame(is_left ? er->writer_queues.left : er->writer_queues.right, copy);
+	xrt_sink_push_frame(is_left ? er->writer_queues.cams[0] : er->writer_queues.cams[1], copy);
 
 	xrt_frame_reference(&copy, NULL);
 }
@@ -357,8 +357,9 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 	// First, make the public queues that will clone frames in memory so that
 	// original frames can be released as soon as possible. Not doing this could
 	// result in frame queues from the user being filled up.
-	u_sink_queue_create(xfctx, 0, &er->cloner_left_sink, &er->cloner_queues.left);
-	u_sink_queue_create(xfctx, 0, &er->cloner_right_sink, &er->cloner_queues.right);
+	er->cloner_queues.cam_count = 2;
+	u_sink_queue_create(xfctx, 0, &er->cloner_left_sink, &er->cloner_queues.cams[0]);
+	u_sink_queue_create(xfctx, 0, &er->cloner_right_sink, &er->cloner_queues.cams[1]);
 	er->cloner_queues.imu = &er->cloner_imu_sink;
 	er->cloner_queues.gt = &er->cloner_gt_sink;
 
@@ -369,8 +370,9 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 	er->cloner_right_sink.push_frame = euroc_recorder_receive_right;
 
 	// Then, make a queue to save frame sinks to disk in a separate thread
-	u_sink_queue_create(xfctx, 0, &er->writer_left_sink, &er->writer_queues.left);
-	u_sink_queue_create(xfctx, 0, &er->writer_right_sink, &er->writer_queues.right);
+	er->writer_queues.cam_count = 2;
+	u_sink_queue_create(xfctx, 0, &er->writer_left_sink, &er->writer_queues.cams[0]);
+	u_sink_queue_create(xfctx, 0, &er->writer_right_sink, &er->writer_queues.cams[1]);
 	er->writer_queues.imu = nullptr;
 	er->writer_queues.gt = nullptr;
 
