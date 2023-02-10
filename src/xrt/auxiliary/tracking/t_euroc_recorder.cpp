@@ -35,6 +35,7 @@ using std::mutex;
 using std::ofstream;
 using std::queue;
 using std::string;
+using std::to_string;
 using std::vector;
 using std::filesystem::create_directories;
 
@@ -42,6 +43,7 @@ struct euroc_recorder
 {
 	struct xrt_frame_node node;
 	string path; //!< Destination path for the dataset
+	int cam_count = -1;
 
 	bool recording;                    //!< Whether samples are being recorded
 	bool files_created;                //!< Whether the dataset directory structure has been created
@@ -53,15 +55,13 @@ struct euroc_recorder
 	struct xrt_slam_sinks cloner_queues; //!< Queue sinks that write into cloner sinks
 	struct xrt_imu_sink cloner_imu_sink;
 	struct xrt_pose_sink cloner_gt_sink;
-	struct xrt_frame_sink cloner_left_sink;
-	struct xrt_frame_sink cloner_right_sink;
+	struct xrt_frame_sink cloner_sinks[XRT_TRACKING_MAX_SLAM_CAMS];
 
 	// Writer sinks: write copied frame to disk
 	struct xrt_slam_sinks writer_queues; //!< Queue sinks that write into writer sinks
 	struct xrt_imu_sink writer_imu_sink;
 	struct xrt_pose_sink writer_gt_sink;
-	struct xrt_frame_sink writer_left_sink;
-	struct xrt_frame_sink writer_right_sink;
+	struct xrt_frame_sink writer_sinks[XRT_TRACKING_MAX_SLAM_CAMS];
 
 	queue<xrt_imu_sample> imu_queue{}; //!< IMU pushes get saved here and are delayed until left_frame pushes
 	mutex imu_queue_lock{};            //!< Lock for imu_queue
@@ -71,10 +71,9 @@ struct euroc_recorder
 
 	// CSV file handles, ofstream implementation is already buffered.
 	// Using pointers because of `container_of`
-	ofstream *imu_csv;
-	ofstream *gt_csv;
-	ofstream *left_cam_csv;
-	ofstream *right_cam_csv;
+	ofstream *imu_csv = nullptr;
+	ofstream *gt_csv = nullptr;
+	ofstream *cams_csv[XRT_TRACKING_MAX_SLAM_CAMS] = {};
 };
 
 
@@ -107,13 +106,12 @@ euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 	*er->gt_csv << "#timestamp [ns],p_RS_R_x [m],p_RS_R_y [m],p_RS_R_z [m],"
 	               "q_RS_w [],q_RS_x [],q_RS_y [],q_RS_z []" CSV_EOL;
 
-	create_directories(path + "/mav0/cam0/data");
-	er->left_cam_csv = new ofstream{path + "/mav0/cam0/data.csv"};
-	*er->left_cam_csv << "#timestamp [ns],filename" CSV_EOL;
-
-	create_directories(path + "/mav0/cam1/data");
-	er->right_cam_csv = new ofstream{path + "/mav0/cam1/data.csv"};
-	*er->right_cam_csv << "#timestamp [ns],filename" CSV_EOL;
+	for (int i = 0; i < er->cam_count; i++) {
+		string data_path = path + "/mav0/cam" + to_string(i) + "/data";
+		create_directories(data_path);
+		er->cams_csv[i] = new ofstream{data_path + ".csv"};
+		*er->cams_csv[i] << "#timestamp [ns],filename" CSV_EOL;
+	}
 }
 
 static void
@@ -156,8 +154,9 @@ euroc_recorder_flush(struct euroc_recorder *er)
 	// Flush csv streams. Not necessary, doing it only to increase flush frequency
 	er->imu_csv->flush();
 	er->gt_csv->flush();
-	er->left_cam_csv->flush();
-	er->right_cam_csv->flush();
+	for (int i = 0; i < er->cam_count; i++) {
+		er->cams_csv[i]->flush();
+	}
 }
 
 extern "C" void
@@ -189,9 +188,9 @@ euroc_recorder_save_gt(xrt_pose_sink *sink, struct xrt_pose_sample *sample)
 }
 
 static void
-euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_left)
+euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, int cam_index)
 {
-	string cam_name = is_left ? "cam0" : "cam1";
+	string cam_name = "cam" + to_string(cam_index);
 	uint64_t ts = frame->timestamp;
 
 	assert(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8); // Only formats supported
@@ -202,24 +201,33 @@ euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_l
 	cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data, frame->stride};
 	cv::imwrite(img_path, img);
 
-	ofstream *cam_csv = is_left ? er->left_cam_csv : er->right_cam_csv;
-	*cam_csv << ts << "," << filename << CSV_EOL;
+	*er->cams_csv[cam_index] << ts << "," << filename << CSV_EOL;
 }
 
-extern "C" void
-euroc_recorder_save_left(struct xrt_frame_sink *sink, struct xrt_frame *frame)
-{
-	euroc_recorder *er = container_of(sink, euroc_recorder, writer_left_sink);
-	euroc_recorder_flush(er);
-	euroc_recorder_save_frame(er, frame, true);
-}
+#define DEFINE_SAVE_CAM(cam_id)                                                                                        \
+	extern "C" void euroc_recorder_save_cam##cam_id(struct xrt_frame_sink *sink, struct xrt_frame *frame)          \
+	{                                                                                                              \
+		euroc_recorder *er = container_of(sink, euroc_recorder, writer_sinks[cam_id]);                         \
+		euroc_recorder_flush(er);                                                                              \
+		euroc_recorder_save_frame(er, frame, cam_id);                                                          \
+	}
 
-extern "C" void
-euroc_recorder_save_right(struct xrt_frame_sink *sink, struct xrt_frame *frame)
-{
-	euroc_recorder *er = container_of(sink, euroc_recorder, writer_right_sink);
-	euroc_recorder_save_frame(er, frame, false);
-}
+DEFINE_SAVE_CAM(0)
+DEFINE_SAVE_CAM(1)
+DEFINE_SAVE_CAM(2)
+DEFINE_SAVE_CAM(3)
+DEFINE_SAVE_CAM(4)
+
+//! Be sure to define the same number of defined functions as
+//! XRT_TRACKING_MAX_SLAM_CAMS and to add them to to euroc_recorder_save_cam
+static void (*euroc_recorder_save_cam[XRT_TRACKING_MAX_SLAM_CAMS])(struct xrt_frame_sink *sink,
+                                                                   struct xrt_frame *frame) = {
+    euroc_recorder_save_cam0, //
+    euroc_recorder_save_cam1, //
+    euroc_recorder_save_cam2, //
+    euroc_recorder_save_cam3, //
+    euroc_recorder_save_cam4, //
+};
 
 
 /*
@@ -264,7 +272,7 @@ euroc_recorder_receive_gt(xrt_pose_sink *sink, struct xrt_pose_sample *sample)
 
 
 static void
-euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bool is_left)
+euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, int cam_index)
 {
 	if (!er->recording) {
 		return;
@@ -274,24 +282,34 @@ euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bo
 	xrt_frame *copy = nullptr;
 	u_frame_clone(src_frame, &copy);
 
-	xrt_sink_push_frame(is_left ? er->writer_queues.cams[0] : er->writer_queues.cams[1], copy);
+	xrt_sink_push_frame(er->writer_queues.cams[cam_index], copy);
 
 	xrt_frame_reference(&copy, NULL);
 }
 
-extern "C" void
-euroc_recorder_receive_left(struct xrt_frame_sink *sink, struct xrt_frame *frame)
-{
-	euroc_recorder *er = container_of(sink, euroc_recorder, cloner_left_sink);
-	euroc_recorder_receive_frame(er, frame, true);
-}
+#define DEFINE_RECEIVE_CAM(cam_id)                                                                                     \
+	extern "C" void euroc_recorder_receive_cam##cam_id(struct xrt_frame_sink *sink, struct xrt_frame *frame)       \
+	{                                                                                                              \
+		euroc_recorder *er = container_of(sink, euroc_recorder, cloner_sinks[cam_id]);                         \
+		euroc_recorder_receive_frame(er, frame, cam_id);                                                       \
+	}
 
-extern "C" void
-euroc_recorder_receive_right(struct xrt_frame_sink *sink, struct xrt_frame *frame)
-{
-	euroc_recorder *er = container_of(sink, euroc_recorder, cloner_right_sink);
-	euroc_recorder_receive_frame(er, frame, false);
-}
+DEFINE_RECEIVE_CAM(0)
+DEFINE_RECEIVE_CAM(1)
+DEFINE_RECEIVE_CAM(2)
+DEFINE_RECEIVE_CAM(3)
+DEFINE_RECEIVE_CAM(4)
+
+//! Be sure to define the same number of defined functions as
+//! XRT_TRACKING_MAX_SLAM_CAMS and to add them to to euroc_recorder_receive_cam
+static void (*euroc_recorder_receive_cam[XRT_TRACKING_MAX_SLAM_CAMS])(struct xrt_frame_sink *,
+                                                                      struct xrt_frame *) = {
+    euroc_recorder_receive_cam0, //
+    euroc_recorder_receive_cam1, //
+    euroc_recorder_receive_cam2, //
+    euroc_recorder_receive_cam3, //
+    euroc_recorder_receive_cam4, //
+};
 
 
 /*
@@ -310,8 +328,9 @@ euroc_recorder_node_destroy(struct xrt_frame_node *node)
 	struct euroc_recorder *er = container_of(node, struct euroc_recorder, node);
 	delete er->imu_csv;
 	delete er->gt_csv;
-	delete er->left_cam_csv;
-	delete er->right_cam_csv;
+	for (int i = 0; i < er->cam_count; i++) {
+		delete er->cams_csv[i];
+	}
 	delete er;
 }
 
@@ -323,11 +342,12 @@ euroc_recorder_node_destroy(struct xrt_frame_node *node)
  */
 
 extern "C" xrt_slam_sinks *
-euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, bool record_from_start)
+euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, int cam_count, bool record_from_start)
 {
 	struct euroc_recorder *er = new euroc_recorder{};
 
 	er->recording = record_from_start;
+	er->cam_count = cam_count;
 
 	struct xrt_frame_node *xfn = &er->node;
 	xfn->break_apart = euroc_recorder_node_break_apart;
@@ -341,7 +361,7 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 		time_t seconds = os_realtime_get_ns() / U_1_000_000_000;
 		constexpr size_t size = sizeof("YYYYMMDDHHmmss");
 		char datetime[size] = {0};
-		strftime(datetime, size, "%Y%m%d%H%M%S", localtime(&seconds));
+		(void)strftime(datetime, size, "%Y%m%d%H%M%S", localtime(&seconds));
 		string default_path = string{"euroc_recording_"} + datetime;
 		er->path = default_path;
 	}
@@ -354,33 +374,36 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 
 	// Setup sink pipeline
 
-	// First, make the public queues that will clone frames in memory so that
-	// original frames can be released as soon as possible. Not doing this could
-	// result in frame queues from the user being filled up.
-	er->cloner_queues.cam_count = 2;
-	u_sink_queue_create(xfctx, 0, &er->cloner_left_sink, &er->cloner_queues.cams[0]);
-	u_sink_queue_create(xfctx, 0, &er->cloner_right_sink, &er->cloner_queues.cams[1]);
+	// We expose a "cloner" sink that will clone frames in memory so that original
+	// frames can be released as soon as possible. Not doing this could result in
+	// frame queues from the user being filled up. After that we write to disk. We
+	// also put queues between these to support sensors streaming on different
+	// threads.
+	// cloner_queue -> cloner_sink (clone ) -> writer_queue -> writer_sink (write to disk)
+
+	er->cloner_queues.cam_count = er->cam_count;
+	er->writer_queues.cam_count = er->cam_count;
+	for (int i = 0; i < er->cam_count; i++) {
+
+		// If any of these asserts failed see docs on euroc_recorder_receive/save_cam
+		assert(euroc_recorder_receive_cam[ARRAY_SIZE(euroc_recorder_receive_cam) - 1] != nullptr);
+		assert(euroc_recorder_save_cam[ARRAY_SIZE(euroc_recorder_save_cam) - 1] != nullptr);
+
+		u_sink_queue_create(xfctx, 0, &er->cloner_sinks[i], &er->cloner_queues.cams[i]);
+		er->cloner_sinks[i].push_frame = euroc_recorder_receive_cam[i];
+		u_sink_queue_create(xfctx, 0, &er->writer_sinks[i], &er->writer_queues.cams[i]);
+		er->writer_sinks[i].push_frame = euroc_recorder_save_cam[i];
+	}
+
 	er->cloner_queues.imu = &er->cloner_imu_sink;
-	er->cloner_queues.gt = &er->cloner_gt_sink;
-
-	// Clone samples into heap and release original samples right after
 	er->cloner_imu_sink.push_imu = euroc_recorder_receive_imu;
-	er->cloner_gt_sink.push_pose = euroc_recorder_receive_gt;
-	er->cloner_left_sink.push_frame = euroc_recorder_receive_left;
-	er->cloner_right_sink.push_frame = euroc_recorder_receive_right;
-
-	// Then, make a queue to save frame sinks to disk in a separate thread
-	er->writer_queues.cam_count = 2;
-	u_sink_queue_create(xfctx, 0, &er->writer_left_sink, &er->writer_queues.cams[0]);
-	u_sink_queue_create(xfctx, 0, &er->writer_right_sink, &er->writer_queues.cams[1]);
-	er->writer_queues.imu = nullptr;
-	er->writer_queues.gt = nullptr;
-
-	// Write cloned samples to disk with these
+	er->writer_queues.imu = nullptr; // We use a std::queue instead
 	er->writer_imu_sink.push_imu = euroc_recorder_save_imu;
+
+	er->cloner_queues.gt = &er->cloner_gt_sink;
+	er->cloner_gt_sink.push_pose = euroc_recorder_receive_gt;
+	er->writer_queues.gt = nullptr; // We use a std::queue instead
 	er->writer_gt_sink.push_pose = euroc_recorder_save_gt;
-	er->writer_left_sink.push_frame = euroc_recorder_save_left;
-	er->writer_right_sink.push_frame = euroc_recorder_save_right;
 
 	xrt_slam_sinks *public_sinks = &er->cloner_queues;
 	return public_sinks;
@@ -392,15 +415,18 @@ euroc_recorder_btn_cb(void *ptr)
 	euroc_recorder *er = (euroc_recorder *)ptr;
 	euroc_recorder_try_mkfiles(er);
 	er->recording = !er->recording;
-	snprintf(er->recording_btn.label, sizeof(er->recording_btn.label),
-	         er->recording ? "Stop recording" : "Record EuRoC dataset");
+	(void)snprintf(er->recording_btn.label, sizeof(er->recording_btn.label),
+	               er->recording ? "Stop recording" : "Record EuRoC dataset");
 }
 
 extern "C" void
-euroc_recorder_add_ui(struct xrt_slam_sinks *public_sinks, void *root)
+euroc_recorder_add_ui(struct xrt_slam_sinks *public_sinks, void *root, const char *prefix)
 {
 	euroc_recorder *er = container_of(public_sinks, euroc_recorder, cloner_queues);
 	er->recording_btn.cb = euroc_recorder_btn_cb;
 	er->recording_btn.ptr = er;
-	u_var_add_button(root, &er->recording_btn, er->recording ? "Stop recording" : "Record EuRoC dataset");
+
+	char tmp[256];
+	(void)snprintf(tmp, sizeof(tmp), "%s%s", prefix, er->recording ? "Stop recording" : "Record EuRoC dataset");
+	u_var_add_button(root, &er->recording_btn, tmp);
 }

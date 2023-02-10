@@ -968,7 +968,7 @@ setup_ui(TrackerSlam &t)
 	u_var_add_log_level(&t, &t.log_level, "Log Level");
 	u_var_add_bool(&t, &t.submit, "Submit data to SLAM");
 	u_var_add_bool(&t, &t.gt.override_tracking, "Track with ground truth (if available)");
-	euroc_recorder_add_ui(t.euroc_recorder, &t);
+	euroc_recorder_add_ui(t.euroc_recorder, &t, "");
 
 	u_var_add_gui_header(&t, NULL, "Trajectory Filter");
 	u_var_add_bool(&t, &t.filter.use_moving_average_filter, "Enable moving average filter");
@@ -1398,7 +1398,7 @@ t_slam_create(struct xrt_frame_context *xfctx,
 
 	xrt_frame_context_add(xfctx, &t.node);
 
-	t.euroc_recorder = euroc_recorder_create(xfctx, NULL, false);
+	t.euroc_recorder = euroc_recorder_create(xfctx, NULL, t.cam_count, false);
 
 	t.last_imu_ts = INT64_MIN;
 	t.last_cam_ts = vector<timepoint_ns>(t.cam_count, INT64_MIN);
