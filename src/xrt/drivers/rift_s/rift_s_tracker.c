@@ -211,7 +211,7 @@ rift_s_create_slam_tracker(struct rift_s_tracker *t, struct xrt_frame_context *x
 	t_slam_fill_default_config(&config);
 
 	/* No need to refcount these parameters */
-	config.stereo_calib = t->stereo_calib;
+	config.cam_count = 2;
 	config.imu_calib = &t->slam_imu_calib;
 	config.extra_calib = &t->slam_extra_calib;
 

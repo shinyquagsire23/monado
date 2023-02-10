@@ -1462,7 +1462,7 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 #ifdef XRT_FEATURE_SLAM
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
-	config.stereo_calib = stereo_calib; // No need to do refcount here
+	config.cam_count = 2;
 	config.imu_calib = imu_calib;
 	config.extra_calib = extra_calib;
 	if (debug_get_option_slam_submit_from_start() == NULL) {

@@ -255,7 +255,10 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 		assert(fact->xfs->source_id == 0xECD0FEED && "xfs is not Euroc, unsynced open_video_device?");
 
 #ifdef XRT_FEATURE_SLAM
-		int ret = t_slam_create(&fact->xfctx, NULL, &fact->xts, &sinks);
+		struct t_slam_tracker_config st_config;
+		t_slam_fill_default_config(&st_config);
+
+		int ret = t_slam_create(&fact->xfctx, &st_config, &fact->xts, &sinks);
 		if (ret != 0) {
 			U_LOG_W("Unable to initialize SLAM tracking, the Euroc driver will not be tracked");
 		}

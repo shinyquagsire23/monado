@@ -162,6 +162,7 @@ valve_index_slam_track(struct lighthouse_system *lhs,
 
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
+	config.cam_count = 2;
 	config.stereo_calib = stereo_calib; // Won't hold stereo_calib so no refcount
 	config.imu_calib = imu_calib;
 	config.extra_calib = extra_calib;
