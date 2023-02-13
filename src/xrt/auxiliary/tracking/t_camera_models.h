@@ -464,7 +464,7 @@ t_camera_model_params_from_t_camera_calibration(const struct t_camera_calibratio
 		out_params->fisheye.k4 = (float)cc->kb4.k4;
 	} break;
 	case T_DISTORTION_OPENCV_RADTAN_14:
-	case T_DISTORTION_OPENCV_RADTAN_5: break;
+	case T_DISTORTION_OPENCV_RADTAN_5:
 	case T_DISTORTION_OPENCV_RADTAN_8:
 	case T_DISTORTION_WMR: interpret_as_rt8(cc, out_params); break;
 	default:
