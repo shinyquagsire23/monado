@@ -417,7 +417,7 @@ dispatch_and_process_hand_detections(struct HandTracking *hgt)
 		float confidence_sum = (infos[0].outputs[hand_idx].hand_detection_confidence +
 		                        infos[1].outputs[hand_idx].hand_detection_confidence) /
 		                       float(num_views);
-		if (confidence_sum < 0.9) {
+		if (confidence_sum < 0.92) {
 			continue;
 		}
 
