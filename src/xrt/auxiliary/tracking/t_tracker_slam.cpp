@@ -821,10 +821,9 @@ flush_poses(TrackerSlam &t)
 		gt_ui_push(t, nts, rel.pose);
 		t.slam_traj_writer->push(nts, rel.pose);
 
-		if (t.timing.ext_enabled) {
-			auto tss = timing_ui_push(t, np);
-			t.slam_times_writer->push(tss);
-		}
+		// Push even if timing extension is disabled
+		auto tss = timing_ui_push(t, np);
+		t.slam_times_writer->push(tss);
 
 		if (t.features.ext_enabled) {
 			vector feat_count = features_ui_push(t, np);
