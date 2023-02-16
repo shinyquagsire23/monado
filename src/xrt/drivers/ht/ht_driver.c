@@ -24,6 +24,7 @@
 #include "util/u_config_json.h"
 #include "util/u_debug.h"
 #include "util/u_sink.h"
+#include "util/u_file.h"
 
 #include "tracking/t_hand_tracking.h"
 
@@ -249,7 +250,11 @@ ht_device_create(struct xrt_frame_context *xfctx,
 
 	struct t_hand_tracking_sync *sync = NULL;
 
-	sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info);
+	char path[1024] = {0};
+
+	u_file_get_hand_tracking_models_dir(path, ARRAY_SIZE(path));
+
+	sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info, path);
 
 	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
 

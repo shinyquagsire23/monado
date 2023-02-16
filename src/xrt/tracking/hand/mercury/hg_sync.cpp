@@ -108,45 +108,6 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration &calibratio
 	return true;
 }
 
-static void
-getModelsFolder(struct HandTracking *hgt)
-{
-// Please bikeshed me on this! I don't know where is the best place to put this stuff!
-#if 0
-	char exec_location[1024] = {};
-	readlink("/proc/self/exe", exec_location, 1024);
-
-	HG_DEBUG(hgt, "Exec at %s\n", exec_location);
-
-	int end = 0;
-	while (exec_location[end] != '\0') {
-		HG_DEBUG(hgt, "%d", end);
-		end++;
-	}
-
-	while (exec_location[end] != '/' && end != 0) {
-		HG_DEBUG(hgt, "%d %c", end, exec_location[end]);
-		exec_location[end] = '\0';
-		end--;
-	}
-
-	strcat(exec_location, "../share/monado/hand-tracking-models/");
-	strcpy(hgt->startup_config.model_slug, exec_location);
-#else
-	const char *xdg_data_home = getenv("XDG_DATA_HOME");
-	const char *home = getenv("HOME");
-	if (xdg_data_home != NULL) {
-		strcpy(hgt->models_folder, xdg_data_home);
-		strcat(hgt->models_folder, "/monado/hand-tracking-models/");
-	} else if (home != NULL) {
-		strcpy(hgt->models_folder, home);
-		strcat(hgt->models_folder, "/.local/share/monado/hand-tracking-models/");
-	} else {
-		assert(false);
-	}
-#endif
-}
-
 static inline bool
 check_outside_view(struct HandTracking *hgt, struct t_camera_extra_info_one_view boundary, xrt_vec2 &keypoint)
 {
@@ -1092,7 +1053,8 @@ using namespace xrt::tracking::hand::mercury;
 
 extern "C" t_hand_tracking_sync *
 t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
-                                    struct t_camera_extra_info extra_camera_info)
+                                    struct t_camera_extra_info extra_camera_info,
+                                    const char *models_folder)
 {
 	XRT_TRACE_MARKER();
 
@@ -1110,7 +1072,7 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	// We have to reference it, getCalibration points at it.
 	t_stereo_camera_calibration_reference(&hgt->calib, calib);
 	getCalibration(hgt, *calib);
-	getModelsFolder(hgt);
+	strncpy(hgt->models_folder, models_folder, ARRAY_SIZE(hgt->models_folder));
 
 
 	hgt->views[0].hgt = hgt;
