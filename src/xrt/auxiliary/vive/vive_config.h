@@ -25,6 +25,10 @@
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
@@ -226,3 +230,7 @@ vive_get_imu_calibration(struct vive_config *d);
 
 struct t_slam_calib_extras
 vive_get_extra_calibration(struct vive_config *d);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
