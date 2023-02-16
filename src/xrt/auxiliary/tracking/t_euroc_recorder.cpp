@@ -13,6 +13,7 @@
 #include "util/u_frame.h"
 #include "util/u_sink.h"
 #include "util/u_var.h"
+#include "util/u_debug.h"
 
 #include <cassert>
 #include <ctime>
@@ -24,6 +25,8 @@
 #include <iomanip>
 
 #include <opencv2/imgcodecs.hpp>
+
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_recorder_use_jpg, "EUROC_RECORDER_USE_JPG", false);
 
 //! @todo: Now that IMU sinks support groundtruth, we could save it here as well.
 
@@ -43,6 +46,8 @@ struct euroc_recorder
 	bool recording;                    //!< Whether samples are being recorded
 	bool files_created;                //!< Whether the dataset directory structure has been created
 	struct u_var_button recording_btn; //!< UI button to start/stop `recording`
+
+	bool use_jpg; //! Whether or not we should save images as .jpg files
 
 	// Cloner sinks: copy frame to heap for quick release of the original
 	struct xrt_slam_sinks cloner_queues; //!< Queue sinks that write into cloner sinks
@@ -146,12 +151,14 @@ euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, bool is_l
 
 	assert(frame->format == XRT_FORMAT_L8 || frame->format == XRT_FORMAT_R8G8B8); // Only formats supported
 	auto img_type = frame->format == XRT_FORMAT_L8 ? CV_8UC1 : CV_8UC3;
-	string img_path = er->path + "/mav0/" + cam_name + "/data/" + std::to_string(ts) + ".png";
+	string file_extension = er->use_jpg ? ".jpg" : ".png";
+	string filename = std::to_string(ts) + file_extension;
+	string img_path = er->path + "/mav0/" + cam_name + "/data/" + filename;
 	cv::Mat img{(int)frame->height, (int)frame->width, img_type, frame->data, frame->stride};
 	cv::imwrite(img_path, img);
 
 	ofstream *cam_csv = is_left ? er->left_cam_csv : er->right_cam_csv;
-	*cam_csv << ts << "," << ts << ".png" CSV_EOL;
+	*cam_csv << ts << "," << filename << CSV_EOL;
 }
 
 extern "C" void
@@ -280,6 +287,8 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 	if (record_from_start) {
 		euroc_recorder_try_mkfiles(er);
 	}
+
+	er->use_jpg = debug_get_bool_option_euroc_recorder_use_jpg();
 
 	// Setup sink pipeline
 
