@@ -29,6 +29,9 @@ FILE *
 u_file_open_file_in_config_dir(const char *filename, const char *mode);
 
 ssize_t
+u_file_get_hand_tracking_models_dir(char *out_path, size_t out_path_size);
+
+ssize_t
 u_file_get_runtime_dir(char *out_path, size_t out_path_size);
 
 char *

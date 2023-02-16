@@ -107,6 +107,21 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	// Do not report error.
 	return fopen(file_str, mode);
 }
+
+ssize_t
+u_file_get_hand_tracking_models_dir(char *out_path, size_t out_path_size)
+{
+	const char *xdg_data_home = getenv("XDG_DATA_HOME");
+	const char *home = getenv("HOME");
+	if (xdg_data_home != NULL) {
+		return snprintf(out_path, out_path_size, "%s/monado/hand-tracking-models/", xdg_data_home);
+	} else if (home != NULL) {
+		return snprintf(out_path, out_path_size, "%s/.local/share/monado/hand-tracking-models/", home);
+	} else {
+		return -1;
+	}
+}
+
 #endif /* XRT_OS_LINUX */
 
 ssize_t
