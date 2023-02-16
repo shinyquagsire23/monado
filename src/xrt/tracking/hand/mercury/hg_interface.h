@@ -17,7 +17,7 @@ extern "C" {
 #endif
 
 /*!
- * Create Mercury hand tracking pipeline.
+ * Create a Mercury hand tracking pipeline.
  *
  * @ingroup aux_tracking
  */
