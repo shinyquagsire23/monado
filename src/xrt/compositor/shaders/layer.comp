@@ -249,9 +249,10 @@ vec4 do_layers(vec2 view_uv, uint view_index)
 				// Unpremultipled blend factor of src.a.
 				accum.rgb = mix(accum.rgb, rgba.rgb, rgba.a);
 			} else {
-				// Premultiplied bland foctor of 1.
+				// Premultiplied blend factor of 1.
 				accum.rgb = (accum.rgb * (1 - rgba.a)) + rgba.rgb;
 			}
+			accum.a = rgba.a + accum.a * (1.0 - rgba.a);
 		}
 	}
 	return accum;
@@ -276,7 +277,7 @@ void main()
 
 	if (do_color_correction) {
 		// Do colour correction here since there are no automatic conversion in hardware available.
-		colour = vec4(from_linear_to_srgb(colour.rgb), 1);
+		colour.rgb = from_linear_to_srgb(colour.rgb);
 	}
 
 	imageStore(target, ivec2(offset.x + ix, offset.y + iy), colour);
