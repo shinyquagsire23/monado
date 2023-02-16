@@ -234,11 +234,10 @@ refine_center_of_distribution(struct HandTracking *hgt, //
 		*out_refined_y = coarse_y;
 		HG_DEBUG(hgt, "Failed! %d %d %d %d %d", coarse_x, coarse_y, w, h, max_kern_width);
 		return false;
-	} else {
-		*out_refined_x = sum_of_values_times_locations_x / sum_of_values;
-		*out_refined_y = sum_of_values_times_locations_y / sum_of_values;
-		return true;
 	}
+	*out_refined_x = sum_of_values_times_locations_x / sum_of_values;
+	*out_refined_y = sum_of_values_times_locations_y / sum_of_values;
+	return true;
 }
 
 static bool
