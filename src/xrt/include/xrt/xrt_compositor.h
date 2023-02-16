@@ -411,7 +411,7 @@ struct xrt_swapchain
 	uint32_t image_count;
 
 	/*!
-	 * Must have called release_image before calling this function.
+	 * @ref dec_image_use must have been called as often as @ref inc_image_use.
 	 */
 	void (*destroy)(struct xrt_swapchain *xsc);
 
@@ -430,6 +430,18 @@ struct xrt_swapchain
 	 * Call @ref xrt_swapchain_wait_image before writing to the image index output from this function.
 	 */
 	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *out_index);
+
+	/*!
+	 * @brief Increments the use counter of a swapchain image.
+	 */
+	xrt_result_t (*inc_image_use)(struct xrt_swapchain *xsc, uint32_t index);
+
+	/*!
+	 * @brief Decrements the use counter of a swapchain image.
+	 *
+	 * @ref wait_image will return once the image use counter is 0.
+	 */
+	xrt_result_t (*dec_image_use)(struct xrt_swapchain *xsc, uint32_t index);
 
 	/*!
 	 * Wait until image @p index is available for exclusive use, or until @p timeout_ns expires.
@@ -502,6 +514,32 @@ static inline xrt_result_t
 xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 {
 	return xsc->acquire_image(xsc, out_index);
+}
+
+/*!
+ * @copydoc xrt_swapchain::inc_image_use
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_inc_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	return xsc->inc_image_use(xsc, index);
+}
+
+/*!
+ * @copydoc xrt_swapchain::dec_image_use
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_dec_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	return xsc->dec_image_use(xsc, index);
 }
 
 /*!
