@@ -816,6 +816,8 @@ flush_poses(TrackerSlam &t)
 
 		t.slam_rels.push(rel, nts);
 
+		xrt_pose_sample sample{nts, rel.pose};
+		xrt_sink_push_pose(t.euroc_recorder->gt, &sample);
 		gt_ui_push(t, nts, rel.pose);
 		t.slam_traj_writer->push(nts, rel.pose);
 
@@ -1156,16 +1158,16 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 
 //! Receive and register ground truth to use for trajectory error metrics.
 extern "C" void
-t_slam_gt_sink_push(struct xrt_pose_sink *sink, timepoint_ns ts, struct xrt_pose *pose)
+t_slam_gt_sink_push(struct xrt_pose_sink *sink, xrt_pose_sample *sample)
 {
 	auto &t = *container_of(sink, TrackerSlam, gt_sink);
 
 	if (t.gt.trajectory->empty()) {
-		t.gt.origin = *pose;
+		t.gt.origin = sample->pose;
 		gt_ui_setup(t);
 	}
 
-	t.gt.trajectory->insert_or_assign(ts, *pose);
+	t.gt.trajectory->insert_or_assign(sample->timestamp_ns, sample->pose);
 }
 
 //! Receive and send IMU samples to the external SLAM system

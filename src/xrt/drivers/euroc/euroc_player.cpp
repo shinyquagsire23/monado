@@ -59,11 +59,10 @@ using std::string;
 using std::vector;
 
 using img_sample = pair<timepoint_ns, string>;
-using gt_entry = pair<timepoint_ns, xrt_pose>;
 
 using imu_samples = vector<xrt_imu_sample>;
 using img_samples = vector<img_sample>;
-using gt_trajectory = vector<gt_entry>;
+using gt_trajectory = vector<xrt_pose_sample>;
 
 enum euroc_player_ui_state
 {
@@ -227,7 +226,7 @@ euroc_player_preload_gt_data(const string &dataset_path,
 		}
 
 		xrt_pose pose = {{v[4], v[5], v[6], v[3]}, {v[0], v[1], v[2]}};
-		trajectory->emplace_back(timestamp, pose);
+		trajectory->push_back({timestamp, pose});
 	}
 	return true;
 }
@@ -497,9 +496,9 @@ euroc_player_push_all_gt(struct euroc_player *ep)
 		return;
 	}
 
-	for (auto [ts, pose] : *ep->gt) {
-		ts = euroc_player_mapped_playback_ts(ep, ts);
-		xrt_sink_push_pose(ep->out_sinks.gt, ts, &pose);
+	for (xrt_pose_sample &sample : *ep->gt) {
+		sample.timestamp_ns = euroc_player_mapped_playback_ts(ep, sample.timestamp_ns);
+		xrt_sink_push_pose(ep->out_sinks.gt, &sample);
 	}
 }
 

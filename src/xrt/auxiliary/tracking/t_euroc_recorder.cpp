@@ -14,6 +14,8 @@
 #include "util/u_sink.h"
 #include "util/u_var.h"
 #include "util/u_debug.h"
+#include "xrt/xrt_defines.h"
+#include "xrt/xrt_tracking.h"
 
 #include <cassert>
 #include <ctime>
@@ -26,9 +28,7 @@
 
 #include <opencv2/imgcodecs.hpp>
 
-DEBUG_GET_ONCE_BOOL_OPTION(euroc_recorder_use_jpg, "EUROC_RECORDER_USE_JPG", false);
-
-//! @todo: Now that IMU sinks support groundtruth, we could save it here as well.
+DEBUG_GET_ONCE_BOOL_OPTION(euroc_recorder_use_jpg, "EUROC_RECORDER_USE_JPG", false)
 
 using std::lock_guard;
 using std::mutex;
@@ -52,21 +52,27 @@ struct euroc_recorder
 	// Cloner sinks: copy frame to heap for quick release of the original
 	struct xrt_slam_sinks cloner_queues; //!< Queue sinks that write into cloner sinks
 	struct xrt_imu_sink cloner_imu_sink;
+	struct xrt_pose_sink cloner_gt_sink;
 	struct xrt_frame_sink cloner_left_sink;
 	struct xrt_frame_sink cloner_right_sink;
 
 	// Writer sinks: write copied frame to disk
 	struct xrt_slam_sinks writer_queues; //!< Queue sinks that write into writer sinks
 	struct xrt_imu_sink writer_imu_sink;
+	struct xrt_pose_sink writer_gt_sink;
 	struct xrt_frame_sink writer_left_sink;
 	struct xrt_frame_sink writer_right_sink;
 
 	queue<xrt_imu_sample> imu_queue{}; //!< IMU pushes get saved here and are delayed until left_frame pushes
 	mutex imu_queue_lock{};            //!< Lock for imu_queue
 
+	queue<xrt_pose_sample> gt_queue{}; //!< GT pushes get saved here and are delayed until left_frame pushes
+	mutex gt_queue_lock{};             //!< Lock for gt_queue
+
 	// CSV file handles, ofstream implementation is already buffered.
 	// Using pointers because of `container_of`
 	ofstream *imu_csv;
+	ofstream *gt_csv;
 	ofstream *left_cam_csv;
 	ofstream *right_cam_csv;
 };
@@ -95,6 +101,12 @@ euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 	*er->imu_csv << "#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],"
 	                "a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]" CSV_EOL;
 
+	create_directories(path + "/mav0/gt0");
+	er->gt_csv = new ofstream{path + "/mav0/gt0/data.csv"};
+	*er->gt_csv << std::fixed << std::setprecision(CSV_PRECISION);
+	*er->gt_csv << "#timestamp [ns],p_RS_R_x [m],p_RS_R_y [m],p_RS_R_z [m],"
+	               "q_RS_w [],q_RS_x [],q_RS_y [],q_RS_z []" CSV_EOL;
+
 	create_directories(path + "/mav0/cam0/data");
 	er->left_cam_csv = new ofstream{path + "/mav0/cam0/data.csv"};
 	*er->left_cam_csv << "#timestamp [ns],filename" CSV_EOL;
@@ -107,24 +119,43 @@ euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 static void
 euroc_recorder_flush(struct euroc_recorder *er)
 {
-	vector<xrt_imu_sample> samples;
+	// Flush IMU samples
+	vector<xrt_imu_sample> imu_samples;
 
 	{ // Move samples out of imu_queue into vector to minimize mutex contention
 		lock_guard lock{er->imu_queue_lock};
-		samples.reserve(er->imu_queue.size());
+		imu_samples.reserve(er->imu_queue.size());
 		while (!er->imu_queue.empty()) {
-			samples.push_back(er->imu_queue.front());
+			imu_samples.push_back(er->imu_queue.front());
 			er->imu_queue.pop();
 		}
 	}
 
 	// Write queued IMU samples to csv stream.
-	for (xrt_imu_sample &sample : samples) {
+	for (xrt_imu_sample &sample : imu_samples) {
 		xrt_sink_push_imu(&er->writer_imu_sink, &sample);
+	}
+
+	// Flush groundtruth samples
+	vector<xrt_pose_sample> gt_samples;
+
+	{ // Move samples out of gt_queue into vector to minimize mutex contention
+		lock_guard lock{er->gt_queue_lock};
+		gt_samples.reserve(er->gt_queue.size());
+		while (!er->gt_queue.empty()) {
+			gt_samples.push_back(er->gt_queue.front());
+			er->gt_queue.pop();
+		}
+	}
+
+	// Write queued gt samples to csv stream.
+	for (xrt_pose_sample &sample : gt_samples) {
+		xrt_sink_push_pose(&er->writer_gt_sink, &sample);
 	}
 
 	// Flush csv streams. Not necessary, doing it only to increase flush frequency
 	er->imu_csv->flush();
+	er->gt_csv->flush();
 	er->left_cam_csv->flush();
 	er->right_cam_csv->flush();
 }
@@ -141,6 +172,20 @@ euroc_recorder_save_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 	*er->imu_csv << ts << ",";
 	*er->imu_csv << w.x << "," << w.y << "," << w.z << ",";
 	*er->imu_csv << a.x << "," << a.y << "," << a.z << CSV_EOL;
+}
+
+extern "C" void
+euroc_recorder_save_gt(xrt_pose_sink *sink, struct xrt_pose_sample *sample)
+{
+	euroc_recorder *er = container_of(sink, euroc_recorder, writer_gt_sink);
+
+	timepoint_ns ts = sample->timestamp_ns;
+	xrt_vec3 p = sample->pose.position;
+	xrt_quat o = sample->pose.orientation;
+
+	*er->gt_csv << ts << ",";
+	*er->gt_csv << p.x << "," << p.y << "," << p.z << ",";
+	*er->gt_csv << o.w << "," << o.x << "," << o.y << "," << o.z << CSV_EOL;
 }
 
 static void
@@ -201,6 +246,22 @@ euroc_recorder_receive_imu(xrt_imu_sink *sink, struct xrt_imu_sample *sample)
 	}
 }
 
+extern "C" void
+euroc_recorder_receive_gt(xrt_pose_sink *sink, struct xrt_pose_sample *sample)
+{
+	// This works similarly to euroc_recorder_receive_imu, read its comments
+	euroc_recorder *er = container_of(sink, euroc_recorder, cloner_gt_sink);
+
+	if (!er->recording) {
+		return;
+	}
+
+	{
+		lock_guard lock{er->gt_queue_lock};
+		er->gt_queue.push(*sample);
+	}
+}
+
 
 static void
 euroc_recorder_receive_frame(euroc_recorder *er, struct xrt_frame *src_frame, bool is_left)
@@ -248,6 +309,7 @@ euroc_recorder_node_destroy(struct xrt_frame_node *node)
 {
 	struct euroc_recorder *er = container_of(node, struct euroc_recorder, node);
 	delete er->imu_csv;
+	delete er->gt_csv;
 	delete er->left_cam_csv;
 	delete er->right_cam_csv;
 	delete er;
@@ -298,9 +360,11 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 	u_sink_queue_create(xfctx, 0, &er->cloner_left_sink, &er->cloner_queues.left);
 	u_sink_queue_create(xfctx, 0, &er->cloner_right_sink, &er->cloner_queues.right);
 	er->cloner_queues.imu = &er->cloner_imu_sink;
+	er->cloner_queues.gt = &er->cloner_gt_sink;
 
 	// Clone samples into heap and release original samples right after
 	er->cloner_imu_sink.push_imu = euroc_recorder_receive_imu;
+	er->cloner_gt_sink.push_pose = euroc_recorder_receive_gt;
 	er->cloner_left_sink.push_frame = euroc_recorder_receive_left;
 	er->cloner_right_sink.push_frame = euroc_recorder_receive_right;
 
@@ -308,9 +372,11 @@ euroc_recorder_create(struct xrt_frame_context *xfctx, const char *record_path, 
 	u_sink_queue_create(xfctx, 0, &er->writer_left_sink, &er->writer_queues.left);
 	u_sink_queue_create(xfctx, 0, &er->writer_right_sink, &er->writer_queues.right);
 	er->writer_queues.imu = nullptr;
+	er->writer_queues.gt = nullptr;
 
 	// Write cloned samples to disk with these
 	er->writer_imu_sink.push_imu = euroc_recorder_save_imu;
+	er->writer_gt_sink.push_pose = euroc_recorder_save_gt;
 	er->writer_left_sink.push_frame = euroc_recorder_save_left;
 	er->writer_right_sink.push_frame = euroc_recorder_save_right;
 
