@@ -35,8 +35,6 @@
 #include "util/u_frame.h"
 #include "util/u_var.h"
 
-#include "util/u_template_historybuf.hpp"
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
