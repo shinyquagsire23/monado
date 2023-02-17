@@ -1085,7 +1085,7 @@
 						"pose": "XRT_INPUT_ML2_CONTROLLER_AIM_POSE"
 					}
 				},
-				"/input/shoudler": {
+				"/input/shoulder": {
 					"type": "button",
 					"localized_name": "Shoulder",
 					"components": ["click"],
