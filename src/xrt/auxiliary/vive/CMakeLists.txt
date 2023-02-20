@@ -18,6 +18,4 @@ target_link_libraries(
 		aux_math
 		aux_tracking
 		xrt-external-cjson
-		${ZLIB_LIBRARIES}
 	)
-target_include_directories(aux_vive PRIVATE ${ZLIB_INCLUDE_DIRS})
