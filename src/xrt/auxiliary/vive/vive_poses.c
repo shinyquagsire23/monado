@@ -50,6 +50,16 @@ vive_poses_get_index_offset_transforms(enum xrt_input_name input_name,
 		out_transform_rotation->z = 0.f;
 
 		break;
+	case XRT_INPUT_GENERIC_HAND_TRACKING_LEFT:
+	case XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT:
+		out_transform_position->x = -0.05f;
+		out_transform_position->y = -0.015f;
+		out_transform_position->z = 0.13f;
+
+		out_transform_rotation->x = DEG_TO_RAD(14.f);
+		out_transform_rotation->y = DEG_TO_RAD(-0.071f);
+		out_transform_rotation->z = DEG_TO_RAD(10.303);
+		break;
 	default:
 		*out_transform_position = (struct xrt_vec3)XRT_VEC3_ZERO;
 		*out_transform_rotation = (struct xrt_vec3)XRT_VEC3_ZERO;
@@ -61,8 +71,6 @@ vive_poses_get_index_offset_transforms(enum xrt_input_name input_name,
 		vive_poses_apply_right_transform(out_transform_position, out_transform_rotation);
 	}
 }
-
-
 
 void
 vive_poses_get_pose_offset(enum xrt_device_name device_name,
