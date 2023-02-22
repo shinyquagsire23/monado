@@ -471,8 +471,6 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	 */
 	struct xrt_vec3 static_offset = {.x = 0, .y = 0.05, .z = 0.11};
 
-
-
 	struct xrt_space_relation hand_relation;
 
 	m_relation_history_get(survive->relation_hist, at_timestamp_ns, &hand_relation);
@@ -488,11 +486,13 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	// out_value->hand_pose = hand_relation;
 
+	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
+	vive_poses_get_pose_offset(survive->base.name, survive->base.device_type, name, &pose_offset);
+
 	m_relation_chain_push_pose(&chain, &hand_on_handle_pose);
+	m_relation_chain_push_pose(&chain, &pose_offset);
 	m_relation_chain_push_relation(&chain, &hand_relation);
 	m_relation_chain_resolve(&chain, &out_value->hand_pose);
-
-
 
 	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
 	*out_timestamp_ns = at_timestamp_ns;
