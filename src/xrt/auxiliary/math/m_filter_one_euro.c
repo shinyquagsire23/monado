@@ -133,7 +133,7 @@ m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min
 }
 
 void
-m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
+m_filter_euro_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
 {
 
 	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {
