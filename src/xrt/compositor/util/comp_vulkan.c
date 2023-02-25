@@ -297,12 +297,73 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
  *
  */
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+static bool
+has_ahardware_buffer_format_conversion(VkFormat format)
+{
+	/*
+	 * Format mappings from official Android docs:
+	 *
+	 * | AHardwareBuffer Format                    | Vulkan format                                |
+	 * |-------------------------------------------|----------------------------------------------|
+	 * | AHARDWAREBUFFER_FORMAT_BLOB               | N/A                                          |
+	 * | AHARDWAREBUFFER_FORMAT_D16_UNORM          | VK_FORMAT_D16_UNORM                          |
+	 * | AHARDWAREBUFFER_FORMAT_D24_UNORM          | VK_FORMAT_X8_D24_UNORM_PACK32                |
+	 * | AHARDWAREBUFFER_FORMAT_D24_UNORM_S8_UINT  | VK_FORMAT_D24_UNORM_S8_UINT                  |
+	 * | AHARDWAREBUFFER_FORMAT_D32_FLOAT          | VK_FORMAT_D32_SFLOAT                         |
+	 * | AHARDWAREBUFFER_FORMAT_D32_FLOAT_S8_UINT  | VK_FORMAT_D32_SFLOAT_S8_UINT                 |
+	 * | AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM | VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 |
+	 * | AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM  | VK_FORMAT_A2B10G10R10_UNORM_PACK32           |
+	 * | AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT | VK_FORMAT_R16G16B16A16_SFLOAT                |
+	 * | AHARDWAREBUFFER_FORMAT_R16G16_UINT        | VK_FORMAT_R16G16_UINT                        |
+	 * | AHARDWAREBUFFER_FORMAT_R16_UINT           | VK_FORMAT_R16_UINT                           |
+	 * | AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM       | VK_FORMAT_R5G6B5_UNORM_PACK16                |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM     | VK_FORMAT_R8G8B8A8_UNORM                     |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM     | VK_FORMAT_R8G8B8A8_UNORM                     |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM       | VK_FORMAT_R8G8B8_UNORM                       |
+	 * | AHARDWAREBUFFER_FORMAT_R8_UNORM           | VK_FORMAT_R8_UNORM                           |
+	 * | AHARDWAREBUFFER_FORMAT_S8_UINT            | VK_FORMAT_S8_UINT                            |
+	 * | AHARDWAREBUFFER_FORMAT_Y8Cb8Cr8_420       | N/A                                          |
+	 * | AHARDWAREBUFFER_FORMAT_YCbCr_P010         | N/A                                          |
+	 *
+	 * The VK_FORMAT_R8G8B8A8_SRGB format maps to AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM.
+	 */
+
+	switch (format) {
+	case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16: return true; // AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM
+	case VK_FORMAT_D16_UNORM: return true;                          // AHARDWAREBUFFER_FORMAT_D16_UNORM
+	case VK_FORMAT_X8_D24_UNORM_PACK32: return true;                // AHARDWAREBUFFER_FORMAT_D24_UNORM
+	case VK_FORMAT_D24_UNORM_S8_UINT: return true;                  // AHARDWAREBUFFER_FORMAT_D24_UNORM_S8_UINT
+	case VK_FORMAT_D32_SFLOAT: return true;                         // AHARDWAREBUFFER_FORMAT_D32_FLOAT
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: return true;                 // AHARDWAREBUFFER_FORMAT_D32_FLOAT_S8_UINT
+	case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return true;           // AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM
+	case VK_FORMAT_R16G16B16A16_SFLOAT: return true;                // AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT
+	case VK_FORMAT_R16G16_UINT: return true;                        // AHARDWAREBUFFER_FORMAT_R16G16_UINT
+	case VK_FORMAT_R16_UINT: return true;                           // AHARDWAREBUFFER_FORMAT_R16_UINT
+	case VK_FORMAT_R5G6B5_UNORM_PACK16: return true;                // AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM
+	case VK_FORMAT_R8G8B8A8_UNORM: return true;                     // AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM
+	case VK_FORMAT_R8G8B8A8_SRGB: return true;                      // AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM
+	case VK_FORMAT_R8G8B8_UNORM: return true;                       // AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM
+	case VK_FORMAT_R8_UNORM: return true;                           // AHARDWAREBUFFER_FORMAT_R8_UNORM
+	case VK_FORMAT_S8_UINT: return true;                            // AHARDWAREBUFFER_FORMAT_S8_UINT
+	default: return false;
+	}
+}
+#endif
+
 static bool
 is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits xbits)
 {
 	/*
 	 * First check if the format is supported at all.
 	 */
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	if (!has_ahardware_buffer_format_conversion(format)) {
+		VK_DEBUG(vk, "Format '%s' does not map to a AHardwareBuffer format!", vk_format_string(format));
+		return false;
+	}
+#endif
 
 	VkFormatProperties prop;
 	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
