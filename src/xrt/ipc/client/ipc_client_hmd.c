@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -37,17 +37,13 @@
  */
 
 /*!
- * An IPC client proxy for an HMD @ref xrt_device.
- * @implements xrt_device
+ * An IPC client proxy for an HMD @ref xrt_device and @ref ipc_client_xdev.
+ * Using a typedef reduce impact of refactor change.
+ *
+ * @implements ipc_client_xdev
+ * @ingroup ipc_client
  */
-struct ipc_client_hmd
-{
-	struct xrt_device base;
-
-	struct ipc_connection *ipc_c;
-
-	uint32_t device_id;
-};
+typedef struct ipc_client_xdev ipc_client_hmd_t;
 
 
 /*
@@ -56,16 +52,16 @@ struct ipc_client_hmd
  *
  */
 
-static inline struct ipc_client_hmd *
+static inline ipc_client_hmd_t *
 ipc_client_hmd(struct xrt_device *xdev)
 {
-	return (struct ipc_client_hmd *)xdev;
+	return (ipc_client_hmd_t *)xdev;
 }
 
 static void
 ipc_client_hmd_destroy(struct xrt_device *xdev)
 {
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
 
 	// Remove the variable tracking.
 	u_var_remove_root(ich);
@@ -81,7 +77,7 @@ ipc_client_hmd_destroy(struct xrt_device *xdev)
 static void
 ipc_client_hmd_update_inputs(struct xrt_device *xdev)
 {
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
 
 	xrt_result_t r = ipc_call_device_update_input(ich->ipc_c, ich->device_id);
 	if (r != XRT_SUCCESS) {
@@ -95,7 +91,7 @@ ipc_client_hmd_get_tracked_pose(struct xrt_device *xdev,
                                 uint64_t at_timestamp_ns,
                                 struct xrt_space_relation *out_relation)
 {
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
 
 	xrt_result_t r =
 	    ipc_call_device_get_tracked_pose(ich->ipc_c, ich->device_id, name, at_timestamp_ns, out_relation);
@@ -113,7 +109,7 @@ ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
                               struct xrt_fov *out_fovs,
                               struct xrt_pose *out_poses)
 {
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
 
 	struct ipc_info_get_view_poses_2 info = {0};
 
@@ -142,7 +138,7 @@ ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
 static bool
 ipc_client_hmd_is_form_factor_available(struct xrt_device *xdev, enum xrt_form_factor form_factor)
 {
-	struct ipc_client_hmd *ich = ipc_client_hmd(xdev);
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
 	bool available = false;
 	xrt_result_t r = ipc_call_device_is_form_factor_available(ich->ipc_c, ich->device_id, form_factor, &available);
 	if (r != XRT_SUCCESS) {
@@ -163,7 +159,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 
 
 	enum u_device_alloc_flags flags = (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD);
-	struct ipc_client_hmd *ich = U_DEVICE_ALLOCATE(struct ipc_client_hmd, flags, 0, 0);
+	ipc_client_hmd_t *ich = U_DEVICE_ALLOCATE(ipc_client_hmd_t, flags, 0, 0);
 	ich->ipc_c = ipc_c;
 	ich->device_id = device_id;
 	ich->base.update_inputs = ipc_client_hmd_update_inputs;
