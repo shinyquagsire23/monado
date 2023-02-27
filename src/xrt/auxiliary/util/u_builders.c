@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,9 +7,18 @@
  * @ingroup aux_util
  */
 
+#include "xrt/xrt_prober.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_tracking.h"
 
+#include "util/u_debug.h"
 #include "util/u_builders.h"
+#include "util/u_space_overseer.h"
+
+
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x, "XRT_TRACKING_ORIGIN_OFFSET_X", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y, "XRT_TRACKING_ORIGIN_OFFSET_Y", 0.0f)
+DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z, "XRT_TRACKING_ORIGIN_OFFSET_Z", 0.0f)
 
 
 /*
@@ -131,4 +140,38 @@ u_builder_setup_tracking_origins(struct xrt_device *head,
 	if (right_origin && right_origin != head_origin && right_origin != left_origin) {
 		apply_offset(&right->tracking_origin->offset.position, global_tracking_origin_offset);
 	}
+}
+
+void
+u_builder_create_space_overseer(struct xrt_system_devices *xsysd, struct xrt_space_overseer **out_xso)
+{
+	/*
+	 * Tracking origins.
+	 */
+
+	struct xrt_vec3 global_tracking_origin_offset = {
+	    debug_get_float_option_tracking_origin_offset_x(),
+	    debug_get_float_option_tracking_origin_offset_y(),
+	    debug_get_float_option_tracking_origin_offset_z(),
+	};
+
+	u_builder_setup_tracking_origins(    //
+	    xsysd->roles.head,               //
+	    xsysd->roles.left,               //
+	    xsysd->roles.right,              //
+	    &global_tracking_origin_offset); //
+
+
+	/*
+	 * Space overseer.
+	 */
+
+	struct u_space_overseer *uso = u_space_overseer_create();
+
+	struct xrt_pose T_stage_local = XRT_POSE_IDENTITY;
+	T_stage_local.position.y = 1.6;
+
+	u_space_overseer_legacy_setup(uso, xsysd->xdevs, xsysd->xdev_count, xsysd->roles.head, &T_stage_local);
+
+	*out_xso = (struct xrt_space_overseer *)uso;
 }
