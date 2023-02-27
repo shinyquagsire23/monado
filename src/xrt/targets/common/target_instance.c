@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
 
@@ -46,19 +47,23 @@ null_compositor_create_system(struct xrt_device *xdev, struct xrt_system_composi
 static xrt_result_t
 t_instance_create_system(struct xrt_instance *xinst,
                          struct xrt_system_devices **out_xsysd,
+                         struct xrt_space_overseer **out_xso,
                          struct xrt_system_compositor **out_xsysc)
 {
 	XRT_TRACE_MARKER();
 
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
+	assert(out_xso != NULL);
+	assert(*out_xso == NULL);
 	assert(out_xsysc == NULL || *out_xsysc == NULL);
 
 	struct xrt_system_compositor *xsysc = NULL;
+	struct xrt_space_overseer *xso = NULL;
 	struct xrt_system_devices *xsysd = NULL;
 	xrt_result_t xret = XRT_SUCCESS;
 
-	xret = u_system_devices_create_from_prober(xinst, &xsysd);
+	xret = u_system_devices_create_from_prober(xinst, &xsysd, &xso);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -96,11 +101,13 @@ t_instance_create_system(struct xrt_instance *xinst,
 #endif
 
 	if (xret != XRT_SUCCESS) {
+		xrt_space_overseer_destroy(&xso);
 		xrt_system_devices_destroy(&xsysd);
 		return xret;
 	}
 
 	*out_xsysd = xsysd;
+	*out_xso = xso;
 	*out_xsysc = xsysc;
 
 	return xret;

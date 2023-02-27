@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,10 +6,13 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_prober.h"
-#include "xrt/xrt_instance.h"
 #include "xrt/xrt_system.h"
+#include "xrt/xrt_instance.h"
+
 #include "util/u_time.h"
+
 #include "gui_common.h"
 
 
@@ -64,7 +67,7 @@ gui_prober_init(struct gui_program *p)
 int
 gui_prober_select(struct gui_program *p)
 {
-	xrt_result_t xret = xrt_instance_create_system(p->instance, &p->xsysd, NULL);
+	xrt_result_t xret = xrt_instance_create_system(p->instance, &p->xsysd, &p->xso, NULL);
 	if (xret != XRT_SUCCESS) {
 		return -1;
 	}
@@ -90,6 +93,7 @@ gui_prober_update(struct gui_program *p)
 void
 gui_prober_teardown(struct gui_program *p)
 {
+	xrt_space_overseer_destroy(&p->xso);
 	xrt_system_devices_destroy(&p->xsysd);
 
 	xrt_instance_destroy(&p->instance);

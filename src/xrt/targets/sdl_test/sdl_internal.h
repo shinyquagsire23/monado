@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -129,6 +129,9 @@ struct sdl_program
 
 	//! System devices base.
 	struct xrt_system_devices xsysd_base;
+
+	//! Space overseer, implemented for now using helper code.
+	struct xrt_space_overseer *xso;
 
 	//! SDL compositor struct.
 	struct sdl_compositor c;

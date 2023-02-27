@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,13 +6,15 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include <string.h>
-#include <stdio.h>
-
-#include "xrt/xrt_instance.h"
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_prober.h"
+#include "xrt/xrt_instance.h"
+
 #include "cli_common.h"
+
+#include <string.h>
+#include <stdio.h>
 
 
 static int
@@ -74,9 +76,11 @@ cli_cmd_test(int argc, const char **argv)
 	printf(" :: Creating system devices!\n");
 
 	struct xrt_system_devices *xsysd = NULL;
+	struct xrt_space_overseer *xso = NULL;
 	xret = xrt_instance_create_system( //
 	    xi,                            // Instance
 	    &xsysd,                        // System devices.
+	    &xso,                          // Space Overseer.
 	    NULL);                         // System compositor.
 	if (xret != XRT_SUCCESS) {
 		printf("\tCall to xrt_instance_create_system failed! '%i'\n", xret);
@@ -123,6 +127,7 @@ cli_cmd_test(int argc, const char **argv)
 	// End of program
 	printf(" :: All ok, shutting down.\n");
 
+	xrt_space_overseer_destroy(&xso);
 	xrt_system_devices_destroy(&xsysd);
 
 	// Finally done

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -25,7 +25,9 @@
 
 #include "shared/ipc_protocol.h"
 #include "client/ipc_client.h"
+
 #include "ipc_client_generated.h"
+
 
 #include <stdio.h>
 #if !defined(XRT_OS_WINDOWS)
@@ -314,6 +316,7 @@ create_system_compositor(struct ipc_client_instance *ii,
 static xrt_result_t
 ipc_client_instance_create_system(struct xrt_instance *xinst,
                                   struct xrt_system_devices **out_xsysd,
+                                  struct xrt_space_overseer **out_xso,
                                   struct xrt_system_compositor **out_xsysc)
 {
 	struct ipc_client_instance *ii = ipc_client_instance(xinst);
@@ -349,6 +352,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 	// Done here now.
 	if (out_xsysc == NULL) {
 		*out_xsysd = &usysd->base;
+		*out_xso = ipc_client_space_overseer_create(&ii->ipc_c);
 		return XRT_SUCCESS;
 	}
 
@@ -366,6 +370,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 	}
 
 	*out_xsysd = &usysd->base;
+	*out_xso = ipc_client_space_overseer_create(&ii->ipc_c);
 	*out_xsysc = xsysc;
 
 	return XRT_SUCCESS;

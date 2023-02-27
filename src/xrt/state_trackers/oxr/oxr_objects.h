@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_limits.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_device.h"
@@ -1295,6 +1296,9 @@ struct oxr_system
 
 	//! System devices used in all session types.
 	struct xrt_system_devices *xsysd;
+
+	//! Space overseer used in all session types.
+	struct xrt_space_overseer *xso;
 
 	//! System compositor, used to create session compositors.
 	struct xrt_system_compositor *xsysc;

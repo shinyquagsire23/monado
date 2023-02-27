@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -131,6 +131,7 @@ teardown_all(struct ipc_server *s)
 
 	teardown_idevs(s);
 
+	xrt_space_overseer_destroy(&s->xso);
 	xrt_system_devices_destroy(&s->xsysd);
 
 	xrt_instance_destroy(&s->xinst);
@@ -468,7 +469,7 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	xret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xsysc);
+	xret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xso, &s->xsysc);
 	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(s, "Could not create system!");
 		teardown_all(s);

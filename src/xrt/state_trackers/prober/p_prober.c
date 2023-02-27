@@ -89,7 +89,7 @@ static int
 p_dump(struct xrt_prober *xp);
 
 static xrt_result_t
-p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd, struct xrt_space_overseer **out_xso);
 
 static int
 p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_count);
@@ -964,7 +964,7 @@ p_dump(struct xrt_prober *xp)
 }
 
 static xrt_result_t
-p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd, struct xrt_space_overseer **out_xso)
 {
 	XRT_TRACE_MARKER();
 
@@ -1062,7 +1062,7 @@ p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
 
 	if (select != NULL) {
 		u_pp(dg, "\n\tUsing builder %s: %s", select->identifier, select->name);
-		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd);
+		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd, out_xso);
 
 		if (xret == XRT_SUCCESS) {
 			print_system_devices(dg, *out_xsysd);

@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 #include "xrt/xrt_config_drivers.h"
 
 #include "util/u_misc.h"
+#include "util/u_builders.h"
 #include "util/u_trace_marker.h"
 
 #include "sdl_internal.h"
@@ -55,15 +56,19 @@ sdl_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 static xrt_result_t
 sdl_instance_create_system(struct xrt_instance *xinst,
                            struct xrt_system_devices **out_xsysd,
+                           struct xrt_space_overseer **out_xso,
                            struct xrt_system_compositor **out_xsysc)
 {
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
+	assert(out_xso != NULL);
+	assert(*out_xso == NULL);
 	assert(out_xsysc == NULL || *out_xsysc == NULL);
 
 	struct sdl_program *sp = from_xinst(xinst);
 
 	*out_xsysd = &sp->xsysd_base;
+	*out_xso = sp->xso;
 
 	// Early out if we only want devices.
 	if (out_xsysc == NULL) {
@@ -107,6 +112,8 @@ sdl_system_devices_init(struct sdl_program *sp)
 	sp->xsysd_base.xdevs[0] = head;
 	sp->xsysd_base.xdev_count = 1;
 	sp->xsysd_base.roles.head = head;
+
+	u_builder_create_space_overseer(&sp->xsysd_base, &sp->xso);
 }
 
 void

@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -524,7 +524,8 @@ static xrt_result_t
 lighthouse_open_system(struct xrt_builder *xb,
                        cJSON *config,
                        struct xrt_prober *xp,
-                       struct xrt_system_devices **out_xsysd)
+                       struct xrt_system_devices **out_xsysd,
+                       struct xrt_space_overseer **out_xso)
 {
 	struct lighthouse_system *lhs = (struct lighthouse_system *)xb;
 	lhs->devices = u_system_devices_allocate();
@@ -703,6 +704,7 @@ end:
 
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;
+		u_builder_create_space_overseer(&usysd->base, out_xso);
 	} else {
 		u_system_devices_destroy(&usysd);
 	}

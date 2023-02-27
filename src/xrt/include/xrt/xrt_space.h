@@ -120,8 +120,12 @@ struct xrt_space_overseer
 	                                    struct xrt_space **out_space);
 
 	/*!
-	 * Create a space that wraps a device input pose, implicitly make the
-	 * device's tracking space the returned space parent.
+	 * Create a space that wraps the @p xdev input pose described by input
+	 * @p name, implicitly make the device's tracking space the parent of
+	 * the created space. The name pose_space was chosen because while most
+	 * input poses are part of the device, they may also be things tracked
+	 * by the device. The important part is that the space is following the
+	 * pose, that it happens to be attached to device is coincidental.
 	 *
 	 * @param[in] xso        Owning space overseer.
 	 * @param[in] xdev       Device to get the pose from.

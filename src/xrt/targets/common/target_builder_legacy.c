@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -12,6 +12,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_device.h"
+#include "util/u_builders.h"
 #include "util/u_system_helpers.h"
 
 #include "target_builder_interface.h"
@@ -106,7 +107,11 @@ legacy_estimate_system(struct xrt_builder *xb,
 }
 
 static xrt_result_t
-legacy_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+legacy_open_system(struct xrt_builder *xb,
+                   cJSON *config,
+                   struct xrt_prober *xp,
+                   struct xrt_system_devices **out_xsysd,
+                   struct xrt_space_overseer **out_xso)
 {
 	struct u_system_devices *usysd = u_system_devices_allocate();
 	xrt_result_t xret;
@@ -169,6 +174,7 @@ legacy_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 	 */
 
 	*out_xsysd = &usysd->base;
+	u_builder_create_space_overseer(&usysd->base, out_xso);
 
 	return XRT_SUCCESS;
 }

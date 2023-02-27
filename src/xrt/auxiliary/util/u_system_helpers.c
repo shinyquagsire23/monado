@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -54,7 +54,9 @@ u_system_devices_allocate(void)
 }
 
 xrt_result_t
-u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_system_devices **out_xsysd)
+u_system_devices_create_from_prober(struct xrt_instance *xinst,
+                                    struct xrt_system_devices **out_xsysd,
+                                    struct xrt_space_overseer **out_xso)
 {
 	xrt_result_t xret;
 
@@ -77,7 +79,7 @@ u_system_devices_create_from_prober(struct xrt_instance *xinst, struct xrt_syste
 		return xret;
 	}
 
-	return xrt_prober_create_system(xp, out_xsysd);
+	return xrt_prober_create_system(xp, out_xsysd, out_xso);
 }
 
 struct xrt_device *

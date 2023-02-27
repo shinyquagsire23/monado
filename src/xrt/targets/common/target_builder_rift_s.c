@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // Copyright 2022, Jan Schmidt
 // SPDX-License-Identifier: BSL-1.0
 /*!
@@ -82,7 +82,11 @@ rift_s_estimate_system(struct xrt_builder *xb,
 }
 
 static xrt_result_t
-rift_s_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+rift_s_open_system(struct xrt_builder *xb,
+                   cJSON *config,
+                   struct xrt_prober *xp,
+                   struct xrt_system_devices **out_xsysd,
+                   struct xrt_space_overseer **out_xso)
 {
 	struct xrt_prober_device **xpdevs = NULL;
 	size_t xpdev_count = 0;
@@ -185,6 +189,7 @@ rift_s_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 #endif
 
 	*out_xsysd = &usysd->base;
+	u_builder_create_space_overseer(&usysd->base, out_xso);
 
 	return XRT_SUCCESS;
 

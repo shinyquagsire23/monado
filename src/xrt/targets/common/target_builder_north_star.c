@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -408,7 +408,11 @@ ns_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 
 
 static xrt_result_t
-ns_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+ns_open_system(struct xrt_builder *xb,
+               cJSON *config,
+               struct xrt_prober *xp,
+               struct xrt_system_devices **out_xsysd,
+               struct xrt_space_overseer **out_xso)
 {
 	struct ns_builder *nsb = (struct ns_builder *)xb;
 
@@ -547,6 +551,7 @@ ns_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, str
 end:
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;
+		u_builder_create_space_overseer(&usysd->base, out_xso);
 	} else {
 		u_system_devices_destroy(&usysd);
 	}

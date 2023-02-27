@@ -92,7 +92,8 @@ static xrt_result_t
 simulated_open_system(struct xrt_builder *xb,
                       cJSON *config,
                       struct xrt_prober *xp,
-                      struct xrt_system_devices **out_xsysd)
+                      struct xrt_system_devices **out_xsysd,
+                      struct xrt_space_overseer **out_xso)
 {
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
@@ -131,6 +132,7 @@ simulated_open_system(struct xrt_builder *xb,
 	}
 
 	*out_xsysd = &usysd->base;
+	u_builder_create_space_overseer(&usysd->base, out_xso);
 
 	return XRT_SUCCESS;
 }

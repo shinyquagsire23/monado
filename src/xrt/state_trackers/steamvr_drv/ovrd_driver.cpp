@@ -29,6 +29,7 @@ extern "C" {
 #include "util/u_builders.h"
 #include "util/u_hand_tracking.h"
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
@@ -1433,6 +1434,7 @@ public:
 private:
 	struct xrt_instance *m_xinst = NULL;
 	struct xrt_system_devices *m_xsysd = NULL;
+	struct xrt_space_overseer *m_xso = NULL;
 	struct xrt_device *m_xhmd = NULL;
 
 	CDeviceDriver_Monado *m_MonadoDeviceDriver = NULL;
@@ -1462,7 +1464,7 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 		return vr::VRInitError_Init_HmdNotFound;
 	}
 
-	xret = xrt_instance_create_system(m_xinst, &m_xsysd, NULL);
+	xret = xrt_instance_create_system(m_xinst, &m_xsysd, &m_xso, NULL);
 	if (xret < 0) {
 		ovrd_log("Failed to create system devices\n");
 		xrt_instance_destroy(&m_xinst);
@@ -1470,6 +1472,8 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	}
 	if (m_xsysd->roles.head == NULL) {
 		ovrd_log("Didn't get a HMD device!\n");
+		xrt_space_overseer_destroy(&m_xso);
+		xrt_system_devices_destroy(&m_xsysd);
 		xrt_instance_destroy(&m_xinst);
 		return vr::VRInitError_Init_HmdNotFound;
 	}
@@ -1508,6 +1512,7 @@ CServerDriver_Monado::Cleanup()
 		m_MonadoDeviceDriver = NULL;
 	}
 
+	xrt_space_overseer_destroy(&m_xso);
 	xrt_system_devices_destroy(&m_xsysd);
 	m_xhmd = NULL;
 	m_left->m_xdev = NULL;

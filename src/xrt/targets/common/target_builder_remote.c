@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -71,7 +71,11 @@ remote_estimate_system(struct xrt_builder *xb,
 }
 
 static xrt_result_t
-remote_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+remote_open_system(struct xrt_builder *xb,
+                   cJSON *config,
+                   struct xrt_prober *xp,
+                   struct xrt_system_devices **out_xsysd,
+                   struct xrt_space_overseer **out_xso)
 {
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
@@ -82,7 +86,16 @@ remote_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 		port = 4242;
 	}
 
-	return r_create_devices(port, out_xsysd);
+	struct xrt_system_devices *xsysd = NULL;
+	xrt_result_t xret = r_create_devices(port, &xsysd);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	*out_xsysd = xsysd;
+	u_builder_create_space_overseer(xsysd, out_xso);
+
+	return xret;
 }
 
 static void

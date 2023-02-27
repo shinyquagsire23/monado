@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -185,7 +185,11 @@ svr_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp
 }
 
 static xrt_result_t
-svr_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+svr_open_system(struct xrt_builder *xb,
+                cJSON *config,
+                struct xrt_prober *xp,
+                struct xrt_system_devices **out_xsysd,
+                struct xrt_space_overseer **out_xso)
 {
 	struct simula_builder *sb = (struct simula_builder *)xb;
 	struct u_system_devices *usysd = u_system_devices_allocate();
@@ -215,6 +219,7 @@ svr_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 end:
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;
+		u_builder_create_space_overseer(&usysd->base, out_xso);
 	} else {
 		u_system_devices_destroy(&usysd);
 	}

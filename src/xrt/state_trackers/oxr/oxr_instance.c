@@ -1,4 +1,4 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -70,6 +70,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	u_hashset_destroy(&inst->action_sets.name_store);
 	u_hashset_destroy(&inst->action_sets.loc_store);
 
+	xrt_space_overseer_destroy(&inst->system.xso);
 	xrt_system_devices_destroy(&inst->system.xsysd);
 
 #ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
@@ -267,9 +268,9 @@ oxr_instance_create(struct oxr_logger *log,
 
 	// Create the compositor if we are not headless.
 	if (!inst->extensions.MND_headless) {
-		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xsysc);
+		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xso, &sys->xsysc);
 	} else {
-		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, NULL);
+		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xso, NULL);
 	}
 
 	if (xret != XRT_SUCCESS) {
