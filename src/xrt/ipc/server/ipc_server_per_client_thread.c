@@ -139,6 +139,12 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	ipc_server_client_destroy_compositor(ics);
 
+	// Make sure undestroyed spaces are unreferenced
+	for (uint32_t i = 0; i < IPC_MAX_CLIENT_SPACES; i++) {
+		// Cast away volatile.
+		xrt_space_reference((struct xrt_space **)&ics->xspcs[i], NULL);
+	}
+
 	// Should we stop the server when a client disconnects?
 	if (ics->server->exit_on_disconnect) {
 		ics->server->running = false;
@@ -199,6 +205,12 @@ client_loop(volatile struct ipc_client_state *ics)
 	os_mutex_unlock(&ics->server->global_state.lock);
 
 	ipc_server_client_destroy_compositor(ics);
+
+	// Make sure undestroyed spaces are unreferenced
+	for (uint32_t i = 0; i < IPC_MAX_CLIENT_SPACES; i++) {
+		// Cast away volatile.
+		xrt_space_reference((struct xrt_space **)&ics->xspcs[i], NULL);
+	}
 
 	// Should we stop the server when a client disconnects?
 	if (ics->server->exit_on_disconnect) {

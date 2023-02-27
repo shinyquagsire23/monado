@@ -115,3 +115,6 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 
 struct xrt_device *
 ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *xtrack, uint32_t device_id);
+
+struct xrt_space_overseer *
+ipc_client_space_overseer_create(struct ipc_connection *ipc_c);

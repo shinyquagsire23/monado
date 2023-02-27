@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,6 +13,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_system.h"
+#include "xrt/xrt_space.h"
 
 #include "util/u_logging.h"
 
@@ -47,6 +48,7 @@ extern "C" {
 
 #define IPC_MAX_CLIENT_SEMAPHORES 8
 #define IPC_MAX_CLIENT_SWAPCHAINS 32
+#define IPC_MAX_CLIENT_SPACES 128
 //#define IPC_MAX_CLIENTS 8
 
 struct xrt_instance;
@@ -99,6 +101,20 @@ struct ipc_client_state
 
 	//! Ptrs to the semaphores.
 	struct xrt_compositor_semaphore *xcsems[IPC_MAX_CLIENT_SEMAPHORES];
+
+	struct
+	{
+		uint32_t root;
+		uint32_t local;
+		uint32_t stage;
+		uint32_t unbounded;
+	} semantic_spaces;
+
+	//! Number of spaces.
+	uint32_t space_count;
+
+	//! Ptrs to the spaces.
+	struct xtr_space *xspcs[IPC_MAX_CLIENT_SPACES];
 
 	//! Socket fd used for client comms
 	struct ipc_message_channel imc;
@@ -299,6 +315,9 @@ struct ipc_server
 
 	//! System devices.
 	struct xrt_system_devices *xsysd;
+
+	//! Space overseer.
+	struct xrt_space_overseer *xso;
 
 	//! System compositor.
 	struct xrt_system_compositor *xsysc;
