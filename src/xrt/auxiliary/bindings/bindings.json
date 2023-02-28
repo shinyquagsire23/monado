@@ -1,4 +1,5 @@
 {
+	"$schema": "./bindings.schema.json",
 	"profiles": {
 		"/interaction_profiles/khr/simple_controller": {
 			"title": "Khronos Simple Controller",
