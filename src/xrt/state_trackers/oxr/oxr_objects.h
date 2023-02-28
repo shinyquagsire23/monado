@@ -1,4 +1,4 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -882,8 +882,7 @@ XRT_CHECK_RESULT bool
 oxr_space_get_pure_relation(struct oxr_logger *log,
                             struct oxr_space *spc,
                             XrTime time,
-                            struct xrt_space_relation *out_relation,
-                            struct xrt_device **out_xdev);
+                            struct xrt_space_relation *out_relation);
 
 XrResult
 oxr_space_locate(

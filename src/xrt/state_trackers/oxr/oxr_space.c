@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -200,8 +200,7 @@ oxr_space_pure_relation_in_space(struct oxr_logger *log,
                                  struct xrt_space_relation *out_relation)
 {
 	struct xrt_space_relation pure_space_relation;
-	struct xrt_device *xdev;
-	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev)) {
+	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation)) {
 		return false;
 	}
 
@@ -239,8 +238,7 @@ oxr_space_pure_relation_from_space(struct oxr_logger *log,
                                    struct xrt_space_relation *out_relation)
 {
 	struct xrt_space_relation pure_space_relation;
-	struct xrt_device *xdev;
-	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation, &xdev)) {
+	if (!oxr_space_get_pure_relation(log, spc, time, &pure_space_relation)) {
 		return false;
 	}
 
@@ -268,12 +266,10 @@ XRT_CHECK_RESULT bool
 oxr_space_get_pure_relation(struct oxr_logger *log,
                             struct oxr_space *spc,
                             XrTime time,
-                            struct xrt_space_relation *out_relation,
-                            struct xrt_device **out_xdev)
+                            struct xrt_space_relation *out_relation)
 {
 	if (oxr_space_type_is_reference(spc->space_type)) {
 		struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(spc->sess->sys, head);
-		*out_xdev = head_xdev;
 		return oxr_space_ref_get_pure_relation(log, spc->sess, spc->space_type, head_xdev, time, out_relation);
 	}
 	if (spc->space_type == OXR_SPACE_TYPE_ACTION) {
@@ -286,7 +282,6 @@ oxr_space_get_pure_relation(struct oxr_logger *log,
 			return false;
 		}
 
-		*out_xdev = input->xdev;
 		oxr_xdev_get_space_relation(log, spc->sess->sys->inst, input->xdev, input->input->name, time,
 		                            out_relation);
 
@@ -325,14 +320,12 @@ get_pure_space_relation(struct oxr_logger *log,
                         struct xrt_space_relation *out_relation)
 {
 	struct xrt_space_relation space_pure_relation;
-	struct xrt_device *space_xdev;
-	if (!oxr_space_get_pure_relation(log, spc, time, &space_pure_relation, &space_xdev)) {
+	if (!oxr_space_get_pure_relation(log, spc, time, &space_pure_relation)) {
 		return false;
 	}
 
 	struct xrt_space_relation base_space_pure_relation;
-	struct xrt_device *base_space_xdev;
-	if (!oxr_space_get_pure_relation(log, baseSpc, time, &base_space_pure_relation, &base_space_xdev)) {
+	if (!oxr_space_get_pure_relation(log, baseSpc, time, &base_space_pure_relation)) {
 		return false;
 	}
 
