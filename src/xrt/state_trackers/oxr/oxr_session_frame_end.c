@@ -858,11 +858,12 @@ handle_space(struct oxr_logger *log,
              uint64_t timestamp,
              struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = *pose_ptr;
+	// Aka T_offset_layer
+	struct xrt_pose T_space_layer = *pose_ptr;
 
-	// The pose might be valid for OpenXR, but not good enough for math.
-	if (!math_quat_validate(&pose.orientation)) {
-		math_quat_normalize(&pose.orientation);
+	// The T_space_layer might be valid for OpenXR, but not good enough for math.
+	if (!math_quat_validate(&T_space_layer.orientation)) {
+		math_quat_normalize(&T_space_layer.orientation);
 	}
 
 	/*
@@ -871,27 +872,32 @@ handle_space(struct oxr_logger *log,
 	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		struct xrt_space_relation rel;
 		struct xrt_relation_chain xrc = {0};
-		m_relation_chain_push_pose(&xrc, &pose);
-		m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose);
+		m_relation_chain_push_pose(&xrc, &T_space_layer);             // T_offset_layer
+		m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose); // T_space_offset
 		m_relation_chain_resolve(&xrc, &rel);
 		*out_pose = rel.pose;
 		return true;
 	}
 
-	struct xrt_space_relation rel;
-	if (!oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel)) {
+	// The compositor doesn't know about spaces, so we want the space in the xdev's "space".
+	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_space_relation T_space_xdev = XRT_SPACE_RELATION_ZERO;
+
+	XrResult ret = oxr_space_locate_device(log, head_xdev, spc, timestamp, &T_space_xdev);
+	if (ret != XR_SUCCESS) {
+		return false;
+	}
+	if (T_space_xdev.relation_flags == 0) {
 		return false;
 	}
 
-
-	// The compositor doesn't know about tracking origins, transform into the "raw" HMD tracking space.
-	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_space_relation T_xdev_layer;
 	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &rel);
-	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &head_xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &rel);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &T_space_layer);
+	m_relation_chain_push_inverted_relation(&xrc, &T_space_xdev); // T_xdev_space
+	m_relation_chain_resolve(&xrc, &T_xdev_layer);
 
-	*out_pose = rel.pose;
+	*out_pose = T_xdev_layer.pose;
 
 	return true;
 }

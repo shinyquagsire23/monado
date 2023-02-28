@@ -764,73 +764,28 @@ oxr_space_reference_create(struct oxr_logger *log,
                            const XrReferenceSpaceCreateInfo *createInfo,
                            struct oxr_space **out_space);
 
-/*!
- * Transforms a relation given in pure global space into the oxr_space @p spc.
- * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_relation_in_space(struct oxr_logger *log,
-                                 XrTime time,
-                                 struct xrt_space_relation *relation,
-                                 struct oxr_space *spc,
-                                 bool apply_space_pose,
-                                 struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a pose given in pure global space into a relation in the oxr_space @p spc.
- * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_pose_in_space(struct oxr_logger *log,
-                             XrTime time,
-                             struct xrt_pose *pose,
-                             struct oxr_space *spc,
-                             bool apply_space_pose,
-                             struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a relation in an given oxr_space @p spc into pure global space, taking the pose offset of @p spc into
- * account.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_relation_from_space(struct oxr_logger *log,
-                                   XrTime time,
-                                   struct xrt_space_relation *relation,
-                                   struct oxr_space *spc,
-                                   struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a posen in a given oxr_space @p spc into a relation in "pure" global space, taking the pose offset of @p
- * spc into account.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_pose_from_space(struct oxr_logger *log,
-                               XrTime time,
-                               struct xrt_pose *pose,
-                               struct oxr_space *spc,
-                               struct xrt_space_relation *out_relation);
-
-/*!
- * Returns the pure relation in global space of an oxr_space, meaning the tracking_origin offsets are already applied
- * and sets @p out_xdev to the device the space is associated with.
- *
- * @todo: This function currently assumes all reference spaces are associated with the HMD.
- */
-XRT_CHECK_RESULT bool
-oxr_space_get_pure_relation(struct oxr_logger *log,
-                            struct oxr_space *spc,
-                            XrTime time,
-                            struct xrt_space_relation *out_relation);
-
 XrResult
 oxr_space_locate(
     struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location);
 
-XRT_CHECK_RESULT bool
-is_local_space_set_up(struct oxr_session *sess);
-
-XRT_CHECK_RESULT bool
-global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel);
+/*!
+ * Locate the @ref xrt_device in the given base space, useful for implementing
+ * hand tracking location look ups and the like.
+ *
+ * @param      log          Logging struct.
+ * @param      xdev         Device to locate in the base space.
+ * @param      baseSpc      Base space where the device is to be located.
+ * @param[in]  time         Time in OpenXR domain.
+ * @param[out] out_relation Returns T_base_xdev, aka xdev in base space.
+ *
+ * @return Any errors, XR_SUCCESS, pose might not be valid on XR_SUCCESS.
+ */
+XRT_CHECK_RESULT XrResult
+oxr_space_locate_device(struct oxr_logger *log,
+                        struct xrt_device *xdev,
+                        struct oxr_space *baseSpc,
+                        XrTime time,
+                        struct xrt_space_relation *out_relation);
 
 
 /*
@@ -996,22 +951,6 @@ oxr_xdev_find_input(struct xrt_device *xdev, enum xrt_input_name name, struct xr
 bool
 oxr_xdev_find_output(struct xrt_device *xdev, enum xrt_output_name name, struct xrt_output **out_output);
 
-void
-oxr_xdev_get_relation_chain(struct oxr_logger *log,
-                            struct oxr_instance *inst,
-                            struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            XrTime at_time,
-                            struct xrt_relation_chain *xrc);
-
-void
-oxr_xdev_get_space_relation(struct oxr_logger *log,
-                            struct oxr_instance *inst,
-                            struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            XrTime at_time,
-                            struct xrt_space_relation *out_relation);
-
 /*!
  * Returns the hand tracking value of the named input from the device.
  * Does NOT apply tracking origin offset to each joint.
@@ -1023,6 +962,7 @@ oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
                               enum xrt_input_name name,
                               XrTime at_time,
                               struct xrt_hand_joint_set *out_value);
+
 
 /*
  *
@@ -1995,6 +1935,13 @@ struct oxr_space
 
 	//! Which sub action path is this?
 	struct oxr_subaction_paths subaction_paths;
+
+	struct
+	{
+		struct xrt_space *xs;
+		struct xrt_device *xdev;
+		enum xrt_input_name name;
+	} action;
 };
 
 /*!

@@ -343,7 +343,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 	const uint64_t xdisplay_time =
 	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, viewLocateInfo->displayTime);
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	// The head pose as in the xdev's space, aka XRT_INPUT_GENERIC_HEAD_POSE.
+	struct xrt_space_relation T_xdev_head = XRT_SPACE_RELATION_ZERO;
 	struct xrt_fov fovs[2] = {0};
 	struct xrt_pose poses[2] = {0};
 
@@ -352,38 +353,33 @@ oxr_session_locate_views(struct oxr_logger *log,
 	    &default_eye_relation, //
 	    xdisplay_time,         //
 	    2,                     //
-	    &head_relation,        //
+	    &T_xdev_head,          //
 	    fovs,                  //
 	    poses);
 
-
-	struct xrt_space_relation pure_head_relation;
-
-	// head_relation is in xdev space. Bring it into pure global space by applying tracking origin offset.
-	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &head_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &pure_head_relation);
-
-	// Clear here and filled in loop.
-	viewState->viewStateFlags = 0;
-
-	struct xrt_space_relation head_relation_in_base_space;
-	if (!oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
-	                                      &head_relation_in_base_space)) {
-		for (uint32_t i = 0; i < view_count; i++) {
-			OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, views[i].pose);
-		}
-
+	// The xdev pose in the base space.
+	struct xrt_space_relation T_base_xdev = XRT_SPACE_RELATION_ZERO;
+	XrResult ret = oxr_space_locate_device( //
+	    log,                                //
+	    xdev,                               //
+	    baseSpc,                            //
+	    viewLocateInfo->displayTime,        //
+	    &T_base_xdev);                      //
+	if (ret != XR_SUCCESS || T_base_xdev.relation_flags == 0) {
 		if (print) {
 			oxr_slog(&slog, "\n\tReturning invalid poses");
 			oxr_log_slog(log, &slog);
 		} else {
 			oxr_slog_cancel(&slog);
 		}
-
-		return XR_SUCCESS;
+		return ret;
 	}
+
+	struct xrt_space_relation T_base_head;
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &T_xdev_head);
+	m_relation_chain_push_relation(&xrc, &T_base_xdev);
+	m_relation_chain_resolve(&xrc, &T_base_head);
 
 	if (print) {
 		for (uint32_t i = 0; i < view_count; i++) {
@@ -392,8 +388,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 			oxr_pp_fov_indented_as_object(&slog, &fovs[i], tmp);
 			oxr_pp_pose_indented_as_object(&slog, &poses[i], tmp);
 		}
-		oxr_pp_relation_indented(&slog, &head_relation, "xdev.head_relation");
-		oxr_pp_relation_indented(&slog, &head_relation_in_base_space, "head_relation_in_base_space");
+		oxr_pp_relation_indented(&slog, &T_xdev_head, "T_xdev_head");
+		oxr_pp_relation_indented(&slog, &T_base_xdev, "T_base_xdev");
 	}
 
 	for (uint32_t i = 0; i < view_count; i++) {
@@ -407,7 +403,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 		struct xrt_space_relation result = {0};
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
-		m_relation_chain_push_relation(&xrc, &head_relation_in_base_space);
+		m_relation_chain_push_relation(&xrc, &T_base_head);
 		m_relation_chain_resolve(&xrc, &result);
 		OXR_XRT_POSE_TO_XRPOSEF(result.pose, views[i].pose);
 
@@ -942,23 +938,31 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time, &value);
 
-	struct xrt_space_relation pure_hand_relation = value.hand_pose;
-	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &pure_hand_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &pure_hand_relation);
+	// The hand pose is returned in the xdev's space.
+	struct xrt_space_relation T_xdev_hand = value.hand_pose;
 
-	struct xrt_space_relation hand_pose_in_base_space;
-	bool has_hand_pose_in_base_sapce = oxr_space_pure_relation_in_space( //
-	    log,                                                             //
-	    at_time,                                                         //
-	    &pure_hand_relation,                                             //
-	    baseSpc,                                                         //
-	    true,                                                            //
-	    &hand_pose_in_base_space);                                       //
+	// Get the xdev's pose in the base space.
+	struct xrt_space_relation T_base_xdev = XRT_SPACE_RELATION_ZERO;
+
+	XrResult ret = oxr_space_locate_device(log, xdev, baseSpc, at_time, &T_base_xdev);
+	if (ret != XR_SUCCESS) {
+		// Error printed logged oxr_space_locate_device
+		return ret;
+	}
+	if (T_base_xdev.relation_flags == 0) {
+		locations->isActive = false;
+		return XR_SUCCESS;
+	}
+
+	// Get the hands pose in the base space.
+	struct xrt_space_relation T_base_hand;
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &T_xdev_hand);
+	m_relation_chain_push_relation(&xrc, &T_base_xdev);
+	m_relation_chain_resolve(&xrc, &T_base_hand);
 
 	// Can we not relate to this space or did we not get values?
-	if (!has_hand_pose_in_base_sapce || !value.is_active) {
+	if (T_base_hand.relation_flags == 0 || !value.is_active) {
 		locations->isActive = false;
 
 		// Loop over all joints and zero flags.
@@ -986,7 +990,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		struct xrt_space_relation result;
 		struct xrt_relation_chain chain = {0};
 		m_relation_chain_push_relation(&chain, &r);
-		m_relation_chain_push_relation(&chain, &hand_pose_in_base_space);
+		m_relation_chain_push_relation(&chain, &T_base_hand);
 		m_relation_chain_resolve(&chain, &result);
 
 		xrt_to_xr_pose(&result.pose, &locations->jointLocations[i].pose);
