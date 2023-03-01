@@ -34,5 +34,3 @@ target_link_libraries(
 if(WIN32)
 	target_link_libraries(sdl-test PRIVATE SDL2::SDL2main)
 endif()
-
-install(TARGETS sdl-test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
