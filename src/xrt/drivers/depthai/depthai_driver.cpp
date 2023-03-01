@@ -894,11 +894,11 @@ depthai_fs_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 	struct depthai_fs *depthai = depthai_fs(xfs);
 	DEPTHAI_DEBUG(depthai, "DepthAI: SLAM stream start called");
 
-	depthai->sink[0] = nullptr;      // 0 == CamA-4L / RGB
-	depthai->sink[1] = sinks->left;  // 1 == CamB-2L / Left Gray
-	depthai->sink[2] = sinks->right; // 2 == CamC-2L / Right Gray
-	depthai->sink[3] = nullptr;      // 3 == CamD-4L
-	if (depthai->want_cameras && sinks->left != NULL && sinks->right != NULL) {
+	depthai->sink[0] = nullptr;        // 0 == CamA-4L / RGB
+	depthai->sink[1] = sinks->cams[0]; // 1 == CamB-2L / Left Gray
+	depthai->sink[2] = sinks->cams[1]; // 2 == CamC-2L / Right Gray
+	depthai->sink[3] = nullptr;        // 3 == CamD-4L
+	if (depthai->want_cameras && sinks->cams[0] != NULL && sinks->cams[1] != NULL) {
 		os_thread_helper_start(&depthai->image_thread, depthai_mainloop, depthai);
 	}
 	if (depthai->want_imu && sinks->imu != NULL) {

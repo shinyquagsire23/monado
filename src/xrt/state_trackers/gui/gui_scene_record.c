@@ -224,7 +224,7 @@ create_depthai_stereo(struct camera_window *cw)
 	struct xrt_frame_sink *tmp = &cw->base.sink;
 
 	struct xrt_slam_sinks sinks;
-	u_sink_combiner_create(&cw->camera.xfctx, tmp, &sinks.left, &sinks.right);
+	u_sink_combiner_create(&cw->camera.xfctx, tmp, &sinks.cams[0], &sinks.cams[1]);
 
 	// Now that we have setup a node graph, start it.
 	xrt_fs_slam_stream_start(cw->camera.xfs, &sinks);

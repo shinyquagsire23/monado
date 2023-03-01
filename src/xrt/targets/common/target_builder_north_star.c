@@ -313,16 +313,16 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	struct xrt_frame_sink *entry_right_sink = NULL;
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	u_sink_split_create(&usysd->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-	u_sink_split_create(&usysd->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+	u_sink_split_create(&usysd->xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
+	u_sink_split_create(&usysd->xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
 #else
-	entry_left_sink = slam_sinks->left;
-	entry_right_sink = slam_sinks->right;
+	entry_left_sink = slam_sinks->cams[0];
+	entry_right_sink = slam_sinks->cams[1];
 #endif
 
 	entry_sinks = (struct xrt_slam_sinks){
-	    .left = entry_left_sink,
-	    .right = entry_right_sink,
+	    .cams[0] = entry_left_sink,
+	    .cams[1] = entry_right_sink,
 	    .imu = slam_sinks->imu,
 	    .gt = slam_sinks->gt,
 	};
@@ -330,8 +330,8 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	struct xrt_slam_sinks dummy_slam_sinks = {0};
 	dummy_slam_sinks.imu = entry_sinks.imu;
 
-	u_sink_force_genlock_create(&usysd->xfctx, entry_sinks.left, entry_sinks.right, &dummy_slam_sinks.left,
-	                            &dummy_slam_sinks.right);
+	u_sink_force_genlock_create(&usysd->xfctx, entry_sinks.cams[0], entry_sinks.cams[1], &dummy_slam_sinks.cams[0],
+	                            &dummy_slam_sinks.cams[1]);
 
 	xrt_fs_slam_stream_start(the_fs, &dummy_slam_sinks);
 

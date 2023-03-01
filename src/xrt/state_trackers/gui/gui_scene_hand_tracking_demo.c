@@ -94,10 +94,10 @@ gui_scene_hand_tracking_demo(struct gui_program *p)
 	struct xrt_slam_sinks gen_lock = {0};
 	u_sink_force_genlock_create( //
 	    &usysd->xfctx,           //
-	    hand_sinks->left,        //
-	    hand_sinks->right,       //
-	    &gen_lock.left,          //
-	    &gen_lock.right);        //
+	    hand_sinks->cams[0],     //
+	    hand_sinks->cams[1],     //
+	    &gen_lock.cams[0],       //
+	    &gen_lock.cams[1]);      //
 
 	xrt_fs_slam_stream_start(the_fs, &gen_lock);
 
