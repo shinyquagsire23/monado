@@ -529,7 +529,7 @@ struct comp_target_factory
 	//! Pretty loggable name of target type.
 	const char *name;
 
-	//! Short all lowercaps identifier for target type.
+	//! Short all lowercase identifier for target type.
 	const char *identifier;
 
 	//! Does this factory require Vulkan to have been initialized.
@@ -549,7 +549,7 @@ struct comp_target_factory
 
 	/*!
 	 * Checks if this target can be detected, is the preferred target or
-	 * some other special considiration that this target should be used over
+	 * some other special consideration that this target should be used over
 	 * all other targets.
 	 *
 	 * This is needed for NVIDIA direct mode which window must be created
