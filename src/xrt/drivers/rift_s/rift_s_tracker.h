@@ -148,8 +148,7 @@ rift_s_tracker_imu_update(struct rift_s_tracker *t,
 void
 rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
                                 uint64_t frame_ts_ns,
-                                struct xrt_frame *left,
-                                struct xrt_frame *right);
+                                struct xrt_frame *frames[RIFT_S_CAMERA_COUNT]);
 void
 rift_s_tracker_get_tracked_pose(struct rift_s_tracker *t,
                                 enum rift_s_tracker_pose pose,

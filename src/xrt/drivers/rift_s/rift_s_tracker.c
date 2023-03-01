@@ -156,50 +156,37 @@ rift_s_fill_slam_cameras_calibration(struct rift_s_tracker *t, struct rift_s_hmd
 	const int CAMERA_FREQUENCY = 30;
 
 	struct rift_s_camera_calibration_block *camera_calibration = &hmd_config->camera_calibration;
-	struct rift_s_camera_calibration *left = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_LEFT];
-	struct rift_s_camera_calibration *right = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_RIGHT];
 
 	/* Compute the IMU from cam transform for each cam */
 	struct xrt_pose device_from_imu, imu_from_device;
-
 	math_pose_from_isometry(&hmd_config->imu_calibration.device_from_imu, &device_from_imu);
 	math_pose_invert(&device_from_imu, &imu_from_device);
 
-	struct xrt_pose device_from_left, device_from_right;
-	math_pose_from_isometry(&left->device_from_camera, &device_from_left);
-	math_pose_from_isometry(&right->device_from_camera, &device_from_right);
+	t->slam_calib.cam_count = RIFT_S_CAMERA_COUNT;
+	for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+		enum rift_s_camera_id cam_id = CAM_IDX_TO_ID[i];
+		struct rift_s_camera_calibration *cam = &camera_calibration->cameras[cam_id];
 
-	struct xrt_pose P_imu_left_cam, P_imu_right_cam;
-	math_pose_transform(&imu_from_device, &device_from_left, &P_imu_left_cam);
-	math_pose_transform(&imu_from_device, &device_from_right, &P_imu_right_cam);
+		struct xrt_pose device_from_cam;
+		math_pose_from_isometry(&cam->device_from_camera, &device_from_cam);
 
-	struct xrt_matrix_4x4 T_imu_left_cam, T_imu_right_cam;
-	math_matrix_4x4_isometry_from_pose(&P_imu_left_cam, &T_imu_left_cam);
-	math_matrix_4x4_isometry_from_pose(&P_imu_right_cam, &T_imu_right_cam);
+		struct xrt_pose P_imu_cam;
+		math_pose_transform(&imu_from_device, &device_from_cam, &P_imu_cam);
 
-	RIFT_S_DEBUG("IMU left cam pose %f %f %f orient %f %f %f %f", P_imu_left_cam.position.x,
-	             P_imu_left_cam.position.y, P_imu_left_cam.position.z, P_imu_left_cam.orientation.x,
-	             P_imu_left_cam.orientation.y, P_imu_left_cam.orientation.z, P_imu_left_cam.orientation.w);
+		struct xrt_matrix_4x4 T_imu_cam;
+		math_matrix_4x4_isometry_from_pose(&P_imu_cam, &T_imu_cam);
 
-	RIFT_S_DEBUG("IMU right cam pose %f %f %f orient %f %f %f %f", P_imu_right_cam.position.x,
-	             P_imu_right_cam.position.y, P_imu_right_cam.position.z, P_imu_right_cam.orientation.x,
-	             P_imu_right_cam.orientation.y, P_imu_right_cam.orientation.z, P_imu_right_cam.orientation.w);
+		RIFT_S_DEBUG("IMU cam%d cam pose %f %f %f orient %f %f %f %f", i, P_imu_cam.position.x,
+		             P_imu_cam.position.y, P_imu_cam.position.z, P_imu_cam.orientation.x,
+		             P_imu_cam.orientation.y, P_imu_cam.orientation.z, P_imu_cam.orientation.w);
 
-	struct t_slam_camera_calibration calib0 = {
-	    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, RIFT_S_CAMERA_FRONT_LEFT),
-	    .frequency = CAMERA_FREQUENCY,
-	    .T_imu_cam = T_imu_left_cam,
-	};
-
-	struct t_slam_camera_calibration calib1 = {
-	    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, RIFT_S_CAMERA_FRONT_RIGHT),
-	    .frequency = CAMERA_FREQUENCY,
-	    .T_imu_cam = T_imu_right_cam,
-	};
-
-	t->slam_calib.cam_count = 2;
-	t->slam_calib.cams[0] = calib0;
-	t->slam_calib.cams[1] = calib1;
+		struct t_slam_camera_calibration calib = {
+		    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, cam_id),
+		    .frequency = CAMERA_FREQUENCY,
+		    .T_imu_cam = T_imu_cam,
+		};
+		t->slam_calib.cams[i] = calib;
+	}
 }
 
 static void
@@ -221,7 +208,7 @@ rift_s_create_slam_tracker(struct rift_s_tracker *t, struct xrt_frame_context *x
 	t_slam_fill_default_config(&config);
 
 	/* No need to refcount these parameters */
-	config.cam_count = 2;
+	config.cam_count = RIFT_S_CAMERA_COUNT;
 	config.slam_calib = &t->slam_calib;
 
 	int create_status = t_slam_create(xfctx, &config, &t->tracking.slam, &sinks);
@@ -424,16 +411,15 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
 	if (slam_enabled && hand_enabled) {
-		struct xrt_frame_sink *entry_left_sink = NULL;
-		struct xrt_frame_sink *entry_right_sink = NULL;
+		struct xrt_frame_sink *entry_cam0_sink = NULL;
+		struct xrt_frame_sink *entry_cam1_sink = NULL;
 
-		u_sink_split_create(xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
-		u_sink_split_create(xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_cam0_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_cam1_sink);
 
 		entry_sinks = *slam_sinks;
-		entry_sinks.cam_count = 2;
-		entry_sinks.cams[0] = entry_left_sink;
-		entry_sinks.cams[1] = entry_right_sink;
+		entry_sinks.cams[0] = entry_cam0_sink;
+		entry_sinks.cams[1] = entry_cam1_sink;
 	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
 	} else if (hand_enabled) {
@@ -555,8 +541,7 @@ rift_s_tracker_imu_update(struct rift_s_tracker *t,
 void
 rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
                                 uint64_t frame_ts_ns,
-                                struct xrt_frame *left_frame,
-                                struct xrt_frame *right_frame)
+                                struct xrt_frame *frames[RIFT_S_CAMERA_COUNT])
 {
 	timepoint_ns frame_time;
 
@@ -601,14 +586,11 @@ rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
 	t->last_frame_time = frame_time;
 	os_mutex_unlock(&t->mutex);
 
-	if (t->slam_sinks.cams[0]) {
-		left_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.cams[0], left_frame);
-	}
-
-	if (t->slam_sinks.cams[1]) {
-		right_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.cams[1], right_frame);
+	for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+		if (t->slam_sinks.cams[i]) {
+			frames[i]->timestamp = frame_time;
+			xrt_sink_push_frame(t->slam_sinks.cams[i], frames[i]);
+		}
 	}
 }
 

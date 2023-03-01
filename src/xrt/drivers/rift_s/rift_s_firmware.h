@@ -37,6 +37,14 @@ enum rift_s_camera_id
 	RIFT_S_CAMERA_FRONT_RIGHT = 0x2,
 	RIFT_S_CAMERA_FRONT_LEFT = 0x3,
 	RIFT_S_CAMERA_SIDE_RIGHT = 0x4,
+	RIFT_S_CAMERA_COUNT,
+};
+
+//! Order/index of cameras when dealing with multi-camera tracking
+static const enum rift_s_camera_id CAM_IDX_TO_ID[RIFT_S_CAMERA_COUNT] = {
+    RIFT_S_CAMERA_FRONT_LEFT, RIFT_S_CAMERA_FRONT_RIGHT, //
+    RIFT_S_CAMERA_SIDE_LEFT,  RIFT_S_CAMERA_SIDE_RIGHT,  //
+    RIFT_S_CAMERA_TOP,
 };
 
 struct rift_s_imu_calibration
@@ -78,11 +86,9 @@ struct rift_s_camera_calibration
 	struct rift_s_fisheye62_distortion distortion;
 };
 
-#define RIFT_S_MAX_CAMERAS 5
-
 struct rift_s_camera_calibration_block
 {
-	struct rift_s_camera_calibration cameras[RIFT_S_MAX_CAMERAS];
+	struct rift_s_camera_calibration cameras[RIFT_S_CAMERA_COUNT];
 };
 
 /* Rift S controller LED entry */
