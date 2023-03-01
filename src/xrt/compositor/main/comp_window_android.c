@@ -202,13 +202,13 @@ static const char *instance_extensions[] = {
 };
 
 static bool
-detect(struct comp_target_factory *ctf, struct comp_compositor *c)
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
 {
 	return false;
 }
 
 static bool
-create_target(struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
 {
 	struct comp_target *ct = comp_window_android_create(c);
 	if (ct == NULL) {
@@ -220,7 +220,7 @@ create_target(struct comp_target_factory *ctf, struct comp_compositor *c, struct
 	return true;
 }
 
-struct comp_target_factory comp_target_factory_android = {
+const struct comp_target_factory comp_target_factory_android = {
     .name = "Android",
     .identifier = "android",
     .requires_vulkan_for_create = false,

@@ -109,7 +109,7 @@ struct comp_compositor
 	struct render_resources nr;
 
 	//! The selected target factory that we create our target from.
-	struct comp_target_factory *target_factory;
+	const struct comp_target_factory *target_factory;
 
 	//! The target we are displaying to.
 	struct comp_target *target;

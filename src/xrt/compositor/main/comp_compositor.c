@@ -760,7 +760,7 @@ compositor_init_vulkan(struct comp_compositor *c)
  *
  */
 
-struct comp_target_factory *ctfs[] = {
+const struct comp_target_factory *ctfs[] = {
 #if defined VK_USE_PLATFORM_WAYLAND_KHR && defined XRT_HAVE_WAYLAND_DIRECT
     &comp_target_factory_direct_wayland,
 #endif
@@ -801,7 +801,7 @@ error_msg_with_list(struct comp_compositor *c, const char *msg)
 }
 
 static bool
-compositor_check_deferred(struct comp_compositor *c, struct comp_target_factory *ctf)
+compositor_check_deferred(struct comp_compositor *c, const struct comp_target_factory *ctf)
 {
 	if (debug_get_bool_option_disable_deferred()) {
 		COMP_DEBUG(c, "Deferred window initialization globally disabled!");
@@ -821,7 +821,7 @@ compositor_check_deferred(struct comp_compositor *c, struct comp_target_factory 
 }
 
 static bool
-compositor_try_window(struct comp_compositor *c, struct comp_target_factory *ctf)
+compositor_try_window(struct comp_compositor *c, const struct comp_target_factory *ctf)
 {
 	COMP_TRACE_MARKER();
 
@@ -845,7 +845,7 @@ compositor_try_window(struct comp_compositor *c, struct comp_target_factory *ctf
 }
 
 static bool
-select_target_factory_from_settings(struct comp_compositor *c, struct comp_target_factory **out_ctf)
+select_target_factory_from_settings(struct comp_compositor *c, const struct comp_target_factory **out_ctf)
 {
 	const char *identifier = c->settings.target_identifier;
 
@@ -854,7 +854,7 @@ select_target_factory_from_settings(struct comp_compositor *c, struct comp_targe
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(ctfs); i++) {
-		struct comp_target_factory *ctf = ctfs[i];
+		const struct comp_target_factory *ctf = ctfs[i];
 
 		if (strcmp(ctf->identifier, identifier) == 0) {
 			*out_ctf = ctf;
@@ -870,10 +870,10 @@ select_target_factory_from_settings(struct comp_compositor *c, struct comp_targe
 }
 
 static bool
-select_target_factory_by_detecting(struct comp_compositor *c, struct comp_target_factory **out_ctf)
+select_target_factory_by_detecting(struct comp_compositor *c, const struct comp_target_factory **out_ctf)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(ctfs); i++) {
-		struct comp_target_factory *ctf = ctfs[i];
+		const struct comp_target_factory *ctf = ctfs[i];
 
 		if (comp_target_factory_detect(ctf, c)) {
 			*out_ctf = ctf;
@@ -885,7 +885,7 @@ select_target_factory_by_detecting(struct comp_compositor *c, struct comp_target
 }
 
 static bool
-compositor_init_window_pre_vulkan(struct comp_compositor *c, struct comp_target_factory *selected_ctf)
+compositor_init_window_pre_vulkan(struct comp_compositor *c, const struct comp_target_factory *selected_ctf)
 {
 	COMP_TRACE_MARKER();
 
@@ -918,7 +918,7 @@ compositor_init_window_pre_vulkan(struct comp_compositor *c, struct comp_target_
 	}
 
 	for (size_t i = 0; i < ARRAY_SIZE(ctfs); i++) {
-		struct comp_target_factory *ctf = ctfs[i];
+		const struct comp_target_factory *ctf = ctfs[i];
 
 		// Skip targets that requires Vulkan.
 		if (ctf->requires_vulkan_for_create) {
@@ -1011,7 +1011,7 @@ compositor_init_renderer(struct comp_compositor *c)
 
 xrt_result_t
 comp_main_create_system_compositor(struct xrt_device *xdev,
-                                   struct comp_target_factory *ctf,
+                                   const struct comp_target_factory *ctf,
                                    struct xrt_system_compositor **out_xsysc)
 {
 	COMP_TRACE_MARKER();

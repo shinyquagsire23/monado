@@ -413,7 +413,7 @@ check_vulkan_caps(struct comp_compositor *c, bool *out_detected)
 }
 
 static bool
-detect(struct comp_target_factory *ctf, struct comp_compositor *c)
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
 {
 	bool detected = false;
 
@@ -425,7 +425,7 @@ detect(struct comp_target_factory *ctf, struct comp_compositor *c)
 }
 
 static bool
-create_target(struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
 {
 	struct comp_target *ct = comp_window_direct_nvidia_create(c);
 	if (ct == NULL) {
@@ -437,7 +437,7 @@ create_target(struct comp_target_factory *ctf, struct comp_compositor *c, struct
 	return true;
 }
 
-struct comp_target_factory comp_target_factory_direct_nvidia = {
+const struct comp_target_factory comp_target_factory_direct_nvidia = {
     .name = "NVIDIA Direct-Mode",
     .identifier = "x11_direct_nvidia",
     .requires_vulkan_for_create = true,

@@ -555,13 +555,15 @@ struct comp_target_factory
 	 * This is needed for NVIDIA direct mode which window must be created
 	 * after vulkan has initialized.
 	 */
-	bool (*detect)(struct comp_target_factory *ctf, struct comp_compositor *c);
+	bool (*detect)(const struct comp_target_factory *ctf, struct comp_compositor *c);
 
 	/*!
 	 * Create a target from this factory, some targets requires Vulkan to
 	 * have been initialised, see @ref requires_vulkan_for_create.
 	 */
-	bool (*create_target)(struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct);
+	bool (*create_target)(const struct comp_target_factory *ctf,
+	                      struct comp_compositor *c,
+	                      struct comp_target **out_ct);
 };
 
 /*!
@@ -571,7 +573,7 @@ struct comp_target_factory
  * @ingroup comp_main
  */
 static inline bool
-comp_target_factory_detect(struct comp_target_factory *ctf, struct comp_compositor *c)
+comp_target_factory_detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
 {
 	COMP_TRACE_MARKER();
 
@@ -585,7 +587,7 @@ comp_target_factory_detect(struct comp_target_factory *ctf, struct comp_composit
  * @ingroup comp_main
  */
 static inline bool
-comp_target_factory_create_target(struct comp_target_factory *ctf,
+comp_target_factory_create_target(const struct comp_target_factory *ctf,
                                   struct comp_compositor *c,
                                   struct comp_target **out_ct)
 {

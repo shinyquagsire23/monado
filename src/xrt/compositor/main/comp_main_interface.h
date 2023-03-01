@@ -35,7 +35,7 @@ extern "C" {
  */
 xrt_result_t
 comp_main_create_system_compositor(struct xrt_device *xdev,
-                                   struct comp_target_factory *ctf,
+                                   const struct comp_target_factory *ctf,
                                    struct xrt_system_compositor **out_xsysc);
 
 
