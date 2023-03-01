@@ -12,15 +12,15 @@
  * Based in part on https://github.com/thaytan/OpenHMD/blob/rift-kalman-filter/src/exponential-filter.c
  */
 
+#include "math/m_mathinclude.h"
+#include "math/m_vec2.h"
+#include "math/m_vec3.h"
+
+#include "util/u_time.h"
+#include "util/u_misc.h"
 
 #include "m_filter_one_euro.h"
 
-#include "math/m_mathinclude.h"
-
-#include "math/m_vec2.h"
-#include "math/m_vec3.h"
-#include "util/u_time.h"
-#include "util/u_misc.h"
 
 static double
 calc_smoothing_alpha(double Fc, double dt)

@@ -28,6 +28,7 @@
 #define M_EURO_FILTER_HEAD_TRACKING_FCMIN_D 25.0
 #define M_EURO_FILTER_HEAD_TRACKING_BETA 0.6
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -245,6 +246,7 @@ m_filter_euro_quat_init(struct m_filter_euro_quat *f, double fc_min, double fc_m
  */
 void
 m_filter_euro_quat_run(struct m_filter_euro_quat *f, uint64_t ts, const struct xrt_quat *in_y, struct xrt_quat *out_y);
+
 
 #ifdef __cplusplus
 }
