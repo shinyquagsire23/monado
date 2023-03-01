@@ -468,7 +468,13 @@ rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_
 {
 	os_mutex_lock(&t->mutex);
 	time_duration_ns last_hw2mono = t->hw2mono;
-	m_clock_offset_a2b(25000, device_timestamp_ns, local_timestamp_ns, &t->hw2mono);
+	const float freq = 250.0;
+
+	t->seen_clock_observations++;
+	if (t->seen_clock_observations < 100)
+		goto done;
+
+	m_clock_offset_a2b(freq, device_timestamp_ns, local_timestamp_ns, &t->hw2mono);
 
 	if (!t->have_hw2mono) {
 		time_duration_ns change_ns = last_hw2mono - t->hw2mono;
@@ -477,6 +483,7 @@ rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_
 			t->have_hw2mono = true;
 		}
 	}
+done:
 	os_mutex_unlock(&t->mutex);
 }
 

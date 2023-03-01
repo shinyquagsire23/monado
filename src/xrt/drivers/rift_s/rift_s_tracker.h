@@ -84,6 +84,7 @@ struct rift_s_tracker
 	struct xrt_pose left_cam_from_imu;
 
 	//!< Estimated offset from HMD device timestamp to local monotonic clock
+	uint64_t seen_clock_observations;
 	bool have_hw2mono;
 	time_duration_ns hw2mono;
 	timepoint_ns last_frame_time;
