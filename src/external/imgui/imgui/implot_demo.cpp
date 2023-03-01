@@ -608,7 +608,7 @@ void ShowDemoWindow(bool* p_open) {
         static double t_max = 1609459200; // 01/01/2021 @ 12:00:00am (UTC)
 
         ImGui::BulletText("When ImPlotAxisFlags_Time is enabled on the X-Axis, values are interpreted as\n"
-                          "UNIX timestamps in seconds and axis labels are formated as date/time.");
+                          "UNIX timestamps in seconds and axis labels are formatted as date/time.");
         ImGui::BulletText("By default, labels are in UTC time but can be set to use local time instead.");
 
         ImGui::Checkbox("Use Local Time",&ImPlot::GetStyle().UseLocalTime);
