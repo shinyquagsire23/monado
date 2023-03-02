@@ -12,6 +12,7 @@
 #include "util/u_debug.h"
 #include "util/u_logging.h"
 #include "wmr_controller_protocol.h"
+#include <stdint.h>
 
 /*
  *
@@ -115,15 +116,15 @@ wmr_controller_packet_parse(const unsigned char *buffer,
 	vec3_from_wmr_controller_gyro(gyro, &decoded_input->imu.gyro);
 
 
-	uint32_t prev_ticks = decoded_input->imu.timestamp_ticks & 0xFFFFFFFFUL;
+	uint32_t prev_ticks = decoded_input->imu.timestamp_ticks & UINT32_C(0xFFFFFFFF);
 
 	// Write the new ticks value into the lower half of timestamp_ticks
-	decoded_input->imu.timestamp_ticks &= (0xFFFFFFFFUL << 32);
+	decoded_input->imu.timestamp_ticks &= (UINT64_C(0xFFFFFFFF) << 32u);
 	decoded_input->imu.timestamp_ticks += (uint32_t)read32(&p);
 
-	if ((decoded_input->imu.timestamp_ticks & 0xFFFFFFFFUL) < prev_ticks) {
+	if ((decoded_input->imu.timestamp_ticks & UINT64_C(0xFFFFFFFF)) < prev_ticks) {
 		// Timer overflow, so increment the upper half of timestamp_ticks
-		decoded_input->imu.timestamp_ticks += (0x1UL << 32);
+		decoded_input->imu.timestamp_ticks += (UINT64_C(0x1) << 32u);
 	}
 
 	/* Todo: More decoding here

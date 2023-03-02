@@ -23,6 +23,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #define WMR_SOURCE_STR "WMR Source"
 
@@ -91,7 +92,7 @@ receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 	struct wmr_source *ws = container_of(sink, struct wmr_source, left_sink);
 	ws->cam_hw2mono = ws->hw2mono; // We want the right frame to use the same offset
 	xf->timestamp += ws->cam_hw2mono;
-	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	WMR_TRACE(ws, "left img t=%" PRId64 " source_t=%" PRId64, xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
 	if (ws->out_sinks.cams[0] && ws->first_imu_received) {
 		xrt_sink_push_frame(ws->out_sinks.cams[0], xf);
@@ -103,7 +104,7 @@ receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, right_sink);
 	xf->timestamp += ws->cam_hw2mono;
-	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
+	WMR_TRACE(ws, "right img t=%" PRId64 " source_t=%" PRId64, xf->timestamp, xf->source_timestamp);
 	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
 	if (ws->out_sinks.cams[1] && ws->first_imu_received) {
 		xrt_sink_push_frame(ws->out_sinks.cams[1], xf);
@@ -117,7 +118,7 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 
 	// Convert hardware timestamp into monotonic clock. Update offset estimate hw2mono.
 	// Note this is only done with IMU samples as they have the smallest USB transmission time.
-	const double IMU_FREQ = 250; //!< @todo use 1000 if "average_imus" is false
+	const float IMU_FREQ = 250.f; //!< @todo use 1000 if "average_imus" is false
 	timepoint_ns now_hw = s->timestamp_ns;
 	timepoint_ns now_mono = (timepoint_ns)os_monotonic_get_ns();
 	s->timestamp_ns = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
@@ -125,7 +126,7 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
-	WMR_TRACE(ws, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+	WMR_TRACE(ws, "imu t=%" PRId64 " a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
 	// Push to debug UI
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
