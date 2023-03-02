@@ -29,8 +29,8 @@ enum u_device_alloc_flags
 {
 	// clang-format off
 	U_DEVICE_ALLOC_NO_FLAGS      = 0,
-	U_DEVICE_ALLOC_HMD           = 1 << 0,
-	U_DEVICE_ALLOC_TRACKING_NONE = 1 << 1,
+	U_DEVICE_ALLOC_HMD           = 1u << 0u,
+	U_DEVICE_ALLOC_TRACKING_NONE = 1u << 1u,
 	// clang-format on
 };
 
