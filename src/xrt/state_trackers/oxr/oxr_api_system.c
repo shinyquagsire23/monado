@@ -277,7 +277,7 @@ oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
 
 // NOLINTNEXTLINE // don't remove the forward decl.
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-vkGetInstanceProcAddr(VkInstance instance, const char *pName);
+vkGetInstanceProcAddr(VkInstance instance, const char *pName); // NOLINT
 
 XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
