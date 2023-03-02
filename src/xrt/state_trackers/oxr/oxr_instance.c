@@ -371,6 +371,12 @@ oxr_instance_create(struct oxr_logger *log,
 
 #ifdef XRT_FEATURE_RENDERDOC
 
+#ifdef __GNUC__
+// Keep the warnings about normal usage of dlsym away.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif // __GNUC_
+
 #ifdef XRT_OS_LINUX
 	void *mod = dlopen("librenderdoc.so", RTLD_NOW | RTLD_NOLOAD);
 	if (mod) {
@@ -395,6 +401,10 @@ oxr_instance_create(struct oxr_logger *log,
 		assert(ret == 1);
 	}
 #endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif // __GNUC_
 
 #endif
 
