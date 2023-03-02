@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 
 /*
@@ -294,8 +295,9 @@ comp_swapchain_create_init(struct comp_swapchain *sc,
 {
 	VkResult ret;
 
-	VK_DEBUG(vk, "CREATE %p %dx%d %s (%ld)", (void *)sc, //
-	         info->width, info->height,                  //
+	VK_DEBUG(vk, "CREATE %p %" PRIu32 "x%" PRIu32 " %s (%" PRId64 ")", //
+	         (void *)sc,                                               //
+	         info->width, info->height,                                //
 	         vk_format_string(info->format), info->format);
 
 	if ((info->create & XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT) != 0) {
@@ -342,8 +344,9 @@ comp_swapchain_import_init(struct comp_swapchain *sc,
 {
 	VkResult ret;
 
-	VK_DEBUG(vk, "IMPORT %p %dx%d %s (%ld)", (void *)sc, //
-	         info->width, info->height,                  //
+	VK_DEBUG(vk, "IMPORT %p %" PRIu32 "x%" PRIu32 " %s (%" PRId64 ")", //
+	         (void *)sc,                                               //
+	         info->width, info->height,                                //
 	         vk_format_string(info->format), info->format);
 
 	set_common_fields(sc, destroy_func, vk, cscgc, native_image_count);
