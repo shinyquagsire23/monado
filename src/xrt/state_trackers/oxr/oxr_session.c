@@ -39,6 +39,7 @@
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
 #include "oxr_pretty_print.h"
+#include "oxr_conversions.h"
 
 #include <stdio.h>
 #include <stdlib.h>

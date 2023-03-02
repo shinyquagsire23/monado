@@ -828,11 +828,9 @@ oxr_space_locate(
 XRT_CHECK_RESULT bool
 is_local_space_set_up(struct oxr_session *sess);
 
-XrSpaceLocationFlags
-xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags);
-
 XRT_CHECK_RESULT bool
 global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel);
+
 
 /*
  *

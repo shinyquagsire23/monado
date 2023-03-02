@@ -23,6 +23,7 @@
 #include "oxr_input_transform.h"
 #include "oxr_chain.h"
 #include "oxr_pretty_print.h"
+#include "oxr_conversions.h"
 
 
 const struct xrt_pose origin = XRT_POSE_IDENTITY;
@@ -348,41 +349,6 @@ print_pose(struct oxr_session *sess, const char *prefix, struct xrt_pose *pose)
 	struct xrt_quat *q = &pose->orientation;
 
 	U_LOG_D("%s (%f, %f, %f) (%f, %f, %f, %f)", prefix, p->x, p->y, p->z, q->x, q->y, q->z, q->w);
-}
-
-XrSpaceLocationFlags
-xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags)
-{
-	// clang-format off
-	bool valid_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_VALID_BIT) != 0;
-	bool tracked_ori = (relation_flags & XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT) != 0;
-	bool valid_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) != 0;
-	bool tracked_pos = (relation_flags & XRT_SPACE_RELATION_POSITION_TRACKED_BIT) != 0;
-
-	bool linear_vel = (relation_flags & XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT) != 0;
-	bool angular_vel = (relation_flags & XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT) != 0;
-	// clang-format on
-
-	XrSpaceLocationFlags location_flags = (XrSpaceLocationFlags)0;
-	if (valid_ori) {
-		location_flags |= XR_SPACE_LOCATION_ORIENTATION_VALID_BIT;
-	}
-	if (tracked_ori) {
-		location_flags |= XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
-	}
-	if (valid_pos) {
-		location_flags |= XR_SPACE_LOCATION_POSITION_VALID_BIT;
-	}
-	if (tracked_pos) {
-		location_flags |= XR_SPACE_LOCATION_POSITION_TRACKED_BIT;
-	}
-	if (linear_vel) {
-		location_flags |= XR_SPACE_VELOCITY_LINEAR_VALID_BIT;
-	}
-	if (angular_vel) {
-		location_flags |= XR_SPACE_VELOCITY_ANGULAR_VALID_BIT;
-	}
-	return location_flags;
 }
 
 XrResult
