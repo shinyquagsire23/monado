@@ -66,13 +66,12 @@ attached_override(struct multi_device *d,
 
 	// XXX TODO tracking origin offsets
 	// m_relation_chain_push_inverted_pose_if_not_identity(&xrc, tracker_offset);
-	// m_relation_chain_push_inverted_relation(&xrc, tracker_relation);
+	// m_relation_chain_push_pose_if_not_identity(&xrc, target_offset);
 
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, target_relation);
 	m_relation_chain_push_pose_if_not_identity(&xrc, &d->tracking_override.offset_inv);
 	m_relation_chain_push_relation(&xrc, tracker_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, tracker_offset);
 	m_relation_chain_push_relation(&xrc, in_target_space);
 	m_relation_chain_resolve(&xrc, out_relation);
 }
