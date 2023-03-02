@@ -31,6 +31,7 @@
 #include <fstream>
 #include <future>
 #include <thread>
+#include <inttypes.h>
 
 //! @see euroc_player_playback_config
 DEBUG_GET_ONCE_LOG_OPTION(euroc_log, "EUROC_LOG", U_LOGGING_WARN)
@@ -395,7 +396,7 @@ static timepoint_ns
 os_monotonic_get_ts()
 {
 	uint64_t uts = os_monotonic_get_ns();
-	EUROC_ASSERT(uts < INT64_MAX, "Timestamp=%lu was greater than INT64_MAX=%ld", uts, INT64_MAX);
+	EUROC_ASSERT(uts < INT64_MAX, "Timestamp=%" PRId64 " was greater than INT64_MAX=%ld", uts, INT64_MAX);
 	int64_t its = uts;
 	return its;
 }
@@ -488,7 +489,8 @@ euroc_player_push_next_frame(struct euroc_player *ep)
 	}
 
 	size_t fcount = ep->imgs->at(0).size();
-	(void)snprintf(ep->progress_text, sizeof(ep->progress_text), "Playback %.2f%% - Frame %lu/%lu - IMU %lu/%lu",
+	(void)snprintf(ep->progress_text, sizeof(ep->progress_text),
+	               "Playback %.2f%% - Frame %" PRId64 "/%" PRId64 " - IMU %" PRId64 "/%" PRId64,
 	               float(ep->img_seq) / float(fcount) * 100, ep->img_seq, fcount, ep->imu_seq, ep->imus->size());
 
 	if (ep->playback.print_progress) {
