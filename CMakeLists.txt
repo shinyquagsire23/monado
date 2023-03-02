@@ -1,4 +1,4 @@
-# Copyright 2018-2022, Collabora, Ltd.
+# Copyright 2018-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 cmake_minimum_required(VERSION 3.10.2)
@@ -255,6 +255,7 @@ option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAV
 option_with_deps(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" DEPENDS "NOT ANDROID")
 option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS "XRT_HAVE_PERCETTO OR XRT_HAVE_TRACY")
 option_with_deps(XRT_FEATURE_WINDOW_PEEK "Enable a window that displays the content of the HMD on screen" DEPENDS XRT_HAVE_SDL2)
+option(XRT_FEATURE_SSE2 "Build using SSE2 instructions, if building for 32-bit x86" ON)
 
 if (XRT_FEATURE_SERVICE)
 	# Disable the client debug gui by default for out-of-proc -

@@ -1,4 +1,4 @@
-# Copyright 2018-2021, Collabora, Ltd.
+# Copyright 2018-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 if(NOT MSVC)
@@ -8,6 +8,13 @@ if(NOT MSVC)
 		)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=int-conversion")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
+
+	# Use effectively ubiquitous SSE2 instead of x87 floating point
+	# for increased reliability/consistency
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "[xX]86" AND XRT_FEATURE_SSE2)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2 -mfpmath=sse")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -mfpmath=sse")
+	endif()
 endif()
 
 if(NOT WIN32)
