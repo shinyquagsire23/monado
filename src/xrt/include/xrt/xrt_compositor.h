@@ -67,9 +67,9 @@ typedef uint64_t VkDeviceMemory;
 enum xrt_swapchain_create_flags
 {
 	//! Our compositor just ignores this bit.
-	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1 << 0),
+	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1u << 0u),
 	//! Signals that the allocator should only allocate one image.
-	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1 << 1),
+	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1u << 1u),
 };
 
 /*!
@@ -115,14 +115,14 @@ enum xrt_layer_type
  */
 enum xrt_layer_composition_flags
 {
-	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1 << 0,
-	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1 << 1,
-	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1 << 2,
+	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1u << 0u,
+	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1u << 1u,
+	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1u << 2u,
 	/*!
 	 * The layer is locked to the device and the pose should only be
 	 * adjusted for the IPD.
 	 */
-	XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT = 1 << 3,
+	XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT = 1u << 3u,
 };
 
 /*!

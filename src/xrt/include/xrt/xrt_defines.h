@@ -102,9 +102,9 @@ enum xrt_blend_mode
 enum xrt_distortion_model
 {
 	// clang-format off
-	XRT_DISTORTION_MODEL_NONE      = 1 << 0,
-	XRT_DISTORTION_MODEL_COMPUTE   = 1 << 1,
-	XRT_DISTORTION_MODEL_MESHUV    = 1 << 2,
+	XRT_DISTORTION_MODEL_NONE      = 1u << 0u,
+	XRT_DISTORTION_MODEL_COMPUTE   = 1u << 1u,
+	XRT_DISTORTION_MODEL_MESHUV    = 1u << 2u,
 	// clang-format on
 };
 
@@ -523,17 +523,19 @@ struct xrt_api_requirements
 enum xrt_space_relation_flags
 {
 	// clang-format off
-	XRT_SPACE_RELATION_ORIENTATION_VALID_BIT =          (1 << 0),
-	XRT_SPACE_RELATION_POSITION_VALID_BIT =             (1 << 1),
-	XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT =      (1 << 2),
-	XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT =     (1 << 3),
-	XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT =        (1 << 4),
-	XRT_SPACE_RELATION_POSITION_TRACKED_BIT =           (1 << 5),
+	XRT_SPACE_RELATION_ORIENTATION_VALID_BIT =          (1u << 0u),
+	XRT_SPACE_RELATION_POSITION_VALID_BIT =             (1u << 1u),
+	XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT =      (1u << 2u),
+	XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT =     (1u << 3u),
+	XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT =        (1u << 4u),
+	XRT_SPACE_RELATION_POSITION_TRACKED_BIT =           (1u << 5u),
 	// clang-format on
-	XRT_SPACE_RELATION_BITMASK_ALL =
-	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_POSITION_VALID_BIT |
-	    XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT |
-	    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT,
+	XRT_SPACE_RELATION_BITMASK_ALL = (uint32_t)XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |      //
+	                                 (uint32_t)XRT_SPACE_RELATION_POSITION_VALID_BIT |         //
+	                                 (uint32_t)XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT |  //
+	                                 (uint32_t)XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | //
+	                                 (uint32_t)XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |    //
+	                                 (uint32_t)XRT_SPACE_RELATION_POSITION_TRACKED_BIT,
 	XRT_SPACE_RELATION_BITMASK_NONE = 0
 };
 
@@ -677,6 +679,23 @@ enum xrt_input_type
 };
 
 /*!
+ * The number of bits reserved for the input type in @ref xrt_input_name
+ *
+ * @see xrt_input_name
+ * @ingroup xrt_iface
+ */
+#define XRT_INPUT_TYPE_BITWIDTH 8u
+
+/*!
+ * The mask associated with @ref XRT_INPUT_TYPE_BITWIDTH
+ *
+ * @see xrt_input_name
+ * @ingroup xrt_iface
+ */
+
+#define XRT_INPUT_TYPE_BITMASK 0xffu
+
+/*!
  * @brief Create an enum value for xrt_input_name that packs an ID and input
  * type.
  *
@@ -687,7 +706,7 @@ enum xrt_input_type
  * @see xrt_input_name
  * @ingroup xrt_iface
  */
-#define XRT_INPUT_NAME(id, type) ((id << 8) | XRT_INPUT_TYPE_##type)
+#define XRT_INPUT_NAME(id, type) ((UINT32_C(id) << XRT_INPUT_TYPE_BITWIDTH) | (uint32_t)XRT_INPUT_TYPE_##type)
 
 /*!
  * @brief Extract the xrt_input_type from an xrt_input_name.
@@ -698,7 +717,7 @@ enum xrt_input_type
  * @returns @ref xrt_input_type
  * @ingroup xrt_iface
  */
-#define XRT_GET_INPUT_TYPE(name) ((enum xrt_input_type)(name & 0xff))
+#define XRT_GET_INPUT_TYPE(name) ((enum xrt_input_type)(name & XRT_INPUT_TYPE_BITMASK))
 
 /*!
  * @brief Extract the xrt_input_name id from an xrt_input_name.
@@ -709,7 +728,7 @@ enum xrt_input_type
  * @returns @ref xrt_input_type
  * @ingroup xrt_iface
  */
-#define XRT_GET_INPUT_ID(name) ((uint32_t)(name >> 8))
+#define XRT_GET_INPUT_ID(name) ((uint32_t)(name >> XRT_INPUT_TYPE_BITWIDTH))
 
 /*!
  * Every internal input source known to monado with a baked in type.
@@ -1019,6 +1038,20 @@ union xrt_input_value {
 };
 
 /*!
+ * The number of bits reserved for the input type in @ref xrt_output_name
+ * @see xrt_output_type
+ * @ingroup xrt_iface
+ */
+#define XRT_OUTPUT_TYPE_BITWIDTH 8u
+
+/*!
+ * The mask associated with @ref XRT_OUTPUT_TYPE_BITWIDTH
+ * @see xrt_output_type
+ * @ingroup xrt_iface
+ */
+#define XRT_OUTPUT_TYPE_BITMASK 0xffu
+
+/*!
  * Base type of this output.
  *
  * @ingroup xrt_iface
@@ -1031,7 +1064,7 @@ enum xrt_output_type
 	// clang-format on
 };
 
-#define XRT_OUTPUT_NAME(id, type) ((id << 8) | XRT_OUTPUT_TYPE_##type)
+#define XRT_OUTPUT_NAME(id, type) ((UINT32_C(id) << XRT_OUTPUT_TYPE_BITWIDTH) | (uint32_t)XRT_OUTPUT_TYPE_##type)
 
 /*!
  * Name of a output with a baked in type.
