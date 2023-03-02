@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <pthread.h>
+#include <inttypes.h>
 
 
 /*!
@@ -141,9 +142,11 @@ force_genlock_mainloop(void *ptr)
 		frames[1]->timestamp = ts;
 
 		if (ts == q->last_ts) {
-			U_LOG_W("Got an image frame with a duplicate timestamp! Old: %lu; New: %lu", q->last_ts, ts);
+			U_LOG_W("Got an image frame with a duplicate timestamp! Old: %" PRId64 "; New: %" PRId64,
+			        q->last_ts, ts);
 		} else if (ts < q->last_ts) {
-			U_LOG_W("Got an image frame with a non-monotonically-increasing timestamp! Old: %lu; New: %lu",
+			U_LOG_W("Got an image frame with a non-monotonically-increasing timestamp! Old: %" PRId64
+			        "; New: %" PRId64,
 			        q->last_ts, ts);
 		} else {
 			// Send to the consumer, in left-right order.
