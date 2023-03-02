@@ -27,7 +27,7 @@
 #include <inttypes.h>
 
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo *createInfo, XrSpace *space)
 {
 	OXR_TRACE_MARKER();
@@ -57,7 +57,7 @@ static const XrReferenceSpaceType session_spaces[] = {
     XR_REFERENCE_SPACE_TYPE_STAGE,
 };
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateReferenceSpaces(XrSession session,
                                uint32_t spaceCapacityInput,
                                uint32_t *spaceCountOutput,
@@ -73,7 +73,7 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 	                    session_spaces, oxr_session_success_result(sess));
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df *bounds)
 {
 	OXR_TRACE_MARKER();
@@ -102,7 +102,7 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType refere
 	return XR_SPACE_BOUNDS_UNAVAILABLE;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *createInfo, XrSpace *out_space)
 {
 	OXR_TRACE_MARKER();
@@ -125,7 +125,7 @@ oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *
 	return oxr_session_success_result(sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation *location)
 {
 	OXR_TRACE_MARKER();
@@ -146,7 +146,7 @@ oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation
 	return oxr_space_locate(&log, spc, baseSpc, time, location);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySpace(XrSpace space)
 {
 	OXR_TRACE_MARKER();

@@ -123,7 +123,7 @@ process_dpad(struct oxr_logger *log,
  *
  */
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 {
 	OXR_TRACE_MARKER();
@@ -151,7 +151,7 @@ oxr_xrSyncActions(XrSession session, const XrActionsSyncInfo *syncInfo)
 	return oxr_action_sync_data(&log, sess, syncInfo->countActiveActionSets, syncInfo->activeActionSets);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttachInfo *bindInfo)
 {
 	OXR_TRACE_MARKER();
@@ -181,7 +181,7 @@ oxr_xrAttachSessionActionSets(XrSession session, const XrSessionActionSetsAttach
 	return oxr_session_attach_action_sets(&log, sess, bindInfo);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
                                         const XrInteractionProfileSuggestedBinding *suggestedBindings)
 {
@@ -392,7 +392,7 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 	return oxr_action_suggest_interaction_profile_bindings(&log, inst, suggestedBindings, &dpad_state);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetCurrentInteractionProfile(XrSession session,
                                    XrPath topLevelUserPath,
                                    XrInteractionProfileState *interactionProfile)
@@ -442,7 +442,7 @@ oxr_xrGetCurrentInteractionProfile(XrSession session,
 	return oxr_action_get_current_interaction_profile(&log, sess, topLevelUserPath, interactionProfile);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetInputSourceLocalizedName(XrSession session,
                                   const XrInputSourceLocalizedNameGetInfo *getInfo,
                                   uint32_t bufferCapacityInput,
@@ -500,7 +500,7 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
  *
  */
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo *createInfo, XrActionSet *actionSet)
 {
 	OXR_TRACE_MARKER();
@@ -551,7 +551,7 @@ oxr_xrCreateActionSet(XrInstance instance, const XrActionSetCreateInfo *createIn
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyActionSet(XrActionSet actionSet)
 {
 	OXR_TRACE_MARKER();
@@ -570,7 +570,7 @@ oxr_xrDestroyActionSet(XrActionSet actionSet)
  *
  */
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo *createInfo, XrAction *action)
 {
 	OXR_TRACE_MARKER();
@@ -635,7 +635,7 @@ oxr_xrCreateAction(XrActionSet actionSet, const XrActionCreateInfo *createInfo, 
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyAction(XrAction action)
 {
 	OXR_TRACE_MARKER();
@@ -647,7 +647,7 @@ oxr_xrDestroyAction(XrAction action)
 	return oxr_handle_destroy(&log, &act->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateBoolean *data)
 {
 	OXR_TRACE_MARKER();
@@ -675,7 +675,7 @@ oxr_xrGetActionStateBoolean(XrSession session, const XrActionStateGetInfo *getIn
 	return oxr_action_get_boolean(&log, sess, act->act_key, subaction_paths, data);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateFloat *data)
 {
 	OXR_TRACE_MARKER();
@@ -703,7 +703,7 @@ oxr_xrGetActionStateFloat(XrSession session, const XrActionStateGetInfo *getInfo
 	return oxr_action_get_vector1f(&log, sess, act->act_key, subaction_paths, data);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStateVector2f *data)
 {
 	OXR_TRACE_MARKER();
@@ -731,7 +731,7 @@ oxr_xrGetActionStateVector2f(XrSession session, const XrActionStateGetInfo *getI
 	return oxr_action_get_vector2f(&log, sess, act->act_key, subaction_paths, data);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo, XrActionStatePose *data)
 {
 	OXR_TRACE_MARKER();
@@ -759,7 +759,7 @@ oxr_xrGetActionStatePose(XrSession session, const XrActionStateGetInfo *getInfo,
 	return oxr_action_get_pose(&log, sess, act->act_key, subaction_paths, data);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateBoundSourcesForAction(XrSession session,
                                      const XrBoundSourcesForActionEnumerateInfo *enumerateInfo,
                                      uint32_t sourceCapacityInput,
@@ -792,7 +792,7 @@ oxr_xrEnumerateBoundSourcesForAction(XrSession session,
  *
  */
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrApplyHapticFeedback(XrSession session,
                           const XrHapticActionInfo *hapticActionInfo,
                           const XrHapticBaseHeader *hapticEvent)
@@ -822,7 +822,7 @@ oxr_xrApplyHapticFeedback(XrSession session,
 	return oxr_action_apply_haptic_feedback(&log, sess, act->act_key, subaction_paths, hapticEvent);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStopHapticFeedback(XrSession session, const XrHapticActionInfo *hapticActionInfo)
 {
 	OXR_TRACE_MARKER();

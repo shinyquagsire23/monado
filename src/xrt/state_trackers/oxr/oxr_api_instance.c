@@ -39,7 +39,7 @@
 	{XR_TYPE_EXTENSION_PROPERTIES, NULL, XR_##all_caps##_EXTENSION_NAME, XR_##mixed_case##_SPEC_VERSION},
 static const XrExtensionProperties extension_properties[] = {OXR_EXTENSION_SUPPORT_GENERATE(MAKE_EXTENSION_PROPERTIES)};
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
                                            uint32_t propertyCapacityInput,
                                            uint32_t *propertyCountOutput,
@@ -55,7 +55,7 @@ oxr_xrEnumerateInstanceExtensionProperties(const char *layerName,
 }
 
 #ifdef OXR_HAVE_KHR_loader_init
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *loaderInitInfo)
 {
 	struct oxr_logger log;
@@ -129,7 +129,7 @@ oxr_check_android_extensions(struct oxr_logger *log,
 }
 #endif // XRT_OS_ANDROID
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_instance)
 {
 	OXR_TRACE_MARKER();
@@ -207,7 +207,7 @@ oxr_xrCreateInstance(const XrInstanceCreateInfo *createInfo, XrInstance *out_ins
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyInstance(XrInstance instance)
 {
 	OXR_TRACE_MARKER();
@@ -219,7 +219,7 @@ oxr_xrDestroyInstance(XrInstance instance)
 	return oxr_handle_destroy(&log, &inst->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetInstanceProperties(XrInstance instance, XrInstanceProperties *instanceProperties)
 {
 	OXR_TRACE_MARKER();
@@ -231,7 +231,7 @@ oxr_xrGetInstanceProperties(XrInstance instance, XrInstanceProperties *instanceP
 	return oxr_instance_get_properties(&log, inst, instanceProperties);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 {
 	OXR_TRACE_MARKER();
@@ -244,7 +244,7 @@ oxr_xrPollEvent(XrInstance instance, XrEventDataBuffer *eventData)
 	return oxr_poll_event(&log, inst, eventData);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RESULT_STRING_SIZE])
 {
 	OXR_TRACE_MARKER();
@@ -267,7 +267,7 @@ oxr_xrResultToString(XrInstance instance, XrResult value, char buffer[XR_MAX_RES
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buffer[XR_MAX_STRUCTURE_NAME_SIZE])
 {
 	OXR_TRACE_MARKER();
@@ -288,7 +288,7 @@ oxr_xrStructureTypeToString(XrInstance instance, XrStructureType value, char buf
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrStringToPath(XrInstance instance, const char *pathString, XrPath *out_path)
 {
 	OXR_TRACE_MARKER();
@@ -314,7 +314,7 @@ oxr_xrStringToPath(XrInstance instance, const char *pathString, XrPath *out_path
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPathToString(
     XrInstance instance, XrPath path, uint32_t bufferCapacityInput, uint32_t *bufferCountOutput, char *buffer)
 {
@@ -346,7 +346,7 @@ oxr_xrPathToString(
 
 // ---- XR_KHR_convert_timespec_time extension
 #ifdef OXR_HAVE_KHR_convert_timespec_time
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *timespecTime, XrTime *time)
 {
 	OXR_TRACE_MARKER();
@@ -362,7 +362,7 @@ oxr_xrConvertTimespecTimeToTimeKHR(XrInstance instance, const struct timespec *t
 	return oxr_instance_convert_timespec_to_time(&log, inst, timespecTime, time);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct timespec *timespecTime)
 {
 	OXR_TRACE_MARKER();
@@ -384,7 +384,7 @@ oxr_xrConvertTimeToTimespecTimeKHR(XrInstance instance, XrTime time, struct time
 
 // ---- XR_KHR_win32_convert_performance_counter_time extension
 #ifdef XR_USE_PLATFORM_WIN32
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
                                               const LARGE_INTEGER *performanceCounter,
                                               XrTime *time)
@@ -402,7 +402,7 @@ oxr_xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
 	return oxr_instance_convert_win32perfcounter_to_time(&log, inst, performanceCounter, time);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrConvertTimeToWin32PerformanceCounterKHR(XrInstance instance, XrTime time, LARGE_INTEGER *performanceCounter)
 {
 	OXR_TRACE_MARKER();

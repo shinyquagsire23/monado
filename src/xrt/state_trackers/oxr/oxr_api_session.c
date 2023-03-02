@@ -27,7 +27,7 @@
 #include "oxr_chain.h"
 
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateSession(XrInstance instance, const XrSessionCreateInfo *createInfo, XrSession *out_session)
 {
 	OXR_TRACE_MARKER();
@@ -61,7 +61,7 @@ oxr_xrCreateSession(XrInstance instance, const XrSessionCreateInfo *createInfo, 
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySession(XrSession session)
 {
 	OXR_TRACE_MARKER();
@@ -83,7 +83,7 @@ oxr_xrDestroySession(XrSession session)
 	return oxr_handle_destroy(&log, &sess->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 {
 	OXR_TRACE_MARKER();
@@ -97,7 +97,7 @@ oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 	return oxr_session_begin(&log, sess, beginInfo);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEndSession(XrSession session)
 {
 	OXR_TRACE_MARKER();
@@ -109,7 +109,7 @@ oxr_xrEndSession(XrSession session)
 	return oxr_session_end(&log, sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrWaitFrame(XrSession session, const XrFrameWaitInfo *frameWaitInfo, XrFrameState *frameState)
 {
 	OXR_TRACE_MARKER();
@@ -124,7 +124,7 @@ oxr_xrWaitFrame(XrSession session, const XrFrameWaitInfo *frameWaitInfo, XrFrame
 	return oxr_session_frame_wait(&log, sess, frameState);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 {
 	OXR_TRACE_MARKER();
@@ -146,7 +146,7 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 	return res;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 {
 	OXR_TRACE_MARKER();
@@ -167,7 +167,7 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 	return res;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrRequestExitSession(XrSession session)
 {
 	OXR_TRACE_MARKER();
@@ -179,7 +179,7 @@ oxr_xrRequestExitSession(XrSession session)
 	return oxr_session_request_exit(&log, sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateViews(XrSession session,
                   const XrViewLocateInfo *viewLocateInfo,
                   XrViewState *viewState,
@@ -235,7 +235,7 @@ oxr_xrLocateViews(XrSession session,
 
 #ifdef XR_KHR_visibility_mask
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVisibilityMaskKHR(XrSession session,
                            XrViewConfigurationType viewConfigurationType,
                            uint32_t viewIndex,
@@ -262,7 +262,7 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
 
 #ifdef XR_EXT_performance_settings
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
                                          XrPerfSettingsDomainEXT domain,
                                          XrPerfSettingsLevelEXT level)
@@ -287,7 +287,7 @@ oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
 
 #ifdef XR_EXT_thermal_query
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrThermalGetTemperatureTrendEXT(XrSession session,
                                     XrPerfSettingsDomainEXT domain,
                                     XrPerfSettingsNotificationLevelEXT *notificationLevel,
@@ -375,7 +375,7 @@ oxr_hand_tracker_create(struct oxr_logger *log,
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateHandTrackerEXT(XrSession session,
                            const XrHandTrackerCreateInfoEXT *createInfo,
                            XrHandTrackerEXT *handTracker)
@@ -406,7 +406,7 @@ oxr_xrCreateHandTrackerEXT(XrSession session,
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker)
 {
 	OXR_TRACE_MARKER();
@@ -418,7 +418,7 @@ oxr_xrDestroyHandTrackerEXT(XrHandTrackerEXT handTracker)
 	return oxr_handle_destroy(&log, &hand_tracker->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
                           const XrHandJointsLocateInfoEXT *locateInfo,
                           XrHandJointLocationsEXT *locations)
@@ -479,7 +479,7 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 
 #ifdef XR_MNDX_force_feedback_curl
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrForceFeedbackCurlApplyLocationsMNDX *locations)
 {
 	OXR_TRACE_MARKER();
@@ -502,7 +502,7 @@ oxr_xrApplyForceFeedbackCurlMNDX(XrHandTrackerEXT handTracker, const XrForceFeed
 
 #ifdef XR_FB_display_refresh_rate
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,
                                      uint32_t displayRefreshRateCapacityInput,
                                      uint32_t *displayRefreshRateCountOutput,
@@ -522,7 +522,7 @@ oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,
 	                    sess->sys->xsysc->info.num_refresh_rates, sess->sys->xsysc->info.refresh_rates, XR_SUCCESS);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate)
 {
 	struct oxr_session *sess = NULL;
@@ -544,7 +544,7 @@ oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate)
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate)
 {
 	struct oxr_session *sess = NULL;

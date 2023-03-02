@@ -25,7 +25,7 @@
 #include <inttypes.h>
 
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainFormats(XrSession session,
                                 uint32_t formatCapacityInput,
                                 uint32_t *formatCountOutput,
@@ -40,7 +40,7 @@ oxr_xrEnumerateSwapchainFormats(XrSession session,
 	return oxr_session_enumerate_formats(&log, sess, formatCapacityInput, formatCountOutput, formats);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo, XrSwapchain *out_swapchain)
 {
 	OXR_TRACE_MARKER();
@@ -111,7 +111,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	return oxr_session_success_result(sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySwapchain(XrSwapchain swapchain)
 {
 	OXR_TRACE_MARKER();
@@ -123,7 +123,7 @@ oxr_xrDestroySwapchain(XrSwapchain swapchain)
 	return oxr_handle_destroy(&log, &sc->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
                                uint32_t imageCapacityInput,
                                uint32_t *imageCountOutput,
@@ -149,7 +149,7 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 	return sc->enumerate_images(&log, sc, xsc->image_count, images);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquireInfo *acquireInfo, uint32_t *index)
 {
 	OXR_TRACE_MARKER();
@@ -163,7 +163,7 @@ oxr_xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquire
 	return sc->acquire_image(&log, sc, acquireInfo, index);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo *waitInfo)
 {
 	OXR_TRACE_MARKER();
@@ -176,7 +176,7 @@ oxr_xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo *
 	return sc->wait_image(&log, sc, waitInfo);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageReleaseInfo *releaseInfo)
 {
 	OXR_TRACE_MARKER();
