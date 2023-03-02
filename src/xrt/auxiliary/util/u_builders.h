@@ -77,6 +77,17 @@ u_builder_search(struct xrt_prober *xp,
                  size_t filter_count,
                  struct u_builder_search_results *results);
 
+/*!
+ * Helper function for setting up tracking origins. Applies 3dof offsets for devices with XRT_TRACKING_TYPE_NONE.
+ *
+ * @ingroup aux_util
+ */
+void
+u_builder_setup_tracking_origins(struct xrt_device *head,
+                                 struct xrt_device *left,
+                                 struct xrt_device *right,
+                                 struct xrt_vec3 *global_tracking_origin_offset);
+
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_git_tag.h"
+#include "util/u_builders.h"
 
 #ifdef XRT_OS_ANDROID
 #include "android/android_globals.h"
@@ -317,8 +318,8 @@ oxr_instance_create(struct oxr_logger *log,
 	                                                 debug_get_float_option_tracking_origin_offset_y(),
 	                                                 debug_get_float_option_tracking_origin_offset_z()};
 
-	u_device_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left), GET_XDEV_BY_ROLE(sys, right),
-	                                &global_tracking_origin_offset);
+	u_builder_setup_tracking_origins(dev, GET_XDEV_BY_ROLE(sys, left), GET_XDEV_BY_ROLE(sys, right),
+	                                 &global_tracking_origin_offset);
 
 	// Sets the enabled extensions, this is where we should do any extra validation.
 	inst->extensions = *extensions;

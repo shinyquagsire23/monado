@@ -26,6 +26,7 @@ extern "C" {
 #include "os/os_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_builders.h"
 #include "util/u_hand_tracking.h"
 
 #include "xrt/xrt_system.h"
@@ -1485,7 +1486,7 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 
 	// use steamvr room setup instead
 	struct xrt_vec3 offset = {0, 0, 0};
-	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
+	u_builder_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
 
 	if (left_xdev) {
 		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev, XRT_HAND_LEFT);

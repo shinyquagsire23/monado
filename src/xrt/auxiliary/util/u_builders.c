@@ -7,8 +7,24 @@
  * @ingroup aux_util
  */
 
-#include "xrt/xrt_prober.h"
-#include "u_builders.h"
+#include "xrt/xrt_tracking.h"
+
+#include "util/u_builders.h"
+
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
+static void
+apply_offset(struct xrt_vec3 *position, struct xrt_vec3 *offset)
+{
+	position->x += offset->x;
+	position->y += offset->y;
+	position->z += offset->z;
+}
 
 
 /*
@@ -73,5 +89,46 @@ u_builder_search(struct xrt_prober *xp,
 		if (results->xpdev_count >= ARRAY_SIZE(results->xpdevs)) {
 			return;
 		}
+	}
+}
+
+void
+u_builder_setup_tracking_origins(struct xrt_device *head,
+                                 struct xrt_device *left,
+                                 struct xrt_device *right,
+                                 struct xrt_vec3 *global_tracking_origin_offset)
+{
+	struct xrt_tracking_origin *head_origin = head ? head->tracking_origin : NULL;
+	struct xrt_tracking_origin *left_origin = left ? left->tracking_origin : NULL;
+	struct xrt_tracking_origin *right_origin = right ? right->tracking_origin : NULL;
+
+	if (left_origin != NULL && left_origin->type == XRT_TRACKING_TYPE_NONE) {
+		left_origin->offset.position.x = -0.2f;
+		left_origin->offset.position.y = 1.3f;
+		left_origin->offset.position.z = -0.5f;
+	}
+
+	if (right_origin != NULL && right_origin->type == XRT_TRACKING_TYPE_NONE) {
+		right_origin->offset.position.x = 0.2f;
+		right_origin->offset.position.y = 1.3f;
+		right_origin->offset.position.z = -0.5f;
+	}
+
+	// Head comes last, because left and right may share tracking origin.
+	if (head_origin != NULL && head_origin->type == XRT_TRACKING_TYPE_NONE) {
+		// "nominal height" 1.6m
+		head_origin->offset.position.x = 0.0f;
+		head_origin->offset.position.y = 1.6f;
+		head_origin->offset.position.z = 0.0f;
+	}
+
+	if (head_origin) {
+		apply_offset(&head_origin->offset.position, global_tracking_origin_offset);
+	}
+	if (left_origin && left_origin != head_origin) {
+		apply_offset(&left->tracking_origin->offset.position, global_tracking_origin_offset);
+	}
+	if (right_origin && right_origin != head_origin && right_origin != left_origin) {
+		apply_offset(&right->tracking_origin->offset.position, global_tracking_origin_offset);
 	}
 }

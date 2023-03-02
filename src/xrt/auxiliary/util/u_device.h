@@ -129,17 +129,6 @@ void
 u_device_assign_xdev_roles(struct xrt_device **xdevs, size_t xdev_count, int *head, int *left, int *right);
 
 /*!
- * Helper function for setting up tracking origins. Applies 3dof offsets for devices with XRT_TRACKING_TYPE_NONE.
- *
- * @ingroup aux_util
- */
-void
-u_device_setup_tracking_origins(struct xrt_device *head,
-                                struct xrt_device *left,
-                                struct xrt_device *right,
-                                struct xrt_vec3 *global_tracking_origin_offset);
-
-/*!
  * Helper function for `get_view_pose` in an HMD driver.
  *
  * Takes in a translation from the left to right eye, and returns a center to left or right eye transform that assumes
