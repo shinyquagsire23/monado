@@ -415,7 +415,7 @@ oxr_xrGetCurrentInteractionProfile(XrSession session,
 	}
 
 	if (!oxr_path_is_valid(&log, inst, topLevelUserPath)) {
-		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(topLevelUserPath == %zu) Is not a valid path",
+		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(topLevelUserPath == %" PRId64 ") Is not a valid path",
 		                 topLevelUserPath);
 	}
 
@@ -472,8 +472,8 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
 	}
 
 	if (!oxr_path_is_valid(&log, inst, getInfo->sourcePath)) {
-		return oxr_error(&log, XR_ERROR_PATH_INVALID, "(getInfo->sourcePath == %zu) Is not a valid path",
-		                 getInfo->sourcePath);
+		return oxr_error(&log, XR_ERROR_PATH_INVALID,
+		                 "(getInfo->sourcePath == %" PRId64 ") Is not a valid path", getInfo->sourcePath);
 	}
 
 	const XrInputSourceLocalizedNameFlags all = XR_INPUT_SOURCE_LOCALIZED_NAME_USER_PATH_BIT |
@@ -482,7 +482,8 @@ oxr_xrGetInputSourceLocalizedName(XrSession session,
 
 	if ((getInfo->whichComponents & ~all) != 0) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE,
-		                 "(getInfo->whichComponents == %08zx) contains invalid bits", getInfo->whichComponents);
+		                 "(getInfo->whichComponents == %08" PRIx64 ") contains invalid bits",
+		                 getInfo->whichComponents);
 	}
 
 	if (getInfo->whichComponents == 0) {

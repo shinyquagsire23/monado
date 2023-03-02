@@ -178,11 +178,11 @@ enum oxr_subaction_path
  */
 enum oxr_dpad_region
 {
-	OXR_DPAD_REGION_CENTER = 0,
-	OXR_DPAD_REGION_UP = (1 << 0),
-	OXR_DPAD_REGION_DOWN = (1 << 1),
-	OXR_DPAD_REGION_LEFT = (1 << 2),
-	OXR_DPAD_REGION_RIGHT = (1 << 3),
+	OXR_DPAD_REGION_CENTER = 0u,
+	OXR_DPAD_REGION_UP = (1u << 0u),
+	OXR_DPAD_REGION_DOWN = (1u << 1u),
+	OXR_DPAD_REGION_LEFT = (1u << 2u),
+	OXR_DPAD_REGION_RIGHT = (1u << 3u),
 };
 
 /*!
