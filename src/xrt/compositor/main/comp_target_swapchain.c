@@ -454,7 +454,7 @@ get_surface_counter_val(struct comp_target *ct)
 	    &counter_val);                  // pCounterValue
 
 	if (ret == VK_SUCCESS) {
-		COMP_SPEW(cts->base.c, "vkGetSwapchainCounterEXT: %lu", counter_val);
+		COMP_SPEW(cts->base.c, "vkGetSwapchainCounterEXT: %" PRIu64, counter_val);
 	} else if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: Swapchain out of date!");
 	} else {
