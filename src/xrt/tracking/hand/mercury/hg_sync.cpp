@@ -402,7 +402,8 @@ dispatch_and_process_hand_detections(struct HandTracking *hgt)
 
 	int num_views = 0;
 
-	if (hgt->tuneable_values.always_run_detection_model || hgt->refinement.optimizing) {
+	if (hgt->tuneable_values.always_run_detection_model || hgt->refinement.optimizing ||
+	    hgt->tuneable_values.detection_model_in_both_views) {
 		u_worker_group_push(hgt->group, run_hand_detection, &infos[0]);
 		u_worker_group_push(hgt->group, run_hand_detection, &infos[1]);
 		num_views = 2;
@@ -1210,12 +1211,14 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	               "Scribble pose-predictions into next frame");
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_keypoint_model_outputs, "Scribble keypoint model output");
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_optimizer_outputs, "Scribble kinematic optimizer output");
-	u_var_add_bool(hgt, &hgt->tuneable_values.always_run_detection_model, "Always run detection model");
+	u_var_add_bool(hgt, &hgt->tuneable_values.always_run_detection_model,
+	               "Use detection model instead of pose-predicting into next frame");
 	u_var_add_bool(hgt, &hgt->tuneable_values.optimize_hand_size, "Optimize hand size");
 	u_var_add_bool(hgt, &hgt->tuneable_values.enable_pose_predicted_input,
 	               "Enable pose-predicted input to keypoint model");
 	u_var_add_bool(hgt, &hgt->tuneable_values.enable_framerate_based_smoothing,
 	               "Enable framerate-based smoothing (Don't use; surprisingly seems to make things worse)");
+	u_var_add_bool(hgt, &hgt->tuneable_values.detection_model_in_both_views, "Run detection model in both views ");
 
 
 
