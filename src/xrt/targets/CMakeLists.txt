@@ -11,7 +11,9 @@ if(XRT_FEATURE_OPENXR)
 	add_subdirectory(openxr)
 endif()
 
-add_subdirectory(cli)
+if(XRT_MODULE_MONADO_CLI)
+	add_subdirectory(cli)
+endif()
 
 if(XRT_HAVE_SDL2)
 	add_subdirectory(gui)
