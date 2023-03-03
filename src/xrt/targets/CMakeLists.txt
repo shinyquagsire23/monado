@@ -15,7 +15,7 @@ if(XRT_MODULE_MONADO_CLI)
 	add_subdirectory(cli)
 endif()
 
-if(XRT_HAVE_SDL2)
+if(XRT_MODULE_MONADO_GUI)
 	add_subdirectory(gui)
 endif()
 

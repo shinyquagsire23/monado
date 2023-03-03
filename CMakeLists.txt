@@ -328,6 +328,7 @@ set(XRT_OXR_RUNTIME_SUFFIX monado CACHE STRING "OpenXR client library suffix")
 # cmake-format: on
 
 option(XRT_MODULE_MONADO_CLI "Build monado-cli" ON)
+option_with_deps(XRT_MODULE_MONADO_GUI "Build monado-gui" DEPENDS XRT_HAVE_SDL2)
 option(XRT_MODULE_AUX_VIVE "Build aux_vive" ON)
 
 # Most users won't touch these.
