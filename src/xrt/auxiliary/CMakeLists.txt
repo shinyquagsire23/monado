@@ -39,10 +39,7 @@ add_subdirectory(tracking)
 add_subdirectory(util)
 
 # Vive helper library.
-if(XRT_BUILD_DRIVER_VIVE
-   OR XRT_BUILD_DRIVER_SURVIVE
-   OR XRT_BUILD_DRIVER_REMOTE
-	)
+if(XRT_MODULE_AUX_VIVE)
 	add_subdirectory(vive)
 endif()
 
