@@ -26,8 +26,6 @@ if(XRT_HAVE_OPENCV)
 			t_debug_hsv_filter.cpp
 			t_debug_hsv_picker.cpp
 			t_debug_hsv_viewer.cpp
-			t_euroc_recorder.cpp
-			t_euroc_recorder.h
 			t_file.cpp
 			t_frame_cv_mat_wrapper.cpp
 			t_frame_cv_mat_wrapper.hpp
@@ -45,6 +43,10 @@ if(XRT_HAVE_OPENCV)
 		PUBLIC ${OpenCV_LIBRARIES}
 		PRIVATE aux_util_sink
 		)
+	# t_euroc_recorder needs a Windows implementation of os_realtime_get_ns.
+	if(NOT WIN32)
+		target_sources(aux_tracking PRIVATE t_euroc_recorder.cpp t_euroc_recorder.h)
+	endif()
 endif()
 
 if(XRT_FEATURE_SLAM)
