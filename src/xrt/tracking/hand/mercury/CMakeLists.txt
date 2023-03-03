@@ -60,6 +60,8 @@ target_link_libraries(
 		${OpenCV_LIBRARIES}
 	)
 
+target_include_directories(t_ht_mercury INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(XRT_HAVE_OPENCV)
 	target_include_directories(
 		t_ht_mercury SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR}
