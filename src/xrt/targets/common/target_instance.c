@@ -15,7 +15,7 @@
 #include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
 
-#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
 #include "main/comp_main_interface.h"
 #endif
 
@@ -24,7 +24,7 @@
 #include <assert.h>
 
 
-#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
 #define USE_NULL_DEFAULT (false)
 #else
 #define USE_NULL_DEFAULT (true)
@@ -73,7 +73,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 
 	bool use_null = debug_get_bool_option_use_null();
 
-#ifdef XRT_FEATURE_COMPOSITOR_NULL
+#ifdef XRT_MODULE_COMPOSITOR_NULL
 	if (use_null) {
 		xret = null_compositor_create_system(head, &xsysc);
 	}
@@ -84,7 +84,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 	}
 #endif
 
-#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
 		xret = comp_main_create_system_compositor(head, NULL, &xsysc);
 	}

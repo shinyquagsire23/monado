@@ -1,4 +1,4 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ####
@@ -165,7 +165,7 @@ endif()
 # Instance
 #
 
-if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
+if(XRT_MODULE_COMPOSITOR_MAIN OR XRT_MODULE_COMPOSITOR_NULL)
 	add_library(target_instance STATIC target_instance.c)
 	target_link_libraries(
 		target_instance
@@ -178,11 +178,11 @@ if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
 		)
 	target_include_directories(target_instance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-	if(XRT_FEATURE_COMPOSITOR_MAIN)
+	if(XRT_MODULE_COMPOSITOR_MAIN)
 		target_link_libraries(target_instance PRIVATE comp_main)
 	endif()
 
-	if(XRT_FEATURE_COMPOSITOR_NULL)
+	if(XRT_MODULE_COMPOSITOR_NULL)
 		target_link_libraries(target_instance PRIVATE comp_null)
 	endif()
 endif()

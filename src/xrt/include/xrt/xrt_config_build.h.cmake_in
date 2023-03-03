@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,12 +9,18 @@
 
 #pragma once
 
+
+/* keep sorted */
+
+#cmakedefine XRT_MODULE_IPC
+#cmakedefine XRT_MODULE_COMPOSITOR
+#cmakedefine XRT_MODULE_COMPOSITOR_MAIN
+#cmakedefine XRT_MODULE_COMPOSITOR_NULL
+
+
 /* keep sorted */
 
 #cmakedefine XRT_FEATURE_COLOR_LOG
-#cmakedefine XRT_FEATURE_COMPOSITOR_MAIN
-#cmakedefine XRT_FEATURE_COMPOSITOR_NULL
-#cmakedefine XRT_FEATURE_IPC
 #cmakedefine XRT_FEATURE_OPENXR
 #cmakedefine XRT_FEATURE_OPENXR_DEBUG_UTILS
 #cmakedefine XRT_FEATURE_OPENXR_LAYER_CUBE

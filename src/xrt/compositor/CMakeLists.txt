@@ -1,4 +1,4 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ###
@@ -167,7 +167,7 @@ endif()
 # Main library
 #
 
-if(XRT_FEATURE_COMPOSITOR_MAIN)
+if(XRT_MODULE_COMPOSITOR_MAIN)
 
 	add_library(
 		comp_main STATIC
@@ -295,7 +295,7 @@ endif()
 # Null compositor
 #
 
-if(XRT_FEATURE_COMPOSITOR_NULL)
+if(XRT_MODULE_COMPOSITOR_NULL)
 	add_subdirectory(null)
 endif()
 
@@ -314,7 +314,7 @@ target_link_libraries(
 	)
 target_include_directories(comp_multi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(XRT_FEATURE_COMPOSITOR_MAIN)
+if(XRT_MODULE_COMPOSITOR_MAIN)
 	target_link_libraries(comp_main PRIVATE comp_multi)
 endif()
 
