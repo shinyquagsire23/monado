@@ -255,6 +255,9 @@ option_with_deps(XRT_MODULE_COMPOSITOR_MAIN "Build main compositor host function
 option_with_deps(XRT_MODULE_COMPOSITOR_NULL "Build testing null compositor" DEPENDS XRT_MODULE_COMPOSITOR XRT_HAVE_VULKAN)
 option_with_deps(XRT_MODULE_MERCURY_HANDTRACKING "Enable Mercury hand tracking" DEPENDS XRT_HAVE_OPENCV XRT_HAVE_ONNXRUNTIME)
 
+option(XRT_MODULE_MONADO_CLI "Build monado-cli" ON)
+option_with_deps(XRT_MODULE_MONADO_GUI "Build monado-gui" DEPENDS XRT_HAVE_SDL2)
+option(XRT_MODULE_AUX_VIVE "Build aux_vive" ON)
 
 # Feature configuration (sorted)
 option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
@@ -326,10 +329,6 @@ set(XRT_IPC_SERVICE_PID_FILENAME monado.pid CACHE STRING "Service pidfile filena
 set(XRT_OXR_RUNTIME_SUFFIX monado CACHE STRING "OpenXR client library suffix")
 
 # cmake-format: on
-
-option(XRT_MODULE_MONADO_CLI "Build monado-cli" ON)
-option_with_deps(XRT_MODULE_MONADO_GUI "Build monado-gui" DEPENDS XRT_HAVE_SDL2)
-option(XRT_MODULE_AUX_VIVE "Build aux_vive" ON)
 
 # Most users won't touch these.
 mark_as_advanced(XRT_MODULE_COMPOSITOR_MAIN XRT_MODULE_COMPOSITOR_NULL XRT_FEATURE_OPENXR)
@@ -516,10 +515,14 @@ message(STATUS "#    XCB:             ${XRT_HAVE_XCB}")
 message(STATUS "#    XLIB:            ${XRT_HAVE_XLIB}")
 message(STATUS "#    XRANDR:          ${XRT_HAVE_XRANDR}")
 message(STATUS "#")
-message(STATUS "#    MODULE_IPC                   ${XRT_MODULE_IPC}")
+message(STATUS "#    MODULE_AUX_VIVE              ${XRT_MODULE_AUX_VIVE}")
 message(STATUS "#    MODULE_COMPOSITOR            ${XRT_MODULE_COMPOSITOR}")
 message(STATUS "#    MODULE_COMPOSITOR_MAIN       ${XRT_MODULE_COMPOSITOR_MAIN}")
 message(STATUS "#    MODULE_COMPOSITOR_NULL       ${XRT_MODULE_COMPOSITOR_NULL}")
+message(STATUS "#    MODULE_MERCURY_HANDTRACKING  ${XRT_MODULE_MERCURY_HANDTRACKING}")
+message(STATUS "#    MODULE_IPC                   ${XRT_MODULE_IPC}")
+message(STATUS "#    MODULE_MONADO_GUI            ${XRT_MODULE_MONADO_GUI}")
+message(STATUS "#    MODULE_MONADO_CLI            ${XRT_MODULE_MONADO_CLI}")
 message(STATUS "#")
 message(STATUS "#    FEATURE_CLIENT_DEBUG_GUI:             ${XRT_FEATURE_CLIENT_DEBUG_GUI}")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
