@@ -507,7 +507,7 @@ predict_new_regions_of_interest(struct HandTracking *hgt)
 		// If we only have *one* frame, we just reuse the same bounding box and hope the hand
 		// hasn't moved too much. @todo
 
-		HistoryBuffer<Eigen::Array<float, 3, 21>, 5> &hh = hgt->history_hands[hand_idx];
+		auto &hh = hgt->history_hands[hand_idx];
 
 
 		if (hh.size() < 2) {
@@ -974,6 +974,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		);
 
 		hgt->history_hands[hand_idx].push_back(asf);
+		hgt->hand_tracked_for_num_frames[hand_idx]++;
 	}
 
 	// More hand-size-optimization spaghetti
@@ -993,6 +994,7 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 			hgt->views[0].regions_of_interest_this_frame[hand_idx].found = false;
 			hgt->views[1].regions_of_interest_this_frame[hand_idx].found = false;
 			hgt->history_hands[hand_idx].clear();
+			hgt->hand_tracked_for_num_frames[hand_idx] = 0;
 		}
 	}
 
@@ -1012,6 +1014,12 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		}
 	}
 
+	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
+		// Don't send the hand to OpenXR until it's been tracked for 4 frames
+		if (hgt->hand_tracked_for_num_frames[hand_idx] < hgt->tuneable_values.num_frames_before_display) {
+			out_xrt_hands[hand_idx]->is_active = false;
+		}
+	}
 
 	// If the debug UI is active, push to the frame-timing widget
 	u_frame_times_widget_push_sample(&hgt->ft_widget, hgt->current_frame_timestamp);
@@ -1194,6 +1202,9 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 
 	u_var_add_i32(hgt, &hgt->tuneable_values.max_num_outside_view,
 	              "max allowed number of hand joints outside view");
+	u_var_add_u64(hgt, &hgt->tuneable_values.num_frames_before_display,
+	              "Number of frames before we show hands to OpenXR");
+
 
 	u_var_add_bool(hgt, &hgt->tuneable_values.scribble_predictions_into_next_frame,
 	               "Scribble pose-predictions into next frame");

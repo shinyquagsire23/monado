@@ -39,6 +39,7 @@ struct hg_tuneable_values
 	bool always_run_detection_model = false;
 	bool optimize_hand_size = true;
 	int max_num_outside_view = 6;
+	size_t num_frames_before_display = 10;
 	bool enable_pose_predicted_input = true;
 	bool enable_framerate_based_smoothing = false;
 

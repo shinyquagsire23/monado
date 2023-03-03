@@ -303,12 +303,15 @@ public:
 	// Used to decide whether to run the keypoint estimator/nonlinear optimizer.
 	bool this_frame_hand_detected[2] = {false, false};
 
-	// Used to determine pose-predicted regions of interest. Contains the last five hand keypoint positions, or less
+	// Used to determine pose-predicted regions of interest. Contains the last 2 hand keypoint positions, or less
 	// if the hand has just started being tracked.
-	HistoryBuffer<Eigen::Array<float, 3, 21>, 5> history_hands[2] = {};
+	HistoryBuffer<Eigen::Array<float, 3, 21>, 2> history_hands[2] = {};
 
-	// Contains the last 5 timestamps, or less if hand tracking has just started.
-	HistoryBuffer<uint64_t, 5> history_timestamps = {};
+	// Contains the last 2 timestamps, or less if hand tracking has just started.
+	HistoryBuffer<uint64_t, 2> history_timestamps = {};
+
+	// It'd be a staring contest between your hand and the heat death of the universe!
+	uint64_t hand_tracked_for_num_frames[2] = {0, 0};
 
 
 	// left hand, right hand
