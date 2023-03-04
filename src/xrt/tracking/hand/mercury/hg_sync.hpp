@@ -11,7 +11,7 @@
 #pragma once
 
 #include "hg_interface.h"
-
+#include "hg_debug_instrumentation.hpp"
 
 #include "tracking/t_hand_tracking.h"
 #include "tracking/t_camera_models.h"
@@ -332,30 +332,7 @@ public:
 
 	u_frame_times_widget ft_widget = {};
 
-	struct
-	{
-		bool new_user_event = false;
-		struct u_var_draggable_f32 after_detection_fac;
-		struct u_var_draggable_f32 dyn_radii_fac;
-		struct u_var_draggable_f32 dyn_joint_y_angle_error;
-		struct u_var_draggable_f32 amount_to_lerp_prediction;
-		struct u_var_draggable_f32 amt_use_depth;
-		struct u_var_draggable_f32 mpiou_any;
-		struct u_var_draggable_f32 mpiou_single_detection;
-		struct u_var_draggable_f32 mpiou_double_detection;
-		struct u_var_draggable_f32 max_reprojection_error;
-		struct u_var_draggable_f32 opt_smooth_factor;
-		struct u_var_draggable_f32 max_hand_dist;
-		bool scribble_predictions_into_next_frame = false;
-		bool scribble_keypoint_model_outputs = false;
-		bool scribble_optimizer_outputs = true;
-		bool always_run_detection_model = false; // true
-		bool optimize_hand_size = true;
-		int max_num_outside_view = 6;
-		bool enable_pose_predicted_input = true;
-		bool enable_framerate_based_smoothing = false;
-	} tuneable_values;
-
+	struct hg_tuneable_values tuneable_values;
 
 public:
 	explicit HandTracking();
