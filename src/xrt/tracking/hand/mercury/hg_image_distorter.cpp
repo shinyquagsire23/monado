@@ -29,12 +29,9 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-//!@todo This is the wrong way of doing it; we should probably be allocating some space up front for each
-//! keypoint estimator to scratch into. Patches welcome!
-#define EIGEN_STACK_ALLOCATION_LIMIT 128 * 128 * 4 * 3
-
 #include "math/m_eigen_interop.hpp"
 #include "hg_sync.hpp"
+#include "hg_stereographic_unprojection.hpp"
 
 namespace xrt::tracking::hand::mercury {
 
@@ -42,6 +39,29 @@ constexpr int wsize = 128;
 
 template <typename T> using OutputSizedArray = Eigen::Array<T, wsize, wsize, Eigen::RowMajor>;
 using OutputSizedFloatArray = OutputSizedArray<float>;
+
+#define ARRAY_STACK_SIZE 20
+
+struct ArrayStack
+{
+	OutputSizedFloatArray arrays[ARRAY_STACK_SIZE];
+	size_t array_idx = 0;
+
+	OutputSizedFloatArray &
+	get()
+	{
+		if (array_idx == ARRAY_STACK_SIZE) {
+			abort();
+		}
+		return this->arrays[this->array_idx++];
+	};
+
+	void
+	dropAll()
+	{
+		this->array_idx = 0;
+	}
+};
 
 struct projection_state
 {
@@ -51,6 +71,11 @@ struct projection_state
 
 	const projection_instructions &instructions;
 
+	ArrayStack stack = {};
+
+	OutputSizedArray<int16_t> image_x = {};
+	OutputSizedArray<int16_t> image_y = {};
+
 	projection_state(const projection_instructions &instructions, cv::Mat &input, cv::Mat &output)
 	    : input(input), distorted_image_eigen(output.data, 128, 128), instructions(instructions){};
 };
@@ -58,16 +83,19 @@ struct projection_state
 
 // A private, purpose-optimized version of the Kannalla-Brandt projection function.
 static void
-project_kb4(const t_camera_model_params &dist, //
-            const OutputSizedFloatArray &x,    //
-            const OutputSizedFloatArray &y,    //
-            const OutputSizedFloatArray &z,    //
-            OutputSizedFloatArray &out_x,      //
+project_kb4(projection_state &mi,
+            const OutputSizedFloatArray &x, //
+            const OutputSizedFloatArray &y, //
+            const OutputSizedFloatArray &z, //
+            OutputSizedFloatArray &out_x,   //
             OutputSizedFloatArray &out_y)
 {
+	const t_camera_model_params &dist = mi.dist;
+	OutputSizedFloatArray r2 = mi.stack.get();
+	OutputSizedFloatArray r = mi.stack.get();
 
-	const OutputSizedFloatArray r2 = x * x + y * y;
-	const OutputSizedFloatArray r = sqrt(r2);
+	r2 = x * x + y * y;
+	r = sqrt(r2);
 
 #if 0
 		const I theta = atan2(r, z);
@@ -81,11 +109,12 @@ project_kb4(const t_camera_model_params &dist, //
 	// If neither of these were true we'd definitely need atan2.
 	//
 	// Grrr, we really need a good library for fast approximations of trigonometric functions.
-
-	const OutputSizedFloatArray theta = atan(r / z);
+	OutputSizedFloatArray theta = mi.stack.get();
+	theta = atan(r / z);
 #endif
 
-	const OutputSizedFloatArray theta2 = theta * theta;
+	OutputSizedFloatArray theta2 = mi.stack.get();
+	theta2 = theta * theta;
 
 
 #if 0
@@ -101,40 +130,22 @@ project_kb4(const t_camera_model_params &dist, //
 #else
 	// This version gives the compiler more options to do FMAs and avoid temporaries. Down to floating point
 	// precision this should give the same result as the above.
-	OutputSizedFloatArray r_theta =
+	OutputSizedFloatArray r_theta = mi.stack.get();
+	r_theta =
 	    (((((dist.fisheye.k4 * theta2) + dist.fisheye.k3) * theta2 + dist.fisheye.k2) * theta2 + dist.fisheye.k1) *
 	         theta2 +
 	     1) *
 	    theta;
 #endif
 
-	const OutputSizedFloatArray mx = x * r_theta / r;
-	const OutputSizedFloatArray my = y * r_theta / r;
+	OutputSizedFloatArray mx = mi.stack.get();
+	mx = x * r_theta / r;
+	OutputSizedFloatArray my = mi.stack.get();
+	my = y * r_theta / r;
 
 	out_x = dist.fx * mx + dist.cx;
 	out_y = dist.fy * my + dist.cy;
 }
-
-
-
-Eigen::Vector3f
-stereographic_to_direction(float sg_x, float sg_y)
-{
-	float X = sg_x;
-	float Y = sg_y;
-
-	float denom = (1 + X * X + Y * Y);
-
-	float x = (2 * X) / denom;
-	float y = (2 * Y) / denom;
-	float z = (-1 + X * X + Y * Y) / denom;
-
-	// forward is -z
-	return {x, y, z};
-	// return {x / -z, y / -z};
-}
-
-
 
 template <typename T>
 T
@@ -177,8 +188,8 @@ StereographicDistort(projection_state &mi)
 {
 	XRT_TRACE_MARKER();
 
-	OutputSizedFloatArray sg_x;
-	OutputSizedFloatArray sg_y;
+	OutputSizedFloatArray &sg_x = mi.stack.get();
+	OutputSizedFloatArray &sg_y = mi.stack.get();
 
 	// Please vectorize me?
 	if (mi.instructions.flip) {
@@ -205,9 +216,9 @@ StereographicDistort(projection_state &mi)
 	// STEREOGRAPHIC DIRECTION TO 3D DIRECTION
 	// Note: we do not normalize the direction, because we don't need to. :)
 
-	OutputSizedFloatArray dir_x;
-	OutputSizedFloatArray dir_y;
-	OutputSizedFloatArray dir_z;
+	OutputSizedFloatArray &dir_x = mi.stack.get();
+	OutputSizedFloatArray &dir_y = mi.stack.get();
+	OutputSizedFloatArray &dir_z = mi.stack.get();
 
 
 #if 0
@@ -224,11 +235,13 @@ StereographicDistort(projection_state &mi)
 	// END STEREOGRAPHIC DIRECTION TO 3D DIRECTION
 
 	// QUATERNION ROTATING VECTOR
-	Eigen::Matrix<OutputSizedFloatArray, 3, 1> rot_dir;
+	OutputSizedFloatArray &rot_dir_x = mi.stack.get();
+	OutputSizedFloatArray &rot_dir_y = mi.stack.get();
+	OutputSizedFloatArray &rot_dir_z = mi.stack.get();
 
-	OutputSizedFloatArray uv0;
-	OutputSizedFloatArray uv1;
-	OutputSizedFloatArray uv2;
+	OutputSizedFloatArray &uv0 = mi.stack.get();
+	OutputSizedFloatArray &uv1 = mi.stack.get();
+	OutputSizedFloatArray &uv2 = mi.stack.get();
 
 	const Eigen::Quaternionf &q = mi.instructions.rot_quat;
 
@@ -240,27 +253,24 @@ StereographicDistort(projection_state &mi)
 	uv1 += uv1;
 	uv2 += uv2;
 
-	rot_dir.x() = dir_x + q.w() * uv0;
-	rot_dir.y() = dir_y + q.w() * uv1;
-	rot_dir.z() = dir_z + q.w() * uv2;
+	rot_dir_x = dir_x + q.w() * uv0;
+	rot_dir_y = dir_y + q.w() * uv1;
+	rot_dir_z = dir_z + q.w() * uv2;
 
-	rot_dir.x() += q.y() * uv2 - q.z() * uv1;
-	rot_dir.y() += q.z() * uv0 - q.x() * uv2;
-	rot_dir.z() += q.x() * uv1 - q.y() * uv0;
+	rot_dir_x += q.y() * uv2 - q.z() * uv1;
+	rot_dir_y += q.z() * uv0 - q.x() * uv2;
+	rot_dir_z += q.x() * uv1 - q.y() * uv0;
 	// END QUATERNION ROTATING VECTOR
 
 
 
-	OutputSizedArray<int16_t> image_x;
-	OutputSizedArray<int16_t> image_y;
-
-	OutputSizedFloatArray image_x_f;
-	OutputSizedFloatArray image_y_f;
+	OutputSizedFloatArray &image_x_f = mi.stack.get();
+	OutputSizedFloatArray &image_y_f = mi.stack.get();
 
 
 	//!@todo optimize
-	rot_dir.y() *= -1;
-	rot_dir.z() *= -1;
+	rot_dir_y *= -1;
+	rot_dir_z *= -1;
 
 	{
 		XRT_TRACE_IDENT(camera_projection);
@@ -268,14 +278,14 @@ StereographicDistort(projection_state &mi)
 		switch (mi.dist.model) {
 		case T_DISTORTION_FISHEYE_KB4:
 			// This takes 250us vs 500 because of the removed atan2.
-			project_kb4(mi.dist, rot_dir.x(), rot_dir.y(), rot_dir.z(), image_x_f, image_y_f);
+			project_kb4(mi, rot_dir_x, rot_dir_y, rot_dir_z, image_x_f, image_y_f);
 			break;
 		case T_DISTORTION_OPENCV_RADTAN_8:
 			// Regular C is plenty fast for radtan :)
 			for (int i = 0; i < image_x_f.rows(); i++) {
 				for (int j = 0; j < image_x_f.cols(); j++) {
-					t_camera_models_project(&mi.dist, rot_dir.x()(i, j), rot_dir.y()(i, j),
-					                        rot_dir.z()(i, j), &image_x_f(i, j), &image_y_f(i, j));
+					t_camera_models_project(&mi.dist, rot_dir_x(i, j), rot_dir_y(i, j),
+					                        rot_dir_z(i, j), &image_x_f(i, j), &image_y_f(i, j));
 				}
 			}
 			break;
@@ -283,10 +293,10 @@ StereographicDistort(projection_state &mi)
 		}
 	}
 
-	image_x = image_x_f.cast<int16_t>();
-	image_y = image_y_f.cast<int16_t>();
+	mi.image_x = image_x_f.cast<int16_t>();
+	mi.image_y = image_y_f.cast<int16_t>();
 
-	naive_remap(image_x, image_y, mi.input, mi.distorted_image_eigen);
+	naive_remap(mi.image_x, mi.image_y, mi.input, mi.distorted_image_eigen);
 }
 
 
@@ -300,7 +310,7 @@ slow(projection_state &mi, float x, float y, cv::Point2i &out)
 	float sg_y =
 	    map_ranges<float>(y, 0, wsize, mi.instructions.stereographic_radius, -mi.instructions.stereographic_radius);
 
-	Eigen::Vector3f dir = stereographic_to_direction(sg_x, sg_y);
+	Eigen::Vector3f dir = stereographic_unprojection(sg_x, sg_y);
 
 	dir = mi.instructions.rot_quat * dir;
 
@@ -519,7 +529,7 @@ make_projection_instructions(t_camera_model_params &dist,
 		float r = fmax(center.x - min.x, center.y - min.y);
 		out_instructions.stereographic_radius = r;
 
-		Eigen::Vector3f new_direction = stereographic_to_direction(center.x, center.y);
+		Eigen::Vector3f new_direction = stereographic_unprojection(center.x, center.y);
 
 		new_direction = out_instructions.rot_quat * new_direction;
 
@@ -598,17 +608,16 @@ stereographic_project_image(const t_camera_model_params &dist,
 
 {
 	out = cv::Mat(cv::Size(wsize, wsize), CV_8U);
-	projection_state mi(instructions, input_image, out);
+	projection_state *mi_ptr = new projection_state(instructions, input_image, out);
+	projection_state &mi = *mi_ptr;
+
 	mi.dist = dist;
-	// Why am I doing it like this????
-	// mi.stereographic_radius = instructions.stereographic_radius;
-	// mi.rot_quat = instructions.rot_quat;
-	// mi.flip = instructions.flip;
 
 	StereographicDistort(mi);
 
 	if (debug_image) {
 		draw_boundary(mi, boundary_color, *debug_image);
 	}
+	delete mi_ptr;
 }
 } // namespace xrt::tracking::hand::mercury
