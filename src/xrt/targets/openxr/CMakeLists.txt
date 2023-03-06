@@ -130,21 +130,7 @@ elseif(NOT ANDROID)
 		)
 endif()
 
-###
-# Inelegant but effective SDL2-based debug GUI
-add_library(oxr_sdl2 STATIC oxr_sdl2_hack.c)
-target_link_libraries(oxr_sdl2 PRIVATE aux_util)
-if(XRT_HAVE_OPENGL)
-	target_link_libraries(oxr_sdl2 PUBLIC aux_ogl)
-endif()
-if(XRT_HAVE_SDL2)
-	target_link_libraries(oxr_sdl2 PRIVATE st_gui xrt-external-imgui-sdl2 ${SDL2_LIBRARIES})
-
-	if(XRT_BUILD_DRIVER_QWERTY)
-		target_link_libraries(oxr_sdl2 PRIVATE drv_qwerty drv_qwerty_includes)
-	endif()
-endif()
-
+# Optional debug ui
 if(XRT_FEATURE_CLIENT_DEBUG_GUI)
-	target_link_libraries(${RUNTIME_TARGET} PRIVATE oxr_sdl2)
+	target_link_libraries(${RUNTIME_TARGET} PRIVATE aux_util_debug_gui)
 endif()

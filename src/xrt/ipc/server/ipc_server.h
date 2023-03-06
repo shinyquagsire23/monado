@@ -295,9 +295,7 @@ struct ipc_server
 	//! Handle for the current process, e.g. pidfile on linux
 	struct u_process *process;
 
-	/* ---- HACK ---- */
-	void *hack;
-	/* ---- HACK ---- */
+	struct u_debug_gui *debug_gui;
 
 	//! System devices.
 	struct xrt_system_devices *xsysd;

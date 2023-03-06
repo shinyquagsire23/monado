@@ -13,19 +13,19 @@ struct xrt_system_devices;
 
 
 int
-oxr_sdl2_hack_create(void **out_hack)
+u_debug_gui_create(void **out_hack)
 {
 	return 0;
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
+u_debug_gui_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
 {
 	// Noop
 }
 
 void
-oxr_sdl2_hack_stop(void **hack)
+u_debug_gui_stop(void **hack)
 {
 	// Noop
 }

@@ -1,44 +1,51 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Hacky SDL integration
+ * @brief  SDL2 Debug UI implementation
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Moses Turner <moses@collabora.com>
  */
 
-#include "util/u_file.h"
-#include "xrt/xrt_compiler.h"
-#include "xrt/xrt_instance.h"
-#include "xrt/xrt_config_have.h"
-#include "xrt/xrt_config_drivers.h"
+#include "xrt/xrt_config_build.h"
 
-#include "util/u_var.h"
-#include "util/u_misc.h"
-#include "util/u_debug.h"
+#ifndef XRT_FEATURE_DEBUG_GUI
 
-#include "os/os_threading.h"
-
-
-struct xrt_instance;
-
-#ifndef XRT_HAVE_SDL2
+#include "util/u_debug_gui.h"
 
 int
-oxr_sdl2_hack_create(void **out_hack)
+u_debug_gui_create(struct u_debug_gui **out_debug_ui)
 {
 	return 0;
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
-{}
+u_debug_gui_start(struct u_debug_gui *debug_ui, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
+{
+	// No-op
+}
 
 void
-oxr_sdl2_hack_stop(void **hack)
-{}
+u_debug_gui_stop(struct u_debug_gui **debug_ui)
+{
+	// No-op
+}
 
-#else
+#else /* XRT_FEATURE_DEBUG_GUI */
+
 #include "xrt/xrt_system.h"
+#include "xrt/xrt_instance.h"
+#include "xrt/xrt_config_have.h"
+#include "xrt/xrt_config_drivers.h"
+
+#include "os/os_threading.h"
+
+#include "util/u_var.h"
+#include "util/u_misc.h"
+#include "util/u_file.h"
+#include "util/u_debug.h"
+#include "util/u_debug_gui.h"
+
 #include "ogl/ogl_api.h"
 
 #include "gui/gui_common.h"
@@ -50,7 +57,7 @@ oxr_sdl2_hack_stop(void **hack)
 
 #include <SDL2/SDL.h>
 
-DEBUG_GET_ONCE_BOOL_OPTION(gui, "OXR_DEBUG_GUI", false)
+DEBUG_GET_ONCE_BOOL_OPTION(gui, "XRT_DEBUG_GUI", false)
 #ifdef XRT_BUILD_DRIVER_QWERTY
 DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
 #endif
@@ -60,7 +67,7 @@ DEBUG_GET_ONCE_BOOL_OPTION(qwerty_enable, "QWERTY_ENABLE", false)
  * Common struct holding state for the GUI interface.
  * @extends gui_program
  */
-struct sdl2_program
+struct u_debug_gui
 {
 	struct gui_program base;
 
@@ -81,7 +88,7 @@ struct gui_imgui
 };
 
 static void
-sdl2_window_init(struct sdl2_program *p)
+sdl2_window_init(struct u_debug_gui *p)
 {
 	const char *title = "Monado! ✨⚡🔥";
 	int x = SDL_WINDOWPOS_UNDEFINED;
@@ -137,7 +144,7 @@ sdl2_window_init(struct sdl2_program *p)
 }
 
 static void
-sdl2_loop(struct sdl2_program *p)
+sdl2_loop(struct u_debug_gui *p)
 {
 	// Need to call this before any other Imgui call.
 	igCreateContext(NULL);
@@ -251,7 +258,7 @@ sdl2_loop(struct sdl2_program *p)
 }
 
 static void
-sdl2_close(struct sdl2_program *p)
+sdl2_close(struct u_debug_gui *p)
 {
 	// All scenes should be destroyed by now.
 	gui_scene_manager_destroy(&p->base);
@@ -276,21 +283,20 @@ sdl2_close(struct sdl2_program *p)
 }
 
 static void *
-oxr_sdl2_hack_run_thread(void *ptr)
+u_debug_gui_run_thread(void *ptr)
 {
-	struct sdl2_program *p = (struct sdl2_program *)ptr;
+	struct u_debug_gui *debug_gui = (struct u_debug_gui *)ptr;
+	sdl2_window_init(debug_gui);
 
-	sdl2_window_init(p);
+	sdl2_loop(debug_gui);
 
-	sdl2_loop(p);
-
-	sdl2_close(p);
+	sdl2_close(debug_gui);
 
 	return NULL;
 }
 
 int
-oxr_sdl2_hack_create(void **out_hack)
+u_debug_gui_create(struct u_debug_gui **out_debug_gui)
 {
 	// Enabled?
 	if (!debug_get_bool_option_gui()) {
@@ -300,53 +306,52 @@ oxr_sdl2_hack_create(void **out_hack)
 	// Need to do this as early as possible.
 	u_var_force_on();
 
-	struct sdl2_program *p = U_TYPED_CALLOC(struct sdl2_program);
+	struct u_debug_gui *p = U_TYPED_CALLOC(struct u_debug_gui);
 	if (p == NULL) {
 		return -1;
 	}
 
 	os_thread_helper_init(&p->oth);
 
-	*out_hack = p;
+	*out_debug_gui = p;
 
 	return 0;
 }
 
 void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
+u_debug_gui_start(struct u_debug_gui *debug_gui, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
 {
-	struct sdl2_program *p = (struct sdl2_program *)hack;
-	if (p == NULL) {
+	if (debug_gui == NULL) {
 		return;
 	}
 
 	// Share the system devices.
-	p->base.xsysd = xsysd;
+	debug_gui->base.xsysd = xsysd;
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 		U_LOG_E("Failed to init SDL2!");
 		return;
 	}
-	p->sdl_initialized = true;
+	debug_gui->sdl_initialized = true;
 
-	(void)os_thread_helper_start(&p->oth, oxr_sdl2_hack_run_thread, p);
+	(void)os_thread_helper_start(&debug_gui->oth, u_debug_gui_run_thread, (void *)debug_gui);
 }
 
 void
-oxr_sdl2_hack_stop(void **hack_ptr)
+u_debug_gui_stop(struct u_debug_gui **debug_gui)
 {
-	struct sdl2_program *p = *(struct sdl2_program **)hack_ptr;
+	struct u_debug_gui *p = *(struct u_debug_gui **)debug_gui;
 	if (p == NULL) {
 		return;
 	}
 
-	// HACK!
 	p->base.stopped = true;
 
 	// Destroy the thread object.
 	os_thread_helper_destroy(&p->oth);
 
 	free(p);
-	*hack_ptr = NULL;
+	*debug_gui = NULL;
 }
-#endif
+
+#endif /* XRT_FEATURE_DEBUG_GUI */

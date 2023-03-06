@@ -269,16 +269,17 @@ option_with_deps(XRT_FEATURE_SLAM "Enable SLAM tracking support" DEPENDS XRT_HAV
 option_with_deps(XRT_FEATURE_STEAMVR_PLUGIN "Build SteamVR plugin" DEPENDS "NOT ANDROID")
 option_with_deps(XRT_FEATURE_TRACING "Enable debug tracing on supported platforms" DEFAULT OFF DEPENDS "XRT_HAVE_PERCETTO OR XRT_HAVE_TRACY")
 option_with_deps(XRT_FEATURE_WINDOW_PEEK "Enable a window that displays the content of the HMD on screen" DEPENDS XRT_HAVE_SDL2)
+option_with_deps(XRT_FEATURE_DEBUG_GUI "Enable debug window to be used" DEPENDS XRT_HAVE_SDL2)
 option(XRT_FEATURE_SSE2 "Build using SSE2 instructions, if building for 32-bit x86" ON)
 
 if (XRT_FEATURE_SERVICE)
 	# Disable the client debug gui by default for out-of-proc -
 	# too many clients have problems with depending on SDL/GStreamer/etc and we rarely use it in this configuration
-	option(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" OFF)
+	option_with_deps(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" DEFAULT OFF DEPENDS XRT_FEATURE_DEBUG_GUI)
 else()
 	# Enable the client debug gui by default for in-proc -
 	# In in-proc, the client debug gui is the same as the server debug gui, and we use it a lot in this configuration
-	option(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" ON)
+	option_with_deps(XRT_FEATURE_CLIENT_DEBUG_GUI "Allow clients to have their own instances of the debug gui" DEFAULT ON DEPENDS XRT_FEATURE_DEBUG_GUI)
 endif()
 
 # systemd detailed config
@@ -526,6 +527,7 @@ message(STATUS "#    MODULE_MONADO_CLI            ${XRT_MODULE_MONADO_CLI}")
 message(STATUS "#")
 message(STATUS "#    FEATURE_CLIENT_DEBUG_GUI:             ${XRT_FEATURE_CLIENT_DEBUG_GUI}")
 message(STATUS "#    FEATURE_COLOR_LOG:                    ${XRT_FEATURE_COLOR_LOG}")
+message(STATUS "#    FEATURE_DEBUG_GUI:                    ${XRT_FEATURE_DEBUG_GUI}")
 message(STATUS "#    FEATURE_MERCURY_HANDTRACKING:         ${XRT_MODULE_MERCURY_HANDTRACKING}")
 message(STATUS "#    FEATURE_OPENXR:                       ${XRT_FEATURE_OPENXR}")
 message(STATUS "#    FEATURE_OPENXR_LAYER_CUBE:            ${XRT_FEATURE_OPENXR_LAYER_CUBE}")

@@ -1360,9 +1360,7 @@ struct oxr_instance
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
-	/* ---- HACK ---- */
-	void *hack;
-	/* ---- HACK ---- */
+	struct u_debug_gui *debug_ui;
 
 	struct xrt_instance *xinst;
 

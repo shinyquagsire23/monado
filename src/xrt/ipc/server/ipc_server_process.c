@@ -23,6 +23,7 @@
 #include "util/u_trace_marker.h"
 #include "util/u_verify.h"
 #include "util/u_process.h"
+#include "util/u_debug_gui.h"
 
 #include "util/u_git_tag.h"
 
@@ -39,18 +40,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-/* ---- HACK ---- */
-extern int
-oxr_sdl2_hack_create(void **out_hack);
-
-extern void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd);
-
-extern void
-oxr_sdl2_hack_stop(void **hack_ptr);
-/* ---- HACK ---- */
-
 
 /*
  *
@@ -789,29 +778,23 @@ ipc_server_main(int argc, char **argv)
 
 	U_LOG_I("Monado Service %s starting up...", u_git_tag);
 
-	/* ---- HACK ---- */
 	// need to create early before any vars are added
-	oxr_sdl2_hack_create(&s->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_create(&s->debug_gui);
 
 	int ret = init_all(s);
 	if (ret < 0) {
-		free(s->hack);
+		free(s->debug_gui);
 		free(s);
 		return ret;
 	}
 
 	init_server_state(s);
 
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(s->hack, s->xinst, s->xsysd);
-	/* ---- HACK ---- */
+	u_debug_gui_start(s->debug_gui, s->xinst, s->xsysd);
 
 	ret = main_loop(s);
 
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_stop(&s->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_stop(&s->debug_gui);
 
 	teardown_all(s);
 	free(s);

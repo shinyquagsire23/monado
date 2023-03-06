@@ -8,11 +8,11 @@ target_link_libraries(
 	monado-service
 	PRIVATE
 		aux_util
+		aux_util_debug_gui
 		st_prober
 		ipc_server
 		target_lists
 		target_instance
-		oxr_sdl2
 	)
 
 install(TARGETS monado-service RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

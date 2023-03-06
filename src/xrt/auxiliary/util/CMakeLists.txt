@@ -142,6 +142,37 @@ endif()
 target_include_directories(aux_util PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 ####
+# Debug UI library
+#
+
+add_library(aux_util_debug_gui STATIC u_debug_gui.c u_debug_gui.h) # Always built, for stubs.
+target_link_libraries(
+	aux_util_debug_gui
+	INTERFACE xrt-interfaces
+	PRIVATE aux-includes
+	)
+
+if(XRT_FEATURE_DEBUG_GUI)
+	target_link_libraries(aux_util_debug_gui PRIVATE aux_util)
+
+	if(XRT_HAVE_OPENGL)
+		target_link_libraries(aux_util_debug_gui PUBLIC aux_ogl)
+	endif()
+
+	if(XRT_HAVE_SDL2)
+		target_link_libraries(
+			aux_util_debug_gui PRIVATE st_gui xrt-external-imgui-sdl2 ${SDL2_LIBRARIES}
+			)
+
+		if(XRT_BUILD_DRIVER_QWERTY)
+			target_link_libraries(
+				aux_util_debug_gui PRIVATE drv_qwerty drv_qwerty_includes
+				)
+		endif()
+	endif()
+endif()
+
+####
 # Sink library
 #
 

@@ -19,6 +19,10 @@
 #include "util/u_git_tag.h"
 #include "util/u_builders.h"
 
+#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
+#include "util/u_debug_gui.h"
+#endif
+
 #ifdef XRT_OS_ANDROID
 #include "android/android_globals.h"
 #include "android/android_looper.h"
@@ -49,19 +53,6 @@ DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_x, "OXR_TRACKING_ORIGIN_OFFSE
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_y, "OXR_TRACKING_ORIGIN_OFFSET_Y", 0.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(tracking_origin_offset_z, "OXR_TRACKING_ORIGIN_OFFSET_Z", 0.0f)
 
-#ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
-/* ---- HACK ---- */
-extern int
-oxr_sdl2_hack_create(void **out_hack);
-
-extern void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd);
-
-extern void
-oxr_sdl2_hack_stop(void **hack_ptr);
-/* ---- HACK ---- */
-#endif
-
 static XrResult
 oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
@@ -82,9 +73,7 @@ oxr_instance_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
 	xrt_system_devices_destroy(&inst->system.xsysd);
 
 #ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_stop(&inst->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_stop(&inst->debug_ui);
 #endif
 
 	xrt_instance_destroy(&inst->xinst);
@@ -204,9 +193,7 @@ oxr_instance_create(struct oxr_logger *log,
 	}
 
 #ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_create(&inst->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_create(&inst->debug_ui);
 #endif
 
 	ret = oxr_path_init(log, inst);
@@ -343,9 +330,7 @@ oxr_instance_create(struct oxr_logger *log,
 	u_var_add_root((void *)inst, "XrInstance", true);
 
 #ifdef XRT_FEATURE_CLIENT_DEBUG_GUI
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(inst->hack, inst->xinst, sys->xsysd);
-	/* ---- HACK ---- */
+	u_debug_gui_start(inst->debug_ui, inst->xinst, sys->xsysd);
 #endif
 
 	oxr_log(log,

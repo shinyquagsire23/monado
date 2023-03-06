@@ -92,7 +92,7 @@ target_include_directories(
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 	PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 	)
-target_link_libraries(ipc_server PRIVATE aux_util aux_util_process ipc_shared)
+target_link_libraries(ipc_server PRIVATE aux_util aux_util_process aux_util_debug_gui ipc_shared)
 
 if(XRT_HAVE_SYSTEMD)
 	target_include_directories(ipc_server PRIVATE ${SYSTEMD_INCLUDE_DIRS})
