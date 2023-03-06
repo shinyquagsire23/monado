@@ -4,11 +4,14 @@
  * @file
  * @brief Defines for Levenberg-Marquardt kinematic optimizer
  * @author Moses Turner <moses@collabora.com>
+ * @author Charlton Rodda <charlton.rodda@collabora.com>
  * @ingroup tracking
  */
 #pragma once
 
 #include "math/m_mathinclude.h"
+#include "math/m_eigen_interop.hpp"
+#include "util/u_logging.h"
 #include "../kine_common.hpp"
 
 namespace xrt::tracking::hand::mercury::lm {
@@ -357,4 +360,207 @@ template <typename T> struct ResidualHelper
 		this->out_residual[out_residual_idx++] = value;
 	}
 };
+
+
+template <typename T> struct OptimizerMetacarpalBone
+{
+	Vec2<T> swing = {};
+	T twist = {};
+};
+
+template <typename T> struct OptimizerFinger
+{
+	OptimizerMetacarpalBone<T> metacarpal = {};
+	Vec2<T> proximal_swing = {};
+	// Not Vec2.
+	T rots[2] = {};
+};
+
+template <typename T> struct OptimizerThumb
+{
+	OptimizerMetacarpalBone<T> metacarpal = {};
+	// Again not Vec2.
+	T rots[2] = {};
+};
+
+template <typename T> struct OptimizerHand
+{
+	T hand_size;
+	Vec3<T> wrist_location = {};
+	// This is constant, a ceres::Rotation.h quat,, taken from last frame.
+	Quat<T> wrist_pre_orientation_quat = {};
+	// This is optimized - angle-axis rotation vector. Starts at 0, loss goes up the higher it goes because it
+	// indicates more of a rotation.
+	Vec3<T> wrist_post_orientation_aax = {};
+	OptimizerThumb<T> thumb = {};
+	OptimizerFinger<T> finger[4] = {};
+};
+
+
+struct minmax
+{
+	HandScalar min = 0;
+	HandScalar max = 0;
+};
+
+class FingerLimit
+{
+public:
+	minmax mcp_swing_x = {};
+	minmax mcp_swing_y = {};
+	minmax mcp_twist = {};
+
+	minmax pxm_swing_x = {};
+	minmax pxm_swing_y = {};
+
+	minmax curls[2] = {}; // int, dst
+};
+
+class HandLimit
+{
+public:
+	minmax hand_size = {};
+
+	minmax thumb_mcp_swing_x = {};
+	minmax thumb_mcp_swing_y = {};
+	minmax thumb_mcp_twist = {};
+	minmax thumb_curls[2] = {};
+
+	FingerLimit fingers[4] = {};
+
+	HandLimit()
+	{
+		hand_size = {MIN_HAND_SIZE, MAX_HAND_SIZE};
+
+		thumb_mcp_swing_x = {rad<HandScalar>(-60), rad<HandScalar>(60)};
+		thumb_mcp_swing_y = {rad<HandScalar>(-60), rad<HandScalar>(60)};
+		thumb_mcp_twist = {rad<HandScalar>(-35), rad<HandScalar>(35)};
+
+		for (int i = 0; i < 2; i++) {
+			thumb_curls[i] = {rad<HandScalar>(-90), rad<HandScalar>(40)};
+		}
+
+
+		HandScalar margin = 0.0001;
+
+		fingers[0].mcp_swing_y = {HandScalar(-0.19) - margin, HandScalar(-0.19) + margin};
+		fingers[1].mcp_swing_y = {HandScalar(0.00) - margin, HandScalar(0.00) + margin};
+		fingers[2].mcp_swing_y = {HandScalar(0.19) - margin, HandScalar(0.19) + margin};
+		fingers[3].mcp_swing_y = {HandScalar(0.38) - margin, HandScalar(0.38) + margin};
+
+
+		fingers[0].mcp_swing_x = {HandScalar(-0.02) - margin, HandScalar(-0.02) + margin};
+		fingers[1].mcp_swing_x = {HandScalar(0.00) - margin, HandScalar(0.00) + margin};
+		fingers[2].mcp_swing_x = {HandScalar(0.02) - margin, HandScalar(0.02) + margin};
+		fingers[3].mcp_swing_x = {HandScalar(0.04) - margin, HandScalar(0.04) + margin};
+
+
+		for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
+			FingerLimit &finger = fingers[finger_idx];
+
+			// finger.mcp_swing_x = {rad<HandScalar>(-0.0001), rad<HandScalar>(0.0001)};
+			finger.mcp_twist = {rad<HandScalar>(-4), rad<HandScalar>(4)};
+
+			finger.pxm_swing_x = {rad<HandScalar>(-100), rad<HandScalar>(20)}; // ??? why is it reversed
+			finger.pxm_swing_y = {rad<HandScalar>(-20), rad<HandScalar>(20)};
+
+			for (int i = 0; i < 2; i++) {
+				finger.curls[i] = {rad<HandScalar>(-90), rad<HandScalar>(0)};
+			}
+		}
+	}
+};
+
+static const class HandLimit the_limit = {};
+
+
+template <typename T> struct StereographicObservation
+{
+	Vec2<T> obs[kNumNNJoints];
+};
+
+
+template <typename T> struct DepthObservation
+{
+	T depth_value[kNumNNJoints];
+};
+
+template <typename T> struct ResidualTracker
+{
+	T *out_residual = nullptr;
+	size_t out_residual_idx = {};
+
+	ResidualTracker(T *residual) : out_residual(residual) {}
+
+	void
+	AddValue(T const &value)
+	{
+		this->out_residual[out_residual_idx++] = value;
+	}
+};
+
+
+struct KinematicHandLM
+{
+	bool first_frame = true;
+	bool use_stability = false;
+	bool optimize_hand_size = true;
+	bool is_right = false;
+	float smoothing_factor;
+	int num_observation_views = 0;
+	one_frame_input *observation = nullptr;
+
+	HandScalar target_hand_size = {};
+	HandScalar hand_size_err_mul = {};
+	HandScalar depth_err_mul = {};
+
+
+	u_logging_level log_level = U_LOGGING_INFO;
+
+	Quat<HandScalar> last_frame_pre_rotation = {};
+	OptimizerHand<HandScalar> last_frame = {};
+
+	// The pose that will take you from the right camera's space to the left camera's space.
+	xrt_pose left_in_right = {};
+
+	// The translation part of the same pose, just easier for Ceres to consume
+	Vec3<HandScalar> left_in_right_translation = {};
+
+	// The orientation part of the same pose, just easier for Ceres to consume
+	Quat<HandScalar> left_in_right_orientation = {};
+
+	Eigen::Matrix<HandScalar, calc_input_size(true), 1> TinyOptimizerInput = {};
+};
+
+template <typename T> struct Translations55
+{
+	Vec3<T> t[kNumFingers][kNumJointsInFinger] = {};
+};
+
+template <typename T> struct Orientations54
+{
+	Quat<T> q[kNumFingers][kNumJointsInFinger] = {};
+};
+
+template <bool optimize_hand_size> struct CostFunctor
+{
+	KinematicHandLM &parent;
+	size_t num_residuals_;
+
+	template <typename T>
+	bool
+	operator()(const T *const x, T *residual) const;
+
+	CostFunctor(KinematicHandLM &in_last_hand, size_t const &num_residuals)
+	    : parent(in_last_hand), num_residuals_(num_residuals)
+	{}
+
+	size_t
+	NumResiduals() const
+	{
+		return num_residuals_;
+	}
+};
+
+
 } // namespace xrt::tracking::hand::mercury::lm

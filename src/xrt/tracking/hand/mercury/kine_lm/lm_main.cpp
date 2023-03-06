@@ -11,7 +11,6 @@
 #include "math/m_api.h"
 #include "math/m_vec3.h"
 #include "os/os_time.h"
-#include "util/u_logging.h"
 #include "util/u_misc.h"
 #include "util/u_trace_marker.h"
 
@@ -36,94 +35,6 @@ Everything templated with <typename T> is basically just a scalar template, usua
 */
 
 namespace xrt::tracking::hand::mercury::lm {
-
-template <typename T> struct StereographicObservation
-{
-	Vec2<T> obs[kNumNNJoints];
-};
-
-
-template <typename T> struct DepthObservation
-{
-	T depth_value[kNumNNJoints];
-};
-
-template <typename T> struct ResidualTracker
-{
-	T *out_residual = nullptr;
-	size_t out_residual_idx = {};
-
-	ResidualTracker(T *residual) : out_residual(residual) {}
-
-	void
-	AddValue(T const &value)
-	{
-		this->out_residual[out_residual_idx++] = value;
-	}
-};
-
-
-struct KinematicHandLM
-{
-	bool first_frame = true;
-	bool use_stability = false;
-	bool optimize_hand_size = true;
-	bool is_right = false;
-	float smoothing_factor;
-	int num_observation_views = 0;
-	one_frame_input *observation = nullptr;
-
-	HandScalar target_hand_size = {};
-	HandScalar hand_size_err_mul = {};
-	HandScalar depth_err_mul = {};
-
-
-	u_logging_level log_level = U_LOGGING_INFO;
-
-	Quat<HandScalar> last_frame_pre_rotation = {};
-	OptimizerHand<HandScalar> last_frame = {};
-
-	// The pose that will take you from the right camera's space to the left camera's space.
-	xrt_pose left_in_right = {};
-
-	// The translation part of the same pose, just easier for Ceres to consume
-	Vec3<HandScalar> left_in_right_translation = {};
-
-	// The orientation part of the same pose, just easier for Ceres to consume
-	Quat<HandScalar> left_in_right_orientation = {};
-
-	Eigen::Matrix<HandScalar, calc_input_size(true), 1> TinyOptimizerInput = {};
-};
-
-template <typename T> struct Translations55
-{
-	Vec3<T> t[kNumFingers][kNumJointsInFinger] = {};
-};
-
-template <typename T> struct Orientations54
-{
-	Quat<T> q[kNumFingers][kNumJointsInFinger] = {};
-};
-
-template <bool optimize_hand_size> struct CostFunctor
-{
-	KinematicHandLM &parent;
-	size_t num_residuals_;
-
-	template <typename T>
-	bool
-	operator()(const T *const x, T *residual) const;
-
-	CostFunctor(KinematicHandLM &in_last_hand, size_t const &num_residuals)
-	    : parent(in_last_hand), num_residuals_(num_residuals)
-	{}
-
-	size_t
-	NumResiduals() const
-	{
-		return num_residuals_;
-	}
-};
 
 template <typename T>
 static inline void
