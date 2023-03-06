@@ -978,6 +978,9 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 		hgt->hand_tracked_for_num_frames[hand_idx]++;
 	}
 
+	// Push our timestamp back as well
+	hgt->history_timestamps.push_back(hgt->current_frame_timestamp);
+
 	// More hand-size-optimization spaghetti
 	if (num_hands > 0) {
 		hgt->target_hand_size = (float)avg_hand_size / (float)num_hands;
@@ -1024,7 +1027,6 @@ HandTracking::cCallbackProcess(struct t_hand_tracking_sync *ht_sync,
 
 	// If the debug UI is active, push to the frame-timing widget
 	u_frame_times_widget_push_sample(&hgt->ft_widget, hgt->current_frame_timestamp);
-	hgt->history_timestamps.push_back(hgt->current_frame_timestamp);
 
 	// If the debug UI is active, push our debug frame
 	if (hgt->debug_scribble) {
