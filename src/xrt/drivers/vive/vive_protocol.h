@@ -286,6 +286,13 @@ struct vive_headset_lighthouse_v2_pulse_report
 
 } __attribute__((packed));
 
+#define VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_RAW_REPORT_ID 0x28
+
+struct vive_headset_lighthouse_v2_pulse_raw_report
+{
+	uint8_t unknown[64];
+} __attribute__((packed));
+
 struct vive_headset_lighthouse_pulse
 {
 	uint8_t id;

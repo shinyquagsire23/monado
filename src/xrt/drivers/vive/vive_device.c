@@ -548,7 +548,7 @@ _decode_pulse_report(struct vive_device *d, const void *buffer)
 		}
 
 		if (sensor_id == 0xfd) { // Camera frame timestamp
-			vive_source_push_frame_ticks(d->source, pulse->timestamp);
+			vive_source_push_frame_ticks(d->source, timestamp);
 			continue;
 		}
 
@@ -579,6 +579,7 @@ _sensors_get_report_string(uint32_t report_id)
 	case VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID: return "VIVE_HEADSET_LIGHTHOUSE_PULSE_REPORT_ID";
 	case VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID: return "VIVE_CONTROLLER_LIGHTHOUSE_PULSE_REPORT_ID";
 	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID: return "VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_REPORT_ID";
+	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_RAW_REPORT_ID: return "VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_RAW_REPORT_ID";
 	default: return "Unknown";
 	}
 }
@@ -728,6 +729,11 @@ vive_sensors_read_lighthouse_msg(struct vive_device *d)
 		if (!_is_report_size_valid(d, ret, 59, buffer[0]))
 			return false;
 		if (!_print_pulse_report_v2(d, buffer))
+			return false;
+		break;
+	case VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_RAW_REPORT_ID:
+		// Report starts coming when lighthouses are in sight
+		if (!_is_report_size_valid(d, ret, 64, buffer[0]))
 			return false;
 		break;
 	default:

@@ -73,9 +73,11 @@ vive_source_try_convert_v4l2_timestamp(struct vive_source *vs, struct xrt_frame 
 	if (vive_ts_count == 0) { // This seems to happen in some runs
 		// This code assumes vive_timestamps will always be populated before v4l2
 		// receives a frame, thus if we reach this, this assumption has failed.
-		VIVE_ERROR(vs, "Received a v4l2 frame but thwere are no vive timestamps to use");
-		VIVE_ERROR(vs, "Will continue, but frame timestamps could be off by one");
-		return false;
+		// As a fallback we'll use the v4l2 timestamp corrected to monotonic clock.
+		VIVE_TRACE(vs, "No vive timestamps available for this v4l2 frame, will use v4l2 timestamp");
+		timepoint_ns hw_ts = v4l2_ts - vs->hw2v4l2;
+		xf->timestamp = hw_ts + vs->hw2mono;
+		return true;
 	}
 
 	os_mutex_lock(vive_timestamps_lock);
