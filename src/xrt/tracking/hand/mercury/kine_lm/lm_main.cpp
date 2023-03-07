@@ -26,6 +26,7 @@
 #include "lm_defines.hpp"
 
 #include "../hg_numerics_checker.hpp"
+#include "lm_hand_init_guesser.hpp"
 
 /*
 
@@ -954,33 +955,6 @@ optimizer_finish(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand, float
 }
 
 void
-hand_was_untracked(KinematicHandLM &state)
-{
-	state.first_frame = true;
-#if 0
-	state.last_frame_pre_rotation.w = 1.0;
-	state.last_frame_pre_rotation.x = 0.0;
-	state.last_frame_pre_rotation.y = 0.0;
-	state.last_frame_pre_rotation.z = 0.0;
-#else
-	// Rotated 90 degrees so that the palm is facing the user and the fingers are up.
-	// The _idea_ is that having the palm be "in" the camera's plane will reduce initial local minima due to flat
-	// things having multiple possible unprojections.
-	state.this_frame_pre_rotation.w = sqrt(2) / 2;
-	state.this_frame_pre_rotation.x = -sqrt(2) / 2;
-	state.this_frame_pre_rotation.y = 0.0;
-	state.this_frame_pre_rotation.z = 0.0;
-#endif
-
-	state.this_frame_pre_position.x = 0.0f;
-	state.this_frame_pre_position.y = 0.0f;
-	state.this_frame_pre_position.z = -0.3f;
-
-	OptimizerHandInit(state.last_frame, state.this_frame_pre_rotation);
-	OptimizerHandPackIntoVector(state.last_frame, state.optimize_hand_size, state.TinyOptimizerInput.data());
-}
-
-void
 optimizer_run(KinematicHandLM *hand,
               one_frame_input &observation,
               bool hand_was_untracked_last_frame,
@@ -998,8 +972,31 @@ optimizer_run(KinematicHandLM *hand,
 	KinematicHandLM &state = *hand;
 	state.smoothing_factor = smoothing_factor;
 
+	xrt_pose blah = XRT_POSE_IDENTITY;
+	hand_init_guess(observation, target_hand_size, state.left_in_right, blah);
+
 	if (hand_was_untracked_last_frame) {
-		hand_was_untracked(state);
+		OptimizerHandInit(state.last_frame, state.this_frame_pre_rotation);
+		OptimizerHandPackIntoVector(state.last_frame, state.optimize_hand_size,
+		                            state.TinyOptimizerInput.data());
+		if (blah.position.z > 0.05) {
+			LM_WARN(state, "Initial position guess was too close to camera! Z axis was %f m",
+			        blah.position.z);
+			state.this_frame_pre_position.x = 0.0f;
+			state.this_frame_pre_position.y = 0.0f;
+			state.this_frame_pre_position.z = -0.3f;
+		} else {
+			state.this_frame_pre_position.x = blah.position.x;
+			state.this_frame_pre_position.y = blah.position.y;
+			state.this_frame_pre_position.z = blah.position.z;
+		}
+
+
+
+		state.this_frame_pre_rotation.x = blah.orientation.x;
+		state.this_frame_pre_rotation.y = blah.orientation.y;
+		state.this_frame_pre_rotation.z = blah.orientation.z;
+		state.this_frame_pre_rotation.w = blah.orientation.w;
 	}
 
 	state.num_observation_views = 0;
@@ -1072,17 +1069,16 @@ optimizer_run(KinematicHandLM *hand,
 
 
 
-	// Postfix - unpack,
+	// Postfix - unpack our optimization result into state.last_frame.
 	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state, state.last_frame);
 
 
 
-	// Squash the orientations
+	// Have the final pose from this frame be the next frame's initial pose
 	state.this_frame_pre_rotation = state.last_frame.wrist_final_orientation;
 	state.this_frame_pre_position = state.last_frame.wrist_final_location;
-	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're
-	// using sin/asin.
 
+	// Reset this frame's post-transform to identity
 	state.last_frame.wrist_post_location.x = 0.0f;
 	state.last_frame.wrist_post_location.y = 0.0f;
 	state.last_frame.wrist_post_location.z = 0.0f;
@@ -1091,7 +1087,8 @@ optimizer_run(KinematicHandLM *hand,
 	state.last_frame.wrist_post_orientation_aax.y = 0.0f;
 	state.last_frame.wrist_post_orientation_aax.z = 0.0f;
 
-
+	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're
+	// using sin/asin.
 	OptimizerHandPackIntoVector(state.last_frame, hand->optimize_hand_size, state.TinyOptimizerInput.data());
 
 	optimizer_finish(state, out_viz_hand, out_reprojection_error);
@@ -1121,9 +1118,6 @@ optimizer_create(xrt_pose left_in_right, bool is_right, u_logging_level log_leve
 	hand->left_in_right_orientation.x = left_in_right.orientation.x;
 	hand->left_in_right_orientation.y = left_in_right.orientation.y;
 	hand->left_in_right_orientation.z = left_in_right.orientation.z;
-
-	// Probably unnecessary.
-	hand_was_untracked(*hand);
 
 	*out_kinematic_hand = hand;
 }

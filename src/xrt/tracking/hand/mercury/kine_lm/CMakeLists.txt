@@ -1,7 +1,10 @@
 # Copyright 2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-add_library(t_ht_mercury_kine_lm STATIC lm_interface.hpp lm_main.cpp)
+add_library(
+	t_ht_mercury_kine_lm STATIC lm_interface.hpp lm_main.cpp lm_hand_init_guesser.hpp
+				    lm_hand_init_guesser.cpp
+	)
 
 target_link_libraries(
 	t_ht_mercury_kine_lm
