@@ -15,6 +15,7 @@
 
 #include "lm_interface.hpp"
 #include "lm_defines.hpp"
+#include "lm_rotations.inl"
 
 namespace xrt::tracking::hand::mercury::lm {
 
@@ -37,19 +38,36 @@ ModelToLM(T model, minmax mm)
 // Input vector,
 template <typename T>
 void
-OptimizerHandUnpackFromVector(const T *in, bool use_hand_size, T hand_size, OptimizerHand<T> &out)
+OptimizerHandUnpackFromVector(const T *in, const KinematicHandLM &state, OptimizerHand<T> &out)
 {
+
+	const Quat<T> pre_wrist_orientation(state.this_frame_pre_rotation);
+	const Vec3<T> pre_wrist_position(state.this_frame_pre_position);
 
 	size_t acc_idx = 0;
 #ifdef USE_HAND_TRANSLATION
-	out.wrist_location.x = in[acc_idx++];
-	out.wrist_location.y = in[acc_idx++];
-	out.wrist_location.z = in[acc_idx++];
+	out.wrist_post_location.x = in[acc_idx++];
+	out.wrist_post_location.y = in[acc_idx++];
+	out.wrist_post_location.z = in[acc_idx++];
+
+	out.wrist_final_location.x = out.wrist_post_location.x + T(pre_wrist_position.x);
+	out.wrist_final_location.y = out.wrist_post_location.y + T(pre_wrist_position.y);
+	out.wrist_final_location.z = out.wrist_post_location.z + T(pre_wrist_position.z);
+
 #endif
+
 #ifdef USE_HAND_ORIENTATION
 	out.wrist_post_orientation_aax.x = in[acc_idx++];
 	out.wrist_post_orientation_aax.y = in[acc_idx++];
 	out.wrist_post_orientation_aax.z = in[acc_idx++];
+
+	Quat<T> post_wrist_orientation = {};
+
+	AngleAxisToQuaternion<T>(out.wrist_post_orientation_aax, post_wrist_orientation);
+
+	Quat<T> pre_wrist_orientation_t(pre_wrist_orientation);
+
+	QuaternionProduct<T>(pre_wrist_orientation_t, post_wrist_orientation, out.wrist_final_orientation);
 #endif
 
 #ifdef USE_EVERYTHING_ELSE
@@ -74,10 +92,10 @@ OptimizerHandUnpackFromVector(const T *in, bool use_hand_size, T hand_size, Opti
 #endif
 
 #ifdef USE_HAND_SIZE
-	if (use_hand_size) {
+	if (state.optimize_hand_size) {
 		out.hand_size = LMToModel(in[acc_idx++], the_limit.hand_size);
 	} else {
-		out.hand_size = hand_size;
+		out.hand_size = T(state.target_hand_size);
 	}
 #endif
 }
@@ -89,9 +107,9 @@ OptimizerHandPackIntoVector(OptimizerHand<T> &in, bool use_hand_size, T *out)
 	size_t acc_idx = 0;
 
 #ifdef USE_HAND_TRANSLATION
-	out[acc_idx++] = in.wrist_location.x;
-	out[acc_idx++] = in.wrist_location.y;
-	out[acc_idx++] = in.wrist_location.z;
+	out[acc_idx++] = in.wrist_post_location.x;
+	out[acc_idx++] = in.wrist_post_location.y;
+	out[acc_idx++] = in.wrist_post_location.z;
 #endif
 #ifdef USE_HAND_ORIENTATION
 	out[acc_idx++] = in.wrist_post_orientation_aax.x;
@@ -136,11 +154,11 @@ OptimizerHandInit(OptimizerHand<T> &opt, Quat<T> &pre_rotation)
 	opt.wrist_post_orientation_aax.z = (T)(0);
 
 
-	opt.wrist_pre_orientation_quat = pre_rotation;
+	// opt.wrist_pre_orientation_quat = pre_rotation;
 
-	opt.wrist_location.x = (T)(0);
-	opt.wrist_location.y = (T)(0);
-	opt.wrist_location.z = (T)(-0.3);
+	opt.wrist_post_location.x = (T)(0);
+	opt.wrist_post_location.y = (T)(0);
+	opt.wrist_post_location.z = (T)(0);
 
 
 	for (int i = 0; i < 4; i++) {
@@ -174,38 +192,6 @@ OptimizerHandInit(OptimizerHand<T> &opt, Quat<T> &pre_rotation)
 	opt.finger[1].proximal_swing.y = (T)(0);
 	opt.finger[2].proximal_swing.y = (T)(0.01);
 	opt.finger[3].proximal_swing.y = (T)(0.02);
-}
-
-// Applies the post axis-angle rotation to the pre quat, then zeroes out the axis-angle.
-template <typename T>
-void
-OptimizerHandSquashRotations(OptimizerHand<T> &opt, Quat<T> &out_orientation)
-{
-
-	// Hmmmmm, is this at all the right thing to do? :
-	opt.wrist_pre_orientation_quat.w = (T)out_orientation.w;
-	opt.wrist_pre_orientation_quat.x = (T)out_orientation.x;
-	opt.wrist_pre_orientation_quat.y = (T)out_orientation.y;
-	opt.wrist_pre_orientation_quat.z = (T)out_orientation.z;
-
-	Quat<T> &pre_rotation = opt.wrist_pre_orientation_quat;
-
-	Quat<T> post_rotation = {};
-
-	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_rotation);
-
-	Quat<T> tmp_new_pre_rotation = {};
-
-	QuaternionProduct(pre_rotation, post_rotation, tmp_new_pre_rotation);
-
-	out_orientation.w = tmp_new_pre_rotation.w;
-	out_orientation.x = tmp_new_pre_rotation.x;
-	out_orientation.y = tmp_new_pre_rotation.y;
-	out_orientation.z = tmp_new_pre_rotation.z;
-
-	opt.wrist_post_orientation_aax.x = T(0);
-	opt.wrist_post_orientation_aax.y = T(0);
-	opt.wrist_post_orientation_aax.z = T(0);
 }
 
 

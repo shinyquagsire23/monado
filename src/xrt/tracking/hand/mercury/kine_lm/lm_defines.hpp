@@ -386,12 +386,12 @@ template <typename T> struct OptimizerThumb
 template <typename T> struct OptimizerHand
 {
 	T hand_size;
-	Vec3<T> wrist_location = {};
-	// This is constant, a ceres::Rotation.h quat,, taken from last frame.
-	Quat<T> wrist_pre_orientation_quat = {};
-	// This is optimized - angle-axis rotation vector. Starts at 0, loss goes up the higher it goes because it
-	// indicates more of a rotation.
+	Vec3<T> wrist_post_location = {};
 	Vec3<T> wrist_post_orientation_aax = {};
+
+	Vec3<T> wrist_final_location = {};
+	Quat<T> wrist_final_orientation = {};
+
 	OptimizerThumb<T> thumb = {};
 	OptimizerFinger<T> finger[4] = {};
 };
@@ -517,7 +517,11 @@ struct KinematicHandLM
 
 	u_logging_level log_level = U_LOGGING_INFO;
 
-	Quat<HandScalar> last_frame_pre_rotation = {};
+	// Squashed final pose from last frame. We start from here.
+	// At some point this might turn into a pose-prediction instead, we'll see :)
+	Quat<HandScalar> this_frame_pre_rotation = {};
+	Vec3<HandScalar> this_frame_pre_position = {};
+
 	OptimizerHand<HandScalar> last_frame = {};
 
 	// The pose that will take you from the right camera's space to the left camera's space.

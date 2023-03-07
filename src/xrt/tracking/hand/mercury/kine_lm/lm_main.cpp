@@ -168,7 +168,8 @@ eval_hand_set_rel_orientations(const OptimizerHand<T> &opt, Orientations54<T> &r
 
 template <typename T>
 void
-eval_hand_with_orientation(const OptimizerHand<T> &opt,
+eval_hand_with_orientation(const KinematicHandLM &state,
+                           const OptimizerHand<T> &opt,
                            const bool is_right,
                            Translations55<T> &translations_absolute,
                            Orientations54<T> &orientations_absolute)
@@ -184,18 +185,11 @@ eval_hand_with_orientation(const OptimizerHand<T> &opt,
 
 	eval_hand_set_rel_translations(opt, rel_translations);
 
-	Quat<T> orientation_root = {};
-
-	Quat<T> post_orientation_quat = {};
-
-	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_orientation_quat);
-
-	QuaternionProduct(opt.wrist_pre_orientation_quat, post_orientation_quat, orientation_root);
 
 	// Get each joint's tracking-relative orientation by rotating its parent-relative orientation by the
 	// tracking-relative orientation of its parent.
 	for (size_t finger = 0; finger < kNumFingers; finger++) {
-		Quat<T> *last_orientation = &orientation_root;
+		const Quat<T> *last_orientation = &opt.wrist_final_orientation;
 		for (size_t bone = 0; bone < kNumOrientationsInFinger; bone++) {
 			Quat<T> &out_orientation = orientations_absolute.q[finger][bone];
 			Quat<T> &rel_orientation = rel_orientations.q[finger][bone];
@@ -205,11 +199,12 @@ eval_hand_with_orientation(const OptimizerHand<T> &opt,
 		}
 	}
 
+
 	// Get each joint's tracking-relative position by rotating its parent-relative translation by the
 	// tracking-relative orientation of its parent, then adding that to its parent's tracking-relative position.
 	for (size_t finger = 0; finger < kNumFingers; finger++) {
-		const Vec3<T> *last_translation = &opt.wrist_location;
-		const Quat<T> *last_orientation = &orientation_root;
+		const Vec3<T> *last_translation = &opt.wrist_final_location;
+		const Quat<T> *last_orientation = &opt.wrist_final_orientation;
 		for (size_t bone = 0; bone < kNumJointsInFinger; bone++) {
 			Vec3<T> &out_translation = translations_absolute.t[finger][bone];
 			Vec3<T> &rel_translation = rel_translations.t[finger][bone];
@@ -328,9 +323,9 @@ computeResidualStability(const OptimizerHand<T> &hand,
 		return;
 	}
 
-	helper.AddValue((last_hand.wrist_location.x - hand.wrist_location.x) * stab.stabilityRootPosition);
-	helper.AddValue((last_hand.wrist_location.y - hand.wrist_location.y) * stab.stabilityRootPosition);
-	helper.AddValue((last_hand.wrist_location.z - hand.wrist_location.z) * stab.stabilityRootPosition);
+	helper.AddValue((hand.wrist_post_location.x) * stab.stabilityRootPosition);
+	helper.AddValue((hand.wrist_post_location.y) * stab.stabilityRootPosition);
+	helper.AddValue((hand.wrist_post_location.z) * stab.stabilityRootPosition);
 
 
 	helper.AddValue((hand.wrist_post_orientation_aax.x) * (T)(stab.stabilityHandOrientationXY));
@@ -493,7 +488,13 @@ cjrc(const KinematicHandLM &state,                   //
 
 	int joint_acc_idx = 0;
 
-	calc_joint_rel_camera(hand.wrist_location, move_direction, move_orientation, after_orientation,
+	Vec3<T> root = state.this_frame_pre_position;
+	root.x += hand.wrist_post_location.x;
+	root.y += hand.wrist_post_location.y;
+	root.z += hand.wrist_post_location.z;
+
+
+	calc_joint_rel_camera(root, move_direction, move_orientation, after_orientation,
 	                      out_model_joints_rel_camera[joint_acc_idx++]);
 
 	for (int finger_idx = 0; finger_idx < 5; finger_idx++) {
@@ -664,9 +665,9 @@ CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 	struct KinematicHandLM &state = this->parent;
 	OptimizerHand<T> hand = {};
 	// ??? should I do the below? probably.
-	Quat<T> tmp = this->parent.last_frame_pre_rotation;
+	Quat<T> tmp = this->parent.this_frame_pre_rotation;
 	OptimizerHandInit<T>(hand, tmp);
-	OptimizerHandUnpackFromVector(x, state.optimize_hand_size, T(state.target_hand_size), hand);
+	OptimizerHandUnpackFromVector(x, state, hand);
 
 	XRT_MAYBE_UNUSED size_t residual_size =
 	    calc_residual_size(state.use_stability, optimize_hand_size, state.num_observation_views);
@@ -685,7 +686,7 @@ CostFunctor<optimize_hand_size>::operator()(const T *const x, T *residual) const
 
 	Translations55<T> translations_absolute = {};
 	Orientations54<T> orientations_absolute = {};
-	eval_hand_with_orientation(hand, state.is_right, translations_absolute, orientations_absolute);
+	eval_hand_with_orientation(state, hand, state.is_right, translations_absolute, orientations_absolute);
 
 
 	CostFunctor_PositionsPart<T>(hand, translations_absolute, state, helper);
@@ -785,18 +786,7 @@ eval_to_viz_hand(KinematicHandLM &state,
 {
 	XRT_TRACE_MARKER();
 
-	eval_hand_with_orientation(opt, state.is_right, translations_absolute, orientations_absolute);
-
-	Quat<HandScalar> post_wrist_orientation = {};
-
-	AngleAxisToQuaternion(opt.wrist_post_orientation_aax, post_wrist_orientation);
-
-	Quat<HandScalar> pre_wrist_orientation = state.last_frame_pre_rotation;
-
-
-	Quat<HandScalar> final_wrist_orientation = {};
-
-	QuaternionProduct(pre_wrist_orientation, post_wrist_orientation, final_wrist_orientation);
+	eval_hand_with_orientation(state, opt, state.is_right, translations_absolute, orientations_absolute);
 
 	int joint_acc_idx = 0;
 
@@ -812,8 +802,9 @@ eval_to_viz_hand(KinematicHandLM &state,
 	zldtt(palm_position, palm_orientation, state.is_right,
 	      out_viz_hand.values.hand_joint_set_default[joint_acc_idx++].relation);
 
+
 	// Wrist.
-	zldtt(opt.wrist_location, final_wrist_orientation, state.is_right,
+	zldtt(opt.wrist_final_location, opt.wrist_final_orientation, state.is_right,
 	      out_viz_hand.values.hand_joint_set_default[joint_acc_idx++].relation);
 
 	for (int finger = 0; finger < 5; finger++) {
@@ -920,7 +911,7 @@ optimizer_finish(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand, float
 
 	Translations55<HandScalar> translations_absolute;
 	Orientations54<HandScalar> orientations_absolute;
-	eval_hand_with_orientation<HandScalar>(final_hand, state.is_right, translations_absolute,
+	eval_hand_with_orientation<HandScalar>(state, final_hand, state.is_right, translations_absolute,
 	                                       orientations_absolute);
 
 	eval_to_viz_hand(state, final_hand, translations_absolute, orientations_absolute, out_viz_hand);
@@ -945,28 +936,31 @@ optimizer_finish(KinematicHandLM &state, xrt_hand_joint_set &out_viz_hand, float
 	out_reprojection_error = sum;
 }
 
-
 void
-hand_was_untracked(KinematicHandLM *hand)
+hand_was_untracked(KinematicHandLM &state)
 {
-	hand->first_frame = true;
+	state.first_frame = true;
 #if 0
-	hand->last_frame_pre_rotation.w = 1.0;
-	hand->last_frame_pre_rotation.x = 0.0;
-	hand->last_frame_pre_rotation.y = 0.0;
-	hand->last_frame_pre_rotation.z = 0.0;
+	state.last_frame_pre_rotation.w = 1.0;
+	state.last_frame_pre_rotation.x = 0.0;
+	state.last_frame_pre_rotation.y = 0.0;
+	state.last_frame_pre_rotation.z = 0.0;
 #else
 	// Rotated 90 degrees so that the palm is facing the user and the fingers are up.
 	// The _idea_ is that having the palm be "in" the camera's plane will reduce initial local minima due to flat
 	// things having multiple possible unprojections.
-	hand->last_frame_pre_rotation.w = sqrt(2) / 2;
-	hand->last_frame_pre_rotation.x = -sqrt(2) / 2;
-	hand->last_frame_pre_rotation.y = 0.0;
-	hand->last_frame_pre_rotation.z = 0.0;
+	state.this_frame_pre_rotation.w = sqrt(2) / 2;
+	state.this_frame_pre_rotation.x = -sqrt(2) / 2;
+	state.this_frame_pre_rotation.y = 0.0;
+	state.this_frame_pre_rotation.z = 0.0;
 #endif
 
-	OptimizerHandInit(hand->last_frame, hand->last_frame_pre_rotation);
-	OptimizerHandPackIntoVector(hand->last_frame, hand->optimize_hand_size, hand->TinyOptimizerInput.data());
+	state.this_frame_pre_position.x = 0.0f;
+	state.this_frame_pre_position.y = 0.0f;
+	state.this_frame_pre_position.z = -0.3f;
+
+	OptimizerHandInit(state.last_frame, state.this_frame_pre_rotation);
+	OptimizerHandPackIntoVector(state.last_frame, state.optimize_hand_size, state.TinyOptimizerInput.data());
 }
 
 void
@@ -988,7 +982,7 @@ optimizer_run(KinematicHandLM *hand,
 	state.smoothing_factor = smoothing_factor;
 
 	if (hand_was_untracked_last_frame) {
-		hand_was_untracked(hand);
+		hand_was_untracked(state);
 	}
 
 	state.num_observation_views = 0;
@@ -1017,8 +1011,7 @@ optimizer_run(KinematicHandLM *hand,
 #if 0
 
 	OptimizerHand<HandScalar> blah = {};
-	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state.optimize_hand_size, state.target_hand_size,
-	                              blah);
+	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state, blah);
 
 	for (int finger_idx = 0; finger_idx < 4; finger_idx++) {
 		// int finger_idx = 0;
@@ -1063,16 +1056,25 @@ optimizer_run(KinematicHandLM *hand,
 
 
 	// Postfix - unpack,
-	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state.optimize_hand_size, state.target_hand_size,
-	                              state.last_frame);
+	OptimizerHandUnpackFromVector(state.TinyOptimizerInput.data(), state, state.last_frame);
 
 
 
 	// Squash the orientations
-	OptimizerHandSquashRotations(state.last_frame, state.last_frame_pre_rotation);
-
+	state.this_frame_pre_rotation = state.last_frame.wrist_final_orientation;
+	state.this_frame_pre_position = state.last_frame.wrist_final_location;
 	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're
 	// using sin/asin.
+	
+	state.last_frame.wrist_post_location.x = 0.0f;
+	state.last_frame.wrist_post_location.y = 0.0f;
+	state.last_frame.wrist_post_location.z = 0.0f;
+
+	state.last_frame.wrist_post_orientation_aax.x = 0.0f;
+	state.last_frame.wrist_post_orientation_aax.y = 0.0f;
+	state.last_frame.wrist_post_orientation_aax.z = 0.0f;
+
+
 	OptimizerHandPackIntoVector(state.last_frame, hand->optimize_hand_size, state.TinyOptimizerInput.data());
 
 	optimizer_finish(state, out_viz_hand, out_reprojection_error);
@@ -1104,7 +1106,7 @@ optimizer_create(xrt_pose left_in_right, bool is_right, u_logging_level log_leve
 	hand->left_in_right_orientation.z = left_in_right.orientation.z;
 
 	// Probably unnecessary.
-	hand_was_untracked(hand);
+	hand_was_untracked(*hand);
 
 	*out_kinematic_hand = hand;
 }
