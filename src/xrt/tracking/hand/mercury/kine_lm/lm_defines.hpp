@@ -289,18 +289,42 @@ template <typename Scalar> struct Vec3
 		return Vec3(0.f, 0.f, 0.f);
 	}
 
-	// Norm, vector length, whatever.
 	Scalar
-	norm()
+	norm_sqrd() const
 	{
-		Scalar len = (Scalar)(0);
+		Scalar len_sqrd = (Scalar)(0);
 
-		len += this->x * this->x;
-		len += this->y * this->y;
-		len += this->z * this->z;
+		len_sqrd += this->x * this->x;
+		len_sqrd += this->y * this->y;
+		len_sqrd += this->z * this->z;
+		return len_sqrd;
+	}
 
-		len = sqrt(len);
-		return len;
+	// Norm, vector length, whatever.
+	// WARNING: Can return NaNs in the derivative part of Jets if magnitude is 0, because d/dx(sqrt(x)) at x=0 is
+	// undefined.
+	// There's no norm_safe because generally you need to add zero-checks somewhere *before* calling
+	// this, and it's not possible to produce correct derivatives from here.
+	Scalar
+	norm() const
+	{
+		Scalar len_sqrd = this->norm_sqrd();
+
+		return sqrt(len_sqrd);
+	}
+
+	// WARNING: Will return NaNs if vector magnitude is zero due to zero division.
+	// Do not call this on vectors with zero norm.
+	Vec3
+	normalized() const
+	{
+		Scalar norm = this->norm();
+
+		Vec3<Scalar> retval;
+		retval.x = this->x / norm;
+		retval.y = this->y / norm;
+		retval.z = this->z / norm;
+		return retval;
 	}
 };
 

@@ -328,9 +328,26 @@ computeResidualStability(const OptimizerHand<T> &hand,
 	helper.AddValue((hand.wrist_post_location.z) * stab.stabilityRootPosition);
 
 
-	helper.AddValue((hand.wrist_post_orientation_aax.x) * (T)(stab.stabilityHandOrientationXY));
-	helper.AddValue((hand.wrist_post_orientation_aax.y) * (T)(stab.stabilityHandOrientationXY));
-	helper.AddValue((hand.wrist_post_orientation_aax.z) * (T)(stab.stabilityHandOrientationZ));
+	// Needed because d/dx(sqrt(x)) at x=0 is undefined, and the first iteration *always* starts at 0.
+	// x-2sin(0.5x) at x=0.001 is 4.16e-11 - this is a reasonable epsilon to pick.
+	const float epsilon = 0.001;
+	if (hand.wrist_post_orientation_aax.x < epsilon && //
+	    hand.wrist_post_orientation_aax.y < epsilon && //
+	    hand.wrist_post_orientation_aax.z < epsilon) {
+		helper.AddValue((hand.wrist_post_orientation_aax.x) * (T)(stab.stabilityHandOrientationXY));
+		helper.AddValue((hand.wrist_post_orientation_aax.y) * (T)(stab.stabilityHandOrientationXY));
+		helper.AddValue((hand.wrist_post_orientation_aax.z) * (T)(stab.stabilityHandOrientationZ));
+	} else {
+		T rotation_magnitude = hand.wrist_post_orientation_aax.norm();
+		T magnitude_sin = T(2) * sin(T(0.5) * rotation_magnitude);
+
+		Vec3<T> rotation_axis = hand.wrist_post_orientation_aax.normalized();
+
+
+		helper.AddValue((magnitude_sin * rotation_axis.x) * (T)(stab.stabilityHandOrientationXY));
+		helper.AddValue((magnitude_sin * rotation_axis.y) * (T)(stab.stabilityHandOrientationXY));
+		helper.AddValue((magnitude_sin * rotation_axis.z) * (T)(stab.stabilityHandOrientationZ));
+	}
 
 
 
@@ -1065,7 +1082,7 @@ optimizer_run(KinematicHandLM *hand,
 	state.this_frame_pre_position = state.last_frame.wrist_final_location;
 	// Repack - brings the curl values back into original domain. Look at ModelToLM/LMToModel, we're
 	// using sin/asin.
-	
+
 	state.last_frame.wrist_post_location.x = 0.0f;
 	state.last_frame.wrist_post_location.y = 0.0f;
 	state.last_frame.wrist_post_location.z = 0.0f;
