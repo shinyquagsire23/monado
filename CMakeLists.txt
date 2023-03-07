@@ -189,6 +189,16 @@ foreach(slam_system IN LISTS EXTERNAL_SLAM_SYSTEMS)
 	endif()
 endforeach()
 
+# Find openvr library
+find_library(OPENVR_LIBRARIES NAMES openvr_api)
+if(OPENVR_LIBRARIES)
+	set(OPENVR_FOUND on)
+	message("Found OpenVR: " ${OPENVR_LIBRARIES})
+else()
+	set(OPENVR_FOUND off)
+	message("OpenVR not found")
+endif()
+
 # ILLIXR
 set(ILLIXR_PATH
     ""
@@ -296,6 +306,7 @@ option_with_deps(XRT_HAVE_JPEG "Enable jpeg code (used for some video drivers)" 
 option_with_deps(XRT_HAVE_LIBUSB "Enable libusb (used for most drivers)" DEPENDS LIBUSB1_FOUND)
 option_with_deps(XRT_HAVE_LIBUVC "Enable libuvc video driver" DEPENDS LIBUVC_FOUND XRT_HAVE_LIBUSB)
 option_with_deps(XRT_HAVE_REALSENSE "Enable RealSense support" DEPENDS realsense2_FOUND)
+option_with_deps(XRT_HAVE_OPENVR "Enable OpenVR support" DEPENDS OPENVR_FOUND)
 
 # Drivers to build (sorted)
 option_with_deps(XRT_BUILD_DRIVER_ANDROID "Enable Android sensors driver" DEPENDS ANDROID)
@@ -507,6 +518,7 @@ message(STATUS "#    OPENGLES:        ${XRT_HAVE_OPENGLES}")
 message(STATUS "#    OPENGL_GLX:      ${XRT_HAVE_OPENGL_GLX}")
 message(STATUS "#    PERCETTO:        ${XRT_HAVE_PERCETTO}")
 message(STATUS "#    REALSENSE:       ${XRT_HAVE_REALSENSE}")
+message(STATUS "#    OPENVR:          ${XRT_HAVE_OPENVR}")
 message(STATUS "#    SDL2:            ${XRT_HAVE_SDL2}")
 message(STATUS "#    SYSTEM_CJSON:    ${XRT_HAVE_SYSTEM_CJSON}")
 message(STATUS "#    SYSTEMD:         ${XRT_HAVE_SYSTEMD}")

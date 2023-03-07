@@ -915,7 +915,7 @@ euroc_player_setup_gui(struct euroc_player *ep)
 	u_var_add_ro_ff_vec3_f32(ep, ep->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(ep, ep->accel_ff, "Accelerometer");
 	for (int i = 0; i < ep->dataset.cam_count; i++) {
-		char label[] = "Camera NNNN";
+		char label[] = "Camera NNNNNNNNNN";
 		(void)snprintf(label, sizeof(label), "Camera %d", i);
 		u_var_add_sink_debug(ep, &ep->ui_cam_sinks[i], label);
 	}

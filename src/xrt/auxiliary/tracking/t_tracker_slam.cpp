@@ -25,6 +25,7 @@
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 #include "tracking/t_euroc_recorder.h"
+#include "tracking/t_openvr_tracker.h"
 #include "tracking/t_tracking.h"
 
 #include <slam_tracker.hpp>
@@ -69,6 +70,7 @@ DEBUG_GET_ONCE_LOG_OPTION(slam_log, "SLAM_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", nullptr)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_ui, "SLAM_UI", false)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
+DEBUG_GET_ONCE_NUM_OPTION(slam_openvr_groundtruth_device, "SLAM_OPENVR_GROUNDTRUTH_DEVICE", 0)
 DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_IL))
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
 DEBUG_GET_ONCE_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
@@ -359,6 +361,7 @@ struct TrackerSlam
 	MatFrame *cv_wrapper;           //!< Wraps a xrt_frame in a cv::Mat to send to the SLAM system
 
 	struct xrt_slam_sinks *euroc_recorder; //!< EuRoC dataset recording sinks
+	struct openvr_tracker *ovr_tracker;    //!< OpenVR lighthouse tracker
 
 	// Used mainly for checking that the timestamps come in order
 	timepoint_ns last_imu_ts;         //!< Last received IMU sample timestamp
@@ -815,8 +818,6 @@ flush_poses(TrackerSlam &t)
 
 		t.slam_rels.push(rel, nts);
 
-		xrt_pose_sample sample{nts, rel.pose};
-		xrt_sink_push_pose(t.euroc_recorder->gt, &sample);
 		gt_ui_push(t, nts, rel.pose);
 		t.slam_traj_writer->push(nts, rel.pose);
 
@@ -1167,6 +1168,7 @@ t_slam_gt_sink_push(struct xrt_pose_sink *sink, xrt_pose_sample *sample)
 	}
 
 	t.gt.trajectory->insert_or_assign(sample->timestamp_ns, sample->pose);
+	xrt_sink_push_pose(t.euroc_recorder->gt, sample);
 }
 
 //! Receive and send IMU samples to the external SLAM system
@@ -1203,6 +1205,9 @@ t_slam_receive_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 static void
 receive_frame(TrackerSlam &t, struct xrt_frame *frame, int cam_index)
 {
+	if (cam_index == 1) {
+		flush_poses(t); // Useful to flush SLAM poses when no openxr app is open
+	}
 	SLAM_DASSERT(t.last_cam_ts[0] != INT64_MIN || cam_index == 0, "First frame was not a cam0 frame");
 
 	// Construct and send the image sample
@@ -1248,6 +1253,9 @@ extern "C" void
 t_slam_node_break_apart(struct xrt_frame_node *node)
 {
 	auto &t = *container_of(node, TrackerSlam, node);
+	if (t.ovr_tracker != NULL) {
+		t_openvr_tracker_stop(t.ovr_tracker);
+	}
 	t.slam->finalize();
 	t.slam->stop();
 	os_thread_helper_stop_and_wait(&t.oth);
@@ -1260,6 +1268,9 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	auto t_ptr = container_of(node, TrackerSlam, node);
 	auto &t = *t_ptr; // Needed by SLAM_DEBUG
 	SLAM_DEBUG("Destroying SLAM tracker");
+	if (t.ovr_tracker != NULL) {
+		t_openvr_tracker_destroy(t.ovr_tracker);
+	}
 	os_thread_helper_destroy(&t_ptr->oth);
 	delete t.gt.trajectory;
 	delete t.slam_times_writer;
@@ -1308,6 +1319,7 @@ t_slam_fill_default_config(struct t_slam_tracker_config *config)
 	config->slam_config = debug_get_option_slam_config();
 	config->slam_ui = debug_get_bool_option_slam_ui();
 	config->submit_from_start = debug_get_bool_option_slam_submit_from_start();
+	config->openvr_groundtruth_device = int(debug_get_num_option_slam_openvr_groundtruth_device());
 	config->prediction = t_slam_prediction_type(debug_get_num_option_slam_prediction_type());
 	config->write_csvs = debug_get_bool_option_slam_write_csvs();
 	config->csv_path = debug_get_option_slam_csv_path();
@@ -1454,6 +1466,16 @@ t_slam_create(struct xrt_frame_context *xfctx,
 	t.filt_traj_writer = new TrajectoryWriter{dir, "filtering.csv", write_csvs};
 
 	setup_ui(t);
+
+	// Setup OpenVR groundtruth tracker
+	if (config->openvr_groundtruth_device > 0) {
+		enum openvr_device dev_class = openvr_device(config->openvr_groundtruth_device);
+		const double freq = 1000.0f;
+		t.ovr_tracker = t_openvr_tracker_create(freq, &dev_class, &t.sinks.gt, 1);
+		if (t.ovr_tracker != NULL) {
+			t_openvr_tracker_start(t.ovr_tracker);
+		}
+	}
 
 	*out_xts = &t.base;
 	*out_sink = &t.sinks;

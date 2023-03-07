@@ -30,6 +30,7 @@
 #cmakedefine XRT_HAVE_OPENCV
 #cmakedefine XRT_HAVE_OPENGL
 #cmakedefine XRT_HAVE_OPENGLES
+#cmakedefine XRT_HAVE_OPENVR
 #cmakedefine XRT_HAVE_PERCETTO
 #cmakedefine XRT_HAVE_SDL2
 #cmakedefine XRT_HAVE_SYSTEMD

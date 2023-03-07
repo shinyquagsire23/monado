@@ -7,6 +7,8 @@ add_library(
 	t_imu_fusion.hpp
 	t_imu.cpp
 	t_imu.h
+	t_openvr_tracker.cpp
+	t_openvr_tracker.h
 	t_tracking.h
 	)
 target_link_libraries(
@@ -52,4 +54,8 @@ endif()
 if(XRT_FEATURE_SLAM)
 	target_sources(aux_tracking PRIVATE t_tracker_slam.cpp)
 	target_link_libraries(aux_tracking PRIVATE xrt-external-slam)
+endif()
+
+if(XRT_HAVE_OPENVR)
+	target_link_libraries(aux_tracking PRIVATE xrt-external-openvr ${OPENVR_LIBRARIES})
 endif()

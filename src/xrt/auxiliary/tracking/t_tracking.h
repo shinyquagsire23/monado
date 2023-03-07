@@ -649,6 +649,7 @@ struct t_slam_tracker_config
 	int cam_count;                  //!< Number of cameras in use
 	bool slam_ui;                   //!< Whether to open the external UI of the external SLAM system
 	bool submit_from_start;         //!< Whether to submit data to the SLAM tracker without user action
+	int openvr_groundtruth_device;  //!< If >0, use lighthouse as groundtruth, see @ref enum openvr_device
 	enum t_slam_prediction_type prediction; //!< Which level of prediction to use
 	bool write_csvs;                        //!< Whether to enable CSV writers from the start for later analysis
 	const char *csv_path;                   //!< Path to write CSVs to
