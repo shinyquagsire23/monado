@@ -100,8 +100,8 @@ euroc_recorder_try_mkfiles(struct euroc_recorder *er)
 	*er->imu_csv << "#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],"
 	                "a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]" CSV_EOL;
 
-	create_directories(path + "/mav0/gt0");
-	er->gt_csv = new ofstream{path + "/mav0/gt0/data.csv"};
+	create_directories(path + "/mav0/gt");
+	er->gt_csv = new ofstream{path + "/mav0/gt/data.csv"};
 	*er->gt_csv << std::fixed << std::setprecision(CSV_PRECISION);
 	*er->gt_csv << "#timestamp [ns],p_RS_R_x [m],p_RS_R_y [m],p_RS_R_z [m],"
 	               "q_RS_w [],q_RS_x [],q_RS_y [],q_RS_z []" CSV_EOL;
@@ -208,7 +208,9 @@ euroc_recorder_save_frame(euroc_recorder *er, struct xrt_frame *frame, int cam_i
 	extern "C" void euroc_recorder_save_cam##cam_id(struct xrt_frame_sink *sink, struct xrt_frame *frame)          \
 	{                                                                                                              \
 		euroc_recorder *er = container_of(sink, euroc_recorder, writer_sinks[cam_id]);                         \
-		euroc_recorder_flush(er);                                                                              \
+		if (cam_id == 0) {                                                                                     \
+			euroc_recorder_flush(er);                                                                      \
+		}                                                                                                      \
 		euroc_recorder_save_frame(er, frame, cam_id);                                                          \
 	}
 
