@@ -65,6 +65,7 @@
 #define MAX_TRACKED_DEVICE_COUNT 16
 
 DEBUG_GET_ONCE_BOOL_OPTION(survive_disable_hand_emulation, "SURVIVE_DISABLE_HAND_EMULATION", false)
+DEBUG_GET_ONCE_BOOL_OPTION(survive_default_ipd, "SURVIVE_DEFAULT_IPD", false)
 
 #define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->log_level, __VA_ARGS__)
 #define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->log_level, __VA_ARGS__)
@@ -140,6 +141,7 @@ struct survive_device
 		{
 			float proximity; // [0,1]
 			float ipd;
+			bool use_default_ipd;
 
 			struct vive_config config;
 		} hmd;
@@ -516,11 +518,20 @@ survive_device_get_view_poses(struct xrt_device *xdev,
 	// Only supports two views.
 	assert(view_count <= 2);
 
-	u_device_get_view_poses(xdev, default_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
+	struct survive_device *survive = (struct survive_device *)xdev;
+
+	struct xrt_vec3 eye_relation = {0};
+
+	if (survive->hmd.use_default_ipd) {
+		eye_relation = *default_eye_relation;
+	} else {
+		eye_relation.x = survive->hmd.ipd;
+	}
+
+	u_device_get_view_poses(xdev, &eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
 	                        out_poses);
 
 	// This is for the Index' canted displays, on the Vive [Pro] they are identity.
-	struct survive_device *survive = (struct survive_device *)xdev;
 	for (uint32_t i = 0; i < view_count && i < ARRAY_SIZE(survive->hmd.config.display.rot); i++) {
 		out_poses[i].orientation = survive->hmd.config.display.rot[i];
 	}
