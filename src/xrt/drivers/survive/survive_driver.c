@@ -228,7 +228,7 @@ survive_device_destroy(struct xrt_device *xdev)
 // libsurvive timecode may not be exactly comparable with monotonic ns.
 // see OGGetAbsoluteTimeUS in libsurvive redist/os_generic.unix.h
 static double
-survive_timecode_now_s()
+survive_timecode_now_s(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, 0);
