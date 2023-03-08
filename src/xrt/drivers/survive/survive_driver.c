@@ -24,6 +24,7 @@
 #include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_misc.h"
+#include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
@@ -216,6 +217,9 @@ survive_device_destroy(struct xrt_device *xdev)
 		free(survive->sys);
 	}
 	m_relation_history_destroy(&survive->relation_hist);
+
+	// Remove the variable tracking.
+	u_var_remove_root(survive);
 
 	free(survive->last_inputs);
 	u_device_free(&survive->base);
@@ -972,6 +976,22 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 		survive->last_inputs[i] = survive->base.inputs[i];
 	}
 
+	survive->hmd.use_default_ipd = debug_get_bool_option_survive_default_ipd();
+
+	u_var_add_root(survive, "Survive HMD Device", true);
+	u_var_add_bool(survive, &survive->hmd.use_default_ipd, "Use default IPD");
+	u_var_add_f32(survive, &survive->hmd.ipd, "IPD");
+
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[0].angle_down, "View 0 FovAngleDown");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[0].angle_left, "View 0 FovAngleLeft");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[0].angle_right, "View 0 FovAngleRight");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[0].angle_up, "View 0 FovAngleUp");
+
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[1].angle_down, "View 1 FovAngleDown");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[1].angle_left, "View 1 FovAngleLeft");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[1].angle_right, "View 1 FovAngleRight");
+	u_var_add_f32(survive, &survive->base.hmd->distortion.fov[1].angle_up, "View 1 FovAngleUp");
+
 	return true;
 }
 
@@ -1144,6 +1164,8 @@ _create_controller_device(struct survive_system *sys,
 	}
 
 	SURVIVE_DEBUG(survive, "Created Controller %d", idx);
+
+	u_var_add_root(survive, "Survive Device", true);
 
 	return true;
 }
