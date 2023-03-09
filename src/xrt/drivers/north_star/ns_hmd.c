@@ -414,7 +414,7 @@ ns_hmd_get_view_poses(struct xrt_device *xdev,
 }
 
 bool
-ns_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+ns_mesh_calc(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 	NS_DEBUG(ns, "Called!");

@@ -24,7 +24,7 @@
 DEBUG_GET_ONCE_NUM_OPTION(mesh_size, "XRT_MESH_SIZE", 64)
 
 
-typedef bool (*func_calc)(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result);
+typedef bool (*func_calc)(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result);
 
 static int
 index_for(int row, int col, uint32_t stride, uint32_t offset)
@@ -426,7 +426,7 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result)
  */
 
 bool
-u_distortion_mesh_none(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+u_distortion_mesh_none(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	return u_compute_distortion_none(u, v, result);
 }

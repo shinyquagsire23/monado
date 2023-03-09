@@ -1148,7 +1148,7 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 }
 
 static bool
-compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+compute_distortion_wmr(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	DRV_TRACE_MARKER();
 

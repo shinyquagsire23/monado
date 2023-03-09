@@ -393,7 +393,7 @@ struct xrt_device
 	 * @param[out] out_result corresponding u,v pairs for all three color channels.
 	 */
 	bool (*compute_distortion)(
-	    struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *out_result);
+	    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *out_result);
 
 	/*!
 	 * Destroy device.
@@ -498,10 +498,11 @@ xrt_device_get_view_poses(struct xrt_device *xdev,
  *
  * @public @memberof xrt_device
  */
-static inline void
-xrt_device_compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *out_result)
+static inline bool
+xrt_device_compute_distortion(
+    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *out_result)
 {
-	xdev->compute_distortion(xdev, view, u, v, out_result);
+	return xdev->compute_distortion(xdev, view, u, v, out_result);
 }
 
 /*!

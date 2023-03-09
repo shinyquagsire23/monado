@@ -833,7 +833,7 @@ vive_device_setup_ui(struct vive_device *d)
 }
 
 static bool
-compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	XRT_TRACE_MARKER();
 

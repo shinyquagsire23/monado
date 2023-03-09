@@ -178,7 +178,7 @@ u_compute_distortion_none(float u, float v, struct xrt_uv_triplet *result);
  * @ingroup aux_distortion
  */
 bool
-u_distortion_mesh_none(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result);
+u_distortion_mesh_none(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result);
 
 
 /*
