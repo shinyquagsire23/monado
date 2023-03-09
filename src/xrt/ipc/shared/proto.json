@@ -246,6 +246,19 @@
 		]
 	},
 
+	"device_compute_distortion": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "view", "type": "uint32_t"},
+			{"name": "u", "type": "float"},
+			{"name": "v", "type": "float"}
+		],
+		"out": [
+			{"name": "ret", "type": "bool"},
+			{"name": "triplet", "type": "struct xrt_uv_triplet"}
+		]
+	},
+
 	"device_set_output": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},

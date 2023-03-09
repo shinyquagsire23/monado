@@ -136,6 +136,29 @@ ipc_client_hmd_get_view_poses(struct xrt_device *xdev,
 }
 
 static bool
+ipc_client_hmd_compute_distortion(
+    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *out_result)
+{
+	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
+
+	bool ret;
+	xrt_result_t xret = ipc_call_device_compute_distortion( //
+	    ich->ipc_c,                                         //
+	    ich->device_id,                                     //
+	    view,                                               //
+	    u,                                                  //
+	    v,                                                  //
+	    &ret,                                               //
+	    out_result);                                        //
+	if (xret != XRT_SUCCESS) {
+		IPC_ERROR(ich->ipc_c, "Error calling compute distortion!");
+		return false;
+	}
+
+	return ret;
+}
+
+static bool
 ipc_client_hmd_is_form_factor_available(struct xrt_device *xdev, enum xrt_form_factor form_factor)
 {
 	ipc_client_hmd_t *ich = ipc_client_hmd(xdev);
@@ -165,6 +188,7 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 	ich->base.update_inputs = ipc_client_hmd_update_inputs;
 	ich->base.get_tracked_pose = ipc_client_hmd_get_tracked_pose;
 	ich->base.get_view_poses = ipc_client_hmd_get_view_poses;
+	ich->base.compute_distortion = ipc_client_hmd_compute_distortion;
 	ich->base.destroy = ipc_client_hmd_destroy;
 	ich->base.is_form_factor_available = ipc_client_hmd_is_form_factor_available;
 
