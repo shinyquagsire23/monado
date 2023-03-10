@@ -165,6 +165,16 @@ static inline uint64_t
 os_realtime_get_ns(void);
 #endif
 
+#if defined(XRT_OS_WINDOWS)
+/*!
+ * Return a realtime clock in nanoseconds
+ *
+ * @ingroup aux_os_time_extra
+ */
+uint64_t
+os_realtime_get_ns(void);
+#endif
+
 #if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
 /*!
  * @brief Return a qpc freq in nanoseconds.
