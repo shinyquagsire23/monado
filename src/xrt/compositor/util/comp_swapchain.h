@@ -64,6 +64,15 @@ struct comp_swapchain_image
 	} views;
 	//! The number of array slices in a texture, 1 == regular 2D texture.
 	size_t array_size;
+
+	//! A usage counter, similar to a reference counter.
+	uint32_t use_count;
+
+	//! A condition variable per swapchain image that is notified when @ref use_count count reaches 0.
+	pthread_cond_t use_cond;
+
+	//! A mutex per swapchain image that is used with @ref use_cond.
+	struct os_mutex use_mutex;
 };
 
 /*!

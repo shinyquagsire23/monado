@@ -127,6 +127,11 @@ u_trace_marker_init(void);
 #define SINK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(sink, IDENT, 0xffa500)
 #define SINK_TRACE_END(IDENT) U_TRACE_END(sink, IDENT)
 
+#define SWAPCHAIN_TRACE_MARKER() U_TRACE_FUNC_COLOR(sc, 0x007700)
+#define SWAPCHAIN_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(sc, IDENT, 0x007700)
+#define SWAPCHAIN_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(sc, IDENT, 0x007700)
+#define SWAPCHAIN_TRACE_END(IDENT) U_TRACE_END(sc, IDENT)
+
 #define TRACK_TRACE_MARKER() U_TRACE_FUNC_COLOR(track, 0xff0000)
 #define TRACK_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(track, IDENT, 0xff0000)
 #define TRACK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(track, IDENT, 0xff0000)
@@ -324,6 +329,7 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 	C(oxr, "st/oxr")    /* OpenXR State Tracker calls */                                                           \
 	C(sink, "sink")     /* Sink/frameserver calls */                                                               \
 	C(comp, "comp")     /* Compositor calls  */                                                                    \
+	C(sc, "sc")         /* Swapchain calls  */                                                                     \
 	C(track, "track")   /* Tracking calls  */                                                                      \
 	C(timing, "timing") /* Timing calls */
 

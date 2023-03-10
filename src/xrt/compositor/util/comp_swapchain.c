@@ -12,6 +12,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_handles.h"
+#include "util/u_trace_marker.h"
 
 #include "util/comp_swapchain.h"
 #include "vk/vk_cmd_pool.h"
@@ -19,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <errno.h>
 
 
 /*
@@ -53,11 +55,142 @@ swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 }
 
 static xrt_result_t
+swapchain_inc_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	struct comp_swapchain *sc = comp_swapchain(xsc);
+
+	SWAPCHAIN_TRACE_BEGIN(swapchain_inc_image_use);
+
+	VK_TRACE(sc->vk, "%p INC_IMAGE %d (use %d)", (void *)sc, index, sc->images[index].use_count);
+
+	os_mutex_lock(&sc->images[index].use_mutex);
+	sc->images[index].use_count++;
+	os_mutex_unlock(&sc->images[index].use_mutex);
+
+	SWAPCHAIN_TRACE_END(swapchain_inc_image_use);
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+swapchain_dec_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	struct comp_swapchain *sc = comp_swapchain(xsc);
+
+	SWAPCHAIN_TRACE_BEGIN(swapchain_dec_image_use);
+
+	VK_TRACE(sc->vk, "%p DEC_IMAGE %d (use %d)", (void *)sc, index, sc->images[index].use_count);
+
+	os_mutex_lock(&sc->images[index].use_mutex);
+
+	assert(sc->images[index].use_count > 0 && "use count already 0");
+
+	sc->images[index].use_count--;
+	if (sc->images[index].use_count == 0) {
+		os_mutex_unlock(&sc->images[index].use_mutex);
+		pthread_cond_broadcast(&sc->images[index].use_cond);
+	}
+
+	os_mutex_unlock(&sc->images[index].use_mutex);
+
+	SWAPCHAIN_TRACE_END(swapchain_dec_image_use);
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	struct comp_swapchain *sc = comp_swapchain(xsc);
 
-	VK_TRACE(sc->vk, "WAIT_IMAGE");
+	SWAPCHAIN_TRACE_BEGIN(swapchain_wait_image);
+
+	VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d)", (void *)sc, index, sc->images[index].use_count);
+
+	os_mutex_lock(&sc->images[index].use_mutex);
+
+	if (sc->images[index].use_count == 0) {
+		VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: NO WAIT", (void *)sc, index);
+		os_mutex_unlock(&sc->images[index].use_mutex);
+		SWAPCHAIN_TRACE_END(swapchain_wait_image);
+		return XRT_SUCCESS;
+	}
+
+	// on windows pthread_cond_timedwait can not be used with monotonic time
+	uint64_t start_wait_rt = os_realtime_get_ns();
+
+	uint64_t end_wait_rt;
+	// don't wrap on big or indefinite timeout
+	if (start_wait_rt > UINT64_MAX - timeout_ns) {
+		end_wait_rt = UINT64_MAX;
+	} else {
+		end_wait_rt = start_wait_rt + timeout_ns;
+	}
+
+	struct timespec spec;
+	os_ns_to_timespec(end_wait_rt, &spec);
+
+	VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d) start wait at: %" PRIu64 " (timeout at %" PRIu64 ")", (void *)sc,
+	         index, sc->images[index].use_count, start_wait_rt, end_wait_rt);
+
+	int ret;
+	while (sc->images[index].use_count > 0) {
+		// use pthread_cond_timedwait to implement timeout behavior
+		ret = pthread_cond_timedwait(&sc->images[index].use_cond, &sc->images[index].use_mutex.mutex, &spec);
+
+		uint64_t now_rt = os_realtime_get_ns();
+		double diff = time_ns_to_ms_f(now_rt - start_wait_rt);
+
+		if (ret == 0) {
+
+			if (sc->images[index].use_count == 0) {
+				// image became available within timeout limits
+				VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: success at %" PRIu64 " after %fms", (void *)sc,
+				         index, now_rt, diff);
+				os_mutex_unlock(&sc->images[index].use_mutex);
+				SWAPCHAIN_TRACE_END(swapchain_wait_image);
+				return XRT_SUCCESS;
+			} else {
+				// cond got signaled but image is still in use, continue waiting
+				VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: woken at %" PRIu64 " after %fms but still (%d use)",
+				         (void *)sc, index, now_rt, diff, sc->images[index].use_count);
+				continue;
+			}
+
+		} else if (ret == ETIMEDOUT) {
+			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d): timeout at %" PRIu64 " after %fms", (void *)sc,
+			         index, sc->images[index].use_count, now_rt, diff);
+
+			if (now_rt >= end_wait_rt) {
+				// image did not become available within timeout limits
+				VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d): timeout (%" PRIu64 " > %" PRIu64 ")",
+				         (void *)sc, index, sc->images[index].use_count, now_rt, end_wait_rt);
+				os_mutex_unlock(&sc->images[index].use_mutex);
+				SWAPCHAIN_TRACE_END(swapchain_wait_image);
+				return XRT_TIMEOUT;
+
+			} else {
+				// spurious cond wakeup
+				VK_TRACE(sc->vk,
+				         "%p WAIT_IMAGE %d (use %d): spurious timeout at %" PRIu64 " (%fms to timeout)",
+				         (void *)sc, index, sc->images[index].use_count, now_rt,
+				         time_ns_to_ms_f(end_wait_rt - now_rt));
+				continue;
+			}
+
+		} else {
+			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: condition variable error %d", (void *)sc, index, ret);
+			os_mutex_unlock(&sc->images[index].use_mutex);
+			SWAPCHAIN_TRACE_END(swapchain_wait_image);
+			return XRT_ERROR_VULKAN;
+		}
+	}
+
+	VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: became available before spurious wakeup %d", (void *)sc, index, ret);
+
+	os_mutex_unlock(&sc->images[index].use_mutex);
+	SWAPCHAIN_TRACE_END(swapchain_wait_image);
+
 	return XRT_SUCCESS;
 }
 
@@ -99,6 +232,8 @@ set_common_fields(struct comp_swapchain *sc,
 {
 	sc->base.base.destroy = swapchain_destroy;
 	sc->base.base.acquire_image = swapchain_acquire_image;
+	sc->base.base.inc_image_use = swapchain_inc_image_use;
+	sc->base.base.dec_image_use = swapchain_dec_image_use;
 	sc->base.base.wait_image = swapchain_wait_image;
 	sc->base.base.release_image = swapchain_release_image;
 	sc->base.base.image_count = image_count;
@@ -227,6 +362,23 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	if (ret != VK_SUCCESS) {
 		//! @todo Propegate error
 		VK_ERROR(vk, "Failed to barrier images");
+	}
+
+	for (uint32_t i = 0; i < image_count; i++) {
+
+		ret = pthread_cond_init(&sc->images[i].use_cond, NULL);
+		if (ret) {
+			VK_ERROR(sc->vk, "Failed to init image use cond: %d", ret);
+			continue;
+		}
+
+		ret = os_mutex_init(&sc->images[i].use_mutex);
+		if (ret) {
+			VK_ERROR(sc->vk, "Failed to init image use mutex: %d", ret);
+			continue;
+		}
+
+		sc->images[i].use_count = 0;
 	}
 }
 
@@ -379,6 +531,18 @@ comp_swapchain_teardown(struct comp_swapchain *sc)
 	struct vk_bundle *vk = sc->vk;
 
 	VK_TRACE(vk, "REALLY DESTROY");
+
+	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
+		// compositor ensures to garbage collect after gpu work finished
+		if (sc->images[i].use_count != 0) {
+			VK_ERROR(vk, "swapchain destroy while image %d use count %d", i, sc->images[i].use_count);
+			assert(false);
+			continue; // leaking better than crashing?
+		}
+
+		os_mutex_destroy(&sc->images[i].use_mutex);
+		pthread_cond_destroy(&sc->images[i].use_cond);
+	}
 
 	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 		image_cleanup(vk, &sc->images[i]);
