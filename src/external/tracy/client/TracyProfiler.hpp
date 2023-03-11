@@ -178,6 +178,13 @@ class Profiler
         uint64_t ptr;
         uint64_t extra;
         uint32_t id;
+
+        SymbolQueueItem(SymbolQueueItemType type, uint64_t ptr)
+            : SymbolQueueItem(type, ptr, 0) {}
+        SymbolQueueItem(SymbolQueueItemType type, uint64_t ptr, uint64_t extra)
+            : SymbolQueueItem(type, ptr, extra, 0) {}
+        SymbolQueueItem(SymbolQueueItemType type, uint64_t ptr, uint64_t extra, uint32_t id)
+            : type{type}, ptr{ptr}, extra{extra}, id{id} {}
     };
 
 public:

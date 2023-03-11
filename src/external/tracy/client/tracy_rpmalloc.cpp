@@ -699,7 +699,7 @@ static pthread_key_t _memory_thread_heap;
 #      define _Thread_local __thread
 #    endif
 #  endif
-static _Thread_local heap_t* _memory_thread_heap TLS_MODEL;
+static thread_local heap_t* _memory_thread_heap TLS_MODEL;
 #endif
 
 static inline heap_t*
