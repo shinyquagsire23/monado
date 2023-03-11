@@ -545,8 +545,6 @@ CostFunctor_PositionsPart(const OptimizerHand<T> &hand,
 
 		T middlepxmdepth = model_joints_rel_camera[Joint21::INDX_PXM].norm();
 
-		int djai = 0;
-
 		for (int i = 0; i < 21; i++) {
 
 			diff_stereographic<T>(model_joints_rel_camera[i],                                          //
@@ -576,8 +574,6 @@ CostFunctor_PositionsPart(const OptimizerHand<T> &hand,
 				helper.AddValue(relative_diff * T(pow(out[i].confidence_depth, 3)) * T(1.0f) *
 				                state.depth_err_mul);
 			}
-
-			djai++;
 		}
 	}
 }
