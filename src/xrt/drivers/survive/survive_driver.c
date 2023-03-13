@@ -170,6 +170,7 @@ struct survive_system
 	enum u_logging_level log_level;
 
 	float wait_timeout;
+	double timecode_offset_ms;
 
 	struct os_thread_helper event_thread;
 	struct os_mutex lock;
@@ -205,6 +206,9 @@ survive_device_destroy(struct xrt_device *xdev)
 	if (survive->sys->hmd == NULL && all_null) {
 		U_LOG_D("Tearing down libsurvive context");
 
+		// Remove the variable tracking.
+		u_var_remove_root(survive->sys);
+
 		// Destroy also stops the thread.
 		os_thread_helper_destroy(&survive->sys->event_thread);
 
@@ -236,7 +240,7 @@ survive_timecode_now_s(void)
 }
 
 static timepoint_ns
-survive_timecode_to_monotonic(double timecode)
+survive_timecode_to_monotonic(struct survive_device *survive, double timecode)
 {
 	timepoint_ns timecode_ns = time_s_to_ns(timecode);
 	timepoint_ns survive_now_ns = time_s_to_ns(survive_timecode_now_s());
@@ -244,7 +248,7 @@ survive_timecode_to_monotonic(double timecode)
 	timepoint_ns timecode_age_ns = survive_now_ns - timecode_ns;
 
 	timepoint_ns now = os_monotonic_get_ns();
-	timepoint_ns timestamp = now - timecode_age_ns;
+	timepoint_ns timestamp = now - timecode_age_ns + (uint64_t)(survive->sys->timecode_offset_ms * 1000000.0);
 
 	return timestamp;
 }
@@ -668,7 +672,7 @@ _calculate_squeeze_value(struct survive_device *survive)
 static void
 _process_button_event(struct survive_device *survive, const struct SurviveSimpleButtonEvent *e)
 {
-	timepoint_ns ts = survive_timecode_to_monotonic(e->time);
+	timepoint_ns ts = survive_timecode_to_monotonic(survive, e->time);
 	;
 	if (e->event_type == SURVIVE_INPUT_EVENT_AXIS_CHANGED) {
 		for (int i = 0; i < e->axis_count; i++) {
@@ -781,7 +785,7 @@ _process_pose_event(struct survive_device *survive, const struct SurviveSimplePo
 	struct xrt_space_relation rel;
 	timepoint_ns ts;
 	pose_to_relation(&e->pose, &e->velocity, &rel);
-	ts = survive_timecode_to_monotonic(e->time);
+	ts = survive_timecode_to_monotonic(survive, e->time);
 	m_relation_history_push(survive->relation_hist, &rel, ts);
 
 	SURVIVE_TRACE(survive, "Process pose event for %s", survive->base.str);
@@ -1326,6 +1330,7 @@ survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive
 	ss->base.offset.position.y = 0.0f;
 	ss->base.offset.position.z = 0.0f;
 	ss->base.offset.orientation.w = 1.0f;
+	ss->timecode_offset_ms = 0.0;
 
 	ss->log_level = debug_get_log_option_survive_log();
 
@@ -1384,5 +1389,9 @@ survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive
 		}
 		return 0;
 	}
+
+	u_var_add_root(ss, "Survive system", true);
+	u_var_add_f64(ss, &ss->timecode_offset_ms, "Timecode offset(ms)");
+
 	return out_idx;
 }
