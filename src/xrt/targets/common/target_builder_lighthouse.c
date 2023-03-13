@@ -278,6 +278,11 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 	if (have_survive_drv && have_vive_drv) {
 		// We have both drivers - default to libsurvive, but if the user asks specifically for vive we'll give
 		// it to them
+		if (vive_over_survive) {
+			LH_DEBUG("Using driver vive (over survive)!");
+		} else {
+			LH_DEBUG("Using driver survive (both)!");
+		}
 		lhs->use_libsurvive = !vive_over_survive;
 	} else if (have_survive_drv) {
 		// We only have libsurvive - don't listen to the env var
@@ -285,8 +290,10 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 		if (vive_over_survive) {
 			LH_WARN("Asked for vive driver, but it isn't built. Using libsurvive.");
 		}
+		LH_DEBUG("Using driver survive (only built)!");
 		lhs->use_libsurvive = true;
 	} else if (have_vive_drv) {
+		LH_DEBUG("Using driver vive (only built)!");
 		// We only have vive
 		lhs->use_libsurvive = false;
 	} else {
