@@ -9,8 +9,10 @@
 #include "util/u_logging.h"
 #include "xrt/xrt_defines.h"
 #include <util/u_worker.hpp>
+#include <math/m_mathinclude.h>
 #include <math/m_space.h>
 #include <math/m_vec3.h>
+#include <math/m_vec2.h>
 
 #include "kine_common.hpp"
 #include "lm_interface.hpp"
@@ -34,6 +36,28 @@ TEST_CASE("LevenbergMarquardt")
 
 	struct one_frame_input input = {};
 
+	for (int view = 0; view < 2; view++) {
+		input.views[view].active = true;
+		input.views[view].stereographic_radius = 0.5;
+		input.views[view].look_dir = XRT_QUAT_IDENTITY;
+		for (int i = 0; i < 5; i++) {
+
+			input.views[view].curls[i].value = -0.5f;
+			input.views[view].curls[i].variance = 1.0f;
+		}
+		for (int i = 0; i < 21; i++) {
+
+			xrt_vec2 dir = {sinf(i), cosf(i)};
+			m_vec2_normalize(&dir);
+
+			input.views[view].keypoints_in_scaled_stereographic[i].pos_2d = dir; //{0,(float)i,-1};
+			input.views[view].keypoints_in_scaled_stereographic[i].depth_relative_to_midpxm =
+			    (i / 21.0f) - 0.5;
+			input.views[view].keypoints_in_scaled_stereographic[i].confidence_depth = 1.0f;
+			input.views[view].keypoints_in_scaled_stereographic[i].confidence_xy = 1.0f;
+		}
+	}
+
 	lm::KinematicHandLM *hand;
 
 	xrt_pose left_in_right = XRT_POSE_IDENTITY;
@@ -42,9 +66,9 @@ TEST_CASE("LevenbergMarquardt")
 	lm::optimizer_create(left_in_right, false, U_LOGGING_TRACE, &hand);
 
 
-	xrt_hand_joint_set out;
-	float out_hand_size;
-	float out_reprojection_error;
+	xrt_hand_joint_set out = {};
+	float out_hand_size = 0.0f;
+	float out_reprojection_error = 0.0f;
 	lm::optimizer_run(hand,          //
 	                  input,         //
 	                  true,          //
