@@ -2079,7 +2079,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	blob_params.filterByInertia = false;
 	blob_params.filterByColor = true;
 	blob_params.blobColor = 255; // 0 or 255 - color comes from binarized image?
-	blob_params.minArea = 0;
+	blob_params.minArea = 1;
 	blob_params.maxArea = 1000;
 	blob_params.maxThreshold = 51; // using a wide threshold span slows things down bigtime
 	blob_params.minThreshold = 50;
