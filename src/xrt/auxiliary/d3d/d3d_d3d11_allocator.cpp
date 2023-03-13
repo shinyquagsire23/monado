@@ -103,9 +103,8 @@ try {
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 	if (xsci.face_count == 6) {
-		//! @todo implement instead of erroring out
-		D3DA_ERROR("No idea how to do cube maps in d3d11!");
-		return XRT_ERROR_ALLOCATION;
+		desc.ArraySize *= 6;
+		desc.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
 	}
 	// Create textures
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> images;
