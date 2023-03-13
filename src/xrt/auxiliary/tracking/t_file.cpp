@@ -743,6 +743,11 @@ read_cv_mat(FILE *f, cv::Mat *m, const char *name)
 		return true;
 	}
 
+	if (header[0] >= 32 || header[1] >= 32) {
+		CALIB_ERROR("Matrix dimensions for '%s' is too large: '%ux%u'", name, header[0], header[1]);
+		return false;
+	}
+
 	//! @todo We may have written things other than CV_32F and CV_64F.
 	if (header[0] == 4) {
 		temp.create(static_cast<int>(header[1]), static_cast<int>(header[2]), CV_32F);
