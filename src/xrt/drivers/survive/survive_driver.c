@@ -170,7 +170,7 @@ struct survive_system
 	enum u_logging_level log_level;
 
 	float wait_timeout;
-	double timecode_offset_ms;
+	struct u_var_draggable_f32 timecode_offset_ms;
 
 	struct os_thread_helper event_thread;
 	struct os_mutex lock;
@@ -248,7 +248,7 @@ survive_timecode_to_monotonic(struct survive_device *survive, double timecode)
 	timepoint_ns timecode_age_ns = survive_now_ns - timecode_ns;
 
 	timepoint_ns now = os_monotonic_get_ns();
-	timepoint_ns timestamp = now - timecode_age_ns + (uint64_t)(survive->sys->timecode_offset_ms * 1000000.0);
+	timepoint_ns timestamp = now - timecode_age_ns + (uint64_t)(survive->sys->timecode_offset_ms.val * 1000000.0);
 
 	return timestamp;
 }
@@ -1321,7 +1321,7 @@ survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive
 	ss->base.offset.position.y = 0.0f;
 	ss->base.offset.position.z = 0.0f;
 	ss->base.offset.orientation.w = 1.0f;
-	ss->timecode_offset_ms = 0.0;
+	ss->timecode_offset_ms = (struct u_var_draggable_f32){.val = 0.0, .min = -20.0, .step = 0.1, .max = +20.0};
 
 	ss->log_level = debug_get_log_option_survive_log();
 
@@ -1382,7 +1382,7 @@ survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive
 	}
 
 	u_var_add_root(ss, "Survive system", true);
-	u_var_add_f64(ss, &ss->timecode_offset_ms, "Timecode offset(ms)");
+	u_var_add_draggable_f32(ss, &ss->timecode_offset_ms, "Timecode offset(ms)");
 
 	return out_idx;
 }
