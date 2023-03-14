@@ -67,6 +67,7 @@
 
 DEBUG_GET_ONCE_BOOL_OPTION(survive_disable_hand_emulation, "SURVIVE_DISABLE_HAND_EMULATION", false)
 DEBUG_GET_ONCE_BOOL_OPTION(survive_default_ipd, "SURVIVE_DEFAULT_IPD", false)
+DEBUG_GET_ONCE_FLOAT_OPTION(survive_timecode_offset_ms, "SURVIVE_TIMECODE_OFFSET_MS", 0.0)
 
 #define SURVIVE_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->sys->log_level, __VA_ARGS__)
 #define SURVIVE_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->sys->log_level, __VA_ARGS__)
@@ -1321,7 +1322,12 @@ survive_get_devices(struct xrt_device **out_xdevs, struct vive_config **out_vive
 	ss->base.offset.position.y = 0.0f;
 	ss->base.offset.position.z = 0.0f;
 	ss->base.offset.orientation.w = 1.0f;
-	ss->timecode_offset_ms = (struct u_var_draggable_f32){.val = 0.0, .min = -20.0, .step = 0.1, .max = +20.0};
+	ss->timecode_offset_ms = (struct u_var_draggable_f32){
+	    .val = debug_get_float_option_survive_timecode_offset_ms(),
+	    .min = -20.0,
+	    .step = 0.1,
+	    .max = +20.0,
+	};
 
 	ss->log_level = debug_get_log_option_survive_log();
 
