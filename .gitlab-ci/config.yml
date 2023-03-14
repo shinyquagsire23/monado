@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
 # Please run the following from the repo root after modifying this file:
 #   make -f .gitlab-ci/ci-scripts.mk
 
-fdo_ci_templates_sha: d5aa3941aa03c2f716595116354fb81eb8012acb
+fdo_ci_templates_sha: 9f0eb526291fe74651fe1430cbd2397f4c0a819b
 
 # These are a mapping, instead of a list/array, so we can merge.
 .default_debian_packages:
@@ -195,35 +195,55 @@ distributions:
   - name: arch
     images:
       - codename: rolling
-        tag: "2022-09-20.0"
+        tag: "2023-03-13.2"
+        script: install-arch-additional-deps.sh
+        # pipewire-jack wireplumber: Explicitly choose dependencies to avoid pacman asking interactively
+        # python-setuptools glu: librealsense
+        # glew boost gtest fmt bc: basalt-monado-git
+        # python-attrs: xr-hardware-git
         packages:
-          git:
-          gcc:
+          base-devel:
+          pipewire-jack:
+          wireplumber:
+          bluez-libs:
+          check:
           clang:
           cmake:
-          ninja:
-          pkgconfig:
-          python3:
           diffutils:
-          patch:
           doxygen:
-          graphviz:
           eigen:
+          ffmpeg:
+          gcc:
+          git:
+          glfw-x11:
+          glslang:
+          graphviz:
+          gtk3:
           hidapi:
+          libusb:
           libxrandr:
           mesa:
-          glslang:
+          ninja:
+          opencv:
+          patch:
+          pkgconfig:
+          python3:
+          qt5-base:
+          v4l-utils:
           vulkan-headers:
           vulkan-icd-loader:
-          check:
-          glfw-x11:
-          libusb:
-          opencv:
-          gtk3:
-          ffmpeg:
-          v4l-utils:
-          qt5-base:
-          bluez-libs:
+          wget:
+          meson:
+          python-setuptools:
+          glu:
+          glew:
+          boost:
+          gtest:
+          fmt:
+          bc:
+          wayland:
+          libbsd:
+          python-attrs:
         build_jobs:
           - name: "arch:cmake"
 

@@ -1,7 +1,7 @@
 # CI and Generated Stuff Readme
 
 <!--
-# Copyright 2018-2022 Collabora, Ltd. and the Monado contributors
+# Copyright 2018-2023 Collabora, Ltd. and the Monado contributors
 #
 # SPDX-License-Identifier: CC0-1.0
 -->
@@ -16,7 +16,7 @@ You can install it with:
 
 <!-- do not break the following line, it is used in CI setup too, to make sure it works -->
 ```sh
-python3 -m pip install git+https://gitlab.freedesktop.org/freedesktop/ci-templates@d5aa3941aa03c2f716595116354fb81eb8012acb
+python3 -m pip install git+https://gitlab.freedesktop.org/freedesktop/ci-templates@9f0eb526291fe74651fe1430cbd2397f4c0a819b
 ```
 
 On Windows you will also need to have GNU make and busybox installed, such as with:

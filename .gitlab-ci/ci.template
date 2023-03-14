@@ -21,6 +21,13 @@ The following will update all files from templates:
 make -f .gitlab-ci/ci-scripts.mk
 #}
 
+# Detached MR pipelines, needed due to https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/438
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'push'
+
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 

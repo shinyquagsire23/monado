@@ -6,10 +6,17 @@
 # see .gitlab-ci/ci.template instead #
 ######################################
 
+# Detached MR pipelines, needed due to https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/438
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'push'
+
 variables:
   FDO_UPSTREAM_REPO: monado/monado
 
-.templates_sha: &templates_sha d5aa3941aa03c2f716595116354fb81eb8012acb
+.templates_sha: &templates_sha 9f0eb526291fe74651fe1430cbd2397f4c0a819b
 
 include:
   # Debian
@@ -127,12 +134,8 @@ arch:rolling:container_prep:
     changes:
       - .gitlab-ci/**/*
   variables:
-    # pipewire-jack wireplumber: Explicitly choose dependencies to avoid pacman asking interactively
-    # python-setuptools glu: librealsense
-    # glew boost gtest fmt bc: basalt-monado-git
-    # python-attrs: xr-hardware-git
-    FDO_DISTRIBUTION_PACKAGES: 'base-devel pipewire-jack wireplumber bluez-libs check clang cmake diffutils doxygen eigen ffmpeg gcc git glfw-x11 glslang graphviz gtk3 hidapi libusb libxrandr mesa ninja opencv patch pkgconfig python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wget meson python-setuptools glu glew boost gtest fmt bc wayland libbsd python-attrs'
-    FDO_DISTRIBUTION_EXEC: bash .gitlab-ci/install-arch-additional-deps.sh
+    FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
+    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/install-arch-additional-deps.sh'
 
 ###
 # Container usage base jobs
