@@ -273,8 +273,6 @@ sdl2_close(struct u_debug_gui *p)
 		p->win = NULL;
 	}
 
-	os_thread_helper_destroy(&p->oth);
-
 	if (p->sdl_initialized) {
 		//! @todo: Properly quit SDL without crashing SDL client apps
 		// SDL_Quit();
