@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
 ######################################
 #      GENERATED - DO NOT EDIT       #
@@ -85,7 +85,7 @@ debian:bullseye:container_prep:
       - .gitlab-ci/**/*
   variables:
     FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
 
 # Make Debian bullseye-ndk image
 debian:bullseye-ndk:container_prep:
@@ -98,7 +98,7 @@ debian:bullseye-ndk:container_prep:
       - .gitlab-ci/**/*
   variables:
     FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake default-jdk-headless git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/android_container_prep.sh'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/android_container_prep.sh'
 
 # Make Ubuntu focal image
 ubuntu:focal:container_prep:
@@ -135,7 +135,7 @@ arch:rolling:container_prep:
       - .gitlab-ci/**/*
   variables:
     FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/install-arch-additional-deps.sh'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/install-arch-additional-deps.sh'
 
 ###
 # Container usage base jobs
@@ -285,10 +285,9 @@ debian:cmake:
     - popd
 
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S .
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh
     - cd build && ctest --output-on-failure
   artifacts:
     paths:
@@ -299,10 +298,9 @@ debian:cmake-no-opencv:
   extends:
     - .monado.image.debian:bullseye
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_OPENCV=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_HAVE_OPENCV=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake-no-sdl2:
@@ -310,10 +308,9 @@ debian:cmake-no-sdl2:
   extends:
     - .monado.image.debian:bullseye
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_HAVE_SDL2=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_HAVE_SDL2=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake-no-service:
@@ -321,10 +318,9 @@ debian:cmake-no-service:
   extends:
     - .monado.image.debian:bullseye
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF -DXRT_FEATURE_SERVICE=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_FEATURE_SERVICE=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake:32bit:
@@ -332,10 +328,9 @@ debian:cmake:32bit:
   extends:
     - .monado.image.debian:bullseye
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DCMAKE_TOOLCHAIN_FILE=.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DCMAKE_TOOLCHAIN_FILE=.gitlab-ci/i386.cmake -DXRT_HAVE_OPENCV=OFF
     - cd build && ctest --output-on-failure
 
 ndk:armeabi-v7a:
@@ -343,20 +338,18 @@ ndk:armeabi-v7a:
   extends:
     - .monado.image.debian:bullseye-ndk
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
 
 ndk:arm64-v8a:
   stage: build
   extends:
     - .monado.image.debian:bullseye-ndk
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
 
 android:outOfProcessDebug:
   stage: build
@@ -374,9 +367,9 @@ android:outOfProcessDebug:
       - .gradlehome/caches
 
   script:
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew assembleOutOfProcessDebug
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-gradle-build.sh assembleOutOfProcessDebug
   artifacts:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
@@ -397,9 +390,9 @@ android:inProcessDebug:
       - .gradlehome/caches
 
   script:
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew assembleInProcessDebug
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-gradle-build.sh assembleInProcessDebug
   artifacts:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/inProcess
@@ -420,9 +413,9 @@ android:outOfProcessRelease:
       - .gradlehome/caches
 
   script:
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew assembleOutOfProcessRelease
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-gradle-build.sh assembleOutOfProcessRelease
   artifacts:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/outOfProcess
@@ -443,9 +436,9 @@ android:inProcessRelease:
       - .gradlehome/caches
 
   script:
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew assembleInProcessRelease
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-gradle-build.sh assembleInProcessRelease
   artifacts:
     paths:
       - src/xrt/targets/openxr_android/build/outputs/apk/inProcess
@@ -455,10 +448,9 @@ ubuntu:focal:cmake:
   extends:
     - .monado.image.ubuntu:focal
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF
     - cd build && ctest --output-on-failure
 
 ubuntu:jammy:cmake:
@@ -466,10 +458,9 @@ ubuntu:jammy:cmake:
   extends:
     - .monado.image.ubuntu:jammy
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DBUILD_DOC=OFF
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF
     - cd build && ctest --output-on-failure
 
 arch:cmake:
@@ -477,10 +468,9 @@ arch:cmake:
   extends:
     - .monado.image.arch:rolling
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S .
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh
     - cd build && ctest --output-on-failure
 
 arch:cmake:clang:
@@ -488,10 +478,9 @@ arch:cmake:clang:
   extends:
     - .monado.image.arch:rolling
   script:
-    - rm -rf build
-    - cmake -GNinja -B build -S . -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-cmake-build.sh -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++
     - cd build && ctest --output-on-failure
 
 # Windows build
@@ -534,6 +523,7 @@ debian:bullseye:package:
     - git config --global user.name Monado CI
     - git config --global user.email ryan.pavlik@collabora.com
   script:
+    - .gitlab-ci/prebuild.sh
     # Prep the source tree
     - git clean -dfx
     # Call this script to build binary and source packages.
@@ -560,6 +550,7 @@ ubuntu:focal:package:
     - git config --global user.name Monado CI
     - git config --global user.email ryan.pavlik@collabora.com
   script:
+    - .gitlab-ci/prebuild.sh
     # Prep the source tree
     - git clean -dfx
     # Call this script to build binary and source packages.
@@ -586,6 +577,7 @@ ubuntu:jammy:package:
     - git config --global user.name Monado CI
     - git config --global user.email ryan.pavlik@collabora.com
   script:
+    - .gitlab-ci/prebuild.sh
     # Prep the source tree
     - git clean -dfx
     # Call this script to build binary and source packages.

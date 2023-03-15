@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
 {# ignore the warning, this is actually the template to edit. #}
 ######################################
@@ -80,7 +80,7 @@ stages:
     {# Needed to be a mapping so it could be "merged" #}
     FDO_DISTRIBUTION_PACKAGES: '{{image.packages | sort | join(" ")}}'
 {% if "script" in image %}
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/{{image["script"]}}'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/{{image["script"]}}'
 {% endif %}
 {% endfor -%} {%- endfor %}
 
@@ -166,20 +166,16 @@ reuse:
 
   script:
 
+    - .gitlab-ci/prebuild.sh
 {#- regular or NDK cmake builds -#}
 {%- if "cmake" in job.name or "ndk" in job.name %}
 
-    - rm -rf build
-    - cmake -GNinja -B build -S . {{- make_cmake_args(job.cmake_defines) }}
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+    - .gitlab-ci/ci-cmake-build.sh {{- make_cmake_args(job.cmake_defines) }}
 
 {#- gradle builds -#}
 {%- elif "android" in job.name %}
 
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew {{ job.target }}
+    - .gitlab-ci/ci-gradle-build.sh {{ job.target }}
 
 {%- else %}
 
@@ -247,6 +243,7 @@ windows:
     - git config --global user.name {{packaging.name}}
     - git config --global user.email {{packaging.email}}
   script:
+    - .gitlab-ci/prebuild.sh
     # Prep the source tree
     - git clean -dfx
     # Call this script to build binary and source packages.
