@@ -642,6 +642,8 @@ enum xrt_compositor_event_type
 	XRT_COMPOSITOR_EVENT_NONE = 0,
 	XRT_COMPOSITOR_EVENT_STATE_CHANGE = 1,
 	XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE = 2,
+	XRT_COMPOSITOR_EVENT_LOSS_PENDING = 3,
+	XRT_COMPOSITOR_EVENT_LOST = 4
 };
 
 /*!
@@ -664,12 +666,31 @@ struct xrt_compositor_event_overlay
 };
 
 /*!
+ * Loss pending event.
+ */
+struct xrt_compositor_event_loss_pending
+{
+	enum xrt_compositor_event_type type;
+	uint64_t loss_time_ns;
+};
+
+/*!
+ * Lost event.
+ */
+struct xrt_compositor_event_lost
+{
+	enum xrt_compositor_event_type type;
+};
+
+/*!
  * Compositor events union.
  */
 union xrt_compositor_event {
 	enum xrt_compositor_event_type type;
 	struct xrt_compositor_event_state_change state;
 	struct xrt_compositor_event_state_change overlay;
+	struct xrt_compositor_event_loss_pending loss_pending;
+	struct xrt_compositor_event_lost lost;
 };
 
 
@@ -1963,6 +1984,20 @@ struct xrt_multi_compositor_control
 	xrt_result_t (*set_main_app_visibility)(struct xrt_system_compositor *xsc,
 	                                        struct xrt_compositor *xc,
 	                                        bool visible);
+
+	/*!
+	 * Notify this client/session if the compositor is going to lose the ability of rendering.
+	 *
+	 * @param loss_time_ns System monotonic timestamps, such as returned by os_monotonic_get_ns().
+	 */
+	xrt_result_t (*notify_loss_pending)(struct xrt_system_compositor *xsc,
+	                                    struct xrt_compositor *xc,
+	                                    uint64_t loss_time_ns);
+
+	/*!
+	 * Notify this client/session if the compositor lost the ability of rendering.
+	 */
+	xrt_result_t (*notify_lost)(struct xrt_system_compositor *xsc, struct xrt_compositor *xc);
 };
 
 /*!
@@ -2072,6 +2107,46 @@ xrt_syscomp_set_main_app_visibility(struct xrt_system_compositor *xsc, struct xr
 	}
 
 	return xsc->xmcc->set_main_app_visibility(xsc, xc, visible);
+}
+
+/*!
+ * @copydoc xrt_multi_compositor_control::notify_loss_pending
+ *
+ * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_notify_loss_pending(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, uint64_t loss_time_ns)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->notify_loss_pending(xsc, xc, loss_time_ns);
+}
+
+/*!
+ * @copydoc xrt_multi_compositor_control::notify_lost
+ *
+ * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_notify_lost(struct xrt_system_compositor *xsc, struct xrt_compositor *xc)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->notify_lost(xsc, xc);
 }
 
 /*!
