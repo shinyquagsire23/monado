@@ -693,7 +693,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
  * Change the state of the session, queues a event.
  */
 void
-oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state);
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state, XrTime time);
 
 XrResult
 oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo);
@@ -1530,6 +1530,8 @@ struct oxr_session
 	/*! initial relation of head in "global" space.
 	 * Used as reference for local space.  */
 	struct xrt_space_relation local_space_pure_relation;
+
+	bool has_lost;
 };
 
 /*!

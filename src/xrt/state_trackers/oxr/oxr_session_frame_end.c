@@ -1200,7 +1200,7 @@ static void
 do_synchronize_state_change(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!sess->has_ended_once && sess->state < XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 		sess->has_ended_once = true;
 	}
 }

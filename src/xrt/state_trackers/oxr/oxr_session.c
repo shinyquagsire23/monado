@@ -92,9 +92,9 @@ to_string(XrSessionState state)
 }
 
 void
-oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state)
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state, XrTime time)
 {
-	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, 0);
+	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, time);
 	sess->state = state;
 }
 
@@ -193,11 +193,11 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		CALL_CHK(xrt_comp_end_session(xc));
 	}
 
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
 	if (sess->exiting) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING, 0);
 	} else {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY, 0);
 	}
 
 	sess->has_begun = false;
@@ -213,19 +213,19 @@ oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 	}
 
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 	if (sess->state == XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 	}
 	if (!sess->has_ended_once) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 		// Fake the synchronization.
 		sess->has_ended_once = true;
 	}
 
 	//! @todo start fading out the app.
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING, 0);
 	sess->exiting = true;
 	return oxr_session_success_result(sess);
 }
@@ -256,24 +256,30 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 		case XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE:
 			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(log, sess, xce.overlay.visible);
 			break;
+		case XRT_COMPOSITOR_EVENT_LOSS_PENDING:
+			oxr_session_change_state(
+			    log, sess, XR_SESSION_STATE_LOSS_PENDING,
+			    time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, xce.loss_pending.loss_time_ns));
+			break;
+		case XRT_COMPOSITOR_EVENT_LOST: sess->has_lost = true; break;
 		default: U_LOG_W("unhandled event type! %d", xce.type); break;
 		}
 	}
 
 	if (sess->state == XR_SESSION_STATE_SYNCHRONIZED && sess->compositor_visible) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_VISIBLE && sess->compositor_focused) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_FOCUSED && !sess->compositor_focused) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_VISIBLE && !sess->compositor_visible) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 	}
 }
 
@@ -891,8 +897,8 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	// Everything is in order, start the state changes.
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY, 0);
 
 	*out_session = sess;
 
