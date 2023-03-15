@@ -32,6 +32,7 @@
 
 #include "vive/vive_config.h"
 #include "vive/vive_bindings.h"
+#include "vive/vive_poses.h"
 
 #include "vive.h"
 #include "vive_protocol.h"
@@ -306,6 +307,25 @@ _update_tracker_inputs(struct xrt_device *xdev)
 }
 
 static void
+predict_pose(struct vive_controller_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
+{
+	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
+	double prediction_s = time_ns_to_s(prediction_ns);
+
+	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
+	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
+	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
+	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
+
+	//! @todo integrate position here
+	struct xrt_space_relation relation = {0};
+	relation.pose.orientation = d->rot_filtered;
+	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
+
+	m_predict_relation(&relation, prediction_s, out_relation);
+}
+
+static void
 vive_controller_get_hand_tracking(struct xrt_device *xdev,
                                   enum xrt_input_name name,
                                   uint64_t requested_timestamp_ns,
@@ -340,56 +360,29 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	    .thumb = thumb_curl,
 	};
 
-	struct xrt_space_relation ident;
-	m_space_relation_ident(&ident);
-	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &ident, out_value);
+	struct xrt_space_relation hand_relation;
+
+	predict_pose(d, requested_timestamp_ns, &hand_relation);
+
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &hand_relation, out_value);
+
+	struct xrt_relation_chain chain = {0};
 
 
-	/* Because IMU is at the very -z end of the controller, the rotation
-	 * pivot point is there too. By offsetting the IMU pose by this z value
-	 * we move the pivot point of the hand.
-	 * This only makes sense with 3dof.
-	 */
+	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
+	vive_poses_get_pose_offset(d->base.name, d->base.device_type, name, &pose_offset);
+	pose_offset.position = (struct xrt_vec3)XRT_VEC3_ZERO;
 
-#if 0
-	float pivot_offset_z = 0.15;
+	m_relation_chain_push_pose(&chain, &pose_offset);
+	m_relation_chain_push_relation(&chain, &hand_relation);
+	m_relation_chain_resolve(&chain, &out_value->hand_pose);
 
-	struct xrt_space_relation controller_relation = {
-	    .pose = {.orientation = d->rot_filtered, .position = {0, 0, pivot_offset_z}},
-	};
-	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
-#endif
-
-	struct xrt_vec3 static_offset = {0, 0, 0};
-
-	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
-
-	// This is a lie: currently, no pose-prediction or history is implemented for this driver.
+	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
 	*out_timestamp_ns = requested_timestamp_ns;
 
+	// This is a lie - apparently libsurvive doesn't report controller tracked/untracked state, so just say that the
+	// hand is being tracked
 	out_value->is_active = true;
-}
-
-static void
-predict_pose(struct vive_controller_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
-{
-	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
-	double prediction_s = time_ns_to_s(prediction_ns);
-
-	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
-	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
-	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
-	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
-
-	//! @todo integrate position here
-	struct xrt_space_relation relation = {0};
-	relation.pose.orientation = d->rot_filtered;
-	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
-
-	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void

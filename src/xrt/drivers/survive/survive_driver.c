@@ -341,6 +341,7 @@ survive_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
+	// We're pretty sure libsurvive is giving us the IMU pose here, so this works.
 	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
 	vive_poses_get_pose_offset(survive->base.name, survive->base.device_type, name, &pose_offset);
 
@@ -476,11 +477,6 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 	                                             .thumb = thumb_curl};
 
 
-	/* The tracked controller position is at the very -z end of the
-	 * controller. Move the hand back offset_z meter to the handle center.
-	 */
-	struct xrt_vec3 static_offset = {.x = 0, .y = 0.05, .z = 0.11};
-
 	struct xrt_space_relation hand_relation;
 
 	m_relation_history_get(survive->relation_hist, at_timestamp_ns, &hand_relation);
@@ -488,18 +484,13 @@ survive_controller_get_hand_tracking(struct xrt_device *xdev,
 
 	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &hand_relation, out_value);
 
-	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
-
 
 	struct xrt_relation_chain chain = {0};
 
-	// out_value->hand_pose = hand_relation;
-
+	// We're pretty sure libsurvive is giving us the IMU pose here, so this works.
 	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
 	vive_poses_get_pose_offset(survive->base.name, survive->base.device_type, name, &pose_offset);
 
-	m_relation_chain_push_pose(&chain, &hand_on_handle_pose);
 	m_relation_chain_push_pose(&chain, &pose_offset);
 	m_relation_chain_push_relation(&chain, &hand_relation);
 	m_relation_chain_resolve(&chain, &out_value->hand_pose);

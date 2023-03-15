@@ -12,6 +12,13 @@
 #include "xrt/xrt_defines.h"
 #include "vive_config.h"
 
+/*!
+ * Returns the offset from a controller's IMU to the aim pose, grip pose or wrist pose (P_imu_{aim,grip,wrist}).
+ *
+ * Return a non-identity pose on
+ * Returns XRT_POSE_IDENTITY on XRT_INPUT_GENERIC_TRACKER_POSE.
+ */
+
 void
 vive_poses_get_pose_offset(enum xrt_device_name device_name,
                            enum xrt_device_type device_type,

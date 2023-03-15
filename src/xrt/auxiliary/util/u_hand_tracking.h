@@ -161,17 +161,6 @@ u_hand_joint_is_distal(enum xrt_hand_joint joint);
 bool
 u_hand_joint_is_thumb(enum xrt_hand_joint joint);
 
-/*!
- * Simple helper function for positioning hands on Valve Index controllers.
- *
- * @ingroup aux_util
- */
-void
-u_hand_joints_offset_valve_index_controller(enum xrt_hand hand,
-                                            const struct xrt_vec3 *static_offset,
-                                            struct xrt_pose *offset);
-
-
 #ifdef __cplusplus
 }
 #endif
