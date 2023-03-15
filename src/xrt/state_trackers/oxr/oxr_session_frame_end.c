@@ -63,12 +63,6 @@ ts_ms(struct oxr_session *sess)
 	return ns_to_ms(monotonic);
 }
 
-static bool
-is_session_running(struct oxr_session *sess)
-{
-	return sess->has_begun;
-}
-
 static XrResult
 is_rect_neg(const XrRect2Di *imageRect)
 {
@@ -1254,12 +1248,8 @@ XrResult
 oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const XrFrameEndInfo *frameEndInfo)
 {
 	/*
-	 * Session state and call order.
+	 * Call order.
 	 */
-
-	if (!is_session_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
 
 	if (!sess->frame_started) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Frame not begun with xrBeginFrame");

@@ -207,6 +207,20 @@ extern "C" {
 		}                                                                                                      \
 	} while (false)
 
+#define OXR_VERIFY_SESSION_NOT_LOST(log, sess)                                                                         \
+	do {                                                                                                           \
+		if (sess->has_lost) {                                                                                  \
+			return oxr_error(log, XR_ERROR_SESSION_LOST, "Session is lost");                               \
+		}                                                                                                      \
+	} while (false)
+
+#define OXR_VERIFY_SESSION_RUNNING(log, sess)                                                                          \
+	do {                                                                                                           \
+		if (!sess->has_begun) {                                                                                \
+			return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");                 \
+		}                                                                                                      \
+	} while (false)
+
 /*
  *
  * Implementation in oxr_verify.cpp

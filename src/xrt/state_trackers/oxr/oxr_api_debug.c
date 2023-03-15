@@ -93,6 +93,7 @@ oxr_xrSessionBeginDebugUtilsLabelRegionEXT(XrSession session, const XrDebugUtils
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSessionBeginDebugUtilsLabelRegionEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_EXTENSION(&log, sess->sys->inst, EXT_debug_utils);
 
 	return oxr_error(&log, XR_ERROR_RUNTIME_FAILURE, " not implemented");
@@ -106,6 +107,7 @@ oxr_xrSessionEndDebugUtilsLabelRegionEXT(XrSession session)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSessionEndDebugUtilsLabelRegionEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_EXTENSION(&log, sess->sys->inst, EXT_debug_utils);
 
 	return oxr_error(&log, XR_ERROR_RUNTIME_FAILURE, " not implemented");
@@ -119,6 +121,7 @@ oxr_xrSessionInsertDebugUtilsLabelEXT(XrSession session, const XrDebugUtilsLabel
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrSessionInsertDebugUtilsLabelEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_EXTENSION(&log, sess->sys->inst, EXT_debug_utils);
 
 	return oxr_error(&log, XR_ERROR_RUNTIME_FAILURE, " not implemented");

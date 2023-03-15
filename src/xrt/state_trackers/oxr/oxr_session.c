@@ -57,12 +57,6 @@ DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
 	}
 
 static bool
-is_running(struct oxr_session *sess)
-{
-	return sess->has_begun;
-}
-
-static bool
 should_render(XrSessionState state)
 {
 	switch (state) {
@@ -137,10 +131,6 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 XrResult
 oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo)
 {
-	if (is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_RUNNING, "Session is already running");
-	}
-
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
 		XrViewConfigurationType view_type = beginInfo->primaryViewConfigurationType;
@@ -171,10 +161,6 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 	}
 
 	struct xrt_compositor *xc = sess->compositor;
-
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
 	if (sess->state != XR_SESSION_STATE_STOPPING) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING, "Session is not stopping");
 	}
@@ -208,10 +194,6 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 XrResult
 oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
 		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
@@ -483,11 +465,6 @@ ts_ms(struct oxr_session *sess)
 XrResult
 oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
-
 	//! @todo this should be carefully synchronized, because there may be
 	//! more than one session per instance.
 	XRT_MAYBE_UNUSED timepoint_ns now = time_state_get_now_and_update(sess->sys->inst->timekeeping);
@@ -553,10 +530,6 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 XrResult
 oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
 	struct xrt_compositor *xc = sess->compositor;
 
 	os_mutex_lock(&sess->active_wait_frames_lock);

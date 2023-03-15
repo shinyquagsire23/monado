@@ -91,8 +91,13 @@ oxr_xrBeginSession(XrSession session, const XrSessionBeginInfo *beginInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginSession");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, beginInfo, XR_TYPE_SESSION_BEGIN_INFO);
 	OXR_VERIFY_VIEW_CONFIG_TYPE(&log, sess->sys->inst, beginInfo->primaryViewConfigurationType);
+
+	if (sess->has_begun) {
+		return oxr_error(&log, XR_ERROR_SESSION_RUNNING, "Session is already running");
+	}
 
 	return oxr_session_begin(&log, sess, beginInfo);
 }
@@ -105,6 +110,8 @@ oxr_xrEndSession(XrSession session)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndSession");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
+	OXR_VERIFY_SESSION_RUNNING(&log, sess);
 
 	return oxr_session_end(&log, sess);
 }
@@ -117,6 +124,8 @@ oxr_xrWaitFrame(XrSession session, const XrFrameWaitInfo *frameWaitInfo, XrFrame
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrWaitFrame");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
+	OXR_VERIFY_SESSION_RUNNING(&log, sess);
 	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, frameWaitInfo, XR_TYPE_FRAME_WAIT_INFO);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameState, XR_TYPE_FRAME_STATE);
 	OXR_VERIFY_ARG_NOT_NULL(&log, frameState);
@@ -132,6 +141,8 @@ oxr_xrBeginFrame(XrSession session, const XrFrameBeginInfo *frameBeginInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrBeginFrame");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
+	OXR_VERIFY_SESSION_RUNNING(&log, sess);
 	// NULL explicitly allowed here because it's a basically empty struct.
 	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, frameBeginInfo, XR_TYPE_FRAME_BEGIN_INFO);
 
@@ -154,6 +165,8 @@ oxr_xrEndFrame(XrSession session, const XrFrameEndInfo *frameEndInfo)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEndFrame");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
+	OXR_VERIFY_SESSION_RUNNING(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, frameEndInfo, XR_TYPE_FRAME_END_INFO);
 
 #ifdef XRT_FEATURE_RENDERDOC
@@ -175,6 +188,8 @@ oxr_xrRequestExitSession(XrSession session)
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrRequestExitSession");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
+	OXR_VERIFY_SESSION_RUNNING(&log, sess);
 
 	return oxr_session_request_exit(&log, sess);
 }
@@ -193,6 +208,7 @@ oxr_xrLocateViews(XrSession session,
 	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrLocateViews");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewLocateInfo, XR_TYPE_VIEW_LOCATE_INFO);
 	OXR_VERIFY_SPACE_NOT_NULL(&log, viewLocateInfo->space, spc);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, viewState, XR_TYPE_VIEW_STATE);
@@ -251,6 +267,7 @@ oxr_xrGetVisibilityMaskKHR(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetVisibilityMaskKHR");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
@@ -276,6 +293,7 @@ oxr_xrPerfSettingsSetPerformanceLevelEXT(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrPerfSettingsSetPerformanceLevelEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
@@ -303,6 +321,7 @@ oxr_xrThermalGetTemperatureTrendEXT(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrThermalGetTemperatureTrendEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	return oxr_error(&log, XR_ERROR_HANDLE_INVALID, "Not implemented");
 }
@@ -391,6 +410,7 @@ oxr_xrCreateHandTrackerEXT(XrSession session,
 	struct oxr_logger log;
 	XrResult ret;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateHandTrackerEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_HAND_TRACKER_CREATE_INFO_EXT);
 	OXR_VERIFY_ARG_NOT_NULL(&log, handTracker);
 
@@ -433,6 +453,7 @@ oxr_xrLocateHandJointsEXT(XrHandTrackerEXT handTracker,
 	struct oxr_space *spc;
 	struct oxr_logger log;
 	OXR_VERIFY_HAND_TRACKER_AND_INIT_LOG(&log, handTracker, hand_tracker, "xrLocateHandJointsEXT");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, hand_tracker->sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locateInfo, XR_TYPE_HAND_JOINTS_LOCATE_INFO_EXT);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, locations, XR_TYPE_HAND_JOINT_LOCATIONS_EXT);
 	OXR_VERIFY_ARG_NOT_NULL(&log, locations->jointLocations);
@@ -515,6 +536,7 @@ oxr_xrEnumerateDisplayRefreshRatesFB(XrSession session,
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateDisplayRefreshRatesFB");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	// headless
 	if (!sess->sys->xsysc) {
@@ -531,7 +553,8 @@ oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate)
 {
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateDisplayRefreshRatesFB");
+	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetDisplayRefreshRateFB");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	// headless
 	if (!sess->sys->xsysc) {
@@ -539,7 +562,6 @@ oxr_xrGetDisplayRefreshRateFB(XrSession session, float *displayRefreshRate)
 		return XR_SUCCESS;
 	}
 
-	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrGetDisplayRefreshRateFB");
 	if (sess->sys->xsysc->info.num_refresh_rates < 1) {
 		return XR_ERROR_RUNTIME_FAILURE;
 	}
@@ -554,6 +576,7 @@ oxr_xrRequestDisplayRefreshRateFB(XrSession session, float displayRefreshRate)
 	struct oxr_session *sess = NULL;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrRequestDisplayRefreshRateFB");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	//! @todo support for changing refresh rates
 	return XR_SUCCESS;
