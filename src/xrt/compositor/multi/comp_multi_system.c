@@ -591,6 +591,39 @@ system_compositor_set_main_app_visibility(struct xrt_system_compositor *xsc, str
 	return XRT_SUCCESS;
 }
 
+static xrt_result_t
+system_compositor_notify_loss_pending(struct xrt_system_compositor *xsc,
+                                      struct xrt_compositor *xc,
+                                      uint64_t loss_time_ns)
+{
+	struct multi_system_compositor *msc = multi_system_compositor(xsc);
+	struct multi_compositor *mc = multi_compositor(xc);
+	(void)msc;
+
+	union xrt_compositor_event xce = XRT_STRUCT_INIT;
+	xce.type = XRT_COMPOSITOR_EVENT_LOSS_PENDING;
+	xce.loss_pending.loss_time_ns = loss_time_ns;
+
+	multi_compositor_push_event(mc, &xce);
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+system_compositor_notify_lost(struct xrt_system_compositor *xsc, struct xrt_compositor *xc)
+{
+	struct multi_system_compositor *msc = multi_system_compositor(xsc);
+	struct multi_compositor *mc = multi_compositor(xc);
+	(void)msc;
+
+	union xrt_compositor_event xce = XRT_STRUCT_INIT;
+	xce.type = XRT_COMPOSITOR_EVENT_LOST;
+
+	multi_compositor_push_event(mc, &xce);
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -664,6 +697,8 @@ comp_multi_create_system_compositor(struct xrt_compositor_native *xcn,
 	msc->xmcc.set_state = system_compositor_set_state;
 	msc->xmcc.set_z_order = system_compositor_set_z_order;
 	msc->xmcc.set_main_app_visibility = system_compositor_set_main_app_visibility;
+	msc->xmcc.notify_loss_pending = system_compositor_notify_loss_pending;
+	msc->xmcc.notify_lost = system_compositor_notify_lost;
 	msc->base.xmcc = &msc->xmcc;
 	msc->base.info = *xsci;
 	msc->upaf = upaf;
