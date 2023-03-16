@@ -9,6 +9,7 @@
 
 #include "qwerty_device.h"
 
+#include "util/u_misc.h"
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 #include "util/u_var.h"

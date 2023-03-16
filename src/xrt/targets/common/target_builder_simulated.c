@@ -10,6 +10,7 @@
 #include "xrt/xrt_config_drivers.h"
 #include "xrt/xrt_prober.h"
 
+#include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_builders.h"
 #include "util/u_config_json.h"

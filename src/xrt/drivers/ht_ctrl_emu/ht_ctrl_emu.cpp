@@ -17,6 +17,7 @@
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 
+#include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_time.h"
 #include "util/u_device.h"

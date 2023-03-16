@@ -8,6 +8,7 @@
  */
 
 #include "multi.h"
+#include "util/u_misc.h"
 #include "util/u_device.h"
 #include "util/u_debug.h"
 

@@ -14,7 +14,6 @@
 
 #include "xrt/xrt_defines.h"
 
-#include "util/u_hand_tracking.h"
 
 #ifdef __cplusplus
 extern "C" {
