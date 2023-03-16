@@ -9,24 +9,24 @@
  * @ingroup drv_cemu
  */
 
-#include "ht_ctrl_emu_interface.h"
-
 #include "xrt/xrt_defines.h"
+#include "xrt/xrt_device.h"
+
+#include "os/os_time.h"
 
 #include "math/m_api.h"
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 
+#include "util/u_var.h"
+#include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_time.h"
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
-#include "util/u_var.h"
 #include "util/u_config_json.h"
 
-#include "os/os_time.h"
-#include "xrt/xrt_device.h"
+#include "ht_ctrl_emu_interface.h"
 
 #include <assert.h>
 #include <stdio.h>

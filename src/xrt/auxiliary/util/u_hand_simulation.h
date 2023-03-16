@@ -10,8 +10,10 @@
 #pragma once
 
 #include "xrt/xrt_defines.h"
+
 #include "util/u_misc.h"
 #include "util/u_hand_tracking.h"
+
 
 #ifdef __cplusplus
 extern "C" {

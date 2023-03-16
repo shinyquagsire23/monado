@@ -7,13 +7,15 @@
  * @ingroup drv_multi
  */
 
-#include "multi.h"
-#include "util/u_misc.h"
-#include "util/u_device.h"
-#include "util/u_debug.h"
-
 #include "math/m_api.h"
 #include "math/m_space.h"
+
+#include "util/u_misc.h"
+#include "util/u_debug.h"
+#include "util/u_device.h"
+
+#include "multi.h"
+
 
 DEBUG_GET_ONCE_LOG_OPTION(multi_log, "MULTI_LOG", U_LOGGING_WARN)
 
