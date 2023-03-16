@@ -157,7 +157,7 @@ oxr_event_push_XrEventDataSessionStateChanged(struct oxr_logger *log,
 	changed->state = state;
 	changed->time = time;
 
-	event->result = state == XR_SESSION_STATE_LOSS_PENDING ? XR_SESSION_LOSS_PENDING : XR_SUCCESS;
+	event->result = XR_SUCCESS;
 
 	lock(inst);
 	push(inst, event);
