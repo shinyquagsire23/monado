@@ -19,22 +19,6 @@
 extern "C" {
 #endif
 
-
-
-/*!
- * The hand tracking model being used.
- *
- * XRT_HAND_TRACKING_MODEL_INTRINSIC for devices that measure hand tracking through sensors, ie gloves and knuckles
- * XRT_HAND_TRACKING_MODEL_EXTRINSIC for devices that measure hand tracking through external factors like cameras
- *
- * @ingroup aux_util
- */
-// enum u_hand_tracking_model
-// {
-// 	XRT_HAND_TRACKING_MODEL_INTRINSIC,
-// 	XRT_HAND_TRACKING_MODEL_EXTRINSIC,
-// };
-
 struct u_hand_sim_metacarpal
 {
 	struct xrt_vec2 swing;
