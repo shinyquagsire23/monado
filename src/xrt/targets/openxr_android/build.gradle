@@ -148,9 +148,6 @@ android {
         }
     }
 
-    lintOptions {
-        fatal 'StopShip'
-    }
 
     flavorDimensions 'deployment'
     productFlavors {
@@ -178,7 +175,13 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     packagingOptions {
-        exclude("META-INF/*.kotlin_module")
+        resources {
+            excludes += ['META-INF/*.kotlin_module']
+        }
+    }
+    namespace 'org.freedesktop.monado.openxr_runtime'
+    lint {
+        fatal 'StopShip'
     }
 
 }
