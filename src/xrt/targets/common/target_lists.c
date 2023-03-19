@@ -32,6 +32,10 @@
 #include "psmv/psmv_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_PSSENSE
+#include "pssense/pssense_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_PSVR
 #include "psvr/psvr_interface.h"
 #endif
@@ -150,6 +154,11 @@ struct xrt_prober_entry target_entry_list[] = {
     {PSMV_VID, PSMV_PID_ZCM1, psmv_found, "PS Move Controller (ZCM1)", "psmv"},
     {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)", "psmv"},
 #endif // XRT_BUILD_DRIVER_PSMV
+
+#ifdef XRT_BUILD_DRIVER_PSSENSE
+    {PSSENSE_VID, PSSENSE_PID_LEFT, pssense_found, "PlayStation VR2 Sense Controller (L)", "pssense"},
+    {PSSENSE_VID, PSSENSE_PID_RIGHT, pssense_found, "PlayStation VR2 Sense Controller (R)", "pssense"},
+#endif // XRT_BUILD_DRIVER_PSSENSE
 
 #ifdef XRT_BUILD_DRIVER_HYDRA
     {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra", "hydra"},

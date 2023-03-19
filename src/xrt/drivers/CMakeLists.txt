@@ -160,6 +160,12 @@ if(XRT_BUILD_DRIVER_PSMV)
 	list(APPEND ENABLED_DRIVERS psmv)
 endif()
 
+if(XRT_BUILD_DRIVER_PSSENSE)
+	add_library(drv_pssense STATIC pssense/pssense_driver.c pssense/pssense_interface.h)
+	target_link_libraries(drv_pssense PRIVATE aux_os)
+	list(APPEND ENABLED_DRIVERS pssense)
+endif()
+
 if(XRT_BUILD_DRIVER_PSVR)
 	add_library(
 		drv_psvr STATIC

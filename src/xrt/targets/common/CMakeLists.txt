@@ -103,6 +103,10 @@ if(XRT_BUILD_DRIVER_PSMV)
 	target_link_libraries(target_lists PRIVATE drv_psmv)
 endif()
 
+if(XRT_BUILD_DRIVER_PSSENSE)
+	target_link_libraries(target_lists PRIVATE drv_pssense)
+endif()
+
 if(XRT_BUILD_DRIVER_PSVR)
 	target_link_libraries(target_lists PRIVATE drv_psvr)
 endif()
