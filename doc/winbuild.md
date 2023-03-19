@@ -158,7 +158,6 @@ or the following in PowerShell:
 ```pwsh
 $env:XR_RUNTIME_JSON="w:\src\monado\build\openxr_monado-dev.json"
 .\hello_xr.exe -G Vulkan
-
 ```
 
 ## Limitations
