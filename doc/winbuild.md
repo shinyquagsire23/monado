@@ -114,13 +114,16 @@ cmake -S . ^
 ninja -C build
 ```
 
-If you want to build the `outOfProcess` version of Monado, please add extra build parameter `-DXRT_FEATURE_SERVICE=ON`.
+If you want to build the `outOfProcess` version of Monado, please add extra
+build parameter `-DXRT_FEATURE_SERVICE=ON`.
 
 ## Using
 
 ### Run Monado service
 
-If you build the `outOfProcess` version of Monado, you need to start the `monado-service.exe` first with the following command in `cmd.exe` command prompt before running OpenXR clients:
+If you build the `outOfProcess` version of Monado, you need to start
+the `monado-service.exe` first with the following command in `cmd.exe`
+command prompt before running OpenXR clients:
 
 ```bat
 monado-service.exe
@@ -132,7 +135,8 @@ or the following in PowerShell:
 .\monado-service.exe
 ```
 
-If you build the `inProcess` version of Monado, you don't need the above steps, and you can jump to the next section to run OpenXR clients directly.
+If you build the `inProcess` version of Monado, you don't need the above
+steps, and you can jump to the next section to run OpenXR clients directly.
 
 ### Run hello_xr
 
@@ -159,5 +163,7 @@ $env:XR_RUNTIME_JSON="w:\src\monado\build\openxr_monado-dev.json"
 
 ## Limitations
 
-Note that there are current limitations in the Windows build. The main one currently is no actual headset drivers yet, partially because some USB stuff needs porting, and
-partially because direct mode on Windows is more complicated.
+Note that there are current limitations in the Windows build.
+The main one currently is no actual headset drivers yet, partially because
+some USB stuff needs porting, and partially because direct mode on Windows
+is more complicated.
