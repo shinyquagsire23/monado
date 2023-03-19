@@ -139,7 +139,5 @@ $env:XR_RUNTIME_JSON="w:\src\monado\build\openxr_monado-dev.json"
 
 ## Limitations
 
-Note that there are current limitations in the Windows build. The main one
-currently is that IPC/service mode is not (yet) supported. There are also no
-actual headset drivers yet, partially because some USB stuff needs porting, and
+Note that there are current limitations in the Windows build. The main one currently is no actual headset drivers yet, partially because some USB stuff needs porting, and
 partially because direct mode on Windows is more complicated.
