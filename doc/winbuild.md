@@ -114,7 +114,27 @@ cmake -S . ^
 ninja -C build
 ```
 
+If you want to build the `outOfProcess` version of Monado, please add extra build parameter `-DXRT_FEATURE_SERVICE=ON`.
+
 ## Using
+
+### Run Monado service
+
+If you build the `outOfProcess` version of Monado, you need to start the `monado-service.exe` first with the following command in `cmd.exe` command prompt before running OpenXR clients:
+
+```bat
+monado-service.exe
+```
+
+or the following in PowerShell:
+
+```pwsh
+.\monado-service.exe
+```
+
+If you build the `inProcess` version of Monado, you don't need the above steps, and you can jump to the next section to run OpenXR clients directly.
+
+### Run hello_xr
 
 Proper install of a runtime in Windows involves registry modifications. However,
 the easiest way to test is just to set the `XR_RUNTIME_JSON` environment
