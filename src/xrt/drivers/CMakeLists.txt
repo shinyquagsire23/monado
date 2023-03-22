@@ -162,7 +162,7 @@ endif()
 
 if(XRT_BUILD_DRIVER_PSSENSE)
 	add_library(drv_pssense STATIC pssense/pssense_driver.c pssense/pssense_interface.h)
-	target_link_libraries(drv_pssense PRIVATE aux_os)
+	target_link_libraries(drv_pssense PRIVATE aux_os aux_util)
 	list(APPEND ENABLED_DRIVERS pssense)
 endif()
 
