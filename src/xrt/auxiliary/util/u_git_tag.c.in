@@ -10,4 +10,12 @@
 #include "util/u_git_tag.h"
 
 #define GIT_DESC "@GIT_DESC@"
+
+#define MAJOR_VERSION @CMAKE_PROJECT_VERSION_MAJOR@
+#define MINOR_VERSION @CMAKE_PROJECT_VERSION_MINOR@
+#define PATCH_VERSION @CMAKE_PROJECT_VERSION_PATCH@
+
 const char u_git_tag[] = GIT_DESC;
+const uint16_t u_version_major = MAJOR_VERSION;
+const uint16_t u_version_minor = MINOR_VERSION;
+const uint16_t u_version_patch = PATCH_VERSION;
