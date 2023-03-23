@@ -401,7 +401,7 @@ oxr_instance_create(struct oxr_logger *log,
 XrResult
 oxr_instance_get_properties(struct oxr_logger *log, struct oxr_instance *inst, XrInstanceProperties *instanceProperties)
 {
-	instanceProperties->runtimeVersion = XR_MAKE_VERSION(21, 0, 0);
+	instanceProperties->runtimeVersion = XR_MAKE_VERSION(u_version_major, u_version_minor, u_version_patch);
 	snprintf(instanceProperties->runtimeName, XR_MAX_RUNTIME_NAME_SIZE - 1, "Monado(XRT) by Collabora et al '%s'",
 	         u_git_tag);
 
