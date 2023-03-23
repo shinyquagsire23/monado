@@ -74,11 +74,11 @@ If you have a recent [vcpkg](https://vcpkg.io) installed and use the appropriate
 CMake toolchain file, the vcpkg manifest in the Monado repository will instruct
 vcpkg to locally install the dependencies automatically.
 
-Tested distributions that are fully compatible,
-on Intel (Vulkan only) and AMD graphics (Vulkan and OpenGL):
+Monado has been tested on these distributions, but is expected to work on almost
+any modern distribution.
 
-* Ubuntu 18.10 (18.04 does not work)
-* Debian 10 `buster`
+* Ubuntu 22.04, 20.04, (18.04 may not be fully supported)
+* Debian 11 `bookworm`, 10 `buster`
   * Up-to-date package lists can be found in our CI config file,
     `.gitlab-ci.yml`
 * Archlinux
