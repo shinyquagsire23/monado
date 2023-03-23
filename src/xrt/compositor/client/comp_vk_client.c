@@ -43,6 +43,32 @@ client_vk_compositor(struct xrt_compositor *xc)
 
 /*
  *
+ * Transition helpers.
+ *
+ */
+
+static xrt_result_t
+submit_image_barrier(struct client_vk_swapchain *sc, VkCommandBuffer cmd_buffer)
+{
+	COMP_TRACE_MARKER();
+
+	struct client_vk_compositor *c = sc->c;
+	struct vk_bundle *vk = &c->vk;
+	VkResult ret;
+
+	// Note we do not submit a fence here, it's not needed.
+	ret = vk_cmd_pool_submit_cmd_buffer(vk, &c->pool, cmd_buffer);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_cmd_pool_submit_cmd_buffer: %s %u", vk_result_string(ret), ret);
+		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
+	}
+
+	return XRT_SUCCESS;
+}
+
+
+/*
+ *
  * Semaphore helpers.
  *
  */
@@ -254,27 +280,18 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
-	struct client_vk_compositor *c = sc->c;
-	struct vk_bundle *vk = &c->vk;
-
+	xrt_result_t xret;
 	uint32_t index = 0;
 
 	// Pipe down call into native swapchain.
-	xrt_result_t xret = xrt_swapchain_acquire_image(&sc->xscn->base, &index);
+	xret = xrt_swapchain_acquire_image(&sc->xscn->base, &index);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
 
-	VkResult ret;
-
-
-	COMP_TRACE_IDENT(submit);
-
-	// Note we do not submit a fence here, it's not needed.
-	ret = vk_cmd_pool_submit_cmd_buffer(vk, &c->pool, sc->acquire[index]);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "Could not submit to queue: %d", ret);
-		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
+	xret = submit_image_barrier(sc, sc->acquire[index]);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
 	// Finally done.
@@ -306,20 +323,11 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
-	struct client_vk_compositor *c = sc->c;
-	struct vk_bundle *vk = &c->vk;
+	xrt_result_t xret;
 
-	VkResult ret;
-
-	{
-		COMP_TRACE_IDENT(submit);
-
-		// Note we do not submit a fence here, it's not needed.
-		ret = vk_cmd_pool_submit_cmd_buffer(vk, &c->pool, sc->release[index]);
-		if (ret != VK_SUCCESS) {
-			VK_ERROR(vk, "Could not submit to queue: %d", ret);
-			return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
-		}
+	xret = submit_image_barrier(sc, sc->release[index]);
+	if (xret != XRT_SUCCESS) {
+		return xret;
 	}
 
 	COMP_TRACE_IDENT(release_image);
