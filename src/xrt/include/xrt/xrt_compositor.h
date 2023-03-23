@@ -379,6 +379,15 @@ enum xrt_swapchain_usage_bits
 };
 
 /*!
+ * The direction of a transition.
+ */
+enum xrt_barrier_direction
+{
+	XRT_BARRIER_TO_APP = 1,
+	XRT_BARRIER_TO_COMP = 2,
+};
+
+/*!
  * @interface xrt_swapchain
  *
  * Common swapchain interface/base.
@@ -433,6 +442,15 @@ struct xrt_swapchain
 	 * @param index Image index to wait for.
 	 */
 	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index);
+
+	/*!
+	 * Do any barrier transitions to and from the application.
+	 *
+	 * @param xsc       Self pointer
+	 * @param direction Direction of the barrier transition.
+	 * @param index     Image index to barrier transition.
+	 */
+	xrt_result_t (*barrier_image)(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
@@ -497,6 +515,19 @@ static inline xrt_result_t
 xrt_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	return xsc->wait_image(xsc, timeout_ns, index);
+}
+
+/*!
+ * @copydoc xrt_swapchain::barrier_image
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return xsc->barrier_image(xsc, direction, index);
 }
 
 /*!
