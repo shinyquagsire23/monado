@@ -295,6 +295,12 @@ client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, u
 }
 
 static xrt_result_t
+client_vk_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	COMP_TRACE_MARKER();
@@ -632,6 +638,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->base.base.destroy = client_vk_swapchain_destroy;
 	sc->base.base.acquire_image = client_vk_swapchain_acquire_image;
 	sc->base.base.wait_image = client_vk_swapchain_wait_image;
+	sc->base.base.barrier_image = client_vk_swapchain_barrier_image;
 	sc->base.base.release_image = client_vk_swapchain_release_image;
 	sc->base.base.reference.count = 1;
 	sc->base.base.image_count = xsc->image_count; // Fetch the number of images from the native swapchain.

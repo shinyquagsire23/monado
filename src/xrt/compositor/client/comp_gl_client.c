@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -149,6 +149,12 @@ client_gl_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, u
 
 	// Pipe down call into native swapchain.
 	return xrt_swapchain_wait_image(&sc->xscn->base, timeout_ns, index);
+}
+
+static xrt_result_t
+client_gl_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return XRT_SUCCESS;
 }
 
 static xrt_result_t
@@ -493,6 +499,9 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	}
 	if (NULL == sc->base.base.wait_image) {
 		sc->base.base.wait_image = client_gl_swapchain_wait_image;
+	}
+	if (NULL == sc->base.base.barrier_image) {
+		sc->base.base.barrier_image = client_gl_swapchain_barrier_image;
 	}
 	if (NULL == sc->base.base.release_image) {
 		sc->base.base.release_image = client_gl_swapchain_release_image;

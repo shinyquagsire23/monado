@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -367,6 +367,12 @@ client_d3d12_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns
 }
 
 static xrt_result_t
+client_d3d12_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 client_d3d12_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct client_d3d12_swapchain *sc = as_client_d3d12_swapchain(xsc);
@@ -537,6 +543,7 @@ try {
 	sc->base.base.destroy = client_d3d12_swapchain_destroy;
 	sc->base.base.acquire_image = client_d3d12_swapchain_acquire_image;
 	sc->base.base.wait_image = client_d3d12_swapchain_wait_image;
+	sc->base.base.barrier_image = client_d3d12_swapchain_barrier_image;
 	sc->base.base.release_image = client_d3d12_swapchain_release_image;
 	sc->c = c;
 	sc->base.base.image_count = image_count;
