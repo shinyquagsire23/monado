@@ -7,8 +7,6 @@
  * @ingroup oxr_main
  */
 
-#include <stdlib.h>
-
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 

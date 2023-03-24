@@ -8,8 +8,6 @@
  * @ingroup comp_client
  */
 
-#include <stdlib.h>
-
 #include "util/u_debug.h"
 
 #include "oxr_objects.h"
