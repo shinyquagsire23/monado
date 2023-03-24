@@ -289,11 +289,6 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 		return xret;
 	}
 
-	xret = submit_image_barrier(sc, sc->acquire[index]);
-	if (xret != XRT_SUCCESS) {
-		return xret;
-	}
-
 	// Finally done.
 	*out_index = index;
 
@@ -314,7 +309,18 @@ client_vk_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, u
 static xrt_result_t
 client_vk_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
 {
-	return XRT_SUCCESS;
+	COMP_TRACE_MARKER();
+
+	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
+	VkCommandBuffer cmd_buffer = VK_NULL_HANDLE;
+
+	switch (direction) {
+	case XRT_BARRIER_TO_APP: cmd_buffer = sc->acquire[index]; break;
+	case XRT_BARRIER_TO_COMP: cmd_buffer = sc->release[index]; break;
+	default: assert(false);
+	}
+
+	return submit_image_barrier(sc, cmd_buffer);
 }
 
 static xrt_result_t
@@ -323,14 +329,6 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
-	xrt_result_t xret;
-
-	xret = submit_image_barrier(sc, sc->release[index]);
-	if (xret != XRT_SUCCESS) {
-		return xret;
-	}
-
-	COMP_TRACE_IDENT(release_image);
 
 	// Pipe down call into native swapchain.
 	return xrt_swapchain_release_image(&sc->xscn->base, index);

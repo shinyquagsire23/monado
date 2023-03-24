@@ -357,10 +357,6 @@ client_d3d12_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns
 		// OK, we got the image in the native compositor, now need the keyed mutex in d3d11.
 		xret = sc->data->keyed_mutex_collection.waitKeyedMutex(index, timeout_ns);
 	}
-	if (xret == XRT_SUCCESS) {
-		// OK, we got the image in the native compositor, now need the transition in d3d12.
-		xret = client_d3d12_swapchain_barrier_to_app(sc, index);
-	}
 
 	//! @todo discard old contents?
 	return xret;
@@ -369,7 +365,16 @@ client_d3d12_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns
 static xrt_result_t
 client_d3d12_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
 {
-	return XRT_SUCCESS;
+	struct client_d3d12_swapchain *sc = as_client_d3d12_swapchain(xsc);
+	xrt_result_t xret;
+
+	switch (direction) {
+	case XRT_BARRIER_TO_APP: xret = client_d3d12_swapchain_barrier_to_app(sc, index); break;
+	case XRT_BARRIER_TO_COMP: xret = client_d3d12_swapchain_barrier_to_compositor(sc, index); break;
+	default: assert(false);
+	}
+
+	return xret;
 }
 
 static xrt_result_t
@@ -385,9 +390,6 @@ client_d3d12_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 		xret = sc->data->keyed_mutex_collection.releaseKeyedMutex(index);
 	}
 
-	if (xret == XRT_SUCCESS) {
-		xret = client_d3d12_swapchain_barrier_to_compositor(sc, index);
-	}
 	return xret;
 }
 
