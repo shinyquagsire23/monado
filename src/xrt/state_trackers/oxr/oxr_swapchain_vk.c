@@ -17,10 +17,10 @@
 
 
 static XrResult
-oxr_swapchain_vk_enumerate_images(struct oxr_logger *log,
-                                  struct oxr_swapchain *sc,
-                                  uint32_t count,
-                                  XrSwapchainImageBaseHeader *images)
+vk_enumerate_images(struct oxr_logger *log,
+                    struct oxr_swapchain *sc,
+                    uint32_t count,
+                    XrSwapchainImageBaseHeader *images)
 {
 	struct xrt_swapchain_vk *xscvk = (struct xrt_swapchain_vk *)sc->swapchain;
 	XrSwapchainImageVulkanKHR *vk_imgs = (XrSwapchainImageVulkanKHR *)images;
@@ -47,7 +47,7 @@ oxr_swapchain_vk_create(struct oxr_logger *log,
 	}
 
 	// Set our API specific function(s).
-	sc->enumerate_images = oxr_swapchain_vk_enumerate_images;
+	sc->enumerate_images = vk_enumerate_images;
 
 	*out_swapchain = sc;
 

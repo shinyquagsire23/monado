@@ -19,10 +19,10 @@
 
 
 static XrResult
-oxr_swapchain_d3d11_enumerate_images(struct oxr_logger *log,
-                                     struct oxr_swapchain *sc,
-                                     uint32_t count,
-                                     XrSwapchainImageBaseHeader *images)
+d3d11_enumerate_images(struct oxr_logger *log,
+                       struct oxr_swapchain *sc,
+                       uint32_t count,
+                       XrSwapchainImageBaseHeader *images)
 {
 	struct xrt_swapchain_d3d11 *xscd3d = (struct xrt_swapchain_d3d11 *)sc->swapchain;
 	XrSwapchainImageD3D11KHR *d3d_imgs = (XrSwapchainImageD3D11KHR *)images;
@@ -49,7 +49,7 @@ oxr_swapchain_d3d11_create(struct oxr_logger *log,
 	}
 
 	// Set our API specific function(s).
-	sc->enumerate_images = oxr_swapchain_d3d11_enumerate_images;
+	sc->enumerate_images = d3d11_enumerate_images;
 
 	*out_swapchain = sc;
 
