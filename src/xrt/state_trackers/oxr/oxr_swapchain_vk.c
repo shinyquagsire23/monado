@@ -41,7 +41,7 @@ oxr_swapchain_vk_create(struct oxr_logger *log,
 	struct oxr_swapchain *sc;
 	XrResult ret;
 
-	ret = oxr_create_swapchain(log, sess, createInfo, &sc);
+	ret = oxr_swapchain_common_create(log, sess, createInfo, &sc);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}

@@ -803,11 +803,22 @@ oxr_swapchain_to_openxr(struct oxr_swapchain *sc)
 	return XRT_CAST_PTR_TO_OXR_HANDLE(XrSwapchain, sc);
 }
 
+/*!
+ * Shared create function for swapchains, called by grahpics API specific
+ * implementations list below. Does most init, but not @ref xrt_swapchain
+ * allocation and other API specific things.
+ *
+ * @param      log           Logger set with the current OpenXR function call context.
+ * @param      sess          OpenXR session
+ * @param      createInfo    Creation info.
+ * @param      sc            Swapchain.
+ * @param[out] out_swapchain Return of the allocated swapchain.
+ */
 XrResult
-oxr_create_swapchain(struct oxr_logger * /*log*/,
-                     struct oxr_session *sess,
-                     const XrSwapchainCreateInfo * /*createInfo*/,
-                     struct oxr_swapchain **out_swapchain);
+oxr_swapchain_common_create(struct oxr_logger *log,
+                            struct oxr_session *sess,
+                            const XrSwapchainCreateInfo *createInfo,
+                            struct oxr_swapchain **out_swapchain);
 
 
 /*

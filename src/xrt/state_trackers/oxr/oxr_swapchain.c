@@ -219,10 +219,10 @@ destroy_handle(struct oxr_logger *log, struct oxr_handle_base *hb)
  */
 
 XrResult
-oxr_create_swapchain(struct oxr_logger *log,
-                     struct oxr_session *sess,
-                     const XrSwapchainCreateInfo *createInfo,
-                     struct oxr_swapchain **out_swapchain)
+oxr_swapchain_common_create(struct oxr_logger *log,
+                            struct oxr_session *sess,
+                            const XrSwapchainCreateInfo *createInfo,
+                            struct oxr_swapchain **out_swapchain)
 {
 	xrt_result_t xret = XRT_SUCCESS;
 

@@ -51,7 +51,7 @@ oxr_swapchain_d3d12_create(struct oxr_logger *log,
 	                                                        XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT,
 	                                                        XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-	ret = oxr_create_swapchain(log, sess, createInfo, &sc);
+	ret = oxr_swapchain_common_create(log, sess, createInfo, &sc);
 	if (ret != XR_SUCCESS) {
 		return ret;
 	}
