@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -17,27 +17,6 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
-
-static XrResult
-oxr_swapchain_d3d11_destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
-{
-	// Release any waited image.
-	if (sc->waited.yes) {
-		sc->release_image(log, sc, NULL);
-	}
-
-	// Release any acquired images.
-	XrSwapchainImageWaitInfo waitInfo = {0};
-	while (!u_index_fifo_is_empty(&sc->acquired.fifo)) {
-		sc->wait_image(log, sc, &waitInfo);
-		sc->release_image(log, sc, NULL);
-	}
-
-	// Drop our reference, does NULL checking.
-	xrt_swapchain_reference(&sc->swapchain, NULL);
-
-	return XR_SUCCESS;
-}
 
 static XrResult
 oxr_swapchain_d3d11_enumerate_images(struct oxr_logger *log,
@@ -69,7 +48,7 @@ oxr_swapchain_d3d11_create(struct oxr_logger *log,
 		return ret;
 	}
 
-	sc->destroy = oxr_swapchain_d3d11_destroy;
+	// Set our API specific function(s).
 	sc->enumerate_images = oxr_swapchain_d3d11_enumerate_images;
 
 	*out_swapchain = sc;

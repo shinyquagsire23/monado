@@ -174,6 +174,34 @@ release_image(struct oxr_logger *log, struct oxr_swapchain *sc, const XrSwapchai
 }
 
 static XrResult
+destroy(struct oxr_logger *log, struct oxr_swapchain *sc)
+{
+	// Release any waited image.
+	if (sc->waited.yes) {
+		sc->release_image(log, sc, NULL);
+	}
+
+	// Release any acquired images.
+	XrSwapchainImageWaitInfo waitInfo = {0};
+	while (!u_index_fifo_is_empty(&sc->acquired.fifo)) {
+		sc->wait_image(log, sc, &waitInfo);
+		sc->release_image(log, sc, NULL);
+	}
+
+	// Drop our reference, does NULL checking.
+	xrt_swapchain_reference(&sc->swapchain, NULL);
+
+	return XR_SUCCESS;
+}
+
+
+/*
+ *
+ * Handle function.
+ *
+ */
+
+static XrResult
 destroy_handle(struct oxr_logger *log, struct oxr_handle_base *hb)
 {
 	struct oxr_swapchain *sc = (struct oxr_swapchain *)hb;
@@ -236,6 +264,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 	sc->acquire_image = acquire_image;
 	sc->wait_image = wait_image;
 	sc->release_image = release_image;
+	sc->destroy = destroy;
 	sc->is_static = (createInfo->createFlags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT) != 0;
 
 	*out_swapchain = sc;
