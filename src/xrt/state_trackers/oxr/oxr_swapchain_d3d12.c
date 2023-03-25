@@ -17,6 +17,7 @@
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_api_verify.h"
+#include "oxr_swapchain_common.h"
 
 
 static XrResult

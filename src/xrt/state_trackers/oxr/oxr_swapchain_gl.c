@@ -12,6 +12,7 @@
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
+#include "oxr_swapchain_common.h"
 
 #include <assert.h>
 #include <stdlib.h>
