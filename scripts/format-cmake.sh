@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 # Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
