@@ -25,6 +25,7 @@ fi
         src/CMakeLists.txt \
         tests \
         \( -name "CMakeLists.txt" -o -name "*.cmake" \) \
+        ! -name ".cmake" \
         -print0 | \
         xargs -0 "${CMAKE_FORMAT}" -c "$(pwd)/.cmake-format.py" -i
 )
