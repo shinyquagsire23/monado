@@ -30,6 +30,20 @@
 #include <percetto.h>
 #endif
 
+#if !defined(XRT_FEATURE_TRACING) || !defined(XRT_HAVE_TRACY)
+#define U_TRACE_FUNC_COLOR(CATEGORY, COLOR)                                                                            \
+	(void)COLOR;                                                                                                   \
+	U_TRACE_FUNC(CATEGORY)
+
+#define U_TRACE_IDENT_COLOR(CATEGORY, IDENT, COLOR)                                                                    \
+	(void)COLOR;                                                                                                   \
+	U_TRACE_IDENT(CATEGORY, IDENT)
+
+#define U_TRACE_BEGIN_COLOR(CATEGORY, IDENT, COLOR)                                                                    \
+	(void)COLOR;                                                                                                   \
+	U_TRACE_BEGIN(CATEGORY, IDENT)
+#endif
+
 #if defined(XRT_FEATURE_TRACING) && defined(XRT_HAVE_TRACY)
 #ifndef TRACY_ENABLE
 #define TRACY_ENABLE
@@ -73,45 +87,50 @@ u_trace_marker_setup(enum u_trace_which which);
 void
 u_trace_marker_init(void);
 
-#define VK_TRACE_MARKER() U_TRACE_FUNC(vk)
-#define VK_TRACE_IDENT(IDENT) U_TRACE_IDENT(vk, IDENT)
-#define VK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(vk, IDENT)
+#define COLOR_TRACE_MARKER(COLOR) U_TRACE_FUNC_COLOR(color, COLOR)
+#define COLOR_TRACE_IDENT(IDENT, COLOR) U_TRACE_IDENT_COLOR(color, IDENT, COLOR)
+#define COLOR_TRACE_BEGIN(IDENT, COLOR) U_TRACE_BEGIN_COLOR(color, IDENT, COLOR)
+#define COLOR_TRACE_END(IDENT) U_TRACE_END(color, IDENT)
+
+#define VK_TRACE_MARKER() U_TRACE_FUNC_COLOR(vk, 0xffffff)
+#define VK_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(vk, IDENT, 0xffffff)
+#define VK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(vk, IDENT, 0xffffff)
 #define VK_TRACE_END(IDENT) U_TRACE_END(vk, IDENT)
 
-#define XRT_TRACE_MARKER() U_TRACE_FUNC(xrt)
-#define XRT_TRACE_IDENT(IDENT) U_TRACE_IDENT(xrt, IDENT)
-#define XRT_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(xrt, IDENT)
+#define XRT_TRACE_MARKER() U_TRACE_FUNC_COLOR(xrt, 0x708090)
+#define XRT_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(xrt, IDENT, 0x708090)
+#define XRT_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(xrt, IDENT, 0x708090)
 #define XRT_TRACE_END(IDENT) U_TRACE_END(xrt, IDENT)
 
-#define DRV_TRACE_MARKER() U_TRACE_FUNC(drv)
-#define DRV_TRACE_IDENT(IDENT) U_TRACE_IDENT(drv, IDENT)
-#define DRV_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(drv, IDENT)
+#define DRV_TRACE_MARKER() U_TRACE_FUNC_COLOR(drv, 0x000080)
+#define DRV_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(drv, IDENT, 0x000080)
+#define DRV_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(drv, IDENT, 0x000080)
 #define DRV_TRACE_END(IDENT) U_TRACE_END(drv, IDENT)
 
-#define IPC_TRACE_MARKER() U_TRACE_FUNC(ipc)
-#define IPC_TRACE_IDENT(IDENT) U_TRACE_IDENT(ipc, IDENT)
-#define IPC_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(ipc, IDENT)
+#define IPC_TRACE_MARKER() U_TRACE_FUNC_COLOR(ipc, 0x87cefa)
+#define IPC_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(ipc, IDENT, 0x87cefa)
+#define IPC_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(ipc, IDENT, 0x87cefa)
 #define IPC_TRACE_END(IDENT) U_TRACE_END(ipc, IDENT)
 
-#define OXR_TRACE_MARKER() U_TRACE_FUNC(oxr)
-#define OXR_TRACE_IDENT(IDENT) U_TRACE_IDENT(oxr, IDENT)
-#define OXR_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(oxr, IDENT)
-#define OXR_TRACE_END(IDENT) U_TRACE_END(oxr, IDENT)
+#define OXR_TRACE_MARKER() U_TRACE_FUNC_COLOR(oxr, 0x7fffd4)
+#define OXR_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(oxr, IDENT, 0x7fffd4)
+#define OXR_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(oxr, IDENT, 0x7fffd4)
+#define OXR_TRACE_END(IDENT) U_TRACE_END(oxr, IDENT, 0x7fffd4)
 
-#define COMP_TRACE_MARKER() U_TRACE_FUNC(comp)
-#define COMP_TRACE_IDENT(IDENT) U_TRACE_IDENT(comp, IDENT)
-#define COMP_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(comp, IDENT)
+#define COMP_TRACE_MARKER() U_TRACE_FUNC_COLOR(comp, 0x00ff00)
+#define COMP_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(comp, IDENT, 0x00ff00)
+#define COMP_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(comp, IDENT, 0x00ff00)
 #define COMP_TRACE_END(IDENT) U_TRACE_END(comp, IDENT)
 
-#define SINK_TRACE_MARKER() U_TRACE_FUNC(sink)
-#define SINK_TRACE_IDENT(IDENT) U_TRACE_IDENT(sink, IDENT)
-#define SINK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(sink, IDENT)
+#define SINK_TRACE_MARKER() U_TRACE_FUNC_COLOR(sink, 0xffa500)
+#define SINK_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(sink, IDENT, 0xffa500)
+#define SINK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(sink, IDENT, 0xffa500)
 #define SINK_TRACE_END(IDENT) U_TRACE_END(sink, IDENT)
 
-#define TRACK_TRACE_MARKER() U_TRACE_FUNC(track)
-#define TRACK_TRACE_IDENT(IDENT) U_TRACE_IDENT(track, IDENT)
-#define TRACK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN(track, IDENT)
-#define TRACK_TRACE_END(IDENT) U_TRACE_END(track, IDENT)
+#define TRACK_TRACE_MARKER() U_TRACE_FUNC_COLOR(track, 0xff0000)
+#define TRACK_TRACE_IDENT(IDENT) U_TRACE_IDENT_COLOR(track, IDENT, 0xff0000)
+#define TRACK_TRACE_BEGIN(IDENT) U_TRACE_BEGIN_COLOR(track, IDENT, 0xff0000)
+#define TRACK_TRACE_END(IDENT) U_TRACE_END(track, IDENT, 0xff0000)
 
 
 /*
@@ -183,7 +202,11 @@ u_trace_marker_init(void);
 // Different wrappers for different cases.
 #ifdef __cplusplus
 
+#define U_TRACE_FUNC_COLOR(CATEGORY, COLOR) ZoneScopedC(COLOR)
+
 #define U_TRACE_FUNC(CATEGORY) ZoneScoped
+
+#define U_TRACE_IDENT_COLOR(CATEGORY, IDENT, COLOR) ZoneScopedNC(#IDENT, COLOR)
 
 #define U_TRACE_IDENT(CATEGORY, IDENT) ZoneScopedN(#IDENT)
 
@@ -195,6 +218,15 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 	TracyCZoneEnd(*ctx_ptr);
 }
 
+#define U_TRACE_FUNC_COLOR(CATEGORY, COLOR)                                                                            \
+	static const struct ___tracy_source_location_data __func_loc = {                                               \
+	    NULL, __func__, __FILE__, (uint32_t)__LINE__, COLOR,                                                       \
+	};                                                                                                             \
+	TracyCZoneCtx __attribute__((cleanup(u_trace_scope_cleanup))) ctx =                                            \
+	    ___tracy_emit_zone_begin(&__func_loc, true);                                                               \
+	(void)ctx
+
+
 #define U_TRACE_FUNC(CATEGORY)                                                                                         \
 	static const struct ___tracy_source_location_data __func_loc = {                                               \
 	    NULL, __func__, __FILE__, (uint32_t)__LINE__, 0,                                                           \
@@ -202,6 +234,14 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 	TracyCZoneCtx __attribute__((cleanup(u_trace_scope_cleanup))) ctx =                                            \
 	    ___tracy_emit_zone_begin(&__func_loc, true);                                                               \
 	(void)ctx
+
+#define U_TRACE_IDENT_COLOR(CATEGORY, IDENT, COLOR)                                                                    \
+	static const struct ___tracy_source_location_data __##IDENT##_loc = {                                          \
+	    #IDENT, __func__, __FILE__, (uint32_t)__LINE__, COLOR,                                                     \
+	};                                                                                                             \
+	TracyCZoneCtx __attribute__((cleanup(u_trace_scope_cleanup))) ctx##IDENT =                                     \
+	    ___tracy_emit_zone_begin(&__##IDENT##_loc, true);                                                          \
+	(void)ctx##IDENT
 
 #define U_TRACE_IDENT(CATEGORY, IDENT)                                                                                 \
 	static const struct ___tracy_source_location_data __##IDENT##_loc = {                                          \
@@ -212,8 +252,15 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 	(void)ctx##IDENT
 
 #else // !XRT_OS_WINDOWS && !__cplusplus
+#define U_TRACE_FUNC_COLOR(CATEGORY, COLOR)                                                                            \
+	do {                                                                                                           \
+	} while (false)
 
 #define U_TRACE_FUNC(CATEGORY)                                                                                         \
+	do {                                                                                                           \
+	} while (false)
+
+#define U_TRACE_IDENT_COLOR(CATEGORY, IDENT, COLOR)                                                                    \
 	do {                                                                                                           \
 	} while (false)
 
@@ -224,6 +271,7 @@ u_trace_scope_cleanup(TracyCZoneCtx *ctx_ptr)
 #endif // !XRT_OS_WINDOWS && !__cplusplus
 
 #define U_TRACE_BEGIN(CATEGORY, IDENT) TracyCZoneN(__trace_##IDENT, #IDENT, true)
+#define U_TRACE_BEGIN_COLOR(CATEGORY, IDENT, COLOR) TracyCZoneNC(__trace_##IDENT, #IDENT, COLOR, true)
 #define U_TRACE_END(CATEGORY, IDENT) TracyCZoneEnd(__trace_##IDENT)
 
 #define U_TRACE_EVENT_BEGIN_ON_TRACK(CATEGORY, TRACK, TIME, NAME)                                                      \
