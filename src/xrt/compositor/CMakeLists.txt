@@ -64,9 +64,6 @@ endif()
 
 if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
 	target_link_libraries(comp_client PRIVATE aux_d3d)
-endif()
-
-if(XRT_HAVE_D3D11 OR XRT_HAVE_D3D12)
 	target_sources(comp_client PRIVATE client/comp_d3d_common.cpp client/comp_d3d_common.hpp)
 endif()
 
