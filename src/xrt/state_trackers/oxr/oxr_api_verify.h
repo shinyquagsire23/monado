@@ -140,6 +140,19 @@ extern "C" {
 		OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(log, arg, type_enum);                                                  \
 	} while (false)
 
+/*!
+ * Must only be used with full typed arrays, aka non-basetyped arrays like that
+ * passed into xrEnumerateSwapchainImages.
+ */
+#define OXR_VERIFY_ARG_ARRAY_ELEMENT_TYPE(log, array, index, type_enum)                                                \
+	do {                                                                                                           \
+		if ((array)[index].type != type_enum) {                                                                \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,                                             \
+			                 "(" #array "[%u]->type == 0x%08x) expected 0x%08x", index,                    \
+			                 (array)[index].type, type_enum);                                              \
+		}                                                                                                      \
+	} while (false)
+
 #define OXR_VERIFY_SUBACTION_PATHS(log, count, paths)                                                                  \
 	do {                                                                                                           \
 		if (count > 0 && paths == NULL) {                                                                      \

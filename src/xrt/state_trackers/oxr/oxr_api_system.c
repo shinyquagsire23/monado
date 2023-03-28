@@ -156,6 +156,10 @@ oxr_xrEnumerateViewConfigurationViews(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrEnumerateViewConfigurationViews");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
+	for (uint32_t i = 0; i < viewCapacityInput; i++) {
+		OXR_VERIFY_ARG_ARRAY_ELEMENT_TYPE(&log, views, i, XR_TYPE_VIEW_CONFIGURATION_VIEW);
+	}
+
 	return oxr_system_enumerate_view_conf_views(&log, sys, viewConfigurationType, viewCapacityInput,
 	                                            viewCountOutput, views);
 }

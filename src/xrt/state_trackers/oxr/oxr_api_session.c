@@ -204,6 +204,10 @@ oxr_xrLocateViews(XrSession session,
 		OXR_VERIFY_ARG_NOT_NULL(&log, views);
 	}
 
+	for (uint32_t i = 0; i < viewCapacityInput; i++) {
+		OXR_VERIFY_ARG_ARRAY_ELEMENT_TYPE(&log, views, i, XR_TYPE_VIEW);
+	}
+
 	if (viewLocateInfo->displayTime <= (XrTime)0) {
 		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.",
 		                 viewLocateInfo->displayTime);
