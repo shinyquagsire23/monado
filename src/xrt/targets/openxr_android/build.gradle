@@ -49,15 +49,15 @@ project.ext.filterLicense = { String line ->
     }
 }
 
-// TODO: this copies to the source dir for simplicity right now, but it's not great!
+project.ext.licenseDir = new File(project.buildDir, 'generated/licenses/main/res/raw')
+
 task copyLicenses(type: Copy) {
     from "${rootDir}/LICENSES/"
     include 'BSL-1.0.txt'
     rename(renameLicense)
-    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
+    into project.licenseDir
     filter(filterLicense)
 }
-project.ext.licenseDir = new File(project.buildDir, 'intermediates/licenses/')
 
 // Grab Eigen if we can't find it on the system.
 task downloadEigen(type: Download) {
@@ -171,13 +171,12 @@ android {
 }
 
 aboutLibraries {
-    configPath = "${projectDir}/config"
-
     // Full license text for license IDs mentioned here
     // will be included, even if no detected dependency uses them.
     additionalLicenses {
         mit
         mpl_2_0
+        bsl_1_0
     }
 }
 
