@@ -80,6 +80,15 @@ if (!(new File(project.file(project.eigenIncludeDir), "Eigen/Core")).exists()) {
     unpackEigen.enabled = false
 }
 
+// Pass -PsharedStl=true on the gradle command line to build with the shared runtime library.
+// This has potential compatibility issues and should only be used if you're consuming another
+// library that exposes a C++ interface.
+project.ext.stl = "c++_static"
+if (project.hasProperty("sharedStl") && project.getProperty("sharedStl")) {
+    project.ext.stl = "c++_shared"
+    println "Using SHARED C++ standard library"
+}
+
 android {
     compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
@@ -102,7 +111,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
+                arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=${project.sharedMinSdk}", "-DANDROID_STL=${project.stl}", "-DANDROID_ARM_NEON=TRUE"
 
             }
             if (project.pythonBinary != null) {
