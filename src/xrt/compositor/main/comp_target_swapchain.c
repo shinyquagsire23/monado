@@ -9,7 +9,6 @@
  */
 
 #include "os/os_threading.h"
-#include "xrt/xrt_config_os.h"
 
 #include "util/u_misc.h"
 #include "util/u_pacing.h"
@@ -18,10 +17,8 @@
 #include "main/comp_compositor.h"
 #include "main/comp_target_swapchain.h"
 
-#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <string.h>
 #include <inttypes.h>
 
 
