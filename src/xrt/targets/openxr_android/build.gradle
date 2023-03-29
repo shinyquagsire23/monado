@@ -154,6 +154,9 @@ android {
             resValue "string", "app_name", "Monado XR (Out-of-Proc)"
         }
     }
+    hilt {
+        enableAggregatingTask = true
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
