@@ -31,7 +31,7 @@ def parseOpenXRVersion(def fn) {
     def matches = file(fn).readLines().find {
         it.contains('XR_CURRENT_API_VERSION')
     } =~ ~/XR_MAKE_VERSION\(([^)]+)\)/
-    def components = matches[0][1].split(',').each { it.replace(' ', '').trim() }
+    def components = matches[0][1].split(',').collect { it.replace(' ', '').trim() }
     String.join('.', components)
 }
 
