@@ -59,21 +59,6 @@ task copyLicenses(type: Copy) {
 }
 project.ext.licenseDir = new File(project.buildDir, 'intermediates/licenses/')
 
-// For JSR250 used by Hilt
-task downloadCddl(type: Download) {
-    src 'https://spdx.org/licenses/CDDL-1.0.txt'
-    dest "${project.licenseDir}/CDDL-1.0.txt"
-    overwrite false
-}
-
-task copyDownloadedLicenses(type: Copy) {
-    from downloadCddl.dest
-    rename(renameLicense)
-    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
-    filter(filterLicense)
-    dependsOn downloadCddl
-}
-
 // Grab Eigen if we can't find it on the system.
 task downloadEigen(type: Download) {
     src "https://gitlab.com/libeigen/eigen/-/archive/${project.eigenFetchVersion}/eigen-${project.eigenFetchVersion}.tar.gz"
@@ -128,7 +113,6 @@ android {
 
         // Be sure to copy over licenses formatted as required.
         preBuild.dependsOn(copyLicenses)
-        preBuild.dependsOn(copyDownloadedLicenses)
 
         // We also need the unpacked Eigen
         preBuild.dependsOn(unpackEigen)
