@@ -4,7 +4,7 @@
 # Please run the following from the repo root after modifying this file:
 #   make -f .gitlab-ci/ci-scripts.mk
 
-fdo_ci_templates_sha: 9f0eb526291fe74651fe1430cbd2397f4c0a819b
+fdo_ci_templates_sha: 7811ba9814a3bad379377241c6c6b62d78b20eac
 
 # These are a mapping, instead of a list/array, so we can merge.
 .default_debian_packages:
@@ -69,7 +69,7 @@ distributions:
       # This image does some extra work.
       - codename: bullseye
         script: i386_and_proclamation_container_prep.sh
-        tag: "2022-09-20.1"
+        tag: "2023-04-07"
         deb_version_suffix: bpo11
         packages:
           <<: *default_debian_packages
@@ -116,13 +116,13 @@ distributions:
         distro_version: bullseye
         repo_suffix: ndk
         script: android_container_prep.sh
-        tag: "2022-09-20.0"
-        # This must match ext.sharedTargetSdk in build.gradle
-        android_compile_sdk: 31
+        tag: "2023-04-10"
+        # This must match ext.sharedCompileSdk in build.gradle
+        android_compile_sdk: 32
         # This must match buildscript.ext.buildToolsVersion in build.gradle
-        android_build_tools: 31.0.0
+        android_build_tools: 32.0.0
         # look up on https://developer.android.com/studio/index.html#downloads when updating other versions
-        android_cli_tools: 8512546
+        android_cli_tools: 9477386
 
         packages:
           git:

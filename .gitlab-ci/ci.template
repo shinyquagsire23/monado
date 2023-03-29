@@ -75,6 +75,7 @@ stages:
   only:
     changes:
       - .gitlab-ci/**/*
+      - .gitlab-ci.yml
   variables:
     {# The packages list is actually a mapping, not an array, but the same syntax works. #}
     {# Needed to be a mapping so it could be "merged" #}

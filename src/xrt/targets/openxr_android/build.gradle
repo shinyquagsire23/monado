@@ -96,7 +96,7 @@ if (!(new File(project.file(project.eigenIncludeDir), "Eigen/Core")).exists()) {
 }
 
 android {
-    compileSdk sharedTargetSdk
+    compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
     ndkVersion "${ndk_version}"

@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    compileSdkVersion project.sharedTargetSdk
+    compileSdkVersion project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
 

@@ -15,7 +15,7 @@ plugins {
 
 
 android {
-    compileSdkVersion project.sharedTargetSdk
+    compileSdkVersion project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
     defaultConfig {
@@ -52,6 +52,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion"
     implementation "com.google.android.material:material:$materialVersion"
+
+    // Not directly used but included to avoid version conflicts
+
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$androidxLifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$androidxLifecycleVersion"
 
     // for Hilt dependency injection
     implementation "com.google.dagger:hilt-android:$hiltVersion"
