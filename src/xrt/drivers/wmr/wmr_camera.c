@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#include "math/m_api.h"
 #include "os/os_threading.h"
 #include "util/u_autoexpgain.h"
 #include "util/u_debug.h"
@@ -88,8 +89,9 @@ struct wmr_camera
 	struct os_thread_helper usb_thread;
 	int usb_complete;
 
-	const struct wmr_camera_config *configs;
-	int config_count;
+	struct wmr_camera_config tcam_confs[WMR_MAX_CAMERAS]; //!< Configs for tracking cameras
+	int tcam_count;                                       //!< Number of tracking cameras
+	int slam_cam_count;                                   //!< Number of tracking cameras used for SLAM
 
 	size_t xfer_size;
 	uint32_t frame_width, frame_height;
@@ -113,8 +115,7 @@ struct wmr_camera
 
 	struct u_sink_debug debug_sinks[2];
 
-	struct xrt_frame_sink *left_sink;  //!< Downstream sinks to push left tracking frames to
-	struct xrt_frame_sink *right_sink; //!< Downstream sinks to push right tracking frames to
+	struct xrt_frame_sink *cam_sinks[WMR_MAX_CAMERAS]; //!< Downstream sinks to push tracking frames to
 
 	enum u_logging_level log_level;
 };
@@ -166,11 +167,8 @@ compute_frame_size(struct wmr_camera *cam)
 
 	F = 26;
 
-	for (i = 0; i < cam->config_count; i++) {
-		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-			continue;
-		}
+	for (i = 0; i < cam->tcam_count; i++) {
+		const struct wmr_camera_config *config = &cam->tcam_confs[i];
 
 		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->roi.extent.w,
 		              config->roi.extent.h);
@@ -373,24 +371,20 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	bool tracking_frame = sink_index == 0;
 	if (tracking_frame) {
 		// Tracking frames usually come at ~30fps
-		struct xrt_frame *xf_left = NULL;
-		struct xrt_frame *xf_right = NULL;
-		u_frame_create_roi(xf, cam->configs[0].roi, &xf_left);
-		u_frame_create_roi(xf, cam->configs[1].roi, &xf_right);
+		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {NULL};
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			u_frame_create_roi(xf, cam->tcam_confs[i].roi, &frames[i]);
+		}
 
-		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {xf_left, xf_right, NULL, NULL};
 		update_expgain(cam, frames);
 
-		if (cam->left_sink != NULL) {
-			xrt_sink_push_frame(cam->left_sink, xf_left);
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			xrt_sink_push_frame(cam->cam_sinks[i], frames[i]);
 		}
 
-		if (cam->right_sink != NULL) {
-			xrt_sink_push_frame(cam->right_sink, xf_right);
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			xrt_frame_reference(&frames[i], NULL);
 		}
-
-		xrt_frame_reference(&xf_left, NULL);
-		xrt_frame_reference(&xf_right, NULL);
 	}
 
 	xrt_frame_reference(&xf, NULL);
@@ -407,11 +401,7 @@ out:
  */
 
 struct wmr_camera *
-wmr_camera_open(struct xrt_prober_device *dev_holo,
-                struct xrt_frame_sink *left_sink,
-                struct xrt_frame_sink *right_sink,
-                int camera_count,
-                enum u_logging_level log_level)
+wmr_camera_open(struct wmr_camera_open_config *config)
 {
 	DRV_TRACE_MARKER();
 
@@ -419,7 +409,14 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	int res;
 	int i;
 
-	cam->log_level = log_level;
+	cam->tcam_count = config->tcam_count;
+	cam->slam_cam_count = config->slam_cam_count;
+	cam->log_level = config->log_level;
+
+	for (int i = 0; i < cam->tcam_count; i++) {
+		cam->tcam_confs[i] = *config->tcam_confs[i];
+		cam->cam_sinks[i] = config->tcam_sinks[i];
+	}
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -432,6 +429,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 		goto fail;
 	}
 
+	struct xrt_prober_device *dev_holo = config->dev_holo;
 	cam->dev = libusb_open_device_with_vid_pid(cam->ctx, dev_holo->vendor_id, dev_holo->product_id);
 	if (cam->dev == NULL) {
 		goto fail;
@@ -460,7 +458,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	int frame_delay = 3; // WMR takes about three frames until the cmd changes the image
 	cam->unify_expgains = debug_get_bool_option_wmr_unify_expgain();
 
-	for (int i = 0; i < camera_count; i++) {
+	for (int i = 0; i < cam->tcam_count; i++) {
 		struct wmr_camera_expgain *ceg = &cam->ceg[i];
 		ceg->manual_control = false;
 		ceg->last_exposure = DEFAULT_EXPOSURE;
@@ -487,7 +485,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	u_var_add_gui_header_begin(cam, NULL, "Exposure and gain control");
 	u_var_add_bool(cam, &cam->unify_expgains, "Use same values");
 
-	for (int i = 0; i < camera_count; i++) {
+	for (int i = 0; i < cam->tcam_count; i++) {
 		struct wmr_camera_expgain *ceg = &cam->ceg[i];
 		char label[256] = {0};
 
@@ -510,9 +508,6 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	}
 
 	u_var_add_gui_header_end(cam, NULL, "Auto exposure and gain control END");
-
-	cam->left_sink = left_sink;
-	cam->right_sink = right_sink;
 
 	return cam;
 
@@ -563,14 +558,12 @@ wmr_camera_free(struct wmr_camera *cam)
 }
 
 bool
-wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_configs, int config_count)
+wmr_camera_start(struct wmr_camera *cam)
 {
 	DRV_TRACE_MARKER();
 
 	int res = 0;
 
-	cam->configs = cam_configs;
-	cam->config_count = config_count;
 	if (!compute_frame_size(cam)) {
 		WMR_CAM_WARN(cam, "Invalid config or no head tracking cameras found");
 		goto fail;
@@ -659,11 +652,8 @@ static int
 update_expgain(struct wmr_camera *cam, struct xrt_frame **frames)
 {
 	int res = 0;
-	for (int i = 0; i < cam->config_count; i++) {
-		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-			continue;
-		}
+	for (int i = 0; i < cam->tcam_count; i++) {
+		const struct wmr_camera_config *config = &cam->tcam_confs[i];
 
 		struct wmr_camera_expgain *ceg = &cam->ceg[i];
 

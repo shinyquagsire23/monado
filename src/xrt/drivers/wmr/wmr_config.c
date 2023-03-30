@@ -10,6 +10,7 @@
 #include <string.h>
 #include "math/m_api.h"
 
+#include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
 
@@ -27,6 +28,9 @@
 #define JSON_VEC3(a, b, c) u_json_get_vec3_array(u_json_get(a, b), c)
 #define JSON_MATRIX_3X3(a, b, c) u_json_get_matrix_3x3(u_json_get(a, b), c)
 #define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+
+//! Specifies the maximum number of cameras to use for SLAM tracking
+DEBUG_GET_ONCE_NUM_OPTION(wmr_max_slam_cams, "WMR_MAX_SLAM_CAMS", WMR_MAX_CAMERAS)
 
 static void
 wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
@@ -274,18 +278,18 @@ wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *
 static bool
 wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_logging_level log_level)
 {
-	if (c->n_cameras == WMR_MAX_CAMERAS) {
+	if (c->cam_count == WMR_MAX_CAMERAS) {
 		WMR_ERROR(log_level, "Too many camera entries. Enlarge WMR_MAX_CAMERAS");
 		return false;
 	}
 
-	struct wmr_camera_config *cam_config = c->cameras + c->n_cameras;
+	struct wmr_camera_config *cam_config = c->cams + c->cam_count;
 
 	/* Camera purpose */
 	cJSON *json_purpose = cJSON_GetObjectItem(camera, "Purpose");
 	char *json_purpose_name = cJSON_GetStringValue(json_purpose);
 	if (json_purpose_name == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - camera purpose not found", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - camera purpose not found", c->cam_count);
 		return false;
 	}
 
@@ -294,14 +298,14 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_purpose_name, "CALIBRATION_CameraPurposeDisplayObserver")) {
 		cam_config->purpose = WMR_CAMERA_PURPOSE_DISPLAY_OBSERVER;
 	} else {
-		WMR_ERROR(log_level, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->cam_count);
 		return false;
 	}
 
 	cJSON *json_location = cJSON_GetObjectItem(camera, "Location");
 	char *json_location_name = cJSON_GetStringValue(json_location);
 	if (json_location_name == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - location", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - location", c->cam_count);
 		return false;
 	}
 
@@ -318,7 +322,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_location_name, "CALIBRATION_CameraLocationDO1")) {
 		cam_config->location = WMR_CAMERA_LOCATION_DO1;
 	} else {
-		WMR_ERROR(log_level, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->cam_count);
 		return false;
 	}
 
@@ -329,12 +333,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *rt = cJSON_GetObjectItem(camera, "Rt");
 	cJSON *rx = cJSON_GetObjectItem(rt, "Rotation");
 	if (rt == NULL || rx == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->cam_count);
 		return false;
 	}
 
 	if (!JSON_VEC3(rt, "Translation", &translation) || u_json_get_float_array(rx, rotation.v, 9) != 9) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->cam_count);
 		return false;
 	}
 
@@ -344,28 +348,28 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	if (!JSON_INT(camera, "SensorWidth", &cam_config->roi.extent.w) ||
 	    !JSON_INT(camera, "SensorHeight", &cam_config->roi.extent.h)) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->cam_count);
 		return false;
 	}
-	cam_config->roi.offset.w = c->n_ht_cameras * cam_config->roi.extent.w; // Assume all HT cams have same width
-	cam_config->roi.offset.h = 1;                                          // Ignore first metadata row
+	cam_config->roi.offset.w = c->tcam_count * cam_config->roi.extent.w; // Assume all tracking cams have same width
+	cam_config->roi.offset.h = 1;                                        // Ignore first metadata row
 
 	/* Distortion information */
 	cJSON *dist = cJSON_GetObjectItemCaseSensitive(camera, "Intrinsics");
 	if (!dist) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - distortion", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - distortion", c->cam_count);
 		return false;
 	}
 
 	const char *model_type = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(dist, "ModelType"));
 	if (model_type == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion type", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion type", c->cam_count);
 		return false;
 	}
 
 	if (!strcmp(model_type, "CALIBRATION_LensDistortionModelRational6KT")) {
 	} else {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown distortion type %s", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown distortion type %s", c->cam_count,
 		          model_type);
 		return false;
 	}
@@ -374,12 +378,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	int param_count;
 	if (!JSON_INT(dist, "ModelParameterCount", &param_count)) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - no ModelParameterCount", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - no ModelParameterCount", c->cam_count);
 		return false;
 	}
 
 	if (param_count != 15) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->cam_count,
 		          param_count);
 		return false;
 	}
@@ -388,15 +392,16 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	if (params_json == NULL ||
 	    u_json_get_float_array(params_json, distortion6KT->v, param_count) != (size_t)param_count) {
 		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion parameters",
-		          c->n_cameras);
+		          c->cam_count);
 		return false;
 	}
 
 	if (cam_config->purpose == WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-		c->n_ht_cameras++;
+		c->tcams[c->tcam_count] = cam_config;
+		c->tcam_count++;
 	}
 
-	c->n_cameras++;
+	c->cam_count++;
 	return true;
 }
 
@@ -444,6 +449,7 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 		if (!wmr_config_parse_camera_config(c, item, log_level))
 			return false;
 	}
+	c->slam_cam_count = MIN(c->tcam_count, (int)debug_get_num_option_wmr_max_slam_cams());
 
 	return true;
 }

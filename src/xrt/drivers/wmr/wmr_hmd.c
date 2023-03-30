@@ -1293,7 +1293,7 @@ XRT_MAYBE_UNUSED static struct t_camera_calibration
 wmr_hmd_get_cam_calib(struct wmr_hmd *wh, int cam_index)
 {
 	struct t_camera_calibration res;
-	struct wmr_camera_config *wcalib = &wh->config.cameras[cam_index];
+	struct wmr_camera_config *wcalib = wh->config.tcams[cam_index];
 	struct wmr_distortion_6KT *intr = &wcalib->distortion6KT;
 
 	res.image_size_pixels.h = wcalib->roi.extent.h;
@@ -1342,14 +1342,14 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 
 
 	// Intrinsics
-	for (int i = 0; i < 2; i++) { // Assuming that cameras[0-1] are HT0 and HT1
+	for (int i = 0; i < 2; i++) {
 		calib->view[i] = wmr_hmd_get_cam_calib(wh, i);
 	}
 
 	// Extrinsics
 
 	// Compute transform from HT1 to HT0 (HT0 space into HT1 space)
-	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
+	struct wmr_camera_config *ht1 = &wh->config.cams[1];
 	calib->camera_translation[0] = ht1->translation.x;
 	calib->camera_translation[1] = ht1->translation.y;
 	calib->camera_translation[2] = ht1->translation.z;
@@ -1370,33 +1370,44 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 XRT_MAYBE_UNUSED static void
 wmr_hmd_fill_slam_cams_calibration(struct wmr_hmd *wh)
 {
-	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_ht1_ht0 = wh->config.cameras[1].pose;
-	struct xrt_pose P_ht0_ht1;
-	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
-	struct xrt_pose P_imu_ht1;
-	math_pose_transform(&P_imu_ht0, &P_ht0_ht1, &P_imu_ht1);
+	wh->tracking.slam_calib.cam_count = wh->config.tcam_count;
 
-	struct xrt_matrix_4x4 T_imu_ht0;
-	struct xrt_matrix_4x4 T_imu_ht1;
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
-
-	struct t_slam_camera_calibration calib0 = {
+	// Fill camera 0
+	struct xrt_pose P_imu_c0 = wh->config.sensors.accel.pose;
+	struct xrt_matrix_4x4 T_imu_c0;
+	math_matrix_4x4_isometry_from_pose(&P_imu_c0, &T_imu_c0);
+	wh->tracking.slam_calib.cams[0] = (struct t_slam_camera_calibration){
 	    .base = wmr_hmd_get_cam_calib(wh, 0),
-	    .T_imu_cam = T_imu_ht0,
+	    .T_imu_cam = T_imu_c0,
 	    .frequency = CAMERA_FREQUENCY,
 	};
 
-	struct t_slam_camera_calibration calib1 = {
-	    .base = wmr_hmd_get_cam_calib(wh, 1),
-	    .T_imu_cam = T_imu_ht1,
-	    .frequency = CAMERA_FREQUENCY,
-	};
+	// Fill remaining cameras
+	for (int i = 1; i < wh->config.tcam_count; i++) {
+		struct xrt_pose P_ci_c0 = wh->config.tcams[i]->pose;
 
-	wh->tracking.slam_calib.cam_count = 2;
-	wh->tracking.slam_calib.cams[0] = calib0;
-	wh->tracking.slam_calib.cams[1] = calib1;
+		if (i == 2 || i == 3) {
+			//! @note The calibration json for the reverb G2v2 (the only 4-camera wmr
+			//! headset we know about) has the HT2 and HT3 extrinsics flipped compared
+			//! to the order the third and fourth camera images come from usb.
+			P_ci_c0 = wh->config.tcams[i == 2 ? 3 : 2]->pose;
+		}
+
+		struct xrt_pose P_c0_ci;
+		math_pose_invert(&P_ci_c0, &P_c0_ci);
+
+		struct xrt_pose P_imu_ci;
+		math_pose_transform(&P_imu_c0, &P_c0_ci, &P_imu_ci);
+
+		struct xrt_matrix_4x4 T_imu_ci;
+		math_matrix_4x4_isometry_from_pose(&P_imu_ci, &T_imu_ci);
+
+		wh->tracking.slam_calib.cams[i] = (struct t_slam_camera_calibration){
+		    .base = wmr_hmd_get_cam_calib(wh, i),
+		    .T_imu_cam = T_imu_ci,
+		    .frequency = CAMERA_FREQUENCY,
+		};
+	}
 }
 
 XRT_MAYBE_UNUSED static struct t_imu_calibration
@@ -1483,7 +1494,8 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 #ifdef XRT_FEATURE_SLAM
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
-	config.cam_count = 2;
+	config.cam_count = wh->config.slam_cam_count;
+	wh->tracking.slam_calib.cam_count = wh->config.slam_cam_count;
 	config.slam_calib = &wh->tracking.slam_calib;
 	if (debug_get_option_slam_submit_from_start() == NULL) {
 		config.submit_from_start = true;
@@ -1724,16 +1736,15 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
 	if (slam_enabled && hand_enabled) {
-		struct xrt_frame_sink *entry_left_sink = NULL;
-		struct xrt_frame_sink *entry_right_sink = NULL;
+		struct xrt_frame_sink *entry_cam0_sink = NULL;
+		struct xrt_frame_sink *entry_cam1_sink = NULL;
 
-		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
-		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_cam0_sink);
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_cam1_sink);
 
 		entry_sinks = *slam_sinks;
-		entry_sinks.cam_count = 2;
-		entry_sinks.cams[0] = entry_left_sink;
-		entry_sinks.cams[1] = entry_right_sink;
+		entry_sinks.cams[0] = entry_cam0_sink;
+		entry_sinks.cams[1] = entry_cam1_sink;
 	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
 	} else if (hand_enabled) {

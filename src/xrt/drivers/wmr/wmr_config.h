@@ -158,9 +158,12 @@ struct wmr_hmd_config
 
 	struct wmr_inertial_sensors_config sensors;
 
-	int n_cameras;
-	int n_ht_cameras;
-	struct wmr_camera_config cameras[WMR_MAX_CAMERAS];
+	int cam_count;
+	struct wmr_camera_config cams[WMR_MAX_CAMERAS];
+
+	struct wmr_camera_config *tcams[WMR_MAX_CAMERAS]; //!< Pointers to tracking cameras in `cameras`
+	int tcam_count;                                   //!< Number of tracking cameras
+	int slam_cam_count;                               //!< Number of tracking cameras to use for SLAM
 };
 
 bool
