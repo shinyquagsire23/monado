@@ -12,6 +12,7 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 
+#include "oxr_xret.h"
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
@@ -34,13 +35,8 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
-	xrt_result_t res = xrt_swapchain_acquire_image(xsc, &index);
-	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_acquire_image failed");
-	}
-	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_acquire_image failed");
-	}
+	xrt_result_t xret = xrt_swapchain_acquire_image(xsc, &index);
+	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_acquire_image");
 
 	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -79,13 +75,8 @@ oxr_swapchain_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
-	xrt_result_t res = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
-	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_wait_image failed");
-	}
-	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_wait_image failed");
-	}
+	xrt_result_t xret = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
+	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_wait_image");
 
 	// The app can only wait on one image.
 	sc->waited.yes = true;
@@ -108,13 +99,8 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 	uint32_t index = sc->waited.index;
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
-	xrt_result_t res = xrt_swapchain_release_image(xsc, index);
-	if (res == XRT_ERROR_IPC_FAILURE) {
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Call to xrt_swapchain_release_image failed");
-	}
-	if (res != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to xrt_swapchain_release_image failed");
-	}
+	xrt_result_t xret = xrt_swapchain_release_image(xsc, index);
+	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_release_image");
 
 	// Only decerement here.
 	sc->acquired.num--;
@@ -216,9 +202,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
 		                 "Specified swapchain format is not supported");
 	}
-	if (xret != XRT_SUCCESS) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create swapchain");
-	}
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_create_swapchain");
 	assert(xsc != NULL);
 
 	struct oxr_swapchain *sc = NULL;

@@ -30,6 +30,7 @@
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
+#include "oxr_xret.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,11 +43,6 @@
  * Helper functions and defines.
  *
  */
-
-#define CALL_CHK(call)                                                                                                 \
-	if ((call) == XRT_ERROR_IPC_FAILURE) {                                                                         \
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Error in function call over IPC");                      \
-	}
 
 static double
 ns_to_ms(int64_t ns)
@@ -936,7 +932,8 @@ submit_quad_layer(struct oxr_session *sess,
 	data.quad.size = *size;
 	fill_in_sub_image(sc, &quad->subImage, &data.quad.sub);
 
-	CALL_CHK(xrt_comp_layer_quad(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_quad(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_quad");
 
 	return XR_SUCCESS;
 }
@@ -1027,20 +1024,26 @@ submit_projection_layer(struct oxr_session *sess,
 	if (d_scs[0] != NULL && d_scs[1] != NULL) {
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
-		CALL_CHK(xrt_comp_layer_stereo_projection_depth(xc, head,
-		                                                scs[0]->swapchain,   // Left
-		                                                scs[1]->swapchain,   // Right
-		                                                d_scs[0]->swapchain, // Left
-		                                                d_scs[1]->swapchain, // Right
-		                                                &data));
+		xrt_result_t xret = xrt_comp_layer_stereo_projection_depth( //
+		    xc,                                                     // compositor
+		    head,                                                   // xdev
+		    scs[0]->swapchain,                                      // left
+		    scs[1]->swapchain,                                      // right
+		    d_scs[0]->swapchain,                                    // left
+		    d_scs[1]->swapchain,                                    // right
+		    &data);                                                 // data
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_stereo_projection_depth");
 #else
 		assert(false && "Should not get here");
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	} else {
-		CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
-		                                          scs[0]->swapchain, // Left
-		                                          scs[1]->swapchain, // Right
-		                                          &data));
+		xrt_result_t xret = xrt_comp_layer_stereo_projection( //
+		    xc,                                               // compositor
+		    head,                                             // xdev
+		    scs[0]->swapchain,                                // left
+		    scs[1]->swapchain,                                // right
+		    &data);                                           // data
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_stereo_projection");
 	}
 
 	return XR_SUCCESS;
@@ -1090,7 +1093,8 @@ submit_cube_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	CALL_CHK(xrt_comp_layer_cube(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_cube(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_cube");
 
 	return XR_SUCCESS;
 }
@@ -1136,7 +1140,8 @@ submit_cylinder_layer(struct oxr_session *sess,
 	data.cylinder.aspect_ratio = cylinder->aspectRatio;
 	fill_in_sub_image(sc, &cylinder->subImage, &data.cylinder.sub);
 
-	CALL_CHK(xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_cylinder");
 
 	return XR_SUCCESS;
 }
@@ -1185,7 +1190,8 @@ submit_equirect1_layer(struct oxr_session *sess,
 	data.equirect1.scale = *scale;
 	data.equirect1.bias = *bias;
 
-	CALL_CHK(xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_equirect1");
 
 	return XR_SUCCESS;
 }
@@ -1239,7 +1245,8 @@ submit_equirect2_layer(struct oxr_session *sess,
 	data.equirect2.lower_vertical_angle = equirect->lowerVerticalAngle;
 	fill_in_sub_image(sc, &equirect->subImage, &data.equirect2.sub);
 
-	CALL_CHK(xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_equirect2");
 
 	return XR_SUCCESS;
 }
@@ -1320,7 +1327,8 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		sess->active_wait_frames--;
 		os_mutex_unlock(&sess->active_wait_frames_lock);
 
-		CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
+		xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_discard_frame");
 		sess->frame_id.begun = -1;
 		sess->frame_started = false;
 
@@ -1394,7 +1402,9 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
 
-	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, xrt_display_time_ns, blend_mode));
+	xrt_result_t xret;
+	xret = xrt_comp_layer_begin(xc, sess->frame_id.begun, xrt_display_time_ns, blend_mode);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_begin");
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
@@ -1429,9 +1439,10 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		}
 	}
 
-	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID));
-	sess->frame_id.begun = -1;
+	xret = xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_commit");
 
+	sess->frame_id.begun = -1;
 	sess->frame_started = false;
 
 	os_mutex_lock(&sess->active_wait_frames_lock);

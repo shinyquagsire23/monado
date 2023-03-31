@@ -40,6 +40,7 @@
 #include "oxr_chain.h"
 #include "oxr_pretty_print.h"
 #include "oxr_conversions.h"
+#include "oxr_xret.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,11 +51,6 @@
 DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(wait_frame_sleep, "OXR_DEBUG_WAIT_FRAME_EXTRA_SLEEP_MS", 0)
 DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
-
-#define CALL_CHK(call)                                                                                                 \
-	if ((call) == XRT_ERROR_IPC_FAILURE) {                                                                         \
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Error in function call over IPC");                      \
-	}
 
 static bool
 should_render(XrSessionState state)
@@ -144,7 +140,9 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 			                 view_type);
 		}
 
-		CALL_CHK(xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo->primaryViewConfigurationType));
+		enum xrt_view_type xvt = (enum xrt_view_type)beginInfo->primaryViewConfigurationType;
+		xrt_result_t xret = xrt_comp_begin_session(xc, xvt);
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_begin_session");
 	}
 
 	sess->has_begun = true;
@@ -176,7 +174,8 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		}
 		sess->frame_started = false;
 
-		CALL_CHK(xrt_comp_end_session(xc));
+		xrt_result_t xret = xrt_comp_end_session(xc);
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_end_session");
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
@@ -494,7 +493,12 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
-	CALL_CHK(xrt_comp_wait_frame(xc, &sess->frame_id.waited, &predicted_display_time, &predicted_display_period));
+	xrt_result_t xret = xrt_comp_wait_frame( //
+	    xc,                                  // compositor
+	    &sess->frame_id.waited,              // out_frame_id
+	    &predicted_display_time,             // out_predicted_display_time
+	    &predicted_display_period);          // out_predicted_display_period
+	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_wait_frame");
 
 	if ((int64_t)predicted_display_time <= 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
@@ -551,7 +555,8 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
+			xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
+			OXR_CHECK_XRET(log, sess, xret, "xrt_comp_discard_frame");
 			sess->frame_id.begun = -1;
 
 			os_mutex_lock(&sess->active_wait_frames_lock);
@@ -563,7 +568,8 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
-		CALL_CHK(xrt_comp_begin_frame(xc, sess->frame_id.waited));
+		xrt_result_t xret = xrt_comp_begin_frame(xc, sess->frame_id.waited);
+		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_begin_frame");
 		sess->frame_id.begun = sess->frame_id.waited;
 		sess->frame_id.waited = -1;
 	}
