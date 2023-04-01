@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 #pragma once
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd_pool.h"
 #include "xrt/xrt_gfx_vk.h"
 
 #ifdef __cplusplus
@@ -75,6 +76,8 @@ struct client_vk_compositor
 	} sync;
 
 	struct vk_bundle vk;
+
+	struct vk_cmd_pool pool;
 };
 
 

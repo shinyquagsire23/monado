@@ -254,7 +254,8 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
-	struct vk_bundle *vk = &sc->c->vk;
+	struct client_vk_compositor *c = sc->c;
+	struct vk_bundle *vk = &c->vk;
 
 	uint32_t index = 0;
 
@@ -269,15 +270,8 @@ client_vk_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index
 
 	COMP_TRACE_IDENT(submit);
 
-	// Acquire ownership and complete layout transition
-	VkSubmitInfo submitInfo = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &sc->acquire[index],
-	};
-
 	// Note we do not submit a fence here, it's not needed.
-	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+	ret = vk_cmd_pool_submit_cmd_buffer(vk, &c->pool, sc->acquire[index]);
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Could not submit to queue: %d", ret);
 		return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -306,22 +300,16 @@ client_vk_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 	COMP_TRACE_MARKER();
 
 	struct client_vk_swapchain *sc = client_vk_swapchain(xsc);
-	struct vk_bundle *vk = &sc->c->vk;
+	struct client_vk_compositor *c = sc->c;
+	struct vk_bundle *vk = &c->vk;
 
 	VkResult ret;
 
 	{
 		COMP_TRACE_IDENT(submit);
 
-		// Release ownership and begin layout transition
-		VkSubmitInfo submitInfo = {
-		    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		    .commandBufferCount = 1,
-		    .pCommandBuffers = &sc->release[index],
-		};
-
 		// Note we do not submit a fence here, it's not needed.
-		ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, VK_NULL_HANDLE);
+		ret = vk_cmd_pool_submit_cmd_buffer(vk, &c->pool, sc->release[index]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "Could not submit to queue: %d", ret);
 			return XRT_ERROR_FAILED_TO_SUBMIT_VULKAN_COMMANDS;
@@ -366,16 +354,23 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	}
 	xrt_compositor_semaphore_reference(&c->sync.xcsem, NULL);
 
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		// Make sure that any of the command buffers from this command
-		// pool are n used here, this pleases the validation layer.
-		os_mutex_lock(&vk->queue_mutex);
-		vk->vkQueueWaitIdle(vk->queue);
-		os_mutex_unlock(&vk->queue_mutex);
+	/*
+	 * Make sure that any of the command buffers from the command pool are
+	 * not in use (pending in Vulkan terms), to please the validation layer.
+	 */
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkQueueWaitIdle(vk->queue);
+	os_mutex_unlock(&vk->queue_mutex);
 
+	// Now safe to free the pool.
+	vk_cmd_pool_destroy(vk, &c->pool);
+
+	// Still needs to free this, even tho it's not used.
+	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
 		vk->cmd_pool = VK_NULL_HANDLE;
 	}
+
 	vk_deinit_mutex(vk);
 
 	free(c);
@@ -657,14 +652,19 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		}
 	}
 
+	vk_cmd_pool_lock(&c->pool);
+	const VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
 	// Prerecord command buffers for swapchain image ownership/layout transitions
 	for (uint32_t i = 0; i < xsc->image_count; i++) {
-		ret = vk_cmd_buffer_create_and_begin(vk, &sc->acquire[i]);
+		ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, &c->pool, flags, &sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
+			vk_cmd_pool_unlock(&c->pool);
 			return XRT_ERROR_VULKAN;
 		}
-		ret = vk_cmd_buffer_create_and_begin(vk, &sc->release[i]);
+		ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, &c->pool, flags, &sc->release[i]);
 		if (ret != VK_SUCCESS) {
+			vk_cmd_pool_unlock(&c->pool);
 			return XRT_ERROR_VULKAN;
 		}
 
@@ -728,14 +728,18 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 		ret = vk->vkEndCommandBuffer(sc->acquire[i]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
+			vk_cmd_pool_unlock(&c->pool);
 			return XRT_ERROR_VULKAN;
 		}
 		ret = vk->vkEndCommandBuffer(sc->release[i]);
 		if (ret != VK_SUCCESS) {
 			VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
+			vk_cmd_pool_unlock(&c->pool);
 			return XRT_ERROR_VULKAN;
 		}
 	}
+	vk_cmd_pool_unlock(&c->pool);
+
 
 	*out_xsc = &sc->base.base;
 
@@ -811,18 +815,24 @@ client_vk_compositor_create(struct xrt_compositor_native *xcn,
 		goto err_free;
 	}
 
+	ret = vk_cmd_pool_init(&c->vk, &c->pool, 0);
+	if (ret != VK_SUCCESS) {
+		goto err_mutex;
+	}
+
 #ifdef VK_KHR_timeline_semaphore
 	if (vk_can_import_and_export_timeline_semaphore(&c->vk)) {
 		xret = setup_semaphore(c);
 		if (xret != XRT_SUCCESS) {
-			goto err_mutex;
+			goto err_pool;
 		}
 	}
 #endif
 
 	return c;
 
-
+err_pool:
+	vk_cmd_pool_destroy(&c->vk, &c->pool);
 err_mutex:
 	vk_deinit_mutex(&c->vk);
 err_free:
