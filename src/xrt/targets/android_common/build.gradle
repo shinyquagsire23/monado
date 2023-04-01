@@ -15,7 +15,7 @@ plugins {
 
 
 android {
-    compileSdkVersion project.sharedCompileSdk
+    compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
     defaultConfig {
