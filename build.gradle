@@ -3,7 +3,7 @@
 
 buildscript {
     ext {
-        kotlinVersion = '1.7.0'
+        kotlinVersion = '1.7.10'
 
         latestAboutLibsRelease = '8.9.4'
 
@@ -15,7 +15,7 @@ buildscript {
         androidxCardViewVersion = '1.0.0'
         androidxRecyclerViewVersion = '1.2.1'
 
-        hiltVersion = '2.44.2'
+        hiltVersion = '2.45'
 
         materialVersion = '1.8.0'
 
