@@ -6,6 +6,8 @@ add_library(
 	vk_bundle_init.c
 	vk_cmd.c
 	vk_cmd.h
+	vk_cmd_pool.c
+	vk_cmd_pool.h
 	vk_compositor_flags.c
 	vk_documentation.h
 	vk_function_loaders.c
