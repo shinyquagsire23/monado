@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -17,24 +17,49 @@
 #include <stdio.h>
 
 
-#define C(c)                                                                                                           \
+/*!
+ * If `COND` is not VK_SUCCESS returns false.
+ */
+#define C(COND)                                                                                                        \
 	do {                                                                                                           \
-		VkResult ret = c;                                                                                      \
+		VkResult ret = COND;                                                                                   \
 		if (ret != VK_SUCCESS) {                                                                               \
 			return false;                                                                                  \
 		}                                                                                                      \
 	} while (false)
 
-#define D(TYPE, thing)                                                                                                 \
-	if (thing != VK_NULL_HANDLE) {                                                                                 \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
-		thing = VK_NULL_HANDLE;                                                                                \
+/*!
+ * This define will error if `RET` is not `VK_SUCCESS`, printing out that the
+ * `FUNC_STR` string has failed, then goto `GOTO`, `VK` will be used for the
+ * `VK_ERROR` call.
+ */
+#define CG(VK, RET, FUNC_STR, GOTO)                                                                                    \
+	do {                                                                                                           \
+		VkResult CG_ret = RET;                                                                                 \
+		if (CG_ret != VK_SUCCESS) {                                                                            \
+			VK_ERROR(VK, FUNC_STR ": %s", vk_result_string(CG_ret));                                       \
+			goto GOTO;                                                                                     \
+		}                                                                                                      \
+	} while (false)
+
+/*!
+ * Calls `vkDestroy##TYPE` on `THING` if it is not `VK_NULL_HANDLE`, sets it to
+ * `VK_NULL_HANDLE` afterwards.
+ */
+#define D(TYPE, THING)                                                                                                 \
+	if (THING != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkDestroy##TYPE(vk->device, THING, NULL);                                                          \
+		THING = VK_NULL_HANDLE;                                                                                \
 	}
 
-#define DF(TYPE, thing)                                                                                                \
-	if (thing != VK_NULL_HANDLE) {                                                                                 \
-		vk->vkFree##TYPE(vk->device, thing, NULL);                                                             \
-		thing = VK_NULL_HANDLE;                                                                                \
+/*!
+ * Calls `vkFree##TYPE` on `THING` if it is not `VK_NULL_HANDLE`, sets it to
+ * `VK_NULL_HANDLE` afterwards.
+ */
+#define DF(TYPE, THING)                                                                                                \
+	if (THING != VK_NULL_HANDLE) {                                                                                 \
+		vk->vkFree##TYPE(vk->device, THING, NULL);                                                             \
+		THING = VK_NULL_HANDLE;                                                                                \
 	}
 
 
@@ -398,14 +423,19 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImageView image_view = VK_NULL_HANDLE;
 	VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_2D;
+	VkResult ret;
 
-	C(vk_create_image_simple(                                         //
+	ret = vk_create_image_simple(                                     //
 	    vk,                                                           // vk_bundle
 	    extent,                                                       // extent
 	    format,                                                       // format
 	    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // usage
 	    &device_memory,                                               // out_device_memory
-	    &image));                                                     // out_image
+	    &image);                                                      // out_image
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_create_image_simple: %s", vk_result_string(ret));
+		return ret;
+	}
 
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -415,13 +445,19 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
 
-	C(vk_create_view(      //
+	ret = vk_create_view(  //
 	    vk,                // vk_bundle
 	    image,             // image
 	    view_type,         // type
 	    format,            // format
 	    subresource_range, // subresource_range
-	    &image_view));     // out_image_view
+	    &image_view);      // out_image_view
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_create_view: %s", vk_result_string(ret));
+		D(Image, image);
+		DF(Memory, device_memory);
+		return ret;
+	}
 
 	*out_device_memory = device_memory;
 	*out_image = image;
@@ -430,7 +466,7 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 	return VK_SUCCESS;
 }
 
-static VkResult
+static void
 queue_upload_for_first_level_and_layer(
     struct vk_bundle *vk, VkCommandBuffer cmd, VkBuffer src, VkImage dst, VkExtent2D extent)
 {
@@ -491,8 +527,6 @@ queue_upload_for_first_level_and_layer(
 
 	// Once we are done writing commands.
 	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	return VK_SUCCESS;
 }
 
 static VkResult
@@ -504,24 +538,27 @@ create_and_queue_upload(struct vk_bundle *vk,
                         VkImageView *out_image_view)
 {
 	VkExtent2D extent = {COMP_DISTORTION_IMAGE_DIMENSIONS, COMP_DISTORTION_IMAGE_DIMENSIONS};
-
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
 	VkImage image = VK_NULL_HANDLE;
 	VkImageView image_view = VK_NULL_HANDLE;
+	VkResult ret;
 
-	C(create_distortion_image_and_view( //
-	    vk,                             // vk_bundle
-	    extent,                         // extent
-	    &device_memory,                 // out_device_memory
-	    &image,                         // out_image
-	    &image_view));                  // out_image_view
+	ret = create_distortion_image_and_view( //
+	    vk,                                 // vk_bundle
+	    extent,                             // extent
+	    &device_memory,                     // out_device_memory
+	    &image,                             // out_image
+	    &image_view);                       // out_image_view
+	if (ret != VK_SUCCESS) {
+		return ret;
+	}
 
-	C(queue_upload_for_first_level_and_layer( //
-	    vk,                                   // vk_bundle
-	    cmd,                                  // cmd
-	    src_buffer,                           // src
-	    image,                                // dst
-	    extent));                             // extent
+	queue_upload_for_first_level_and_layer( //
+	    vk,                                 // vk_bundle
+	    cmd,                                // cmd
+	    src_buffer,                         // src
+	    image,                              // dst
+	    extent);                            // extent
 
 	*out_image_device_memory = device_memory;
 	*out_image = image;
@@ -579,7 +616,7 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 	*out_rect = transform;
 }
 
-static XRT_MAYBE_UNUSED VkResult
+static XRT_CHECK_RESULT VkResult
 create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
                                               struct xrt_device *xdev,
                                               struct render_buffer *r_buffer,
@@ -590,6 +627,7 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 {
 	VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VkMemoryPropertyFlags properties = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+	VkResult ret;
 
 	struct xrt_matrix_2x2 rot = xdev->hmd->views[view].rot;
 
@@ -607,13 +645,19 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 
 	VkDeviceSize size = sizeof(struct texture);
 
-	C(render_buffer_init(vk, r_buffer, usage_flags, properties, size));
-	C(render_buffer_init(vk, g_buffer, usage_flags, properties, size));
-	C(render_buffer_init(vk, b_buffer, usage_flags, properties, size));
+	ret = render_buffer_init(vk, r_buffer, usage_flags, properties, size);
+	CG(vk, ret, "render_buffer_init", err_buffers);
+	ret = render_buffer_init(vk, g_buffer, usage_flags, properties, size);
+	CG(vk, ret, "render_buffer_init", err_buffers);
+	ret = render_buffer_init(vk, b_buffer, usage_flags, properties, size);
+	CG(vk, ret, "render_buffer_init", err_buffers);
 
-	C(render_buffer_map(vk, r_buffer));
-	C(render_buffer_map(vk, g_buffer));
-	C(render_buffer_map(vk, b_buffer));
+	ret = render_buffer_map(vk, r_buffer);
+	CG(vk, ret, "render_buffer_map", err_buffers);
+	ret = render_buffer_map(vk, g_buffer);
+	CG(vk, ret, "render_buffer_map", err_buffers);
+	ret = render_buffer_map(vk, b_buffer);
+	CG(vk, ret, "render_buffer_map", err_buffers);
 
 	struct texture *r = r_buffer->mapped;
 	struct texture *g = g_buffer->mapped;
@@ -649,6 +693,13 @@ create_and_fill_in_distortion_buffer_for_view(struct vk_bundle *vk,
 	render_buffer_unmap(vk, b_buffer);
 
 	return VK_SUCCESS;
+
+err_buffers:
+	render_buffer_close(vk, r_buffer);
+	render_buffer_close(vk, g_buffer);
+	render_buffer_close(vk, b_buffer);
+
+	return ret;
 }
 
 static VkResult
@@ -1159,40 +1210,95 @@ render_distortion_buffer_init(struct render_resources *r,
                               struct xrt_device *xdev,
                               bool pre_rotate)
 {
-	struct render_buffer buffers[COMP_DISTORTION_NUM_IMAGES];
+	struct render_buffer bufs[COMP_DISTORTION_NUM_IMAGES];
+	VkDeviceMemory device_memories[COMP_DISTORTION_NUM_IMAGES];
+	VkImage images[COMP_DISTORTION_NUM_IMAGES];
+	VkImageView image_views[COMP_DISTORTION_NUM_IMAGES];
+	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
+	VkResult ret;
+
+
+	/*
+	 * Basics
+	 */
+
+	static_assert(COMP_DISTORTION_NUM_IMAGES == 6, "Wrong number of distortion images!");
 
 	calc_uv_to_tanangle(xdev, 0, &r->distortion.uv_to_tanangle[0]);
 	calc_uv_to_tanangle(xdev, 1, &r->distortion.uv_to_tanangle[1]);
 
-	create_and_fill_in_distortion_buffer_for_view(vk, xdev, &buffers[0], &buffers[2], &buffers[4], 0, pre_rotate);
-	create_and_fill_in_distortion_buffer_for_view(vk, xdev, &buffers[1], &buffers[3], &buffers[5], 1, pre_rotate);
 
-	VkCommandBuffer upload_buffer = VK_NULL_HANDLE;
-	C(vk_cmd_buffer_create_and_begin(vk, &upload_buffer));
+	/*
+	 * Buffers with data to upload.
+	 */
+
+	ret = create_and_fill_in_distortion_buffer_for_view(vk, xdev, &bufs[0], &bufs[2], &bufs[4], 0, pre_rotate);
+	CG(vk, ret, "create_and_fill_in_distortion_buffer_for_view", err_resources);
+
+	ret = create_and_fill_in_distortion_buffer_for_view(vk, xdev, &bufs[1], &bufs[3], &bufs[5], 1, pre_rotate);
+	CG(vk, ret, "create_and_fill_in_distortion_buffer_for_view", err_resources);
+
+
+	/*
+	 * Command submission.
+	 */
+
+	ret = vk_cmd_buffer_create_and_begin(vk, &upload_buffer);
+	CG(vk, ret, "vk_cmd_buffer_create_and_begin", err_resources);
 
 	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
-		C(create_and_queue_upload(             //
-		    vk,                                // vk_bundle
-		    upload_buffer,                     // cmd
-		    buffers[i].buffer,                 // src_buffer
-		    &r->distortion.device_memories[i], // out_image_device_memory
-		    &r->distortion.images[i],          // out_image
-		    &r->distortion.image_views[i]));   // out_image_view
+		ret = create_and_queue_upload( //
+		    vk,                        // vk_bundle
+		    upload_buffer,             // cmd
+		    bufs[i].buffer,            // src_buffer
+		    &device_memories[i],       // out_image_device_memory
+		    &images[i],                // out_image
+		    &image_views[i]);          // out_image_view
+		CG(vk, ret, "create_and_queue_upload", err_cmd);
 	}
 
-	C(vk_cmd_buffer_submit(vk, upload_buffer));
+	ret = vk_cmd_buffer_submit(vk, upload_buffer);
+	CG(vk, ret, "vk_cmd_buffer_submit", err_cmd);
 
-	os_mutex_lock(&vk->queue_mutex);
-	vk->vkDeviceWaitIdle(vk->device);
-	os_mutex_unlock(&vk->queue_mutex);
 
-	for (uint32_t i = 0; i < ARRAY_SIZE(buffers); i++) {
-		render_buffer_close(vk, &buffers[i]);
-	}
+	/*
+	 * Write results.
+	 */
 
 	r->distortion.pre_rotated = pre_rotate;
 
+	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
+		r->distortion.device_memories[i] = device_memories[i];
+		r->distortion.images[i] = images[i];
+		r->distortion.image_views[i] = image_views[i];
+	}
+
+
+	/*
+	 * Tidy
+	 */
+
+	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
+		render_buffer_close(vk, &bufs[i]);
+	}
+
 	return true;
+
+
+err_cmd:
+	os_mutex_lock(&vk->cmd_pool_mutex);
+	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &upload_buffer);
+	os_mutex_unlock(&vk->cmd_pool_mutex);
+
+err_resources:
+	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
+		D(ImageView, image_views[i]);
+		D(Image, images[i]);
+		DF(Memory, device_memories[i]);
+		render_buffer_close(vk, &bufs[i]);
+	}
+
+	return false;
 }
 
 static void
