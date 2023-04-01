@@ -35,6 +35,7 @@
 #endif
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd.h"
 #include "vk/vk_image_readback_to_xf_pool.h"
 #include "vk/vk_cmd.h"
 
@@ -696,7 +697,13 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	    .pSignalSemaphores = &ct->semaphores.render_complete,
 	};
 
-	ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
+	/*
+	 * The renderer command buffer pool is only accessed from one thread,
+	 * this satisfies the `_locked` requirement of the function. This lets
+	 * us avoid taking a lot of locks. The queue lock will be taken by
+	 * @ref vk_cmd_submit_locked tho.
+	 */
+	ret = vk_cmd_submit_locked(vk, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 	}
