@@ -1,4 +1,4 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -12,116 +12,17 @@
 #include "util/u_debug.h"
 #include "util/u_misc.h"
 
-#include "oxr_xret.h"
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 #include "oxr_handle.h"
+#include "oxr_xret.h"
 
 
-static XrResult
-oxr_swapchain_acquire_image(struct oxr_logger *log,
-                            struct oxr_swapchain *sc,
-                            const XrSwapchainImageAcquireInfo *acquireInfo,
-                            uint32_t *out_index)
-{
-	uint32_t index;
-	if (sc->acquired.num >= sc->swapchain->image_count) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "All images have been acquired");
-	}
-
-	if (sc->is_static && (sc->released.yes || sc->waited.yes)) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Can only acquire once on a static swapchain");
-	}
-
-	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
-
-	xrt_result_t xret = xrt_swapchain_acquire_image(xsc, &index);
-	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_acquire_image);
-
-	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
-		                 "Internal xrt_swapchain_acquire_image call returned non-ready image.");
-	}
-
-	sc->acquired.num++;
-	u_index_fifo_push(&sc->acquired.fifo, index);
-	sc->images[index].state = OXR_IMAGE_STATE_ACQUIRED;
-
-	// If the compositor is resuing the image,
-	// mark it as invalid to use in xrEndFrame.
-	if (sc->released.index == (int)index) {
-		sc->released.yes = false;
-		sc->released.index = -1;
-	}
-
-	*out_index = index;
-
-	return oxr_session_success_result(sc->sess);
-}
-
-static XrResult
-oxr_swapchain_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const XrSwapchainImageWaitInfo *waitInfo)
-{
-	if (sc->waited.yes) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Swapchain has already been waited, call release");
-	}
-
-	if (u_index_fifo_is_empty(&sc->acquired.fifo)) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "No image acquired");
-	}
-
-	uint32_t index;
-	u_index_fifo_pop(&sc->acquired.fifo, &index);
-
-	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
-
-	xrt_result_t xret = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
-	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_wait_image);
-
-	// The app can only wait on one image.
-	sc->waited.yes = true;
-	sc->waited.index = index;
-	sc->images[index].state = OXR_IMAGE_STATE_WAITED;
-
-	return oxr_session_success_result(sc->sess);
-}
-
-static XrResult
-oxr_swapchain_release_image(struct oxr_logger *log,
-                            struct oxr_swapchain *sc,
-                            const XrSwapchainImageReleaseInfo *releaseInfo)
-{
-	if (!sc->waited.yes) {
-		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "No swapchain images waited on");
-	}
-
-	sc->waited.yes = false;
-	uint32_t index = sc->waited.index;
-
-	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
-	xrt_result_t xret = xrt_swapchain_release_image(xsc, index);
-	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_release_image);
-
-	// Only decerement here.
-	sc->acquired.num--;
-
-	// Overwrite the old released image, with new.
-	sc->released.yes = true;
-	sc->released.index = index;
-	sc->images[index].state = OXR_IMAGE_STATE_READY;
-
-	return oxr_session_success_result(sc->sess);
-}
-
-static XrResult
-oxr_swapchain_destroy(struct oxr_logger *log, struct oxr_handle_base *hb)
-{
-	struct oxr_swapchain *sc = (struct oxr_swapchain *)hb;
-
-	XrResult ret = sc->destroy(log, sc);
-	free(sc);
-	return ret;
-}
+/*
+ *
+ * Conversion functions.
+ *
+ */
 
 static enum xrt_swapchain_create_flags
 convert_create_flags(XrSwapchainCreateFlags xr_flags)
@@ -172,6 +73,123 @@ convert_usage_bits(XrSwapchainUsageFlags xr_usage)
 	return usage;
 }
 
+
+/*
+ *
+ * Internal API functions.
+ *
+ */
+
+static XrResult
+acquire_image(struct oxr_logger *log,
+              struct oxr_swapchain *sc,
+              const XrSwapchainImageAcquireInfo *acquireInfo,
+              uint32_t *out_index)
+{
+	uint32_t index;
+	if (sc->acquired.num >= sc->swapchain->image_count) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "All images have been acquired");
+	}
+
+	if (sc->is_static && (sc->released.yes || sc->waited.yes)) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Can only acquire once on a static swapchain");
+	}
+
+	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
+
+	xrt_result_t xret = xrt_swapchain_acquire_image(xsc, &index);
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_acquire_image);
+
+	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
+		                 "Internal xrt_swapchain_acquire_image call returned non-ready image.");
+	}
+
+	sc->acquired.num++;
+	u_index_fifo_push(&sc->acquired.fifo, index);
+	sc->images[index].state = OXR_IMAGE_STATE_ACQUIRED;
+
+	// If the compositor is resuing the image,
+	// mark it as invalid to use in xrEndFrame.
+	if (sc->released.index == (int)index) {
+		sc->released.yes = false;
+		sc->released.index = -1;
+	}
+
+	*out_index = index;
+
+	return oxr_session_success_result(sc->sess);
+}
+
+static XrResult
+wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const XrSwapchainImageWaitInfo *waitInfo)
+{
+	if (sc->waited.yes) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Swapchain has already been waited, call release");
+	}
+
+	if (u_index_fifo_is_empty(&sc->acquired.fifo)) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "No image acquired");
+	}
+
+	uint32_t index;
+	u_index_fifo_pop(&sc->acquired.fifo, &index);
+
+	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
+
+	xrt_result_t xret = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_wait_image);
+
+	// The app can only wait on one image.
+	sc->waited.yes = true;
+	sc->waited.index = index;
+	sc->images[index].state = OXR_IMAGE_STATE_WAITED;
+
+	return oxr_session_success_result(sc->sess);
+}
+
+static XrResult
+release_image(struct oxr_logger *log, struct oxr_swapchain *sc, const XrSwapchainImageReleaseInfo *releaseInfo)
+{
+	if (!sc->waited.yes) {
+		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "No swapchain images waited on");
+	}
+
+	sc->waited.yes = false;
+	uint32_t index = sc->waited.index;
+
+	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
+	xrt_result_t xret = xrt_swapchain_release_image(xsc, index);
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_release_image);
+
+	// Only decerement here.
+	sc->acquired.num--;
+
+	// Overwrite the old released image, with new.
+	sc->released.yes = true;
+	sc->released.index = index;
+	sc->images[index].state = OXR_IMAGE_STATE_READY;
+
+	return oxr_session_success_result(sc->sess);
+}
+
+static XrResult
+destroy_handle(struct oxr_logger *log, struct oxr_handle_base *hb)
+{
+	struct oxr_swapchain *sc = (struct oxr_swapchain *)hb;
+
+	XrResult ret = sc->destroy(log, sc);
+	free(sc);
+	return ret;
+}
+
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 XrResult
 oxr_create_swapchain(struct oxr_logger *log,
                      struct oxr_session *sess,
@@ -202,20 +220,22 @@ oxr_create_swapchain(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
 		                 "Specified swapchain format is not supported");
 	}
-	OXR_CHECK_XRET(log, sess, xret, xrt_comp_create_swapchain);
+	if (xret != XRT_SUCCESS) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create swapchain");
+	}
 	assert(xsc != NULL);
 
 	struct oxr_swapchain *sc = NULL;
-	OXR_ALLOCATE_HANDLE_OR_RETURN(log, sc, OXR_XR_DEBUG_SWAPCHAIN, oxr_swapchain_destroy, &sess->handle);
+	OXR_ALLOCATE_HANDLE_OR_RETURN(log, sc, OXR_XR_DEBUG_SWAPCHAIN, destroy_handle, &sess->handle);
 	sc->sess = sess;
 	sc->swapchain = xsc;
 	sc->width = createInfo->width;
 	sc->height = createInfo->height;
 	sc->array_layer_count = createInfo->arraySize;
 	sc->face_count = createInfo->faceCount;
-	sc->acquire_image = oxr_swapchain_acquire_image;
-	sc->wait_image = oxr_swapchain_wait_image;
-	sc->release_image = oxr_swapchain_release_image;
+	sc->acquire_image = acquire_image;
+	sc->wait_image = wait_image;
+	sc->release_image = release_image;
 	sc->is_static = (createInfo->createFlags & XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT) != 0;
 
 	*out_swapchain = sc;
