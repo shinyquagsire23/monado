@@ -933,7 +933,7 @@ submit_quad_layer(struct oxr_session *sess,
 	fill_in_sub_image(sc, &quad->subImage, &data.quad.sub);
 
 	xrt_result_t xret = xrt_comp_layer_quad(xc, head, sc->swapchain, &data);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_quad");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_quad);
 
 	return XR_SUCCESS;
 }
@@ -1032,7 +1032,7 @@ submit_projection_layer(struct oxr_session *sess,
 		    d_scs[0]->swapchain,                                    // left
 		    d_scs[1]->swapchain,                                    // right
 		    &data);                                                 // data
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_stereo_projection_depth");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_stereo_projection_depth);
 #else
 		assert(false && "Should not get here");
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
@@ -1043,7 +1043,7 @@ submit_projection_layer(struct oxr_session *sess,
 		    scs[0]->swapchain,                                // left
 		    scs[1]->swapchain,                                // right
 		    &data);                                           // data
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_stereo_projection");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_stereo_projection);
 	}
 
 	return XR_SUCCESS;
@@ -1094,7 +1094,7 @@ submit_cube_layer(struct oxr_session *sess,
 	}
 
 	xrt_result_t xret = xrt_comp_layer_cube(xc, head, sc->swapchain, &data);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_cube");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_cube);
 
 	return XR_SUCCESS;
 }
@@ -1141,7 +1141,7 @@ submit_cylinder_layer(struct oxr_session *sess,
 	fill_in_sub_image(sc, &cylinder->subImage, &data.cylinder.sub);
 
 	xrt_result_t xret = xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_cylinder");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_cylinder);
 
 	return XR_SUCCESS;
 }
@@ -1191,7 +1191,7 @@ submit_equirect1_layer(struct oxr_session *sess,
 	data.equirect1.bias = *bias;
 
 	xrt_result_t xret = xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_equirect1");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_equirect1);
 
 	return XR_SUCCESS;
 }
@@ -1246,7 +1246,7 @@ submit_equirect2_layer(struct oxr_session *sess,
 	fill_in_sub_image(sc, &equirect->subImage, &data.equirect2.sub);
 
 	xrt_result_t xret = xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_equirect2");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_equirect2);
 
 	return XR_SUCCESS;
 }
@@ -1328,7 +1328,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		os_mutex_unlock(&sess->active_wait_frames_lock);
 
 		xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_discard_frame");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_discard_frame);
 		sess->frame_id.begun = -1;
 		sess->frame_started = false;
 
@@ -1404,7 +1404,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 
 	xrt_result_t xret;
 	xret = xrt_comp_layer_begin(xc, sess->frame_id.begun, xrt_display_time_ns, blend_mode);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_begin");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_begin);
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
@@ -1440,7 +1440,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	}
 
 	xret = xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_layer_commit");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_commit);
 
 	sess->frame_id.begun = -1;
 	sess->frame_started = false;

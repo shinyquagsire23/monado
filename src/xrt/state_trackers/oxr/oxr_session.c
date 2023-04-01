@@ -142,7 +142,7 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 
 		enum xrt_view_type xvt = (enum xrt_view_type)beginInfo->primaryViewConfigurationType;
 		xrt_result_t xret = xrt_comp_begin_session(xc, xvt);
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_begin_session");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_begin_session);
 	}
 
 	sess->has_begun = true;
@@ -175,7 +175,7 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		sess->frame_started = false;
 
 		xrt_result_t xret = xrt_comp_end_session(xc);
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_end_session");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_end_session);
 	}
 
 	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
@@ -498,7 +498,7 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 	    &sess->frame_id.waited,              // out_frame_id
 	    &predicted_display_time,             // out_predicted_display_time
 	    &predicted_display_period);          // out_predicted_display_period
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_wait_frame");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
 
 	if ((int64_t)predicted_display_time <= 0) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
@@ -556,7 +556,7 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
 			xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
-			OXR_CHECK_XRET(log, sess, xret, "xrt_comp_discard_frame");
+			OXR_CHECK_XRET(log, sess, xret, xrt_comp_discard_frame);
 			sess->frame_id.begun = -1;
 
 			os_mutex_lock(&sess->active_wait_frames_lock);
@@ -569,7 +569,7 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 	}
 	if (xc != NULL) {
 		xrt_result_t xret = xrt_comp_begin_frame(xc, sess->frame_id.waited);
-		OXR_CHECK_XRET(log, sess, xret, "xrt_comp_begin_frame");
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_begin_frame);
 		sess->frame_id.begun = sess->frame_id.waited;
 		sess->frame_id.waited = -1;
 	}

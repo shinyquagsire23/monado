@@ -36,7 +36,7 @@ oxr_swapchain_acquire_image(struct oxr_logger *log,
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
 	xrt_result_t xret = xrt_swapchain_acquire_image(xsc, &index);
-	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_acquire_image");
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_acquire_image);
 
 	if (sc->images[index].state != OXR_IMAGE_STATE_READY) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE,
@@ -76,7 +76,7 @@ oxr_swapchain_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
 	xrt_result_t xret = xrt_swapchain_wait_image(xsc, waitInfo->timeout, index);
-	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_wait_image");
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_wait_image);
 
 	// The app can only wait on one image.
 	sc->waited.yes = true;
@@ -100,7 +100,7 @@ oxr_swapchain_release_image(struct oxr_logger *log,
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 	xrt_result_t xret = xrt_swapchain_release_image(xsc, index);
-	OXR_CHECK_XRET(log, sc->sess, xret, "xrt_swapchain_release_image");
+	OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_release_image);
 
 	// Only decerement here.
 	sc->acquired.num--;
@@ -202,7 +202,7 @@ oxr_create_swapchain(struct oxr_logger *log,
 		return oxr_error(log, XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED,
 		                 "Specified swapchain format is not supported");
 	}
-	OXR_CHECK_XRET(log, sess, xret, "xrt_comp_create_swapchain");
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_create_swapchain);
 	assert(xsc != NULL);
 
 	struct oxr_swapchain *sc = NULL;
