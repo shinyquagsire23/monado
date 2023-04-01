@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -70,7 +70,7 @@ base_create_swapchain(struct xrt_compositor *xc,
 	struct xrt_swapchain_create_properties xsccp = {0};
 	xrt_comp_get_swapchain_create_properties(xc, info, &xsccp);
 
-	return comp_swapchain_create(&cb->vk, &cb->cscgc, info, &xsccp, out_xsc);
+	return comp_swapchain_create(&cb->vk, &cb->cscs, info, &xsccp, out_xsc);
 }
 
 static xrt_result_t
@@ -82,7 +82,7 @@ base_import_swapchain(struct xrt_compositor *xc,
 {
 	struct comp_base *cb = comp_base(xc);
 
-	return comp_swapchain_import(&cb->vk, &cb->cscgc, info, native_images, image_count, out_xsc);
+	return comp_swapchain_import(&cb->vk, &cb->cscs, info, native_images, image_count, out_xsc);
 }
 
 static xrt_result_t
@@ -265,7 +265,7 @@ comp_base_init(struct comp_base *cb)
 	cb->base.base.layer_equirect2 = base_layer_equirect2;
 	cb->base.base.wait_frame = base_wait_frame;
 
-	u_threading_stack_init(&cb->cscgc.destroy_swapchains);
+	u_threading_stack_init(&cb->cscs.destroy_swapchains);
 
 	os_precise_sleeper_init(&cb->sleeper);
 }
@@ -275,5 +275,5 @@ comp_base_fini(struct comp_base *cb)
 {
 	os_precise_sleeper_deinit(&cb->sleeper);
 
-	u_threading_stack_fini(&cb->cscgc.destroy_swapchains);
+	u_threading_stack_fini(&cb->cscs.destroy_swapchains);
 }

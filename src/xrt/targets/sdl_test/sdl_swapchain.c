@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -164,7 +164,7 @@ sdl_swapchain_create(struct xrt_compositor *xc,
 	    &ssc->base,                    //
 	    really_destroy,                //
 	    &sp->c.base.vk,                //
-	    &sp->c.base.cscgc,             //
+	    &sp->c.base.cscs,              //
 	    info,                          //
 	    &xsccp);                       //
 	if (xret != XRT_SUCCESS) {
@@ -197,7 +197,7 @@ sdl_swapchain_import(struct xrt_compositor *xc,
 	    &ssc->base,                    //
 	    really_destroy,                //
 	    &sp->c.base.vk,                //
-	    &sp->c.base.cscgc,             //
+	    &sp->c.base.cscs,              //
 	    info,                          //
 	    native_images,                 //
 	    native_image_count);           //

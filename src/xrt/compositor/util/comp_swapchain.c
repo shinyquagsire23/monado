@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -14,6 +14,7 @@
 #include "util/u_handles.h"
 
 #include "util/comp_swapchain.h"
+#include "vk/vk_cmd_pool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +34,7 @@ swapchain_destroy(struct xrt_swapchain *xsc)
 
 	VK_TRACE(sc->vk, "DESTROY");
 
-	u_threading_stack_push(&sc->gc->destroy_swapchains, sc);
+	u_threading_stack_push(&sc->cscs->destroy_swapchains, sc);
 }
 
 static xrt_result_t
@@ -93,7 +94,7 @@ static struct comp_swapchain *
 set_common_fields(struct comp_swapchain *sc,
                   comp_swapchain_destroy_func_t destroy_func,
                   struct vk_bundle *vk,
-                  struct comp_swapchain_gc *cscgc,
+                  struct comp_swapchain_shared *cscs,
                   uint32_t image_count)
 {
 	sc->base.base.destroy = swapchain_destroy;
@@ -103,7 +104,7 @@ set_common_fields(struct comp_swapchain *sc,
 	sc->base.base.image_count = image_count;
 	sc->real_destroy = destroy_func;
 	sc->vk = vk;
-	sc->gc = cscgc;
+	sc->cscs = cscs;
 
 	// Make sure the handles are invalid.
 	for (uint32_t i = 0; i < ARRAY_SIZE(sc->base.images); i++) {
@@ -185,7 +186,19 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	 *
 	 */
 
-	vk_cmd_buffer_create_and_begin(vk, &cmd_buffer);
+	// To reduce the pointer chasing.
+	struct vk_cmd_pool *pool = &sc->cscs->pool;
+
+	// First lock.
+	vk_cmd_pool_lock(pool);
+
+	// Now lets create the command buffer.
+	ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, pool, 0, &cmd_buffer);
+	if (ret != VK_SUCCESS) {
+		vk_cmd_pool_unlock(pool);
+		VK_ERROR(vk, "Failed to barrier images");
+		return;
+	}
 
 	VkImageAspectFlagBits image_barrier_aspect = vk_csci_get_barrier_aspect_mask(image_view_format);
 
@@ -198,7 +211,7 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 	};
 
 	for (uint32_t i = 0; i < image_count; i++) {
-		vk_cmd_image_barrier_gpu(                     //
+		vk_cmd_image_barrier_gpu_locked(              //
 		    vk,                                       //
 		    cmd_buffer,                               //
 		    sc->vkic.images[i].handle,                //
@@ -209,7 +222,13 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		    subresource_range);                       //
 	}
 
-	ret = vk_cmd_buffer_submit(vk, cmd_buffer);
+	// Done writing commands, submit to queue, waits for command to finish.
+	ret = vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked(vk, pool, cmd_buffer);
+
+	// Done submitting commands.
+	vk_cmd_pool_unlock(pool);
+
+	// Check results from submit.
 	if (ret != VK_SUCCESS) {
 		//! @todo Propegate error
 		VK_ERROR(vk, "Failed to barrier images");
@@ -289,7 +308,7 @@ xrt_result_t
 comp_swapchain_create_init(struct comp_swapchain *sc,
                            comp_swapchain_destroy_func_t destroy_func,
                            struct vk_bundle *vk,
-                           struct comp_swapchain_gc *cscgc,
+                           struct comp_swapchain_shared *cscs,
                            const struct xrt_swapchain_create_info *info,
                            const struct xrt_swapchain_create_properties *xsccp)
 {
@@ -307,7 +326,7 @@ comp_swapchain_create_init(struct comp_swapchain *sc,
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 	}
 
-	set_common_fields(sc, destroy_func, vk, cscgc, xsccp->image_count);
+	set_common_fields(sc, destroy_func, vk, cscs, xsccp->image_count);
 
 	// Use the image helper to allocate the images.
 	ret = vk_ic_allocate(vk, info, xsccp->image_count, &sc->vkic);
@@ -337,7 +356,7 @@ xrt_result_t
 comp_swapchain_import_init(struct comp_swapchain *sc,
                            comp_swapchain_destroy_func_t destroy_func,
                            struct vk_bundle *vk,
-                           struct comp_swapchain_gc *cscgc,
+                           struct comp_swapchain_shared *cscs,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_image_native *native_images,
                            uint32_t native_image_count)
@@ -349,7 +368,7 @@ comp_swapchain_import_init(struct comp_swapchain *sc,
 	         info->width, info->height,                                //
 	         vk_format_string(info->format), info->format);
 
-	set_common_fields(sc, destroy_func, vk, cscgc, native_image_count);
+	set_common_fields(sc, destroy_func, vk, cscs, native_image_count);
 
 	// Use the image helper to get the images.
 	ret = vk_ic_from_natives(vk, info, native_images, native_image_count, &sc->vkic);
@@ -383,16 +402,34 @@ comp_swapchain_teardown(struct comp_swapchain *sc)
 
 /*
  *
- * 'Exported' garbage collection functions.
+ * 'Exported' shared functions.
  *
  */
 
+XRT_CHECK_RESULT xrt_result_t
+comp_swapchain_shared_init(struct comp_swapchain_shared *cscs, struct vk_bundle *vk)
+{
+	VkResult ret = vk_cmd_pool_init(vk, &cscs->pool, 0);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		return XRT_ERROR_VULKAN;
+	}
+
+	return XRT_SUCCESS;
+}
+
 void
-comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc)
+comp_swapchain_shared_destroy(struct comp_swapchain_shared *cscs, struct vk_bundle *vk)
+{
+	vk_cmd_pool_destroy(vk, &cscs->pool);
+}
+
+void
+comp_swapchain_shared_garbage_collect(struct comp_swapchain_shared *cscs)
 {
 	struct comp_swapchain *sc;
 
-	while ((sc = u_threading_stack_pop(&cscgc->destroy_swapchains))) {
+	while ((sc = u_threading_stack_pop(&cscs->destroy_swapchains))) {
 		sc->real_destroy(sc);
 	}
 }
@@ -423,7 +460,7 @@ comp_swapchain_get_create_properties(const struct xrt_swapchain_create_info *inf
 
 xrt_result_t
 comp_swapchain_create(struct vk_bundle *vk,
-                      struct comp_swapchain_gc *cscgc,
+                      struct comp_swapchain_shared *cscs,
                       const struct xrt_swapchain_create_info *info,
                       const struct xrt_swapchain_create_properties *xsccp,
                       struct xrt_swapchain **out_xsc)
@@ -435,7 +472,7 @@ comp_swapchain_create(struct vk_bundle *vk,
 	    sc,                            //
 	    really_destroy,                //
 	    vk,                            //
-	    cscgc,                         //
+	    cscs,                          //
 	    info,                          //
 	    xsccp);                        //
 	if (xret != XRT_SUCCESS) {
@@ -451,7 +488,7 @@ comp_swapchain_create(struct vk_bundle *vk,
 
 xrt_result_t
 comp_swapchain_import(struct vk_bundle *vk,
-                      struct comp_swapchain_gc *cscgc,
+                      struct comp_swapchain_shared *cscs,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
                       uint32_t native_image_count,
@@ -464,7 +501,7 @@ comp_swapchain_import(struct vk_bundle *vk,
 	    sc,                            //
 	    really_destroy,                //
 	    vk,                            //
-	    cscgc,                         //
+	    cscs,                          //
 	    info,                          //
 	    native_images,                 //
 	    native_image_count);           //

@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -204,6 +204,12 @@ compositor_init_vulkan(struct sdl_compositor *c, enum u_logging_level log_level)
 	c->sys_info.compositor_vk_deviceUUID = vk_res.selected_gpu_deviceUUID;
 	c->sys_info.client_d3d_deviceLUID = vk_res.client_gpu_deviceLUID;
 	c->sys_info.client_d3d_deviceLUID_valid = vk_res.client_gpu_deviceLUID_valid;
+
+	// Tie the lifetimes of swapchains to Vulkan.
+	xrt_result_t xret = comp_swapchain_shared_init(&c->base.cscs, vk);
+	if (xret != XRT_SUCCESS) {
+		return false;
+	}
 
 	return true;
 }
@@ -456,7 +462,7 @@ sdl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_
 	}
 
 	// Now is a good point to garbage collect.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
 	return XRT_SUCCESS;
 }
@@ -514,8 +520,10 @@ sdl_compositor_destroy(struct xrt_compositor *xc)
 	SC_DEBUG(c, "DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
+	// Must be destroyed before Vulkan.
+	comp_swapchain_shared_destroy(&c->base.cscs, vk);
 
 	if (vk->cmd_pool != VK_NULL_HANDLE) {
 		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);

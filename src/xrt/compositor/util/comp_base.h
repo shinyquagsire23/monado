@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -103,7 +103,7 @@ struct comp_base
 	struct os_precise_sleeper sleeper;
 
 	//! Swapchain garbage collector, used by swapchain, child class needs to call.
-	struct comp_swapchain_gc cscgc;
+	struct comp_swapchain_shared cscs;
 
 	//! We only need to track a single slot.
 	struct comp_layer_slot slot;

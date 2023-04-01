@@ -155,7 +155,7 @@ compositor_end_session(struct xrt_compositor *xc)
 
 	if (c->deferred_surface) {
 		// Make sure we don't have anything to destroy.
-		comp_swapchain_garbage_collect(&c->base.cscgc);
+		comp_swapchain_shared_garbage_collect(&c->base.cscs);
 		comp_renderer_destroy(&c->r);
 #ifdef XRT_FEATURE_WINDOW_PEEK
 		comp_window_peek_destroy(&c->peek);
@@ -404,7 +404,7 @@ compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sy
 	COMP_SPEW(c, "LAYER_COMMIT finished drawing at %8.3fms", ns_to_ms(c->last_frame_time_ns));
 
 	// Now is a good point to garbage collect.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
 	return XRT_SUCCESS;
 }
@@ -454,7 +454,10 @@ compositor_destroy(struct xrt_compositor *xc)
 	COMP_DEBUG(c, "COMP_DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
+
+	// Must be destroyed before Vulkan.
+	comp_swapchain_shared_destroy(&c->base.cscs, vk);
 
 	comp_renderer_destroy(&c->r);
 
@@ -749,6 +752,12 @@ compositor_init_vulkan(struct comp_compositor *c)
 	c->settings.selected_gpu_index = vk_res.selected_gpu_index;
 	c->settings.client_gpu_deviceLUID = vk_res.client_gpu_deviceLUID;
 	c->settings.client_gpu_deviceLUID_valid = vk_res.client_gpu_deviceLUID_valid;
+
+	// Tie the lifetimes of swapchains to Vulkan.
+	xrt_result_t xret = comp_swapchain_shared_init(&c->base.cscs, vk);
+	if (xret != XRT_SUCCESS) {
+		return false;
+	}
 
 	return true;
 }
