@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -102,6 +102,8 @@ struct comp_renderer
 			VkImage image;
 			VkDeviceMemory mem;
 		} bounce;
+
+		struct vk_cmd_pool cmd_pool;
 	} mirror_to_debug_gui;
 
 	//! @}
@@ -589,6 +591,11 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 
 	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
 	                                    XRT_FORMAT_R8G8B8X8);
+	VkResult ret = vk_cmd_pool_init(vk, &r->mirror_to_debug_gui.cmd_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		assert(false && "Whelp, can't return a error. But should never really fail.");
+	}
 }
 
 static void
@@ -836,6 +843,9 @@ renderer_fini(struct comp_renderer *r)
 		vk->vkFreeMemory(vk->device, r->mirror_to_debug_gui.bounce.mem, NULL);
 		vk->vkDestroyImage(vk->device, r->mirror_to_debug_gui.bounce.image, NULL);
 	}
+
+	// Command pool for readback code.
+	vk_cmd_pool_destroy(vk, &r->mirror_to_debug_gui.cmd_pool);
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
@@ -1815,11 +1825,17 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 		return;
 	}
 
-	VkCommandBuffer cmd;
-	vk_cmd_buffer_create_and_begin(vk, &cmd);
+	struct vk_cmd_pool *pool = &r->mirror_to_debug_gui.cmd_pool;
 
-	// For submitting commands.
-	os_mutex_lock(&vk->cmd_pool_mutex);
+	// For writing and submitting commands.
+	vk_cmd_pool_lock(pool);
+
+	VkCommandBuffer cmd;
+	ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, pool, 0, &cmd);
+	if (ret != VK_SUCCESS) {
+		vk_cmd_pool_unlock(pool);
+		return;
+	}
 
 	// First mip view into the copy from image.
 	struct vk_cmd_first_mip_image copy_from_fm_image = {
@@ -1903,11 +1919,13 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    VK_PIPELINE_STAGE_HOST_BIT,           // dstStageMask
 	    first_color_level_subresource_range); // subresourceRange
 
-	// Done submitting commands.
-	os_mutex_unlock(&vk->cmd_pool_mutex);
+	// Done writing commands, submit to queue, waits for command to finish.
+	ret = vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked(vk, pool, cmd);
 
-	// Waits for command to finish.
-	ret = vk_cmd_buffer_submit(vk, cmd);
+	// Done submitting commands.
+	vk_cmd_pool_unlock(pool);
+
+	// Check results from submit.
 	if (ret != VK_SUCCESS) {
 		//! @todo Better handling of error?
 		COMP_ERROR(r->c, "Failed to mirror image");
