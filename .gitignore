@@ -89,6 +89,7 @@ src/xrt/drivers/arduino/device/*.bin
 .settings
 .project
 .classpath
+*.hprof
 
 # Ignore Sourcetrail things
 *.srctrlbm
