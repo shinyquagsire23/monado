@@ -1,4 +1,5 @@
 // Copyright 2022, Simon Zeni <simon@bl4ckb0ne.ca>
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -36,6 +37,7 @@ struct comp_window_peek
 	bool running;
 	bool hidden;
 
+	struct vk_cmd_pool pool;
 	VkCommandBuffer cmd;
 
 	struct os_thread_helper oth;
@@ -137,9 +139,33 @@ comp_window_peek_create(struct comp_compositor *c)
 	w->c = c;
 	w->eye = eye;
 
+
+	/*
+	 * Vulkan
+	 */
+
+	struct vk_bundle *vk = get_vk(w);
+
+	VkResult ret = vk_cmd_pool_init(vk, &w->pool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		goto err_free;
+	}
+
+	ret = vk_cmd_pool_create_cmd_buffer(vk, &w->pool, &w->cmd);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_cmd_pool_create_cmd_buffer: %s", vk_result_string(ret));
+		goto err_pool;
+	}
+
+
+	/*
+	 * SDL
+	 */
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		COMP_ERROR(c, "Failed to init SDL2");
-		return NULL;
+		goto err_pool;
 	}
 
 	int x = SDL_WINDOWPOS_UNDEFINED;
@@ -150,8 +176,7 @@ comp_window_peek_create(struct comp_compositor *c)
 	w->window = SDL_CreateWindow(xdev->str, x, y, width, height, flags);
 	if (w->window == NULL) {
 		COMP_ERROR(c, "Failed to create SDL window: %s", SDL_GetError());
-		free(w);
-		return NULL;
+		goto err_pool;
 	}
 
 	w->width = width;
@@ -159,7 +184,7 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
-	struct vk_bundle *vk = get_vk(w);
+
 
 	w->base.base.name = "peek";
 	w->base.base.c = c;
@@ -167,10 +192,13 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	if (!SDL_Vulkan_CreateSurface(w->window, vk->instance, &w->base.surface.handle)) {
 		COMP_ERROR(c, "Failed to create SDL surface: %s", SDL_GetError());
-		SDL_DestroyWindow(w->window);
-		free(w);
-		return NULL;
+		goto err_window;
 	}
+
+
+	/*
+	 * Images
+	 */
 
 	/* TODO: present mode fallback to FIFO if MAILBOX is not available */
 	comp_target_create_images(        //
@@ -182,15 +210,27 @@ comp_window_peek_create(struct comp_compositor *c)
 	    PEEK_IMAGE_USAGE,             //
 	    VK_PRESENT_MODE_MAILBOX_KHR); //
 
-	VkResult ret = vk_cmd_buffer_create(vk, &w->cmd);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_buffer_create: %s", vk_result_string(ret));
-	}
+
+	/*
+	 * Thread
+	 */
 
 	os_thread_helper_init(&w->oth);
 	os_thread_helper_start(&w->oth, window_peek_run_thread, w);
 
 	return w;
+
+
+err_window:
+	SDL_DestroyWindow(w->window);
+
+err_pool:
+	vk_cmd_pool_destroy(vk, &w->pool);
+
+err_free:
+	free(w);
+
+	return NULL;
 }
 
 void
@@ -212,9 +252,11 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 	vk->vkDeviceWaitIdle(vk->device);
 	os_mutex_unlock(&vk->queue_mutex);
 
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &w->cmd);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
+	vk_cmd_pool_lock(&w->pool);
+	vk->vkFreeCommandBuffers(vk->device, w->pool.pool, 1, &w->cmd);
+	vk_cmd_pool_unlock(&w->pool);
+
+	vk_cmd_pool_destroy(vk, &w->pool);
 
 	comp_target_swapchain_cleanup(&w->base);
 
@@ -261,8 +303,8 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
 
-	// For submitting commands.
-	os_mutex_lock(&vk->cmd_pool_mutex);
+	// For writing and submitting commands.
+	vk_cmd_pool_lock(&w->pool);
 
 	ret = vk->vkBeginCommandBuffer(w->cmd, &begin_info);
 
@@ -359,10 +401,8 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    range);                                   // subresourceRange
 
 	ret = vk->vkEndCommandBuffer(w->cmd);
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
 	if (ret != VK_SUCCESS) {
+		vk_cmd_pool_unlock(&w->pool);
 		VK_ERROR(vk, "Error: Could not end command buffer.\n");
 		return;
 	}
@@ -382,12 +422,15 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .pSignalSemaphores = &w->base.base.semaphores.render_complete,
 	};
 
+	// Done writing commands, submit to queue.
 	os_mutex_lock(&vk->queue_mutex);
-	os_mutex_lock(&vk->cmd_pool_mutex);
 	ret = vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
 	os_mutex_unlock(&vk->queue_mutex);
 
+	// Done submitting commands, unlock pool.
+	vk_cmd_pool_unlock(&w->pool);
+
+	// Check results from submit.
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Error: Could not submit to queue.\n");
 		return;
