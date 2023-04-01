@@ -1,9 +1,11 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 add_library(
 	aux_vk STATIC
 	vk_bundle_init.c
+	vk_cmd.c
+	vk_cmd.h
 	vk_compositor_flags.c
 	vk_documentation.h
 	vk_function_loaders.c
