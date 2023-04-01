@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -28,6 +28,8 @@ struct comp_layer_renderer
 		VkSampler sampler;
 		VkFramebuffer handle;
 	} framebuffers[2];
+
+	struct vk_cmd_pool pool;
 
 	VkRenderPass render_pass;
 
