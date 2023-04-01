@@ -467,7 +467,7 @@ create_distortion_image_and_view(struct vk_bundle *vk,
 }
 
 static void
-queue_upload_for_first_level_and_layer(
+queue_upload_for_first_level_and_layer_locked(
     struct vk_bundle *vk, VkCommandBuffer cmd, VkBuffer src, VkImage dst, VkExtent2D extent)
 {
 	VkImageSubresourceRange subresource_range = {
@@ -477,9 +477,6 @@ queue_upload_for_first_level_and_layer(
 	    .baseArrayLayer = 0,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
-
-	// Take the lock here.
-	os_mutex_lock(&vk->cmd_pool_mutex);
 
 	vk_cmd_image_barrier_gpu_locked(          //
 	    vk,                                   //
@@ -524,18 +521,16 @@ queue_upload_for_first_level_and_layer(
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,     //
 	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
 	    subresource_range);                       //
-
-	// Once we are done writing commands.
-	os_mutex_unlock(&vk->cmd_pool_mutex);
 }
 
 static VkResult
-create_and_queue_upload(struct vk_bundle *vk,
-                        VkCommandBuffer cmd,
-                        VkBuffer src_buffer,
-                        VkDeviceMemory *out_image_device_memory,
-                        VkImage *out_image,
-                        VkImageView *out_image_view)
+create_and_queue_upload_locked(struct vk_bundle *vk,
+                               struct vk_cmd_pool *pool,
+                               VkCommandBuffer cmd,
+                               VkBuffer src_buffer,
+                               VkDeviceMemory *out_image_device_memory,
+                               VkImage *out_image,
+                               VkImageView *out_image_view)
 {
 	VkExtent2D extent = {COMP_DISTORTION_IMAGE_DIMENSIONS, COMP_DISTORTION_IMAGE_DIMENSIONS};
 	VkDeviceMemory device_memory = VK_NULL_HANDLE;
@@ -553,12 +548,12 @@ create_and_queue_upload(struct vk_bundle *vk,
 		return ret;
 	}
 
-	queue_upload_for_first_level_and_layer( //
-	    vk,                                 // vk_bundle
-	    cmd,                                // cmd
-	    src_buffer,                         // src
-	    image,                              // dst
-	    extent);                            // extent
+	queue_upload_for_first_level_and_layer_locked( //
+	    vk,                                        // vk_bundle
+	    cmd,                                       // cmd
+	    src_buffer,                                // src
+	    image,                                     // dst
+	    extent);                                   // extent
 
 	*out_image_device_memory = device_memory;
 	*out_image = image;
@@ -703,7 +698,7 @@ err_buffers:
 }
 
 static VkResult
-prepare_mock_image(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
+prepare_mock_image_locked(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
 {
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -712,9 +707,6 @@ prepare_mock_image(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
 	    .baseArrayLayer = 0,
 	    .layerCount = VK_REMAINING_ARRAY_LAYERS,
 	};
-
-	// Take the lock here.
-	os_mutex_lock(&vk->cmd_pool_mutex);
 
 	vk_cmd_image_barrier_gpu_locked(              //
 	    vk,                                       //
@@ -725,9 +717,6 @@ prepare_mock_image(struct vk_bundle *vk, VkCommandBuffer cmd, VkImage dst)
 	    VK_IMAGE_LAYOUT_UNDEFINED,                //
 	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
 	    subresource_range);                       //
-
-	// Once we are done writing commands.
-	os_mutex_unlock(&vk->cmd_pool_mutex);
 
 	return VK_SUCCESS;
 }
@@ -866,6 +855,21 @@ render_resources_init(struct render_resources *r,
 
 
 	/*
+	 * Command buffer pool, needs to go first.
+	 */
+
+	C(vk_cmd_pool_init(vk, &r->distortion_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT));
+
+	VkCommandPoolCreateInfo command_pool_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+	    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+	    .queueFamilyIndex = vk->queue_family_index,
+	};
+
+	C(vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &r->cmd_pool));
+
+
+	/*
 	 * Mock, used as a default image empty image.
 	 */
 
@@ -900,14 +904,14 @@ render_resources_init(struct render_resources *r,
 
 
 		VkCommandBuffer cmd = VK_NULL_HANDLE;
-		C(vk_cmd_buffer_create_and_begin(vk, &cmd));
+		C(vk_cmd_create_and_begin_cmd_buffer_locked(vk, r->cmd_pool, 0, &cmd));
 
-		C(prepare_mock_image(      //
-		    vk,                    // vk_bundle
-		    cmd,                   // cmd
-		    r->mock.color.image)); // dsat
+		C(prepare_mock_image_locked( //
+		    vk,                      // vk_bundle
+		    cmd,                     // cmd
+		    r->mock.color.image));   // dst
 
-		C(vk_cmd_buffer_submit(vk, cmd));
+		C(vk_cmd_end_submit_wait_and_free_cmd_buffer_locked(vk, r->cmd_pool, cmd));
 
 		// No need to wait, submit waits on the fence.
 	}
@@ -918,14 +922,6 @@ render_resources_init(struct render_resources *r,
 	 */
 
 	C(vk_create_pipeline_cache(vk, &r->pipeline_cache));
-
-	VkCommandPoolCreateInfo command_pool_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-	    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-	    .queueFamilyIndex = vk->queue_family_index,
-	};
-
-	C(vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &r->cmd_pool));
 
 	VkCommandBufferAllocateInfo cmd_buffer_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -1243,23 +1239,29 @@ render_distortion_buffer_init(struct render_resources *r,
 	 * Command submission.
 	 */
 
-	ret = vk_cmd_buffer_create_and_begin(vk, &upload_buffer);
-	CG(vk, ret, "vk_cmd_buffer_create_and_begin", err_resources);
+	struct vk_cmd_pool *pool = &r->distortion_pool;
+
+	vk_cmd_pool_lock(pool);
+
+	ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, pool, 0, &upload_buffer);
+	CG(vk, ret, "vk_cmd_pool_create_and_begin_cmd_buffer_locked", err_unlock);
 
 	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
-		ret = create_and_queue_upload( //
-		    vk,                        // vk_bundle
-		    upload_buffer,             // cmd
-		    bufs[i].buffer,            // src_buffer
-		    &device_memories[i],       // out_image_device_memory
-		    &images[i],                // out_image
-		    &image_views[i]);          // out_image_view
-		CG(vk, ret, "create_and_queue_upload", err_cmd);
+		ret = create_and_queue_upload_locked( //
+		    vk,                               // vk_bundle
+		    pool,                             // pool
+		    upload_buffer,                    // cmd
+		    bufs[i].buffer,                   // src_buffer
+		    &device_memories[i],              // out_image_device_memory
+		    &images[i],                       // out_image
+		    &image_views[i]);                 // out_image_view
+		CG(vk, ret, "create_and_queue_upload_locked", err_cmd);
 	}
 
-	ret = vk_cmd_buffer_submit(vk, upload_buffer);
-	CG(vk, ret, "vk_cmd_buffer_submit", err_cmd);
+	ret = vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked(vk, pool, upload_buffer);
+	CG(vk, ret, "vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked", err_cmd);
 
+	vk_cmd_pool_unlock(pool);
 
 	/*
 	 * Write results.
@@ -1286,9 +1288,10 @@ render_distortion_buffer_init(struct render_resources *r,
 
 
 err_cmd:
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &upload_buffer);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
+	vk->vkFreeCommandBuffers(vk->device, pool->pool, 1, &upload_buffer);
+
+err_unlock:
+	vk_cmd_pool_unlock(pool);
 
 err_resources:
 	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
@@ -1377,7 +1380,6 @@ render_resources_close(struct render_resources *r)
 	D(DescriptorSetLayout, r->mesh.descriptor_set_layout);
 	D(PipelineLayout, r->mesh.pipeline_layout);
 	D(PipelineCache, r->pipeline_cache);
-	D(CommandPool, r->cmd_pool);
 	D(DescriptorPool, r->mesh.descriptor_pool);
 	D(QueryPool, r->query_pool);
 	render_buffer_close(vk, &r->mesh.vbo);
@@ -1407,6 +1409,9 @@ render_resources_close(struct render_resources *r)
 	render_buffer_close(vk, &r->compute.distortion.ubo);
 
 	teardown_scratch_image(r);
+
+	vk_cmd_pool_destroy(vk, &r->distortion_pool);
+	D(CommandPool, r->cmd_pool);
 
 	// Finally forget about the vk bundle. We do not own it!
 	r->vk = NULL;

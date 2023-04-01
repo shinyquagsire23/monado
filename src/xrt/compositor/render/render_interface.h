@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -18,6 +18,7 @@
 #include "xrt/xrt_defines.h"
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd_pool.h"
 
 
 #ifdef __cplusplus
@@ -216,6 +217,9 @@ struct render_resources
 	/*
 	 * Shared pools and caches.
 	 */
+
+	//! Pool used for distortion image uploads.
+	struct vk_cmd_pool distortion_pool;
 
 	//! Shared for all rendering.
 	VkPipelineCache pipeline_cache;
