@@ -18,7 +18,6 @@
 #include "os/os_threading.h"
 
 struct comp_compositor;
-struct comp_renderer;
 
 #ifdef __cplusplus
 extern "C" {

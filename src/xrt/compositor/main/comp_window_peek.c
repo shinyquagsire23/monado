@@ -8,7 +8,6 @@
  */
 
 #include "main/comp_compositor.h"
-#include "main/comp_renderer.h"
 #include "main/comp_target_swapchain.h"
 #include "main/comp_window_peek.h"
 
