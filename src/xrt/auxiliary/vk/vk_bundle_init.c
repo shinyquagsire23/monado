@@ -1166,9 +1166,6 @@ err_destroy:
 VkResult
 vk_init_mutex(struct vk_bundle *vk)
 {
-	if (os_mutex_init(&vk->cmd_pool_mutex) < 0) {
-		return VK_ERROR_INITIALIZATION_FAILED;
-	}
 	if (os_mutex_init(&vk->queue_mutex) < 0) {
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
@@ -1178,27 +1175,8 @@ vk_init_mutex(struct vk_bundle *vk)
 VkResult
 vk_deinit_mutex(struct vk_bundle *vk)
 {
-	os_mutex_destroy(&vk->cmd_pool_mutex);
 	os_mutex_destroy(&vk->queue_mutex);
 	return VK_SUCCESS;
-}
-
-XRT_CHECK_RESULT VkResult
-vk_init_cmd_pool(struct vk_bundle *vk)
-{
-	VkCommandPoolCreateInfo cmd_pool_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-	    .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-	    .queueFamilyIndex = vk->queue_family_index,
-	};
-
-	VkResult ret;
-	ret = vk->vkCreateCommandPool(vk->device, &cmd_pool_info, NULL, &vk->cmd_pool);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateCommandPool: %s", vk_result_string(ret));
-	}
-
-	return ret;
 }
 
 
@@ -1282,12 +1260,6 @@ vk_init_from_given(struct vk_bundle *vk,
 	}
 
 	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, vk->queue_index, &vk->queue);
-
-	// Create the pool.
-	ret = vk_init_cmd_pool(vk);
-	if (ret != VK_SUCCESS) {
-		goto err_memset;
-	}
 
 
 	return VK_SUCCESS;

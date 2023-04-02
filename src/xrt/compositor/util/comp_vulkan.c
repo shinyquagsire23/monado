@@ -272,12 +272,6 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 		return ret;
 	}
 
-	ret = vk_init_cmd_pool(vk);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vk_init_cmd_pool", "Failed to init command pool.", ret);
-		return ret;
-	}
-
 	// Print device information.
 	vk_print_opened_device_info(vk, U_LOGGING_INFO);
 

@@ -474,11 +474,6 @@ compositor_destroy(struct xrt_compositor *xc)
 	// As long as vk_bundle is valid it's safe to call this function.
 	render_shaders_close(&c->shaders, vk);
 
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
-
 	if (vk->device != VK_NULL_HANDLE) {
 		vk->vkDestroyDevice(vk->device, NULL);
 		vk->device = VK_NULL_HANDLE;

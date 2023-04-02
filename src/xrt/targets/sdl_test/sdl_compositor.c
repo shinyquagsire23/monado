@@ -525,11 +525,6 @@ sdl_compositor_destroy(struct xrt_compositor *xc)
 	// Must be destroyed before Vulkan.
 	comp_swapchain_shared_destroy(&c->base.cscs, vk);
 
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
-
 	if (vk->device != VK_NULL_HANDLE) {
 		vk->vkDestroyDevice(vk->device, NULL);
 		vk->device = VK_NULL_HANDLE;

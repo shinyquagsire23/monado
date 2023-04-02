@@ -365,12 +365,6 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 	// Now safe to free the pool.
 	vk_cmd_pool_destroy(vk, &c->pool);
 
-	// Still needs to free this, even tho it's not used.
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
-
 	vk_deinit_mutex(vk);
 
 	free(c);

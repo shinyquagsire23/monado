@@ -167,10 +167,6 @@ struct vk_bundle
 
 	VkPhysicalDeviceMemoryProperties device_memory_props;
 
-	VkCommandPool cmd_pool;
-
-	struct os_mutex cmd_pool_mutex;
-
 	// Loader functions
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
 	PFN_vkCreateInstance vkCreateInstance;
@@ -675,14 +671,6 @@ VkResult
 vk_deinit_mutex(struct vk_bundle *vk);
 
 /*!
- * Requires device and queue to have been set up.
- *
- * @ingroup aux_vk
- */
-XRT_CHECK_RESULT VkResult
-vk_init_cmd_pool(struct vk_bundle *vk);
-
-/*!
  * Initialize a bundle with objects given to us by client code,
  * used by @ref client_vk_compositor in @ref comp_client.
  *
@@ -933,77 +921,6 @@ vk_buffer_destroy(struct vk_buffer *self, struct vk_bundle *vk);
 
 bool
 vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDeviceMemory memory);
-
-
-/*
- *
- * Helpers for writing command buffers using the global command pool.
- *
- */
-
-/*!
- * Create a new command buffer, takes the pool lock.
- *
- * @pre Requires successful call to vk_init_mutex.
- *
- * @ingroup aux_vk
- */
-VkResult
-vk_cmd_buffer_create(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
-
-/*!
- * Create and begins a new command buffer, takes the pool lock.
- *
- * @pre Requires successful call to vk_init_mutex.
- *
- * @ingroup aux_vk
- */
-VkResult
-vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer);
-
-/*!
- * A do everything command buffer submission function, during the operation
- * the pool lock will be taken and released.
- *
- * * Creates a new fence.
- * * Submits @p cmd_buffer to the queue, along with the fence.
- * * Waits for the fence to complete.
- * * Destroys the fence.
- * * Destroy @p cmd_buffer.
- *
- * @pre Requires successful call to vk_init_mutex.
- *
- * @ingroup aux_vk
- */
-XRT_CHECK_RESULT VkResult
-vk_cmd_buffer_submit(struct vk_bundle *vk, VkCommandBuffer cmd_buffer);
-
-/*!
- * Submits to the given queue, with the given fence.
- *
- * @pre Requires successful call to vk_init_mutex.
- *
- * @ingroup aux_vk
- */
-XRT_CHECK_RESULT VkResult
-vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence);
-
-/*!
- * Set the image layout using a barrier command, takes the pool lock.
- *
- * @pre Requires successful call to vk_init_mutex.
- *
- * @ingroup aux_vk
- */
-void
-vk_cmd_image_barrier_gpu(struct vk_bundle *vk,
-                         VkCommandBuffer cmd_buffer,
-                         VkImage image,
-                         VkAccessFlags src_access_mask,
-                         VkAccessFlags dst_access_mask,
-                         VkImageLayout old_layout,
-                         VkImageLayout new_layout,
-                         VkImageSubresourceRange subresource_range);
 
 
 /*
