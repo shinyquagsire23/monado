@@ -1005,8 +1005,17 @@ vk_cmd_image_barrier_gpu(struct vk_bundle *vk,
                          VkImageLayout new_layout,
                          VkImageSubresourceRange subresource_range);
 
+
+/*
+ *
+ * Helpers for writing command buffers, in the vk_helpers.c file.
+ *
+ */
+
 /*!
- * Inserts a image barrier command, doesn't take any locks.
+ * Inserts a image barrier command, doesn't take any locks, the calling code
+ * will need hold the lock for the pool that cmd_buffer is from or ensure it is
+ * externally synchronized.
  *
  * @ingroup aux_vk
  */
@@ -1023,8 +1032,9 @@ vk_cmd_image_barrier_locked(struct vk_bundle *vk,
                             VkImageSubresourceRange subresource_range);
 
 /*!
- * Inserts a image barrier command specifically for GPU commands,
- * doesn't take any locks.
+ * Inserts a image barrier command specifically for GPU commands, doesn't take
+ * any locks, the calling code will need hold the lock for the pool that
+ * cmd_buffer is from or ensure it is externally synchronized.
  *
  * @ingroup aux_vk
  */
