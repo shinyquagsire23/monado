@@ -87,6 +87,7 @@ vk_format_to_gl(int64_t format)
 	case 90 /*  VK_FORMAT_R16G16B16_SFLOAT         */: return GL_RGB16F;
 	case 91 /*  VK_FORMAT_R16G16B16A16_UNORM       */: return GL_RGBA16;
 	case 97 /*  VK_FORMAT_R16G16B16A16_SFLOAT      */: return GL_RGBA16F;
+	case 100 /* VK_FORMAT_R32_SFLOAT               */: return 0;
 	case 124 /* VK_FORMAT_D16_UNORM                */: return GL_DEPTH_COMPONENT16;
 	case 125 /* VK_FORMAT_X8_D24_UNORM_PACK32      */: return 0; // GL_DEPTH_COMPONENT24?
 	case 126 /* VK_FORMAT_D32_SFLOAT               */: return GL_DEPTH_COMPONENT32F;
