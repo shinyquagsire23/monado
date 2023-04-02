@@ -151,7 +151,7 @@ public class VrModeStatus extends Fragment {
         try {
             context.startActivity(intent);
         } catch (AndroidRuntimeException exception) {
-            Log.w("Monado", "Got exception trying to start VR listener settings: " + exception.toString());
+            Log.w("Monado", "Got exception trying to start VR listener settings: " + exception);
         }
     }
 
