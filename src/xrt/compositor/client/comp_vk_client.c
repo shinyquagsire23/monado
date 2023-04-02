@@ -14,6 +14,9 @@
 
 #include "comp_vk_client.h"
 
+//! We are not allowed to touch the queue in xrDestroySwapchain
+#define BREAK_OPENXR_SPEC_IN_DESTROY_SWAPCHAIN (true)
+
 
 /*!
  * Down-cast helper.
@@ -221,9 +224,11 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct vk_bundle *vk = &c->vk;
 
 	// Make sure images are not used anymore.
-	os_mutex_lock(&vk->queue_mutex);
-	vk->vkQueueWaitIdle(vk->queue);
-	os_mutex_unlock(&vk->queue_mutex);
+	if (BREAK_OPENXR_SPEC_IN_DESTROY_SWAPCHAIN) {
+		os_mutex_lock(&vk->queue_mutex);
+		vk->vkQueueWaitIdle(vk->queue);
+		os_mutex_unlock(&vk->queue_mutex);
+	}
 
 	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
