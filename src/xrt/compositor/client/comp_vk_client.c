@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -195,7 +195,9 @@ submit_fallback(struct client_vk_compositor *c, xrt_result_t *out_xret)
 		COMP_TRACE_IDENT(device_wait_idle);
 
 		// Last course of action fallback.
-		vk->vkDeviceWaitIdle(vk->device);
+		os_mutex_lock(&vk->queue_mutex);
+		vk->vkQueueWaitIdle(vk->queue);
+		os_mutex_unlock(&vk->queue_mutex);
 	}
 
 	*out_xret = xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
@@ -219,7 +221,9 @@ client_vk_swapchain_destroy(struct xrt_swapchain *xsc)
 	struct vk_bundle *vk = &c->vk;
 
 	// Make sure images are not used anymore.
-	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkQueueWaitIdle(vk->queue);
+	os_mutex_unlock(&vk->queue_mutex);
 
 	for (uint32_t i = 0; i < sc->base.base.image_count; i++) {
 		if (sc->base.images[i] != VK_NULL_HANDLE) {
@@ -361,7 +365,7 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 		// Make sure that any of the command buffers from this command
 		// pool are n used here, this pleases the validation layer.
 		os_mutex_lock(&vk->queue_mutex);
-		vk->vkDeviceWaitIdle(vk->device);
+		vk->vkQueueWaitIdle(vk->queue);
 		os_mutex_unlock(&vk->queue_mutex);
 
 		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
