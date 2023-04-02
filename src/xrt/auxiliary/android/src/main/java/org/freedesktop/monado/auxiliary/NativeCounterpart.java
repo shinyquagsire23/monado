@@ -131,7 +131,7 @@ public final class NativeCounterpart {
         } catch (InterruptedException e) {
             e.printStackTrace();
             Log.i(TAG,
-                    "Interrupted while waiting for native code to finish up: " + e.toString());
+                    "Interrupted while waiting for native code to finish up: " + e);
             return false;
         }
 
