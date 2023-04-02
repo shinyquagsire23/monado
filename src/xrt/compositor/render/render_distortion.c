@@ -465,13 +465,13 @@ render_distortion_images_close(struct render_resources *r)
 {
 	struct vk_bundle *vk = r->vk;
 
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.image_views); i++) {
+	static_assert(COMP_DISTORTION_NUM_IMAGES == ARRAY_SIZE(r->distortion.image_views), "Array size is wrong!");
+	static_assert(COMP_DISTORTION_NUM_IMAGES == ARRAY_SIZE(r->distortion.images), "Array size is wrong!");
+	static_assert(COMP_DISTORTION_NUM_IMAGES == ARRAY_SIZE(r->distortion.device_memories), "Array size is wrong!");
+
+	for (uint32_t i = 0; i < COMP_DISTORTION_NUM_IMAGES; i++) {
 		D(ImageView, r->distortion.image_views[i]);
-	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.images); i++) {
 		D(Image, r->distortion.images[i]);
-	}
-	for (uint32_t i = 0; i < ARRAY_SIZE(r->distortion.device_memories); i++) {
 		DF(Memory, r->distortion.device_memories[i]);
 	}
 }
