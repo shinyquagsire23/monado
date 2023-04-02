@@ -151,7 +151,7 @@ public class Client implements ServiceConnection {
             try {
                 binderSync.wait();
             } catch (InterruptedException e) {
-                Log.e(TAG, "Interrupted: " + e.toString());
+                Log.e(TAG, "Interrupted: " + e);
                 return -1;
             }
         }
@@ -214,12 +214,12 @@ public class Client implements ServiceConnection {
             monado.connect(theirs);
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e(TAG, "could not create socket pair: " + e.toString());
+            Log.e(TAG, "could not create socket pair: " + e);
             handleFailure();
             return -1;
         } catch (RemoteException e) {
             e.printStackTrace();
-            Log.e(TAG, "could not connect to service: " + e.toString());
+            Log.e(TAG, "could not connect to service: " + e);
             handleFailure();
             return -1;
         }
@@ -264,7 +264,7 @@ public class Client implements ServiceConnection {
 
         if (!bindService(context, intent)) {
             Log.e(TAG,
-                    "bindService: Service " + intent.toString() + " could not be found to bind!");
+                    "bindService: Service " + intent + " could not be found to bind!");
             return false;
         }
 
