@@ -142,6 +142,7 @@ if(XRT_HAVE_VULKAN)
 		${SHADER_HEADERS}
 		render/render_buffer.c
 		render/render_compute.c
+		render/render_distortion.c
 		render/render_gfx.c
 		render/render_interface.h
 		render/render_resources.c

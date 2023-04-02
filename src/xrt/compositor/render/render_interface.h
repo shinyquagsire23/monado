@@ -411,10 +411,16 @@ render_resources_close(struct render_resources *r);
  * Creates or recreates the compute distortion textures if necessary.
  */
 bool
-render_ensure_distortion_buffer(struct render_resources *r,
+render_distortion_images_ensure(struct render_resources *r,
                                 struct vk_bundle *vk,
                                 struct xrt_device *xdev,
                                 bool pre_rotate);
+
+/*!
+ * Free distortion images.
+ */
+void
+render_distortion_images_close(struct render_resources *r);
 
 /*!
  * Ensure that the scratch image is created and has the given extent.

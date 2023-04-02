@@ -538,7 +538,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	}
 
 	// @todo: is it safe to fail here?
-	if (!render_ensure_distortion_buffer(&r->c->nr, &r->c->base.vk, r->c->xdev, pre_rotate))
+	if (!render_distortion_images_ensure(&r->c->nr, &r->c->base.vk, r->c->xdev, pre_rotate))
 		return false;
 
 	r->buffer_count = r->c->target->image_count;
