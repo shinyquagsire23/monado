@@ -317,7 +317,7 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 
 	struct wmr_camera_open_config options = {
 	    .dev_holo = dev_holo,
-	    .tcam_confs = ws->config.tcams,
+	    .tcam_confs = cfg.tcams,
 	    .tcam_sinks = ws->in_sinks.cams,
 	    .tcam_count = cfg.tcam_count,
 	    .slam_cam_count = cfg.slam_cam_count,
