@@ -21,6 +21,23 @@ extern "C" {
 
 
 /*!
+ * Headset type, used to select different control and init/shutdown procedures.
+ *
+ * @ingroup drv_wmr
+ */
+enum wmr_headset_type
+{
+	WMR_HEADSET_GENERIC,
+	WMR_HEADSET_HP_VR1000,
+	WMR_HEADSET_REVERB_G1,
+	WMR_HEADSET_REVERB_G2,
+	WMR_HEADSET_SAMSUNG_XE700X3AI,
+	WMR_HEADSET_SAMSUNG_800ZAA,
+	WMR_HEADSET_LENOVO_EXPLORER,
+	WMR_HEADSET_MEDION_ERAZER_X1000,
+};
+
+/*!
  * Defines for the WMR driver.
  *
  * @addtogroup drv_wmr

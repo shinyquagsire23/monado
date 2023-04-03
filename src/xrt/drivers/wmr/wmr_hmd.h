@@ -27,22 +27,13 @@
 #include "wmr_protocol.h"
 #include "wmr_config.h"
 #include "wmr_camera.h"
+#include "wmr_common.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum wmr_headset_type
-{
-	WMR_HEADSET_GENERIC,
-	WMR_HEADSET_HP_VR1000,
-	WMR_HEADSET_REVERB_G1,
-	WMR_HEADSET_REVERB_G2,
-	WMR_HEADSET_SAMSUNG_XE700X3AI,
-	WMR_HEADSET_SAMSUNG_800ZAA,
-	WMR_HEADSET_LENOVO_EXPLORER,
-	WMR_HEADSET_MEDION_ERAZER_X1000,
-};
 
 struct wmr_hmd;
 
