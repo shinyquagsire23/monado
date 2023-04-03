@@ -243,7 +243,7 @@ The CI "style" job currently runs on Debian Bullseye, so it has clang-format-11.
 ## Contributing, Code of Conduct
 
 See `CONTRIBUTING.md` for details of contribution guidelines. GitLab Issues and
-Merge Requests are the preferred wait to discuss problems, suggest enhancements,
+Merge Requests are the preferred way to discuss problems, suggest enhancements,
 or submit changes for review. **In case of a security issue**, you should choose
 the "confidential" option when using the GitLab issues page. For highest
 security, you can send encrypted email (using GPG/OpenPGP) to Ryan Pavlik, with
