@@ -61,40 +61,12 @@ typedef uint64_t VkDeviceMemory;
  * @{
  */
 
-/*!
- * Special flags for creating swapchain images.
- */
-enum xrt_swapchain_create_flags
-{
-	//! Our compositor just ignores this bit.
-	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1u << 0u),
-	//! Signals that the allocator should only allocate one image.
-	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1u << 1u),
-};
 
-/*!
- * Usage of the swapchain images.
+/*
+ *
+ * Layers.
+ *
  */
-enum xrt_swapchain_usage_bits
-{
-	XRT_SWAPCHAIN_USAGE_COLOR = 0x00000001,
-	XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL = 0x00000002,
-	XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS = 0x00000004,
-	XRT_SWAPCHAIN_USAGE_TRANSFER_SRC = 0x00000008,
-	XRT_SWAPCHAIN_USAGE_TRANSFER_DST = 0x00000010,
-	XRT_SWAPCHAIN_USAGE_SAMPLED = 0x00000020,
-	XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT = 0x00000040,
-	XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT = 0x00000080,
-};
-
-/*!
- * View type to be rendered to by the compositor.
- */
-enum xrt_view_type
-{
-	XRT_VIEW_TYPE_MONO = 1,
-	XRT_VIEW_TYPE_STEREO = 2,
-};
 
 /*!
  * Layer type.
@@ -360,6 +332,39 @@ struct xrt_layer_data
 		struct xrt_layer_equirect1_data equirect1;
 		struct xrt_layer_equirect2_data equirect2;
 	};
+};
+
+
+/*
+ *
+ * Swapchain.
+ *
+ */
+
+/*!
+ * Special flags for creating swapchain images.
+ */
+enum xrt_swapchain_create_flags
+{
+	//! Our compositor just ignores this bit.
+	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1u << 0u),
+	//! Signals that the allocator should only allocate one image.
+	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1u << 1u),
+};
+
+/*!
+ * Usage of the swapchain images.
+ */
+enum xrt_swapchain_usage_bits
+{
+	XRT_SWAPCHAIN_USAGE_COLOR = 0x00000001,
+	XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL = 0x00000002,
+	XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS = 0x00000004,
+	XRT_SWAPCHAIN_USAGE_TRANSFER_SRC = 0x00000008,
+	XRT_SWAPCHAIN_USAGE_TRANSFER_DST = 0x00000010,
+	XRT_SWAPCHAIN_USAGE_SAMPLED = 0x00000020,
+	XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT = 0x00000040,
+	XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT = 0x00000080,
 };
 
 /*!
@@ -699,6 +704,15 @@ union xrt_compositor_event {
  * Compositor.
  *
  */
+
+/*!
+ * View type to be rendered to by the compositor.
+ */
+enum xrt_view_type
+{
+	XRT_VIEW_TYPE_MONO = 1,
+	XRT_VIEW_TYPE_STEREO = 2,
+};
 
 enum xrt_compositor_frame_point
 {
