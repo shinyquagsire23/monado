@@ -172,14 +172,6 @@ struct xrt_prober_entry target_entry_list[] = {
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
 
-#ifdef XRT_BUILD_DRIVER_WMR
-    {MICROSOFT_VID, HOLOLENS_SENSORS_PID, wmr_found, "Microsoft HoloLens Sensors", "wmr"},
-    {MICROSOFT_VID, WMR_CONTROLLER_PID, wmr_bt_controller_found, "WMR Bluetooth controller", "wmr"},
-    {MICROSOFT_VID, REVERB_G2_CONTROLLER_PID, wmr_bt_controller_found, "HP Reverb G2 Bluetooth controller", "wmr"},
-    {MICROSOFT_VID, ODYSSEY_CONTROLLER_PID, wmr_bt_controller_found, "Odyssey Bluetooth controller", "wmr"},
-
-#endif // XRT_BUILD_DRIVER_WMR
-
     {0x0000, 0x0000, NULL, NULL, NULL}, // Terminate
 };
 

@@ -150,40 +150,6 @@ wmr_create_bt_controller(struct xrt_prober *xp,
                          struct xrt_device **out_xdev);
 
 
-/*
- *
- * Found functions.
- *
- */
-
-/*!
- * Probing function for Windows Mixed Reality devices.
- *
- * @ingroup drv_wmr
- * @see xrt_prober_found_func_t
- */
-int
-wmr_found(struct xrt_prober *xp,
-          struct xrt_prober_device **devices,
-          size_t device_count,
-          size_t index,
-          cJSON *attached_data,
-          struct xrt_device **out_xdev);
-
-/*!
- * Probing function for Bluetooth WMR motion controllers.
- *
- * @ingroup drv_wmr
- */
-int
-wmr_bt_controller_found(struct xrt_prober *xp,
-                        struct xrt_prober_device **devices,
-                        size_t device_count,
-                        size_t index,
-                        cJSON *attached_data,
-                        struct xrt_device **out_xdev);
-
-
 #ifdef __cplusplus
 }
 #endif
