@@ -511,7 +511,6 @@ wmr_camera_open(struct wmr_camera_open_config *config)
 
 	return cam;
 
-
 fail:
 	WMR_CAM_ERROR(cam, "Failed to open camera: %s", libusb_error_name(res));
 	wmr_camera_free(cam);
@@ -540,19 +539,22 @@ wmr_camera_free(struct wmr_camera *cam)
 		os_thread_helper_destroy(&cam->usb_thread);
 
 		for (i = 0; i < NUM_XFERS; i++) {
-			if (cam->xfers[i] != NULL)
-				libusb_free_transfer(cam->xfers[i]);
+			if (cam->xfers[i] == NULL) {
+				continue;
+			}
+
+			libusb_free_transfer(cam->xfers[i]);
+			cam->xfers[i] = NULL;
 		}
 
 		libusb_exit(cam->ctx);
+		cam->ctx = NULL;
 	}
 
 	// Tidy the variable tracking.
 	u_var_remove_root(cam);
 	u_sink_debug_destroy(&cam->debug_sinks[0]);
 	u_sink_debug_destroy(&cam->debug_sinks[1]);
-
-
 
 	free(cam);
 }
