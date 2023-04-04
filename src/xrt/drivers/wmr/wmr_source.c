@@ -74,6 +74,7 @@ struct wmr_source
 
 	bool is_running;              //!< Whether the device is streaming
 	bool first_imu_received;      //!< Don't send frames until first IMU sample
+	timepoint_ns last_imu_ns;     //!< Last timepoint received.
 	time_duration_ns hw2mono;     //!< Estimated offset from IMU to monotonic clock
 	time_duration_ns cam_hw2mono; //!< Caches hw2mono for use in the full frame bundle
 };
@@ -123,9 +124,22 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	const float IMU_FREQ = 250.f; //!< @todo use 1000 if "average_imus" is false
 	timepoint_ns now_hw = s->timestamp_ns;
 	timepoint_ns now_mono = (timepoint_ns)os_monotonic_get_ns();
-	s->timestamp_ns = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
+	timepoint_ns ts = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
 
-	timepoint_ns ts = s->timestamp_ns;
+	/*
+	 * Check if the timepoint does time travel, we get one or two
+	 * old samples when the device has not been cleanly shut down.
+	 */
+	if (ws->last_imu_ns > ts) {
+		WMR_WARN(ws, "Received sample from the past, new: %" PRIu64 ", last: %" PRIu64 ", diff: %" PRIu64, ts,
+		         s->timestamp_ns, ts - s->timestamp_ns);
+		return;
+	}
+
+	ws->first_imu_received = true;
+	ws->last_imu_ns = ts;
+	s->timestamp_ns = ts;
+
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
 	WMR_TRACE(ws, "imu t=%" PRId64 " a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
@@ -139,7 +153,6 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	if (ws->out_sinks.imu) {
 		xrt_sink_push_imu(ws->out_sinks.imu, s);
 	}
-	ws->first_imu_received = true;
 }
 
 
