@@ -164,7 +164,6 @@
 
 	"compositor_layer_sync": {
 		"in": [
-			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"}
 		],
 		"in_handles": {"type": "xrt_graphics_sync_handle_t"},
@@ -175,7 +174,6 @@
 
 	"compositor_layer_sync_with_semaphore": {
 		"in": [
-			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"},
 			{"name": "semaphore_id", "type": "uint32_t"},
 			{"name": "semaphore_value", "type": "uint64_t"}

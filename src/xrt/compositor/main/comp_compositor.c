@@ -370,7 +370,7 @@ can_do_one_projection_layer_fast_path(struct comp_compositor *c)
 }
 
 static xrt_result_t
-compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 

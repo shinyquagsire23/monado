@@ -283,7 +283,7 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 		struct multi_compositor *mc = array[k];
 		assert(mc != NULL);
 
-		uint64_t frame_time_ns = mc->delivered.display_time_ns;
+		uint64_t frame_time_ns = mc->delivered.data.display_time_ns;
 		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
 			log_frame_time_diff(frame_time_ns, display_time_ns);
 		}
@@ -493,16 +493,24 @@ multi_main_loop(struct multi_system_compositor *msc)
 
 		//! @todo Pick the blend mode from primary client.
 		enum xrt_blend_mode blend_mode = XRT_BLEND_MODE_OPAQUE;
+
 		//! @todo Pick a good display time.
 		uint64_t display_time_ns = 0;
-		xrt_comp_layer_begin(xc, frame_id, display_time_ns, blend_mode);
+
+		// Prepare data.
+		struct xrt_layer_frame_data data = {
+		    .frame_id = frame_id,
+		    .display_time_ns = display_time_ns,
+		    .env_blend_mode = blend_mode,
+		};
+		xrt_comp_layer_begin(xc, &data);
 
 		// Make sure that the clients doesn't go away while we transfer layers.
 		os_mutex_lock(&msc->list_and_timing_lock);
 		transfer_layers_locked(msc, predicted_display_time_ns, frame_id);
 		os_mutex_unlock(&msc->list_and_timing_lock);
 
-		xrt_comp_layer_commit(xc, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+		xrt_comp_layer_commit(xc, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 
 		// Re-lock the thread for check in while statement.
 		os_thread_helper_lock(&msc->oth);

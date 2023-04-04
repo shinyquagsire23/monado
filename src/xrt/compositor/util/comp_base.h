@@ -49,8 +49,8 @@ struct comp_layer
  */
 struct comp_layer_slot
 {
-	//! What environmental blend mode did the app use.
-	enum xrt_blend_mode env_blend_mode;
+	//! The per frame data.
+	struct xrt_layer_frame_data data;
 
 	//! All of the layers.
 	struct comp_layer layers[COMP_MAX_LAYERS];

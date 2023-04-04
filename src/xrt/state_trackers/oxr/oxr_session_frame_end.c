@@ -1402,8 +1402,14 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
 
+	struct xrt_layer_frame_data data = {
+	    .frame_id = sess->frame_id.begun,
+	    .display_time_ns = xrt_display_time_ns,
+	    .env_blend_mode = blend_mode,
+	};
+
 	xrt_result_t xret;
-	xret = xrt_comp_layer_begin(xc, sess->frame_id.begun, xrt_display_time_ns, blend_mode);
+	xret = xrt_comp_layer_begin(xc, &data);
 	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_begin);
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
@@ -1439,7 +1445,7 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		}
 	}
 
-	xret = xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	xret = xrt_comp_layer_commit(xc, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_commit);
 
 	sess->frame_id.begun = -1;

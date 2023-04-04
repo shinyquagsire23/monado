@@ -84,10 +84,7 @@ setup_semaphore(struct client_vk_compositor *c)
  */
 
 static bool
-submit_handle(struct client_vk_compositor *c,
-              int64_t frame_id,
-              xrt_graphics_sync_handle_t sync_handle,
-              xrt_result_t *out_xret)
+submit_handle(struct client_vk_compositor *c, xrt_graphics_sync_handle_t sync_handle, xrt_result_t *out_xret)
 {
 	// Did we get a ready made handle, assume it's in the command stream and call commit directly.
 	if (!xrt_graphics_sync_handle_is_valid(sync_handle)) {
@@ -95,12 +92,12 @@ submit_handle(struct client_vk_compositor *c,
 	}
 
 	// Commit consumes the sync_handle.
-	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, sync_handle);
 	return true;
 }
 
 static bool
-submit_semaphore(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+submit_semaphore(struct client_vk_compositor *c, xrt_result_t *out_xret)
 {
 #ifdef VK_KHR_timeline_semaphore
 	if (c->sync.xcsem == NULL) {
@@ -144,7 +141,6 @@ submit_semaphore(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t 
 
 	*out_xret = xrt_comp_layer_commit_with_semaphore( //
 	    &c->xcn->base,                                // xc
-	    frame_id,                                     // frame_id
 	    c->sync.xcsem,                                // xcsem
 	    values[0]);                                   // value
 
@@ -155,7 +151,7 @@ submit_semaphore(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t 
 }
 
 static bool
-submit_fence(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+submit_fence(struct client_vk_compositor *c, xrt_result_t *out_xret)
 {
 	xrt_graphics_sync_handle_t sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 	struct vk_bundle *vk = &c->vk;
@@ -186,12 +182,12 @@ submit_fence(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out
 		}
 	}
 
-	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, sync_handle);
 	return true;
 }
 
 static bool
-submit_fallback(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *out_xret)
+submit_fallback(struct client_vk_compositor *c, xrt_result_t *out_xret)
 {
 	struct vk_bundle *vk = &c->vk;
 
@@ -202,7 +198,7 @@ submit_fallback(struct client_vk_compositor *c, int64_t frame_id, xrt_result_t *
 		vk->vkDeviceWaitIdle(vk->device);
 	}
 
-	*out_xret = xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	*out_xret = xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 	return true;
 }
 
@@ -431,16 +427,13 @@ client_vk_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_vk_compositor_layer_begin(struct xrt_compositor *xc,
-                                 int64_t frame_id,
-                                 uint64_t display_time_ns,
-                                 enum xrt_blend_mode env_blend_mode)
+client_vk_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	COMP_TRACE_MARKER();
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, data);
 }
 
 static xrt_result_t
@@ -569,20 +562,20 @@ client_vk_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_vk_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+client_vk_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	xrt_result_t xret = XRT_SUCCESS;
-	if (submit_handle(c, frame_id, sync_handle, &xret)) {
+	if (submit_handle(c, sync_handle, &xret)) {
 		return xret;
-	} else if (submit_semaphore(c, frame_id, &xret)) {
+	} else if (submit_semaphore(c, &xret)) {
 		return xret;
-	} else if (submit_fence(c, frame_id, &xret)) {
+	} else if (submit_fence(c, &xret)) {
 		return xret;
-	} else if (submit_fallback(c, frame_id, &xret)) {
+	} else if (submit_fallback(c, &xret)) {
 		return xret;
 	} else {
 		// Really bad state.

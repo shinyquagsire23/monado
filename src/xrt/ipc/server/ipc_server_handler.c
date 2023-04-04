@@ -790,7 +790,6 @@ _update_layers(volatile struct ipc_client_state *ics, struct xrt_compositor *xc,
 
 xrt_result_t
 ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
-                                 int64_t frame_id,
                                  uint32_t slot_id,
                                  uint32_t *out_free_slot_id,
                                  const xrt_graphics_sync_handle_t *handles,
@@ -826,11 +825,11 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 	 * Transfer data to underlying compositor.
 	 */
 
-	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+	xrt_comp_layer_begin(ics->xc, &copy.data);
 
 	_update_layers(ics, ics->xc, &copy);
 
-	xrt_comp_layer_commit(ics->xc, frame_id, sync_handle);
+	xrt_comp_layer_commit(ics->xc, sync_handle);
 
 
 	/*
@@ -849,7 +848,6 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_compositor_layer_sync_with_semaphore(volatile struct ipc_client_state *ics,
-                                                int64_t frame_id,
                                                 uint32_t slot_id,
                                                 uint32_t semaphore_id,
                                                 uint64_t semaphore_value,
@@ -883,11 +881,11 @@ ipc_handle_compositor_layer_sync_with_semaphore(volatile struct ipc_client_state
 	 * Transfer data to underlying compositor.
 	 */
 
-	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+	xrt_comp_layer_begin(ics->xc, &copy.data);
 
 	_update_layers(ics, ics->xc, &copy);
 
-	xrt_comp_layer_commit_with_semaphore(ics->xc, frame_id, xcsem, semaphore_value);
+	xrt_comp_layer_commit_with_semaphore(ics->xc, xcsem, semaphore_value);
 
 
 	/*

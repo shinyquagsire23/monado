@@ -334,6 +334,17 @@ struct xrt_layer_data
 	};
 };
 
+/*!
+ * Per frame data for the layer submission calls, used in
+ * @ref xrt_compositor::layer_begin.
+ */
+struct xrt_layer_frame_data
+{
+	int64_t frame_id;
+	uint64_t display_time_ns;
+	enum xrt_blend_mode env_blend_mode;
+};
+
 
 /*
  *
@@ -982,10 +993,7 @@ struct xrt_compositor
 	 * From the point of view of the swapchain, the image is used as
 	 * soon as it's given in a call.
 	 */
-	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
-	                            int64_t frame_id,
-	                            uint64_t display_time_ns,
-	                            enum xrt_blend_mode env_blend_mode);
+	xrt_result_t (*layer_begin)(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data);
 
 	/*!
 	 * @brief Adds a stereo projection layer for submissions.
@@ -1117,9 +1125,7 @@ struct xrt_compositor
 	 *
 	 * Only after this call will the compositor actually use the layers.
 	 */
-	xrt_result_t (*layer_commit)(struct xrt_compositor *xc,
-	                             int64_t frame_id,
-	                             xrt_graphics_sync_handle_t sync_handle);
+	xrt_result_t (*layer_commit)(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle);
 
 	/*!
 	 * @brief Commits all of the submitted layers, with a semaphore.
@@ -1132,7 +1138,6 @@ struct xrt_compositor
 	 * @param value       Semaphore value upone completion of GPU work.
 	 */
 	xrt_result_t (*layer_commit_with_semaphore)(struct xrt_compositor *xc,
-	                                            int64_t frame_id,
 	                                            struct xrt_compositor_semaphore *xcsem,
 	                                            uint64_t value);
 
@@ -1387,12 +1392,9 @@ xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_begin(struct xrt_compositor *xc,
-                     int64_t frame_id,
-                     uint64_t display_time_ns,
-                     enum xrt_blend_mode env_blend_mode)
+xrt_comp_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
-	return xc->layer_begin(xc, frame_id, display_time_ns, env_blend_mode);
+	return xc->layer_begin(xc, data);
 }
 
 /*!
@@ -1520,9 +1522,9 @@ xrt_comp_layer_equirect2(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+xrt_comp_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
-	return xc->layer_commit(xc, frame_id, sync_handle);
+	return xc->layer_commit(xc, sync_handle);
 }
 
 /*!
@@ -1533,12 +1535,9 @@ xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc,
-                                     int64_t frame_id,
-                                     struct xrt_compositor_semaphore *xcsem,
-                                     uint64_t value)
+xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc, struct xrt_compositor_semaphore *xcsem, uint64_t value)
 {
-	return xc->layer_commit_with_semaphore(xc, frame_id, xcsem, value);
+	return xc->layer_commit_with_semaphore(xc, xcsem, value);
 }
 
 /*! @} */

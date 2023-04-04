@@ -104,14 +104,11 @@ base_create_semaphore(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-base_layer_begin(struct xrt_compositor *xc,
-                 int64_t frame_id,
-                 uint64_t display_time_ns,
-                 enum xrt_blend_mode env_blend_mode)
+base_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct comp_base *cb = comp_base(xc);
 
-	cb->slot.env_blend_mode = env_blend_mode;
+	cb->slot.data = *data;
 	cb->slot.layer_count = 0;
 
 	return XRT_SUCCESS;

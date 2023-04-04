@@ -607,15 +607,12 @@ client_d3d12_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_i
 }
 
 static xrt_result_t
-client_d3d12_compositor_layer_begin(struct xrt_compositor *xc,
-                                    int64_t frame_id,
-                                    uint64_t display_time_ns,
-                                    enum xrt_blend_mode env_blend_mode)
+client_d3d12_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, data);
 }
 
 static xrt_result_t
@@ -739,9 +736,7 @@ client_d3d12_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
-                                     int64_t frame_id,
-                                     xrt_graphics_sync_handle_t sync_handle)
+client_d3d12_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
@@ -756,19 +751,24 @@ client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
 			char buf[kErrorBufSize];
 			formatMessage(hr, buf);
 			D3D_ERROR(c, "Error signaling fence: %s", buf);
-			return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+			return xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 		}
 	}
 	if (c->timeline_semaphore) {
 		// We got this from the native compositor, so we can pass it back
-		return xrt_comp_layer_commit_with_semaphore(&c->xcn->base, frame_id, c->timeline_semaphore.get(),
-		                                            c->timeline_semaphore_value);
+		return xrt_comp_layer_commit_with_semaphore( //
+		    &c->xcn->base,                           //
+		    c->timeline_semaphore.get(),             //
+		    c->timeline_semaphore_value);            //
 	}
 
 	if (c->fence) {
 		// Wait on it ourselves, if we have it and didn't tell the native compositor to wait on it.
-		xret = xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout(c->fence, c->local_wait_event,
-		                                                          c->timeline_semaphore_value, kFenceTimeout);
+		xret = xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout( //
+		    c->fence,                                              //
+		    c->local_wait_event,                                   //
+		    c->timeline_semaphore_value,                           //
+		    kFenceTimeout);                                        //
 		if (xret != XRT_SUCCESS) {
 			struct u_pp_sink_stack_only sink; // Not inited, very large.
 			u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
@@ -780,7 +780,7 @@ client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
 		}
 	}
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	return xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 

@@ -417,12 +417,13 @@ sdl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-sdl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+sdl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
 	struct sdl_program *sp = from_comp(xc);
 	struct sdl_compositor *c = &sp->c;
+	int64_t frame_id = c->base.slot.data.frame_id;
 
 	SC_TRACE(c, "LAYER_COMMIT");
 

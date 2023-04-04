@@ -545,18 +545,14 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-ipc_compositor_layer_begin(struct xrt_compositor *xc,
-                           int64_t frame_id,
-                           uint64_t display_time_ns,
-                           enum xrt_blend_mode env_blend_mode)
+ipc_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 
-	slot->display_time_ns = display_time_ns;
-	slot->env_blend_mode = env_blend_mode;
+	slot->data = *data;
 
 	return XRT_SUCCESS;
 }
@@ -700,7 +696,7 @@ ipc_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+ipc_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -714,7 +710,6 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync( //
 	    icc->ipc_c,                              //
-	    frame_id,                                //
 	    icc->layers.slot_id,                     //
 	    &sync_handle,                            //
 	    valid_sync ? 1 : 0,                      //
@@ -733,7 +728,6 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 
 static xrt_result_t
 ipc_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
-                                           int64_t frame_id,
                                            struct xrt_compositor_semaphore *xcsem,
                                            uint64_t value)
 {
@@ -748,7 +742,6 @@ ipc_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync_with_semaphore( //
 	    icc->ipc_c,                                             //
-	    frame_id,                                               //
 	    icc->layers.slot_id,                                    //
 	    iccs->id,                                               //
 	    value,                                                  //

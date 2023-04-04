@@ -215,14 +215,11 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_gl_compositor_layer_begin(struct xrt_compositor *xc,
-                                 int64_t frame_id,
-                                 uint64_t display_time_ns,
-                                 enum xrt_blend_mode env_blend_mode)
+client_gl_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, data);
 }
 
 static xrt_result_t
@@ -371,7 +368,7 @@ client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+client_gl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
@@ -390,7 +387,7 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 
 	COMP_TRACE_IDENT(layer_commit);
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	return xrt_comp_layer_commit(&c->xcn->base, sync_handle);
 }
 
 static xrt_result_t
