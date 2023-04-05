@@ -23,7 +23,7 @@
 #define T_BUILDER_LIGHTHOUSE
 #endif
 
-#if defined(XRT_BUILD_DRIVER_NS)
+#if defined(XRT_BUILD_DRIVER_NS) || defined(XRT_DOXYGEN)
 #define T_BUILDER_NS
 #endif
 
