@@ -194,6 +194,16 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 static void
 on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct debug_scene *ds)
 {
+	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
+	if (usd->sink == NULL) {
+		struct debug_record *dr = &ds->recs[ds->num_recrs++];
+
+		dr->ptr = ptr;
+
+		gui_window_record_init(&dr->rw);
+		u_sink_debug_set_sink(usd, &dr->rw.sink);
+	}
+
 	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
 		struct debug_record *dr = &ds->recs[i];
 
@@ -497,26 +507,6 @@ on_root_enter_sink(const char *name, void *priv)
 {}
 
 static void
-on_elem_sink_debug_add(struct u_var_info *info, void *priv)
-{
-	void *ptr = info->ptr;
-	enum u_var_kind kind = info->kind;
-
-	if (kind != U_VAR_KIND_SINK_DEBUG) {
-		return;
-	}
-
-	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
-	struct debug_scene *ds = ((struct priv_tuple *)priv)->ds;
-	struct debug_record *dr = &ds->recs[ds->num_recrs++];
-
-	dr->ptr = ptr;
-
-	gui_window_record_init(&dr->rw);
-	u_sink_debug_set_sink(usd, &dr->rw.sink);
-}
-
-static void
 on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
 {
 	void *ptr = info->ptr;
@@ -588,8 +578,4 @@ gui_scene_debug(struct gui_program *p)
 	ds->base.destroy = scene_destroy;
 
 	gui_scene_push_front(p, &ds->base);
-
-	// Create the sink interceptors.
-	struct priv_tuple pt = {p, ds};
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_add, &pt);
 }
