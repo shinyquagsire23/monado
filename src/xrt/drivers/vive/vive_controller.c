@@ -399,11 +399,9 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 	os_mutex_unlock(&d->fusion.mutex);
 
 	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL; // Needed after history_get
-	relation.pose.position = d->pose.position;
 	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
 
 	*out_relation = relation;
-	d->pose = out_relation->pose;
 
 	math_pose_transform(&d->offset, &out_relation->pose, &out_relation->pose);
 }
@@ -597,6 +595,9 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 	rel.pose.orientation = d->fusion.i3dof.rot;
 	m_relation_history_push(d->fusion.relation_hist, &rel, now_ns);
 	os_mutex_unlock(&d->fusion.mutex);
+
+	// Update the pose we show in the GUI.
+	d->pose = rel.pose;
 }
 
 static void
