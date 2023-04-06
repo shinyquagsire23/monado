@@ -102,6 +102,13 @@ enum vive_controller_input_index
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
 static inline struct vive_controller_device *
 vive_controller_device(struct xrt_device *xdev)
 {
@@ -109,6 +116,53 @@ vive_controller_device(struct xrt_device *xdev)
 	struct vive_controller_device *ret = (struct vive_controller_device *)xdev;
 	return ret;
 }
+
+static inline void
+get_pose(struct vive_controller_device *d,
+         enum xrt_input_name name,
+         uint64_t at_timestamp_ns,
+         struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_relation imu_relation = {0};
+	imu_relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
+
+	os_mutex_lock(&d->fusion.mutex);
+	m_relation_history_get(d->fusion.relation_hist, at_timestamp_ns, &imu_relation);
+	os_mutex_unlock(&d->fusion.mutex);
+
+	imu_relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL; // Needed after history_get
+
+	// Get the offset to the pose (this is from libsurvive's reporting position currently)
+	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
+	vive_poses_get_pose_offset(d->base.name, d->base.device_type, name, &pose_offset);
+
+	// We want this to make grip the center of rotation.
+	struct xrt_pose grip = XRT_POSE_IDENTITY;
+	enum xrt_input_name grip_name = XRT_INPUT_INDEX_GRIP_POSE; //! @todo Vive poses only have index poses.
+	vive_poses_get_pose_offset(d->base.name, d->base.device_type, grip_name, &grip);
+
+	// Build proper relation.
+	struct xrt_relation_chain chain = {0};
+	m_relation_chain_push_pose(&chain, &pose_offset);
+	m_relation_chain_push_inverted_pose_if_not_identity(&chain, &grip);
+	m_relation_chain_push_relation(&chain, &imu_relation);
+	m_relation_chain_push_pose_if_not_identity(&chain, &d->offset);
+
+	// And resolve it.
+	struct xrt_space_relation relation = {0};
+	m_relation_chain_resolve(&chain, &relation);
+
+	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
+
+	*out_relation = relation;
+}
+
+
+/*
+ *
+ * Member functions.
+ *
+ */
 
 static void
 vive_controller_device_destroy(struct xrt_device *xdev)
@@ -350,29 +404,13 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	};
 
 	struct xrt_space_relation hand_relation;
-
-	os_mutex_lock(&d->fusion.mutex);
-	m_relation_history_get(d->fusion.relation_hist, requested_timestamp_ns, &hand_relation);
-	os_mutex_unlock(&d->fusion.mutex);
+	get_pose(d, name, requested_timestamp_ns, &hand_relation);
 
 	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &hand_relation, out_value);
-
-	struct xrt_relation_chain chain = {0};
-
-
-	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
-	vive_poses_get_pose_offset(d->base.name, d->base.device_type, name, &pose_offset);
-	pose_offset.position = (struct xrt_vec3)XRT_VEC3_ZERO;
-
-	m_relation_chain_push_pose(&chain, &pose_offset);
-	m_relation_chain_push_relation(&chain, &hand_relation);
-	m_relation_chain_resolve(&chain, &out_value->hand_pose);
 
 	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
 	*out_timestamp_ns = requested_timestamp_ns;
 
-	// This is a lie - apparently libsurvive doesn't report controller tracked/untracked state, so just say that the
-	// hand is being tracked
 	out_value->is_active = true;
 }
 
@@ -391,19 +429,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	struct xrt_space_relation relation = {0};
-	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
-
-	os_mutex_lock(&d->fusion.mutex);
-	m_relation_history_get(d->fusion.relation_hist, at_timestamp_ns, &relation);
-	os_mutex_unlock(&d->fusion.mutex);
-
-	relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL; // Needed after history_get
-	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
-
-	*out_relation = relation;
-
-	math_pose_transform(&d->offset, &out_relation->pose, &out_relation->pose);
+	get_pose(d, name, at_timestamp_ns, out_relation);
 }
 
 static int
@@ -483,6 +509,13 @@ vive_controller_device_set_output(struct xrt_device *xdev,
 	vive_controller_haptic_pulse(d, value);
 	os_mutex_unlock(&d->lock);
 }
+
+
+/*
+ *
+ * Misc functions.
+ *
+ */
 
 static void
 controller_handle_battery(struct vive_controller_device *d, struct vive_controller_battery_sample *sample)
