@@ -63,8 +63,6 @@ struct vive_device
 
 	struct
 	{
-		bool calibration;
-		bool fusion;
 		struct u_var_button switch_tracker_btn;
 		char hand_status[128];
 		char slam_status[128];

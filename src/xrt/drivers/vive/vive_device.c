@@ -812,6 +812,7 @@ static void
 vive_device_setup_ui(struct vive_device *d)
 {
 	u_var_add_root(d, "Vive Device", true);
+	u_var_add_log_level(d, &d->log_level, "Log level");
 
 	u_var_add_gui_header(d, NULL, "Tracking");
 	if (d->tracking.slam_enabled) {
@@ -822,9 +823,9 @@ vive_device_setup_ui(struct vive_device *d)
 	u_var_add_pose(d, &d->pose, "Tracked Pose");
 	u_var_add_pose(d, &d->offset, "Pose Offset");
 
-	u_var_add_gui_header(d, &d->gui.fusion, "3DoF Tracking");
+	u_var_add_gui_header(d, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
-	u_var_add_gui_header(d, &d->gui.calibration, "Calibration");
+	u_var_add_gui_header(d, NULL, "Calibration");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
 	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
 	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
