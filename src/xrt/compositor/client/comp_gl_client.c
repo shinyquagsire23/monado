@@ -398,6 +398,15 @@ client_gl_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
+	int64_t vk_format = gl_format_to_vk(info->format);
+	if (vk_format == 0) {
+		U_LOG_E("Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
+	struct xrt_swapchain_create_info vkinfo = *info;
+	vkinfo.format = vk_format;
+
 	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
 }
 

@@ -691,7 +691,16 @@ client_d3d11_compositor_get_swapchain_create_properties(struct xrt_compositor *x
 {
 	struct client_d3d11_compositor *c = as_client_d3d11_compositor(xc);
 
-	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
+	int64_t vk_format = d3d_dxgi_format_to_vk((DXGI_FORMAT)info->format);
+	if (vk_format == 0) {
+		D3D_ERROR(c, "Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
+	struct xrt_swapchain_create_info xinfo = *info;
+	xinfo.format = vk_format;
+
+	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, &xinfo, xsccp);
 }
 
 static xrt_result_t
