@@ -186,10 +186,6 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
 		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
 
-	if ((prop.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
-		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	}
-
 	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
 		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_COLOR, prop.optimalTilingFeatures,
 		                   VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
