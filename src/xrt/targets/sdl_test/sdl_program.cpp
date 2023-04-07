@@ -90,8 +90,8 @@ sdl_program_plus_create()
 
 	// Init sub components.
 	sdl_instance_init(&spp);
-	sdl_system_devices_init(&spp);
 	sdl_device_init(&spp);
+	sdl_system_devices_init(&spp);
 	sdl_compositor_init(&spp); // Needs the window.
 
 	return &spp;
