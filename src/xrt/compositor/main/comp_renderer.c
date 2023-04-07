@@ -18,8 +18,6 @@
 #include "os/os_time.h"
 
 #include "math/m_api.h"
-#include "math/m_vec3.h"
-#include "math/m_matrix_4x4_f64.h"
 #include "math/m_matrix_2x2.h"
 #include "math/m_space.h"
 
@@ -28,7 +26,6 @@
 #include "util/u_distortion_mesh.h"
 #include "util/u_sink.h"
 #include "util/u_var.h"
-#include "util/u_frame.h"
 #include "util/u_frame_times_widget.h"
 
 #include "main/comp_layer_renderer.h"
