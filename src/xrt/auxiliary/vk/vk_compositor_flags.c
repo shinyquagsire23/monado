@@ -222,19 +222,6 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
 		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 	}
 
-	// For compositors to be able to read it.
-	if (true) {
-		VkFormatFeatureFlags format_features = prop.optimalTilingFeatures;
-		VkFormatFeatureFlags flag = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-		if ((format_features & flag) == 0) {
-			U_LOG_E("%s: Compositor needs %s but not supported for format %s (%08x) (%08x)", __func__,
-			        vk_format_feature_string(flag), vk_format_string(format), format_features, flag);
-			return 0;
-		}
-
-		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-	}
-
 	return image_usage;
 }
 
