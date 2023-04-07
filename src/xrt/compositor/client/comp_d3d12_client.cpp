@@ -425,7 +425,11 @@ try {
 
 	struct xrt_swapchain_create_info xinfo = *info;
 	struct xrt_swapchain_create_info vkinfo = *info;
+
+	// Update the create info.
+	xinfo.bits = (enum xrt_swapchain_usage_bits)(xsccp.extra_bits | xinfo.bits);
 	vkinfo.format = vk_format;
+	vkinfo.bits = (enum xrt_swapchain_usage_bits)(xsccp.extra_bits | vkinfo.bits);
 
 	std::unique_ptr<struct client_d3d12_swapchain> sc = std::make_unique<struct client_d3d12_swapchain>();
 	sc->data = std::make_unique<client_d3d12_swapchain_data>(c->log_level);

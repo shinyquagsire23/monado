@@ -416,7 +416,22 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
                            struct xrt_swapchain **out_xsc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain_create_properties xsccp = {0};
 	xrt_result_t xret = XRT_SUCCESS;
+
+	// Do before getting the context, not using ourselves.
+	xret = xrt_comp_get_swapchain_create_properties(xc, info, &xsccp);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Failed to get create properties: %u", xret);
+		return xret;
+	}
+
+	// Check before setting the context.
+	int64_t vk_format = gl_format_to_vk(info->format);
+	if (vk_format == 0) {
+		U_LOG_E("Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
 
 	xret = client_gl_compositor_context_begin(xc);
 	if (xret != XRT_SUCCESS) {
@@ -432,18 +447,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		}
 	}
 
-	int64_t vk_format = gl_format_to_vk(info->format);
-	if (vk_format == 0) {
-		U_LOG_E("Invalid format!");
-		client_gl_compositor_context_end(xc);
-		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
-	}
-
 	struct xrt_swapchain_create_info xinfo = *info;
-	xinfo.format = vk_format;
-	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
-	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
+	struct xrt_swapchain_create_info vkinfo = *info;
 
+	// Update the create info.
+	xinfo.bits |= xsccp.extra_bits;
+	vkinfo.format = vk_format;
+	vkinfo.bits |= xsccp.extra_bits;
+
+	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
+	xret = xrt_comp_native_create_swapchain(c->xcn, &vkinfo, &xscn);
 
 	if (xret != XRT_SUCCESS) {
 		client_gl_compositor_context_end(xc);
@@ -462,7 +475,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct xrt_swapchain *xsc = &xscn->base;
 
 	struct client_gl_swapchain *sc = NULL;
-	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
+	if (NULL == c->create_swapchain(xc, &xinfo, xscn, &sc)) {
 		// Drop our reference, does NULL checking.
 		xrt_swapchain_reference(&xsc, NULL);
 		client_gl_compositor_context_end(xc);

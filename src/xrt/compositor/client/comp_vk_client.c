@@ -614,8 +614,19 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	VkResult ret;
 	xrt_result_t xret;
 
+	struct xrt_swapchain_create_properties xsccp = XRT_STRUCT_INIT;
+	xret = xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, &xsccp);
+	if (xret != XRT_SUCCESS) {
+		VK_ERROR(vk, "Failed to get create properties: %u", xret);
+		return xret;
+	}
+
+	// Update the create info.
+	struct xrt_swapchain_create_info xinfo = *info;
+	xinfo.bits |= xsccp.extra_bits;
+
 	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
-	xret = xrt_comp_native_create_swapchain(c->xcn, info, &xscn);
+	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
 
 	if (xret != XRT_SUCCESS) {
 		return xret;
@@ -624,9 +635,9 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 
 	struct xrt_swapchain *xsc = &xscn->base;
 
-	VkAccessFlags barrier_access_mask = vk_csci_get_barrier_access_mask(info->bits);
-	VkImageLayout barrier_optimal_layout = vk_csci_get_barrier_optimal_layout(info->format);
-	VkImageAspectFlags barrier_aspect_mask = vk_csci_get_barrier_aspect_mask(info->format);
+	VkAccessFlags barrier_access_mask = vk_csci_get_barrier_access_mask(xinfo.bits);
+	VkImageLayout barrier_optimal_layout = vk_csci_get_barrier_optimal_layout(xinfo.format);
+	VkImageAspectFlags barrier_aspect_mask = vk_csci_get_barrier_aspect_mask(xinfo.format);
 
 	struct client_vk_swapchain *sc = U_TYPED_CALLOC(struct client_vk_swapchain);
 	sc->base.base.destroy = client_vk_swapchain_destroy;
@@ -639,7 +650,7 @@ client_vk_swapchain_create(struct xrt_compositor *xc,
 	sc->xscn = xscn;
 
 	for (uint32_t i = 0; i < xsc->image_count; i++) {
-		ret = vk_create_image_from_native(vk, info, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
+		ret = vk_create_image_from_native(vk, &xinfo, &xscn->images[i], &sc->base.images[i], &sc->mems[i]);
 
 		if (ret != VK_SUCCESS) {
 			return XRT_ERROR_VULKAN;
