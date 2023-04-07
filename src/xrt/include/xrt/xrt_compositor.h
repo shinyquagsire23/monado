@@ -755,6 +755,9 @@ struct xrt_swapchain_create_properties
 {
 	//! How many images the compositor want in the swapchain.
 	uint32_t image_count;
+
+	//! New creation bits.
+	enum xrt_swapchain_usage_bits extra_bits;
 };
 
 /*!
