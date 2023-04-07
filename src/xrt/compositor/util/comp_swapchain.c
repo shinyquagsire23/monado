@@ -416,6 +416,7 @@ comp_swapchain_get_create_properties(const struct xrt_swapchain_create_info *inf
 
 	U_ZERO(xsccp);
 	xsccp->image_count = image_count;
+	xsccp->extra_bits = XRT_SWAPCHAIN_USAGE_SAMPLED;
 
 	return XRT_SUCCESS;
 }
