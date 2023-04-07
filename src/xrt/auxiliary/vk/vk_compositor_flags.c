@@ -178,45 +178,31 @@ vk_csci_get_image_usage_flags(struct vk_bundle *vk, VkFormat format, enum xrt_sw
 
 	VkImageUsageFlags image_usage = 0;
 
-	if ((bits & XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL, prop.optimalTilingFeatures,
-		                   VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
-			return 0;
-		}
-		image_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+#define TEST(XRT_BIT, VK_FORMAT_BIT, VK_USAGE_BIT)                                                                     \
+	if ((bits & XRT_BIT) != 0) {                                                                                   \
+		if (!check_feature(format, XRT_BIT, prop.optimalTilingFeatures, VK_FORMAT_BIT)) {                      \
+			return 0;                                                                                      \
+		}                                                                                                      \
+		image_usage |= VK_USAGE_BIT;                                                                           \
 	}
 
-	if ((bits & XRT_SWAPCHAIN_USAGE_COLOR) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_COLOR, prop.optimalTilingFeatures,
-		                   VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) {
-			return 0;
-		}
-		image_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	}
-	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_SRC) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_SRC, prop.optimalTilingFeatures,
-		                   VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)) {
-			return 0;
-		}
-		image_usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-	}
-	if ((bits & XRT_SWAPCHAIN_USAGE_TRANSFER_DST) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_TRANSFER_DST, prop.optimalTilingFeatures,
-		                   VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) {
-			return 0;
-		}
-		image_usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	}
-	if ((bits & XRT_SWAPCHAIN_USAGE_SAMPLED) != 0) {
-		if (!check_feature(format, XRT_SWAPCHAIN_USAGE_SAMPLED, prop.optimalTilingFeatures,
-		                   VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)) {
-			return 0;
-		}
-		image_usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-	}
-	if ((bits & XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT) != 0) {
-		image_usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-	}
+	// clang-format off
+	TEST(XRT_SWAPCHAIN_USAGE_COLOR,            VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+	TEST(XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT,         VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
+	TEST(XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL,    VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+	TEST(XRT_SWAPCHAIN_USAGE_TRANSFER_SRC,     VK_FORMAT_FEATURE_TRANSFER_SRC_BIT,             VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+	TEST(XRT_SWAPCHAIN_USAGE_TRANSFER_DST,     VK_FORMAT_FEATURE_TRANSFER_DST_BIT,             VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+	TEST(XRT_SWAPCHAIN_USAGE_SAMPLED,          VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,            VK_IMAGE_USAGE_SAMPLED_BIT)
+	// clang-format on
+
+#undef TEST
+
+	/*
+	 * Should not be handled here.
+	 *
+	 * XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS
+	 * XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT
+	 */
 
 	return image_usage;
 }
