@@ -324,7 +324,7 @@ u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, f
 
 /*
  *
- * Moses Turner's mesh-grid-based North Star distortion correction.
+ * Moshi Turner's mesh-grid-based North Star distortion correction.
  * This is a relatively ad-hoc thing I wrote; if this ends up going unused feel free to remove it.
  *
  */

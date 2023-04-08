@@ -134,7 +134,7 @@ u_compute_distortion_ns_p2d(struct u_ns_p2d_values *values, int view, float u, f
 
 /*
  *
- * Values for Moses Turner's North Star distortion correction.
+ * Values for Moshi Turner's North Star distortion correction.
  *
  */
 struct u_ns_meshgrid_values
@@ -149,7 +149,7 @@ struct u_ns_meshgrid_values
 };
 
 /*!
- * Moses Turner's North Star distortion correction implementation
+ * Moshi Turner's North Star distortion correction implementation
  *
  * @ingroup aux_distortion
  */
