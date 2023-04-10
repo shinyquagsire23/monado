@@ -23,6 +23,7 @@ Checks:       |
     -clang-diagnostic-unused-function,
     -misc-non-private-member-variables-in-classes,
     -misc-static-assert,-cert-dcl03-c,
+    -misc-unused-using-decls,
     -misc-unused-parameters,
     -performance-no-int-to-ptr,
     -readability-braces-around-statements,
