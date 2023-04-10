@@ -21,6 +21,14 @@
 #define INDEX_MIN_IPD 0.058
 #define INDEX_MAX_IPD 0.07
 
+// https://vr-compare.com/headset/htcvive
+// #define VIVE_MIN_IPD 0.061
+// #define VIVE_MAX_IPD 0.072
+
+// steamvr goes from ~60 to 75
+#define VIVE_MIN_IPD 0.060
+#define VIVE_MAX_IPD 0.075
+
 // arbitrary default values
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f

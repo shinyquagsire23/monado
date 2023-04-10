@@ -712,9 +712,27 @@ _process_hmd_button_event(struct survive_device *survive, const struct SurviveSi
 
 			if (e->axis_ids[i] == SURVIVE_AXIS_IPD) {
 				float ipd = val;
-				float range = INDEX_MAX_IPD - INDEX_MIN_IPD;
+
+				// arbitrary default values
+				float max = 70;
+				float min = 60;
+				if (survive->hmd.config.variant == VIVE_VARIANT_INDEX) {
+					max = INDEX_MAX_IPD;
+					min = INDEX_MIN_IPD;
+				} else if (survive->hmd.config.variant == VIVE_VARIANT_VIVE) {
+					max = VIVE_MAX_IPD;
+					min = VIVE_MIN_IPD;
+				} else {
+					if (!survive->hmd.use_default_ipd) {
+						SURVIVE_WARN(survive,
+						             "No IPD range for this HMD, falling back to default");
+						survive->hmd.use_default_ipd = true;
+					}
+				}
+
+				float range = max - min;
 				ipd *= range;
-				ipd += INDEX_MIN_IPD;
+				ipd += min;
 				survive->hmd.ipd = ipd;
 
 				// SURVIVE_DEBUG(survive, "ipd: %f meter", ipd);
