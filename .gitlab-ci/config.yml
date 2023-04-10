@@ -116,7 +116,7 @@ distributions:
         distro_version: bullseye
         repo_suffix: ndk
         script: android_container_prep.sh
-        tag: "2023-04-10"
+        tag: "2023-04-10.1"
         # This must match ext.sharedCompileSdk in build.gradle
         android_compile_sdk: 32
         # This must match buildscript.ext.buildToolsVersion in build.gradle

@@ -72,10 +72,14 @@ stages:
   extends:
     - .monado.variables.{{distro.name}}:{{image.codename}}
     - .fdo.container-build@{{distro.name}} # from ci-templates
-  only:
-    changes:
-      - .gitlab-ci/**/*
-      - .gitlab-ci.yml
+
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - .gitlab-ci/**/*
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      changes:
+        - .gitlab-ci/**/*
   variables:
     {# The packages list is actually a mapping, not an array, but the same syntax works. #}
     {# Needed to be a mapping so it could be "merged" #}
