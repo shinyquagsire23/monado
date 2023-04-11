@@ -116,7 +116,7 @@ simulated_open_system(struct xrt_builder *xb,
 	//! @todo Make these be a option to the hmd create function, or just make it be there from the start.
 	head->orientation_tracking_supported = true;
 	head->position_tracking_supported = true;
-	//! @todo Create a shared tracking origin on the system deviecs struct instead.
+	//! @todo Create a shared tracking origin on the system devices struct instead.
 	head->tracking_origin->type = XRT_TRACKING_TYPE_OTHER; // Just anything other then none.
 
 	struct u_system_devices *usysd = u_system_devices_allocate();
