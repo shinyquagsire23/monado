@@ -157,6 +157,19 @@ struct depthai_fs
 		bool has;
 	} floodlights;
 
+	struct
+	{
+		bool active;
+		u_var_draggable_u16 exposure_time_ui;
+		u_var_draggable_u16 iso_ui;
+
+		uint16_t exposure_time;
+		uint16_t iso;
+
+		uint16_t last_exposure_time;
+		uint16_t last_iso;
+	} manual_exposure;
+
 
 	bool want_cameras;
 	bool want_imu;
@@ -411,6 +424,27 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	xrt_frame_reference(&xf, NULL);
 }
 
+static void
+depthai_maybe_send_exposure_command(struct depthai_fs *depthai)
+{
+	if (!depthai->manual_exposure.active) {
+		return;
+	}
+
+	// If the user hasn't changed the exposure values since last we sent a command, we don't need to send a new one.
+	if (depthai->manual_exposure.last_exposure_time == depthai->manual_exposure.exposure_time && //
+	    depthai->manual_exposure.last_iso == depthai->manual_exposure.iso) {
+		return;
+	}
+
+	dai::CameraControl ctrl;
+	ctrl.setManualExposure(depthai->manual_exposure.exposure_time, depthai->manual_exposure.iso);
+	depthai->control_queue->send(ctrl);
+
+	depthai->manual_exposure.last_exposure_time = depthai->manual_exposure.exposure_time;
+	depthai->manual_exposure.last_iso = depthai->manual_exposure.iso;
+}
+
 static void *
 depthai_mainloop(void *ptr)
 {
@@ -424,6 +458,8 @@ depthai_mainloop(void *ptr)
 		os_thread_helper_unlock(&depthai->image_thread);
 
 		depthai_do_one_frame(depthai);
+
+		depthai_maybe_send_exposure_command(depthai);
 
 		// Need to lock the thread when we go back to the while condition.
 		os_thread_helper_lock(&depthai->image_thread);
@@ -764,11 +800,6 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 	//!@todo This code will turn the exposure time down, but you may not want it. Or we may want to rework Monado's
 	//! AEG code to control the IR floodlight brightness in concert with the exposure itme. For now, disable.
-#if 0
-	dai::CameraControl ctrl;
-	ctrl.setManualExposure(500, 700);
-	depthai->control_queue->send(ctrl);
-#endif
 }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
@@ -992,6 +1023,23 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->floodlights.mA = debug_get_num_option_depthai_floodlight_brightness();
 	depthai->device = d;
 
+	depthai->manual_exposure.active = false;
+	// Low values, useful for marker calibration on a monitor.
+	depthai->manual_exposure.iso = 270;
+	depthai->manual_exposure.exposure_time = 320;
+
+	depthai->manual_exposure.iso_ui.val = &depthai->manual_exposure.iso;
+	depthai->manual_exposure.iso_ui.min = 0;
+	depthai->manual_exposure.iso_ui.max = 1600;
+	depthai->manual_exposure.iso_ui.step = 1;
+
+	depthai->manual_exposure.exposure_time_ui.val = &depthai->manual_exposure.exposure_time;
+	depthai->manual_exposure.exposure_time_ui.min = 0;
+	// 160,000 us = 0.1s
+	depthai->manual_exposure.exposure_time_ui.max = 65535;
+	depthai->manual_exposure.exposure_time_ui.step = 1;
+
+
 	u_var_add_root(depthai, "DepthAI Source", 0);
 	for (int i = 0; i < 4; i++) {
 		u_sink_debug_init(&depthai->debug_sinks[i]);
@@ -1000,6 +1048,12 @@ depthai_create_and_do_minimal_setup(void)
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[1], "Left");
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[2], "Right");
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[3], "CamD");
+
+	u_var_add_bool(depthai, &depthai->manual_exposure.active, "Manual exposure");
+
+	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.exposure_time_ui, "Exposure time");
+	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.iso_ui, "ISO");
+
 
 	// Some debug printing.
 	depthai_guess_camera_type(depthai);
