@@ -36,6 +36,7 @@
 
 #include "vk/vk_helpers.h"
 #include "vk/vk_image_readback_to_xf_pool.h"
+#include "vk/vk_cmd.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -96,6 +97,11 @@ struct comp_renderer
 
 		struct vk_image_readback_to_xf_pool *pool;
 
+		struct
+		{
+			VkImage image;
+			VkDeviceMemory mem;
+		} bounce;
 	} mirror_to_debug_gui;
 
 	//! @}
@@ -825,6 +831,11 @@ renderer_fini(struct comp_renderer *r)
 
 	// Left eye readback
 	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
+
+	if (r->mirror_to_debug_gui.bounce.image != VK_NULL_HANDLE) {
+		vk->vkFreeMemory(vk->device, r->mirror_to_debug_gui.bounce.mem, NULL);
+		vk->vkDestroyImage(vk->device, r->mirror_to_debug_gui.bounce.image, NULL);
+	}
 
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
@@ -1760,6 +1771,34 @@ can_mirror_to_debug_gui(struct comp_renderer *r)
 	return true;
 }
 
+static bool
+mirror_to_debug_gui_ensure_scratch(struct comp_renderer *r)
+{
+
+	if (r->mirror_to_debug_gui.bounce.image != VK_NULL_HANDLE) {
+		return true;
+	}
+
+	struct vk_bundle *vk = &r->c->base.vk;
+
+	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	VkExtent2D extent = r->mirror_to_debug_gui.image_extent;
+
+	if (vk_create_image_simple(                  //
+	        vk,                                  // vk_bundle
+	        extent,                              // extent
+	        format,                              // format
+	        usage,                               // usage
+	        &r->mirror_to_debug_gui.bounce.mem,  // out_mem
+	        &r->mirror_to_debug_gui.bounce.image // out_image
+	        ) != VK_SUCCESS) {
+		return false;
+	}
+
+	return true;
+}
+
 static void
 mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 {
@@ -1772,6 +1811,10 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 		return;
 	}
 
+	if (!mirror_to_debug_gui_ensure_scratch(r)) {
+		return;
+	}
+
 	VkCommandBuffer cmd;
 	vk_cmd_buffer_create_and_begin(vk, &cmd);
 
@@ -1779,6 +1822,35 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	os_mutex_lock(&vk->cmd_pool_mutex);
 
 	VkImage copy_from = r->lr->framebuffers[0].image;
+
+	struct vk_cmd_blit_image_info blit_info = {0};
+
+	blit_info.src.old_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	blit_info.src.src_access_mask = VK_ACCESS_SHADER_READ_BIT;
+	blit_info.src.src_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	// don't need to set blit_info.src.rect.offset
+	blit_info.src.rect.extent.w = r->lr->extent.width;
+	blit_info.src.rect.extent.h = r->lr->extent.height;
+	blit_info.src.fm_image.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_info.src.fm_image.base_array_layer = 0;
+	blit_info.src.fm_image.image = copy_from;
+
+
+	blit_info.dst.old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	blit_info.dst.src_access_mask = VK_ACCESS_TRANSFER_READ_BIT;
+	blit_info.dst.src_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+	blit_info.dst.rect.extent.w = r->mirror_to_debug_gui.image_extent.width;
+	blit_info.dst.rect.extent.h = r->mirror_to_debug_gui.image_extent.height;
+
+
+	blit_info.dst.fm_image.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_info.dst.fm_image.base_array_layer = 0;
+	blit_info.dst.fm_image.image = r->mirror_to_debug_gui.bounce.image;
+
+
+	vk_cmd_blit_image_locked(vk, cmd, &blit_info);
 
 	VkImageSubresourceRange first_color_level_subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -1788,63 +1860,28 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    .layerCount = 1,
 	};
 
-	// Barrier to make destination a destination
-	vk_cmd_image_barrier_locked(              //
-	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
-	    wrap->image,                          // image
-	    VK_ACCESS_HOST_READ_BIT,              // srcAccessMask
-	    VK_ACCESS_TRANSFER_WRITE_BIT,         // dstAccessMask
-	    wrap->layout,                         // oldImageLayout
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newImageLayout
-	    VK_PIPELINE_STAGE_HOST_BIT,           // srcStageMask
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // dstStageMask
-	    first_color_level_subresource_range); // subresourceRange
+	struct vk_cmd_copy_image_info copy_info = {0};
 
-	// Barrier to make source a source
-	vk_cmd_image_barrier_locked(                  //
-	    vk,                                       // vk_bundle
-	    cmd,                                      // cmdbuffer
-	    copy_from,                                // image
-	    VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-	    VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
-	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // oldImageLayout
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // newImageLayout
-	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // srcStageMask
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // dstStageMask
-	    first_color_level_subresource_range);     // subresourceRange
+	copy_info.src.old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	copy_info.src.src_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	copy_info.src.src_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	copy_info.src.fm_image.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copy_info.src.fm_image.base_array_layer = 0;
+	copy_info.src.fm_image.image = r->mirror_to_debug_gui.bounce.image;
 
+	copy_info.dst.old_layout = wrap->layout;
+	copy_info.dst.src_access_mask = VK_ACCESS_HOST_READ_BIT;
+	copy_info.dst.src_stage_mask = VK_PIPELINE_STAGE_HOST_BIT;
+	copy_info.dst.fm_image.aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copy_info.dst.fm_image.base_array_layer = 0;
+	copy_info.dst.fm_image.image = wrap->image;
 
-	VkImageBlit blit = {0};
-	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.srcSubresource.layerCount = 1;
+	copy_info.size.w = r->mirror_to_debug_gui.image_extent.width;
+	copy_info.size.h = r->mirror_to_debug_gui.image_extent.height;
 
-	blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.dstSubresource.layerCount = 1;
+	vk_cmd_copy_image_locked(vk, cmd, &copy_info);
 
-	blit.srcOffsets[1].x = r->lr->extent.width;
-	blit.srcOffsets[1].y = r->lr->extent.height;
-	blit.srcOffsets[1].z = 1;
-
-
-	blit.dstOffsets[1].x = r->mirror_to_debug_gui.image_extent.width;
-	blit.dstOffsets[1].y = r->mirror_to_debug_gui.image_extent.height;
-	blit.dstOffsets[1].z = 1;
-
-	vk->vkCmdBlitImage(                       //
-	    cmd,                                  // commandBuffer
-	    copy_from,                            // srcImage
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // srcImageLayout
-	    wrap->image,                          // dstImage
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // dstImageLayout
-	    1,                                    // regionCount
-	    &blit,                                // pRegions
-	    VK_FILTER_LINEAR                      // filter
-	);
-
-	wrap->layout = VK_IMAGE_LAYOUT_GENERAL;
-
-	// Reset destination
+	// Barrier readback image to host so we can safely read
 	vk_cmd_image_barrier_locked(              //
 	    vk,                                   // vk_bundle
 	    cmd,                                  // cmdbuffer
@@ -1852,23 +1889,10 @@ mirror_to_debug_gui_do_blit(struct comp_renderer *r)
 	    VK_ACCESS_TRANSFER_WRITE_BIT,         // srcAccessMask
 	    VK_ACCESS_HOST_READ_BIT,              // dstAccessMask
 	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // oldImageLayout
-	    wrap->layout,                         // newImageLayout
+	    VK_IMAGE_LAYOUT_GENERAL,              // newImageLayout
 	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
 	    VK_PIPELINE_STAGE_HOST_BIT,           // dstStageMask
 	    first_color_level_subresource_range); // subresourceRange
-
-	// Reset src
-	vk_cmd_image_barrier_locked(                  //
-	    vk,                                       // vk_bundle
-	    cmd,                                      // cmdbuffer
-	    copy_from,                                // image
-	    VK_ACCESS_TRANSFER_READ_BIT,              // srcAccessMask
-	    VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // oldImageLayout
-	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // newImageLayout
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // srcStageMask
-	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // dstStageMask
-	    first_color_level_subresource_range);     // subresourceRange
 
 	// Done submitting commands.
 	os_mutex_unlock(&vk->cmd_pool_mutex);
