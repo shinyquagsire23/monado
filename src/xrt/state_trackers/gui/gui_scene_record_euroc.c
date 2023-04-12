@@ -59,7 +59,7 @@ gui_scene_record_euroc(struct gui_program *p)
 	// values, just camera projection values.
 	settings.half_size_ov9282 = false;
 	settings.want_cameras = true;
-	settings.want_imu = false;
+	settings.want_imu = true;
 
 	struct xrt_fs *the_fs = depthai_fs_slam(&xfctx, &settings);
 
