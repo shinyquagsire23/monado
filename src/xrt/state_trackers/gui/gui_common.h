@@ -221,6 +221,14 @@ void
 gui_scene_hand_tracking_demo(struct gui_program *p);
 
 /*!
+ * EuRoC recorder for DepthAI cameras
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_record_euroc(struct gui_program *p);
+
+/*!
  * Create a recording view scene.
  *
  * @ingroup gui

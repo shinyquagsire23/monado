@@ -14,6 +14,7 @@ add_library(
 	gui_scene_calibrate.c
 	gui_scene_debug.c
 	gui_scene_hand_tracking_demo.c
+	gui_scene_record_euroc.c
 	gui_scene_main_menu.c
 	gui_scene_record.c
 	gui_scene_remote.c
