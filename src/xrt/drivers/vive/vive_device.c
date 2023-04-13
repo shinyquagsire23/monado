@@ -288,9 +288,16 @@ vive_mainboard_decode_message(struct vive_device *d, struct vive_mainboard_statu
 		d->board.proximity = proximity;
 	}
 
+	/* System button on HMD */
 	if (d->board.button != report->button) {
 		d->board.button = report->button;
 		VIVE_TRACE(d, "Button %d.", report->button);
+	}
+
+	/* Vive Pro headphone buttons, reported mutually exclusive: 1 = Volume up, 2 = Volume down, 4 = Mic mute */
+	if (d->board.audio_button != report->audio_button) {
+		d->board.audio_button = report->audio_button;
+		VIVE_TRACE(d, "Audio button %d.", report->audio_button);
 	}
 }
 

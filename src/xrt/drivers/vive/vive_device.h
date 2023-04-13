@@ -56,6 +56,7 @@ struct vive_device
 		uint16_t lens_separation;
 		uint16_t proximity;
 		uint8_t button;
+		uint8_t audio_button;
 	} board;
 
 	enum u_logging_level log_level;

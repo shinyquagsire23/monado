@@ -87,7 +87,8 @@ struct vive_mainboard_status_report
 	uint16_t lens_separation;
 	uint16_t reserved1;
 	uint8_t button;
-	uint8_t reserved2[3];
+	uint8_t audio_button;
+	uint8_t reserved2[2];
 	uint8_t proximity_change;
 	uint8_t reserved3;
 	uint16_t proximity;
