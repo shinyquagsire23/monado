@@ -719,6 +719,7 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 	VIVE_DEBUG(d, "Parsing model number: %s", d->firmware.model_number);
 
 	if (strcmp(d->firmware.model_number, "Vive. Controller MV") == 0 ||
+	    strcmp(d->firmware.model_number, "VIVE Controller Pro MV") == 0 ||
 	    strcmp(d->firmware.model_number, "Vive Controller MV") == 0) {
 		d->variant = CONTROLLER_VIVE_WAND;
 		VIVE_DEBUG(d, "Found Vive Wand controller");
