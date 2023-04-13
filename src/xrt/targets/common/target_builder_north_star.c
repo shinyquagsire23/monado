@@ -89,6 +89,7 @@ struct ns_ultraleap_device
 struct ns_depthai_device
 {
 	bool active;
+	bool upside_down;
 	struct xrt_pose P_imu_to_left_camera_basalt;
 	struct xrt_pose P_middleofeyes_to_imu_oxr;
 };
@@ -149,6 +150,15 @@ ns_tracking_config_parse_depthai(struct ns_builder *nsb, bool *out_config_valid)
 		*out_config_valid = true;
 		// not invalid, but doesn't exist. active is not set and won't be used
 		return;
+	}
+
+	// Ad-hoc optional field - the only device that needs this is Moshi's personal NS, and they might rebuild it.
+	const cJSON *upside_down = u_json_get(root, "upside_down");
+
+	if (upside_down != NULL) {
+		u_json_get_bool(upside_down, &nsb->depthai_device.upside_down);
+	} else {
+		nsb->depthai_device.upside_down = false;
 	}
 
 	*out_config_valid = *out_config_valid && //
@@ -287,9 +297,15 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	struct xrt_slam_sinks *hand_sinks = NULL;
 
-	struct t_camera_extra_info extra_camera_info;
-	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_180;
-	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_180;
+	struct t_camera_extra_info extra_camera_info = {0};
+
+	if (nsb->depthai_device.upside_down) {
+		extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_180;
+		extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_180;
+	} else {
+		extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
+		extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+	}
 
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
