@@ -45,6 +45,11 @@ getCalibration(struct HandTracking *hgt, t_stereo_camera_calibration &calibratio
 	    (float)calibration.camera_translation[2],
 	};
 
+	if (hgt->log_level <= U_LOGGING_DEBUG) {
+		HG_DEBUG(hgt, "Dumping full camera calibration!");
+		t_stereo_camera_calibration_dump(&calibration);
+	}
+
 	hgt->baseline = m_vec3_len(trans);
 	HG_DEBUG(hgt, "I think the baseline is %f meters!", hgt->baseline);
 
