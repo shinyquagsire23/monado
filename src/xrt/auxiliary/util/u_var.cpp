@@ -8,10 +8,7 @@
  */
 
 #include "util/u_var.h"
-#include "util/u_time.h"
-#include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_device.h"
 
 #include <string>
 #include <sstream>
