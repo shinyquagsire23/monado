@@ -919,6 +919,19 @@ multi_compositor_destroy(struct xrt_compositor *xc)
 	free(mc);
 }
 
+static void
+log_frame_time_diff(uint64_t frame_time_ns, uint64_t display_time_ns)
+{
+	int64_t diff_ns = (int64_t)frame_time_ns - (int64_t)display_time_ns;
+	bool late = false;
+	if (diff_ns < 0) {
+		diff_ns = -diff_ns;
+		late = true;
+	}
+
+	U_LOG_W("Frame %s by %.2fms!", late ? "late" : "early", time_ns_to_ms_f(diff_ns));
+}
+
 void
 multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t display_time_ns)
 {
@@ -931,6 +944,11 @@ multi_compositor_deliver_any_frames(struct multi_compositor *mc, uint64_t displa
 
 	if (time_is_greater_then_or_within_half_ms(display_time_ns, mc->scheduled.data.display_time_ns)) {
 		slot_move_and_clear_locked(mc, &mc->delivered, &mc->scheduled);
+
+		uint64_t frame_time_ns = mc->delivered.data.display_time_ns;
+		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
+			log_frame_time_diff(frame_time_ns, display_time_ns);
+		}
 	}
 
 	os_mutex_unlock(&mc->slot_lock);

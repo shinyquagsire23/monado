@@ -212,19 +212,6 @@ overlay_sort_func(const void *a, const void *b)
 }
 
 static void
-log_frame_time_diff(uint64_t frame_time_ns, uint64_t display_time_ns)
-{
-	int64_t diff_ns = (int64_t)frame_time_ns - (int64_t)display_time_ns;
-	bool late = false;
-	if (diff_ns < 0) {
-		diff_ns = -diff_ns;
-		late = true;
-	}
-
-	U_LOG_W("Frame %s by %.2fms!", late ? "late" : "early", time_ns_to_ms_f(diff_ns));
-}
-
-static void
 transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_time_ns, int64_t system_frame_id)
 {
 	COMP_TRACE_MARKER();
@@ -282,11 +269,6 @@ transfer_layers_locked(struct multi_system_compositor *msc, uint64_t display_tim
 	for (size_t k = 0; k < count; k++) {
 		struct multi_compositor *mc = array[k];
 		assert(mc != NULL);
-
-		uint64_t frame_time_ns = mc->delivered.data.display_time_ns;
-		if (!time_is_within_half_ms(frame_time_ns, display_time_ns)) {
-			log_frame_time_diff(frame_time_ns, display_time_ns);
-		}
 
 		for (uint32_t i = 0; i < mc->delivered.layer_count; i++) {
 			struct multi_layer_entry *layer = &mc->delivered.layers[i];
