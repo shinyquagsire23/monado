@@ -27,6 +27,10 @@ CI_FAIRY := ci-fairy generate-template --config=$(CONFIG_FILE)
 # As the default thing for ci-fairy to template, this is special cased
 .gitlab-ci.yml: .gitlab-ci/ci.template .gitlab-ci/win_containers.yml $(CONFIG_FILE)
 	$(CI_FAIRY) $< > $@
+# Extra deps
+.gitlab-ci.yml: .gitlab-ci/ci-containers-variables.yml.jinja
+.gitlab-ci.yml: .gitlab-ci/ci-containers.yml.jinja
+.gitlab-ci.yml: .gitlab-ci/functions.jinja
 
 # Everything else is structured alike
 $(FILES_IN_SUBDIR): %: %.jinja $(CONFIG_FILE)

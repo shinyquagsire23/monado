@@ -2,10 +2,11 @@
 # SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
 {# ignore the warning, this is actually the template to edit. #}
-######################################
-#      GENERATED - DO NOT EDIT       #
-# see .gitlab-ci/ci.template instead #
-######################################
+###############################################
+# GENERATED - DO NOT EDIT
+# see .gitlab-ci/ci.template, etc instead
+###############################################
+{# See README.md for instructions to regenerate after modification. #}
 {#
 useful links:
 https://freedesktop.pages.freedesktop.org/ci-templates/
@@ -23,35 +24,23 @@ make -f .gitlab-ci/ci-scripts.mk
 
 # Detached MR pipelines, needed due to https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/438
 
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_PIPELINE_SOURCE == 'push'
+# workflow:
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+#     - if: $CI_PIPELINE_SOURCE == 'push'
 
 variables:
-  FDO_UPSTREAM_REPO: monado/monado
-
-.templates_sha: &templates_sha {{fdo_ci_templates_sha}}
+  FDO_UPSTREAM_REPO: "monado/monado"
 
 include:
-{% for distro in distributions %}
-  # {{ distro.name | capitalize }}
   - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/{{distro.name}}.yml"
+    ref: {{fdo_ci_templates_sha}}
+    file:
+{% for distro in distributions %}
+      - "/templates/{{distro.name}}.yml"
 {% endfor %}
-
-{% for distro in distributions -%} {%- for image in distro.images %}
-
-# Variables for build and usage of {{ distro.name|capitalize }} {{image.codename}} image
-.monado.variables.{{distro.name}}:{{image.codename}}:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "{{ image["distro_version"] | default(image.codename) }}"
-    FDO_DISTRIBUTION_TAG: "{{image["tag"]}}"
-{% if "repo_suffix" in image %}
-    FDO_REPO_SUFFIX: {{image["repo_suffix"]}}
-{% endif %}
-{% endfor -%} {%- endfor %}
+  # - local: .gitlab-ci/containers/ci-container-prep.yml
+  - local: .gitlab-ci/ci-rules.yml
 
 stages:
   - container_prep
@@ -61,57 +50,12 @@ stages:
   - pages
   - deploy
 
-###
-# Container prep jobs
-
-{%- for distro in distributions -%} {%- for image in distro.images %}
-
-# Make {{ distro.name|capitalize }} {{image.codename}} image
-{{distro.name}}:{{image.codename}}:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.{{distro.name}}:{{image.codename}}
-    - .fdo.container-build@{{distro.name}} # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    {# The packages list is actually a mapping, not an array, but the same syntax works. #}
-    {# Needed to be a mapping so it could be "merged" #}
-    FDO_DISTRIBUTION_PACKAGES: '{{image.packages | sort | join(" ")}}'
-{% if "script" in image %}
-    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/{{image["script"]}}'
-{% endif %}
-{% endfor -%} {%- endfor %}
-
-{# Macro to compute job name to extend to use image given distro and image objects#}
-{% macro base_job_to_use_image(distro, image) %}.monado.image.{{distro.name}}:{{image.codename}}{% endmacro -%}
-
-###
-# Container usage base jobs
-{% for distro in distributions -%} {%- for image in distro.images %}
-
-# Base for using {{ distro.name|capitalize }} {{image.codename}} image
-{{base_job_to_use_image(distro, image)}}:
-  extends:
-    - .monado.variables.{{distro.name}}:{{image.codename}}
-    - .fdo.{{ "suffixed" if "repo_suffix" in image else "distribution" }}-image@{{distro.name}} # from ci-templates
-
-{% endfor -%} {%- endfor %}
-
-{# Macro to compute job name to extend to use image given a package we want#}
-{% macro base_job_to_use_image_containing(package) %}
-{% for distro in distributions -%} {%- for image in distro.images if package in image.packages %}
-{{ base_job_to_use_image(distro, image) if loop.first }}
-{% endfor -%} {%- endfor %}
-{% endmacro -%}
 
 {% include 'win_containers.yml' %}
+{% include 'ci-containers-variables.yml.jinja' %}
+{% include 'ci-containers.yml.jinja' %}
+
+{% from 'functions.jinja' import base_job_to_use_image_containing, base_job_to_use_image with context %}
 
 # Style check job
 format-and-spellcheck:
@@ -128,6 +72,8 @@ format-and-spellcheck:
 
 # Verify REUSE compliance
 reuse:
+  extends:
+    - .build-rules
   stage: build
   image:
     name: fsfe/reuse:latest

@@ -1,0 +1,16 @@
+{#
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
+#}
+
+{% for distro in distributions -%} {%- for image in distro.images %}
+
+# Variables for build and usage of {{ distro.name|capitalize }} {{image.codename}} image
+.monado.variables.{{distro.name}}:{{image.codename}}:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "{{ image["distro_version"] | default(image.codename) }}"
+    FDO_DISTRIBUTION_TAG: "{{image["tag"]}}"
+{% if "repo_suffix" in image %}
+    FDO_REPO_SUFFIX: {{image["repo_suffix"]}}
+{% endif %}
+{% endfor -%} {%- endfor %}

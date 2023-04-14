@@ -35,9 +35,8 @@
     - shell
   variables:
     GIT_STRATEGY: fetch
-  only:
-    changes:
-      - .gitlab-ci/**/*
+  extends:
+    - .container-rules
 
   stage: container_prep
   script:
@@ -76,4 +75,5 @@ win:container_prep:
     - docker
   extends:
     - .monado.variables.windows:vs2022
+    - .build-rules
   image: $MONADO_IMAGE

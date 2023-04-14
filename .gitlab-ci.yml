@@ -1,68 +1,30 @@
 # SPDX-License-Identifier: CC0-1.0
 # SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
-######################################
-#      GENERATED - DO NOT EDIT       #
-# see .gitlab-ci/ci.template instead #
-######################################
+###############################################
+# GENERATED - DO NOT EDIT
+# see .gitlab-ci/ci.template, etc instead
+###############################################
 
 # Detached MR pipelines, needed due to https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/438
 
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-    - if: $CI_PIPELINE_SOURCE == 'push'
+# workflow:
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+#     - if: $CI_PIPELINE_SOURCE == 'push'
 
 variables:
-  FDO_UPSTREAM_REPO: monado/monado
-
-.templates_sha: &templates_sha 7811ba9814a3bad379377241c6c6b62d78b20eac
+  FDO_UPSTREAM_REPO: "monado/monado"
 
 include:
-  # Debian
   - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/debian.yml"
-  # Ubuntu
-  - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/ubuntu.yml"
-  # Arch
-  - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/arch.yml"
-
-
-# Variables for build and usage of Debian bullseye image
-.monado.variables.debian:bullseye:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2023-04-07"
-
-# Variables for build and usage of Debian bullseye-ndk image
-.monado.variables.debian:bullseye-ndk:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "bullseye"
-    FDO_DISTRIBUTION_TAG: "2023-04-10.1"
-    FDO_REPO_SUFFIX: ndk
-
-# Variables for build and usage of Ubuntu focal image
-.monado.variables.ubuntu:focal:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "20.04"
-    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
-
-# Variables for build and usage of Ubuntu jammy image
-.monado.variables.ubuntu:jammy:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "22.04"
-    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
-
-# Variables for build and usage of Arch rolling image
-.monado.variables.arch:rolling:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "rolling"
-    FDO_DISTRIBUTION_TAG: "2023-03-13.2"
+    ref: 7811ba9814a3bad379377241c6c6b62d78b20eac
+    file:
+      - "/templates/debian.yml"
+      - "/templates/ubuntu.yml"
+      - "/templates/arch.yml"
+  # - local: .gitlab-ci/containers/ci-container-prep.yml
+  - local: .gitlab-ci/ci-rules.yml
 
 stages:
   - container_prep
@@ -71,133 +33,6 @@ stages:
   - reprepro
   - pages
   - deploy
-
-###
-# Container prep jobs
-# Make Debian bullseye image
-debian:bullseye:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.debian:bullseye
-    - .fdo.container-build@debian # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
-
-# Make Debian bullseye-ndk image
-debian:bullseye-ndk:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.debian:bullseye-ndk
-    - .fdo.container-build@debian # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake default-jdk-headless git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
-    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/android_container_prep.sh'
-
-# Make Ubuntu focal image
-ubuntu:focal:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.ubuntu:focal
-    - .fdo.container-build@ubuntu # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 unzip wget'
-
-# Make Ubuntu jammy image
-ubuntu:jammy:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.ubuntu:jammy
-    - .fdo.container-build@ubuntu # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
-
-# Make Arch rolling image
-arch:rolling:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.arch:rolling
-    - .fdo.container-build@arch # from ci-templates
-
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
-      changes:
-        - .gitlab-ci/**/*
-    - if: $CI_PIPELINE_SOURCE == 'push'
-      changes:
-        - .gitlab-ci/**/*
-  variables:
-    FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
-    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/install-arch-additional-deps.sh'
-
-###
-# Container usage base jobs
-
-# Base for using Debian bullseye image
-.monado.image.debian:bullseye:
-  extends:
-    - .monado.variables.debian:bullseye
-    - .fdo.distribution-image@debian # from ci-templates
-
-
-# Base for using Debian bullseye-ndk image
-.monado.image.debian:bullseye-ndk:
-  extends:
-    - .monado.variables.debian:bullseye-ndk
-    - .fdo.suffixed-image@debian # from ci-templates
-
-
-# Base for using Ubuntu focal image
-.monado.image.ubuntu:focal:
-  extends:
-    - .monado.variables.ubuntu:focal
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Ubuntu jammy image
-.monado.image.ubuntu:jammy:
-  extends:
-    - .monado.variables.ubuntu:jammy
-    - .fdo.distribution-image@ubuntu # from ci-templates
-
-
-# Base for using Arch rolling image
-.monado.image.arch:rolling:
-  extends:
-    - .monado.variables.arch:rolling
-    - .fdo.distribution-image@arch # from ci-templates
 
 
 # # # 
@@ -234,9 +69,8 @@ arch:rolling:container_prep:
     - shell
   variables:
     GIT_STRATEGY: fetch
-  only:
-    changes:
-      - .gitlab-ci/**/*
+  extends:
+    - .container-rules
 
   stage: container_prep
   script:
@@ -275,7 +109,145 @@ win:container_prep:
     - docker
   extends:
     - .monado.variables.windows:vs2022
+    - .build-rules
   image: $MONADO_IMAGE
+
+# Variables for build and usage of Debian bullseye image
+.monado.variables.debian:bullseye:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "bullseye"
+    FDO_DISTRIBUTION_TAG: "2023-04-07"
+
+# Variables for build and usage of Debian bullseye-ndk image
+.monado.variables.debian:bullseye-ndk:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "bullseye"
+    FDO_DISTRIBUTION_TAG: "2023-04-10.1"
+    FDO_REPO_SUFFIX: ndk
+
+# Variables for build and usage of Ubuntu focal image
+.monado.variables.ubuntu:focal:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "20.04"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
+
+# Variables for build and usage of Ubuntu jammy image
+.monado.variables.ubuntu:jammy:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "22.04"
+    FDO_DISTRIBUTION_TAG: "2022-09-20.0"
+
+# Variables for build and usage of Arch rolling image
+.monado.variables.arch:rolling:
+  variables:
+    FDO_DISTRIBUTION_VERSION: "rolling"
+    FDO_DISTRIBUTION_TAG: "2023-03-13.2"
+
+###
+# Container prep jobs
+# Make Debian bullseye image
+debian:bullseye:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.debian:bullseye
+    - .fdo.container-build@debian # from ci-templates
+
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates clang-format cmake codespell curl debhelper devscripts doxygen dput-ng gettext-base git glslang-tools graphviz libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 python3-click python3-pip unzip wget'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/i386_and_proclamation_container_prep.sh'
+
+# Make Debian bullseye-ndk image
+debian:bullseye-ndk:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.debian:bullseye-ndk
+    - .fdo.container-build@debian # from ci-templates
+
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: 'ca-certificates cmake default-jdk-headless git glslang-tools libeigen3-dev meson ninja-build pkg-config python3 unzip wget'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/android_container_prep.sh'
+
+# Make Ubuntu focal image
+ubuntu:focal:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.ubuntu:focal
+    - .fdo.container-build@ubuntu # from ci-templates
+
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 unzip wget'
+
+# Make Ubuntu jammy image
+ubuntu:jammy:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.ubuntu:jammy
+    - .fdo.container-build@ubuntu # from ci-templates
+
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: 'build-essential ca-certificates cmake curl debhelper devscripts dput-ng gettext-base git glslang-tools libavcodec-dev libbluetooth-dev libbsd-dev libcjson-dev libdbus-1-dev libegl1-mesa-dev libeigen3-dev libgl1-mesa-dev libglvnd-dev libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev libhidapi-dev libopencv-dev libsdl2-dev libsystemd-dev libudev-dev libusb-1.0-0-dev libuvc-dev libv4l-dev libvulkan-dev libwayland-dev libx11-dev libx11-xcb-dev libxcb-randr0-dev libxrandr-dev libxxf86vm-dev ninja-build pandoc patch pkg-config python3 reprepro unzip wget'
+
+# Make Arch rolling image
+arch:rolling:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.arch:rolling
+    - .fdo.container-build@arch # from ci-templates
+
+  variables:
+    FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/install-arch-additional-deps.sh'
+
+
+###
+# Container usage base jobs
+
+# Base for using Debian bullseye image
+.monado.image.debian:bullseye:
+  extends:
+    - .monado.variables.debian:bullseye
+    - .fdo.distribution-image@debian # from ci-templates
+    - .build-rules
+
+
+# Base for using Debian bullseye-ndk image
+.monado.image.debian:bullseye-ndk:
+  extends:
+    - .monado.variables.debian:bullseye-ndk
+    - .fdo.suffixed-image@debian # from ci-templates
+    - .build-rules
+
+
+# Base for using Ubuntu focal image
+.monado.image.ubuntu:focal:
+  extends:
+    - .monado.variables.ubuntu:focal
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .build-rules
+
+
+# Base for using Ubuntu jammy image
+.monado.image.ubuntu:jammy:
+  extends:
+    - .monado.variables.ubuntu:jammy
+    - .fdo.distribution-image@ubuntu # from ci-templates
+    - .build-rules
+
+
+# Base for using Arch rolling image
+.monado.image.arch:rolling:
+  extends:
+    - .monado.variables.arch:rolling
+    - .fdo.distribution-image@arch # from ci-templates
+    - .build-rules
+
+
+
 # Style check job
 format-and-spellcheck:
   extends:
@@ -292,6 +264,8 @@ format-and-spellcheck:
 
 # Verify REUSE compliance
 reuse:
+  extends:
+    - .build-rules
   stage: build
   image:
     name: fsfe/reuse:latest
