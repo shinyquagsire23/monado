@@ -23,8 +23,10 @@
 static FILE *g_file = NULL;
 static struct os_mutex g_file_mutex;
 static bool g_metrics_initialized = false;
+static bool g_metrics_early_flush = false;
 
 DEBUG_GET_ONCE_OPTION(metrics_file, "XRT_METRICS_FILE", NULL)
+DEBUG_GET_ONCE_BOOL_OPTION(metrics_early_flush, "XRT_METRICS_EARLY_FLUSH", false)
 
 
 
@@ -50,6 +52,10 @@ write_record(monado_metrics_Record *r)
 	os_mutex_lock(&g_file_mutex);
 
 	fwrite(buffer, stream.bytes_written, 1, g_file);
+
+	if (g_metrics_early_flush) {
+		fflush(g_file);
+	}
 
 	os_mutex_unlock(&g_file_mutex);
 }
@@ -96,6 +102,7 @@ u_metrics_init(void)
 	os_mutex_init(&g_file_mutex);
 
 	g_metrics_initialized = true;
+	g_metrics_early_flush = debug_get_bool_option_metrics_early_flush();
 
 	write_version(VERSION_MAJOR, VERSION_MINOR);
 
