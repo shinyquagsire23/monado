@@ -15,6 +15,26 @@
     # Outside of monado.
     - if: &is-forked-branch '$CI_PROJECT_NAMESPACE != "monado" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != $CI_COMMIT_REF_NAME'
       when: manual
+    # GitLab CI paths
+    - changes: &paths-ci-files
+        - ".gitlab-ci.yml"
+        - ".gitlab-ci/**/*"
+      when: on_success
+    # All paths, 1 hours have been wasted trying to combine the above arrays.
+    - changes: &paths-ci-code-sys-files
+        # Code
+        - "scripts/**/*"
+        - "src/**/*"
+        # Build sys
+        - CMakeLists.txt
+        - "*.cmake"
+        - "**/*.gradle"
+        - "cmake/**/*"
+        - "gradle/**/*"
+        # CI paths
+        - ".gitlab-ci.yml"
+        - ".gitlab-ci/**/*"
+      when: on_success
 
 
 # When to automatically run the CI for build jobs
@@ -22,19 +42,8 @@
   rules:
     # If any files affecting the pipeline are changed, build/test jobs run
     # automatically once all dependency jobs have passed
-    - changes: &all_paths
-      # build sys
-      - CMakeLists.txt
-      - "*.cmake"
-      - "**/*.gradle"
-      - "cmake/**/*"
-      - "gradle/**/*"
-      # GitLab CI
-      - ".gitlab-ci.yml"
-      - ".gitlab-ci/**/*"
-      # Source code
-      - "scripts/**/*"
-      - "src/**/*"
+    - changes:
+        *paths-ci-code-sys-files
       when: on_success
     # Don't build on forked repos.
     - if: *is-forked-branch
@@ -48,20 +57,19 @@
     # configuration files were changed, to ensure docker images are up to date
     - if: *is-post-merge
       changes:
-      - ".gitlab-ci.yml"
-      - ".gitlab-ci/**/*"
+        *paths-ci-files
       when: on_success
     # Run pipeline by default if it is for a merge request, and any files
     # affecting the pipeline were changed
     - if: *is-pre-merge
       changes:
-        *all_paths
+        *paths-ci-files
       when: on_success
     # Allow triggering jobs manually in other cases if any files affecting the
     # pipeline were changed: Disabled for now because it causes the pipeline on
     # main to be blocked because it gets stuck in the container stage.
     #- changes:
-    #    *all_paths
+    #    *paths-ci-files
     #  when: manual
     # Don't build on forked repos.
     - if: *is-forked-branch
