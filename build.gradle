@@ -54,7 +54,19 @@ plugins {
     id "com.quittle.svg-2-android-vector" version "0.0.6" apply false
 
     // Spotless for Java and Kotlin's code formatting
-    id 'com.diffplug.spotless' version "6.18.0" apply false
+    id 'com.diffplug.spotless' version "6.18.0"
+}
+
+spotless {
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.gradle', '*.md', '.gitignore'
+
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces(4)
+        endWithNewline()
+    }
 }
 
 ext {

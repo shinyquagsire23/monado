@@ -81,4 +81,3 @@ bug reports should include:
     otherwise a description of expected and actual behavior
   - if you cannot disclose your code, or even if you can,
     an "artificial", minimally-sized example can be very valuable.
-
