@@ -52,8 +52,9 @@
         *all_paths
       when: on_success
     # Allow triggering jobs manually in other cases if any files affecting the
-    # pipeline were changed
-    - changes:
-        *all_paths
-      when: manual
+    # pipeline were changed: Disabled for now because it causes the pipeline on
+    # main to be blocked because it gets stuck in the container stage.
+    #- changes:
+    #    *all_paths
+    #  when: manual
     # Otherwise, container jobs won't run because no rule matched.
