@@ -27,15 +27,20 @@ import org.freedesktop.monado.auxiliary.UiProvider
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class MonadoOpenXrAndroidModule {
-    @Binds
-    abstract fun bindUiProvider(uiProvider: MonadoOpenXrUiProvider): UiProvider
+    @Binds abstract fun bindUiProvider(uiProvider: MonadoOpenXrUiProvider): UiProvider
 
     @Binds
-    abstract fun bindNameAndLogo(monadoOpenXrBrandingUiProvider: MonadoOpenXrBrandingUiProvider): NameAndLogoProvider
+    abstract fun bindNameAndLogo(
+        monadoOpenXrBrandingUiProvider: MonadoOpenXrBrandingUiProvider
+    ): NameAndLogoProvider
 
     @Binds
-    abstract fun bindNoticeFragment(noticeFragmentProvider: AboutLibrariesNoticeFragmentProvider): NoticeFragmentProvider
+    abstract fun bindNoticeFragment(
+        noticeFragmentProvider: AboutLibrariesNoticeFragmentProvider
+    ): NoticeFragmentProvider
 
     @Binds
-    abstract fun bindServiceNotification(serviceNotificationImpl: ServiceNotificationImpl): IServiceNotification
+    abstract fun bindServiceNotification(
+        serviceNotificationImpl: ServiceNotificationImpl
+    ): IServiceNotification
 }

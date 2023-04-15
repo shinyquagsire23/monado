@@ -14,9 +14,7 @@ import androidx.annotation.NonNull;
 
 import dagger.hilt.android.HiltAndroidApp;
 
-/**
- * Subclass required for Hilt usage.
- */
+/** Subclass required for Hilt usage. */
 @HiltAndroidApp
 public class MonadoOpenXrApplication extends Application {
 

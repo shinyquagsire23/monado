@@ -14,16 +14,11 @@ import android.widget.Button
 
 class ShutdownProcess {
     companion object {
-        /**
-         * Show and handle the shutdown runtime button.
-         */
+        /** Show and handle the shutdown runtime button. */
         fun setupRuntimeShutdownButton(activity: AboutActivity) {
-            val button =
-                    activity.findViewById<Button>(R.id.shutdown)
+            val button = activity.findViewById<Button>(R.id.shutdown)
             button.visibility = View.VISIBLE
-            button.setOnClickListener {
-                Process.killProcess(Process.myPid())
-            }
+            button.setOnClickListener { Process.killProcess(Process.myPid()) }
         }
     }
 }
