@@ -12,6 +12,9 @@
     # Pre-merge pipeline
     - if: &is-pre-merge '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: on_success
+    # Outside of monado.
+    - if: &is-forked-branch '$CI_PROJECT_NAMESPACE != "monado" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != $CI_COMMIT_REF_NAME'
+      when: manual
 
 
 # When to automatically run the CI for build jobs
@@ -33,6 +36,9 @@
       - "scripts/**/*"
       - "src/**/*"
       when: on_success
+    # Don't build on forked repos.
+    - if: *is-forked-branch
+      when: manual
     # Otherwise, build/test jobs won't run because no rule matched.
 
 
@@ -57,4 +63,7 @@
     #- changes:
     #    *all_paths
     #  when: manual
+    # Don't build on forked repos.
+    - if: *is-forked-branch
+      when: manual
     # Otherwise, container jobs won't run because no rule matched.
