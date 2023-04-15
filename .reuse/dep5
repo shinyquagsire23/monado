@@ -118,3 +118,8 @@ Files:  src/external/tracy/*
 Copyright: 2017-2022, Bartosz Taudul
 License: BSD-3-Clause
 Comment: SPDX-License-Identifier missing.
+
+Files:  src/external/valve-file-vdf/*
+Copyright: 2016-2023, Matthias Moeller
+License: MIT
+Comment: SPDX-License-Identifier missing.

@@ -165,3 +165,9 @@ if(XRT_HAVE_TRACY)
 	target_compile_definitions(xrt-external-tracy PRIVATE TRACY_ENABLE)
 	target_link_libraries(xrt-external-tracy PRIVATE ${CMAKE_DL_LIBS})
 endif()
+
+# Valve VDF parser
+add_library(xrt-external-vdf INTERFACE)
+target_include_directories(
+	xrt-external-vdf SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/valve-file-vdf
+	)
