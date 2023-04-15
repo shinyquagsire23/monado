@@ -112,6 +112,7 @@ win:container_prep:
     - .build-rules
   image: $MONADO_IMAGE
 
+
 # Variables for build and usage of Debian bullseye image
 .monado.variables.debian:bullseye:
   variables:
@@ -349,6 +350,26 @@ ndk:arm64-v8a:
 
     - .gitlab-ci/prebuild.sh
     - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
+
+android:spotlessCheck:
+  stage: build
+  extends:
+    - .monado.image.debian:bullseye-ndk
+  before_script:
+    # For caching gradle stuff
+    - export GRADLE_USER_HOME=`pwd`/.gradlehome
+
+  variables:
+    GRADLE_ARGS: "-Porg.gradle.daemon=false "
+  cache:
+    paths:
+      - .gradlehome/wrapper
+      - .gradlehome/caches
+
+  script:
+
+    - .gitlab-ci/prebuild.sh
+    - .gitlab-ci/ci-gradle-build.sh spotlessCheck
 
 android:outOfProcessDebug:
   stage: build
