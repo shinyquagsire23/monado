@@ -11,8 +11,26 @@ plugins {
 
     // SVG files in the "raw" resource directory will be transformed into vector drawables of the same name.
     id 'com.quittle.svg-2-android-vector'
+
+    // Use spotless to format Java and Kotlin code.
+    id 'com.diffplug.spotless'
 }
 
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+        // apply a specific flavor of google-java-format.
+        googleJavaFormat('1.8').aosp().reflowLongStrings()
+        // fix formatting of type annotations.
+        formatAnnotations()
+    }
+
+    kotlin {
+        target 'src/main/java/**/*.kt'
+        // Use ktfmt(https://github.com/facebook/ktfmt) as the default Kotlin formatter. .
+        ktfmt('0.43').kotlinlangStyle()
+    }
+}
 
 android {
     compileSdk project.sharedCompileSdk

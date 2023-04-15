@@ -52,6 +52,9 @@ plugins {
 
     // So we don't have to check in generated files: we start with SVGs for vector art.
     id "com.quittle.svg-2-android-vector" version "0.0.6" apply false
+
+    // Spotless for Java and Kotlin's code formatting
+    id 'com.diffplug.spotless' version "6.18.0" apply false
 }
 
 ext {
