@@ -61,6 +61,12 @@ update_expgain(struct wmr_camera *cam, struct xrt_frame **frames);
 #define DEFAULT_EXPOSURE 6000
 #define DEFAULT_GAIN 127
 
+#define WMR_FRAMETYPE_SLAM 0x0
+#define WMR_FRAMETYPE_CONTROLLER 0x2
+
+#define WMR_DEBUG_SINK_SLAM 0
+#define WMR_DEBUG_SINK_CONTROLLER 1
+
 struct wmr_camera_active_cmd
 {
 	__le32 magic;
@@ -338,11 +344,18 @@ img_xfer_cb(struct libusb_transfer *xfer)
 
 	uint16_t unknown16 = read16(&src);
 	uint16_t unknown16_2 = read16(&src);
+	src += 4; // Skip "Dlo+" magic bytes
+	uint16_t frametype = read16(&src);
+	/* frametype 0 is SLAM, frametype 2 is controller tracking */
+	bool slam_tracking_frame = (frametype == WMR_FRAMETYPE_SLAM);
 
-	WMR_CAM_TRACE(
-	    cam, "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64 " unknown %u %u",
-	    frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2);
+	WMR_CAM_TRACE(cam,
+	              "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64
+	              " unknown %u %u frame type %u",
+	              frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2,
+	              frametype);
 
+	/* Read values from the pixel header */
 	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
 	uint8_t seq = xf->data[89];
 	uint8_t seq_delta = seq - cam->last_seq;
@@ -360,16 +373,14 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	cam->last_frame_ts = frame_start_ts;
 	cam->last_seq = seq;
 
-	/* Exposure of 0 is a dark frame for controller tracking (usually ~60fps) */
-	int sink_index = (exposure == 0) ? 1 : 0;
-
+	/* Push to the appropriate debug output based on frame type */
+	int sink_index = slam_tracking_frame ? WMR_DEBUG_SINK_SLAM : WMR_DEBUG_SINK_CONTROLLER;
 	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
 		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
 	}
 
 	// Push to sinks
-	bool tracking_frame = sink_index == 0;
-	if (tracking_frame) {
+	if (slam_tracking_frame) {
 		// Tracking frames usually come at ~30fps
 		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {NULL};
 		for (int i = 0; i < cam->slam_cam_count; i++) {
@@ -472,14 +483,14 @@ wmr_camera_open(struct wmr_camera_open_config *config)
 		ceg->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
 	}
 
-	u_sink_debug_init(&cam->debug_sinks[0]);
-	u_sink_debug_init(&cam->debug_sinks[1]);
+	u_sink_debug_init(&cam->debug_sinks[WMR_DEBUG_SINK_SLAM]);
+	u_sink_debug_init(&cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER]);
 	u_var_add_root(cam, "WMR Camera", true);
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
 
 	u_var_add_gui_header_begin(cam, NULL, "Camera Streams");
-	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
-	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[WMR_DEBUG_SINK_SLAM], "SLAM Tracking Streams");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER], "Controller Tracking Streams");
 	u_var_add_gui_header_end(cam, NULL, NULL);
 
 	u_var_add_gui_header_begin(cam, NULL, "Exposure and gain control");
@@ -553,8 +564,8 @@ wmr_camera_free(struct wmr_camera *cam)
 
 	// Tidy the variable tracking.
 	u_var_remove_root(cam);
-	u_sink_debug_destroy(&cam->debug_sinks[0]);
-	u_sink_debug_destroy(&cam->debug_sinks[1]);
+	u_sink_debug_destroy(&cam->debug_sinks[WMR_DEBUG_SINK_SLAM]);
+	u_sink_debug_destroy(&cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER]);
 
 	free(cam);
 }
@@ -589,7 +600,8 @@ wmr_camera_start(struct wmr_camera *cam)
 	for (int i = 0; i < NUM_XFERS; i++) {
 		uint8_t *recv_buf = malloc(cam->xfer_size);
 
-		libusb_fill_bulk_transfer(cam->xfers[i], cam->dev, 0x85, recv_buf, cam->xfer_size, img_xfer_cb, cam, 0);
+		libusb_fill_bulk_transfer(cam->xfers[i], cam->dev, LIBUSB_ENDPOINT_IN | 5, recv_buf, cam->xfer_size,
+		                          img_xfer_cb, cam, 0);
 		cam->xfers[i]->flags |= LIBUSB_TRANSFER_FREE_BUFFER;
 
 		res = libusb_submit_transfer(cam->xfers[i]);
@@ -690,6 +702,7 @@ wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t
 {
 	DRV_TRACE_MARKER();
 
+	WMR_CAM_TRACE(cam, "Setting camera %d exposure %u gain %u", camera_id, exposure, gain);
 	struct wmr_camera_gain_cmd cmd = {
 	    .magic = __cpu_to_le32(WMR_MAGIC),
 	    .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),
