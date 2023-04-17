@@ -24,9 +24,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 
-/**
- * Class that creates/manages surface on display.
- */
+/** Class that creates/manages surface on display. */
 class SurfaceManager(context: Context) : SurfaceHolder.Callback {
     private val appContext: Context = context.applicationContext
     private val surfaceLock: ReentrantLock = ReentrantLock()
@@ -109,8 +107,8 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
     /**
      * Check if current process has the capability to draw over other applications.
      *
-     * Implementation of [Settings.canDrawOverlays] checks both context and UID,
-     * therefore this cannot be done in client side.
+     * Implementation of [Settings.canDrawOverlays] checks both context and UID, therefore this
+     * cannot be done in client side.
      *
      * @return True if current process can draw over other applications; otherwise false.
      */
@@ -118,16 +116,12 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
         return Settings.canDrawOverlays(appContext)
     }
 
-    /**
-     * Destroy created surface.
-     */
+    /** Destroy created surface. */
     fun destroySurface() {
         viewHelper.removeView()
     }
 
-    /**
-     * Helper class that manages surface view.
-     */
+    /** Helper class that manages surface view. */
     private class ViewHelper(private val callback: SurfaceHolder.Callback) {
         private var view: SurfaceView? = null
         private var displayContext: Context? = null
@@ -162,9 +156,7 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
             }
         }
 
-        /**
-         * Check whether given display is the one being used right now.
-         */
+        /** Check whether given display is the one being used right now. */
         @Suppress("DEPRECATION")
         private fun isSameDisplay(context: Context, display: Display): Boolean {
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -186,7 +178,7 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
             lp.flags = if (focusable) VIEW_FLAG_FOCUSABLE else VIEW_FLAG_NOT_FOCUSABLE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 lp.layoutInDisplayCutoutMode =
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
 
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -212,12 +204,11 @@ class SurfaceManager(context: Context) : SurfaceHolder.Callback {
             @Suppress("DEPRECATION")
             private const val VIEW_FLAG_NOT_FOCUSABLE =
                 WindowManager.LayoutParams.FLAG_FULLSCREEN or
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
         }
     }
 
     companion object {
         private const val TAG = "SurfaceManager"
     }
-
 }

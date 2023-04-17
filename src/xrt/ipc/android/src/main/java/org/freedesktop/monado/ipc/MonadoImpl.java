@@ -7,7 +7,6 @@
  * @ingroup ipc_android
  */
 
-
 package org.freedesktop.monado.ipc;
 
 import android.os.ParcelFileDescriptor;
@@ -23,12 +22,12 @@ import java.io.IOException;
 
 /**
  * Java implementation of the IMonado IPC interface.
- * <p>
- * (This is the server-side code.)
- * <p>
- * All this does is delegate calls to native JNI implementations.
- * The warning suppression is because Android Studio tends to have a hard time finding
- * the (very real) implementations of these in service-lib.
+ *
+ * <p>(This is the server-side code.)
+ *
+ * <p>All this does is delegate calls to native JNI implementations. The warning suppression is
+ * because Android Studio tends to have a hard time finding the (very real) implementations of these
+ * in service-lib.
  */
 @Keep
 public class MonadoImpl extends IMonado.Stub {
@@ -45,21 +44,21 @@ public class MonadoImpl extends IMonado.Stub {
 
     public MonadoImpl(@NonNull SurfaceManager surfaceManager) {
         this.surfaceManager = surfaceManager;
-        this.surfaceManager.setCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                Log.i(TAG, "surfaceCreated");
-                passAppSurface(holder.getSurface());
-            }
+        this.surfaceManager.setCallback(
+                new SurfaceHolder.Callback() {
+                    @Override
+                    public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                        Log.i(TAG, "surfaceCreated");
+                        passAppSurface(holder.getSurface());
+                    }
 
-            @Override
-            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-            }
+                    @Override
+                    public void surfaceChanged(
+                            @NonNull SurfaceHolder holder, int format, int width, int height) {}
 
-            @Override
-            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-            }
-        });
+                    @Override
+                    public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
+                });
     }
 
     @Override
@@ -111,18 +110,16 @@ public class MonadoImpl extends IMonado.Stub {
         nativeShutdownServer();
     }
 
-    /**
-     * Native method that starts server.
-     */
+    /** Native method that starts server. */
     @SuppressWarnings("JavaJniMissingFunction")
     private native void nativeStartServer();
 
     /**
      * Native handling of receiving a surface: should convert it to an ANativeWindow then do stuff
      * with it.
-     * <p>
-     * Ignore warnings that this function is missing: it is not, it is just in a different module.
-     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
+     *
+     * <p>Ignore warnings that this function is missing: it is not, it is just in a different
+     * module. See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param surface The surface to pass to native code
      * @todo figure out a good way to have a client ID
@@ -133,13 +130,13 @@ public class MonadoImpl extends IMonado.Stub {
     /**
      * Native handling of receiving an FD for a new client: the FD should be used to start up the
      * rest of the native IPC code on that socket.
-     * <p>
-     * This is essentially the entry point for the monado service on Android: if it's already
+     *
+     * <p>This is essentially the entry point for the monado service on Android: if it's already
      * running, this will be called in it. If it's not already running, a process will be created,
      * and this will be the first native code executed in that process.
-     * <p>
-     * Ignore warnings that this function is missing: it is not, it is just in a different module.
-     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
+     *
+     * <p>Ignore warnings that this function is missing: it is not, it is just in a different
+     * module. See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param fd The incoming file descriptor: ownership is transferred to native code here.
      * @return 0 on success, anything else means the fd wasn't sent and ownership not transferred.

@@ -7,7 +7,6 @@
  * @ingroup ipc_android
  */
 
-
 package org.freedesktop.monado.ipc;
 
 import android.app.Activity;
@@ -37,50 +36,40 @@ import java.util.concurrent.Executors;
 
 /**
  * Provides the client-side code to initiate connection to Monado IPC service.
- * <p>
- * This class will get loaded into the OpenXR client application by our native code.
+ *
+ * <p>This class will get loaded into the OpenXR client application by our native code.
  */
 @Keep
 public class Client implements ServiceConnection {
     private static final String TAG = "monado-ipc-client";
-    /**
-     * Used to block until binder is ready.
-     */
+    /** Used to block until binder is ready. */
     private final Object binderSync = new Object();
-    /**
-     * Keep track of the ipc_client_android instance over on the native side.
-     */
+    /** Keep track of the ipc_client_android instance over on the native side. */
     private final NativeCounterpart nativeCounterpart;
     /**
-     * Pointer to local IPC proxy: calling methods on it automatically transports arguments across binder IPC.
-     * <p>
-     * May be null!
+     * Pointer to local IPC proxy: calling methods on it automatically transports arguments across
+     * binder IPC.
+     *
+     * <p>May be null!
      */
-    @Keep
-    public IMonado monado = null;
+    @Keep public IMonado monado = null;
     /**
      * Indicates that we tried to connect but failed.
-     * <p>
-     * Used to distinguish a "not yet fully connected" null monado member from a "tried and failed"
-     * null monado member.
+     *
+     * <p>Used to distinguish a "not yet fully connected" null monado member from a "tried and
+     * failed" null monado member.
      */
-    @Keep
-    public boolean failed = false;
+    @Keep public boolean failed = false;
     /**
-     * "Our" side of the socket pair - the other side is sent to the server automatically on connection.
+     * "Our" side of the socket pair - the other side is sent to the server automatically on
+     * connection.
      */
     private ParcelFileDescriptor fd = null;
-    /**
-     * Context provided by app.
-     */
+    /** Context provided by app. */
     private Context context = null;
-    /**
-     * Context of the runtime package
-     */
+    /** Context of the runtime package */
     private Context runtimePackageContext = null;
-    /**
-     * Control system ui visibility
-     */
+    /** Control system ui visibility */
     private SystemUiController systemUiController = null;
 
     /**
@@ -110,9 +99,7 @@ public class Client implements ServiceConnection {
         }
     }
 
-    /**
-     * Let the native code notify us that it is no longer using this class.
-     */
+    /** Let the native code notify us that it is no longer using this class. */
     @Keep
     public void markAsDiscardedByNative() {
         nativeCounterpart.markAsDiscardedByNative(TAG);
@@ -121,22 +108,21 @@ public class Client implements ServiceConnection {
 
     /**
      * Bind to the Monado IPC service, and block until it is fully connected.
-     * <p>
-     * The IPC client code on Android should load this class (from the right package), instantiate
-     * this class (retaining a reference to it!), and call this method.
-     * <p>
-     * This method must not be called from the main (UI) thread.
      *
-     * @param context_    Context to use to make the connection. (We get the application context
-     *                    from it.)
+     * <p>The IPC client code on Android should load this class (from the right package),
+     * instantiate this class (retaining a reference to it!), and call this method.
+     *
+     * <p>This method must not be called from the main (UI) thread.
+     *
+     * @param context_ Context to use to make the connection. (We get the application context from
+     *     it.)
      * @param packageName The package name containing the Monado runtime. The caller is guaranteed
-     *                    to know this because it had to load this class from that package.
-     *                    There's a define in xrt_config_android.h to use for this.
+     *     to know this because it had to load this class from that package. There's a define in
+     *     xrt_config_android.h to use for this.
      * @return the fd number - do not close! (dup if you want to be able to close it) Returns -1 if
-     * something went wrong.
-     * <p>
-     * Various builds, variants, etc. will have different package names, but we must specify the
-     * package name explicitly to avoid violating security restrictions.
+     *     something went wrong.
+     *     <p>Various builds, variants, etc. will have different package names, but we must specify
+     *     the package name explicitly to avoid violating security restrictions.
      */
     @Keep
     public int blockingConnect(Context context_, String packageName) {
@@ -167,42 +153,49 @@ public class Client implements ServiceConnection {
         // TODO: just initiate MonadoView attachment and add callback to native code to
         // notify about Surface status and pass it to OpenXR application as a Session lifecycle
         // (ready ... synchronized ... visible ... focused)
-        new Thread(()-> {
-            boolean surfaceCreated = false;
-            Activity activity = null;
-            if (context_ instanceof Activity) {
-                activity = (Activity) context_;
-            }
+        new Thread(
+                        () -> {
+                            boolean surfaceCreated = false;
+                            Activity activity = null;
+                            if (context_ instanceof Activity) {
+                                activity = (Activity) context_;
+                            }
 
-            try {
-                // Determine whether runtime or client should create surface
-                if (monado.canDrawOverOtherApps()) {
-                    WindowManager wm = (WindowManager) context_.getSystemService(Context.WINDOW_SERVICE);
-                    surfaceCreated = monado.createSurface(wm.getDefaultDisplay().getDisplayId(), false);
-                } else {
-                    if (activity != null) {
-                        Surface surface = attachViewAndGetSurface(activity);
-                        surfaceCreated = (surface != null);
-                        if (surfaceCreated) {
-                            monado.passAppSurface(surface);
-                        }
-                    }
-                }
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
+                            try {
+                                // Determine whether runtime or client should create surface
+                                if (monado.canDrawOverOtherApps()) {
+                                    WindowManager wm =
+                                            (WindowManager)
+                                                    context_.getSystemService(
+                                                            Context.WINDOW_SERVICE);
+                                    surfaceCreated =
+                                            monado.createSurface(
+                                                    wm.getDefaultDisplay().getDisplayId(), false);
+                                } else {
+                                    if (activity != null) {
+                                        Surface surface = attachViewAndGetSurface(activity);
+                                        surfaceCreated = (surface != null);
+                                        if (surfaceCreated) {
+                                            monado.passAppSurface(surface);
+                                        }
+                                    }
+                                }
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
 
-            if (!surfaceCreated) {
-                Log.e(TAG, "Failed to create surface");
-                handleFailure();
-                return;
-            }
+                            if (!surfaceCreated) {
+                                Log.e(TAG, "Failed to create surface");
+                                handleFailure();
+                                return;
+                            }
 
-            if (activity != null) {
-                systemUiController = new SystemUiController(activity);
-                systemUiController.hide();
-            }
-        }).start();
+                            if (activity != null) {
+                                systemUiController = new SystemUiController(activity);
+                                systemUiController.hide();
+                            }
+                        })
+                .start();
 
         // Create socket pair
         ParcelFileDescriptor theirs;
@@ -233,15 +226,13 @@ public class Client implements ServiceConnection {
      * Bind to the Monado IPC service - this asynchronously starts connecting (and launching the
      * service if it's not already running)
      *
-     * @param context_    Context to use to make the connection. (We get the application context
-     *                    from it.)
+     * @param context_ Context to use to make the connection. (We get the application context from
+     *     it.)
      * @param packageName The package name containing the Monado runtime. The caller is guaranteed
-     *                    to know this because it had to load this class from that package.
-     *                    There's a define in xrt_config_android.h to use for this.
-     *                    <p>
-     *                    Various builds, variants, etc. will have different package names, but we
-     *                    must specify the package name explicitly to avoid violating security
-     *                    restrictions.
+     *     to know this because it had to load this class from that package. There's a define in
+     *     xrt_config_android.h to use for this.
+     *     <p>Various builds, variants, etc. will have different package names, but we must specify
+     *     the package name explicitly to avoid violating security restrictions.
      */
     public boolean bind(Context context_, String packageName) {
         Log.i(TAG, "bind");
@@ -251,20 +242,20 @@ public class Client implements ServiceConnection {
             context = context_;
         }
         try {
-            runtimePackageContext = context.createPackageContext(packageName,
-                    Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
+            runtimePackageContext =
+                    context.createPackageContext(
+                            packageName,
+                            Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
             Log.e(TAG, "bind: Could not find package " + packageName);
             return false;
         }
 
-        Intent intent = new Intent(BuildConfig.SERVICE_ACTION)
-                .setPackage(packageName);
+        Intent intent = new Intent(BuildConfig.SERVICE_ACTION).setPackage(packageName);
 
         if (!bindService(context, intent)) {
-            Log.e(TAG,
-                    "bindService: Service " + intent + " could not be found to bind!");
+            Log.e(TAG, "bindService: Service " + intent + " could not be found to bind!");
             return false;
         }
 
@@ -276,8 +267,12 @@ public class Client implements ServiceConnection {
         boolean result;
         int flags = Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            result = context.bindService(intent, flags | Context.BIND_INCLUDE_CAPABILITIES,
-                    Executors.newSingleThreadExecutor(), this);
+            result =
+                    context.bindService(
+                            intent,
+                            flags | Context.BIND_INCLUDE_CAPABILITIES,
+                            Executors.newSingleThreadExecutor(),
+                            this);
         } else {
             result = context.bindService(intent, this, flags);
         }
@@ -285,16 +280,13 @@ public class Client implements ServiceConnection {
         return result;
     }
 
-    /**
-     * Some on-failure cleanup.
-     */
+    /** Some on-failure cleanup. */
     private void handleFailure() {
         failed = true;
         shutdown();
     }
 
-    @Nullable
-    private Surface attachViewAndGetSurface(Activity activity) {
+    @Nullable private Surface attachViewAndGetSurface(Activity activity) {
         MonadoView monadoView = MonadoView.attachToActivity(activity);
         SurfaceHolder holder = monadoView.waitGetSurfaceHolder(2000);
         Surface surface = null;
@@ -308,7 +300,7 @@ public class Client implements ServiceConnection {
     /**
      * Handle the asynchronous connection of the binder IPC.
      *
-     * @param name    should match the preceding intent, but not used.
+     * @param name should match the preceding intent, but not used.
      * @param service the associated service, which we cast in this function.
      */
     @Override
@@ -330,7 +322,7 @@ public class Client implements ServiceConnection {
     public void onServiceDisconnected(ComponentName name) {
         Log.i(TAG, "onServiceDisconnected");
         shutdown();
-        //! @todo tell C/C++ that the world is crumbling, then close the fd here.
+        // ! @todo tell C/C++ that the world is crumbling, then close the fd here.
     }
 
     /*
