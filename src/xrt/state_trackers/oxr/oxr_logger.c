@@ -7,10 +7,8 @@
  * @ingroup oxr_main
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #include "xrt/xrt_compiler.h"
+
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 
@@ -19,6 +17,12 @@
 
 #include "openxr/openxr_reflection.h"
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <limits.h>
+
+
+#define LOG_BUFFER_SIZE (1024)
 
 DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_STDERR_PRINTING", false)
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
@@ -47,6 +51,58 @@ is_fmt_func_arg_start(const char *fmt)
 }
 
 /*!
+ * We want to truncate the value, not get the possible written.
+ *
+ * There are no version of the *many* Windows versions of this functions that
+ * truncates and returns the number of bytes written (not including null).
+ */
+static int
+truncate_vsnprintf(char *chars, size_t char_count, const char *fmt, va_list args)
+{
+	/*
+	 * We always want to be able to write null terminator, and
+	 * something propbly went wrong if char_count larger then INT_MAX.
+	 */
+	if (char_count == 0 || char_count > INT_MAX) {
+		return -1;
+	}
+
+	// Will always be able to write null terminator.
+	int ret = vsnprintf(chars, char_count, fmt, args);
+	if (ret < 0) {
+		return ret;
+	}
+
+	// Safe, ret is checked for negative above.
+	if ((size_t)ret > char_count - 1) {
+		return (int)char_count - 1;
+	}
+
+	return ret;
+}
+
+/*!
+ * We want to truncate the value, not get the possible written.
+ */
+static int
+truncate_snprintf(char *chars, size_t char_count, const char *fmt, ...)
+{
+	/*
+	 * We always want to be able to write null terminator, and
+	 * something propbly went wrong if char_count larger then INT_MAX.
+	 */
+	if (char_count == 0 || char_count > INT_MAX) {
+		return -1;
+	}
+
+	va_list args;
+	va_start(args, fmt);
+	int ret = truncate_vsnprintf(chars, char_count, fmt, args);
+	va_end(args);
+	return ret;
+}
+
+/*!
  * Prints the first part of a logging message, has three forms.
  *
  * ```c++
@@ -60,18 +116,66 @@ is_fmt_func_arg_start(const char *fmt)
  * // LOG: No function set now
  * ```
  */
-static void
-print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix)
+static int
+print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix, char *buf, int remaining)
 {
 	if (logger->api_func_name != NULL) {
 		if (is_fmt_func_arg_start(fmt)) {
-			fprintf(stderr, "%s: %s", prefix, logger->api_func_name);
+			return truncate_snprintf(buf, remaining, "%s: %s", prefix, logger->api_func_name);
 		} else {
-			fprintf(stderr, "%s in %s: ", prefix, logger->api_func_name);
+			return truncate_snprintf(buf, remaining, "%s in %s: ", prefix, logger->api_func_name);
 		}
 	} else {
-		fprintf(stderr, "%s: ", prefix);
+		return truncate_snprintf(buf, remaining, "%s: ", prefix);
 	}
+}
+
+static void
+do_output(const char *buf)
+{
+#ifdef XRT_OS_WINDOWS
+	OutputDebugStringA(buf);
+#endif
+
+	fprintf(stderr, "%s", buf);
+}
+
+static void
+do_print(struct oxr_logger *logger, const char *fmt, const char *prefix, va_list args)
+{
+	char buf[LOG_BUFFER_SIZE];
+
+	int remaining = sizeof(buf) - 2; // 2 for \n\0
+	int printed = 0;
+	int ret;
+
+	ret = print_prefix(logger, fmt, prefix, buf, remaining);
+	if (ret < 0) {
+		U_LOG_E("Internal OpenXR logging error!");
+		return;
+	}
+	printed += ret;
+
+	ret = truncate_vsnprintf(buf + printed, remaining - printed, fmt, args);
+	if (ret < 0) {
+		U_LOG_E("Internal OpenXR logging error!");
+		return;
+	}
+	printed += ret;
+
+	// Always add newline.
+	buf[printed++] = '\n';
+	buf[printed++] = '\0';
+
+	do_output(buf);
+}
+
+static void
+do_print_func(const char *api_func_name)
+{
+	char buf[LOG_BUFFER_SIZE];
+	truncate_snprintf(buf, sizeof(buf), "%s\n", api_func_name);
+	do_output(buf);
 }
 
 
@@ -85,7 +189,7 @@ void
 oxr_log_init(struct oxr_logger *logger, const char *api_func_name)
 {
 	if (debug_get_bool_option_entrypoints()) {
-		fprintf(stderr, "%s\n", api_func_name);
+		do_print_func(api_func_name);
 	}
 
 	logger->inst = NULL;
@@ -105,14 +209,10 @@ oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 		return;
 	}
 
-	print_prefix(logger, fmt, "LOG");
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, "LOG", args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
 
 void
@@ -122,14 +222,10 @@ oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 		return;
 	}
 
-	print_prefix(logger, fmt, "WARNING");
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, "WARNING", args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
 
 XrResult
@@ -139,18 +235,11 @@ oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 		return result;
 	}
 
-	if (debug_get_bool_option_entrypoints()) {
-		fprintf(stderr, "\t");
-	}
-
-	print_prefix(logger, fmt, oxr_result_to_string(result));
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, oxr_result_to_string(result), args);
 	va_end(args);
 
-	fprintf(stderr, "\n");
 	if (debug_get_bool_option_break_on_error() && result != XR_ERROR_FUNCTION_UNSUPPORTED) {
 		/// Trigger a debugger breakpoint.
 		XRT_DEBUGBREAK();
