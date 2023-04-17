@@ -17,13 +17,12 @@ import android.graphics.drawable.Drawable
  * Intended for use in dependency injection.
  */
 interface NameAndLogoProvider {
-    /**
-     * Gets a localized runtime name string for the runtime/Monado-incorporating target.
-     */
+    /** Gets a localized runtime name string for the runtime/Monado-incorporating target. */
     fun getLocalizedRuntimeName(): CharSequence
 
     /**
-     * Gets a drawable for use in the about activity and elsewhere, for the runtime/Monado-incorporating target.
+     * Gets a drawable for use in the about activity and elsewhere, for the
+     * runtime/Monado-incorporating target.
      */
     fun getLogoDrawable(): Drawable?
 }

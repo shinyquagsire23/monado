@@ -24,18 +24,15 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.Calendar;
-
 @Keep
-public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
+public class MonadoView extends SurfaceView
+        implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
 
-    @NonNull
-    private final Context context;
+    @NonNull private final Context context;
 
     /// The activity we've connected to.
-    @Nullable
-    private final Activity activity;
+    @Nullable private final Activity activity;
     private final Object currentSurfaceHolderSync = new Object();
 
     public int width = -1;
@@ -44,9 +41,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     private NativeCounterpart nativeCounterpart;
 
-    @GuardedBy("currentSurfaceHolderSync")
-    @Nullable
-    private SurfaceHolder currentSurfaceHolder = null;
+    @GuardedBy("currentSurfaceHolderSync") @Nullable private SurfaceHolder currentSurfaceHolder = null;
 
     private SystemUiController systemUiController = null;
 
@@ -80,29 +75,27 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /**
      * Construct and start attaching a MonadoView to a client application.
      *
-     * @param activity      The activity to attach to.
+     * @param activity The activity to attach to.
      * @param nativePointer The native android_custom_surface pointer, cast to a long.
      * @return The MonadoView instance created and asynchronously attached.
      */
-    @NonNull
-    @Keep
+    @NonNull @Keep
     @SuppressWarnings("deprecation")
-    public static MonadoView attachToActivity(@NonNull final Activity activity, long nativePointer) {
+    public static MonadoView attachToActivity(
+            @NonNull final Activity activity, long nativePointer) {
         final MonadoView view = new MonadoView(activity, nativePointer);
         view.createSurfaceInActivity();
         return view;
     }
 
-    @NonNull
-    @Keep
+    @NonNull @Keep
     public static MonadoView attachToActivity(@NonNull final Activity activity) {
         final MonadoView view = new MonadoView(activity);
         view.createSurfaceInActivity();
         return view;
     }
 
-    @NonNull
-    @Keep
+    @NonNull @Keep
     public static DisplayMetrics getDisplayMetrics(@NonNull Context context) {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -128,62 +121,61 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         createSurfaceInActivity(false);
     }
 
-    /**
-     * @param focusable Indicates MonadoView should be focusable or not
-     */
+    /** @param focusable Indicates MonadoView should be focusable or not */
     private void createSurfaceInActivity(boolean focusable) {
         Log.i(TAG, "Starting to add a new surface!");
-        activity.runOnUiThread(() -> {
-            Log.i(TAG, "Starting runOnUiThread");
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        activity.runOnUiThread(
+                () -> {
+                    Log.i(TAG, "Starting runOnUiThread");
+                    activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-            WindowManager windowManager = activity.getWindowManager();
-            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-            if (focusable) {
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            } else {
-                // There are 2 problems if view is focusable on all-in-one device:
-                // 1. Navigation bar won't go away because view gets focus.
-                // 2. Underlying activity lost focus and cannot receive input.
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                lp.layoutInDisplayCutoutMode =
-                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-            }
-            windowManager.addView(this, lp);
-            if (focusable) {
-                requestFocus();
-            }
-            SurfaceHolder surfaceHolder = getHolder();
-            surfaceHolder.addCallback(this);
-            Log.i(TAG, "Registered callbacks!");
-        });
+                    WindowManager windowManager = activity.getWindowManager();
+                    WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+                    if (focusable) {
+                        lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                    } else {
+                        // There are 2 problems if view is focusable on all-in-one device:
+                        // 1. Navigation bar won't go away because view gets focus.
+                        // 2. Underlying activity lost focus and cannot receive input.
+                        lp.flags =
+                                WindowManager.LayoutParams.FLAG_FULLSCREEN
+                                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        lp.layoutInDisplayCutoutMode =
+                                WindowManager.LayoutParams
+                                        .LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                    }
+                    windowManager.addView(this, lp);
+                    if (focusable) {
+                        requestFocus();
+                    }
+                    SurfaceHolder surfaceHolder = getHolder();
+                    surfaceHolder.addCallback(this);
+                    Log.i(TAG, "Registered callbacks!");
+                });
     }
 
     /**
      * Block up to a specified amount of time, waiting for the surfaceCreated callback to be fired
      * and populate the currentSurfaceHolder.
-     * <p>
-     * If it returns a SurfaceHolder, the `usedByNativeCode` flag will be set.
-     * <p>
-     * Called by native code!
+     *
+     * <p>If it returns a SurfaceHolder, the `usedByNativeCode` flag will be set.
+     *
+     * <p>Called by native code!
      *
      * @param wait_ms Max duration you prefer to wait, in milliseconds. Spurious wakeups mean this
-     *                not be totally precise.
+     *     not be totally precise.
      * @return A SurfaceHolder or null.
      */
     @Keep
-    public @Nullable
-    SurfaceHolder waitGetSurfaceHolder(int wait_ms) {
+    public @Nullable SurfaceHolder waitGetSurfaceHolder(int wait_ms) {
         long currentTime = SystemClock.uptimeMillis();
         long timeout = currentTime + wait_ms;
         SurfaceHolder ret = null;
         synchronized (currentSurfaceHolderSync) {
             ret = currentSurfaceHolder;
-            while (currentSurfaceHolder == null
-                    && SystemClock.uptimeMillis() < timeout) {
+            while (currentSurfaceHolder == null && SystemClock.uptimeMillis() < timeout) {
                 try {
                     currentSurfaceHolderSync.wait(wait_ms, 0);
                     ret = currentSurfaceHolder;
@@ -194,8 +186,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (ret != null) {
-            if (nativeCounterpart != null)
-                nativeCounterpart.markAsUsedByNativeCode();
+            if (nativeCounterpart != null) nativeCounterpart.markAsUsedByNativeCode();
         }
         return ret;
     }
@@ -203,13 +194,12 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /**
      * Change the flag and notify those waiting on it, to indicate that native code is done with
      * this object.
-     * <p>
-     * Called by native code!
+     *
+     * <p>Called by native code!
      */
     @Keep
     public void markAsDiscardedByNative() {
-        if (nativeCounterpart != null)
-            nativeCounterpart.markAsDiscardedByNative(TAG);
+        if (nativeCounterpart != null) nativeCounterpart.markAsDiscardedByNative(TAG);
     }
 
     @Override
@@ -222,7 +212,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     }
 
     @Override
-    public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
+    public void surfaceChanged(
+            @NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
 
         synchronized (currentSurfaceHolderSync) {
             currentSurfaceHolder = surfaceHolder;
@@ -245,18 +236,19 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (lost) {
-            //! @todo this function should notify native code that the surface is gone.
+            // ! @todo this function should notify native code that the surface is gone.
             if (nativeCounterpart != null && !nativeCounterpart.blockUntilNativeDiscard(TAG)) {
-                Log.i(TAG,
-                        "Interrupted in surfaceDestroyed while waiting for native code to finish up.");
+                Log.i(
+                        TAG,
+                        "Interrupted in surfaceDestroyed while waiting for native code to finish"
+                                + " up.");
             }
         }
     }
 
     @Override
     public void surfaceRedrawNeeded(@NonNull SurfaceHolder surfaceHolder) {
-//        currentSurfaceHolder = surfaceHolder;
+        //        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceRedrawNeeded");
     }
-
 }

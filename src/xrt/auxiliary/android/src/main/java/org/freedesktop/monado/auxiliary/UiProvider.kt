@@ -24,14 +24,11 @@ interface UiProvider {
      */
     fun getNotificationIcon(): Icon? = null
 
-    /**
-     * Make a {@code PendingIntent} to launch an "About" activity for the runtime/target.
-     */
+    /** Make a {@code PendingIntent} to launch an "About" activity for the runtime/target. */
     fun makeAboutActivityPendingIntent(): PendingIntent
 
     /**
      * Make a {@code PendingIntent} to launch a configuration activity, if provided by the target.
      */
     fun makeConfigureActivityPendingIntent(): PendingIntent? = null
-
 }

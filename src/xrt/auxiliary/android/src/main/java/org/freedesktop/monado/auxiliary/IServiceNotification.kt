@@ -26,8 +26,6 @@ interface IServiceNotification {
      */
     fun buildNotification(context: Context, pendingShutdownIntent: PendingIntent): Notification
 
-    /**
-     * Return the notification ID to use
-     */
+    /** Return the notification ID to use */
     fun getNotificationId(): Int
 }
