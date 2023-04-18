@@ -24,7 +24,16 @@
 
 #define LOG_BUFFER_SIZE (1024)
 
-DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_STDERR_PRINTING", false)
+#ifdef XRT_OS_WINDOWS
+#define DEFAULT_NO_STDERR (true)
+#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing_stderr())
+#else
+#define DEFAULT_NO_STDERR (false)
+#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing() || debug_get_bool_option_no_printing_stderr())
+#endif
+
+DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_PRINTING", false)
+DEBUG_GET_ONCE_BOOL_OPTION(no_printing_stderr, "OXR_NO_PRINTING_STDERR", DEFAULT_NO_STDERR)
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(break_on_error, "OXR_BREAK_ON_ERROR", false)
 
@@ -135,6 +144,10 @@ do_output(const char *buf)
 {
 #ifdef XRT_OS_WINDOWS
 	OutputDebugStringA(buf);
+
+	if (debug_get_bool_option_no_printing_stderr()) {
+		return;
+	}
 #endif
 
 	fprintf(stderr, "%s", buf);
@@ -205,7 +218,7 @@ oxr_log_set_instance(struct oxr_logger *logger, struct oxr_instance *inst)
 void
 oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return;
 	}
 
@@ -218,7 +231,7 @@ oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 void
 oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return;
 	}
 
@@ -231,7 +244,7 @@ oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 XrResult
 oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return result;
 	}
 
