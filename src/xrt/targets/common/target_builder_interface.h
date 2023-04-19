@@ -31,6 +31,10 @@
 #define T_BUILDER_REMOTE
 #endif
 
+#if defined(XRT_BUILD_DRIVER_QWERTY) || defined(XRT_DOXYGEN)
+#define T_BUILDER_QWERTY
+#endif
+
 #if defined(XRT_BUILD_DRIVER_PSMV) || defined(XRT_BUILD_DRIVER_PSVR) || defined(XRT_DOXYGEN)
 #define T_BUILDER_RGB_TRACKING
 #endif
@@ -76,6 +80,14 @@ t_builder_lighthouse_create(void);
  */
 struct xrt_builder *
 t_builder_north_star_create(void);
+#endif
+
+#ifdef T_BUILDER_QWERTY
+/*!
+ * The qwerty driver builder.
+ */
+struct xrt_builder *
+t_builder_qwerty_create(void);
 #endif
 
 #ifdef T_BUILDER_REMOTE

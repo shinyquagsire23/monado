@@ -104,6 +104,10 @@ xrt_builder_create_func_t target_builder_list[] = {
     t_builder_rgb_tracking_create,
 #endif // T_BUILDER_RGB_TRACKING
 
+#ifdef T_BUILDER_QWERTY
+    t_builder_qwerty_create,
+#endif // T_BUILDER_QWERTY
+
 #ifdef T_BUILDER_SIMULATED
     t_builder_simulated_create,
 #endif // T_BUILDER_SIMULATED
