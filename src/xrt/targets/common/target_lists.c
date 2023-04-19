@@ -96,6 +96,18 @@
  * Builders
  */
 xrt_builder_create_func_t target_builder_list[] = {
+#ifdef T_BUILDER_QWERTY // High up to override any real hardware.
+    t_builder_qwerty_create,
+#endif // T_BUILDER_QWERTY
+
+#ifdef T_BUILDER_REMOTE // High up to override any real hardware.
+    t_builder_remote_create,
+#endif // T_BUILDER_REMOTE
+
+#ifdef T_BUILDER_SIMULATED // High up to override any real hardware.
+    t_builder_simulated_create,
+#endif // T_BUILDER_SIMULATED
+
 #ifdef XRT_BUILD_DRIVER_RIFT_S
     rift_s_builder_create,
 #endif // XRT_BUILD_DRIVER_RIFT_S
@@ -104,14 +116,6 @@ xrt_builder_create_func_t target_builder_list[] = {
     t_builder_rgb_tracking_create,
 #endif // T_BUILDER_RGB_TRACKING
 
-#ifdef T_BUILDER_QWERTY
-    t_builder_qwerty_create,
-#endif // T_BUILDER_QWERTY
-
-#ifdef T_BUILDER_SIMULATED
-    t_builder_simulated_create,
-#endif // T_BUILDER_SIMULATED
-
 #ifdef T_BUILDER_SIMULAVR
     t_builder_simula_create,
 #endif // T_BUILDER_SIMULAVR
@@ -119,10 +123,6 @@ xrt_builder_create_func_t target_builder_list[] = {
 #ifdef T_BUILDER_LIGHTHOUSE
     t_builder_lighthouse_create,
 #endif // T_BUILDER_LIGHTHOUSE
-
-#ifdef T_BUILDER_REMOTE
-    t_builder_remote_create,
-#endif // T_BUILDER_REMOTE
 
 #ifdef T_BUILDER_NS
     t_builder_north_star_create,
