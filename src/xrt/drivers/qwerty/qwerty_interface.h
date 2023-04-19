@@ -34,14 +34,6 @@ typedef union SDL_Event SDL_Event;
  */
 
 /*!
- * Create an auto prober for qwerty devices.
- *
- * @ingroup drv_qwerty
- */
-struct xrt_auto_prober *
-qwerty_create_auto_prober(void);
-
-/*!
  * Process an SDL_Event (like a key press) and dispatches a suitable action
  * to the appropriate qwerty_device.
  *

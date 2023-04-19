@@ -72,10 +72,6 @@
 #include "depthai/depthai_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_QWERTY
-#include "qwerty/qwerty_interface.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_WMR
 #include "wmr/wmr_interface.h"
 #include "wmr/wmr_common.h"
@@ -218,10 +214,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_EUROC
     euroc_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_QWERTY
-    qwerty_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SIMULATED
