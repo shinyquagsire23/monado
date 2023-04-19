@@ -11,6 +11,8 @@ add_library(
 	vive_config.c
 	vive_poses.h
 	vive_poses.c
+	vive_tweaks.c
+	vive_tweaks.h
 	)
 target_link_libraries(
 	aux_vive

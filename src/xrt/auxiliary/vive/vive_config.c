@@ -19,6 +19,7 @@
 #include "tracking/t_tracking.h"
 
 #include "vive_config.h"
+#include "vive_tweaks.h"
 
 #include <stdio.h>
 
@@ -380,6 +381,9 @@ _calculate_fov(struct vive_config *d)
 			return false;
 		}
 	}
+
+	// Apply any tweaks to the FoV.
+	vive_tweak_fov(d);
 
 	return true;
 }
