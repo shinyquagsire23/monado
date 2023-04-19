@@ -7,11 +7,15 @@
  * @ingroup drv_qwerty
  */
 
-#include "qwerty_device.h"
+#include "xrt/xrt_prober.h"
+
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_logging.h"
-#include "xrt/xrt_prober.h"
+
+#include "qwerty_device.h"
+#include "qwerty_interface.h"
+
 
 // Using INFO as default to inform events real devices could report physically
 DEBUG_GET_ONCE_LOG_OPTION(qwerty_log, "QWERTY_LOG", U_LOGGING_INFO)
@@ -72,6 +76,13 @@ qwerty_prober_autoprobe(struct xrt_auto_prober *xap,
 	return num_qwerty_devices;
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
 struct xrt_auto_prober *
 qwerty_create_auto_prober(void)
 {
@@ -81,4 +92,23 @@ qwerty_create_auto_prober(void)
 	qp->base.lelo_dallas_autoprobe = qwerty_prober_autoprobe;
 
 	return &qp->base;
+}
+
+xrt_result_t
+qwerty_create_devices(enum u_logging_level log_level,
+                      struct xrt_device **out_hmd,
+                      struct xrt_device **out_left,
+                      struct xrt_device **out_right)
+{
+	struct qwerty_hmd *qhmd = qwerty_hmd_create();
+	struct qwerty_controller *qleft = qwerty_controller_create(true, qhmd);
+	struct qwerty_controller *qright = qwerty_controller_create(false, qhmd);
+
+	qwerty_system_create(qhmd, qleft, qright, log_level);
+
+	*out_hmd = &qhmd->base.base;
+	*out_left = &qleft->base.base;
+	*out_right = &qright->base.base;
+
+	return XRT_SUCCESS;
 }

@@ -55,6 +55,17 @@ qwerty_create_auto_prober(void);
 void
 qwerty_process_event(struct xrt_device **xdevs, size_t xdev_count, SDL_Event event);
 
+/*!
+ * Create all qwerty devices.
+ *
+ * @ingroup drv_qwerty
+ */
+xrt_result_t
+qwerty_create_devices(enum u_logging_level log_level,
+                      struct xrt_device **out_hmd,
+                      struct xrt_device **out_left,
+                      struct xrt_device **out_right);
+
 
 #ifdef __cplusplus
 }
