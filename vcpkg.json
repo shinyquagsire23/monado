@@ -35,7 +35,13 @@
         "gui": {
             "description": "Debug GUI support",
             "dependencies": [
-                "sdl2"
+                {
+                    "name": "sdl2",
+                    "features": [
+                        "base",
+                        "vulkan"
+                    ]
+                }
             ]
         }
     }
