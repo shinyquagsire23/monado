@@ -7,6 +7,7 @@ set(MANIFEST_RELATIVE_DIR @MANIFEST_RELATIVE_DIR@)
 set(XR_API_MAJOR @XR_API_MAJOR@)
 set(RUNTIME_TARGET @RUNTIME_TARGET@)
 
+execute_process(COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_BINARY_DIR}/active_runtime.json)
 execute_process(
 	COMMAND
 		${CMAKE_COMMAND} -E create_symlink
