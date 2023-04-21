@@ -316,7 +316,7 @@ get_timeline_semaphore_bit_support(struct vk_bundle *vk,
 #endif
 }
 
-bool
+static bool
 is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
 {
 	bool importable = false, exportable = false;
