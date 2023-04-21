@@ -80,7 +80,7 @@ if(XRT_FEATURE_SLAM)
 		xrt-external-slam INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/slam_tracker
 		)
 	target_include_directories(xrt-external-slam SYSTEM INTERFACE ${SLAM_INCLUDE_DIRS})
-	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LIBRARIES})
+	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LDFLAGS})
 endif()
 
 # STB

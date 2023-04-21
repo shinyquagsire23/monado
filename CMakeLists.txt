@@ -182,6 +182,7 @@ foreach(slam_system IN LISTS EXTERNAL_SLAM_SYSTEMS)
 	endif()
 	if(${slam_system}_FOUND)
 		set(SLAM_NAME ${slam_system})
+		set(SLAM_LDFLAGS ${${slam_system}_LDFLAGS})
 		set(SLAM_LIBRARIES ${${slam_system}_LIBRARIES})
 		set(SLAM_INCLUDE_DIRS ${${slam_system}_INCLUDE_DIRS})
 		# Exit after the first we find.
