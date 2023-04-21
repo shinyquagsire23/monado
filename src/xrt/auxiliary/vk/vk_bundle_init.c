@@ -897,7 +897,7 @@ build_device_extensions(struct vk_bundle *vk,
 	return true;
 }
 
-/**
+/*!
  * @brief Sets fields in @p device_features to true if and only if they are available and they are true in @p
  * optional_device_features (indicating a desire for that feature)
  *
