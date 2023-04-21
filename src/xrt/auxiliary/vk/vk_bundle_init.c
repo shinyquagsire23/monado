@@ -114,7 +114,6 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 		} else {
 			VK_WARN(vk, "Duplicate instance extension %s not added twice", optional_ext);
 		}
-		break;
 	}
 
 	free(props);
