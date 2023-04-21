@@ -178,6 +178,10 @@ vive_device_get_tracked_pose(struct xrt_device *xdev,
 	XRT_TRACE_MARKER();
 
 	struct vive_device *d = vive_device(xdev);
+
+	// Ajdust the timestamp with the offset.
+	at_timestamp_ns += (uint64_t)(d->tracked_offset_ms.val * (double)U_TIME_1MS_IN_NS);
+
 	if (d->tracking.slam_enabled && d->slam_over_3dof) {
 		vive_device_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
 	} else {
@@ -829,6 +833,7 @@ vive_device_setup_ui(struct vive_device *d)
 	}
 	u_var_add_pose(d, &d->pose, "Tracked Pose");
 	u_var_add_pose(d, &d->offset, "Pose Offset");
+	u_var_add_draggable_f32(d, &d->tracked_offset_ms, "Timecode offset(ms)");
 
 	u_var_add_gui_header(d, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
@@ -956,6 +961,12 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->sensors_dev = sensors_dev;
 	d->log_level = debug_get_log_option_vive_log();
 	d->watchman_dev = watchman_dev;
+	d->tracked_offset_ms = (struct u_var_draggable_f32){
+	    .val = 0.0,
+	    .min = -40.0,
+	    .step = 0.1,
+	    .max = +120.0,
+	};
 
 	d->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	d->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;

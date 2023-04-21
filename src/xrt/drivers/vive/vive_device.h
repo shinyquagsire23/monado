@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -98,6 +98,13 @@ struct vive_device
 		//! SLAM systems track the IMU pose, enabling this corrects it to middle of the eyes
 		bool imu2me;
 	} tracking;
+
+	/*!
+	 * Offset for tracked pose offsets (applies to both fusion and SLAM).
+	 * Applied when getting the tracked poses, so is effectivily a offset
+	 * to increase or decrease prediction.
+	 */
+	struct u_var_draggable_f32 tracked_offset_ms;
 
 	struct xrt_pose P_imu_me; //!< IMU to head/display/middle-of-eyes transform in OpenXR coords
 
