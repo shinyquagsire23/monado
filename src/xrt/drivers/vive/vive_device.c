@@ -1004,12 +1004,11 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		free(config);
 	}
 
-	// TODO: Replace hard coded values from OpenHMD with config
-	double w_meters = 0.122822 / 2.0;
-	double h_meters = 0.068234;
-	double lens_horizontal_separation = 0.057863;
-	double eye_to_screen_distance = 0.023226876441867737;
+	// FoV values from config.
+	d->base.hmd->distortion.fov[0] = d->config.distortion.fov[0];
+	d->base.hmd->distortion.fov[1] = d->config.distortion.fov[1];
 
+	// Per-view size.
 	uint32_t w_pixels = d->config.display.eye_target_width_in_pixels;
 	uint32_t h_pixels = d->config.display.eye_target_height_in_pixels;
 
@@ -1018,19 +1017,10 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	d->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
 	if (d->config.variant == VIVE_VARIANT_INDEX) {
-		lens_horizontal_separation = 0.06;
-		h_meters = 0.07;
-		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
-		eye_to_screen_distance = 0.0255;
-
 		d->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 144.0f);
 	} else {
 		d->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 90.0f);
 	}
-
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
-
-	struct xrt_vec2 lens_center[2];
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &d->base.hmd->views[eye];
@@ -1038,28 +1028,12 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 		v->display.h_pixels = h_pixels;
 		v->viewport.w_pixels = w_pixels;
 		v->viewport.h_pixels = h_pixels;
+		v->viewport.x_pixels = eye == 0 ? 0 : w_pixels;
 		v->viewport.y_pixels = 0;
-		lens_center[eye].y = (float)h_meters / 2.0f;
 		v->rot = u_device_rotation_ident;
 	}
 
-	// Left
-	lens_center[0].x = (float)(w_meters - lens_horizontal_separation / 2.0);
-	d->base.hmd->views[0].viewport.x_pixels = 0;
-
-	// Right
-	lens_center[1].x = (float)lens_horizontal_separation / 2.0f;
-	d->base.hmd->views[1].viewport.x_pixels = w_pixels;
-
-	for (uint8_t eye = 0; eye < 2; eye++) {
-		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
-		                       0, &d->base.hmd->distortion.fov[eye])) {
-			VIVE_ERROR(d, "Failed to compute the partial fields of view.");
-			free(d);
-			return NULL;
-		}
-	}
-
+	// Sensor setup.
 	precompute_sensor_transforms(d);
 
 	// Init threads.
