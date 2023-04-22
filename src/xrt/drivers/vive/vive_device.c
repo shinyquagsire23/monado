@@ -1,5 +1,5 @@
 // Copyright 2016-2019, Philipp Zabel
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -152,7 +152,7 @@ vive_device_get_slam_tracked_pose(struct xrt_device *xdev,
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
 
 	if (pose_tracked) {
-#if defined(XRT_HAVE_BASALT_SLAM)
+#if defined(XRT_HAVE_BASALT)
 		d->pose = vive_device_correct_pose_from_basalt(out_relation->pose);
 #else
 		d->pose = out_relation->pose;

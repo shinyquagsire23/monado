@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2021-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -106,7 +106,7 @@ using cv::UMatUsageFlags;
 
 #define USING_OPENCV_3_3_1 (CV_VERSION_MAJOR == 3 && CV_VERSION_MINOR == 3 && CV_VERSION_REVISION == 1)
 
-#if defined(XRT_HAVE_KIMERA_SLAM) && !USING_OPENCV_3_3_1
+#if defined(XRT_HAVE_KIMERA) && !USING_OPENCV_3_3_1
 #pragma message "Kimera-VIO uses OpenCV 3.3.1, use that to prevent conflicts"
 #endif
 

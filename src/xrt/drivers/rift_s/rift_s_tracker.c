@@ -3,6 +3,7 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2023, Collabora, Ltd.
  * SPDX-License-Identifier: BSL-1.0
  *
  */
@@ -635,7 +636,7 @@ rift_s_tracker_get_tracked_pose(struct rift_s_tracker *t,
 		// Get the IMU pose from the SLAM tracker
 		xrt_tracked_slam_get_tracked_pose(t->tracking.slam, at_timestamp_ns, &imu_relation);
 
-#if defined(XRT_HAVE_BASALT_SLAM)
+#if defined(XRT_HAVE_BASALT)
 		rift_s_tracker_correct_pose_from_basalt(&imu_relation.pose);
 #endif
 

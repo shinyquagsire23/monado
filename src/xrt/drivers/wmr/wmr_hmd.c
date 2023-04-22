@@ -1,6 +1,6 @@
 // Copyright 2018, Philipp Zabel.
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -1065,7 +1065,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
 
 	if (pose_tracked) {
-#if defined(XRT_HAVE_BASALT_SLAM)
+#if defined(XRT_HAVE_BASALT)
 		wh->pose = wmr_hmd_correct_pose_from_basalt(out_relation->pose);
 #else
 		wh->pose = out_relation->pose;

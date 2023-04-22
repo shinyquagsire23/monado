@@ -1,4 +1,4 @@
-// Copyright 2021, Collabora, Ltd.
+// Copyright 2021-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -140,9 +140,9 @@ euroc_device_get_tracked_pose(struct xrt_device *xdev,
 		int pose_bits = XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT | XRT_SPACE_RELATION_POSITION_TRACKED_BIT;
 		bool pose_tracked = out_relation->relation_flags & pose_bits;
 		if (pose_tracked) {
-#if defined(XRT_HAVE_KIMERA_SLAM)
+#if defined(XRT_HAVE_KIMERA)
 			ed->pose = euroc_device_correct_pose_from_kimera(out_relation->pose);
-#elif defined(XRT_HAVE_BASALT_SLAM)
+#elif defined(XRT_HAVE_BASALT)
 			ed->pose = euroc_device_correct_pose_from_basalt(out_relation->pose);
 #else
 			ed->pose = out_relation->pose;
