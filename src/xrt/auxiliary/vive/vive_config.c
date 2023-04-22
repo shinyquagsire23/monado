@@ -106,8 +106,8 @@ _get_distortion_properties(struct vive_config *d, const cJSON *eye_transform_jso
 
 	// TODO: store grow_for_undistort per eye
 	// clang-format off
-	JSON_FLOAT(eye_json, "grow_for_undistort", &d->distortion[eye].grow_for_undistort);
-	JSON_FLOAT(eye_json, "undistort_r2_cutoff", &d->distortion[eye].undistort_r2_cutoff);
+	JSON_FLOAT(eye_json, "grow_for_undistort", &d->distortion.values[eye].grow_for_undistort);
+	JSON_FLOAT(eye_json, "undistort_r2_cutoff", &d->distortion.values[eye].undistort_r2_cutoff);
 	// clang-format on
 
 	const char *names[3] = {
@@ -122,12 +122,12 @@ _get_distortion_properties(struct vive_config *d, const cJSON *eye_transform_jso
 			continue;
 		}
 
-		JSON_FLOAT(distortion, "center_x", &d->distortion[eye].center[i].x);
-		JSON_FLOAT(distortion, "center_y", &d->distortion[eye].center[i].y);
+		JSON_FLOAT(distortion, "center_x", &d->distortion.values[eye].center[i].x);
+		JSON_FLOAT(distortion, "center_y", &d->distortion.values[eye].center[i].y);
 
 		const cJSON *coeffs = cJSON_GetObjectItemCaseSensitive(distortion, "coeffs");
 		if (coeffs != NULL) {
-			_get_color_coeffs(&d->distortion[eye], coeffs, eye, i);
+			_get_color_coeffs(&d->distortion.values[eye], coeffs, eye, i);
 		}
 	}
 }
@@ -330,10 +330,58 @@ vive_init_defaults(struct vive_config *d)
 	d->cameras.valid = false;
 
 	for (int view = 0; view < 2; view++) {
-		d->distortion[view].aspect_x_over_y = 0.89999997615814209f;
-		d->distortion[view].grow_for_undistort = 0.5f;
-		d->distortion[view].undistort_r2_cutoff = 1.0f;
+		d->distortion.values[view].aspect_x_over_y = 0.89999997615814209f;
+		d->distortion.values[view].grow_for_undistort = 0.5f;
+		d->distortion.values[view].undistort_r2_cutoff = 1.0f;
 	}
+}
+
+static bool
+_calculate_fov(struct vive_config *d)
+{
+	// TODO: Replace hard coded values from OpenHMD with config
+	double w_meters = 0.122822 / 2.0;
+	double h_meters = 0.068234;
+	double lens_horizontal_separation = 0.057863;
+	double eye_to_screen_distance = 0.023226876441867737;
+
+	if (d->variant == VIVE_VARIANT_INDEX) {
+		lens_horizontal_separation = 0.06;
+		h_meters = 0.07;
+		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
+		eye_to_screen_distance = 0.0255;
+	}
+
+	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
+
+	struct xrt_vec2 lens_center[2];
+	for (uint8_t eye = 0; eye < 2; eye++) {
+		lens_center[eye].y = (float)h_meters / 2.0f;
+	}
+
+	// Left
+	lens_center[0].x = (float)(w_meters - lens_horizontal_separation / 2.0);
+
+	// Right
+	lens_center[1].x = (float)lens_horizontal_separation / 2.0f;
+
+	for (uint8_t eye = 0; eye < 2; eye++) {
+		bool bret = math_compute_fovs(  //
+		    w_meters,                   //
+		    (double)lens_center[eye].x, //
+		    fov,                        //
+		    h_meters,                   //
+		    (double)lens_center[eye].y, //
+		    0,                          //
+		    &d->distortion.fov[eye]);   //
+		if (!bret) {
+			VIVE_ERROR(d, "Failed to compute the partial fields of view.");
+			free(d);
+			return false;
+		}
+	}
+
+	return true;
 }
 
 
@@ -442,9 +490,9 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 	if (device_json) {
 		if (d->variant != VIVE_VARIANT_INDEX) {
 			JSON_DOUBLE(device_json, "persistence", &d->display.persistence);
-			JSON_FLOAT(device_json, "physical_aspect_x_over_y", &d->distortion[0].aspect_x_over_y);
+			JSON_FLOAT(device_json, "physical_aspect_x_over_y", &d->distortion.values[0].aspect_x_over_y);
 
-			d->distortion[1].aspect_x_over_y = d->distortion[0].aspect_x_over_y;
+			d->distortion.values[1].aspect_x_over_y = d->distortion.values[0].aspect_x_over_y;
 		}
 		JSON_INT(device_json, "eye_target_height_in_pixels", &d->display.eye_target_height_in_pixels);
 		JSON_INT(device_json, "eye_target_width_in_pixels", &d->display.eye_target_width_in_pixels);
@@ -457,13 +505,19 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 		}
 	}
 
+	if (!_calculate_fov(d)) {
+		VIVE_ERROR(d, "Could not calculate fields of view.");
+		vive_config_teardown(d);
+		return false;
+	}
+
 	cJSON_Delete(json);
 
 	// clang-format off
 	VIVE_DEBUG(d, "= Vive configuration =");
 	VIVE_DEBUG(d, "lens_separation: %f", d->display.lens_separation);
 	VIVE_DEBUG(d, "persistence: %f", d->display.persistence);
-	VIVE_DEBUG(d, "physical_aspect_x_over_y: %f", (double)d->distortion[0].aspect_x_over_y);
+	VIVE_DEBUG(d, "physical_aspect_x_over_y: %f", (double)d->distortion.values[0].aspect_x_over_y);
 
 	VIVE_DEBUG(d, "model_number: %s", d->firmware.model_number);
 	VIVE_DEBUG(d, "mb_serial_number: %s", d->firmware.mb_serial_number);
@@ -479,10 +533,10 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 		_print_vec3("gyro_scale", &d->imu.gyro_scale);
 	}
 
-	VIVE_DEBUG(d, "grow_for_undistort: %f", (double)d->distortion[0].grow_for_undistort);
+	VIVE_DEBUG(d, "grow_for_undistort: %f", (double)d->distortion.values[0].grow_for_undistort);
 
-	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->distortion[0].undistort_r2_cutoff);
-	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->distortion[1].undistort_r2_cutoff);
+	VIVE_DEBUG(d, "undistort_r2_cutoff 0: %f", (double)d->distortion.values[0].undistort_r2_cutoff);
+	VIVE_DEBUG(d, "undistort_r2_cutoff 1: %f", (double)d->distortion.values[1].undistort_r2_cutoff);
 	// clang-format on
 
 	return true;

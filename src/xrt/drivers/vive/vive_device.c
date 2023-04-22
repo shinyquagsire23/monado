@@ -857,7 +857,7 @@ compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, str
 	XRT_TRACE_MARKER();
 
 	struct vive_device *d = vive_device(xdev);
-	return u_compute_distortion_vive(&d->config.distortion[view], u, v, result);
+	return u_compute_distortion_vive(&d->config.distortion.values[view], u, v, result);
 }
 
 void

@@ -870,7 +870,7 @@ static bool
 compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct survive_device *d = (struct survive_device *)xdev;
-	return u_compute_distortion_vive(&d->hmd.config.distortion[view], u, v, result);
+	return u_compute_distortion_vive(&d->hmd.config.distortion.values[view], u, v, result);
 }
 
 static bool

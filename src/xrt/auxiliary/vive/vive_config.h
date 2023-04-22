@@ -184,7 +184,11 @@ struct vive_config
 		char device_serial_number[32];
 	} firmware;
 
-	struct u_vive_values distortion[2];
+	struct
+	{
+		struct u_vive_values values[2];
+		struct xrt_fov fov[2];
+	} distortion;
 
 	struct
 	{
