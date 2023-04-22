@@ -8,21 +8,26 @@
  * @ingroup drv_vive
  */
 
-#include <stdio.h>
+#include "math/m_api.h"
+#include "math/m_mathinclude.h"
+
+#include "util/u_misc.h"
+#include "util/u_json.h"
+#include "util/u_debug.h"
+#include "util/u_distortion_mesh.h"
+
+#include "tracking/t_tracking.h"
 
 #include "vive_config.h"
 
-#include "util/u_debug.h"
-#include "util/u_misc.h"
-#include "util/u_json.h"
-#include "util/u_distortion_mesh.h"
+#include <stdio.h>
 
-#include "math/m_api.h"
 
-#include "tracking/t_tracking.h"
-#include "math/m_vec3.h"
-#include "math/m_space.h"
-
+/*
+ *
+ * Defines.
+ *
+ */
 
 #define VIVE_TRACE(d, ...) U_LOG_IFL_T(d->log_level, __VA_ARGS__)
 #define VIVE_DEBUG(d, ...) U_LOG_IFL_D(d->log_level, __VA_ARGS__)
@@ -37,9 +42,25 @@
 #define JSON_MATRIX_3X3(a, b, c) u_json_get_matrix_3x3(u_json_get(a, b), c)
 #define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
 
-#define printf_pose(pose)                                                                                              \
-	printf("%f %f %f  %f %f %f %f\n", pose.position.x, pose.position.y, pose.position.z, pose.orientation.x,       \
-	       pose.orientation.y, pose.orientation.z, pose.orientation.w);
+
+/*
+ *
+ * Printing helpers.
+ *
+ */
+
+static void
+_print_vec3(const char *title, struct xrt_vec3 *vec)
+{
+	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
+}
+
+
+/*
+ *
+ * Loading helpers.
+ *
+ */
 
 static void
 _get_color_coeffs(struct u_vive_values *values, const cJSON *coeffs, uint8_t eye, uint8_t channel)
@@ -185,12 +206,6 @@ _get_lighthouse(struct vive_config *d, const cJSON *json)
 	}
 }
 
-static void
-_print_vec3(const char *title, struct xrt_vec3 *vec)
-{
-	U_LOG_D("%s = %f %f %f", title, (double)vec->x, (double)vec->y, (double)vec->z);
-}
-
 static bool
 _get_camera(struct index_camera *cam, const cJSON *cam_json)
 {
@@ -285,6 +300,13 @@ _get_cameras(struct vive_config *d, const cJSON *cameras_json)
 	return true;
 }
 
+
+/*
+ *
+ * General helpers.
+ *
+ */
+
 static void
 vive_init_defaults(struct vive_config *d)
 {
@@ -313,6 +335,13 @@ vive_init_defaults(struct vive_config *d)
 		d->distortion[view].undistort_r2_cutoff = 1.0f;
 	}
 }
+
+
+/*
+ *
+ * 'Exported' hmd functions.
+ *
+ */
 
 bool
 vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level)
@@ -468,6 +497,13 @@ vive_config_teardown(struct vive_config *config)
 		config->lh.sensor_count = 0;
 	}
 }
+
+
+/*
+ *
+ * 'Exported' controller functions.
+ *
+ */
 
 bool
 vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level)
