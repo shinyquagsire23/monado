@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -916,12 +916,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	}
 	snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s", survive->hmd.config.firmware.device_serial_number);
 
-	// TODO: Replace hard coded values from OpenHMD with config
-	double w_meters = 0.122822 / 2.0;
-	double h_meters = 0.068234;
-	double lens_horizontal_separation = 0.057863;
-	double eye_to_screen_distance = 0.023226876441867737;
-
+	// Per-view size.
 	uint32_t w_pixels = survive->hmd.config.display.eye_target_width_in_pixels;
 	uint32_t h_pixels = survive->hmd.config.display.eye_target_height_in_pixels;
 
@@ -932,19 +927,10 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	survive->base.hmd->screens[0].h_pixels = (int)h_pixels;
 
 	if (survive->hmd.config.variant == VIVE_VARIANT_INDEX) {
-		lens_horizontal_separation = 0.06;
-		h_meters = 0.07;
-		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
-		eye_to_screen_distance = 0.0255;
-
 		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 144.0f);
 	} else {
 		survive->base.hmd->screens[0].nominal_frame_interval_ns = (uint64_t)time_s_to_ns(1.0f / 90.0f);
 	}
-
-	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
-
-	struct xrt_vec2 lens_center[2];
 
 	for (uint8_t eye = 0; eye < 2; eye++) {
 		struct xrt_view *v = &survive->base.hmd->views[eye];
@@ -952,28 +938,16 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 		v->display.h_pixels = h_pixels;
 		v->viewport.w_pixels = w_pixels;
 		v->viewport.h_pixels = h_pixels;
+		v->viewport.x_pixels = eye == 0 ? 0 : w_pixels;
 		v->viewport.y_pixels = 0;
-		lens_center[eye].y = (float)h_meters / 2.0f;
 		v->rot = u_device_rotation_ident;
 	}
 
-	// Left
-	lens_center[0].x = (float)(w_meters - lens_horizontal_separation / 2.0);
-	survive->base.hmd->views[0].viewport.x_pixels = 0;
+	// FoV values from config.
+	survive->base.hmd->distortion.fov[0] = survive->hmd.config.distortion.fov[0];
+	survive->base.hmd->distortion.fov[1] = survive->hmd.config.distortion.fov[1];
 
-	// Right
-	lens_center[1].x = (float)lens_horizontal_separation / 2.0f;
-	survive->base.hmd->views[1].viewport.x_pixels = w_pixels;
-
-	for (uint8_t eye = 0; eye < 2; eye++) {
-		if (!math_compute_fovs(w_meters, (double)lens_center[eye].x, fov, h_meters, (double)lens_center[eye].y,
-		                       0, &survive->base.hmd->distortion.fov[eye])) {
-			SURVIVE_ERROR(survive, "Failed to compute the partial fields of view.");
-			free(survive);
-			return NULL;
-		}
-	}
-
+	// Distortion params.
 	survive->base.hmd->distortion.models = XRT_DISTORTION_MODEL_COMPUTE;
 	survive->base.hmd->distortion.preferred = XRT_DISTORTION_MODEL_COMPUTE;
 	survive->base.compute_distortion = compute_distortion;
