@@ -228,8 +228,8 @@ vive_get_slam_cams_calib(const struct vive_config *d,
 	*out_calib1 = calib1;
 }
 
-struct t_imu_calibration
-vive_get_imu_calibration(const struct vive_config *d)
+void
+vive_get_imu_calibration(const struct vive_config *d, struct t_imu_calibration *out_calib)
 {
 
 	struct xrt_vec3 ab = d->imu.acc_bias;
@@ -253,15 +253,18 @@ vive_get_imu_calibration(const struct vive_config *d)
 	            .noise_std = {0.000282, 0.000282, 0.000282},
 	        },
 	};
-	return calib;
+
+	*out_calib = calib;
 }
 
-struct t_slam_imu_calibration
-vive_get_slam_imu_calibration(const struct vive_config *d)
+void
+vive_get_slam_imu_calibration(const struct vive_config *d, struct t_slam_imu_calibration *out_calib)
 {
 	struct t_slam_imu_calibration calib;
 	const int IMU_FREQUENCY = 1000;
-	calib.base = vive_get_imu_calibration(d);
+
+	vive_get_imu_calibration(d, &calib.base);
 	calib.frequency = IMU_FREQUENCY;
-	return calib;
+
+	*out_calib = calib;
 }

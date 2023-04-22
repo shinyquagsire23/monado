@@ -46,16 +46,16 @@ vive_get_slam_cams_calib(const struct vive_config *d,
  *
  * @ingroup drv_vive
  */
-struct t_imu_calibration
-vive_get_imu_calibration(const struct vive_config *d);
+void
+vive_get_imu_calibration(const struct vive_config *d, struct t_imu_calibration *out_calib);
 
 /*!
  * Get a @ref t_slam_imu_calibration for the IMU.
  *
  * @ingroup drv_vive
  */
-struct t_slam_imu_calibration
-vive_get_slam_imu_calibration(const struct vive_config *d);
+void
+vive_get_slam_imu_calibration(const struct vive_config *d, struct t_slam_imu_calibration *out_calib);
 
 
 #ifdef __cplusplus

@@ -385,7 +385,7 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	// SLAM calibration
 	lhs->slam_calib.cam_count = 2;
 	vive_get_slam_cams_calib(lhs->hmd_config, &lhs->slam_calib.cams[0], &lhs->slam_calib.cams[1]);
-	lhs->slam_calib.imu = vive_get_slam_imu_calibration(lhs->hmd_config);
+	vive_get_slam_imu_calibration(lhs->hmd_config, &lhs->slam_calib.imu);
 
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
