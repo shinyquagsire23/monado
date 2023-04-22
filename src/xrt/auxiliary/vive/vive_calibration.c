@@ -37,11 +37,11 @@ DEBUG_GET_ONCE_BOOL_OPTION(vive_use_factory_rotations, "VIVE_USE_FACTORY_ROTATIO
  */
 
 static struct t_camera_calibration
-vive_get_camera_calibration(struct vive_config *d, int cam_index)
+vive_get_camera_calibration(const struct vive_config *d, int cam_index)
 {
 	struct t_camera_calibration calib;
 
-	struct index_camera *camera = &d->cameras.view[cam_index];
+	const struct index_camera *camera = &d->cameras.view[cam_index];
 	calib.image_size_pixels.w = camera->intrinsics.image_size_pixels.w;
 	calib.image_size_pixels.h = camera->intrinsics.image_size_pixels.h;
 
@@ -74,7 +74,7 @@ vive_get_camera_calibration(struct vive_config *d, int cam_index)
  */
 
 bool
-vive_get_stereo_camera_calibration(struct vive_config *d,
+vive_get_stereo_camera_calibration(const struct vive_config *d,
                                    struct t_stereo_camera_calibration **calibration_ptr_to_ref,
                                    struct xrt_pose *out_head_in_left_camera)
 {
@@ -126,7 +126,7 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
 
 //! Camera calibrations for SLAM
 void
-vive_get_slam_cams_calib(struct vive_config *d,
+vive_get_slam_cams_calib(const struct vive_config *d,
                          struct t_slam_camera_calibration *out_calib0,
                          struct t_slam_camera_calibration *out_calib1)
 {
@@ -229,7 +229,7 @@ vive_get_slam_cams_calib(struct vive_config *d,
 }
 
 struct t_imu_calibration
-vive_get_imu_calibration(struct vive_config *d)
+vive_get_imu_calibration(const struct vive_config *d)
 {
 
 	struct xrt_vec3 ab = d->imu.acc_bias;
@@ -257,7 +257,7 @@ vive_get_imu_calibration(struct vive_config *d)
 }
 
 struct t_slam_imu_calibration
-vive_get_slam_imu_calibration(struct vive_config *d)
+vive_get_slam_imu_calibration(const struct vive_config *d)
 {
 	struct t_slam_imu_calibration calib;
 	const int IMU_FREQUENCY = 1000;

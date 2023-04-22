@@ -27,7 +27,7 @@ struct vive_config;
  * @ingroup drv_vive
  */
 bool
-vive_get_stereo_camera_calibration(struct vive_config *d,
+vive_get_stereo_camera_calibration(const struct vive_config *d,
                                    struct t_stereo_camera_calibration **calibration_ptr_to_ref,
                                    struct xrt_pose *out_head_in_left_camera);
 
@@ -37,7 +37,7 @@ vive_get_stereo_camera_calibration(struct vive_config *d,
  * @ingroup drv_vive
  */
 void
-vive_get_slam_cams_calib(struct vive_config *d,
+vive_get_slam_cams_calib(const struct vive_config *d,
                          struct t_slam_camera_calibration *out_calib0,
                          struct t_slam_camera_calibration *out_calib1);
 
@@ -47,7 +47,7 @@ vive_get_slam_cams_calib(struct vive_config *d,
  * @ingroup drv_vive
  */
 struct t_imu_calibration
-vive_get_imu_calibration(struct vive_config *d);
+vive_get_imu_calibration(const struct vive_config *d);
 
 /*!
  * Get a @ref t_slam_imu_calibration for the IMU.
@@ -55,7 +55,7 @@ vive_get_imu_calibration(struct vive_config *d);
  * @ingroup drv_vive
  */
 struct t_slam_imu_calibration
-vive_get_slam_imu_calibration(struct vive_config *d);
+vive_get_slam_imu_calibration(const struct vive_config *d);
 
 
 #ifdef __cplusplus
