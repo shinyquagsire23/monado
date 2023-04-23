@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -10,11 +10,12 @@
 
 #pragma once
 
-#include <stdbool.h>
-
+#include "xrt/xrt_compiler.h"
 #include "xrt/xrt_defines.h"
+
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
+
 
 // public documentation
 #define INDEX_MIN_IPD 0.058
@@ -36,6 +37,12 @@
 extern "C" {
 #endif
 
+
+/*!
+ * Headset variant.
+ *
+ * @ingroup drv_vive
+ */
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
@@ -44,6 +51,11 @@ enum VIVE_VARIANT
 	VIVE_VARIANT_INDEX
 };
 
+/*!
+ * Controller variant.
+ *
+ * @ingroup drv_vive
+ */
 enum VIVE_CONTROLLER_VARIANT
 {
 	CONTROLLER_VIVE_WAND,
@@ -56,6 +68,8 @@ enum VIVE_CONTROLLER_VARIANT
 
 /*!
  * A calibrated camera on an Index.
+ *
+ * @ingroup drv_vive
  */
 struct index_camera
 {
@@ -93,6 +107,8 @@ struct index_camera
 
 /*!
  * A single lighthouse senosor point and normal, in IMU space.
+ *
+ * @ingroup drv_vive
  */
 struct lh_sensor
 {
@@ -106,6 +122,8 @@ struct lh_sensor
  * A lighthouse consisting of sensors.
  *
  * All sensors are placed in IMU space.
+ *
+ * @ingroup drv_vive
  */
 struct lh_model
 {
@@ -113,6 +131,11 @@ struct lh_model
 	size_t sensor_count;
 };
 
+/*!
+ * headset config.
+ *
+ * @ingroup drv_vive
+ */
 struct vive_config
 {
 	//! log level accessed by the config parser
@@ -181,6 +204,11 @@ struct vive_config
 	struct lh_model lh;
 };
 
+/*!
+ * Controller config.
+ *
+ * @ingroup drv_vive
+ */
 struct vive_controller_config
 {
 	enum u_logging_level log_level;
@@ -213,17 +241,34 @@ struct vive_controller_config
 	} imu;
 };
 
+
+/*
+ *
+ * Functions.
+ *
+ */
+
+/*!
+ * Parse a headset config.
+ *
+ * @ingroup drv_vive
+ */
 bool
 vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level);
 
 /*!
  * Free any allocated resources on this config.
+ *
+ * @ingroup drv_vive
  */
 void
 vive_config_teardown(struct vive_config *config);
 
-struct vive_controller_device;
-
+/*!
+ * Parse a controller config.
+ *
+ * @ingroup drv_vive
+ */
 bool
 vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level);
 
