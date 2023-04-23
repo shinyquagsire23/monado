@@ -1,8 +1,10 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 add_library(
 	aux_vive STATIC
+	vive_calibration.c
+	vive_calibration.h
 	vive_config.h
 	vive_config.c
 	vive_bindings.c
