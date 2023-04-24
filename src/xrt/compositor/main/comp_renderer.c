@@ -2072,8 +2072,12 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * For direct mode this makes us wait until the last frame has been
 	 * actually shown to the user, this avoids us missing that we have
 	 * missed a frame and miss-predicting the next frame.
+	 *
+	 * Only do this if we are ready.
 	 */
-	renderer_acquire_swapchain_image(r);
+	if (comp_target_check_ready(r->c->target)) {
+		renderer_acquire_swapchain_image(r);
+	}
 
 	comp_target_update_timings(ct);
 }
