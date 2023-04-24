@@ -1,6 +1,6 @@
 // Copyright 2018, Philipp Zabel.
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -173,6 +173,13 @@ struct wmr_hmd
 
 	//! Average 4 IMU samples before sending them to the trackers
 	bool average_imus;
+
+	/*!
+	 * Offset for tracked pose offsets (applies to both fusion and SLAM).
+	 * Applied when getting the tracked poses, so is effectivily a offset
+	 * to increase or decrease prediction.
+	 */
+	struct u_var_draggable_f32 tracked_offset_ms;
 
 	struct
 	{

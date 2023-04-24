@@ -1091,6 +1091,9 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	DRV_TRACE_MARKER();
 
 	struct wmr_hmd *wh = wmr_hmd(xdev);
+
+	at_timestamp_ns += (uint64_t)(wh->tracked_offset_ms.val * (double)U_TIME_1MS_IN_NS);
+
 	if (wh->tracking.slam_enabled && wh->slam_over_3dof) {
 		wmr_hmd_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
 	} else {
@@ -1617,6 +1620,7 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
 	u_var_add_pose(wh, &wh->offset, "Pose Offset");
 	u_var_add_bool(wh, &wh->average_imus, "Average IMU samples");
+	u_var_add_draggable_f32(wh, &wh->tracked_offset_ms, "Timecode offset(ms)");
 
 	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
@@ -1887,6 +1891,12 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
 	wh->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 	wh->average_imus = true;
+	wh->tracked_offset_ms = (struct u_var_draggable_f32){
+	    .val = 0.0,
+	    .min = -40.0,
+	    .step = 0.1,
+	    .max = +120.0,
+	};
 
 	/* Now that we have the config loaded, iterate the map of known headsets and see if we have
 	 * an entry for this specific headset (otherwise the generic entry will be used)
