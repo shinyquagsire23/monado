@@ -155,10 +155,10 @@ public:
 		m_ff_vec3_f32_push(ff, &sample, timestamp_ns);
 	}
 
-	inline void
+	inline bool
 	get(size_t num, xrt_vec3 *out_sample, uint64_t *out_timestamp_ns)
 	{
-		m_ff_vec3_f32_get(ff, num, out_sample, out_timestamp_ns);
+		return m_ff_vec3_f32_get(ff, num, out_sample, out_timestamp_ns);
 	}
 
 	inline size_t
