@@ -140,6 +140,15 @@ public:
 		m_ff_vec3_f32_free(&ff);
 	}
 
+	/*!
+	 * Get the pointer to the C filter fifo, ownership is not passed.
+	 */
+	inline m_ff_vec3_f32 *
+	unsafeGetFilterFifo()
+	{
+		return ff;
+	}
+
 	inline void
 	push(const xrt_vec3 &sample, uint64_t timestamp_ns)
 	{
