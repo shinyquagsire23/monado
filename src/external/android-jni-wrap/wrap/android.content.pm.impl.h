@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 // Inline implementations: do not include on its own!
@@ -24,6 +24,11 @@ inline std::string PackageItemInfo::getName() const {
 inline std::string PackageItemInfo::getPackageName() const {
     assert(!isNull());
     return get(Meta::data().packageName, object());
+}
+
+inline ApplicationInfo ComponentInfo::getApplicationInfo() const {
+    assert(!isNull());
+    return get(Meta::data().applicationInfo, object());
 }
 
 inline std::string ApplicationInfo::getNativeLibraryDir() const {

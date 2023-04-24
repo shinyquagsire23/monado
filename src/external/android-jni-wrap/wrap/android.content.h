@@ -8,10 +8,6 @@
 #include <string>
 
 namespace wrap {
-namespace java::io {
-class File;
-} // namespace java::io
-
 namespace android::content {
 class ComponentName;
 class ContentResolver;
@@ -32,13 +28,17 @@ class Uri;
 class Uri_Builder;
 } // namespace android::net
 
+namespace android::os {
+class Bundle;
+} // namespace android::os
+
 namespace android::view {
 class Display;
 } // namespace android::view
 
-namespace android::os {
-class Bundle;
-} // namespace android::os
+namespace java::io {
+class File;
+} // namespace java::io
 
 namespace java::lang {
 class Class;
@@ -126,6 +126,17 @@ class Context : public ObjectWrapperBase {
     java::lang::ClassLoader getClassLoader();
 
     /*!
+     * Wrapper for the getExternalFilesDir method
+     *
+     * Java prototype:
+     * `public abstract java.io.File getExternalFilesDir(java.lang.String);`
+     *
+     * JNI signature: (Ljava/lang/String;)Ljava/io/File;
+     *
+     */
+    java::io::File getExternalFilesDir(std::string const &type);
+
+    /*!
      * Wrapper for the startActivity method
      *
      * Java prototype:
@@ -149,6 +160,17 @@ class Context : public ObjectWrapperBase {
     void startActivity(Intent const &intent, os::Bundle const &bundle);
 
     /*!
+     * Wrapper for the getSystemService method
+     *
+     * Java prototype:
+     * `public abstract java.lang.Object getSystemService(java.lang.String);`
+     *
+     * JNI signature: (Ljava/lang/String;)Ljava/lang/Object;
+     *
+     */
+    jni::Object getSystemService(std::string const &name);
+
+    /*!
      * Wrapper for the createPackageContext method
      *
      * Java prototype:
@@ -165,34 +187,13 @@ class Context : public ObjectWrapperBase {
      * Wrapper for the createDisplayContext method
      *
      * Java prototype:
-     * `public abstract Context createDisplayContext(android.view.Display display)`
+     * `public abstract android.content.Context
+     * createDisplayContext(android.view.Display);`
      *
      * JNI signature: (Landroid/view/Display;)Landroid/content/Context;
      *
      */
-    Context createDisplayContext(wrap::android::view::Display const &display);
-
-    /*!
-     * Wrapper for the getSystemService method
-     *
-     * Java prototype:
-     * `public abstract java.lang.Object getSystemService(java.lang.String);`
-     *
-     * JNI signature: (Ljava/lang/String;)Ljava/lang/Object;
-     *
-     */
-    jni::Object getSystemService(std::string const &name);
-
-    /*!
-     * Wrapper for the getExternalFilesDir method
-     *
-     * Java prototype:
-     * `public abstract java.io.File getExternalFilesDir(java.lang.String);`
-     *
-     * JNI signature: (Ljava/lang/String;)Ljava/io/File;
-     *
-     */
-    java::io::File getExternalFilesDir(std::string const &type);
+    Context createDisplayContext(view::Display const &display);
 
     enum {
         CONTEXT_INCLUDE_CODE = 1,
@@ -209,12 +210,12 @@ class Context : public ObjectWrapperBase {
         jni::method_t getContentResolver;
         jni::method_t getApplicationContext;
         jni::method_t getClassLoader;
+        jni::method_t getExternalFilesDir;
         jni::method_t startActivity;
         jni::method_t startActivity1;
+        jni::method_t getSystemService;
         jni::method_t createPackageContext;
         jni::method_t createDisplayContext;
-        jni::method_t getSystemService;
-        jni::method_t getExternalFilesDir;
 
         /*!
          * Singleton accessor

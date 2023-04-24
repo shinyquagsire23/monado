@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -9,9 +9,12 @@
 
 namespace wrap {
 namespace android::content {
-    class Context;
+class Context;
 } // namespace android::content
 
+} // namespace wrap
+
+namespace wrap {
 namespace android::provider {
 /*!
  * Wrapper for android.provider.Settings objects.
@@ -38,14 +41,12 @@ class Settings : public ObjectWrapperBase {
      * Wrapper for the canDrawOverlays static method
      *
      * Java prototype:
-     * `public static final boolean
-     * canDrawOverlays(android.content.Context);`
+     * `public static boolean canDrawOverlays(android.content.Context);`
      *
-     * JNI signature:
-     * (Landroid/content/Context;)Z
+     * JNI signature: (Landroid/content/Context;)Z
      *
      */
-    static bool canDrawOverlays(content::Context const &context);
+    static bool canDrawOverlays(const content::Context &context);
 
     /*!
      * Class metadata

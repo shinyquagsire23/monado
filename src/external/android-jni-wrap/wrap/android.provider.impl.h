@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 // Inline implementations: do not include on its own!
@@ -17,5 +17,6 @@ inline bool Settings::canDrawOverlays(const content::Context &context) {
     return Meta::data().clazz().call<bool>(Meta::data().canDrawOverlays,
                                            context.object());
 }
+
 } // namespace android::provider
 } // namespace wrap
