@@ -37,8 +37,8 @@ extern "C" {
 #define WMR_MOTION_CONTROLLER_NS_PER_TICK 100
 
 
-// Messages types specific to Bluetooth connected WMR motion controllers
-#define WMR_BT_MOTION_CONTROLLER_MSG 0x01
+// Messages types for WMR motion controllers
+#define WMR_MOTION_CONTROLLER_STATUS_MSG 0x01
 
 
 struct wmr_controller_input

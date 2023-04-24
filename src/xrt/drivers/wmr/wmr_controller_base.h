@@ -1,0 +1,136 @@
+// Copyright 2020-2021, N Madsen.
+// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2021-2023, Jan Schmidt
+// SPDX-License-Identifier: BSL-1.0
+//
+/*!
+ * @file
+ * @brief Common implementation for WMR controllers, handling
+ * shared behaviour such as communication, configuration reading,
+ * IMU integration.
+ * @author Jan Schmidt <jan@centricular.com>
+ * @author Nis Madsen <nima_zero_one@protonmail.com>
+ * @ingroup drv_wmr
+ */
+#pragma once
+
+#include "os/os_threading.h"
+#include "math/m_imu_3dof.h"
+#include "util/u_logging.h"
+#include "xrt/xrt_device.h"
+
+#include "wmr_controller_protocol.h"
+#include "wmr_config.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct wmr_controller_base;
+
+/*!
+ * A connection for communicating with the controller.
+ * The mechanism is implementation specific, so there are
+ * two variants for either communicating directly with a
+ * controller via bluetooth, and another for talking
+ * to a controller through a headset tunnelled mapping.
+ *
+ * The controller implementation doesn't need to care how
+ * the communication is implemented.
+ *
+ * The connection is reference counted and mutex protected,
+ * as both the controller and the connection implementation
+ * may need to hold a reference to it, and to detach
+ * safely when shutting down.
+ */
+struct wmr_controller_connection
+{
+	//! The controller this connection is talking to.
+	struct wmr_controller_base *wcb;
+
+	bool (*send_bytes)(struct wmr_controller_connection *wcc, const uint8_t *buffer, uint32_t buf_size);
+	int (*read_sync)(struct wmr_controller_connection *wcc, uint8_t *buffer, uint32_t buf_size, int timeout_ms);
+
+	void (*disconnect)(struct wmr_controller_connection *wcc);
+};
+
+static inline bool
+wmr_controller_connection_send_bytes(struct wmr_controller_connection *wcc, const uint8_t *buffer, uint32_t buf_size)
+{
+	assert(wcc->send_bytes != NULL);
+	return wcc->send_bytes(wcc, buffer, buf_size);
+}
+
+static inline int
+wmr_controller_connection_read_sync(struct wmr_controller_connection *wcc,
+                                    uint8_t *buffer,
+                                    uint32_t buf_size,
+                                    int timeout_ms)
+{
+	return wcc->read_sync(wcc, buffer, buf_size, timeout_ms);
+}
+
+static inline void
+wmr_controller_connection_disconnect(struct wmr_controller_connection *wcc)
+{
+	wcc->disconnect(wcc);
+}
+
+/*!
+ * Common base for all WMR controllers.
+ *
+ * @ingroup drv_wmr
+ * @implements xrt_device
+ */
+struct wmr_controller_base
+{
+	//! Base struct.
+	struct xrt_device base;
+
+	//! Mutex protects the controller connection
+	struct os_mutex conn_lock;
+
+	//! The connection for this controller.
+	struct wmr_controller_connection *wcc;
+
+	//! Callback from the connection when a packet has been received.
+	void (*receive_bytes)(struct wmr_controller_base *wcb, uint64_t time_ns, uint8_t *buffer, uint32_t buf_size);
+
+	enum u_logging_level log_level;
+
+	//! Mutex protects shared data used from OpenXR callbacks
+	struct os_mutex data_lock;
+
+	/* firmware configuration block */
+	struct wmr_controller_config config;
+
+	//! The last decoded package of IMU and button data
+	struct wmr_controller_input input;
+	//! Time of last IMU sample, in CPU time.
+	uint64_t last_imu_timestamp_ns;
+	//! Main fusion calculator.
+	struct m_imu_3dof fusion;
+	//! The last angular velocity from the IMU, for prediction.
+	struct xrt_vec3 last_angular_velocity;
+};
+
+struct wmr_controller_base *
+wmr_controller_base_create(struct wmr_controller_connection *conn,
+                           enum xrt_device_type controller_type,
+                           enum u_logging_level log_level);
+
+
+static inline void
+wmr_controller_connection_receive_bytes(struct wmr_controller_connection *wcc,
+                                        uint64_t time_ns,
+                                        uint8_t *buffer,
+                                        uint32_t buf_size)
+{
+	struct wmr_controller_base *wcb = wcc->wcb;
+
+	wcb->receive_bytes(wcb, time_ns, buffer, buf_size);
+}
+
+#ifdef __cplusplus
+}
+#endif
