@@ -12,6 +12,7 @@
 #include "util/u_logging.h"
 
 #include "wrap/android.content.h"
+#include "wrap/android.content.pm.h"
 #include "wrap/dalvik.system.h"
 
 #include "jni.h"
@@ -24,6 +25,8 @@ using wrap::android::content::pm::PackageManager;
 using wrap::dalvik::system::DexClassLoader;
 
 namespace xrt::auxiliary::android {
+
+static constexpr char kIntentAction[] = "org.khronos.openxr.OpenXRRuntimeService";
 
 /*!
  * Hacky way to retrieve runtime source dir.
@@ -56,21 +59,41 @@ getAppInfo(std::string const &packageName, jobject application_context)
 		if (packageManager.isNull()) {
 			U_LOG_E(
 			    "getAppInfo: "
-			    "application_context.getPackageManager() returned "
-			    "null");
+			    "application_context.getPackageManager() returned null");
 			return {};
 		}
-		auto packageInfo = packageManager.getPackageInfo(
-		    packageName, PackageManager::GET_META_DATA | PackageManager::GET_SHARED_LIBRARY_FILES);
-
-		if (packageInfo.isNull()) {
+		auto intent = wrap::android::content::Intent::construct(kIntentAction);
+		auto resolutions = packageManager.queryIntentServices(
+		    intent, PackageManager::GET_META_DATA | PackageManager::GET_SHARED_LIBRARY_FILES);
+		if (resolutions.isNull() || resolutions.size() == 0) {
 			U_LOG_E(
 			    "getAppInfo: "
-			    "application_context.getPackageManager()."
-			    "getPackaegInfo() returned null");
+			    "application_context.getPackageManager().queryIntentServices() returned null or empty");
 			return {};
 		}
-		return packageInfo.getApplicationInfo();
+		const auto n = resolutions.size();
+		ApplicationInfo appInfo;
+		for (int32_t i = 0; i < n; ++i) {
+			wrap::android::content::pm::ResolveInfo resolution{resolutions.get(i)};
+			auto service = resolution.getServiceInfo();
+			if (service.isNull()) {
+				continue;
+			}
+			U_LOG_I("getAppInfo: Considering package %s", service.getPackageName().c_str());
+			if (service.getPackageName() == packageName) {
+				appInfo = service.getApplicationInfo();
+				break;
+			}
+		}
+
+		if (appInfo.isNull()) {
+			U_LOG_E(
+			    "getAppInfo: "
+			    "could not find a package advertising the intent %s named %s",
+			    kIntentAction, packageName.c_str());
+			return {};
+		}
+		return appInfo;
 	} catch (std::exception const &e) {
 		U_LOG_E("Could not get App Info: %s", e.what());
 		return {};
