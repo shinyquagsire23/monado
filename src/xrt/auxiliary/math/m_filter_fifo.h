@@ -124,7 +124,7 @@ m_ff_f64_filter(struct m_ff_f64 *ff, uint64_t start_ns, uint64_t stop_ns, double
 class FilterFifo3F
 {
 private:
-	struct m_ff_vec3_f32 *ff;
+	m_ff_vec3_f32 *mFifoPtr;
 
 
 public:
@@ -132,12 +132,12 @@ public:
 
 	FilterFifo3F(size_t size)
 	{
-		m_ff_vec3_f32_alloc(&ff, size);
+		m_ff_vec3_f32_alloc(&mFifoPtr, size);
 	}
 
 	~FilterFifo3F()
 	{
-		m_ff_vec3_f32_free(&ff);
+		m_ff_vec3_f32_free(&mFifoPtr);
 	}
 
 	/*!
@@ -146,25 +146,25 @@ public:
 	inline m_ff_vec3_f32 *
 	unsafeGetFilterFifo()
 	{
-		return ff;
+		return mFifoPtr;
 	}
 
 	inline void
 	push(const xrt_vec3 &sample, uint64_t timestamp_ns)
 	{
-		m_ff_vec3_f32_push(ff, &sample, timestamp_ns);
+		m_ff_vec3_f32_push(mFifoPtr, &sample, timestamp_ns);
 	}
 
 	inline bool
 	get(size_t num, xrt_vec3 *out_sample, uint64_t *out_timestamp_ns)
 	{
-		return m_ff_vec3_f32_get(ff, num, out_sample, out_timestamp_ns);
+		return m_ff_vec3_f32_get(mFifoPtr, num, out_sample, out_timestamp_ns);
 	}
 
 	inline size_t
 	filter(uint64_t start_ns, uint64_t stop_ns, struct xrt_vec3 *out_average)
 	{
-		return m_ff_vec3_f32_filter(ff, start_ns, stop_ns, out_average);
+		return m_ff_vec3_f32_filter(mFifoPtr, start_ns, stop_ns, out_average);
 	}
 };
 #endif
