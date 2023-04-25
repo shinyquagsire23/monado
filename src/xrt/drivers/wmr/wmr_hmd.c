@@ -824,8 +824,8 @@ wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *b
 	os_hid_write(hid, cmd, sizeof(cmd));
 
 	do {
-		int size = os_hid_read(hid, buf, len, -1);
-		if (size == -1) {
+		int size = os_hid_read(hid, buf, len, 100);
+		if (size < 1) {
 			return -1;
 		}
 		if (buf[0] == WMR_MS_HOLOLENS_MSG_CONTROL) {
