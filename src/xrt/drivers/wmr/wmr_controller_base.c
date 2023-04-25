@@ -294,7 +294,7 @@ read_controller_config(struct wmr_controller_base *wcb)
 
 	// Read config block
 	ret = wmr_read_fw_block(wcb, 0x02, &data, &data_size);
-	if (ret < 0 || data == NULL)
+	if (ret < 0 || data == NULL || data_size < 2)
 		return false;
 
 	/* De-obfuscate the JSON config */
