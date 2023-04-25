@@ -339,7 +339,9 @@ wmr_create_headset(struct xrt_prober *xp,
 
 	if (hmd == NULL) {
 		U_LOG_IFL_E(log_level, "Failed to create WMR HMD device.");
-		goto error_companion;
+		/* No cleanup - the wmr_hmd_create() method cleaned up
+		 * the hid devices already */
+		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
@@ -354,8 +356,6 @@ wmr_create_headset(struct xrt_prober *xp,
 
 	return XRT_SUCCESS;
 
-error_companion:
-	os_hid_destroy(hid_companion);
 error_holo:
 	os_hid_destroy(hid_holo);
 
