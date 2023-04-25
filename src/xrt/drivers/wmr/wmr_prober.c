@@ -205,7 +205,7 @@ wmr_find_bt_controller_pair(struct xrt_prober *xp,
 			classify_and_assign_controller(xp, xpd, &odyssey_ctrls);
 		} else if (xpd->product_id == REVERB_G2_CONTROLLER_PID) {
 			U_LOG_W(
-			    "Reverb G2 controller connected to host BT controller, correnntly not supported, "
+			    "Reverb G2 controller connected to host BT controller, currently not supported, "
 			    "skipping!");
 		}
 	}
