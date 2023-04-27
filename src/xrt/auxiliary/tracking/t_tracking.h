@@ -599,6 +599,8 @@ enum t_slam_prediction_type
 	SLAM_PRED_SP_SO_SA_SL, //!< Predicts from last two SLAM poses only
 	SLAM_PRED_SP_SO_IA_SL, //!< Predicts from last SLAM pose with angular velocity computed from IMU
 	SLAM_PRED_SP_SO_IA_IL, //!< Predicts from last SLAM pose with angular and linear velocity computed from IMU
+	SLAM_PRED_IP_IO_IA_IL, //!< Predicts from a pose that is the last SLAM pose with the IMU samples that came after
+	                       //!< it integrated on top; velocities from latest IMU sample.
 	SLAM_PRED_COUNT,
 };
 

@@ -72,7 +72,7 @@ DEBUG_GET_ONCE_OPTION(slam_config, "SLAM_CONFIG", nullptr)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_ui, "SLAM_UI", false)
 DEBUG_GET_ONCE_BOOL_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", false)
 DEBUG_GET_ONCE_NUM_OPTION(slam_openvr_groundtruth_device, "SLAM_OPENVR_GROUNDTRUTH_DEVICE", 0)
-DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_SP_SO_IA_IL))
+DEBUG_GET_ONCE_NUM_OPTION(slam_prediction_type, "SLAM_PREDICTION_TYPE", long(SLAM_PRED_IP_IO_IA_IL))
 DEBUG_GET_ONCE_BOOL_OPTION(slam_write_csvs, "SLAM_WRITE_CSVS", false)
 DEBUG_GET_ONCE_OPTION(slam_csv_path, "SLAM_CSV_PATH", "evaluation/")
 DEBUG_GET_ONCE_BOOL_OPTION(slam_timing_stat, "SLAM_TIMING_STAT", true)
@@ -374,6 +374,9 @@ struct TrackerSlam
 	t_slam_prediction_type pred_type;
 	u_var_combo pred_combo;         //!< UI combo box to select @ref pred_type
 	RelationHistory slam_rels{};    //!< A history of relations produced purely from external SLAM tracker data
+	int dbg_pred_every = 1;         //!< Skip X SLAM poses so that you get tracked mostly by the prediction algo
+	int dbg_pred_counter = 0;       //!< SLAM pose counter for prediction debugging
+	struct os_mutex lock_ff;        //!< Lock for gyro_ff and accel_ff.
 	struct m_ff_vec3_f32 *gyro_ff;  //!< Last gyroscope samples
 	struct m_ff_vec3_f32 *accel_ff; //!< Last accelerometer samples
 	vector<u_sink_debug> ui_sink;   //!< Sink to display frames in UI of each camera
@@ -817,10 +820,16 @@ flush_poses(TrackerSlam &t)
 		rel.linear_velocity = (npos - lpos) / dt;
 		math_quat_finite_difference(&lrot, &nrot, dt, &rel.angular_velocity);
 
-		t.slam_rels.push(rel, nts);
+		// Push to relationship history unless we are debugging prediction
+		if (t.dbg_pred_counter % t.dbg_pred_every == 0) {
+			t.slam_rels.push(rel, nts);
+		}
+		t.dbg_pred_counter = (t.dbg_pred_counter + 1) % t.dbg_pred_every;
 
 		gt_ui_push(t, nts, rel.pose);
 		t.slam_traj_writer->push(nts, rel.pose);
+		xrt_pose_sample pose_sample = {nts, rel.pose};
+		xrt_sink_push_pose(t.euroc_recorder->gt, &pose_sample);
 
 		// Push even if timing extension is disabled
 		auto tss = timing_ui_push(t, np);
@@ -841,13 +850,104 @@ flush_poses(TrackerSlam &t)
 	return got_one;
 }
 
+//! Integrates IMU samples on top of a base pose and predicts from that
+static void
+predict_pose_from_imu(TrackerSlam &t,
+                      timepoint_ns when_ns,
+                      xrt_space_relation base_rel, // Pose to integrate IMUs on top of
+                      timepoint_ns base_rel_ts,
+                      struct xrt_space_relation *out_relation)
+{
+	os_mutex_lock(&t.lock_ff);
+
+	// Find oldest imu index i that is newer than latest SLAM pose (or -1)
+	int i = 0;
+	uint64_t imu_ts = UINT64_MAX;
+	xrt_vec3 _;
+	while (m_ff_vec3_f32_get(t.gyro_ff, i, &_, &imu_ts)) {
+		if ((int64_t)imu_ts < base_rel_ts) {
+			i--; // Back to the oldest newer-than-SLAM IMU index (or -1)
+			break;
+		}
+		i++;
+	}
+
+	if (i == -1) {
+		SLAM_WARN("No IMU samples received after latest SLAM pose (and frame)");
+	}
+
+	xrt_space_relation integ_rel = base_rel;
+	timepoint_ns integ_rel_ts = base_rel_ts;
+	xrt_quat &o = integ_rel.pose.orientation;
+	xrt_vec3 &p = integ_rel.pose.position;
+	xrt_vec3 &w = integ_rel.angular_velocity;
+	xrt_vec3 &v = integ_rel.linear_velocity;
+	bool clamped = false; // If when_ns is older than the latest IMU ts
+
+	while (i >= 0) { // Decreasing i increases timestamp
+		// Get samples
+		xrt_vec3 g{};
+		xrt_vec3 a{};
+		uint64_t g_ts{};
+		uint64_t a_ts{};
+		bool got = true;
+		got &= m_ff_vec3_f32_get(t.gyro_ff, i, &g, &g_ts);
+		got &= m_ff_vec3_f32_get(t.accel_ff, i, &a, &a_ts);
+		timepoint_ns ts = g_ts;
+
+
+		// Checks
+		if (ts > when_ns) {
+			clamped = true;
+			//! @todo Instead of using same a and g values, do an interpolated sample like this:
+			// a = prev_a + ((when_ns - prev_ts) / (ts - prev_ts)) * (a - prev_a);
+			// g = prev_g + ((when_ns - prev_ts) / (ts - prev_ts)) * (g - prev_g);
+			ts = when_ns; // clamp ts to when_ns
+		}
+		SLAM_DASSERT(got && g_ts == a_ts, "Failure getting synced gyro and accel samples");
+		SLAM_DASSERT(ts >= base_rel_ts, "Accessing imu sample that is older than latest SLAM pose");
+
+		// Update time
+		float dt = (float)time_ns_to_s(ts - integ_rel_ts);
+		integ_rel_ts = ts;
+
+		// Integrate gyroscope
+		xrt_quat angvel_delta{};
+		xrt_vec3 scaled_half_g = g * dt * 0.5f;
+		math_quat_exp(&scaled_half_g, &angvel_delta); // Same as using math_quat_from_angle_vector(g/dt)
+		math_quat_rotate(&o, &angvel_delta, &o);      // Orientation
+		math_quat_rotate_derivative(&o, &g, &w);      // Angular velocity
+
+		// Integrate accelerometer
+		xrt_vec3 world_accel{};
+		math_quat_rotate_vec3(&o, &a, &world_accel);
+		world_accel += t.gravity_correction;
+		v += world_accel * dt;                        // Linear velocity
+		p += v * dt + world_accel * (dt * dt * 0.5f); // Position
+
+		if (clamped) {
+			break;
+		}
+		i--;
+	}
+
+	os_mutex_unlock(&t.lock_ff);
+
+	// Do the prediction based on the updated relation
+	double last_imu_to_now_dt = time_ns_to_s(when_ns - integ_rel_ts);
+	xrt_space_relation predicted_relation{};
+	m_predict_relation(&integ_rel, last_imu_to_now_dt, &predicted_relation);
+
+	*out_relation = predicted_relation;
+}
+
 //! Return our best guess of the relation at time @p when_ns using all the data the tracker has.
 static void
 predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
 	XRT_TRACE_MARKER();
 
-	bool valid_pred_type = t.pred_type >= SLAM_PRED_NONE && t.pred_type <= SLAM_PRED_SP_SO_IA_IL;
+	bool valid_pred_type = t.pred_type >= SLAM_PRED_NONE && t.pred_type < SLAM_PRED_COUNT;
 	SLAM_DASSERT(valid_pred_type, "Invalid prediction type (%d)", t.pred_type);
 
 	// Get last relation computed purely from SLAM data
@@ -874,6 +974,14 @@ predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *ou
 		return;
 	}
 
+
+	if (t.pred_type == SLAM_PRED_IP_IO_IA_IL) {
+		predict_pose_from_imu(t, when_ns, rel, (int64_t)rel_ts, out_relation);
+		return;
+	}
+
+	os_mutex_lock(&t.lock_ff);
+
 	// Update angular velocity with gyro data
 	if (t.pred_type >= SLAM_PRED_SP_SO_IA_SL) {
 		xrt_vec3 avg_gyro{};
@@ -891,6 +999,8 @@ predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *ou
 		double slam_to_imu_dt = time_ns_to_s(t.last_imu_ts - rel_ts);
 		rel.linear_velocity += world_accel * slam_to_imu_dt;
 	}
+
+	os_mutex_unlock(&t.lock_ff);
 
 	// Do the prediction based on the updated relation
 	double slam_to_now_dt = time_ns_to_s(when_ns - rel_ts);
@@ -959,12 +1069,13 @@ static void
 setup_ui(TrackerSlam &t)
 {
 	t.pred_combo.count = SLAM_PRED_COUNT;
-	t.pred_combo.options = "None\0Interpolate SLAM poses\0Also gyro\0Also accel (needs gravity correction)\0\0";
+	t.pred_combo.options = "None\0Interpolate SLAM poses\0Also gyro\0Also accel\0Latest IMU\0";
 	t.pred_combo.value = (int *)&t.pred_type;
 	t.ui_sink = vector<u_sink_debug>(t.cam_count);
 	for (size_t i = 0; i < t.ui_sink.size(); i++) {
 		u_sink_debug_init(&t.ui_sink[i]);
 	}
+	os_mutex_init(&t.lock_ff);
 	m_ff_vec3_f32_alloc(&t.gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&t.accel_ff, 1000);
 	m_ff_vec3_f32_alloc(&t.filter.pos_ff, 1000);
@@ -991,6 +1102,7 @@ setup_ui(TrackerSlam &t)
 
 	u_var_add_gui_header(&t, NULL, "Prediction");
 	u_var_add_combo(&t, &t.pred_combo, "Prediction Type");
+	u_var_add_i32(&t, &t.dbg_pred_every, "Debug prediction skips (try 30)");
 	u_var_add_ro_ff_vec3_f32(&t, t.gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(&t, t.accel_ff, "Accelerometer");
 	u_var_add_f32(&t, &t.gravity_correction.z, "Gravity Correction");
@@ -1208,8 +1320,10 @@ t_slam_receive_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
 	struct xrt_vec3 accel = {(float)a.x, (float)a.y, (float)a.z};
+	os_mutex_lock(&t.lock_ff);
 	m_ff_vec3_f32_push(t.gyro_ff, &gyro, ts);
 	m_ff_vec3_f32_push(t.accel_ff, &accel, ts);
+	os_mutex_unlock(&t.lock_ff);
 }
 
 //! Push the frame to the external SLAM system
@@ -1298,6 +1412,7 @@ t_slam_node_destroy(struct xrt_frame_node *node)
 	}
 	m_ff_vec3_f32_free(&t.gyro_ff);
 	m_ff_vec3_f32_free(&t.accel_ff);
+	os_mutex_destroy(&t.lock_ff);
 	m_ff_vec3_f32_free(&t.filter.pos_ff);
 	m_ff_vec3_f32_free(&t.filter.rot_ff);
 	delete t_ptr->slam;
