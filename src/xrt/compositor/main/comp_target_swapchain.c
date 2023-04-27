@@ -719,8 +719,23 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 		extent.height = w2;
 	}
 
+	/*
+	 * For all direct mode outputs 2 is what we want since we want to run
+	 * lockstep with the display. Most direct mode swapchains only supports
+	 * FIFO mode, and since there is no commonly available Vulkan API to
+	 * wait for a specific VBLANK event, even just the latest, we can set
+	 * the number of images to two and then acquire immediately after
+	 * present. Since the old images are being displayed and the new can't
+	 * be flipped this will block until the flip has gone through. Crude but
+	 * works well enough on both AMD(Mesa) and Nvidia(Blob).
+	 *
+	 * When not in direct mode and display to a composited window we
+	 * probably want 3, but most compositors on Linux sets the minImageCount
+	 * to 3 anyways so we get what we want.
+	 */
+	const uint32_t preferred_at_least_image_count = 2;
+
 	// Get the image count.
-	const uint32_t preferred_at_least_image_count = 3;
 	uint32_t image_count = select_image_count(cts, surface_caps, preferred_at_least_image_count);
 
 
