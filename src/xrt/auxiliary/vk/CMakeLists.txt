@@ -19,6 +19,8 @@ add_library(
 	vk_image_readback_to_xf_pool.h
 	vk_print.c
 	vk_state_creators.c
+	vk_surface_info.c
+	vk_surface_info.h
 	vk_sync_objects.c
 	vk_time.c
 	)
