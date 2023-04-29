@@ -547,8 +547,13 @@ control_read_packets(struct wmr_hmd *wh)
 	case WMR_CONTROL_MSG_DEVICE_STATUS: //
 		WMR_DEBUG(wh, "Device status message type: %02x (size %i)", buffer[0], size);
 		if (size != 11) {
-			WMR_DEBUG(wh, "---> Unexpected message size. Expected 11 bytes incl. message type.");
-			break;
+			WMR_DEBUG(wh,
+			          "---> Unexpected message size. Expected 11 bytes incl. message type. Got %d bytes",
+			          size);
+			WMR_DEBUG_HEX(wh, buffer, size);
+			if (size < 11) {
+				break;
+			}
 		}
 
 		// Todo: HMD state info to be decoded further.
@@ -568,6 +573,7 @@ control_read_packets(struct wmr_hmd *wh)
 		break;
 	default: //
 		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
+		WMR_DEBUG_HEX(wh, buffer, size);
 		break;
 	}
 
