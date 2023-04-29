@@ -159,7 +159,7 @@ find_companion_device(struct xrt_prober *xp,
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_MANUFACTURER, m_str, sizeof(m_str));
 	xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_PRODUCT, p_str, sizeof(p_str));
 
-	U_LOG_IFL_D(log_level, "Found Hololens Sensors' companion device '%s' '%s' (vid %04X, pid%04X)", p_str, m_str,
+	U_LOG_IFL_D(log_level, "Found Hololens Sensors' companion device '%s' '%s' (vid %04X, pid %04X)", p_str, m_str,
 	            dev->vendor_id, dev->product_id);
 
 
@@ -185,6 +185,7 @@ wmr_find_bt_controller_pair(struct xrt_prober *xp,
 	// Try to pair controllers of the same type.
 	struct wmr_bt_controllers_search_results odyssey_ctrls = {0};
 	struct wmr_bt_controllers_search_results wmr_ctrls = {0};
+	struct wmr_bt_controllers_search_results reverbg2_ctrls = {0};
 
 	for (size_t i = 0; i < device_count; i++) {
 		struct xrt_prober_device *xpd = devices[i];
@@ -204,15 +205,18 @@ wmr_find_bt_controller_pair(struct xrt_prober *xp,
 		} else if (xpd->product_id == ODYSSEY_CONTROLLER_PID) {
 			classify_and_assign_controller(xp, xpd, &odyssey_ctrls);
 		} else if (xpd->product_id == REVERB_G2_CONTROLLER_PID) {
-			U_LOG_W(
-			    "Reverb G2 controller connected to host BT controller, currently not supported, "
-			    "skipping!");
+			classify_and_assign_controller(xp, xpd, &reverbg2_ctrls);
 		}
 	}
 
 	// We have to prefer one type pair, prefer Odyssey.
 	if (odyssey_ctrls.left != NULL && odyssey_ctrls.right != NULL) {
 		*out_wbtcsr = odyssey_ctrls;
+		return;
+	}
+
+	if (reverbg2_ctrls.left != NULL && reverbg2_ctrls.right != NULL) {
+		*out_wbtcsr = reverbg2_ctrls;
 		return;
 	}
 
@@ -223,8 +227,12 @@ wmr_find_bt_controller_pair(struct xrt_prober *xp,
 	}
 
 	// Grab any of them.
-	out_wbtcsr->left = odyssey_ctrls.left != NULL ? odyssey_ctrls.left : wmr_ctrls.left;
-	out_wbtcsr->right = odyssey_ctrls.right != NULL ? odyssey_ctrls.right : wmr_ctrls.right;
+	out_wbtcsr->left = reverbg2_ctrls.left != NULL  ? reverbg2_ctrls.left
+	                   : odyssey_ctrls.left != NULL ? odyssey_ctrls.left
+	                                                : wmr_ctrls.left;
+	out_wbtcsr->right = reverbg2_ctrls.right != NULL  ? reverbg2_ctrls.right
+	                    : odyssey_ctrls.right != NULL ? odyssey_ctrls.right
+	                                                  : wmr_ctrls.right;
 }
 
 void
