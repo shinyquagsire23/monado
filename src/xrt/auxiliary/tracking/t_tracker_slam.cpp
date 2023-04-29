@@ -16,6 +16,7 @@
 #include "util/u_misc.h"
 #include "util/u_sink.h"
 #include "util/u_var.h"
+#include "util/u_trace_marker.h"
 #include "os/os_threading.h"
 #include "math/m_api.h"
 #include "math/m_filter_fifo.h"
@@ -844,6 +845,8 @@ flush_poses(TrackerSlam &t)
 static void
 predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
+	XRT_TRACE_MARKER();
+
 	bool valid_pred_type = t.pred_type >= SLAM_PRED_NONE && t.pred_type <= SLAM_PRED_SP_SO_IA_IL;
 	SLAM_DASSERT(valid_pred_type, "Invalid prediction type (%d)", t.pred_type);
 
@@ -901,6 +904,8 @@ predict_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *ou
 static void
 filter_pose(TrackerSlam &t, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
+	XRT_TRACE_MARKER();
+
 	if (t.filter.use_moving_average_filter) {
 		if (out_relation->relation_flags & XRT_SPACE_RELATION_POSITION_VALID_BIT) {
 			xrt_vec3 pos = out_relation->pose.position;
@@ -1131,6 +1136,8 @@ using namespace xrt::auxiliary::tracking::slam;
 extern "C" void
 t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, struct xrt_space_relation *out_relation)
 {
+	XRT_TRACE_MARKER();
+
 	auto &t = *container_of(xts, TrackerSlam, base);
 
 	//! @todo This should not be cached, the same timestamp can be requested at a
@@ -1160,6 +1167,8 @@ t_slam_get_tracked_pose(struct xrt_tracked_slam *xts, timepoint_ns when_ns, stru
 extern "C" void
 t_slam_gt_sink_push(struct xrt_pose_sink *sink, xrt_pose_sample *sample)
 {
+	XRT_TRACE_MARKER();
+
 	auto &t = *container_of(sink, TrackerSlam, gt_sink);
 
 	if (t.gt.trajectory->empty()) {
@@ -1175,6 +1184,8 @@ t_slam_gt_sink_push(struct xrt_pose_sink *sink, xrt_pose_sample *sample)
 extern "C" void
 t_slam_receive_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
+	XRT_TRACE_MARKER();
+
 	auto &t = *container_of(sink, TrackerSlam, imu_sink);
 
 	timepoint_ns ts = s->timestamp_ns;
@@ -1205,6 +1216,8 @@ t_slam_receive_imu(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 static void
 receive_frame(TrackerSlam &t, struct xrt_frame *frame, int cam_index)
 {
+	XRT_TRACE_MARKER();
+
 	if (cam_index == 1) {
 		flush_poses(t); // Useful to flush SLAM poses when no openxr app is open
 	}
@@ -1215,6 +1228,7 @@ receive_frame(TrackerSlam &t, struct xrt_frame *frame, int cam_index)
 	SLAM_DASSERT_(frame->timestamp < INT64_MAX);
 	img_sample sample{(int64_t)frame->timestamp, img, cam_index};
 	if (t.submit) {
+		XRT_TRACE_IDENT(slam_push);
 		t.slam->push_frame(sample);
 	}
 	SLAM_TRACE("cam%d frame t=%lu", cam_index, frame->timestamp);
