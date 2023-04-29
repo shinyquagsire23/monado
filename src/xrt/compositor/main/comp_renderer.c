@@ -29,6 +29,7 @@
 #include "util/u_frame_times_widget.h"
 
 #include "main/comp_layer_renderer.h"
+#include "main/comp_frame.h"
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 #include "main/comp_window_peek.h"
@@ -666,7 +667,7 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	const void *next = NULL;
 
 #ifdef VK_KHR_timeline_semaphore
-	assert(r->c->frame.rendering.id >= 0);
+	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_values[WAIT_SEMAPHORE_COUNT] = {(uint64_t)r->c->frame.rendering.id};
 
 	VkTimelineSemaphoreSubmitInfoKHR timeline_info = {
@@ -814,7 +815,7 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 
 	VkResult ret;
 
-	assert(r->c->frame.rendering.id >= 0);
+	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_value = (uint64_t)r->c->frame.rendering.id;
 
 	ret = comp_target_present(        //
@@ -1960,12 +1961,14 @@ comp_renderer_draw(struct comp_renderer *r)
 	struct comp_target *ct = r->c->target;
 	struct comp_compositor *c = r->c;
 
+	// Check that we don't have any bad data.
+	assert(!comp_frame_is_invalid_locked(&c->frame.waited));
+	assert(comp_frame_is_invalid_locked(&c->frame.rendering));
 
-	assert(c->frame.rendering.id == -1);
+	// Move waited frame to rendering frame, clear waited.
+	comp_frame_move_and_clear_locked(&c->frame.rendering, &c->frame.waited);
 
-	c->frame.rendering = c->frame.waited;
-	c->frame.waited.id = -1;
-
+	// Tell the target we are starting to render, for frame timing.
 	comp_target_mark_begin(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
 	// Are we ready to render? No - skip rendering.
@@ -1973,6 +1976,9 @@ comp_renderer_draw(struct comp_renderer *r)
 		// Need to emulate rendering for the timing.
 		//! @todo This should be discard.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+		// Clear the rendering frame.
+		comp_frame_clear_locked(&c->frame.rendering);
 		return;
 	}
 
@@ -2022,8 +2028,8 @@ comp_renderer_draw(struct comp_renderer *r)
 	// Save for timestamps below.
 	uint64_t frame_id = c->frame.rendering.id;
 
-	// Clear the frame.
-	c->frame.rendering.id = -1;
+	// Clear the rendered frame.
+	comp_frame_clear_locked(&c->frame.rendering);
 
 	mirror_to_debug_gui_fixup_ui_state(r);
 	if (can_mirror_to_debug_gui(r)) {

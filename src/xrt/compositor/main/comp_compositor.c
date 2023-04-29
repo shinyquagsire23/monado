@@ -59,6 +59,7 @@
 
 #include "util/comp_vulkan.h"
 #include "main/comp_compositor.h"
+#include "main/comp_frame.h"
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 #include "main/comp_window_peek.h"
@@ -185,7 +186,7 @@ compositor_predict_frame(struct xrt_compositor *xc,
 
 	comp_target_update_timings(c->target);
 
-	assert(c->frame.waited.id == -1);
+	assert(comp_frame_is_invalid_locked(&c->frame.waited));
 
 	int64_t frame_id = -1;
 	uint64_t wake_up_time_ns = 0;
