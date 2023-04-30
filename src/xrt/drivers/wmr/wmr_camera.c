@@ -308,6 +308,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	size_t dst_remain = xf->size;
 	const size_t chunk_size = 0x6000 - 32;
 
+	DRV_TRACE_BEGIN(copy_to_frame);
 	while (dst_remain > 0) {
 		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
 
@@ -326,6 +327,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 		dst += to_copy;
 		dst_remain -= to_copy;
 	}
+	DRV_TRACE_END(copy_to_frame);
 
 	/* There should be exactly a 26 byte footer left over */
 	assert(xfer->buffer + xfer->length - src == 26);
@@ -381,6 +383,8 @@ img_xfer_cb(struct libusb_transfer *xfer)
 
 	// Push to sinks
 	if (slam_tracking_frame) {
+		DRV_TRACE_IDENT(push_to_sinks);
+
 		// Tracking frames usually come at ~30fps
 		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {NULL};
 		for (int i = 0; i < cam->slam_cam_count; i++) {
