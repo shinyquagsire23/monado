@@ -1893,6 +1893,7 @@ oxr_space_type_is_reference(enum oxr_space_type space_type)
 	switch (space_type) {
 	case OXR_SPACE_TYPE_REFERENCE_VIEW:
 	case OXR_SPACE_TYPE_REFERENCE_LOCAL:
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL_FLOOR:
 	case OXR_SPACE_TYPE_REFERENCE_STAGE:
 	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT:
 	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return true;

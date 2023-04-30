@@ -119,6 +119,7 @@ get_xrt_space(struct oxr_logger *log, struct oxr_space *spc, struct xrt_space **
 	case OXR_SPACE_TYPE_ACTION: return get_xrt_space_action(log, spc, out_xspace);
 	case OXR_SPACE_TYPE_REFERENCE_VIEW: xspace = spc->sess->sys->xso->semantic.view; break;
 	case OXR_SPACE_TYPE_REFERENCE_LOCAL: xspace = spc->sess->sys->xso->semantic.local; break;
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL_FLOOR: xspace = NULL; break;
 	case OXR_SPACE_TYPE_REFERENCE_STAGE: xspace = spc->sess->sys->xso->semantic.stage; break;
 	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT: xspace = spc->sess->sys->xso->semantic.unbounded; break;
 	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: xspace = NULL; break;
