@@ -137,6 +137,41 @@ typedef void (*u_log_sink_func_t)(const char *file,
 		}                                                                                                      \
 	} while (false)
 
+/*!
+ * @brief Log a memory hexdump at @p level only if the level is at least @p cond_level - typically wrapped in a helper
+ * macro.
+ *
+ * Adds file, line, and function context. Like U_LOG_IFL()
+ *
+ * @param level A @ref u_logging_level value for this message.
+ * @param cond_level The minimum @ref u_logging_level that will be actually output.
+ * @param data The data to print in hexdump format
+ * @param data_size The size (in bytes) of the data block
+ */
+#define U_LOG_IFL_HEX(level, cond_level, data, data_size)                                                              \
+	do {                                                                                                           \
+		if (cond_level <= level) {                                                                             \
+			u_log_hex(__FILE__, __LINE__, __func__, level, data, data_size);                               \
+		}                                                                                                      \
+	} while (false)
+
+/*!
+ * @brief Log a memory hexdump at @p level for a given @ref xrt_device, only if the level is at least @p cond_level -
+ * typically wrapped in a helper macro.
+ *
+ * Adds file, line, and function context, and forwards device context from provided @p xdev .
+ * @param level A @ref u_logging_level value for this message.
+ * @param cond_level The minimum @ref u_logging_level that will be actually output.
+ * @param xdev The @ref xrt_device pointer associated with this message.
+ * @param data The data to print in hexdump format
+ * @param data_size The size (in bytes) of the data block
+ */
+#define U_LOG_XDEV_IFL_HEX(level, cond_level, xdev, data, data_size)                                                   \
+	do {                                                                                                           \
+		if (cond_level <= level) {                                                                             \
+			u_log_xdev_hex(__FILE__, __LINE__, __func__, level, xdev, data, data_size);                    \
+		}                                                                                                      \
+	} while (false)
 
 
 /*!
@@ -181,6 +216,48 @@ u_log_xdev(const char *file,
            struct xrt_device *xdev,
            const char *format,
            ...) XRT_PRINTF_FORMAT(6, 7);
+
+/*!
+ * @brief Log implementation for dumping memory buffers as hex: do not call directly, use a macro that wraps it.
+ *
+ * This function always logs: level is used for printing or passed to native logging functions.
+ *
+ * @param file Source file name associated with a message
+ * @param line Source file line associated with a message
+ * @param func Function name associated with a message
+ * @param level Message level: used for formatting or forwarding to native log functions
+ * @param data Data buffer to dump
+ * @param data_size Size of the data buffer in bytes
+ */
+void
+u_log_hex(const char *file,
+          int line,
+          const char *func,
+          enum u_logging_level level,
+          const uint8_t *data,
+          const size_t data_size);
+
+/*!
+ * @brief Device-related log implementation for dumping memory buffers as hex: do not call directly, use a macro that
+ * wraps it.
+ *
+ * This function always logs: level is used for printing or passed to native logging functions.
+ * @param file Source file name associated with a message
+ * @param line Source file line associated with a message
+ * @param func Function name associated with a message
+ * @param level Message level: used for formatting or forwarding to native log functions
+ * @param xdev The associated @ref xrt_device
+ * @param data Data buffer to dump
+ * @param data_size Size of the data buffer in bytes
+ */
+void
+u_log_xdev_hex(const char *file,
+               int line,
+               const char *func,
+               enum u_logging_level level,
+               struct xrt_device *xdev,
+               const uint8_t *data,
+               const size_t data_size);
 
 /*!
  * Sets the logging sink, log is still passed on to the platform defined output
@@ -249,6 +326,11 @@ u_log_set_sink(u_log_sink_func_t func, void *data);
 #define U_LOG_IFL_W(cond_level, ...) U_LOG_IFL(U_LOGGING_WARN, cond_level, __VA_ARGS__)
 //! Conditionally log a message at U_LOGGING_ERROR level.
 #define U_LOG_IFL_E(cond_level, ...) U_LOG_IFL(U_LOGGING_ERROR, cond_level, __VA_ARGS__)
+
+//! Conditionally log a memory hexdump at U_LOGGING_TRACE level.
+#define U_LOG_IFL_T_HEX(cond_level, data, data_size) U_LOG_IFL_HEX(U_LOGGING_TRACE, cond_level, data, data_size)
+//! Conditionally log a memory hexdump at U_LOGGING_DEBUG level.
+#define U_LOG_IFL_D_HEX(cond_level, data, data_size) U_LOG_IFL_HEX(U_LOGGING_DEBUG, cond_level, data, data_size)
 /*!
  * @}
  */
@@ -278,6 +360,13 @@ u_log_set_sink(u_log_sink_func_t func, void *data);
 #define U_LOG_XDEV_IFL_W(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_WARN, cond_level, xdev, __VA_ARGS__)
 //! Conditionally log a device-related message at U_LOGGING_ERROR level.
 #define U_LOG_XDEV_IFL_E(xdev, cond_level, ...) U_LOG_XDEV_IFL(U_LOGGING_ERROR, cond_level, xdev, __VA_ARGS__)
+
+//! Conditionally log a device-related memory hexdump at U_LOGGING_TRACE level.
+#define U_LOG_XDEV_IFL_T_HEX(xdev, cond_level, data, data_size)                                                        \
+	U_LOG_XDEV_IFL_HEX(U_LOGGING_TRACE, cond_level, xdev, data, data_size)
+//! Conditionally log a device-related memory hexdump message at U_LOGGING_DEBUG level.
+#define U_LOG_XDEV_IFL_D_HEX(xdev, cond_level, data, data_size)                                                        \
+	U_LOG_XDEV_IFL_HEX(U_LOGGING_DEBUG, cond_level, xdev, data, data_size)
 /*!
  * @}
  */

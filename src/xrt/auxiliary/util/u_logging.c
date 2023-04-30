@@ -44,6 +44,86 @@ u_log_set_sink(u_log_sink_func_t func, void *data)
 		va_end(copy);                                                                                          \
 	}
 
+static void
+u_log_hexdump_line(char *buf, size_t offset, const uint8_t *data, size_t data_size)
+{
+	char *pos = buf;
+
+	if (data_size > 16) {
+		data_size = 16;
+	}
+
+	pos += sprintf(pos, "%08x: ", (uint32_t)offset);
+
+	char *ascii = pos + (16 * 3) + 1;
+	size_t i;
+
+	for (i = 0; i < data_size; i++) {
+		pos += sprintf(pos, "%02x ", data[i]);
+
+		if (data[i] >= ' ' && data[i] <= '~') {
+			*ascii++ = data[i];
+		} else {
+			*ascii++ = '.';
+		}
+	}
+
+	/* Pad short lines with spaces, and null terminate */
+	while (i++ < 16) {
+		pos += sprintf(pos, "   ");
+	}
+	/* Replace the first NULL terminator with a space */
+	*pos++ = ' ';
+	/* and set it after the ASCII representation */
+	*ascii++ = '\0';
+}
+
+void
+u_log_hex(const char *file,
+          int line,
+          const char *func,
+          enum u_logging_level level,
+          const uint8_t *data,
+          const size_t data_size)
+{
+	size_t offset = 0;
+
+	while (offset < data_size) {
+		char tmp[128];
+		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
+		u_log(file, line, func, level, "%s", tmp);
+
+		offset += 16;
+		if (offset > 0xffffffff) { /* Limit the dump length to 4GB(!) */
+			break;
+		}
+	}
+}
+
+void
+u_log_xdev_hex(const char *file,
+               int line,
+               const char *func,
+               enum u_logging_level level,
+               struct xrt_device *xdev,
+               const uint8_t *data,
+               const size_t data_size)
+{
+	size_t offset = 0;
+
+	while (offset < data_size) {
+		char tmp[128];
+		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
+		u_log_xdev(file, line, func, level, xdev, "%s", tmp);
+
+		offset += 16;
+		if (offset > 0xffffffff) { /* Limit the dump length to 4GB(!) */
+			break;
+		}
+	}
+}
+
+
 #if defined(XRT_OS_ANDROID)
 
 #include <android/log.h>
