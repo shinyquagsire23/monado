@@ -50,7 +50,7 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 	uint32_t image_count = sc->base.base.base.image_count;
 
 	struct client_gl_compositor *c = sc->base.gl_compositor;
-	enum xrt_result xret = client_gl_compositor_context_begin(&c->base.base);
+	enum xrt_result xret = client_gl_compositor_context_begin(&c->base.base, CLIENT_GL_CONTEXT_REASON_OTHER);
 
 	if (image_count > 0) {
 		if (xret == XRT_SUCCESS) {
@@ -64,7 +64,7 @@ client_gl_memobj_swapchain_destroy(struct xrt_swapchain *xsc)
 	}
 
 	if (xret == XRT_SUCCESS) {
-		client_gl_compositor_context_end(&c->base.base);
+		client_gl_compositor_context_end(&c->base.base, CLIENT_GL_CONTEXT_REASON_OTHER);
 	}
 
 	// Drop our reference, does NULL checking.

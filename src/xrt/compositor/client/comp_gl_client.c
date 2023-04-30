@@ -386,10 +386,10 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_h
 
 	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
-	xrt_result_t xret = client_gl_compositor_context_begin(xc);
+	xrt_result_t xret = client_gl_compositor_context_begin(xc, CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE);
 	if (xret == XRT_SUCCESS) {
 		sync_handle = handle_fencing_or_finish(c);
-		client_gl_compositor_context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE);
 	}
 
 	COMP_TRACE_IDENT(layer_commit);
@@ -439,7 +439,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
 	}
 
-	xret = client_gl_compositor_context_begin(xc);
+	xret = client_gl_compositor_context_begin(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -448,7 +448,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
 			U_LOG_E("Only one array layer is supported with OpenGL ES 2");
-			client_gl_compositor_context_end(xc);
+			client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
@@ -465,7 +465,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	xret = xrt_comp_native_create_swapchain(c->xcn, &vkinfo, &xscn);
 
 	if (xret != XRT_SUCCESS) {
-		client_gl_compositor_context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return xret;
 	}
 	assert(xscn != NULL);
@@ -484,13 +484,13 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	if (NULL == c->create_swapchain(xc, &xinfo, xscn, &sc)) {
 		// Drop our reference, does NULL checking.
 		xrt_swapchain_reference(&xsc, NULL);
-		client_gl_compositor_context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return XRT_ERROR_OPENGL;
 	}
 
 	if (sc == NULL) {
 		U_LOG_E("Could not create OpenGL swapchain.");
-		client_gl_compositor_context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -512,7 +512,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	glBindTexture(tex_target, prev_texture);
 
-	client_gl_compositor_context_end(xc);
+	client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;

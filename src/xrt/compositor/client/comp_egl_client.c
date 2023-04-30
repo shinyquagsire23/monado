@@ -417,9 +417,14 @@ client_egl_insert_fence(struct xrt_compositor *xc, xrt_graphics_sync_handle_t *o
 }
 
 static xrt_result_t
-client_egl_context_begin(struct xrt_compositor *xc)
+client_egl_context_begin(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_egl_compositor *eglc = client_egl_compositor(xc);
+
+	//! @todo Handle this better, don't just assume that the context is current.
+	if (reason == CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE) {
+		return XRT_SUCCESS;
+	}
 
 	save_context(&eglc->previous);
 	struct client_egl_context *cur = &eglc->current;
@@ -431,9 +436,14 @@ client_egl_context_begin(struct xrt_compositor *xc)
 }
 
 static void
-client_egl_context_end(struct xrt_compositor *xc)
+client_egl_context_end(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_egl_compositor *eglc = client_egl_compositor(xc);
+
+	//! @todo Handle this better, don't just assume that the context is current.
+	if (reason == CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE) {
+		return;
+	}
 
 	restore_context(&eglc->previous);
 }

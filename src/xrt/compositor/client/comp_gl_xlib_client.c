@@ -74,7 +74,7 @@ client_gl_xlib_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_gl_context_begin_locked(struct xrt_compositor *xc)
+client_gl_context_begin_locked(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_xlib_compositor *c = client_gl_xlib_compositor(xc);
 
@@ -97,7 +97,7 @@ client_gl_context_begin_locked(struct xrt_compositor *xc)
 }
 
 static void
-client_gl_context_end_locked(struct xrt_compositor *xc)
+client_gl_context_end_locked(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_xlib_compositor *c = client_gl_xlib_compositor(xc);
 

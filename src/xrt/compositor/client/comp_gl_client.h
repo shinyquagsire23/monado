@@ -53,6 +53,27 @@ struct client_gl_swapchain
 };
 
 /*!
+ * What's the reason to make the context current, this is needed currently for
+ * EGL where we have to create a shared context in some cases. But when we
+ * want to synchronize (insert a fence or call glFinish) we can not use the
+ * shared context and must use the context that the app provided on creation.
+ */
+enum client_gl_context_reason
+{
+	/*!
+	 * Used when the compositor needs to insert a fence in the command
+	 * stream of the apps context, this needs to be done in the given
+	 * context and not the shared one that may be created.
+	 */
+	CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE,
+	/*!
+	 * Any other reason to make the context current,
+	 * the shared may be used by now.
+	 */
+	CLIENT_GL_CONTEXT_REASON_OTHER,
+};
+
+/*!
  * Fetches the OpenGL context that is current on this thread and makes the
  * OpenGL context given in the graphics binding current instead. Only one thread
  * at a time can operate on the sections between
@@ -67,7 +88,8 @@ struct client_gl_swapchain
  * If the return value is not XRT_SUCCESS,
  * @ref client_gl_context_end_locked_func_t should not be called.
  */
-typedef xrt_result_t (*client_gl_context_begin_locked_func_t)(struct xrt_compositor *xc);
+typedef xrt_result_t (*client_gl_context_begin_locked_func_t)(struct xrt_compositor *xc,
+                                                              enum client_gl_context_reason reason);
 
 /*!
  * Makes the OpenGL context current that was current before
@@ -78,7 +100,7 @@ typedef xrt_result_t (*client_gl_context_begin_locked_func_t)(struct xrt_composi
  * not released by this function, but @ref client_gl_compositor_context_end does
  * release it.
  */
-typedef void (*client_gl_context_end_locked_func_t)(struct xrt_compositor *xc);
+typedef void (*client_gl_context_end_locked_func_t)(struct xrt_compositor *xc, enum client_gl_context_reason reason);
 
 /*!
  * The type of a swapchain create constructor.
@@ -207,13 +229,13 @@ client_gl_compositor_close(struct client_gl_compositor *c);
  * @public @memberof client_gl_compositor
  */
 static inline xrt_result_t
-client_gl_compositor_context_begin(struct xrt_compositor *xc)
+client_gl_compositor_context_begin(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_compositor *cgc = client_gl_compositor(xc);
 
 	os_mutex_lock(&cgc->context_mutex);
 
-	xrt_result_t xret = cgc->context_begin_locked(xc);
+	xrt_result_t xret = cgc->context_begin_locked(xc, reason);
 	if (xret != XRT_SUCCESS) {
 		os_mutex_unlock(&cgc->context_mutex);
 	}
@@ -229,11 +251,11 @@ client_gl_compositor_context_begin(struct xrt_compositor *xc)
  * @public @memberof client_gl_compositor
  */
 static inline void
-client_gl_compositor_context_end(struct xrt_compositor *xc)
+client_gl_compositor_context_end(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_compositor *cgc = client_gl_compositor(xc);
 
-	cgc->context_end_locked(xc);
+	cgc->context_end_locked(xc, reason);
 
 	os_mutex_unlock(&cgc->context_mutex);
 }
