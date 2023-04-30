@@ -16,6 +16,7 @@
 
 #include "wmr_common.h"
 #include "wmr_bt_controller.h"
+#include "wmr_controller.h"
 #include "wmr_config_key.h"
 
 #include <stdio.h>
@@ -148,6 +149,8 @@ wmr_bt_connection_destroy(struct wmr_controller_connection *base)
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
+                         uint16_t vid,
+                         uint16_t pid,
                          enum u_logging_level log_level)
 {
 	DRV_TRACE_MARKER();
@@ -179,7 +182,7 @@ wmr_bt_controller_create(struct os_hid_device *controller_hid,
 	}
 
 	// Takes ownership of the connection
-	struct wmr_controller_base *wcb = wmr_controller_base_create(&conn->base, controller_type, log_level);
+	struct wmr_controller_base *wcb = wmr_controller_create(&conn->base, controller_type, vid, pid, log_level);
 	if (wcb == NULL) {
 		WMR_ERROR(conn, "WMR Controller (Bluetooth): Failed to create controller");
 		return NULL;

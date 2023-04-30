@@ -417,7 +417,8 @@ wmr_create_bt_controller(struct xrt_prober *xp,
 	}
 
 	// Takes ownership of the hid_controller, even on failure
-	struct xrt_device *xdev = wmr_bt_controller_create(hid_controller, controller_type, log_level);
+	struct xrt_device *xdev =
+	    wmr_bt_controller_create(hid_controller, controller_type, xpdev->vendor_id, xpdev->product_id, log_level);
 	if (xdev == NULL) {
 		U_LOG_IFL_E(log_level, "Failed to create WMR controller (Bluetooth)");
 		return XRT_ERROR_DEVICE_CREATION_FAILED;

@@ -366,6 +366,10 @@ if(XRT_BUILD_DRIVER_WMR)
 		wmr/wmr_config.h
 		wmr/wmr_controller_base.c
 		wmr/wmr_controller_base.h
+		wmr/wmr_controller_og.c
+		wmr/wmr_controller_hp.c
+		wmr/wmr_controller.c
+		wmr/wmr_controller.h
 		wmr/wmr_bt_controller.c
 		wmr/wmr_bt_controller.h
 		wmr/wmr_hmd.c

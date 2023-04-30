@@ -43,6 +43,8 @@ struct wmr_bt_connection
 struct xrt_device *
 wmr_bt_controller_create(struct os_hid_device *controller_hid,
                          enum xrt_device_type controller_type,
+                         uint16_t vid,
+                         uint16_t pid,
                          enum u_logging_level log_level);
 
 #ifdef __cplusplus

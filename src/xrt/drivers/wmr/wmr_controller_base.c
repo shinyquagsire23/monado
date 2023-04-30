@@ -35,29 +35,19 @@
 #include <errno.h>
 
 #define WMR_TRACE(wcb, ...) U_LOG_XDEV_IFL_T(&wcb->base, wcb->log_level, __VA_ARGS__)
+#define WMR_TRACE_HEX(wcb, ...) U_LOG_XDEV_IFL_T_HEX(&wcb->base, wcb->log_level, __VA_ARGS__)
 #define WMR_DEBUG(wcb, ...) U_LOG_XDEV_IFL_D(&wcb->base, wcb->log_level, __VA_ARGS__)
+#define WMR_DEBUG_HEX(wcb, ...) U_LOG_XDEV_IFL_D_HEX(&wcb->base, wcb->log_level, __VA_ARGS__)
 #define WMR_INFO(wcb, ...) U_LOG_XDEV_IFL_I(&wcb->base, wcb->log_level, __VA_ARGS__)
 #define WMR_WARN(wcb, ...) U_LOG_XDEV_IFL_W(&wcb->base, wcb->log_level, __VA_ARGS__)
 #define WMR_ERROR(wcb, ...) U_LOG_XDEV_IFL_E(&wcb->base, wcb->log_level, __VA_ARGS__)
 
-/*!
- * Indices in input list of each input.
- */
-enum wmr_bt_input_index
-{
-	WMR_INDEX_MENU_CLICK,
-	WMR_INDEX_SQUEEZE_CLICK,
-	WMR_INDEX_TRIGGER_VALUE,
-	WMR_INDEX_THUMBSTICK_CLICK,
-	WMR_INDEX_THUMBSTICK,
-	WMR_INDEX_TRACKPAD_CLICK,
-	WMR_INDEX_TRACKPAD_TOUCH,
-	WMR_INDEX_TRACKPAD,
-	WMR_INDEX_GRIP_POSE,
-	WMR_INDEX_AIM_POSE,
-};
+#define wmr_controller_hexdump_buffer(wcb, label, buf, length)                                                         \
+	do {                                                                                                           \
+		WMR_DEBUG(wcb, "%s", label);                                                                           \
+		WMR_DEBUG_HEX(wcb, buf, length);                                                                       \
+	} while (0);
 
-#define SET_INPUT(NAME) (wcb->base.inputs[WMR_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
 
 //! file path to store controller JSON configuration blocks that
 //! read from the firmware.
@@ -81,22 +71,16 @@ receive_bytes(struct wmr_controller_base *wcb, uint64_t time_ns, uint8_t *buffer
 	case WMR_MOTION_CONTROLLER_STATUS_MSG:
 		os_mutex_lock(&wcb->data_lock);
 		// Note: skipping msg type byte
-		bool b = wmr_controller_packet_parse(&buffer[1], (size_t)buf_size - 1, &wcb->input, wcb->log_level);
-		if (b) {
-			m_imu_3dof_update(&wcb->fusion,
-			                  wcb->input.imu.timestamp_ticks * WMR_MOTION_CONTROLLER_NS_PER_TICK,
-			                  &wcb->input.imu.acc, &wcb->input.imu.gyro);
+		bool b = wcb->handle_input_packet(wcb, time_ns, &buffer[1], (size_t)buf_size - 1);
+		os_mutex_unlock(&wcb->data_lock);
 
-			wcb->last_imu_timestamp_ns = time_ns;
-			wcb->last_angular_velocity = wcb->input.imu.gyro;
-
-		} else {
-			WMR_ERROR(wcb, "WMR Controller (Bluetooth): Failed parsing message type: %02x, size: %i",
-			          buffer[0], buf_size);
-			os_mutex_unlock(&wcb->data_lock);
+		if (!b) {
+			WMR_ERROR(wcb, "WMR Controller: Failed handling message type: %02x, size: %i", buffer[0],
+			          buf_size);
+			wmr_controller_hexdump_buffer(wcb, "Controller Message", buffer, buf_size);
 			return;
 		}
-		os_mutex_unlock(&wcb->data_lock);
+
 		break;
 	default:
 		WMR_DEBUG(wcb, "WMR Controller (Bluetooth): Unknown message type: %02x, size: %i", buffer[0], buf_size);
@@ -242,6 +226,7 @@ wmr_read_fw_block(struct wmr_controller_base *d, uint8_t blk_id, uint8_t **out_d
 	}
 
 	WMR_DEBUG(d, "Read %d-byte FW data block %d", data_size, blk_id);
+	wmr_controller_hexdump_buffer(d, "Data block", data, data_size);
 
 	*out_data = data;
 	*out_size = data_size;
@@ -333,15 +318,6 @@ read_controller_config(struct wmr_controller_base *wcb)
 }
 
 static void
-wmr_controller_base_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
-{
-	DRV_TRACE_MARKER();
-
-	// struct wmr_controller_base *d = wmr_controller_base(xdev);
-	// Todo: implement
-}
-
-static void
 wmr_controller_base_get_tracked_pose(struct xrt_device *xdev,
                                      enum xrt_input_name name,
                                      uint64_t at_timestamp_ns,
@@ -386,37 +362,10 @@ wmr_controller_base_get_tracked_pose(struct xrt_device *xdev,
 	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
-
-
-static void
-wmr_controller_base_update_inputs(struct xrt_device *xdev)
+void
+wmr_controller_base_deinit(struct wmr_controller_base *wcb)
 {
 	DRV_TRACE_MARKER();
-
-	struct wmr_controller_base *wcb = wmr_controller_base(xdev);
-
-	struct xrt_input *inputs = wcb->base.inputs;
-
-	os_mutex_lock(&wcb->data_lock);
-
-	inputs[WMR_INDEX_MENU_CLICK].value.boolean = wcb->input.menu;
-	inputs[WMR_INDEX_SQUEEZE_CLICK].value.boolean = wcb->input.squeeze;
-	inputs[WMR_INDEX_TRIGGER_VALUE].value.vec1.x = wcb->input.trigger;
-	inputs[WMR_INDEX_THUMBSTICK_CLICK].value.boolean = wcb->input.thumbstick.click;
-	inputs[WMR_INDEX_THUMBSTICK].value.vec2 = wcb->input.thumbstick.values;
-	inputs[WMR_INDEX_TRACKPAD_CLICK].value.boolean = wcb->input.trackpad.click;
-	inputs[WMR_INDEX_TRACKPAD_TOUCH].value.boolean = wcb->input.trackpad.touch;
-	inputs[WMR_INDEX_TRACKPAD].value.vec2 = wcb->input.trackpad.values;
-
-	os_mutex_unlock(&wcb->data_lock);
-}
-
-static void
-wmr_controller_base_destroy(struct xrt_device *xdev)
-{
-	DRV_TRACE_MARKER();
-
-	struct wmr_controller_base *wcb = wmr_controller_base(xdev);
 
 	// Remove the variable tracking.
 	u_var_remove_root(wcb);
@@ -437,38 +386,7 @@ wmr_controller_base_destroy(struct xrt_device *xdev)
 
 	// Destroy the fusion.
 	m_imu_3dof_close(&wcb->fusion);
-
-	free(wcb);
 }
-
-
-/*
- *
- * Bindings
- *
- */
-
-static struct xrt_binding_input_pair simple_inputs[4] = {
-    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_WMR_TRIGGER_VALUE},
-    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_WMR_MENU_CLICK},
-    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_WMR_GRIP_POSE},
-    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_WMR_AIM_POSE},
-};
-
-static struct xrt_binding_output_pair simple_outputs[1] = {
-    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_WMR_HAPTIC},
-};
-
-static struct xrt_binding_profile binding_profiles[1] = {
-    {
-        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
-        .inputs = simple_inputs,
-        .input_count = ARRAY_SIZE(simple_inputs),
-        .outputs = simple_outputs,
-        .output_count = ARRAY_SIZE(simple_outputs),
-    },
-};
-
 
 /*
  *
@@ -476,15 +394,13 @@ static struct xrt_binding_profile binding_profiles[1] = {
  *
  */
 
-struct wmr_controller_base *
-wmr_controller_base_create(struct wmr_controller_connection *conn,
-                           enum xrt_device_type controller_type,
-                           enum u_logging_level log_level)
+bool
+wmr_controller_base_init(struct wmr_controller_base *wcb,
+                         struct wmr_controller_connection *conn,
+                         enum xrt_device_type controller_type,
+                         enum u_logging_level log_level)
 {
 	DRV_TRACE_MARKER();
-
-	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct wmr_controller_base *wcb = U_DEVICE_ALLOCATE(struct wmr_controller_base, flags, 10, 1);
 
 	wcb->log_level = log_level;
 	wcb->wcc = conn;
@@ -496,30 +412,7 @@ wmr_controller_base_create(struct wmr_controller_connection *conn,
 		snprintf(wcb->base.str, ARRAY_SIZE(wcb->base.str), "WMR Right Controller");
 	}
 
-	wcb->base.destroy = wmr_controller_base_destroy;
 	wcb->base.get_tracked_pose = wmr_controller_base_get_tracked_pose;
-	wcb->base.set_output = wmr_controller_base_set_output;
-	wcb->base.update_inputs = wmr_controller_base_update_inputs;
-
-	SET_INPUT(MENU_CLICK);
-	SET_INPUT(SQUEEZE_CLICK);
-	SET_INPUT(TRIGGER_VALUE);
-	SET_INPUT(THUMBSTICK_CLICK);
-	SET_INPUT(THUMBSTICK);
-	SET_INPUT(TRACKPAD_CLICK);
-	SET_INPUT(TRACKPAD_TOUCH);
-	SET_INPUT(TRACKPAD);
-	SET_INPUT(GRIP_POSE);
-	SET_INPUT(AIM_POSE);
-
-	for (uint32_t i = 0; i < wcb->base.input_count; i++) {
-		wcb->base.inputs[0].active = true;
-	}
-
-	wcb->base.outputs[0].name = XRT_OUTPUT_NAME_WMR_HAPTIC;
-
-	wcb->base.binding_profiles = binding_profiles;
-	wcb->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 
 	wcb->base.name = XRT_DEVICE_WMR_CONTROLLER;
 	wcb->base.device_type = controller_type;
@@ -527,39 +420,43 @@ wmr_controller_base_create(struct wmr_controller_connection *conn,
 	wcb->base.position_tracking_supported = false;
 	wcb->base.hand_tracking_supported = true;
 
-
-	wcb->input.imu.timestamp_ticks = 0;
 	m_imu_3dof_init(&wcb->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	if (os_mutex_init(&wcb->conn_lock) != 0 || os_mutex_init(&wcb->data_lock) != 0) {
 		WMR_ERROR(wcb, "WMR Controller: Failed to init mutex!");
-		wmr_controller_base_destroy(&wcb->base);
-		return NULL;
+		return false;
+	}
+
+	u_var_add_root(wcb, wcb->base.str, true);
+
+	/* Send init commands */
+	struct wmr_controller_fw_cmd fw_cmd = {
+	    0,
+	};
+	struct wmr_controller_fw_cmd_response fw_cmd_response;
+
+	/* Zero command. Clears controller state? */
+	fw_cmd = WMR_CONTROLLER_FW_CMD_INIT(0x06, 0x0, 0, 0);
+	if (wmr_controller_send_fw_cmd(wcb, &fw_cmd, 0x06, &fw_cmd_response) < 0) {
+		return false;
+	}
+
+	/* Unknown what this one does. No obvious effect */
+	fw_cmd = WMR_CONTROLLER_FW_CMD_INIT(0x06, 0x04, 0xc1, 0x02);
+	if (wmr_controller_send_fw_cmd(wcb, &fw_cmd, 0x06, &fw_cmd_response) < 0) {
+		return false;
 	}
 
 	// Read config file from controller
 	if (!read_controller_config(wcb)) {
-		wmr_controller_base_destroy(&wcb->base);
-		return NULL;
+		return false;
 	}
 
-	u_var_add_root(wcb, wcb->base.str, true);
-	u_var_add_bool(wcb, &wcb->input.menu, "input.menu");
-	u_var_add_bool(wcb, &wcb->input.home, "input.home");
-	u_var_add_bool(wcb, &wcb->input.bt_pairing, "input.bt_pairing");
-	u_var_add_bool(wcb, &wcb->input.squeeze, "input.squeeze");
-	u_var_add_f32(wcb, &wcb->input.trigger, "input.trigger");
-	u_var_add_u8(wcb, &wcb->input.battery, "input.battery");
-	u_var_add_bool(wcb, &wcb->input.thumbstick.click, "input.thumbstick.click");
-	u_var_add_f32(wcb, &wcb->input.thumbstick.values.x, "input.thumbstick.values.y");
-	u_var_add_f32(wcb, &wcb->input.thumbstick.values.y, "input.thumbstick.values.x");
-	u_var_add_bool(wcb, &wcb->input.trackpad.click, "input.trackpad.click");
-	u_var_add_bool(wcb, &wcb->input.trackpad.touch, "input.trackpad.touch");
-	u_var_add_f32(wcb, &wcb->input.trackpad.values.x, "input.trackpad.values.x");
-	u_var_add_f32(wcb, &wcb->input.trackpad.values.y, "input.trackpad.values.y");
-	u_var_add_ro_vec3_f32(wcb, &wcb->input.imu.acc, "imu.acc");
-	u_var_add_ro_vec3_f32(wcb, &wcb->input.imu.gyro, "imu.gyro");
-	u_var_add_i32(wcb, &wcb->input.imu.temperature, "imu.temperature");
+	/* Enable the status reports, IMU and touchpad */
+	const unsigned char wmr_controller_status_enable_cmd[64] = {0x06, 0x03, 0x01, 0x00, 0x02};
+	wmr_controller_send_bytes(wcb, wmr_controller_status_enable_cmd, sizeof(wmr_controller_status_enable_cmd));
+	const unsigned char wmr_controller_imu_on_cmd[64] = {0x06, 0x03, 0x02, 0xe1, 0x02};
+	wmr_controller_send_bytes(wcb, wmr_controller_imu_on_cmd, sizeof(wmr_controller_imu_on_cmd));
 
-	return wcb;
+	return true;
 }

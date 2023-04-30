@@ -101,11 +101,16 @@ struct wmr_controller_base
 	//! Mutex protects shared data used from OpenXR callbacks
 	struct os_mutex data_lock;
 
+	//! Callback to parse a controller update packet and update the input / imu info. Called with the
+	//  data lock held.
+	bool (*handle_input_packet)(struct wmr_controller_base *wcb,
+	                            uint64_t time_ns,
+	                            uint8_t *buffer,
+	                            uint32_t buf_size);
+
 	/* firmware configuration block */
 	struct wmr_controller_config config;
 
-	//! The last decoded package of IMU and button data
-	struct wmr_controller_input input;
 	//! Time of last IMU sample, in CPU time.
 	uint64_t last_imu_timestamp_ns;
 	//! Main fusion calculator.
@@ -114,11 +119,14 @@ struct wmr_controller_base
 	struct xrt_vec3 last_angular_velocity;
 };
 
-struct wmr_controller_base *
-wmr_controller_base_create(struct wmr_controller_connection *conn,
-                           enum xrt_device_type controller_type,
-                           enum u_logging_level log_level);
+bool
+wmr_controller_base_init(struct wmr_controller_base *wcb,
+                         struct wmr_controller_connection *conn,
+                         enum xrt_device_type controller_type,
+                         enum u_logging_level log_level);
 
+void
+wmr_controller_base_deinit(struct wmr_controller_base *wcb);
 
 static inline void
 wmr_controller_connection_receive_bytes(struct wmr_controller_connection *wcc,
