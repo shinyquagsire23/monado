@@ -32,6 +32,7 @@
 enum wmr_controller_og_input_index
 {
 	WMR_CONTROLLER_INDEX_MENU_CLICK,
+	WMR_CONTROLLER_INDEX_HOME_CLICK,
 	WMR_CONTROLLER_INDEX_SQUEEZE_CLICK,
 	WMR_CONTROLLER_INDEX_TRIGGER_VALUE,
 	WMR_CONTROLLER_INDEX_THUMBSTICK_CLICK,
@@ -267,6 +268,7 @@ wmr_controller_og_update_xrt_inputs(struct xrt_device *xdev)
 	struct wmr_controller_og_input *cur_inputs = &ctrl->last_inputs;
 
 	xrt_inputs[WMR_CONTROLLER_INDEX_MENU_CLICK].value.boolean = cur_inputs->menu;
+	xrt_inputs[WMR_CONTROLLER_INDEX_HOME_CLICK].value.boolean = cur_inputs->home;
 	xrt_inputs[WMR_CONTROLLER_INDEX_SQUEEZE_CLICK].value.boolean = cur_inputs->squeeze;
 	xrt_inputs[WMR_CONTROLLER_INDEX_TRIGGER_VALUE].value.vec1.x = cur_inputs->trigger;
 	xrt_inputs[WMR_CONTROLLER_INDEX_THUMBSTICK_CLICK].value.boolean = cur_inputs->thumbstick.click;
@@ -304,7 +306,7 @@ wmr_controller_og_create(struct wmr_controller_connection *conn,
 	DRV_TRACE_MARKER();
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct wmr_controller_og *ctrl = U_DEVICE_ALLOCATE(struct wmr_controller_og, flags, 10, 1);
+	struct wmr_controller_og *ctrl = U_DEVICE_ALLOCATE(struct wmr_controller_og, flags, 11, 1);
 	struct wmr_controller_base *wcb = (struct wmr_controller_base *)(ctrl);
 
 	if (!wmr_controller_base_init(wcb, conn, controller_type, log_level)) {
@@ -319,6 +321,7 @@ wmr_controller_og_create(struct wmr_controller_connection *conn,
 	wcb->base.set_output = wmr_controller_og_set_output;
 
 	SET_INPUT(wcb, MENU_CLICK);
+	SET_INPUT(wcb, HOME_CLICK);
 	SET_INPUT(wcb, SQUEEZE_CLICK);
 	SET_INPUT(wcb, TRIGGER_VALUE);
 	SET_INPUT(wcb, THUMBSTICK_CLICK);
