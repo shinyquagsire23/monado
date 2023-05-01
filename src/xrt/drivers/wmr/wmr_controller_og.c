@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "wmr_common.h"
 #include "wmr_controller.h"
 
 #ifdef XRT_DOXYGEN
@@ -44,7 +45,9 @@ enum wmr_controller_og_input_index
 	WMR_CONTROLLER_INDEX_AIM_POSE,
 };
 
-#define SET_INPUT(wcb, NAME) (wcb->base.inputs[WMR_CONTROLLER_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
+#define SET_WMR_INPUT(wcb, NAME) (wcb->base.inputs[WMR_CONTROLLER_INDEX_##NAME].name = XRT_INPUT_WMR_##NAME)
+#define SET_ODYSSEY_INPUT(wcb, NAME)                                                                                   \
+	(wcb->base.inputs[WMR_CONTROLLER_INDEX_##NAME].name = XRT_INPUT_ODYSSEY_CONTROLLER_##NAME)
 
 /*
  *
@@ -52,26 +55,48 @@ enum wmr_controller_og_input_index
  *
  */
 
-static struct xrt_binding_input_pair simple_inputs[4] = {
+static struct xrt_binding_input_pair simple_inputs_og[4] = {
     {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_WMR_TRIGGER_VALUE},
     {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_WMR_MENU_CLICK},
     {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_WMR_GRIP_POSE},
     {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_WMR_AIM_POSE},
 };
 
-static struct xrt_binding_output_pair simple_outputs[1] = {
+static struct xrt_binding_output_pair simple_outputs_og[1] = {
     {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_WMR_HAPTIC},
 };
 
-static struct xrt_binding_profile binding_profiles[1] = {
+static struct xrt_binding_profile binding_profiles_og[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
-        .inputs = simple_inputs,
-        .input_count = ARRAY_SIZE(simple_inputs),
-        .outputs = simple_outputs,
-        .output_count = ARRAY_SIZE(simple_outputs),
+        .inputs = simple_inputs_og,
+        .input_count = ARRAY_SIZE(simple_inputs_og),
+        .outputs = simple_outputs_og,
+        .output_count = ARRAY_SIZE(simple_outputs_og),
     },
 };
+
+static struct xrt_binding_input_pair simple_inputs_odyssey[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_ODYSSEY_CONTROLLER_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_ODYSSEY_CONTROLLER_MENU_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_ODYSSEY_CONTROLLER_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_ODYSSEY_CONTROLLER_AIM_POSE},
+};
+
+static struct xrt_binding_output_pair simple_outputs_odyssey[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_ODYSSEY_CONTROLLER_HAPTIC},
+};
+
+static struct xrt_binding_profile binding_profiles_odyssey[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_odyssey,
+        .input_count = ARRAY_SIZE(simple_inputs_odyssey),
+        .outputs = simple_outputs_odyssey,
+        .output_count = ARRAY_SIZE(simple_outputs_odyssey),
+    },
+};
+
 
 /* OG WMR Controller inputs struct */
 struct wmr_controller_og_input
@@ -301,6 +326,7 @@ wmr_controller_og_destroy(struct xrt_device *xdev)
 struct wmr_controller_base *
 wmr_controller_og_create(struct wmr_controller_connection *conn,
                          enum xrt_device_type controller_type,
+                         uint16_t pid,
                          enum u_logging_level log_level)
 {
 	DRV_TRACE_MARKER();
@@ -316,32 +342,56 @@ wmr_controller_og_create(struct wmr_controller_connection *conn,
 
 	wcb->handle_input_packet = handle_input_packet;
 
+	if (pid == ODYSSEY_CONTROLLER_PID) {
+		wcb->base.name = XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER;
+	} else {
+		wcb->base.name = XRT_DEVICE_WMR_CONTROLLER;
+	}
 	wcb->base.destroy = wmr_controller_og_destroy;
 	wcb->base.update_inputs = wmr_controller_og_update_xrt_inputs;
 	wcb->base.set_output = wmr_controller_og_set_output;
 
-	SET_INPUT(wcb, MENU_CLICK);
-	SET_INPUT(wcb, HOME_CLICK);
-	SET_INPUT(wcb, SQUEEZE_CLICK);
-	SET_INPUT(wcb, TRIGGER_VALUE);
-	SET_INPUT(wcb, THUMBSTICK_CLICK);
-	SET_INPUT(wcb, THUMBSTICK);
-	SET_INPUT(wcb, TRACKPAD_CLICK);
-	SET_INPUT(wcb, TRACKPAD_TOUCH);
-	SET_INPUT(wcb, TRACKPAD);
-	SET_INPUT(wcb, GRIP_POSE);
-	SET_INPUT(wcb, AIM_POSE);
+	if (pid == ODYSSEY_CONTROLLER_PID) {
+		SET_ODYSSEY_INPUT(wcb, MENU_CLICK);
+		SET_ODYSSEY_INPUT(wcb, HOME_CLICK);
+		SET_ODYSSEY_INPUT(wcb, SQUEEZE_CLICK);
+		SET_ODYSSEY_INPUT(wcb, TRIGGER_VALUE);
+		SET_ODYSSEY_INPUT(wcb, THUMBSTICK_CLICK);
+		SET_ODYSSEY_INPUT(wcb, THUMBSTICK);
+		SET_ODYSSEY_INPUT(wcb, TRACKPAD_CLICK);
+		SET_ODYSSEY_INPUT(wcb, TRACKPAD_TOUCH);
+		SET_ODYSSEY_INPUT(wcb, TRACKPAD);
+		SET_ODYSSEY_INPUT(wcb, GRIP_POSE);
+		SET_ODYSSEY_INPUT(wcb, AIM_POSE);
+
+		wcb->base.outputs[0].name = XRT_OUTPUT_NAME_ODYSSEY_CONTROLLER_HAPTIC;
+
+		wcb->base.binding_profiles = binding_profiles_odyssey;
+		wcb->base.binding_profile_count = ARRAY_SIZE(binding_profiles_odyssey);
+	} else {
+		SET_WMR_INPUT(wcb, MENU_CLICK);
+		SET_WMR_INPUT(wcb, HOME_CLICK);
+		SET_WMR_INPUT(wcb, SQUEEZE_CLICK);
+		SET_WMR_INPUT(wcb, TRIGGER_VALUE);
+		SET_WMR_INPUT(wcb, THUMBSTICK_CLICK);
+		SET_WMR_INPUT(wcb, THUMBSTICK);
+		SET_WMR_INPUT(wcb, TRACKPAD_CLICK);
+		SET_WMR_INPUT(wcb, TRACKPAD_TOUCH);
+		SET_WMR_INPUT(wcb, TRACKPAD);
+		SET_WMR_INPUT(wcb, GRIP_POSE);
+		SET_WMR_INPUT(wcb, AIM_POSE);
+
+		wcb->base.outputs[0].name = XRT_OUTPUT_NAME_WMR_HAPTIC;
+
+		wcb->base.binding_profiles = binding_profiles_og;
+		wcb->base.binding_profile_count = ARRAY_SIZE(binding_profiles_og);
+	}
 
 	for (uint32_t i = 0; i < wcb->base.input_count; i++) {
 		wcb->base.inputs[0].active = true;
 	}
 
 	ctrl->last_inputs.imu.timestamp_ticks = 0;
-
-	wcb->base.outputs[0].name = XRT_OUTPUT_NAME_WMR_HAPTIC;
-
-	wcb->base.binding_profiles = binding_profiles;
-	wcb->base.binding_profile_count = ARRAY_SIZE(binding_profiles);
 
 	u_var_add_bool(wcb, &ctrl->last_inputs.menu, "input.menu");
 	u_var_add_bool(wcb, &ctrl->last_inputs.home, "input.home");
