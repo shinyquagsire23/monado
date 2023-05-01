@@ -1,4 +1,5 @@
 ---
 - mr.803
+- mr.1796
 ---
-wmr: Initial commit of driver, 3DoF only.
+wmr: Add Windows Mixed Reality driver, supports 6dof through Basalt.
