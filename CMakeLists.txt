@@ -194,10 +194,10 @@ endforeach()
 find_library(OPENVR_LIBRARIES NAMES openvr_api)
 if(OPENVR_LIBRARIES)
 	set(OPENVR_FOUND on)
-	message("Found OpenVR: " ${OPENVR_LIBRARIES})
+	message(STATUS "Found OpenVR: " ${OPENVR_LIBRARIES})
 else()
 	set(OPENVR_FOUND off)
-	message("OpenVR not found")
+	message(STATUS "OpenVR not found")
 endif()
 
 # ILLIXR
