@@ -179,6 +179,7 @@ oxr_instance_create(struct oxr_logger *log,
 
 	OXR_ALLOCATE_HANDLE_OR_RETURN(log, inst, OXR_XR_DEBUG_INSTANCE, oxr_instance_destroy, NULL);
 
+	inst->extensions = *extensions; // Sets the enabled extensions.
 	inst->lifecycle_verbose = debug_get_bool_option_lifecycle_verbose();
 	inst->debug_spaces = debug_get_bool_option_debug_spaces();
 	inst->debug_views = debug_get_bool_option_debug_views();
@@ -254,6 +255,11 @@ oxr_instance_create(struct oxr_logger *log,
 	android_looper_poll_until_activity_resumed();
 #endif
 
+
+	/*
+	 * Monado initialisation.
+	 */
+
 	xret = xrt_instance_create(&i_info, &inst->xinst);
 	if (xret != XRT_SUCCESS) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Failed to create instance '%i'", xret);
@@ -298,9 +304,6 @@ oxr_instance_create(struct oxr_logger *log,
 		oxr_instance_destroy(log, &inst->handle);
 		return ret;
 	}
-
-	// Sets the enabled extensions, this is where we should do any extra validation.
-	inst->extensions = *extensions;
 
 	ret = oxr_system_fill_in(log, inst, 1, &inst->system);
 	if (ret != XR_SUCCESS) {
