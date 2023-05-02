@@ -326,7 +326,7 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	xret = twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
 	if (xret != XRT_SUCCESS) {
 		U_LOG_E("twrap_slam_create_device: %u", xret);
-		return xrt;
+		return xret;
 	}
 	if (slam_sinks == NULL) {
 		U_LOG_E("twrap_slam_create_device: Returned NULL slam_sinks!");
