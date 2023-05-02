@@ -2027,6 +2027,7 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	// Save for timestamps below.
 	uint64_t frame_id = c->frame.rendering.id;
+	uint64_t desired_present_time_ns = c->frame.rendering.desired_present_time_ns;
 
 	// Clear the rendered frame.
 	comp_frame_clear_locked(&c->frame.rendering);
@@ -2076,7 +2077,25 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * Only do this if we are ready.
 	 */
 	if (comp_target_check_ready(r->c->target)) {
+		// For estimating frame misses.
+		uint64_t then_ns = os_monotonic_get_ns();
+
+		// Do the acquire
 		renderer_acquire_swapchain_image(r);
+
+		// How long did it take?
+		uint64_t now_ns = os_monotonic_get_ns();
+
+		/*
+		 * Make sure we at least waited 1ms before warning. Then check
+		 * if we are more then 1ms behind when we wanted to present.
+		 */
+		if (then_ns + U_TIME_1MS_IN_NS < now_ns && //
+		    desired_present_time_ns + U_TIME_1MS_IN_NS < now_ns) {
+			uint64_t diff_ns = now_ns - desired_present_time_ns;
+			double diff_ms_f = time_ns_to_ms_f(diff_ns);
+			COMP_WARN(c, "Compositor probably missed frame by %.2fms", diff_ms_f);
+		}
 	}
 
 	comp_target_update_timings(ct);
