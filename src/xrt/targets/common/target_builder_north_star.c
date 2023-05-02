@@ -278,6 +278,7 @@ ns_setup_depthai_device(struct ns_builder *nsb,
                         struct xrt_device **out_head_device)
 {
 	struct depthai_slam_startup_settings settings = {0};
+	xrt_result_t xret;
 
 	settings.frames_per_second = 60;
 	settings.half_size_ov9282 = true;
@@ -322,7 +323,15 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 #endif
 
 	struct xrt_slam_sinks *slam_sinks = NULL;
-	twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
+	xret = twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("twrap_slam_create_device: %u", xret);
+		return xrt;
+	}
+	if (slam_sinks == NULL) {
+		U_LOG_E("twrap_slam_create_device: Returned NULL slam_sinks!");
+		return XRT_ERROR_DEVICE_CREATION_FAILED;
+	}
 
 	struct xrt_slam_sinks entry_sinks = {0};
 	struct xrt_frame_sink *entry_left_sink = NULL;
