@@ -203,6 +203,7 @@ twrap_slam_create_device(struct xrt_frame_context *xfctx,
 	int create_status = t_slam_create(xfctx, NULL, &dx->slam, out_sinks);
 
 	if (create_status != 0 || dx->slam == NULL) {
+		U_LOG_E("t_slam_create: %i, dx->slam: %p", create_status, (void *)dx->slam);
 		twrap_slam_destroy(&dx->base);
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
@@ -222,6 +223,7 @@ twrap_slam_create_device(struct xrt_frame_context *xfctx,
 	int start_status = t_slam_start(dx->slam);
 
 	if (start_status != 0) {
+		U_LOG_E("t_slam_start: %i", start_status);
 		twrap_slam_destroy(&dx->base);
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
