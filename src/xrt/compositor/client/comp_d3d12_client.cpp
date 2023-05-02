@@ -759,7 +759,7 @@ client_d3d12_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_syn
 	xrt_result_t xret = XRT_SUCCESS;
 	if (c->fence) {
 		c->timeline_semaphore_value++;
-		HRESULT hr = c->fence->Signal(c->timeline_semaphore_value);
+		HRESULT hr = c->app_queue->Signal(c->fence.get(), c->timeline_semaphore_value);
 		if (!SUCCEEDED(hr)) {
 			char buf[kErrorBufSize];
 			formatMessage(hr, buf);
