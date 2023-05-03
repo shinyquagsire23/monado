@@ -461,6 +461,50 @@ ts_ms(struct oxr_session *sess)
 	return ns_to_ms(monotonic);
 }
 
+static XrResult
+do_wait_frame_and_checks(struct oxr_logger *log,
+                         struct oxr_session *sess,
+                         int64_t *out_frame_id,
+                         uint64_t *out_predicted_display_time,
+                         uint64_t *out_predicted_display_period,
+                         XrTime *out_converted_time)
+{
+	assert(sess->compositor != NULL);
+
+	int64_t frame_id = -1;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
+
+	xrt_result_t xret = xrt_comp_wait_frame( //
+	    sess->compositor,                    // compositor
+	    &frame_id,                           // out_frame_id
+	    &predicted_display_time,             // out_predicted_display_time
+	    &predicted_display_period);          // out_predicted_display_period
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
+
+	if (frame_id < 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative frame id '%" PRIi64 "'", frame_id);
+	}
+
+	if ((int64_t)predicted_display_time <= 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
+		                 (int64_t)predicted_display_time);
+	}
+
+	XrTime converted_time = time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, predicted_display_time);
+	if (converted_time <= 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got '%" PRIi64 "' from time_state_monotonic_to_ts_ns",
+		                 converted_time);
+	}
+
+	*out_frame_id = frame_id;
+	*out_predicted_display_time = predicted_display_time;
+	*out_predicted_display_period = predicted_display_period;
+	*out_converted_time = converted_time;
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState)
 {
@@ -474,46 +518,56 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 		return oxr_session_success_result(sess);
 	}
 
-
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Called at %8.3fms", ts_ms(sess));
 	}
 
-	// A subsequent xrWaitFrame call must: block until the previous frame
-	// has been begun
+	/*
+	 * A subsequent xrWaitFrame call must: block until the previous frame
+	 * has been begun. It's extremely forbidden to call xrWaitFrame from
+	 * multiple threads. We do this before so we call predicted after any
+	 * waiting for xrBeginFrame has happened, for better timing information.
+	 */
 	os_semaphore_wait(&sess->sem, 0);
-
-	os_mutex_lock(&sess->active_wait_frames_lock);
-	sess->active_wait_frames++;
-	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Finished waiting for previous frame begin at %8.3fms", ts_ms(sess));
 	}
 
+	int64_t frame_id = -1;
 	uint64_t predicted_display_time;
 	uint64_t predicted_display_period;
-	xrt_result_t xret = xrt_comp_wait_frame( //
-	    xc,                                  // compositor
-	    &sess->frame_id.waited,              // out_frame_id
-	    &predicted_display_time,             // out_predicted_display_time
-	    &predicted_display_period);          // out_predicted_display_period
-	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
+	XrTime converted_time;
 
-	if ((int64_t)predicted_display_time <= 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
-		                 (int64_t)predicted_display_time);
+	XrResult ret = do_wait_frame_and_checks( //
+	    log,                                 // log
+	    sess,                                // sess
+	    &frame_id,                           // out_frame_id
+	    &predicted_display_time,             // out_predicted_display_time
+	    &predicted_display_period,           // out_predicted_display_period
+	    &converted_time);                    // out_converted_time
+	if (ret != XR_SUCCESS) {
+		// On error we need to release the semaphore ourselves as xrBeginFrame won't do it.
+		os_semaphore_release(&sess->sem);
+
+		// Error already logged.
+		return ret;
 	}
+
+	/*
+	 * We set the frame_id along with the number of active waited frames to
+	 * avoid races with xrBeginFrame. The function xrBeginFrame will only
+	 * allow xrWaitFrame to continue from the semaphore above once it has
+	 * cleared the `sess->frame_id.waited`.
+	 */
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	sess->active_wait_frames++;
+	sess->frame_id.waited = frame_id;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	frameState->shouldRender = should_render(sess->state);
 	frameState->predictedDisplayPeriod = predicted_display_period;
-	frameState->predictedDisplayTime =
-	    time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, predicted_display_time);
-
-	if (frameState->predictedDisplayTime <= 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
-		                 frameState->predictedDisplayTime);
-	}
+	frameState->predictedDisplayTime = converted_time;
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log,
