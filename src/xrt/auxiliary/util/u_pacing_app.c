@@ -149,7 +149,36 @@ pacing_app(struct u_pacing_app *upa)
 	return (struct pacing_app *)upa;
 }
 
-#define DEBUG_PRINT_FRAME_ID() UPA_LOG_T("%" PRIi64, frame_id)
+static inline const char *
+state_to_str(enum u_pa_state state)
+{
+	switch (state) {
+	case U_PA_READY: return "U_PA_READY";
+	case U_RT_WAIT_LEFT: return "U_RT_WAIT_LEFT";
+	case U_RT_PREDICTED: return "U_RT_PREDICTED";
+	case U_RT_BEGUN: return "U_RT_BEGUN";
+	case U_RT_DELIVERED: return "U_RT_DELIVERED";
+	case U_RT_GPU_DONE: return "U_RT_GPU_DONE";
+	default: return "UNKNOWN";
+	}
+}
+
+static inline const char *
+point_to_str(enum u_timing_point point)
+{
+	switch (point) {
+	case U_TIMING_POINT_WAKE_UP: return "U_TIMING_POINT_WAKE_UP";
+	case U_TIMING_POINT_BEGIN: return "U_TIMING_POINT_BEGIN";
+	case U_TIMING_POINT_SUBMIT: return "U_TIMING_POINT_SUBMIT";
+	default: return "UNKNOWN";
+	}
+}
+
+#define DEBUG_PRINT_ID(ID) UPA_LOG_T("%" PRIi64, ID)
+#define DEBUG_PRINT_ID_FRAME(ID, F) UPA_LOG_T("%" PRIi64 " (%" PRIi64 ", %s)", ID, F->frame_id, state_to_str(F->state))
+#define DEBUG_PRINT_ID_FRAME_POINT(ID, F, P)                                                                           \
+	UPA_LOG_T("%" PRIi64 " (%" PRIi64 ", %s) %s", frame_id, F->frame_id, state_to_str(F->state), point_to_str(P));
+
 #define GET_INDEX_FROM_ID(RT, ID) ((uint64_t)(ID) % FRAME_COUNT)
 
 #define IIR_ALPHA_LT 0.8
@@ -370,7 +399,7 @@ pa_predict(struct u_pacing_app *upa,
 	int64_t frame_id = ++pa->frame_counter;
 	*out_frame_id = frame_id;
 
-	DEBUG_PRINT_FRAME_ID();
+	DEBUG_PRINT_ID(frame_id);
 
 	uint64_t period_ns = calc_period(pa);
 	uint64_t predict_ns = predict_display_time(pa, now_ns, period_ns);
@@ -411,10 +440,11 @@ pa_mark_point(struct u_pacing_app *upa, int64_t frame_id, enum u_timing_point po
 {
 	struct pacing_app *pa = pacing_app(upa);
 
-	UPA_LOG_T("%" PRIi64 " (%u)", frame_id, point);
-
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	struct u_pa_frame *f = &pa->frames[index];
+
+	DEBUG_PRINT_ID_FRAME_POINT(frame_id, f, point);
+
 	assert(f->frame_id == frame_id);
 
 	switch (point) {
@@ -440,10 +470,11 @@ pa_mark_discarded(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
-	DEBUG_PRINT_FRAME_ID();
-
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	struct u_pa_frame *f = &pa->frames[index];
+
+	DEBUG_PRINT_ID_FRAME(frame_id, f);
+
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_WAIT_LEFT || f->state == U_RT_BEGUN);
 
@@ -464,10 +495,11 @@ pa_mark_delivered(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns, 
 {
 	struct pacing_app *pa = pacing_app(upa);
 
-	DEBUG_PRINT_FRAME_ID();
-
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	struct u_pa_frame *f = &pa->frames[index];
+
+	DEBUG_PRINT_ID_FRAME(frame_id, f);
+
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_BEGUN);
 
@@ -482,10 +514,11 @@ pa_mark_gpu_done(struct u_pacing_app *upa, int64_t frame_id, uint64_t when_ns)
 {
 	struct pacing_app *pa = pacing_app(upa);
 
-	DEBUG_PRINT_FRAME_ID();
-
 	size_t index = GET_INDEX_FROM_ID(pa, frame_id);
 	struct u_pa_frame *f = &pa->frames[index];
+
+	DEBUG_PRINT_ID_FRAME(frame_id, f);
+
 	assert(f->frame_id == frame_id);
 	assert(f->state == U_RT_DELIVERED);
 
