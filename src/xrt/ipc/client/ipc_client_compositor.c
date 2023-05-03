@@ -517,19 +517,28 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	IPC_TRACE_MARKER();
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	int64_t frame_id = -1;
 	uint64_t wake_up_time_ns = 0;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
 
-	IPC_CALL_CHK(ipc_call_compositor_predict_frame(icc->ipc_c,                     // Connection
-	                                               out_frame_id,                   // Frame id
-	                                               &wake_up_time_ns,               // When we should wake up
-	                                               out_predicted_display_time,     // Display time
-	                                               out_predicted_display_period)); // Current period
+	IPC_CALL_CHK(ipc_call_compositor_predict_frame( //
+	    icc->ipc_c,                                 // Connection
+	    &frame_id,                                  // Frame id
+	    &wake_up_time_ns,                           // When we should wake up
+	    &predicted_display_time,                    // Display time
+	    &predicted_display_period));                // Current period
 
 	// Wait until the given wake up time.
 	u_wait_until(&icc->sleeper, wake_up_time_ns);
 
 	// Signal that we woke up.
-	res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
+	res = ipc_call_compositor_wait_woke(icc->ipc_c, frame_id);
+
+	// Only write arguments once we have fully waited.
+	*out_frame_id = frame_id;
+	*out_predicted_display_time = predicted_display_time;
+	*out_predicted_display_period = predicted_display_period;
 
 	return res;
 }
