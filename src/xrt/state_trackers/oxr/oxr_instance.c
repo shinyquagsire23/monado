@@ -269,8 +269,11 @@ oxr_instance_create(struct oxr_logger *log,
 
 	struct oxr_system *sys = &inst->system;
 
-	// Create the compositor if we are not headless.
-	if (!inst->extensions.MND_headless) {
+	// Create the compositor if we are not headless, currently always create it.
+	bool should_create_compositor = true /* !inst->extensions.MND_headless */;
+
+	// Create the system.
+	if (should_create_compositor) {
 		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xso, &sys->xsysc);
 	} else {
 		xret = xrt_instance_create_system(inst->xinst, &sys->xsysd, &sys->xso, NULL);
@@ -285,9 +288,9 @@ oxr_instance_create(struct oxr_logger *log,
 	ret = XR_SUCCESS;
 	if (sys->xsysd == NULL) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysd was NULL?");
-	} else if (!inst->extensions.MND_headless && sys->xsysc == NULL) {
+	} else if (should_create_compositor && sys->xsysc == NULL) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysc was NULL?");
-	} else if (inst->extensions.MND_headless && sys->xsysc != NULL) {
+	} else if (!should_create_compositor && sys->xsysc != NULL) {
 		ret = oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Huh?! Field sys->xsysc was not NULL?");
 	}
 
