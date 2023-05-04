@@ -699,6 +699,13 @@ oxr_session_allocate_and_init(struct oxr_logger *log, struct oxr_system *sys, st
 	return XR_SUCCESS;
 }
 
+#define OXR_CHECK_XSYSC(LOG, SYS)                                                                                      \
+	do {                                                                                                           \
+		if (sys->xsysc == NULL) {                                                                              \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,                                             \
+			                 " Can not use graphics bindings when have asked to not create graphics");     \
+		}                                                                                                      \
+	} while (false)
 
 #define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, XSI, SESS)                                                                 \
 	do {                                                                                                           \
@@ -739,6 +746,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR, XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -756,6 +765,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR, XrGraphicsBindingOpenGLESAndroidKHR);
 	if (opengles_android != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -772,6 +783,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLWin32KHR const *opengl_win32 = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR, XrGraphicsBindingOpenGLWin32KHR);
 	if (opengl_win32 != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called xrGetOpenGLGraphicsRequirementsKHR");
@@ -787,6 +800,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingVulkanKHR const *vulkan =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->instance);
 		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->physicalDevice);
 		if (vulkan->device == VK_NULL_HANDLE) {
@@ -824,6 +839,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingEGLMNDX const *egl =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX, XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -841,6 +858,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D11_KHR, XrGraphicsBindingD3D11KHR);
 	if (d3d11 != NULL) {
 		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
+
+		OXR_CHECK_XSYSC(log, sys);
 
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
@@ -864,6 +883,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D12_KHR, XrGraphicsBindingD3D12KHR);
 	if (d3d12 != NULL) {
 		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
+
+		OXR_CHECK_XSYSC(log, sys);
 
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
