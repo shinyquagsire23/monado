@@ -22,6 +22,7 @@
 #include <inttypes.h>
 
 DEBUG_GET_ONCE_LOG_OPTION(log_level, "U_PACING_APP_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_FLOAT_OPTION(min_app_time_ms, "U_PACING_APP_MIN_TIME_MS", 1.0f)
 
 #define UPA_LOG_T(...) U_LOG_IFL_T(debug_get_log_option_log_level(), __VA_ARGS__)
 #define UPA_LOG_D(...) U_LOG_IFL_D(debug_get_log_option_log_level(), __VA_ARGS__)
@@ -110,6 +111,9 @@ struct pacing_app
 	uint32_t next_frame;
 
 	int64_t frame_counter;
+
+	// Minimum calculated frame (total app time).
+	double min_app_time_ms;
 
 	struct
 	{
@@ -201,6 +205,12 @@ min_period(const struct pacing_app *pa)
 }
 
 static uint64_t
+min_app_time(const struct pacing_app *pa)
+{
+	return (uint64_t)(pa->min_app_time_ms * (double)U_TIME_1MS_IN_NS);
+}
+
+static uint64_t
 last_sample_displayed(const struct pacing_app *pa)
 {
 	return pa->last_input.predicted_display_time_ns;
@@ -215,7 +225,14 @@ last_return_predicted_display(const struct pacing_app *pa)
 static uint64_t
 total_app_time_ns(const struct pacing_app *pa)
 {
-	return pa->app.cpu_time_ns + pa->app.draw_time_ns + pa->app.wait_time_ns;
+	uint64_t total_ns = pa->app.cpu_time_ns + pa->app.draw_time_ns + pa->app.wait_time_ns;
+	uint64_t min_ns = min_app_time(pa);
+
+	if (total_ns < min_ns) {
+		total_ns = min_ns;
+	}
+
+	return total_ns;
 }
 
 static uint64_t
@@ -650,6 +667,7 @@ pa_create(int64_t session_id, struct u_pacing_app **out_upa)
 	pa->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.draw_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.margin_ns = U_TIME_1MS_IN_NS * 2;
+	pa->min_app_time_ms = debug_get_float_option_min_app_time_ms();
 
 	for (size_t i = 0; i < ARRAY_SIZE(pa->frames); i++) {
 		pa->frames[i].state = U_PA_READY;
