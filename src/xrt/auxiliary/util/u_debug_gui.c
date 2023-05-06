@@ -78,6 +78,10 @@ struct u_debug_gui
 
 	bool sdl_initialized;
 	char layout_file[1024];
+
+#ifdef XRT_BUILD_DRIVER_QWERTY
+	bool qwerty_enabled;
+#endif
 };
 
 struct gui_imgui
@@ -144,6 +148,74 @@ sdl2_window_init(struct u_debug_gui *p)
 }
 
 static void
+sdl2_loop_events(struct u_debug_gui *p)
+{
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+		igImGui_ImplSDL2_ProcessEvent(&event);
+
+#ifdef XRT_BUILD_DRIVER_QWERTY
+		// Caution here, qwerty driver is being accessed by the main thread as well
+		if (p->qwerty_enabled) {
+			qwerty_process_event(p->base.xsysd->xdevs, p->base.xsysd->xdev_count, event);
+		}
+#endif
+
+		if (event.type == SDL_QUIT) {
+			p->base.stopped = true;
+		}
+
+		if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
+		    event.window.windowID == SDL_GetWindowID(p->win)) {
+			p->base.stopped = true;
+		}
+	}
+}
+
+static void
+sdl2_loop_new_frame(struct u_debug_gui *p)
+{
+	// Start the Dear ImGui frame
+	igImGui_ImplOpenGL3_NewFrame();
+	igImGui_ImplSDL2_NewFrame(p->win);
+
+	// Start new frame.
+	igNewFrame();
+}
+
+static void
+sdl2_loop_show_scene(struct u_debug_gui *p, struct gui_imgui *gui)
+{
+	// Render the scene into it.
+	gui_scene_manager_render(&p->base);
+
+	// Handle this here.
+	if (gui->show_imgui_demo) {
+		igShowDemoWindow(&gui->show_imgui_demo);
+	}
+
+	// Handle this here.
+	if (gui->show_implot_demo) {
+		ImPlot_ShowDemoWindow(&gui->show_implot_demo);
+	}
+}
+
+static void
+sdl2_loop_render(struct u_debug_gui *p, struct gui_imgui *gui, ImGuiIO *io)
+{
+	// Build the DrawData (EndFrame).
+	igRender();
+
+	// Clear the background.
+	glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
+	glClearColor(gui->clear.r, gui->clear.g, gui->clear.b, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	igImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
+}
+
+static void
 sdl2_loop(struct u_debug_gui *p)
 {
 	// Need to call this before any other Imgui call.
@@ -177,7 +249,7 @@ sdl2_loop(struct u_debug_gui *p)
 
 #ifdef XRT_BUILD_DRIVER_QWERTY
 	// Setup qwerty driver usage
-	bool qwerty_enabled = debug_get_bool_option_qwerty_enable();
+	p->qwerty_enabled = debug_get_bool_option_qwerty_enable();
 #endif
 
 	// Main loop
@@ -192,60 +264,17 @@ sdl2_loop(struct u_debug_gui *p)
 	u_var_add_bool(&gui, &p->base.stopped, "Exit");
 
 	while (!p->base.stopped) {
-		SDL_Event event;
+		sdl2_loop_events(p);
 
-		while (SDL_PollEvent(&event)) {
-			igImGui_ImplSDL2_ProcessEvent(&event);
+		sdl2_loop_new_frame(p);
 
-#ifdef XRT_BUILD_DRIVER_QWERTY
-			// Caution here, qwerty driver is being accessed by the main thread as well
-			if (qwerty_enabled) {
-				qwerty_process_event(p->base.xsysd->xdevs, p->base.xsysd->xdev_count, event);
-			}
-#endif
+		sdl2_loop_show_scene(p, &gui);
 
-			if (event.type == SDL_QUIT) {
-				p->base.stopped = true;
-			}
-
-			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
-			    event.window.windowID == SDL_GetWindowID(p->win)) {
-				p->base.stopped = true;
-			}
-		}
-
-		// Start the Dear ImGui frame
-		igImGui_ImplOpenGL3_NewFrame();
-		igImGui_ImplSDL2_NewFrame(p->win);
-
-		// Start new frame.
-		igNewFrame();
-
-		// Render the scene into it.
-		gui_scene_manager_render(&p->base);
-
-		// Handle this here.
-		if (gui.show_imgui_demo) {
-			igShowDemoWindow(&gui.show_imgui_demo);
-		}
-
-		// Handle this here.
-		if (gui.show_implot_demo) {
-			ImPlot_ShowDemoWindow(&gui.show_implot_demo);
-		}
-
-		// Build the DrawData (EndFrame).
-		igRender();
-
-		// Clear the background.
-		glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
-		glClearColor(gui.clear.r, gui.clear.g, gui.clear.b, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		igImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
+		sdl2_loop_render(p, &gui, io);
 
 		SDL_GL_SwapWindow(p->win);
 
+		// Update prober things.
 		gui_prober_update(&p->base);
 	}
 
