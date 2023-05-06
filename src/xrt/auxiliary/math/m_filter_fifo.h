@@ -119,7 +119,7 @@ m_ff_f64_filter(struct m_ff_f64 *ff, uint64_t start_ns, uint64_t stop_ns, double
 }
 
 /*!
- * Helper class to wrap a C filter fifo.
+ * Helper class to wrap a C filter fifo (@ref m_ff_vec3_f32).
  */
 class FilterFifo3F
 {
@@ -149,18 +149,33 @@ public:
 		return mFifoPtr;
 	}
 
+	/*!
+	 * @copydoc m_ff_vec3_f32_push
+	 *
+	 * Wrapper for @ref m_ff_vec3_f32_push.
+	 */
 	inline void
 	push(const xrt_vec3 &sample, uint64_t timestamp_ns)
 	{
 		m_ff_vec3_f32_push(mFifoPtr, &sample, timestamp_ns);
 	}
 
+	/*!
+	 * @copydoc m_ff_vec3_f32_get
+	 *
+	 * Wrapper for @ref m_ff_vec3_f32_get.
+	 */
 	inline bool
 	get(size_t num, xrt_vec3 *out_sample, uint64_t *out_timestamp_ns)
 	{
 		return m_ff_vec3_f32_get(mFifoPtr, num, out_sample, out_timestamp_ns);
 	}
 
+	/*!
+	 * @copydoc m_ff_vec3_f32_filter
+	 *
+	 * Wrapper for @ref m_ff_vec3_f32_filter.
+	 */
 	inline size_t
 	filter(uint64_t start_ns, uint64_t stop_ns, struct xrt_vec3 *out_average)
 	{
