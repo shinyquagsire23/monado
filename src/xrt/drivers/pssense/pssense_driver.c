@@ -1,4 +1,5 @@
 // Copyright 2023, Collabora, Ltd.
+// Copyright 2023, Jarett Millard
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -24,6 +25,9 @@
 #include "util/u_trace_marker.h"
 
 #include "pssense_interface.h"
+#include "math/m_mathinclude.h"
+#include "math/m_space.h"
+#include "math/m_imu_3dof.h"
 
 #include <stdio.h>
 
@@ -37,7 +41,26 @@
 #define PSSENSE_WARN(p, ...) U_LOG_XDEV_IFL_W(&p->base, p->log_level, __VA_ARGS__)
 #define PSSENSE_ERROR(p, ...) U_LOG_XDEV_IFL_E(&p->base, p->log_level, __VA_ARGS__)
 
-DEBUG_GET_ONCE_LOG_OPTION(pssense_log, "PSSENSE_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_LOG_OPTION(pssense_log, "PSSENSE_LOG", U_LOGGING_INFO)
+
+#define DEG_TO_RAD(DEG) (DEG * M_PI / 180.)
+
+static struct xrt_binding_input_pair simple_inputs_pssense[4] = {
+    {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_PSSENSE_TRIGGER_VALUE},
+    {XRT_INPUT_SIMPLE_MENU_CLICK, XRT_INPUT_PSSENSE_OPTIONS_CLICK},
+    {XRT_INPUT_SIMPLE_GRIP_POSE, XRT_INPUT_PSSENSE_GRIP_POSE},
+    {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_PSSENSE_AIM_POSE},
+};
+
+static struct xrt_binding_profile binding_profiles_pssense[1] = {
+    {
+        .name = XRT_DEVICE_SIMPLE_CONTROLLER,
+        .inputs = simple_inputs_pssense,
+        .input_count = ARRAY_SIZE(simple_inputs_pssense),
+        .outputs = NULL,
+        .output_count = 0,
+    },
+};
 
 /*!
  * Indices where each input is in the input list.
@@ -64,7 +87,43 @@ enum pssense_input_index
 	PSSENSE_INDEX_TRIGGER_PROXIMITY,
 	PSSENSE_INDEX_THUMBSTICK,
 	PSSENSE_INDEX_THUMBSTICK_CLICK,
-	PSSENSE_INDEX_THUMBSTICK_TOUCH
+	PSSENSE_INDEX_THUMBSTICK_TOUCH,
+	PSSENSE_INDEX_GRIP_POSE,
+	PSSENSE_INDEX_AIM_POSE,
+};
+
+const uint8_t HID_PACKET_REPORT_ID = 0x31;
+const uint8_t CALIBRATION_DATA_FEATURE_REPORT_ID = 0x05;
+const uint8_t CALIBRATION_DATA_PART_ID_1 = 0;
+const uint8_t CALIBRATION_DATA_PART_ID_2 = 0x81;
+
+/**
+ * Gyro read value range is +-32768.
+ */
+const double PSSENSE_GYRO_SCALE_DEG = 180.0 / 1024;
+/**
+ * Accelerometer read value range is +-32768 and covers +-8 g.
+ */
+const double PSSENSE_ACCEL_SCALE = MATH_GRAVITY_M_S2 / 4096;
+
+/**
+ * 16-bit little-endian int
+ */
+struct pssense_i16_le
+{
+	uint8_t low;
+	uint8_t high;
+};
+
+/**
+ * 32-bit little-endian int
+ */
+struct pssense_i32_le
+{
+	uint8_t lowest;
+	uint8_t lower;
+	uint8_t higher;
+	uint8_t highest;
 };
 
 /*!
@@ -72,15 +131,26 @@ enum pssense_input_index
  */
 struct pssense_data_packet
 {
-	uint8_t header;
+	uint8_t report_id;
+	uint8_t bt_header;
 	uint8_t thumbstick_x;
 	uint8_t thumbstick_y;
 	uint8_t trigger_value;
 	uint8_t trigger_proximity;
 	uint8_t squeeze_proximity;
-	uint8_t reserved;
-	uint8_t seq_no;
+	uint8_t unknown1[2]; // Always 0x0001
 	uint8_t buttons[3];
+	uint8_t unknown2; // Always 0x00
+	struct pssense_i32_le seq_no;
+	struct pssense_i16_le gyro[3];
+	struct pssense_i16_le accel[3];
+	uint8_t unknown3[3];
+	uint8_t unknown4;      // Increments occasionally
+	uint8_t battery_level; // Range appears to be 0x00-0x0e
+	uint8_t unknown5[10];
+	uint8_t charging_state; // 0x00 when unplugged, 0x20 when charging
+	uint8_t unknown6[29];
+	uint8_t crc[4];
 };
 
 /*!
@@ -88,8 +158,8 @@ struct pssense_data_packet
  */
 struct pssense_input_state
 {
-	uint64_t timestamp;
-	uint8_t seq_no;
+	uint64_t timestamp_ns;
+	uint32_t seq_no;
 
 	bool ps_click;
 	bool share_click;
@@ -112,6 +182,9 @@ struct pssense_input_state
 	bool thumbstick_click;
 	bool thumbstick_touch;
 	struct xrt_vec2 thumbstick;
+
+	struct xrt_vec3_i32 gyro_raw;
+	struct xrt_vec3_i32 accel_raw;
 };
 
 /*!
@@ -138,18 +211,35 @@ struct pssense_device
 	//! Input state parsed from most recent packet
 	struct pssense_input_state state;
 
+	struct m_imu_3dof fusion;
+	struct xrt_pose pose;
+
 	struct
 	{
 		bool button_states;
+		bool tracking;
 	} gui;
 };
+
+static uint32_t
+pssense_i32_le_to_u32(const struct pssense_i32_le *from)
+{
+	return (uint32_t)(from->lowest | from->lower << 8 | from->higher << 16 | from->highest << 24);
+}
+
+static int16_t
+pssense_i16_le_to_i16(const struct pssense_i16_le *from)
+{
+	// The cast is important, sign extend properly.
+	return (int16_t)(from->low | from->high << 8);
+}
 
 /*!
  * Reads one packet from the device, handles time out, locking and checking if
  * the thread has been told to shut down.
  */
 static bool
-pssense_read_one_packet(struct pssense_device *pssense, uint8_t *buffer, size_t size)
+pssense_read_one_packet(struct pssense_device *pssense, uint8_t *buffer, size_t size, bool check_size)
 {
 	os_thread_helper_lock(&pssense->controller_thread);
 
@@ -169,7 +259,8 @@ pssense_read_one_packet(struct pssense_device *pssense, uint8_t *buffer, size_t 
 			PSSENSE_ERROR(pssense, "Failed to read device '%i'!", ret);
 			return false;
 		}
-		if (ret != (int)size) {
+		// Skip this check if we haven't flushed all the compat mode packets yet, since they're shorter.
+		if (check_size && ret != (int)size) {
 			PSSENSE_ERROR(pssense, "Unexpected HID packet size %i (expected %zu)", ret, size);
 			return false;
 		}
@@ -180,13 +271,23 @@ pssense_read_one_packet(struct pssense_device *pssense, uint8_t *buffer, size_t 
 	return false;
 }
 
-static void
+static bool
 pssense_parse_packet(struct pssense_device *pssense,
                      struct pssense_data_packet *data,
                      struct pssense_input_state *input)
 {
-	input->timestamp = os_monotonic_get_ns();
-	input->seq_no = data->seq_no;
+	if (data->report_id != HID_PACKET_REPORT_ID) {
+		PSSENSE_WARN(pssense, "Unrecognized HID report id %u", data->report_id);
+		return false;
+	}
+
+	input->timestamp_ns = os_monotonic_get_ns();
+
+	uint32_t seq_no = pssense_i32_le_to_u32(&data->seq_no);
+	if (input->seq_no != 0 && seq_no != input->seq_no + 1) {
+		PSSENSE_WARN(pssense, "Missed seq no %u. Previous was %u", seq_no, input->seq_no);
+	}
+	input->seq_no = seq_no;
 
 	input->ps_click = (data->buttons[1] & 16) != 0;
 	input->squeeze_touch = (data->buttons[2] & 8) != 0;
@@ -217,6 +318,35 @@ pssense_parse_packet(struct pssense_device *pssense,
 		input->trigger_click = (data->buttons[0] & 128) != 0;
 		input->thumbstick_click = (data->buttons[1] & 8) != 0;
 	}
+
+	input->gyro_raw.x = pssense_i16_le_to_i16(&data->gyro[0]);
+	input->gyro_raw.y = pssense_i16_le_to_i16(&data->gyro[1]);
+	input->gyro_raw.z = pssense_i16_le_to_i16(&data->gyro[2]);
+
+	input->accel_raw.x = pssense_i16_le_to_i16(&data->accel[0]);
+	input->accel_raw.y = pssense_i16_le_to_i16(&data->accel[1]);
+	input->accel_raw.z = pssense_i16_le_to_i16(&data->accel[2]);
+
+	return true;
+}
+
+static void
+pssense_update_fusion(struct pssense_device *pssense)
+{
+	struct xrt_vec3 gyro;
+	gyro.x = DEG_TO_RAD(pssense->state.gyro_raw.x * PSSENSE_GYRO_SCALE_DEG);
+	gyro.y = DEG_TO_RAD(pssense->state.gyro_raw.y * PSSENSE_GYRO_SCALE_DEG);
+	gyro.z = DEG_TO_RAD(pssense->state.gyro_raw.z * PSSENSE_GYRO_SCALE_DEG);
+
+	struct xrt_vec3 accel;
+	accel.x = pssense->state.accel_raw.x * PSSENSE_ACCEL_SCALE;
+	accel.y = pssense->state.accel_raw.y * PSSENSE_ACCEL_SCALE;
+	accel.z = pssense->state.accel_raw.z * PSSENSE_ACCEL_SCALE;
+
+	// TODO: Apply correction from calibration data
+
+	m_imu_3dof_update(&pssense->fusion, pssense->state.timestamp_ns, &accel, &gyro);
+	pssense->pose.orientation = pssense->fusion.rot;
 }
 
 static void *
@@ -228,24 +358,24 @@ pssense_run_thread(void *ptr)
 
 	union {
 		uint8_t buffer[sizeof(struct pssense_data_packet)];
-		struct pssense_data_packet input;
+		struct pssense_data_packet packet;
 	} data;
-	struct pssense_input_state input = {0};
+	struct pssense_input_state input_state = {0};
 
-	while (os_hid_read(pssense->hid, data.buffer, sizeof(data), 0) > 0) {
-		// Empty queue first
+	// The Sense controller starts in compat mode with a different HID report ID and format.
+	// We need to discard packets until we get a correct report.
+	while (pssense_read_one_packet(pssense, data.buffer, sizeof(data), false) &&
+	       data.packet.report_id != HID_PACKET_REPORT_ID) {
+		PSSENSE_DEBUG(pssense, "Discarding compat mode HID report");
 	}
 
-	// Now wait for a package to sync up, it's discarded but that's okay.
-	if (!pssense_read_one_packet(pssense, data.buffer, sizeof(data))) {
-		return NULL;
-	}
-
-	while (pssense_read_one_packet(pssense, data.buffer, sizeof(data))) {
-		pssense_parse_packet(pssense, (struct pssense_data_packet *)data.buffer, &input);
-		os_mutex_lock(&pssense->lock);
-		pssense->state = input;
-		os_mutex_unlock(&pssense->lock);
+	while (pssense_read_one_packet(pssense, data.buffer, sizeof(data), true)) {
+		if (pssense_parse_packet(pssense, &data.packet, &input_state)) {
+			os_mutex_lock(&pssense->lock);
+			pssense->state = input_state;
+			pssense_update_fusion(pssense);
+			os_mutex_unlock(&pssense->lock);
+		}
 	}
 
 	return NULL;
@@ -261,6 +391,8 @@ pssense_device_destroy(struct xrt_device *xdev)
 
 	// Now that the thread is not running we can destroy the lock.
 	os_mutex_destroy(&pssense->lock);
+
+	m_imu_3dof_close(&pssense->fusion);
 
 	// Remove the variable tracking.
 	u_var_remove_root(pssense);
@@ -282,7 +414,7 @@ pssense_device_update_inputs(struct xrt_device *xdev)
 	os_mutex_lock(&pssense->lock);
 
 	for (uint i = 0; i < (uint)sizeof(enum pssense_input_index); i++) {
-		pssense->base.inputs[i].timestamp = (int64_t)pssense->state.timestamp;
+		pssense->base.inputs[i].timestamp = (int64_t)pssense->state.timestamp_ns;
 	}
 	pssense->base.inputs[PSSENSE_INDEX_PS_CLICK].value.boolean = pssense->state.ps_click;
 	pssense->base.inputs[PSSENSE_INDEX_SHARE_CLICK].value.boolean = pssense->state.share_click;
@@ -310,6 +442,96 @@ pssense_device_update_inputs(struct xrt_device *xdev)
 	os_mutex_unlock(&pssense->lock);
 }
 
+static void
+pssense_get_fusion_pose(struct pssense_device *pssense,
+                        enum xrt_input_name name,
+                        uint64_t at_timestamp_ns,
+                        struct xrt_space_relation *out_relation)
+{
+	out_relation->pose = pssense->pose;
+	out_relation->linear_velocity.x = 0.0f;
+	out_relation->linear_velocity.y = 0.0f;
+	out_relation->linear_velocity.z = 0.0f;
+
+	/*!
+	 * @todo This is hack, fusion reports angvel relative to the device but
+	 * it needs to be in relation to the base space. Rotating it with the
+	 * device orientation is enough to get it into the right space, angular
+	 * velocity is a derivative so needs a special rotation.
+	 */
+	math_quat_rotate_derivative(&pssense->pose.orientation, &pssense->fusion.last.gyro,
+	                            &out_relation->angular_velocity);
+
+	out_relation->relation_flags = (enum xrt_space_relation_flags)(
+	    XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |
+	    XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | XRT_SPACE_RELATION_LINEAR_VELOCITY_VALID_BIT);
+}
+
+static void
+pssense_get_tracked_pose(struct xrt_device *xdev,
+                         enum xrt_input_name name,
+                         uint64_t at_timestamp_ns,
+                         struct xrt_space_relation *out_relation)
+{
+	struct pssense_device *pssense = (struct pssense_device *)xdev;
+
+	if (name != XRT_INPUT_PSSENSE_AIM_POSE && name != XRT_INPUT_PSSENSE_GRIP_POSE) {
+		PSSENSE_ERROR(pssense, "Unknown pose name requested %u", name);
+		return;
+	}
+
+	struct xrt_relation_chain xrc = {0};
+	struct xrt_pose pose_correction = {0};
+
+	// Rotate the grip/aim pose up by 60 degrees around the X axis
+	struct xrt_vec3 axis = {1.0, 0, 0};
+	math_quat_from_angle_vector(DEG_TO_RAD(60), &axis, &pose_correction.orientation);
+	m_relation_chain_push_pose(&xrc, &pose_correction);
+
+	struct xrt_space_relation *rel = m_relation_chain_reserve(&xrc);
+
+	os_mutex_lock(&pssense->lock);
+	pssense_get_fusion_pose(pssense, name, at_timestamp_ns, rel);
+	os_mutex_unlock(&pssense->lock);
+
+	m_relation_chain_resolve(&xrc, out_relation);
+}
+
+/**
+ * Retrieving the calibration data report will switch the Sense controller from compat mode into full mode.
+ */
+bool
+pssense_get_calibration_data(struct pssense_device *pssense)
+{
+	int ret;
+	uint8_t buffer[64];
+	uint8_t data[(sizeof(buffer) - 2) * 2];
+	for (int i = 0; i < 2; i++) {
+		ret = os_hid_get_feature(pssense->hid, CALIBRATION_DATA_FEATURE_REPORT_ID, buffer, sizeof(buffer));
+		if (ret < 0) {
+			PSSENSE_ERROR(pssense, "Failed to retrieve calibration report: %d", ret);
+			return false;
+		}
+		if (ret != sizeof(buffer)) {
+			PSSENSE_ERROR(pssense, "Invalid byte count transferred, expected %zu got %d\n", sizeof(buffer),
+			              ret);
+			return false;
+		}
+		if (buffer[1] == CALIBRATION_DATA_PART_ID_1) {
+			memcpy(data, buffer + 2, sizeof(buffer) - 2);
+		} else if (buffer[1] == CALIBRATION_DATA_PART_ID_2) {
+			memcpy(data + sizeof(buffer) - 2, buffer + 2, sizeof(buffer) - 2);
+		} else {
+			PSSENSE_ERROR(pssense, "Unknown calibration data part ID %u", buffer[1]);
+			return false;
+		}
+	}
+
+	// TODO: Parse calibration data into prefiler
+
+	return true;
+}
+
 #define SET_INPUT(NAME) (pssense->base.inputs[PSSENSE_INDEX_##NAME].name = XRT_INPUT_PSSENSE_##NAME)
 
 int
@@ -335,19 +557,26 @@ pssense_found(struct xrt_prober *xp,
 	    XRT_PROBER_STRING_PRODUCT,          //
 	    product_name,                       //
 	    sizeof(product_name));              //
-	if (ret != 0) {
+	if (ret <= 0) {
 		U_LOG_E("Failed to get product name from Bluetooth device!");
 		return -1;
 	}
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct pssense_device *pssense = U_DEVICE_ALLOCATE(struct pssense_device, flags, 13, 1);
-
+	struct pssense_device *pssense = U_DEVICE_ALLOCATE(struct pssense_device, flags, 23, 0);
 	PSSENSE_DEBUG(pssense, "PlayStation Sense controller found");
-	pssense->base.destroy = pssense_device_destroy;
-	pssense->base.update_inputs = pssense_device_update_inputs;
+
 	pssense->base.name = XRT_DEVICE_PSSENSE;
 	snprintf(pssense->base.str, XRT_DEVICE_NAME_LEN, "%s", product_name);
+	pssense->base.update_inputs = pssense_device_update_inputs;
+	pssense->base.get_tracked_pose = pssense_get_tracked_pose;
+	pssense->base.destroy = pssense_device_destroy;
+	pssense->base.orientation_tracking_supported = true;
+
+	pssense->base.binding_profiles = binding_profiles_pssense;
+	pssense->base.binding_profile_count = ARRAY_SIZE(binding_profiles_pssense);
+
+	m_imu_3dof_init(&pssense->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
 
 	pssense->log_level = debug_get_log_option_pssense_log();
 	pssense->hid = hid;
@@ -385,6 +614,8 @@ pssense_found(struct xrt_prober *xp,
 	SET_INPUT(THUMBSTICK);
 	SET_INPUT(THUMBSTICK_CLICK);
 	SET_INPUT(THUMBSTICK_TOUCH);
+	SET_INPUT(GRIP_POSE);
+	SET_INPUT(AIM_POSE);
 
 	ret = os_mutex_init(&pssense->lock);
 	if (ret != 0) {
@@ -403,6 +634,12 @@ pssense_found(struct xrt_prober *xp,
 	ret = os_thread_helper_start(&pssense->controller_thread, pssense_run_thread, pssense);
 	if (ret != 0) {
 		PSSENSE_ERROR(pssense, "Failed to start thread!");
+		pssense_device_destroy(&pssense->base);
+		return -1;
+	}
+
+	if (!pssense_get_calibration_data(pssense)) {
+		PSSENSE_ERROR(pssense, "Failed to retrieve calibration data");
 		pssense_device_destroy(&pssense->base);
 		return -1;
 	}
@@ -436,6 +673,11 @@ pssense_found(struct xrt_prober *xp,
 	u_var_add_ro_f32(pssense, &pssense->state.thumbstick.y, "Thumbstick Y");
 	u_var_add_bool(pssense, &pssense->state.thumbstick_click, "Thumbstick Click");
 	u_var_add_bool(pssense, &pssense->state.thumbstick_touch, "Thumbstick Touch");
+
+	u_var_add_gui_header(pssense, &pssense->gui.tracking, "Tracking");
+	u_var_add_ro_vec3_i32(pssense, &pssense->state.gyro_raw, "Raw Gyro");
+	u_var_add_ro_vec3_i32(pssense, &pssense->state.accel_raw, "Raw Accel");
+	u_var_add_pose(pssense, &pssense->pose, "Pose");
 
 	out_xdevs[0] = &pssense->base;
 	return 1;

@@ -1,4 +1,5 @@
 // Copyright 2023, Collabora, Ltd.
+// Copyright 2023, Jarett Millard
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
