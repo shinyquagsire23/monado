@@ -29,7 +29,11 @@
  *
  */
 
-
+/*!
+ * A very simple pacer that tries it best to pace a compositor. Used when the
+ * compositor can't get any good or limited feedback from the presentation
+ * engine about timing.
+ */
 struct fake_timing
 {
 	struct u_pacing_compositor base;
@@ -51,9 +55,10 @@ struct fake_timing
 	 */
 	struct u_var_draggable_f32 present_to_display_offset_ms;
 
-	// The amount of time that the application needs to render frame.
+	//! The amount of time that the application needs to render frame.
 	uint64_t comp_time_ns;
 
+	//! This won't run out, trust me.
 	int64_t frame_id_generator;
 };
 
