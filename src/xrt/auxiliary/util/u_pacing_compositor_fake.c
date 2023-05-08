@@ -29,6 +29,8 @@
  *
  */
 
+DEBUG_GET_ONCE_FLOAT_OPTION(min_comp_time_ms, "U_PACING_COMP_MIN_TIME_MS", 3.0f)
+
 /*!
  * A very simple pacer that tries it best to pace a compositor. Used when the
  * compositor can't get any good or limited feedback from the presentation
@@ -284,9 +286,12 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	// 20% of the frame time.
 	ft->comp_time_ns = get_percent_of_time(estimated_frame_period_ns, 20);
 
-	// Or at least 2ms.
-	if (ft->comp_time_ns < U_TIME_1MS_IN_NS * 2) {
-		ft->comp_time_ns = U_TIME_1MS_IN_NS * 2;
+	// Or at least a certain amount of time.
+	float min_comp_time_ms_f = debug_get_float_option_min_comp_time_ms();
+	uint64_t min_comp_time_ns = time_ms_f_to_ns(min_comp_time_ms_f);
+
+	if (ft->comp_time_ns < min_comp_time_ns) {
+		ft->comp_time_ns = min_comp_time_ns;
 	}
 
 	// Make the next present time be in the future.
