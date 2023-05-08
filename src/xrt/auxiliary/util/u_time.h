@@ -109,6 +109,19 @@ time_ns_to_ms_f(time_duration_ns ns)
 }
 
 /*!
+ * Convert double float milliseconds to nanoseconds, human comprehensible config
+ * inputs. Recommended to keep the absolute value of the input relitively small.
+ *
+ * @see timepoint_ns
+ * @ingroup aux_util
+ */
+static inline timepoint_ns
+time_ms_f_to_ns(double ms_f)
+{
+	return (timepoint_ns)(ms_f * (double)(U_TIME_1MS_IN_NS));
+}
+
+/*!
  * Checks if two timepoints are with a certain range of each other.
  *
  * @see timepoint_ns
