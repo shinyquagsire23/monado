@@ -92,7 +92,7 @@ static uint64_t
 calc_display_time(struct fake_timing *ft, uint64_t present_time_ns)
 {
 	double offset_ms = ft->present_to_display_offset_ms.val;
-	uint64_t offset_ns = (uint64_t)(offset_ms * (double)U_TIME_1MS_IN_NS);
+	uint64_t offset_ns = time_ms_f_to_ns(offset_ms);
 	return present_time_ns + offset_ns;
 }
 
@@ -234,7 +234,7 @@ pc_update_present_offset(struct u_pacing_compositor *upc, int64_t frame_id, uint
 	// not associating with frame IDs right now.
 	(void)frame_id;
 
-	double offset_ms = (double)present_to_display_offset_ns / (double)U_TIME_1MS_IN_NS;
+	double offset_ms = time_ns_to_ms_f(present_to_display_offset_ns);
 
 	ft->present_to_display_offset_ms.val = offset_ms;
 }
