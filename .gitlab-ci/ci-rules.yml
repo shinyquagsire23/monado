@@ -63,7 +63,7 @@
     # affecting the pipeline were changed
     - if: *is-pre-merge
       changes:
-        *paths-ci-files
+        *paths-ci-code-sys-files
       when: on_success
     # Allow triggering jobs manually in other cases if any files affecting the
     # pipeline were changed: Disabled for now because it causes the pipeline on
