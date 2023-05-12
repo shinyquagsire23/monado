@@ -25,10 +25,10 @@ struct m_ff_f64;
 struct m_ff_vec3_f32;
 
 /*!
- * @addtogroup aux_util
- * @{
+ * Used to plot an array for values.
+ *
+ * @ingroup aux_util
  */
-
 struct u_var_f32_arr
 {
 	void *data;
@@ -36,6 +36,11 @@ struct u_var_f32_arr
 	int length;
 };
 
+/*!
+ * Used to plot a graph of timing information.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_timing
 {
 	//! Values to be plotted.
@@ -59,9 +64,16 @@ struct u_var_timing
 
 /*!
  * Callback for a button action
+ *
+ * @ingroup aux_util
  */
 typedef void (*u_var_button_cb)(void *);
 
+/*!
+ * Simple pushable button.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_button
 {
 	//! Callback function to execute on button press
@@ -81,6 +93,11 @@ struct u_var_button
 	bool disabled;
 };
 
+/*!
+ * Combo box information.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_combo
 {
 	//! Number of options.
@@ -93,6 +110,11 @@ struct u_var_combo
 	int *value;
 };
 
+/*!
+ * Draggable single precision float information.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_draggable_f32
 {
 	float val;
@@ -101,6 +123,11 @@ struct u_var_draggable_f32
 	float max;
 };
 
+/*!
+ * Draggable usingned 16-bit integer information.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_draggable_u16
 {
 	//! @note Using a float instead of storing the value like @ref
@@ -113,6 +140,11 @@ struct u_var_draggable_u16
 	uint16_t max;
 };
 
+/*!
+ * Histogram based on single precision bars.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_histogram_f32
 {
 	float *values; //!< Bin heights
@@ -121,15 +153,29 @@ struct u_var_histogram_f32
 	float height;  //!< Widget height or 0 for auto
 };
 
+/*!
+ * A point on the curve, uses doubles like ImPlotPoint.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_curve_point
 {
-	// Using doubles like ImPlotPoint
 	double x;
 	double y;
 };
 
+/*!
+ * Callback for getting points on a curve.
+ *
+ * @ingroup aux_util
+ */
 typedef struct u_var_curve_point (*u_var_curve_getter)(void *data, int i);
 
+/*!
+ * A single curve on a plot.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_curve
 {
 	u_var_curve_getter getter; //!< Getter of 2D points for the curve
@@ -140,6 +186,11 @@ struct u_var_curve
 	const char *ylabel;        //!< Label of the Y axis
 };
 
+/*!
+ * A collection of curves to be plotted.
+ *
+ * @ingroup aux_util
+ */
 struct u_var_curves
 {
 	struct u_var_curve curves[16];
@@ -152,6 +203,8 @@ struct u_var_curves
 
 /*!
  * What kind of variable is this tracking.
+ *
+ * @ingroup aux_util
  */
 enum u_var_kind
 {
@@ -197,10 +250,18 @@ enum u_var_kind
 	U_VAR_KIND_CURVES,
 };
 
+/*!
+ * Maximum string length for a tracked variable.
+ *
+ * @ingroup aux_util
+ */
 #define U_VAR_NAME_STRING_SIZE 256
+
 /*!
  * Struct that keeps all of the information about the variable, some of the UI
  * state is kept on it.
+ *
+ * @ingroup aux_util
  */
 struct u_var_info
 {
@@ -217,11 +278,15 @@ struct u_var_info
 
 /*!
  * Callback for entering and leaving root nodes.
+ *
+ * @ingroup aux_util
  */
 typedef void (*u_var_root_cb)(const char *, void *);
 
 /*!
  * Callback on each variable a root node has.
+ *
+ * @ingroup aux_util
  */
 typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
 
@@ -252,18 +317,24 @@ u_var_add_root(void *root, const char *c_name, bool number);
 
 /*!
  * Remove the root node.
+ *
+ * @ingroup aux_util
  */
 void
 u_var_remove_root(void *root);
 
 /*!
  * Visit all root nodes and their variables.
+ *
+ * @ingroup aux_util
  */
 void
 u_var_visit(u_var_root_cb enter_cb, u_var_root_cb exit_cb, u_var_elm_cb elem_cb, void *priv);
 
 /*!
  * This forces the variable tracking code to on, it is disabled by default.
+ *
+ * @ingroup aux_util
  */
 void
 u_var_force_on(void);
