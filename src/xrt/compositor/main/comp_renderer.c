@@ -1773,24 +1773,25 @@ mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
 }
 
 static bool
-can_mirror_to_debug_gui(struct comp_renderer *r)
+can_mirror_to_debug_gui(struct comp_renderer *r, uint64_t predicted_display_time_ns)
 {
 	if (!r->c->mirroring_to_debug_gui || !u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink)) {
 		return false;
 	}
 
-	uint64_t now = r->c->frame.rendering.predicted_display_time_ns;
-
-	double diff_s = (double)(now - r->mirror_to_debug_gui.last_push_ts_ns) / (double)U_TIME_1MS_IN_NS;
+	double diff_ms = time_ns_to_ms_f(predicted_display_time_ns - r->mirror_to_debug_gui.last_push_ts_ns);
 
 	// Completely unscientific - lower values probably works fine too.
 	// I figure we don't have very many 500Hz displays and this woorks great for 120-144hz
 	double slop_ms = 2;
 
-	if (diff_s < r->mirror_to_debug_gui.target_frame_time_ms - slop_ms) {
+	if (diff_ms < r->mirror_to_debug_gui.target_frame_time_ms - slop_ms) {
 		return false;
 	}
-	r->mirror_to_debug_gui.last_push_ts_ns = now;
+
+	// Set the last time to the frame that is being displayed.
+	r->mirror_to_debug_gui.last_push_ts_ns = predicted_display_time_ns;
+
 	return true;
 }
 
@@ -2033,12 +2034,13 @@ comp_renderer_draw(struct comp_renderer *r)
 	// Save for timestamps below.
 	uint64_t frame_id = c->frame.rendering.id;
 	uint64_t desired_present_time_ns = c->frame.rendering.desired_present_time_ns;
+	uint64_t predicted_display_time_ns = c->frame.rendering.predicted_display_time_ns;
 
 	// Clear the rendered frame.
 	comp_frame_clear_locked(&c->frame.rendering);
 
 	mirror_to_debug_gui_fixup_ui_state(r);
-	if (can_mirror_to_debug_gui(r)) {
+	if (can_mirror_to_debug_gui(r, predicted_display_time_ns)) {
 		mirror_to_debug_gui_do_blit(r);
 	}
 
