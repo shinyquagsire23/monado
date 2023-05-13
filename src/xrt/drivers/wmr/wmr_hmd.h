@@ -87,11 +87,12 @@ struct wmr_hmd
 	 * IMU data and read the config from.
 	 *
 	 * During start it is owned by the thread creating the device, after
-	 * init it is owned by the reading thread, there is no mutex protecting
-	 * this field as it's only used by the reading thread in @p oth.
+	 * init it is owned by the reading thread. Read/write access is
+	 * protected by the hid_lock
 	 */
 
 	struct os_hid_device *hid_hololens_sensors_dev;
+	struct os_mutex hid_lock;
 
 	/*!
 	 * This is the vendor specific companion device of the Hololens Sensors.
@@ -205,14 +206,10 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_device **out_hmd,
                struct xrt_device **out_handtracker);
 
-#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_DEBUG_HEX(d, data, data_size) U_LOG_XDEV_IFL_D_HEX(&d->base, d->log_level, data, data_size)
-#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
-
-
+bool
+wmr_hmd_send_controller_packet(struct wmr_hmd *hmd, const uint8_t *buffer, uint32_t buf_size);
+int
+wmr_hmd_read_sync_from_controller(struct wmr_hmd *hmd, uint8_t *buffer, uint32_t buf_size, int timeout_ms);
 #ifdef __cplusplus
 }
 #endif

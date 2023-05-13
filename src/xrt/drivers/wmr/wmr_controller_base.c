@@ -80,9 +80,7 @@ receive_bytes(struct wmr_controller_base *wcb, uint64_t time_ns, uint8_t *buffer
 		}
 
 		break;
-	default:
-		WMR_DEBUG(wcb, "WMR Controller (Bluetooth): Unknown message type: %02x, size: %i", buffer[0], buf_size);
-		break;
+	default: WMR_DEBUG(wcb, "WMR Controller: Unknown message type: %02x, size: %i", buffer[0], buf_size); break;
 	}
 
 	return;

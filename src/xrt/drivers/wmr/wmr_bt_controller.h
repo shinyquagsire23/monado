@@ -36,8 +36,6 @@ struct wmr_bt_connection
 	struct os_thread_helper controller_thread;
 
 	struct os_mutex hid_lock;
-
-	struct wmr_controller_base *wcb;
 };
 
 struct xrt_device *

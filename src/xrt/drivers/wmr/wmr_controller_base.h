@@ -51,6 +51,10 @@ struct wmr_controller_connection
 	struct wmr_controller_base *wcb;
 
 	bool (*send_bytes)(struct wmr_controller_connection *wcc, const uint8_t *buffer, uint32_t buf_size);
+	void (*receive_bytes)(struct wmr_controller_connection *wcc,
+	                      uint64_t time_ns,
+	                      uint8_t *buffer,
+	                      uint32_t buf_size);
 	int (*read_sync)(struct wmr_controller_connection *wcc, uint8_t *buffer, uint32_t buf_size, int timeout_ms);
 
 	void (*disconnect)(struct wmr_controller_connection *wcc);
@@ -136,9 +140,15 @@ wmr_controller_connection_receive_bytes(struct wmr_controller_connection *wcc,
                                         uint8_t *buffer,
                                         uint32_t buf_size)
 {
-	struct wmr_controller_base *wcb = wcc->wcb;
 
-	wcb->receive_bytes(wcb, time_ns, buffer, buf_size);
+	if (wcc->receive_bytes != NULL) {
+		wcc->receive_bytes(wcc, time_ns, buffer, buf_size);
+	} else {
+		/* Default: deliver directly to the controller instance */
+		struct wmr_controller_base *wcb = wcc->wcb;
+		assert(wcb->receive_bytes != NULL);
+		wcb->receive_bytes(wcb, time_ns, buffer, buf_size);
+	}
 }
 
 #ifdef __cplusplus

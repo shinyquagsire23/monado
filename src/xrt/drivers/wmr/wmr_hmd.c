@@ -78,6 +78,13 @@ DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 DEBUG_GET_ONCE_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", NULL)
 #endif
 
+#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_DEBUG_HEX(d, data, data_size) U_LOG_XDEV_IFL_D_HEX(&d->base, d->log_level, data, data_size)
+#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
+
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
 static void
@@ -254,6 +261,7 @@ hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer,
 	pkt_type = buffer[1];
 	if (pkt_type != WMR_BT_IFACE_MSG_DEBUG) {
 		WMR_DEBUG(wh, "Unknown Bluetooth interface packet (%d) type 0x%02x", size, pkt_type);
+		WMR_DEBUG_HEX(wh, buffer, size);
 		return;
 	}
 	buffer += 2;
@@ -431,7 +439,9 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Block for 100ms
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_read(wh->hid_hololens_sensors_dev, buffer, sizeof(buffer), 100);
+	os_mutex_unlock(&wh->hid_lock);
 
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from Hololens Sensors device. Call to os_hid_read returned %i", size);
@@ -514,7 +524,9 @@ control_read_packets(struct wmr_hmd *wh)
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Do not block
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_read(wh->hid_control_dev, buffer, sizeof(buffer), 0);
+	os_mutex_unlock(&wh->hid_lock);
 
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from companion (HMD control) device. Call to os_hid_read returned %i",
@@ -621,26 +633,36 @@ hololens_sensors_enable_imu(struct wmr_hmd *wh)
 {
 	DRV_TRACE_MARKER();
 
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_write(wh->hid_hololens_sensors_dev, hololens_sensors_imu_on, sizeof(hololens_sensors_imu_on));
+	os_mutex_unlock(&wh->hid_lock);
+
 	if (size <= 0) {
 		WMR_ERROR(wh, "Error writing to device");
 		return;
 	}
 }
 
-#define HID_SEND(HID, DATA, STR)                                                                                       \
+#define HID_SEND(hmd, HID, DATA, STR)                                                                                  \
 	do {                                                                                                           \
+		os_mutex_lock(&hmd->hid_lock);                                                                         \
 		int _ret = os_hid_set_feature(HID, DATA, sizeof(DATA));                                                \
+		os_mutex_unlock(&hmd->hid_lock);                                                                       \
 		if (_ret < 0) {                                                                                        \
 			WMR_ERROR(wh, "Send (%s): %i", STR, _ret);                                                     \
 		}                                                                                                      \
 	} while (false);
 
-#define HID_GET(HID, DATA, STR)                                                                                        \
+#define HID_GET(hmd, HID, DATA, STR)                                                                                   \
 	do {                                                                                                           \
+		os_mutex_lock(&hmd->hid_lock);                                                                         \
 		int _ret = os_hid_get_feature(HID, DATA[0], DATA, sizeof(DATA));                                       \
+		os_mutex_unlock(&hmd->hid_lock);                                                                       \
 		if (_ret < 0) {                                                                                        \
 			WMR_ERROR(wh, "Get (%s): %i", STR, _ret);                                                      \
+		} else {                                                                                               \
+			WMR_DEBUG(wh, "0x%02x HID feature returned", DATA[0]);                                         \
+			WMR_DEBUG_HEX(wh, DATA, _ret);                                                                 \
 		}                                                                                                      \
 	} while (false);
 
@@ -660,22 +682,22 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 
 	for (int i = 0; i < 4; i++) {
 		unsigned char cmd[64] = {0x50, 0x01};
-		HID_SEND(hid, cmd, "loop");
+		HID_SEND(wh, hid, cmd, "loop");
 
 		unsigned char data[64] = {0x50};
-		HID_GET(hid, data, "loop");
+		HID_GET(wh, hid, data, "loop");
 
 		os_nanosleep(U_TIME_1MS_IN_NS * 10); // Sleep 10ms
 	}
 
 	unsigned char data[64] = {0x09};
-	HID_GET(hid, data, "data_1");
+	HID_GET(wh, hid, data, "data_1");
 
 	data[0] = 0x08;
-	HID_GET(hid, data, "data_2");
+	HID_GET(wh, hid, data, "data_2");
 
 	data[0] = 0x06;
-	HID_GET(hid, data, "data_3");
+	HID_GET(wh, hid, data, "data_3");
 
 	WMR_INFO(wh, "Sent activation report.");
 
@@ -730,7 +752,7 @@ wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable)
 		cmd[1] = enable ? 0x01 : 0x00;
 	}
 
-	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+	HID_SEND(wh, hid, cmd, (enable ? "screen_on" : "screen_off"));
 
 	wh->hmd_screen_enable = enable;
 
@@ -750,13 +772,13 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 	os_nanosleep(U_TIME_1MS_IN_NS * 300);
 
 	unsigned char data[64] = {0x16};
-	HID_GET(hid, data, "data_1");
+	HID_GET(wh, hid, data, "data_1");
 
 	data[0] = 0x15;
-	HID_GET(hid, data, "data_2");
+	HID_GET(wh, hid, data, "data_2");
 
 	data[0] = 0x14;
-	HID_GET(hid, data, "data_3");
+	HID_GET(wh, hid, data, "data_3");
 
 	// Enable the HMD screen now, if required. Otherwise, if screen should initially be disabled, then
 	// proactively disable it now. Why? Because some cases of irregular termination of Monado will
@@ -796,7 +818,7 @@ wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable)
 		cmd[1] = enable ? 0x01 : 0x00;
 	}
 
-	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+	HID_SEND(wh, hid, cmd, (enable ? "screen_on" : "screen_off"));
 
 	wh->hmd_screen_enable = enable;
 
@@ -1152,6 +1174,7 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	m_imu_3dof_close(&wh->fusion.i3dof);
 
 	os_mutex_destroy(&wh->fusion.mutex);
+	os_mutex_destroy(&wh->hid_lock);
 
 	u_device_free(&wh->base);
 }
@@ -1868,7 +1891,15 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Mutex before thread.
 	ret = os_mutex_init(&wh->fusion.mutex);
 	if (ret != 0) {
-		WMR_ERROR(wh, "Failed to init mutex!");
+		WMR_ERROR(wh, "Failed to init fusion mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_mutex_init(&wh->hid_lock);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init HID mutex!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
 		return;
@@ -2017,4 +2048,26 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	*out_hmd = &wh->base;
 	*out_handtracker = hand_device;
+}
+
+bool
+wmr_hmd_send_controller_packet(struct wmr_hmd *hmd, const uint8_t *buffer, uint32_t buf_size)
+{
+	os_mutex_lock(&hmd->hid_lock);
+	int ret = os_hid_write(hmd->hid_hololens_sensors_dev, buffer, buf_size);
+	os_mutex_unlock(&hmd->hid_lock);
+
+	return ret != -1 && (uint32_t)(ret) == buf_size;
+}
+
+/* Called from WMR controller implementation only during fw reads. @todo: Refactor
+ * controller firmware reads to happen from a state machine and not require this blocking method */
+int
+wmr_hmd_read_sync_from_controller(struct wmr_hmd *hmd, uint8_t *buffer, uint32_t buf_size, int timeout_ms)
+{
+	os_mutex_lock(&hmd->hid_lock);
+	int res = os_hid_read(hmd->hid_hololens_sensors_dev, buffer, buf_size, timeout_ms);
+	os_mutex_unlock(&hmd->hid_lock);
+
+	return res;
 }
