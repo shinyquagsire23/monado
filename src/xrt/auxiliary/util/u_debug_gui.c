@@ -45,6 +45,7 @@ u_debug_gui_stop(struct u_debug_gui **debug_ui)
 #include "util/u_file.h"
 #include "util/u_debug.h"
 #include "util/u_debug_gui.h"
+#include "util/u_trace_marker.h"
 
 #include "ogl/ogl_api.h"
 
@@ -94,6 +95,8 @@ struct gui_imgui
 static void
 sdl2_window_init(struct u_debug_gui *p)
 {
+	XRT_TRACE_MARKER();
+
 	const char *title = "Monado! ✨⚡🔥";
 	int x = SDL_WINDOWPOS_UNDEFINED;
 	int y = SDL_WINDOWPOS_UNDEFINED;
@@ -150,6 +153,8 @@ sdl2_window_init(struct u_debug_gui *p)
 static void
 sdl2_loop_events(struct u_debug_gui *p)
 {
+	XRT_TRACE_MARKER();
+
 	SDL_Event event;
 
 	while (SDL_PollEvent(&event)) {
@@ -176,6 +181,8 @@ sdl2_loop_events(struct u_debug_gui *p)
 static void
 sdl2_loop_new_frame(struct u_debug_gui *p)
 {
+	XRT_TRACE_MARKER();
+
 	// Start the Dear ImGui frame
 	igImGui_ImplOpenGL3_NewFrame();
 	igImGui_ImplSDL2_NewFrame(p->win);
@@ -187,6 +194,8 @@ sdl2_loop_new_frame(struct u_debug_gui *p)
 static void
 sdl2_loop_show_scene(struct u_debug_gui *p, struct gui_imgui *gui)
 {
+	XRT_TRACE_MARKER();
+
 	// Render the scene into it.
 	gui_scene_manager_render(&p->base);
 
@@ -204,6 +213,8 @@ sdl2_loop_show_scene(struct u_debug_gui *p, struct gui_imgui *gui)
 static void
 sdl2_loop_render(struct u_debug_gui *p, struct gui_imgui *gui, ImGuiIO *io)
 {
+	XRT_TRACE_MARKER();
+
 	// Build the DrawData (EndFrame).
 	igRender();
 
@@ -264,6 +275,9 @@ sdl2_loop(struct u_debug_gui *p)
 	u_var_add_bool(&gui, &p->base.stopped, "Exit");
 
 	while (!p->base.stopped) {
+		// All this counts as work.
+		XRT_TRACE_IDENT(frame);
+
 		sdl2_loop_events(p);
 
 		sdl2_loop_new_frame(p);
@@ -272,7 +286,9 @@ sdl2_loop(struct u_debug_gui *p)
 
 		sdl2_loop_render(p, &gui, io);
 
+		XRT_TRACE_BEGIN(swap);
 		SDL_GL_SwapWindow(p->win);
+		XRT_TRACE_END(swap);
 
 		// Update prober things.
 		gui_prober_update(&p->base);
@@ -289,6 +305,8 @@ sdl2_loop(struct u_debug_gui *p)
 static void
 sdl2_close(struct u_debug_gui *p)
 {
+	XRT_TRACE_MARKER();
+
 	// All scenes should be destroyed by now.
 	gui_scene_manager_destroy(&p->base);
 
@@ -312,6 +330,8 @@ sdl2_close(struct u_debug_gui *p)
 static void *
 u_debug_gui_run_thread(void *ptr)
 {
+	U_TRACE_SET_THREAD_NAME("Debug GUI");
+
 	struct u_debug_gui *debug_gui = (struct u_debug_gui *)ptr;
 	sdl2_window_init(debug_gui);
 
@@ -325,6 +345,8 @@ u_debug_gui_run_thread(void *ptr)
 int
 u_debug_gui_create(struct u_debug_gui **out_debug_gui)
 {
+	XRT_TRACE_MARKER();
+
 	// Enabled?
 	if (!debug_get_bool_option_gui()) {
 		return 0;
@@ -348,6 +370,8 @@ u_debug_gui_create(struct u_debug_gui **out_debug_gui)
 void
 u_debug_gui_start(struct u_debug_gui *debug_gui, struct xrt_instance *xinst, struct xrt_system_devices *xsysd)
 {
+	XRT_TRACE_MARKER();
+
 	if (debug_gui == NULL) {
 		return;
 	}
@@ -367,6 +391,8 @@ u_debug_gui_start(struct u_debug_gui *debug_gui, struct xrt_instance *xinst, str
 void
 u_debug_gui_stop(struct u_debug_gui **debug_gui)
 {
+	XRT_TRACE_MARKER();
+
 	struct u_debug_gui *p = *(struct u_debug_gui **)debug_gui;
 	if (p == NULL) {
 		return;
