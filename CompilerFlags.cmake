@@ -1,7 +1,13 @@
 # Copyright 2018-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-if(NOT MSVC)
+
+# Target used for applying more aggressive optimizations to math-heavy code
+add_library(xrt-optimized-math INTERFACE)
+
+if(MSVC)
+	target_compile_options(xrt-optimized-math INTERFACE $<IF:$<CONFIG:Debug>,/O2,/O3>)
+else()
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
 	set(CMAKE_C_FLAGS
 	    "${CMAKE_C_FLAGS} -Werror-implicit-function-declaration -Werror=incompatible-pointer-types"
@@ -15,6 +21,8 @@ if(NOT MSVC)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2 -mfpmath=sse")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -mfpmath=sse")
 	endif()
+
+	target_compile_options(xrt-optimized-math INTERFACE $<IF:$<CONFIG:Debug>,-O2,-O3>)
 endif()
 
 if(NOT WIN32)

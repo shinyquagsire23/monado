@@ -14,7 +14,12 @@ add_library(
 target_link_libraries(
 	aux_tracking
 	PUBLIC aux-includes xrt-external-cjson
-	PRIVATE aux_math aux_util xrt-external-flexkalman xrt-external-hungarian
+	PRIVATE
+		aux_math
+		aux_util
+		xrt-external-flexkalman
+		xrt-external-hungarian
+		xrt-optimized-math
 	)
 target_include_directories(aux_tracking SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 

@@ -37,5 +37,9 @@ add_library(
 	m_vec2.h
 	m_vec3.h
 	)
-target_link_libraries(aux_math PUBLIC aux-includes aux_util)
+target_link_libraries(
+	aux_math
+	PUBLIC aux-includes aux_util
+	PRIVATE xrt-optimized-math
+	)
 target_include_directories(aux_math SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
