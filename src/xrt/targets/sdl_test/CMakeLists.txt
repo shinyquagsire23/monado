@@ -1,4 +1,4 @@
-# Copyright 2020-2022, Collabora, Ltd.
+# Copyright 2020-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 add_executable(
@@ -32,5 +32,10 @@ target_link_libraries(
 	)
 
 if(WIN32)
+	# For UTF-8 in sdl_program.cpp, MSVC defaults to UTF-16.
+	target_compile_options(sdl-test PRIVATE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+	target_compile_options(sdl-test PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
+	# Need to link against SDL2main on Windows.
 	target_link_libraries(sdl-test PRIVATE SDL2::SDL2main)
 endif()
