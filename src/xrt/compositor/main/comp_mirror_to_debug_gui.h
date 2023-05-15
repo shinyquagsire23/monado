@@ -48,8 +48,27 @@ struct comp_mirror_to_debug_gui
 	struct
 	{
 		VkImage image;
+		VkImageView unorm_view;
 		VkDeviceMemory mem;
 	} bounce;
+
+	struct
+	{
+		//! Private here for now.
+		VkPipelineCache pipeline_cache;
+
+		//! Descriptor pool for blit.
+		VkDescriptorPool descriptor_pool;
+
+		//! Descriptor set layout for compute.
+		VkDescriptorSetLayout descriptor_set_layout;
+
+		//! Pipeline layout used for compute distortion.
+		VkPipelineLayout pipeline_layout;
+
+		//! Doesn't depend on target so is static.
+		VkPipeline pipeline;
+	} blit;
 
 	struct vk_cmd_pool cmd_pool;
 };
@@ -60,7 +79,10 @@ struct comp_mirror_to_debug_gui
  * @public @memberof comp_mirror_to_debug_gui
  */
 VkResult
-comp_mirror_init(struct comp_mirror_to_debug_gui *m, struct vk_bundle *vk, VkExtent2D extent);
+comp_mirror_init(struct comp_mirror_to_debug_gui *m,
+                 struct vk_bundle *vk,
+                 struct render_shaders *shaders,
+                 VkExtent2D extent);
 
 /*!
  * One time adding of the debug variables.
@@ -99,7 +121,10 @@ comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
                     struct vk_bundle *vk,
                     uint64_t predicted_display_time_ns,
                     VkImage from_image,
-                    VkExtent2D from_extent);
+                    VkImageView from_view,
+                    VkSampler from_sampler,
+                    VkExtent2D from_extent,
+                    struct xrt_normalized_rect from_rect);
 
 /*!
  * Finalise the struct, frees and resources.

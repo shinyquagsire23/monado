@@ -548,7 +548,7 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	VkResult ret = comp_mirror_init(&r->mirror_to_debug_gui, vk, r->lr->extent);
+	VkResult ret = comp_mirror_init(&r->mirror_to_debug_gui, vk, &c->shaders, r->lr->extent);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "comp_mirror_init: %s", vk_result_string(ret));
 		assert(false && "Whelp, can't return a error. But should never really fail.");
@@ -1441,7 +1441,9 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
 	uint32_t layer_count = c->base.slot.layer_count;
-	if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	bool fast_path = c->base.slot.one_projection_layer_fast_path;
+
+	if (fast_path && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
@@ -1449,7 +1451,7 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
-	} else if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (fast_path && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
@@ -1772,12 +1774,33 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	comp_mirror_fixup_ui_state(&r->mirror_to_debug_gui, c);
 	if (comp_mirror_is_ready_and_active(&r->mirror_to_debug_gui, c, predicted_display_time_ns)) {
-		comp_mirror_do_blit(              //
-		    &r->mirror_to_debug_gui,      //
-		    &c->base.vk,                  //
-		    predicted_display_time_ns,    //
-		    r->lr->framebuffers[0].image, //
-		    r->lr->extent);               //
+		if (use_compute) {
+			// Covers only the first half of the view.
+			struct xrt_normalized_rect rect = {0, 0, 0.5f, 1.0f};
+
+			comp_mirror_do_blit(               //
+			    &r->mirror_to_debug_gui,       //
+			    &c->base.vk,                   //
+			    predicted_display_time_ns,     //
+			    c->nr.scratch.color.image,     //
+			    c->nr.scratch.color.srgb_view, //
+			    c->nr.compute.default_sampler, //
+			    c->nr.scratch.extent,          //
+			    rect);                         //
+		} else {
+			// Covers the whole view.
+			struct xrt_normalized_rect rect = {0, 0, 1.0f, 1.0f};
+
+			comp_mirror_do_blit(                //
+			    &r->mirror_to_debug_gui,        //
+			    &c->base.vk,                    //
+			    predicted_display_time_ns,      //
+			    r->lr->framebuffers[0].image,   //
+			    r->lr->framebuffers[0].view,    //
+			    r->lr->framebuffers[0].sampler, //
+			    r->lr->extent,                  //
+			    rect);                          //
+		}
 	}
 
 	/*
