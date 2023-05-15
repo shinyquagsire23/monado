@@ -113,6 +113,7 @@ endif()
 
 if(XRT_HAVE_VULKAN)
 	set(SHADERS
+	    shaders/blit.comp
 	    shaders/clear.comp
 	    shaders/distortion.comp
 	    shaders/layer.comp

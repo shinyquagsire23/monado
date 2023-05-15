@@ -23,6 +23,7 @@
 
 #include "xrt/xrt_config_build.h"
 
+#include "shaders/blit.comp.h"
 #include "shaders/clear.comp.h"
 #include "shaders/layer.comp.h"
 #include "shaders/distortion.comp.h"
@@ -89,6 +90,11 @@ shader_load(struct vk_bundle *vk, const uint32_t *code, size_t size, VkShaderMod
 bool
 render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 {
+	C(shader_load(vk,                        // vk_bundle
+	              shaders_blit_comp,         // data
+	              sizeof(shaders_blit_comp), // size
+	              &s->blit_comp));           // out
+
 	C(shader_load(vk,                         // vk_bundle
 	              shaders_clear_comp,         // data
 	              sizeof(shaders_clear_comp), // size
@@ -165,6 +171,7 @@ render_shaders_load(struct render_shaders *s, struct vk_bundle *vk)
 void
 render_shaders_close(struct render_shaders *s, struct vk_bundle *vk)
 {
+	D(blit_comp);
 	D(clear_comp);
 	D(distortion_comp);
 	D(layer_comp);

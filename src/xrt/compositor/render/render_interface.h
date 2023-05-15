@@ -79,6 +79,7 @@ render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
  */
 struct render_shaders
 {
+	VkShaderModule blit_comp;
 	VkShaderModule clear_comp;
 	VkShaderModule layer_comp;
 	VkShaderModule distortion_comp;
@@ -727,6 +728,15 @@ struct render_compute
 
 	//! Descriptor set for distortion.
 	VkDescriptorSet distortion_descriptor_set;
+};
+
+/*!
+ * Push data that is sent to the blit shader.
+ */
+struct render_compute_blit_push_data
+{
+	struct xrt_normalized_rect source_rect;
+	struct xrt_rect target_rect;
 };
 
 /*!
