@@ -138,10 +138,8 @@ if(XRT_HAVE_OPENGL)
 		target_link_libraries(
 			xrt-external-imgui-sdl2
 			PUBLIC xrt-external-imgui
-			PUBLIC ${SDL2_LIBRARIES}
+			PUBLIC SDL2::SDL2
 			)
-
-		target_include_directories(xrt-external-imgui-sdl2 PUBLIC ${SDL2_INCLUDE_DIRS})
 		target_include_directories(
 			xrt-external-imgui-sdl2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui
 			)

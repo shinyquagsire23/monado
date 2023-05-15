@@ -105,9 +105,9 @@ endif()
 
 if(_have_opengl_test)
 	target_link_libraries(
-		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl ${SDL2_LIBRARIES}
+		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl SDL2::SDL2
 		)
-	target_include_directories(tests_comp_client_opengl PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_include_directories(tests_comp_client_opengl PRIVATE SDL2::SDL2)
 endif()
 
 if(XRT_HAVE_VULKAN AND XRT_HAVE_D3D11)

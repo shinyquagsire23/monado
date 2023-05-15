@@ -163,7 +163,7 @@ if(XRT_FEATURE_DEBUG_GUI)
 
 	if(XRT_HAVE_SDL2)
 		target_link_libraries(
-			aux_util_debug_gui PRIVATE st_gui xrt-external-imgui-sdl2 ${SDL2_LIBRARIES}
+			aux_util_debug_gui PRIVATE st_gui xrt-external-imgui-sdl2 SDL2::SDL2
 			)
 
 		if(XRT_BUILD_DRIVER_QWERTY)
