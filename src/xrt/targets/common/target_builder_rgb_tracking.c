@@ -130,11 +130,13 @@ setup_pipeline(struct xrt_prober *xp, struct build_state *build)
 	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}};
 
 	// We create the two psmv trackers up front, but don't start them.
-	// clang-format off
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSMV)
 	t_psmv_create(build->xfctx, &rgb[0], data, &build->psmv_red, &xsinks[0]);
 	t_psmv_create(build->xfctx, &rgb[1], data, &build->psmv_purple, &xsinks[1]);
+#endif
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSVR)
 	t_psvr_create(build->xfctx, data, &build->psvr, &xsinks[2]);
-	// clang-format on
+#endif
 
 	// No longer needed.
 	t_stereo_camera_calibration_reference(&data, NULL);
