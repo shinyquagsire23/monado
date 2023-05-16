@@ -45,7 +45,7 @@ vk_format_to_gl(int64_t format)
 static void
 post_init_setup(struct sdl_swapchain *ssc, struct sdl_program *sp, const struct xrt_swapchain_create_info *info)
 {
-	SP_DEBUG(sp, "CREATE");
+	ST_DEBUG(sp, "CREATE");
 
 	// Setup fields
 	ssc->sp = sp;
@@ -114,7 +114,7 @@ really_destroy(struct comp_swapchain *sc)
 	struct sdl_swapchain *ssc = (struct sdl_swapchain *)sc;
 	struct sdl_program *sp = ssc->sp;
 
-	SP_DEBUG(sp, "DESTROY");
+	ST_DEBUG(sp, "DESTROY");
 
 	sdl_make_current(sp);
 

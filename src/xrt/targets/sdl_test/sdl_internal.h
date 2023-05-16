@@ -214,14 +214,14 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_TRACE(sp, ...) U_LOG_IFL_T(sp->log_level, __VA_ARGS__);
+#define ST_TRACE(sp, ...) U_LOG_IFL_T(sp->log_level, __VA_ARGS__);
 
 /*!
  * Debug level logging.
  *
  * @relates sdl_program
  */
-#define SP_DEBUG(sp, ...) U_LOG_IFL_D(sp->log_level, __VA_ARGS__);
+#define ST_DEBUG(sp, ...) U_LOG_IFL_D(sp->log_level, __VA_ARGS__);
 
 /*!
  * Info level logging.
@@ -229,7 +229,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_INFO(sp, ...) U_LOG_IFL_I(sp->log_level, __VA_ARGS__);
+#define ST_INFO(sp, ...) U_LOG_IFL_I(sp->log_level, __VA_ARGS__);
 
 /*!
  * Warn level logging.
@@ -237,7 +237,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_WARN(sp, ...) U_LOG_IFL_W(sp->log_level, __VA_ARGS__);
+#define ST_WARN(sp, ...) U_LOG_IFL_W(sp->log_level, __VA_ARGS__);
 
 /*!
  * Error level logging.
@@ -245,7 +245,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_ERROR(sp, ...) U_LOG_IFL_E(sp->log_level, __VA_ARGS__);
+#define ST_ERROR(sp, ...) U_LOG_IFL_E(sp->log_level, __VA_ARGS__);
 
 /*!
  * Check for OpenGL errors, context needs to be current.
