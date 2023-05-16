@@ -83,6 +83,7 @@ static const char *driver_list[] = {
 #if defined(XRT_BUILD_DRIVER_SIMULATED)
     "simulated",
 #endif
+    NULL,
 };
 
 
@@ -202,7 +203,7 @@ t_builder_legacy_create(void)
 	xb->identifier = "legacy";
 	xb->name = "Legacy probing system";
 	xb->driver_identifiers = driver_list;
-	xb->driver_identifier_count = ARRAY_SIZE(driver_list);
+	xb->driver_identifier_count = ARRAY_SIZE(driver_list) - 1;
 
 	return xb;
 }
