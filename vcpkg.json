@@ -43,6 +43,12 @@
                     ]
                 }
             ]
+        },
+        "tracking": {
+            "description": "OpenCV-based tracking features",
+            "dependencies": [
+                "opencv"
+            ]
         }
     }
 }
