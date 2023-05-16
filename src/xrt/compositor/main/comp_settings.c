@@ -95,7 +95,7 @@ comp_settings_init(struct comp_settings *s, struct xrt_device *xdev)
 	}
 
 	if (debug_get_bool_option_force_wayland_direct()) {
-		s->target_identifier = "wayland_direct";
+		s->target_identifier = "direct_wayland";
 	}
 
 	if (debug_get_bool_option_force_xcb()) {
