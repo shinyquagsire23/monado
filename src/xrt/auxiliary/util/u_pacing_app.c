@@ -9,6 +9,7 @@
 
 #include "os/os_time.h"
 
+#include "util/u_var.h"
 #include "util/u_time.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -113,7 +114,7 @@ struct pacing_app
 	int64_t frame_counter;
 
 	// Minimum calculated frame (total app time).
-	double min_app_time_ms;
+	struct u_var_draggable_f32 min_app_time_ms;
 
 	struct
 	{
@@ -207,7 +208,7 @@ min_period(const struct pacing_app *pa)
 static uint64_t
 min_app_time(const struct pacing_app *pa)
 {
-	return (uint64_t)(pa->min_app_time_ms * (double)U_TIME_1MS_IN_NS);
+	return (uint64_t)(pa->min_app_time_ms.val * (double)U_TIME_1MS_IN_NS);
 }
 
 static uint64_t
@@ -647,6 +648,8 @@ pa_info(struct u_pacing_app *upa,
 static void
 pa_destroy(struct u_pacing_app *upa)
 {
+	u_var_remove_root(upa);
+
 	free(upa);
 }
 
@@ -667,12 +670,24 @@ pa_create(int64_t session_id, struct u_pacing_app **out_upa)
 	pa->app.cpu_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.draw_time_ns = U_TIME_1MS_IN_NS * 2;
 	pa->app.margin_ns = U_TIME_1MS_IN_NS * 2;
-	pa->min_app_time_ms = debug_get_float_option_min_app_time_ms();
+	pa->min_app_time_ms = (struct u_var_draggable_f32){
+	    .val = (float)debug_get_float_option_min_app_time_ms(),
+	    .min = 1.0, // This can never be negative.
+	    .step = 1.0,
+	    .max = +120.0, // There are some really slow applications out there.
+	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(pa->frames); i++) {
 		pa->frames[i].state = U_PA_READY;
 		pa->frames[i].frame_id = -1;
 	}
+
+	// U variable tracking.
+	u_var_add_root(pa, "App timing info", true);
+	u_var_add_draggable_f32(pa, &pa->min_app_time_ms, "Minimum app time(ms)");
+	u_var_add_ro_u64(pa, &pa->app.cpu_time_ns, "CPU time(ns)");
+	u_var_add_ro_u64(pa, &pa->app.draw_time_ns, "Draw time(ns)");
+	u_var_add_ro_u64(pa, &pa->app.wait_time_ns, "GPU time(ns)");
 
 	*out_upa = &pa->base;
 
