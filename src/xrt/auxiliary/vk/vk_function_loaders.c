@@ -211,6 +211,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdCopyImage                              = GET_DEV_PROC(vk, vkCmdCopyImage);
 	vk->vkCmdCopyImageToBuffer                      = GET_DEV_PROC(vk, vkCmdCopyImageToBuffer);
 	vk->vkCmdBlitImage                              = GET_DEV_PROC(vk, vkCmdBlitImage);
+	vk->vkCmdPushConstants                          = GET_DEV_PROC(vk, vkCmdPushConstants);
 	vk->vkEndCommandBuffer                          = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers                        = GET_DEV_PROC(vk, vkFreeCommandBuffers);
 

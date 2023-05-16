@@ -317,6 +317,7 @@ struct vk_bundle
 	PFN_vkCmdCopyImage vkCmdCopyImage;
 	PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer;
 	PFN_vkCmdBlitImage vkCmdBlitImage;
+	PFN_vkCmdPushConstants vkCmdPushConstants;
 	PFN_vkEndCommandBuffer vkEndCommandBuffer;
 	PFN_vkFreeCommandBuffers vkFreeCommandBuffers;
 
