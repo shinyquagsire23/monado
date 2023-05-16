@@ -30,6 +30,7 @@
 
 #include "main/comp_layer_renderer.h"
 #include "main/comp_frame.h"
+#include "main/comp_mirror_to_debug_gui.h"
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 #include "main/comp_window_peek.h"
@@ -63,7 +64,7 @@
 
 /*
  *
- * Private struct.
+ * Private struct(s).
  *
  */
 
@@ -82,31 +83,7 @@ struct comp_renderer
 	struct comp_compositor *c;
 	struct comp_settings *settings;
 
-	struct
-	{
-		// Hint: enable/disable is in c->mirroring_to_debug_gui. It's there because comp_renderer is just a
-		// forward decl to comp_compositor.c
-
-		struct u_frame_times_widget push_frame_times;
-
-		float target_frame_time_ms;
-		uint64_t last_push_ts_ns;
-		int push_every_frame_out_of_X;
-
-		struct u_sink_debug debug_sink;
-		VkExtent2D image_extent;
-		uint64_t sequence;
-
-		struct vk_image_readback_to_xf_pool *pool;
-
-		struct
-		{
-			VkImage image;
-			VkDeviceMemory mem;
-		} bounce;
-
-		struct vk_cmd_pool cmd_pool;
-	} mirror_to_debug_gui;
+	struct comp_mirror_to_debug_gui mirror_to_debug_gui;
 
 	//! @}
 
@@ -566,41 +543,14 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 	r->fenced_buffer = -1;
 	r->rtr_array = NULL;
 
-	// Do this init as early as possible.
-	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
-
 	// Try to early-allocate these, in case we can.
 	renderer_ensure_images_and_renderings(r, false);
 
-	double orig_width = r->lr->extent.width;
-	double orig_height = r->lr->extent.height;
-
-	double target_height = 1080;
-
-	double mul = target_height / orig_height;
-
-	// Casts seem to always round down; we don't want that here.
-	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(round(orig_width * mul));
-	r->mirror_to_debug_gui.image_extent.height = (uint32_t)target_height;
-
-
-	// We want the images to have even widths/heights so that libx264 can encode them properly; no other reason.
-	if (r->mirror_to_debug_gui.image_extent.width % 2 == 1) {
-		r->mirror_to_debug_gui.image_extent.width += 1;
-	}
-
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	vk_image_readback_to_xf_pool_create(     //
-	    vk,                                  //
-	    r->mirror_to_debug_gui.image_extent, //
-	    &r->mirror_to_debug_gui.pool,        //
-	    XRT_FORMAT_R8G8B8X8,                 //
-	    VK_FORMAT_R8G8B8A8_SRGB);            //
-
-	VkResult ret = vk_cmd_pool_init(vk, &r->mirror_to_debug_gui.cmd_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+	VkResult ret = comp_mirror_init(&r->mirror_to_debug_gui, vk, r->lr->extent);
 	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		COMP_ERROR(c, "comp_mirror_init: %s", vk_result_string(ret));
 		assert(false && "Whelp, can't return a error. But should never really fail.");
 	}
 }
@@ -846,29 +796,14 @@ renderer_fini(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	// Remove u_var root as early as possible.
-	u_var_remove_root(r);
-
-	// Left eye readback
-	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
-
-	if (r->mirror_to_debug_gui.bounce.image != VK_NULL_HANDLE) {
-		vk->vkFreeMemory(vk->device, r->mirror_to_debug_gui.bounce.mem, NULL);
-		vk->vkDestroyImage(vk->device, r->mirror_to_debug_gui.bounce.image, NULL);
-	}
-
-	// Command pool for readback code.
-	vk_cmd_pool_destroy(vk, &r->mirror_to_debug_gui.cmd_pool);
-
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
 
+	// Do before layer render just in case it holds any references.
+	comp_mirror_fini(&r->mirror_to_debug_gui, vk);
+
+	// Do this after the mirror struct.
 	comp_layer_renderer_destroy(&(r->lr));
-
-	u_frame_times_widget_teardown(&r->mirror_to_debug_gui.push_frame_times);
-
-	// Destroy as late as possible.
-	u_sink_debug_destroy(&r->mirror_to_debug_gui.debug_sink);
 }
 
 static VkImageView
@@ -1755,210 +1690,6 @@ comp_renderer_set_cube_layer(struct comp_renderer *r,
 }
 #endif
 
-static void
-mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
-{
-	// One out of every zero frames is not what we want!
-	// Also one out of every negative two frames, etc. is nonsensical
-	if (r->mirror_to_debug_gui.push_every_frame_out_of_X < 1) {
-		r->mirror_to_debug_gui.push_every_frame_out_of_X = 1;
-	}
-
-	r->mirror_to_debug_gui.target_frame_time_ms = (float)r->mirror_to_debug_gui.push_every_frame_out_of_X *
-	                                              (float)time_ns_to_ms_f(r->c->settings.nominal_frame_interval_ns);
-
-	r->mirror_to_debug_gui.push_frame_times.debug_var->reference_timing =
-	    r->mirror_to_debug_gui.target_frame_time_ms;
-	r->mirror_to_debug_gui.push_frame_times.debug_var->range = r->mirror_to_debug_gui.target_frame_time_ms;
-}
-
-static bool
-can_mirror_to_debug_gui(struct comp_renderer *r, uint64_t predicted_display_time_ns)
-{
-	if (!r->c->mirroring_to_debug_gui || !u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink)) {
-		return false;
-	}
-
-	double diff_ms = time_ns_to_ms_f(predicted_display_time_ns - r->mirror_to_debug_gui.last_push_ts_ns);
-
-	// Completely unscientific - lower values probably works fine too.
-	// I figure we don't have very many 500Hz displays and this woorks great for 120-144hz
-	double slop_ms = 2;
-
-	if (diff_ms < r->mirror_to_debug_gui.target_frame_time_ms - slop_ms) {
-		return false;
-	}
-
-	// Set the last time to the frame that is being displayed.
-	r->mirror_to_debug_gui.last_push_ts_ns = predicted_display_time_ns;
-
-	return true;
-}
-
-static bool
-mirror_to_debug_gui_ensure_scratch(struct comp_renderer *r)
-{
-
-	if (r->mirror_to_debug_gui.bounce.image != VK_NULL_HANDLE) {
-		return true;
-	}
-
-	struct vk_bundle *vk = &r->c->base.vk;
-
-	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-	VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	VkExtent2D extent = r->mirror_to_debug_gui.image_extent;
-
-	if (vk_create_image_simple(                  //
-	        vk,                                  // vk_bundle
-	        extent,                              // extent
-	        format,                              // format
-	        usage,                               // usage
-	        &r->mirror_to_debug_gui.bounce.mem,  // out_mem
-	        &r->mirror_to_debug_gui.bounce.image // out_image
-	        ) != VK_SUCCESS) {
-		return false;
-	}
-
-	return true;
-}
-
-static void
-mirror_to_debug_gui_do_blit(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->base.vk;
-	VkResult ret;
-
-	struct vk_image_readback_to_xf *wrap = NULL;
-
-	if (!vk_image_readback_to_xf_pool_get_unused_frame(vk, r->mirror_to_debug_gui.pool, &wrap)) {
-		return;
-	}
-
-	if (!mirror_to_debug_gui_ensure_scratch(r)) {
-		return;
-	}
-
-	struct vk_cmd_pool *pool = &r->mirror_to_debug_gui.cmd_pool;
-
-	// For writing and submitting commands.
-	vk_cmd_pool_lock(pool);
-
-	VkCommandBuffer cmd;
-	ret = vk_cmd_pool_create_and_begin_cmd_buffer_locked(vk, pool, 0, &cmd);
-	if (ret != VK_SUCCESS) {
-		vk_cmd_pool_unlock(pool);
-		return;
-	}
-
-	// First mip view into the copy from image.
-	struct vk_cmd_first_mip_image copy_from_fm_image = {
-	    .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .base_array_layer = 0,
-	    .image = r->lr->framebuffers[0].image,
-	};
-
-	// First mip view into the bounce image.
-	struct vk_cmd_first_mip_image bounce_fm_image = {
-	    .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .base_array_layer = 0,
-	    .image = r->mirror_to_debug_gui.bounce.image,
-	};
-
-	// First mip view into the target image.
-	struct vk_cmd_first_mip_image target_fm_image = {
-	    .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .base_array_layer = 0,
-	    .image = wrap->image,
-	};
-
-	// Blit arguments.
-	struct vk_cmd_blit_image_info blit_info = {
-	    .src.old_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	    .src.src_access_mask = VK_ACCESS_SHADER_READ_BIT,
-	    .src.src_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-	    .src.fm_image = copy_from_fm_image,
-
-	    .src.rect.offset = {0, 0},
-	    .src.rect.extent = {r->lr->extent.width, r->lr->extent.height},
-
-	    .dst.old_layout = VK_IMAGE_LAYOUT_UNDEFINED,
-	    .dst.src_access_mask = VK_ACCESS_TRANSFER_READ_BIT,
-	    .dst.src_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-	    .dst.fm_image = bounce_fm_image,
-
-	    .dst.rect.offset = {0, 0},
-	    .dst.rect.extent = {r->mirror_to_debug_gui.image_extent.width, r->mirror_to_debug_gui.image_extent.height},
-	};
-
-	vk_cmd_blit_image_locked(vk, cmd, &blit_info);
-
-	// Copy arguments.
-	struct vk_cmd_copy_image_info copy_info = {
-	    .src.old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	    .src.src_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
-	    .src.src_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-	    .src.fm_image = bounce_fm_image,
-
-	    .dst.old_layout = wrap->layout,
-	    .dst.src_access_mask = VK_ACCESS_HOST_READ_BIT,
-	    .dst.src_stage_mask = VK_PIPELINE_STAGE_HOST_BIT,
-	    .dst.fm_image = target_fm_image,
-
-	    .size.w = r->mirror_to_debug_gui.image_extent.width,
-	    .size.h = r->mirror_to_debug_gui.image_extent.height,
-	};
-
-	vk_cmd_copy_image_locked(vk, cmd, &copy_info);
-
-	// Barrier arguments.
-	VkImageSubresourceRange first_color_level_subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .baseMipLevel = 0,
-	    .levelCount = 1,
-	    .baseArrayLayer = 0,
-	    .layerCount = 1,
-	};
-
-	// Barrier readback image to host so we can safely read
-	vk_cmd_image_barrier_locked(              //
-	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
-	    wrap->image,                          // image
-	    VK_ACCESS_TRANSFER_WRITE_BIT,         // srcAccessMask
-	    VK_ACCESS_HOST_READ_BIT,              // dstAccessMask
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // oldImageLayout
-	    VK_IMAGE_LAYOUT_GENERAL,              // newImageLayout
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
-	    VK_PIPELINE_STAGE_HOST_BIT,           // dstStageMask
-	    first_color_level_subresource_range); // subresourceRange
-
-	// Done writing commands, submit to queue, waits for command to finish.
-	ret = vk_cmd_pool_end_submit_wait_and_free_cmd_buffer_locked(vk, pool, cmd);
-
-	// Done submitting commands.
-	vk_cmd_pool_unlock(pool);
-
-	// Check results from submit.
-	if (ret != VK_SUCCESS) {
-		//! @todo Better handling of error?
-		COMP_ERROR(r->c, "Failed to mirror image");
-	}
-
-	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp =
-	    r->c->frame.rendering.predicted_display_time_ns;
-	wrap->base_frame.source_id = r->mirror_to_debug_gui.sequence++;
-
-
-	struct xrt_frame *frame = &wrap->base_frame;
-	wrap = NULL;
-	u_sink_debug_push_frame(&r->mirror_to_debug_gui.debug_sink, frame);
-	u_frame_times_widget_push_sample(&r->mirror_to_debug_gui.push_frame_times,
-	                                 r->c->frame.rendering.predicted_display_time_ns);
-
-	xrt_frame_reference(&frame, NULL);
-}
-
 void
 comp_renderer_draw(struct comp_renderer *r)
 {
@@ -2039,9 +1770,14 @@ comp_renderer_draw(struct comp_renderer *r)
 	// Clear the rendered frame.
 	comp_frame_clear_locked(&c->frame.rendering);
 
-	mirror_to_debug_gui_fixup_ui_state(r);
-	if (can_mirror_to_debug_gui(r, predicted_display_time_ns)) {
-		mirror_to_debug_gui_do_blit(r);
+	comp_mirror_fixup_ui_state(&r->mirror_to_debug_gui, c);
+	if (comp_mirror_is_ready_and_active(&r->mirror_to_debug_gui, c, predicted_display_time_ns)) {
+		comp_mirror_do_blit(              //
+		    &r->mirror_to_debug_gui,      //
+		    &c->base.vk,                  //
+		    predicted_display_time_ns,    //
+		    r->lr->framebuffers[0].image, //
+		    r->lr->extent);               //
 	}
 
 	/*
@@ -2156,19 +1892,6 @@ void
 comp_renderer_add_debug_vars(struct comp_renderer *self)
 {
 	struct comp_renderer *r = self;
-	r->mirror_to_debug_gui.push_every_frame_out_of_X = 2;
 
-	u_frame_times_widget_init(&r->mirror_to_debug_gui.push_frame_times, 0.f, 0.f);
-	mirror_to_debug_gui_fixup_ui_state(r);
-
-	u_var_add_root(r, "Readback", true);
-
-	u_var_add_bool(r, &r->c->mirroring_to_debug_gui, "Readback left eye to debug GUI");
-	u_var_add_i32(r, &r->mirror_to_debug_gui.push_every_frame_out_of_X, "Push 1 frame out of every X frames");
-
-	u_var_add_ro_f32(r, &r->mirror_to_debug_gui.push_frame_times.fps, "FPS (Readback)");
-	u_var_add_f32_timing(r, r->mirror_to_debug_gui.push_frame_times.debug_var, "Frame Times (Readback)");
-
-
-	u_var_add_sink_debug(r, &r->mirror_to_debug_gui.debug_sink, "Left view!");
+	comp_mirror_add_debug_vars(&r->mirror_to_debug_gui, r->c);
 }
