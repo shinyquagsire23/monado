@@ -282,7 +282,7 @@ u_win_raise_cpu_priority(enum u_logging_level log_level)
 }
 
 void
-u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char const *argv[])
+u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char *argv[])
 {
 	if (argc > 1 && strcmp(argv[1], "nothing") == 0) {
 		LOG_I("Not trying privileges or priority");

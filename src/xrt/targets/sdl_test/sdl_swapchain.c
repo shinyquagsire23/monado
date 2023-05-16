@@ -79,7 +79,7 @@ post_init_setup(struct sdl_swapchain *ssc, struct sdl_program *sp, const struct 
 		    ssc->memory[i],                //
 		    ssc->base.base.images[i].size, //
 		    GL_HANDLE_TYPE_OPAQUE_FD_EXT,  //
-		    handle);                       //
+		    (GLint)handle);                //
 		CHECK_GL();
 
 		if (info->array_size == 1) {

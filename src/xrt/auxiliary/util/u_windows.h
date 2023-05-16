@@ -12,6 +12,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_windows.h"
+#include "util/u_logging.h"
 
 
 #ifdef __cplusplus
@@ -63,7 +64,7 @@ u_win_raise_cpu_priority(enum u_logging_level log_level);
  * @param argv      Array of argument strings, as passed into main.
  */
 void
-u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char const *argv[]);
+u_win_try_privilege_or_priority_from_args(enum u_logging_level log_level, int argc, char *argv[]);
 
 
 #ifdef __cplusplus

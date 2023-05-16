@@ -337,7 +337,7 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 		// DXGI handles need to be dealt with differently, they are identified
 		// by having their lower bit set to 1 during transfer
 		if (native_images[i].is_dxgi_handle) {
-			(size_t) handles[i] |= 1;
+			handles[i] = (void *)((size_t)handles[i] | 1);
 		}
 #endif
 	}
