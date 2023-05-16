@@ -211,7 +211,8 @@ on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct deb
 			continue;
 		}
 
-		if (!igCollapsingHeaderBoolPtr(name, NULL, 0)) {
+		const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
 			continue;
 		}
 
