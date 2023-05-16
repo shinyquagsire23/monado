@@ -1,6 +1,8 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+xrt_optimized_math_flags()
+
 add_library(
 	aux_math STATIC
 	m_api.h
@@ -43,3 +45,8 @@ target_link_libraries(
 	PRIVATE xrt-optimized-math
 	)
 target_include_directories(aux_math SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+
+if(MSVC)
+	get_target_property(options aux_math COMPILE_OPTIONS)
+	message(STATUS "COMPILE_OPTIONS: ${options}")
+endif()

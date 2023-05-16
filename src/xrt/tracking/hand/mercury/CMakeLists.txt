@@ -5,6 +5,8 @@
 
 add_subdirectory(kine_lm)
 
+xrt_optimized_math_flags()
+
 # t_ht_mercury_model
 add_library(t_ht_mercury_model STATIC hg_model.cpp)
 

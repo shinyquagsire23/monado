@@ -1,6 +1,8 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+xrt_optimized_math_flags()
+
 add_library(
 	aux_tracking STATIC
 	t_data_utils.c
