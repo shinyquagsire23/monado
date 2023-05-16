@@ -29,6 +29,7 @@
  *
  */
 
+DEBUG_GET_ONCE_FLOAT_OPTION(present_to_display_offset_ms, "U_PACING_COMP_PRESENT_TO_DISPLAY_OFFSET_MS", 4.0f)
 DEBUG_GET_ONCE_FLOAT_OPTION(min_comp_time_ms, "U_PACING_COMP_MIN_TIME_MS", 3.0f)
 
 /*!
@@ -275,9 +276,12 @@ u_pc_fake_create(uint64_t estimated_frame_period_ns, uint64_t now_ns, struct u_p
 	// To make sure the code can start from a non-zero frame id.
 	ft->frame_id_generator = 5;
 
+	// An arbitrary guess, that happens to be based on Index.
+	float present_to_display_offset_ms = debug_get_float_option_present_to_display_offset_ms();
+
 	// Present to display offset, aka vblank to pixel turning into photons.
 	ft->present_to_display_offset_ms = (struct u_var_draggable_f32){
-	    .val = 4.0, // An arbitrary guess, that happens to be based on Index.
+	    .val = present_to_display_offset_ms,
 	    .min = 1.0, // A lot of things assumes this is not negative.
 	    .step = 0.1,
 	    .max = +40.0,
