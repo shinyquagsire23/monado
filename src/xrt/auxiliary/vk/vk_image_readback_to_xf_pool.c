@@ -21,7 +21,8 @@ struct vk_image_readback_to_xf_pool
 	int num_images;
 	struct vk_image_readback_to_xf images[READBACK_POOL_NUM_FRAMES];
 	VkExtent2D extent;
-	enum xrt_format desired_format;
+	VkFormat vk_format;
+	enum xrt_format xrt_format;
 };
 
 static void
@@ -61,7 +62,7 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 	VkResult res = vk_create_image_advanced( //
 	    vk,                                  //
 	    extent,                              //
-	    VK_FORMAT_R8G8B8A8_SRGB,             //
+	    pool->vk_format,                     //
 	    VK_IMAGE_TILING_LINEAR,              //
 	    usage,                               //
 	    memory_property_flags,               //
@@ -115,7 +116,7 @@ vk_xf_readback_pool_try_create_new_frame(struct vk_bundle *vk, struct vk_image_r
 	im->base_frame.width = extent.width;
 	im->base_frame.height = extent.height;
 	im->base_frame.size = stride * extent.height;
-	im->base_frame.format = pool->desired_format;
+	im->base_frame.format = pool->xrt_format;
 }
 
 /*
@@ -176,17 +177,19 @@ void
 vk_image_readback_to_xf_pool_create(struct vk_bundle *vk,
                                     VkExtent2D extent,
                                     struct vk_image_readback_to_xf_pool **out_pool,
-                                    enum xrt_format desired_format)
+                                    enum xrt_format xrt_format,
+                                    VkFormat vk_format)
 {
 	struct vk_image_readback_to_xf_pool *pool = U_TYPED_CALLOC(struct vk_image_readback_to_xf_pool);
-	assert(desired_format == XRT_FORMAT_R8G8B8X8 || desired_format == XRT_FORMAT_R8G8B8A8);
+	assert(xrt_format == XRT_FORMAT_R8G8B8X8 || xrt_format == XRT_FORMAT_R8G8B8A8);
 	int ret = os_mutex_init(&pool->mutex);
 	if (ret != 0) {
 		assert(false);
 	}
 	pool->extent = extent;
 	pool->num_images = 0;
-	pool->desired_format = desired_format;
+	pool->xrt_format = xrt_format;
+	pool->vk_format = vk_format;
 
 	*out_pool = pool;
 }

@@ -591,8 +591,13 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
-	                                    XRT_FORMAT_R8G8B8X8);
+	vk_image_readback_to_xf_pool_create(     //
+	    vk,                                  //
+	    r->mirror_to_debug_gui.image_extent, //
+	    &r->mirror_to_debug_gui.pool,        //
+	    XRT_FORMAT_R8G8B8X8,                 //
+	    VK_FORMAT_R8G8B8A8_SRGB);            //
+
 	VkResult ret = vk_cmd_pool_init(vk, &r->mirror_to_debug_gui.cmd_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
