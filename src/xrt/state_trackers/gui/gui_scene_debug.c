@@ -118,6 +118,7 @@ struct draw_state
 	struct debug_scene *ds;
 	bool vis_stack[MAX_HEADER_NESTING]; //!< Visibility stack for nested headers
 	int vis_i;
+	bool inhibit_sink_headers;
 };
 
 struct plot_state
@@ -192,8 +193,12 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 }
 
 static void
-on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct debug_scene *ds)
+on_sink_debug_var(const char *name, void *ptr, struct draw_state *state)
 {
+	struct gui_program *p = state->p;
+	struct debug_scene *ds = state->ds;
+	bool gui_header = !state->inhibit_sink_headers;
+
 	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
 	if (usd->sink == NULL) {
 		struct debug_record *dr = &ds->recs[ds->num_recrs++];
@@ -211,9 +216,11 @@ on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct deb
 			continue;
 		}
 
-		const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
-		if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
-			continue;
+		if (gui_header) {
+			const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
+			if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
+				continue;
+			}
 		}
 
 		gui_window_record_render(&dr->rw, p);
@@ -473,7 +480,7 @@ on_elem(struct u_var_info *info, void *priv)
 		igUnindent(8.0f);
 		break;
 	}
-	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
+	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state); break;
 	case U_VAR_KIND_DRAGGABLE_F32: on_draggable_f32_var(name, ptr); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	case U_VAR_KIND_COMBO: on_combo_var(name, ptr); break;
@@ -536,7 +543,7 @@ static void
 scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
-	struct draw_state state = {p, ds, {0}, 0};
+	struct draw_state state = {p, ds, {0}, 0, false};
 
 	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
 }
