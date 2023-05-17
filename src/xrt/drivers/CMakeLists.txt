@@ -234,6 +234,7 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 		PRIVATE
 			xrt-interfaces
 			aux_util
+			aux_util_sink
 			aux_math
 			xrt-external-cjson
 			xrt-external-tinyceres
