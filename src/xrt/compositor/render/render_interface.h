@@ -329,9 +329,6 @@ struct render_resources
 		//! Uniform data binding.
 		uint32_t ubo_binding;
 
-		//! Default sampler for null images.
-		VkSampler default_sampler;
-
 		struct
 		{
 			//! Descriptor set layout for compute.

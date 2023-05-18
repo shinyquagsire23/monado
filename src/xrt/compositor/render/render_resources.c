@@ -737,12 +737,6 @@ render_resources_init(struct render_resources *r,
 	VkMemoryPropertyFlags memory_property_flags =
 	    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
-	C(vk_create_sampler(                       //
-	    vk,                                    // vk_bundle
-	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
-	    &r->compute.default_sampler));         // out_sampler
-
-
 	struct vk_descriptor_pool_info compute_pool_info = {
 	    .uniform_per_descriptor_count = 1,
 	    // layer images
@@ -1017,8 +1011,6 @@ render_resources_close(struct render_resources *r)
 	D(PipelineLayout, r->compute.distortion.pipeline_layout);
 
 	D(Pipeline, r->compute.clear.pipeline);
-
-	D(Sampler, r->compute.default_sampler);
 
 	render_distortion_images_close(r);
 	render_buffer_close(vk, &r->compute.clear.ubo);
