@@ -56,9 +56,6 @@ struct comp_swapchain_shared
  */
 struct comp_swapchain_image
 {
-	//! Sampler used by the renderer and distortion code.
-	VkSampler sampler;
-	VkSampler repeat_sampler;
 	//! Views used by the renderer and distortion code, for each array layer.
 	struct
 	{

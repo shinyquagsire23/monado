@@ -141,11 +141,6 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		sc->images[i].views.no_alpha = U_TYPED_ARRAY_CALLOC(VkImageView, info->array_size);
 		sc->images[i].array_size = info->array_size;
 
-		vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_REPEAT, &sc->images[i].repeat_sampler);
-
-		vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, &sc->images[i].sampler);
-
-
 		for (uint32_t layer = 0; layer < info->array_size; ++layer) {
 			VkImageSubresourceRange subresource_range = {
 			    .aspectMask = image_view_aspect,
@@ -276,9 +271,6 @@ image_cleanup(struct vk_bundle *vk, struct comp_swapchain_image *image)
 
 	clean_image_views(vk, image->array_size, &image->views.alpha);
 	clean_image_views(vk, image->array_size, &image->views.no_alpha);
-
-	D(Sampler, image->sampler);
-	D(Sampler, image->repeat_sampler);
 }
 
 /*!
