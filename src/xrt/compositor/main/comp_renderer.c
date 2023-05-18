@@ -843,9 +843,10 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 		src_norm_rects[1].y = 1 + src_norm_rects[1].y;
 	}
 
+	VkSampler clamp_to_border_black = rr->r->samplers.clamp_to_border_black;
 	VkSampler src_samplers[2] = {
-	    left->sampler,
-	    right->sampler,
+	    clamp_to_border_black,
+	    clamp_to_border_black,
 	};
 
 	VkImageView src_image_views[2] = {
@@ -878,10 +879,10 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		renderer_get_view_projection(r);
 		comp_layer_renderer_draw(r->lr);
 
+		VkSampler clamp_to_border_black = r->c->nr.samplers.clamp_to_border_black;
 		VkSampler src_samplers[2] = {
-		    r->lr->framebuffers[0].sampler,
-		    r->lr->framebuffers[1].sampler,
-
+		    clamp_to_border_black,
+		    clamp_to_border_black,
 		};
 		VkImageView src_image_views[2] = {
 		    r->lr->framebuffers[0].view,
@@ -1062,6 +1063,9 @@ do_layers(struct comp_renderer *r,
 	ubo_data->pre_transforms[0] = crc->r->distortion.uv_to_tanangle[0];
 	ubo_data->pre_transforms[1] = crc->r->distortion.uv_to_tanangle[1];
 
+	VkSampler clamp_to_edge = crc->r->samplers.clamp_to_edge;
+	VkSampler clamp_to_border_black = crc->r->samplers.clamp_to_border_black;
+
 	VkImage target_image = crc->r->scratch.color.image;
 	VkImageView target_image_view = crc->r->scratch.color.unorm_view; // Have to write in linear
 
@@ -1137,12 +1141,12 @@ do_layers(struct comp_renderer *r,
 			const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
 
 			// Left
-			src_samplers[cur_image] = left->sampler;
+			src_samplers[cur_image] = clamp_to_border_black;
 			src_image_views[cur_image] = get_image_view(left, data->flags, left_array_index);
 			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image++;
 
 			// Right
-			src_samplers[cur_image] = right->sampler;
+			src_samplers[cur_image] = clamp_to_border_black;
 			src_image_views[cur_image] = get_image_view(right, data->flags, right_array_index);
 			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image++;
 
@@ -1155,13 +1159,14 @@ do_layers(struct comp_renderer *r,
 				const struct comp_swapchain_image *d_right =
 				    &layer->sc_array[3]->images[r_dvd->sub.image_index];
 
+
 				// Depth left
-				src_samplers[cur_image] = d_left->sampler;
+				src_samplers[cur_image] = clamp_to_edge; // Edge to keep depth stable at edges.
 				src_image_views[cur_image] = get_image_view(d_left, data->flags, d_left_array_index);
 				ubo_data->images_samplers[view_index_for_layer + 0].images[1] = cur_image++;
 
 				// Depth right
-				src_samplers[cur_image] = d_right->sampler;
+				src_samplers[cur_image] = clamp_to_edge; // Edge to keep depth stable at edges.
 				src_image_views[cur_image] = get_image_view(d_right, data->flags, d_right_array_index);
 				ubo_data->images_samplers[view_index_for_layer + 1].images[1] = cur_image++;
 			}
@@ -1197,7 +1202,7 @@ do_layers(struct comp_renderer *r,
 			uint32_t array_index = q->sub.array_index;
 
 			// Same image for both views
-			src_samplers[cur_image] = image->sampler;
+			src_samplers[cur_image] = clamp_to_edge;
 			src_image_views[cur_image] = get_image_view(image, layer->data.flags, array_index);
 			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image;
 			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image;
@@ -1300,7 +1305,7 @@ do_layers(struct comp_renderer *r,
 
 	//! @todo: If Vulkan 1.2, use VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT and skip this
 	while (cur_image < crc->r->compute.layer.image_array_size) {
-		src_samplers[cur_image] = crc->r->compute.default_sampler;
+		src_samplers[cur_image] = clamp_to_edge;
 		src_image_views[cur_image] = crc->r->mock.color.image_view;
 		cur_image++;
 	}
@@ -1323,7 +1328,7 @@ do_distortion(struct comp_renderer *r, struct render_compute *crc, const struct 
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
 	VkImageView view = crc->r->scratch.color.srgb_view; // Read with gamma curve.
-	VkSampler sampler = crc->r->compute.default_sampler;
+	VkSampler sampler = crc->r->samplers.clamp_to_border_black;
 
 	VkImageView src_image_views[2] = {view, view};
 	VkSampler src_samplers[2] = {sampler, sampler};
@@ -1379,9 +1384,10 @@ do_projection_layers(struct comp_renderer *r,
 	struct xrt_pose unused[2]; // New eye poses, unused.
 	get_view_poses(r, new_world_poses, unused);
 
+	VkSampler clamp_to_border_black = crc->r->samplers.clamp_to_border_black;
 	VkSampler src_samplers[2] = {
-	    left->sampler,
-	    right->sampler,
+	    clamp_to_border_black,
+	    clamp_to_border_black,
 	};
 
 	VkImageView src_image_views[2] = {
@@ -1506,8 +1512,16 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->sampler,
-	                              get_image_view(image, data->flags, data->quad.sub.array_index));
+	VkSampler clamp_to_edge = r->c->nr.samplers.clamp_to_edge;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->quad.sub.array_index);         //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    clamp_to_edge,             //
+	    image_view);               //
 
 	struct xrt_vec3 s = {data->quad.size.x, data->quad.size.y, 1.0f};
 	struct xrt_matrix_4x4 model_matrix;
@@ -1552,9 +1566,16 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
 		return;
 	}
 
-	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
-	                              get_image_view(image, data->flags, data->cylinder.sub.array_index));
+	VkSampler clamp_to_edge = r->c->nr.samplers.clamp_to_edge;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->cylinder.sub.array_index);     //
 
+	comp_layer_update_descriptors( //
+	    r->lr->layers[layer],      //
+	    clamp_to_edge,             //
+	    image_view);               //
 
 	float height = (data->cylinder.radius * data->cylinder.central_angle) / data->cylinder.aspect_ratio;
 
@@ -1591,9 +1612,24 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_stereo_descriptors(l, left_image->sampler, right_image->sampler,
-	                                     get_image_view(left_image, data->flags, left_array_index),
-	                                     get_image_view(right_image, data->flags, right_array_index));
+	VkSampler clamp_to_border_black = r->c->nr.samplers.clamp_to_border_black;
+
+	VkImageView left_image_view = get_image_view( //
+	    left_image,                               //
+	    data->flags,                              //
+	    left_array_index);                        //
+
+	VkImageView right_image_view = get_image_view( //
+	    right_image,                               //
+	    data->flags,                               //
+	    right_array_index);                        //
+
+	comp_layer_update_stereo_descriptors( //
+	    l,                                //
+	    clamp_to_border_black,            //
+	    clamp_to_border_black,            //
+	    left_image_view,                  //
+	    right_image_view);                //
 
 	comp_layer_set_flip_y(l, data->flip_y);
 
@@ -1629,8 +1665,16 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->equirect1.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->equirect1.sub.array_index);    //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 
 	comp_layer_update_equirect1_descriptor(l, &data->equirect1);
 
@@ -1663,8 +1707,16 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->equirect2.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->equirect2.sub.array_index);    //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 
 	comp_layer_update_equirect2_descriptor(l, &data->equirect2);
 
@@ -1697,8 +1749,16 @@ comp_renderer_set_cube_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->cube.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->cube.sub.array_index);         //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 }
 #endif
 
@@ -1786,6 +1846,10 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	comp_mirror_fixup_ui_state(&r->mirror_to_debug_gui, c);
 	if (comp_mirror_is_ready_and_active(&r->mirror_to_debug_gui, c, predicted_display_time_ns)) {
+
+		// Used for both, want clamp to edge to no bring in black.
+		VkSampler clamp_to_edge = c->nr.samplers.clamp_to_edge;
+
 		if (use_compute) {
 			// Covers only the first half of the view.
 			struct xrt_normalized_rect rect = {0, 0, 0.5f, 1.0f};
@@ -1796,22 +1860,22 @@ comp_renderer_draw(struct comp_renderer *r)
 			    predicted_display_time_ns,     //
 			    c->nr.scratch.color.image,     //
 			    c->nr.scratch.color.srgb_view, //
-			    c->nr.compute.default_sampler, //
+			    clamp_to_edge,                 //
 			    c->nr.scratch.extent,          //
 			    rect);                         //
 		} else {
 			// Covers the whole view.
 			struct xrt_normalized_rect rect = {0, 0, 1.0f, 1.0f};
 
-			comp_mirror_do_blit(                //
-			    &r->mirror_to_debug_gui,        //
-			    &c->base.vk,                    //
-			    predicted_display_time_ns,      //
-			    r->lr->framebuffers[0].image,   //
-			    r->lr->framebuffers[0].view,    //
-			    r->lr->framebuffers[0].sampler, //
-			    r->lr->extent,                  //
-			    rect);                          //
+			comp_mirror_do_blit(              //
+			    &r->mirror_to_debug_gui,      //
+			    &c->base.vk,                  //
+			    predicted_display_time_ns,    //
+			    r->lr->framebuffers[0].image, //
+			    r->lr->framebuffers[0].view,  //
+			    clamp_to_edge,                //
+			    r->lr->extent,                //
+			    rect);                        //
 		}
 	}
 
