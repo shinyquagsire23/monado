@@ -948,7 +948,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 	} break;
 
-	default: assert(false);
+	default: COMP_ERROR(c, "Unhandled case: '%u'", layer->data.type); assert(false);
 	}
 }
 
