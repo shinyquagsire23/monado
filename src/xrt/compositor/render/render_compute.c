@@ -580,7 +580,7 @@ render_compute_projection_timewarp(struct render_compute *crc,
 	    VK_IMAGE_LAYOUT_GENERAL,     //
 	    subresource_range);          //
 
-	VkSampler sampler = r->compute.default_sampler;
+	VkSampler sampler = r->samplers.clamp_to_edge;
 	VkSampler distortion_samplers[6] = {
 	    sampler, sampler, sampler, sampler, sampler, sampler,
 	};
@@ -700,7 +700,7 @@ render_compute_projection(struct render_compute *crc,
 	    VK_IMAGE_LAYOUT_GENERAL,     //
 	    subresource_range);          //
 
-	VkSampler sampler = r->compute.default_sampler;
+	VkSampler sampler = r->samplers.clamp_to_edge;
 	VkSampler distortion_samplers[6] = {
 	    sampler, sampler, sampler, sampler, sampler, sampler,
 	};
@@ -821,7 +821,7 @@ render_compute_clear(struct render_compute *crc,                 //
 	    VK_IMAGE_LAYOUT_GENERAL,     //
 	    subresource_range);          //
 
-	VkSampler sampler = r->compute.default_sampler;
+	VkSampler sampler = r->samplers.mock;
 	VkSampler src_samplers[2] = {sampler, sampler};
 	VkImageView src_image_views[2] = {r->mock.color.image_view, r->mock.color.image_view};
 	VkSampler distortion_samplers[6] = {sampler, sampler, sampler, sampler, sampler, sampler};

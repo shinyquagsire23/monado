@@ -239,6 +239,21 @@ struct render_resources
 
 	struct
 	{
+		//! Sampler for mock/null images.
+		VkSampler mock;
+
+		//! Sampler that repeats the texture in all directions.
+		VkSampler repeat;
+
+		//! Sampler that clamps the coordinates to the edge in all directions.
+		VkSampler clamp_to_edge;
+
+		//! Sampler that clamps color samples to black in all directions.
+		VkSampler clamp_to_border_black;
+	} samplers;
+
+	struct
+	{
 		//! The binding index for the source texture.
 		uint32_t src_binding;
 

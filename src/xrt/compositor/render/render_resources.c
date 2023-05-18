@@ -576,6 +576,31 @@ render_resources_init(struct render_resources *r,
 
 
 	/*
+	 * Common samplers.
+	 */
+
+	C(vk_create_sampler(                       //
+	    vk,                                    // vk_bundle
+	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
+	    &r->samplers.mock));                   // out_sampler
+
+	C(vk_create_sampler(                //
+	    vk,                             // vk_bundle
+	    VK_SAMPLER_ADDRESS_MODE_REPEAT, // clamp_mode
+	    &r->samplers.repeat));          // out_sampler
+
+	C(vk_create_sampler(                       //
+	    vk,                                    // vk_bundle
+	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, // clamp_mode
+	    &r->samplers.clamp_to_edge));          // out_sampler
+
+	C(vk_create_sampler(                         //
+	    vk,                                      // vk_bundle
+	    VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, // clamp_mode
+	    &r->samplers.clamp_to_border_black));    // out_sampler
+
+
+	/*
 	 * Command buffer pool, needs to go first.
 	 */
 
@@ -960,6 +985,11 @@ render_resources_close(struct render_resources *r)
 	}
 
 	struct vk_bundle *vk = r->vk;
+
+	D(Sampler, r->samplers.mock);
+	D(Sampler, r->samplers.repeat);
+	D(Sampler, r->samplers.clamp_to_edge);
+	D(Sampler, r->samplers.clamp_to_border_black);
 
 	D(ImageView, r->mock.color.image_view);
 	D(Image, r->mock.color.image);
