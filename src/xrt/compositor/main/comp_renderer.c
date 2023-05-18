@@ -217,7 +217,10 @@ renderer_build_rendering_target_resources(struct comp_renderer *r,
 	render_gfx_target_resources_init(rtr, &c->nr, r->c->target->images[index].view, &data);
 }
 
-//! @pre comp_target_has_images(r->c->target)
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ * @pre comp_target_has_images(r->c->target)
+ */
 static void
 renderer_build_rendering(struct comp_renderer *r,
                          struct render_gfx *rr,
@@ -252,10 +255,9 @@ renderer_build_rendering(struct comp_renderer *r,
 
 
 	/*
-	 * Init
+	 * Begin
 	 */
 
-	render_gfx_init(rr, &c->nr);
 	render_gfx_begin(rr);
 
 
@@ -816,6 +818,9 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 	return image->views.no_alpha[array_index];
 }
 
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ */
 static void
 do_gfx_mesh_and_proj(struct comp_renderer *r,
                      struct render_gfx *rr,
@@ -851,6 +856,9 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 	renderer_build_rendering(r, rr, rts, src_samplers, src_image_views, src_norm_rects);
 }
 
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ */
 static void
 dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 {
@@ -1423,6 +1431,9 @@ do_projection_layers(struct comp_renderer *r,
 	}
 }
 
+/*!
+ * @pre render_compute_init(crc, &c->nr)
+ */
 static void
 dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 {
@@ -1431,7 +1442,6 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	render_compute_init(crc, &c->nr);
 	render_compute_begin(crc);
 
 	struct render_viewport_data views[2];
@@ -1736,8 +1746,10 @@ comp_renderer_draw(struct comp_renderer *r)
 	struct render_gfx rr = {0};
 	struct render_compute crc = {0};
 	if (use_compute) {
+		render_compute_init(&crc, &c->nr);
 		dispatch_compute(r, &crc);
 	} else {
+		render_gfx_init(&rr, &c->nr);
 		dispatch_graphics(r, &rr);
 	}
 
