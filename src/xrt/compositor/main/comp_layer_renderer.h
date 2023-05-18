@@ -25,7 +25,6 @@ struct comp_layer_renderer
 		VkImage image;
 		VkDeviceMemory memory;
 		VkImageView view;
-		VkSampler sampler;
 		VkFramebuffer handle;
 	} framebuffers[2];
 

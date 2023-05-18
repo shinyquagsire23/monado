@@ -418,8 +418,6 @@ _init_frame_buffer(struct comp_layer_renderer *self, VkFormat format, VkRenderPa
 	                                      &self->framebuffers[eye].image);
 	vk_check_error("vk_create_image_simple", res, false);
 
-	vk_create_sampler(vk, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, &self->framebuffers[eye].sampler);
-
 	VkImageSubresourceRange subresource_range = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 	    .baseMipLevel = 0,
@@ -672,7 +670,6 @@ _destroy_framebuffer(struct comp_layer_renderer *self, uint32_t i)
 	vk->vkDestroyImage(vk->device, self->framebuffers[i].image, NULL);
 	vk->vkFreeMemory(vk->device, self->framebuffers[i].memory, NULL);
 	vk->vkDestroyFramebuffer(vk->device, self->framebuffers[i].handle, NULL);
-	vk->vkDestroySampler(vk->device, self->framebuffers[i].sampler, NULL);
 }
 
 void
