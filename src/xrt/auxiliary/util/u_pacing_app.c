@@ -113,7 +113,20 @@ struct pacing_app
 
 	int64_t frame_counter;
 
-	// Minimum calculated frame (total app time).
+	/*!
+	 * Minimum calculated frame (total app time). Min app time lets you add
+	 * of time between the time where the compositor picks the frame up and
+	 * when the application is woken up. Essentially a minimum amount of
+	 * latency between the app and the compositor (and by extension the
+	 * display time).
+	 *
+	 * For applications that has varied frame times this lets the user tweak
+	 * the values, trading latency for frame stability. Avoiding dropped
+	 * frames, or jittery frame delivery.
+	 *
+	 * This does not effect frame cadence, you can essentially have 3x the
+	 * frame periods time as latench but still run at frame cadence.
+	 */
 	struct u_var_draggable_f32 min_app_time_ms;
 
 	struct
