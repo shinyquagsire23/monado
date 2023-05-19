@@ -413,7 +413,7 @@ pssense_device_update_inputs(struct xrt_device *xdev)
 	// Lock the data.
 	os_mutex_lock(&pssense->lock);
 
-	for (uint i = 0; i < (uint)sizeof(enum pssense_input_index); i++) {
+	for (uint32_t i = 0; i < (uint32_t)sizeof(enum pssense_input_index); i++) {
 		pssense->base.inputs[i].timestamp = (int64_t)pssense->state.timestamp_ns;
 	}
 	pssense->base.inputs[PSSENSE_INDEX_PS_CLICK].value.boolean = pssense->state.ps_click;
