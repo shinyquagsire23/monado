@@ -1,9 +1,10 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Interface for vive data sources
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup drv_vive
  */
 
@@ -16,6 +17,7 @@
 
 #include "util/u_deque.h"
 #include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
 #include "vive.h"
 
@@ -143,7 +145,7 @@ static void
 vive_source_receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct vive_source *vs = container_of(sink, struct vive_source, imu_sink);
-	s->timestamp_ns = m_clock_offset_a2b(IMU_FREQUENCY, s->timestamp_ns, os_monotonic_get_ns(), &vs->hw2mono);
+
 	timepoint_ns ts = s->timestamp_ns;
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
@@ -206,12 +208,69 @@ vive_source_create(struct xrt_frame_context *xfctx)
 }
 
 void
-vive_source_push_imu_packet(struct vive_source *vs, timepoint_ns t, struct xrt_vec3 a, struct xrt_vec3 g)
+vive_source_push_imu_packet(struct vive_source *vs, uint32_t age, timepoint_ns t, struct xrt_vec3 a, struct xrt_vec3 g)
 {
-	struct xrt_vec3_f64 a64 = {a.x, a.y, a.z};
-	struct xrt_vec3_f64 g64 = {g.x, g.y, g.z};
-	struct xrt_imu_sample sample = {.timestamp_ns = t, .accel_m_s2 = a64, .gyro_rad_secs = g64};
+	/*
+	 * We want the samples to be on sometime in the past, not future. This
+	 * is due to USB latency, which we don't know, so we are guessing here.
+	 * We also don't know if the timestamp given for the start of the sample
+	 * or the end.
+	 *
+	 * We picked 2 here because that's about what the best gaming mice can
+	 * do, it also seems to feel good with what seems to be reasonable
+	 * present to display offset in the compositor.
+	 *
+	 * We also adjust for the "age" of a sample, the vive sends out 3
+	 * samples per packet, most often only one is a new sample. But
+	 * sometimes we get up to 3 new samples in one packet. So if age is
+	 * greater then 0, adjust with that many MS (1000Hz sampler rate).
+	 */
+
+	// 2 ms in value.
+	const timepoint_ns t2ms_ns = U_TIME_1MS_IN_NS * 2;
+
+	// Extra in the past for age.
+	timepoint_ns age_diff_ns = age * U_TIME_1MS_IN_NS;
+
+	// Now.
+	timepoint_ns now_ns = (timepoint_ns)os_monotonic_get_ns();
+
+	// Calculated sample point.
+	timepoint_ns sample_point = now_ns - t2ms_ns - age_diff_ns;
+
+	// Time adjustment.
+	t = m_clock_offset_a2b(IMU_FREQUENCY, t, sample_point, &vs->hw2mono);
+
+	// Finished sample.
+	struct xrt_imu_sample sample = {
+	    .timestamp_ns = t,
+	    .accel_m_s2 = (struct xrt_vec3_f64){a.x, a.y, a.z},
+	    .gyro_rad_secs = (struct xrt_vec3_f64){g.x, g.y, g.z},
+	};
+
+	// Push it out!
 	xrt_sink_push_imu(&vs->imu_sink, &sample);
+
+	// Only do this if we are really debugging stuff.
+#ifdef XRT_FEATURE_TRACING
+	timepoint_ns diff_ns = t - (now_ns - age_diff_ns);
+	static timepoint_ns last_ns = 0;
+	if (last_ns == 0) {
+		last_ns = t;
+	}
+
+	double now_diff_ms = time_ns_to_ms_f(diff_ns);
+	double last_diff_ms = time_ns_to_ms_f(t - last_ns);
+	last_ns = t;
+
+#ifdef U_TRACE_TRACY
+	TracyCPlot("Vive IMU to now(ms)", now_diff_ms);
+	TracyCPlot("Vive IMU to last(ms)", last_diff_ms);
+	TracyCPlot("Vive IMU age", age);
+#endif
+
+	VIVE_TRACE(vs, "Sample diffs, now: %+.4fms, last: %+.4f, age: %u", now_diff_ms, last_diff_ms, age);
+#endif
 }
 
 void

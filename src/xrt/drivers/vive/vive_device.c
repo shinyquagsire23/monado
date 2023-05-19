@@ -432,7 +432,10 @@ update_imu(struct vive_device *d, const void *buffer)
 		m_relation_history_push(d->fusion.relation_hist, &rel, now_ns);
 		os_mutex_unlock(&d->fusion.mutex);
 
-		vive_source_push_imu_packet(d->source, d->imu.last_sample_ts_ns, acceleration, angular_velocity);
+		assert(j > 0);
+		uint32_t age = j <= 0 ? 0 : (uint32_t)(j - 1);
+
+		vive_source_push_imu_packet(d->source, age, d->imu.last_sample_ts_ns, acceleration, angular_velocity);
 	}
 }
 
