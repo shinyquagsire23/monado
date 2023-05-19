@@ -7,14 +7,18 @@
  * @ingroup drv_vive
  */
 
-#include "math/m_clock_offset.h"
-#include "os/os_threading.h"
-#include "util/u_deque.h"
-#include "util/u_logging.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_tracking.h"
 
+#include "os/os_threading.h"
+
+#include "math/m_clock_offset.h"
+
+#include "util/u_deque.h"
+#include "util/u_logging.h"
+
 #include "vive.h"
+
 
 /*!
  * Manages the data streaming state related to a vive headset.
