@@ -436,6 +436,12 @@ update_imu(struct vive_device *d, const void *buffer)
 	}
 }
 
+static void
+drain_imu(struct vive_device *d, const void *buffer)
+{
+	// Noop
+}
+
 
 /*
  *
@@ -784,16 +790,32 @@ vive_sensors_run_thread(void *ptr)
 
 	U_TRACE_SET_THREAD_NAME("Vive: Sensors");
 
-	os_thread_helper_lock(&d->sensors_thread);
-	while (os_thread_helper_is_running_locked(&d->sensors_thread)) {
-		os_thread_helper_unlock(&d->sensors_thread);
 
+	/*
+	 * We want to drain all old packets to avoid old ones,
+	 * read packets with a noop function for 50ms.
+	 */
+
+	uint64_t then_ns = os_monotonic_get_ns();
+	uint64_t future_50ms_ns = then_ns + U_TIME_1MS_IN_NS * (uint64_t)50;
+
+	while (future_50ms_ns > os_monotonic_get_ns() && os_thread_helper_is_running(&d->sensors_thread)) {
+		// Lock not held.
+		if (!vive_sensors_read_one_msg(d, d->sensors_dev, VIVE_IMU_REPORT_ID, 52, drain_imu)) {
+			return NULL;
+		}
+	}
+
+
+	/*
+	 * Now read the packets.
+	 */
+
+	while (os_thread_helper_is_running(&d->sensors_thread)) {
+		// Lock not held.
 		if (!vive_sensors_read_one_msg(d, d->sensors_dev, VIVE_IMU_REPORT_ID, 52, update_imu)) {
 			return NULL;
 		}
-
-		// Just keep swimming.
-		os_thread_helper_lock(&d->sensors_thread);
 	}
 
 	return NULL;
