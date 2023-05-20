@@ -55,6 +55,17 @@ mkpath(const char *path)
 	return 0;
 }
 
+static bool
+is_dir(const char *path)
+{
+	struct stat st = {0};
+	if (!stat(path, &st)) {
+		return S_ISDIR(st.st_mode);
+	} else {
+		return false;
+	}
+}
+
 ssize_t
 u_file_get_config_dir(char *out_path, size_t out_path_size)
 {
@@ -111,15 +122,40 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 ssize_t
 u_file_get_hand_tracking_models_dir(char *out_path, size_t out_path_size)
 {
+	const char *suffix = "/monado/hand-tracking-models";
 	const char *xdg_data_home = getenv("XDG_DATA_HOME");
 	const char *home = getenv("HOME");
+	ssize_t ret = 0;
+
 	if (xdg_data_home != NULL) {
-		return snprintf(out_path, out_path_size, "%s/monado/hand-tracking-models/", xdg_data_home);
-	} else if (home != NULL) {
-		return snprintf(out_path, out_path_size, "%s/.local/share/monado/hand-tracking-models/", home);
-	} else {
-		return -1;
+		ret = snprintf(out_path, out_path_size, "%s%s", xdg_data_home, suffix);
+		if (ret > 0 && is_dir(out_path)) {
+			return ret;
+		}
 	}
+
+	if (home != NULL) {
+		ret = snprintf(out_path, out_path_size, "%s/.local/share%s", home, suffix);
+		if (ret > 0 && is_dir(out_path)) {
+			return ret;
+		}
+	}
+
+	ret = snprintf(out_path, out_path_size, "/usr/local/share%s", suffix);
+	if (ret > 0 && is_dir(out_path)) {
+		return ret;
+	}
+
+	ret = snprintf(out_path, out_path_size, "/usr/share%s", suffix);
+	if (ret > 0 && is_dir(out_path)) {
+		return ret;
+	}
+
+	if (out_path_size > 0) {
+		out_path[0] = '\0';
+	}
+
+	return -1;
 }
 
 #endif /* XRT_OS_LINUX */
