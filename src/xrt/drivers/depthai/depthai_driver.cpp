@@ -153,13 +153,17 @@ struct depthai_fs
 
 	struct
 	{
-		float mA;
 		bool has;
+		bool manual_control;
+
+		u_var_draggable_f32 mA;
+		float last_mA;
 	} floodlights;
 
 	struct
 	{
 		bool active;
+		// Remember, these hold a pointer to a value!
 		u_var_draggable_u16 exposure_time_ui;
 		u_var_draggable_u16 iso_ui;
 
@@ -445,6 +449,22 @@ depthai_maybe_send_exposure_command(struct depthai_fs *depthai)
 	depthai->manual_exposure.last_iso = depthai->manual_exposure.iso;
 }
 
+static void
+depthai_maybe_send_floodlight_command(struct depthai_fs *depthai)
+{
+	if (!(depthai->floodlights.has && depthai->floodlights.manual_control)) {
+		return;
+	}
+
+	// If the user hasn't changed the exposure values since last we sent a command, we don't need to send a new one.
+	if (depthai->floodlights.last_mA == depthai->floodlights.mA.val) {
+		return;
+	}
+
+	depthai->device->setIrFloodLightBrightness(depthai->floodlights.mA.val);
+}
+
+
 static void *
 depthai_mainloop(void *ptr)
 {
@@ -460,6 +480,7 @@ depthai_mainloop(void *ptr)
 		depthai_do_one_frame(depthai);
 
 		depthai_maybe_send_exposure_command(depthai);
+		depthai_maybe_send_floodlight_command(depthai);
 
 		// Need to lock the thread when we go back to the while condition.
 		os_thread_helper_lock(&depthai->image_thread);
@@ -786,7 +807,7 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	depthai->control_queue = depthai->device->getInputQueue("control").get();
 
 	if (depthai->floodlights.has) {
-		float mA = depthai->floodlights.mA;
+		float mA = depthai->floodlights.mA.val;
 
 		if (mA > 1500.0f) {
 			DEPTHAI_ERROR(depthai, "Can not set brightness to more then 1500mA, clamping!");
@@ -1020,7 +1041,6 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
 	depthai->log_level = debug_get_log_option_depthai_log();
-	depthai->floodlights.mA = debug_get_num_option_depthai_floodlight_brightness();
 	depthai->device = d;
 
 	depthai->manual_exposure.active = false;
@@ -1039,6 +1059,12 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->manual_exposure.exposure_time_ui.max = 65535;
 	depthai->manual_exposure.exposure_time_ui.step = 1;
 
+	depthai->floodlights.mA.val = debug_get_num_option_depthai_floodlight_brightness();
+	depthai->floodlights.mA.min = 0.0f;
+	depthai->floodlights.mA.max = 1500.0f;
+	depthai->floodlights.mA.step = 1.0f;
+
+
 
 	u_var_add_root(depthai, "DepthAI Source", 0);
 	for (int i = 0; i < 4; i++) {
@@ -1054,10 +1080,16 @@ depthai_create_and_do_minimal_setup(void)
 	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.exposure_time_ui, "Exposure time");
 	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.iso_ui, "ISO");
 
+	depthai_guess_ir_drivers(depthai);
+	if (depthai->floodlights.has) {
+		u_var_add_bool(depthai, &depthai->floodlights.manual_control, "Manual floodlight control");
+		u_var_add_draggable_f32(depthai, &depthai->floodlights.mA, "Floodlight brightness (mA)");
+	}
+
 
 	// Some debug printing.
 	depthai_guess_camera_type(depthai);
-	depthai_guess_ir_drivers(depthai);
+
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.
