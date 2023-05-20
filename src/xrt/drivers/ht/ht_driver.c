@@ -252,7 +252,13 @@ ht_device_create(struct xrt_frame_context *xfctx,
 
 	char path[1024] = {0};
 
-	u_file_get_hand_tracking_models_dir(path, ARRAY_SIZE(path));
+	int ret = u_file_get_hand_tracking_models_dir(path, ARRAY_SIZE(path));
+	if (ret < 0) {
+		U_LOG_E(
+		    "Could not find any directory with hand-tracking models!\n\t"
+		    "Run ./scripts/get-ht-models.sh or install monado-data package");
+		return -1;
+	}
 
 	sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info, path);
 
@@ -262,5 +268,6 @@ ht_device_create(struct xrt_frame_context *xfctx,
 
 	*out_sinks = &htd->async->sinks;
 	*out_device = &htd->base;
+
 	return 0;
 }
