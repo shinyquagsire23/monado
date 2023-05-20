@@ -45,11 +45,9 @@ if(XRT_HAVE_OPENCV)
 		)
 	if(XRT_BUILD_DRIVER_PSMV)
 		target_sources(aux_tracking PRIVATE t_tracker_psmv_fusion.hpp t_tracker_psmv.cpp)
-
 	endif()
 	if(XRT_BUILD_DRIVER_PSVR)
 		target_sources(aux_tracking PRIVATE t_tracker_psvr.cpp)
-
 	endif()
 	target_include_directories(aux_tracking SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS})
 	target_link_libraries(
