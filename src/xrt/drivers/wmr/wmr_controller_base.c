@@ -17,6 +17,7 @@
 #include "math/m_vec2.h"
 #include "math/m_predict.h"
 
+#include "util/u_file.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_time.h"
@@ -28,6 +29,7 @@
 #include "wmr_controller_base.h"
 #include "wmr_config_key.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,10 +50,6 @@
 		WMR_DEBUG_HEX(wcb, buf, length);                                                                       \
 	} while (0);
 
-
-//! file path to store controller JSON configuration blocks that
-//! read from the firmware.
-DEBUG_GET_ONCE_OPTION(wmr_ctrl_config_path, "WMR_CONFIG_DUMP", NULL)
 
 static inline struct wmr_controller_base *
 wmr_controller_base(struct xrt_device *p)
@@ -146,8 +144,8 @@ wmr_controller_send_fw_cmd(struct wmr_controller_base *wcb,
 			continue;
 		}
 
-		WMR_TRACE(wcb, "Controller fw read returned %d bytes", size);
 		if (response->buf[0] == response_code) {
+			WMR_TRACE(wcb, "Controller fw read returned %d bytes", size);
 			if (size != sizeof(response->buf) || (response->response.cmd_id_echo != fw_cmd->cmd.cmd_id)) {
 				WMR_DEBUG(
 				    wcb, "Unexpected fw response - size %d (expected %zu), cmd_id_echo %u != cmd_id %u",
@@ -239,36 +237,161 @@ wmr_read_fw_block(struct wmr_controller_base *d, uint8_t blk_id, uint8_t **out_d
  * Config functions.
  *
  */
+static bool
+read_controller_fw_info(struct wmr_controller_base *wcb,
+                        uint32_t *fw_revision,
+                        uint16_t *calibration_size,
+                        char serial_no[16])
+{
+	uint8_t *data = NULL;
+	size_t data_size;
+	int ret;
+
+	/* FW block 0 contains the FW revision (offset 0x14, size 4) and
+	 * calibration block size (offset 0x34 size 2) */
+	ret = wmr_read_fw_block(wcb, 0x0, &data, &data_size);
+	if (ret < 0 || data == NULL) {
+		WMR_ERROR(wcb, "Failed to read FW info block 0");
+		return false;
+	}
+	if (data_size < 0x36) {
+		WMR_ERROR(wcb, "Failed to read FW info block 0 - too short");
+		free(data);
+		return false;
+	}
+
+
+	const unsigned char *tmp = data + 0x14;
+	*fw_revision = read32(&tmp);
+	tmp = data + 0x34;
+	*calibration_size = read16(&tmp);
+
+	free(data);
+
+	/* FW block 3 contains the controller serial number at offset
+	 * 0x84, size 16 bytes */
+	ret = wmr_read_fw_block(wcb, 0x3, &data, &data_size);
+	if (ret < 0 || data == NULL) {
+		WMR_ERROR(wcb, "Failed to read FW info block 3");
+		return false;
+	}
+	if (data_size < 0x94) {
+		WMR_ERROR(wcb, "Failed to read FW info block 3 - too short");
+		free(data);
+		return false;
+	}
+
+	memcpy(serial_no, data + 0x84, 0x10);
+	serial_no[16] = '\0';
+
+	free(data);
+	return true;
+}
+
+char *
+build_cache_filename(char *serial_no)
+{
+	int outlen = strlen("controller-") + strlen(serial_no) + strlen(".json") + 1;
+	char *out = malloc(outlen);
+	int ret = snprintf(out, outlen, "controller-%s.json", serial_no);
+
+	assert(ret <= outlen);
+	(void)ret;
+
+	// Make sure the filename is valid
+	for (char *cur = out; *cur != '\0'; cur++) {
+		if (!isalnum(*cur) && *cur != '.') {
+			*cur = '_';
+		}
+	}
+
+	return out;
+}
+
+static bool
+read_calibration_cache(struct wmr_controller_base *wcb, char *cache_filename)
+{
+	FILE *f = u_file_open_file_in_config_dir_subpath("wmr", cache_filename, "r");
+	uint8_t *buffer = NULL;
+
+	if (f == NULL) {
+		WMR_DEBUG(wcb, "Failed to open wmr/%s cache file or it doesn't exist.", cache_filename);
+		return false;
+	}
+
+	// Read the file size to allocate a read buffer
+	fseek(f, 0L, SEEK_END);
+	size_t file_size = ftell(f);
+
+	// Reset and read the data
+	fseek(f, 0L, SEEK_SET);
+
+	buffer = calloc(file_size + 1, sizeof(uint8_t));
+	if (buffer == NULL) {
+		goto fail;
+	}
+	buffer[file_size] = '\0';
+
+	size_t ret = fread(buffer, sizeof(char), file_size, f);
+	if (ret != file_size) {
+		WMR_WARN(wcb, "Cache file wmr/%s failed to read %u bytes (got %u)", cache_filename, (int)file_size,
+		         (int)ret);
+		goto fail;
+	}
+
+	if (!wmr_controller_config_parse(&wcb->config, (char *)buffer, wcb->log_level)) {
+		WMR_WARN(wcb, "Cache file wmr/%s contains invalid JSON. Ignoring", cache_filename);
+		goto fail;
+	}
+
+	fclose(f);
+	free(buffer);
+
+	return true;
+
+fail:
+	if (buffer) {
+		free(buffer);
+	}
+	fclose(f);
+	return false;
+}
+
+static void
+write_calibration_cache(struct wmr_controller_base *wcb, char *cache_filename, uint8_t *data, size_t data_size)
+{
+	FILE *f = u_file_open_file_in_config_dir_subpath("wmr", cache_filename, "w");
+	if (f == NULL) {
+		return;
+	}
+
+	size_t ret = fwrite(data, sizeof(char), data_size, f);
+	if (ret != data_size) {
+		fclose(f);
+		return;
+	}
+
+	fclose(f);
+}
 
 static bool
 read_controller_config(struct wmr_controller_base *wcb)
 {
-	unsigned char *data = NULL;
 	unsigned char *config_json_block;
-	size_t data_size;
 	int ret;
+	uint32_t fw_revision;
+	uint16_t calibration_size;
+	char serial_no[16 + 1];
 
-#if 1
-	// There are extra firmware blocks that can be read from
-	// the controllers, like these. Serial numbers and
-	// USB PID/VID are visible in them, but it's not clear
-	// what the layout is and we don't use them currently,
-	// so this if 0 code is just exemplary.
-
-	// Read 0x00 block
-	ret = wmr_read_fw_block(wcb, 0x0, &data, &data_size);
-	if (ret < 0 || data == NULL)
+	if (!read_controller_fw_info(wcb, &fw_revision, &calibration_size, serial_no)) {
 		return false;
-	free(data);
-	data = NULL;
+	}
 
-	// Read serials
-	ret = wmr_read_fw_block(wcb, 0x03, &data, &data_size);
-	if (ret < 0 || data == NULL)
-		return false;
-	free(data);
-	data = NULL;
+	WMR_INFO(wcb, "Reading configuration for controller serial %s. FW revision %x", serial_no, fw_revision);
 
+#if 0
+  /* WMR also reads block 0x14, which seems to have some FW revision info,
+   * but we don't use it */
 	// Read block 0x14
 	ret = wmr_read_fw_block(wcb, 0x14, &data, &data_size);
 	if (ret < 0 || data == NULL)
@@ -278,42 +401,46 @@ read_controller_config(struct wmr_controller_base *wcb)
 #endif
 
 	// Read config block
-	ret = wmr_read_fw_block(wcb, 0x02, &data, &data_size);
-	if (ret < 0 || data == NULL || data_size < 2)
-		return false;
+	WMR_INFO(wcb, "Reading %s controller config",
+	         wcb->base.device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER ? "left" : "right");
 
-	/* De-obfuscate the JSON config */
-	config_json_block = data + sizeof(uint16_t);
-	for (unsigned int i = 0; i < data_size - sizeof(uint16_t); i++) {
-		config_json_block[i] ^= wmr_config_key[i % sizeof(wmr_config_key)];
-	}
+	// Check if we have it cached already
+	char *cache_filename = build_cache_filename(serial_no);
 
-#if 1
-	// Option to dump config block to a path. Later, these will be
-	// stored in a cache to save time on future startup
-	const char *dump_dir = debug_get_option_wmr_ctrl_config_path();
-	if (dump_dir != NULL) {
-		char fname[256];
+	if (!read_calibration_cache(wcb, cache_filename)) {
+		unsigned char *data = NULL;
+		size_t data_size;
 
-		int device_id = (wcb->base.device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) ? 0 : 1;
+		ret = wmr_read_fw_block(wcb, 0x02, &data, &data_size);
+		if (ret < 0 || data == NULL || data_size < 2) {
+			free(cache_filename);
+			return false;
+		}
 
-		sprintf(fname, "%s/controller-%d-fw.txt", dump_dir, device_id);
-		WMR_INFO(wcb, "Storing controller config JSON to %s", fname);
+		/* De-obfuscate the JSON config */
+		config_json_block = data + sizeof(uint16_t);
+		for (unsigned int i = 0; i < data_size - sizeof(uint16_t); i++) {
+			config_json_block[i] ^= wmr_config_key[i % sizeof(wmr_config_key)];
+		}
 
-		FILE *f = fopen(fname, "w");
-		fwrite(config_json_block, data_size - 2, 1, f);
-		fclose(f);
-	}
-#endif
+		if (!wmr_controller_config_parse(&wcb->config, (char *)config_json_block, wcb->log_level)) {
+			free(cache_filename);
+			free(data);
+			return false;
+		}
 
-	if (!wmr_controller_config_parse(&wcb->config, (char *)config_json_block, wcb->log_level)) {
+		/* Write to the cache file (if it fails, ignore it, it's just a cache) */
+		write_calibration_cache(wcb, cache_filename, config_json_block, data_size - sizeof(uint16_t));
 		free(data);
-		return false;
+	} else {
+		WMR_DEBUG(wcb, "Read %s controller config from cache %s",
+		          wcb->base.device_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER ? "left" : "right",
+		          cache_filename);
 	}
+	free(cache_filename);
 
 	WMR_DEBUG(wcb, "Parsed %d LED entries from controller calibration", wcb->config.led_count);
 
-	free(data);
 	return true;
 }
 
