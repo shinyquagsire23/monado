@@ -136,7 +136,9 @@ wmr_create_headset(struct xrt_prober *xp,
                    enum u_logging_level log_level,
                    struct xrt_device **out_hmd,
                    struct xrt_device **out_left,
-                   struct xrt_device **out_right);
+                   struct xrt_device **out_right,
+                   struct xrt_device **out_ht_left,
+                   struct xrt_device **out_ht_right);
 
 /*!
  * Creates a WMR BT controller device.

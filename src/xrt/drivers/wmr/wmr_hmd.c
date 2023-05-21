@@ -170,8 +170,9 @@ hololens_ensure_controller(struct wmr_hmd *wh, uint8_t controller_id, uint16_t v
 	if (controller_id >= WMR_MAX_CONTROLLERS)
 		return;
 
-	if (wh->controller[controller_id] != NULL)
+	if (wh->controller[controller_id] != NULL) {
 		return;
+	}
 
 	WMR_DEBUG(wh, "Adding controller device %d", controller_id);
 
@@ -1928,7 +1929,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level,
                struct xrt_device **out_hmd,
-               struct xrt_device **out_handtracker)
+               struct xrt_device **out_handtracker,
+               struct xrt_device **out_left_controller,
+               struct xrt_device **out_right_controller)
 {
 	DRV_TRACE_MARKER();
 
@@ -2150,6 +2153,20 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	*out_hmd = &wh->base;
 	*out_handtracker = hand_device;
+
+	os_mutex_lock(&wh->controller_status_lock);
+	if (wh->controller[0] != NULL) {
+		*out_left_controller = wmr_hmd_controller_connection_get_controller(wh->controller[0]);
+	} else {
+		*out_left_controller = NULL;
+	}
+
+	if (wh->controller[1] != NULL) {
+		*out_right_controller = wmr_hmd_controller_connection_get_controller(wh->controller[1]);
+	} else {
+		*out_right_controller = NULL;
+	}
+	os_mutex_unlock(&wh->controller_status_lock);
 }
 
 bool

@@ -215,7 +215,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level,
                struct xrt_device **out_hmd,
-               struct xrt_device **out_handtracker);
+               struct xrt_device **out_handtracker,
+               struct xrt_device **out_left_controller,
+               struct xrt_device **out_right_controller);
 
 bool
 wmr_hmd_send_controller_packet(struct wmr_hmd *hmd, const uint8_t *buffer, uint32_t buf_size);

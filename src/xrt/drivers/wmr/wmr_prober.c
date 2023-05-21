@@ -316,7 +316,9 @@ wmr_create_headset(struct xrt_prober *xp,
                    enum u_logging_level log_level,
                    struct xrt_device **out_hmd,
                    struct xrt_device **out_left,
-                   struct xrt_device **out_right)
+                   struct xrt_device **out_right,
+                   struct xrt_device **out_ht_left,
+                   struct xrt_device **out_ht_right)
 {
 	DRV_TRACE_MARKER();
 
@@ -343,7 +345,9 @@ wmr_create_headset(struct xrt_prober *xp,
 	struct xrt_device *hmd = NULL;
 	struct xrt_device *ht = NULL;
 	struct xrt_device *two_hands[2] = {NULL, NULL}; // Must initialize, always returned.
-	wmr_hmd_create(type, hid_holo, hid_companion, xpdev_holo, log_level, &hmd, &ht);
+	struct xrt_device *hmd_left_ctrl = NULL, *hmd_right_ctrl = NULL;
+	wmr_hmd_create(type, hid_holo, hid_companion, xpdev_holo, log_level, &hmd, &ht, &hmd_left_ctrl,
+	               &hmd_right_ctrl);
 
 	if (hmd == NULL) {
 		U_LOG_IFL_E(log_level, "Failed to create WMR HMD device.");
@@ -359,8 +363,11 @@ wmr_create_headset(struct xrt_prober *xp,
 #endif
 
 	*out_hmd = hmd;
-	*out_left = two_hands[0];
-	*out_right = two_hands[1];
+	*out_left = hmd_left_ctrl;
+	*out_right = hmd_right_ctrl;
+
+	*out_ht_left = two_hands[0];
+	*out_ht_right = two_hands[1];
 
 	return XRT_SUCCESS;
 

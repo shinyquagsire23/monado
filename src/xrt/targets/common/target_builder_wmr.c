@@ -230,6 +230,8 @@ wmr_open_system(struct xrt_builder *xb,
 	struct xrt_device *head = NULL;
 	struct xrt_device *left = NULL;
 	struct xrt_device *right = NULL;
+	struct xrt_device *ht_left = NULL;
+	struct xrt_device *ht_right = NULL;
 
 	xret = wmr_create_headset( //
 	    xp,                    //
@@ -239,7 +241,9 @@ wmr_open_system(struct xrt_builder *xb,
 	    log_level,             //
 	    &head,                 //
 	    &left,                 //
-	    &right);               //
+	    &right,                //
+	    &ht_left,              //
+	    &ht_right);            //
 	if (xret != XRT_SUCCESS) {
 		goto error;
 	}
@@ -268,15 +272,30 @@ wmr_open_system(struct xrt_builder *xb,
 
 	struct u_system_devices *usysd = u_system_devices_allocate();
 
-	usysd->base.roles.head = head;
-	usysd->base.roles.left = left;
-	usysd->base.roles.right = right;
 	usysd->base.xdevs[usysd->base.xdev_count++] = head;
 	if (left != NULL) {
 		usysd->base.xdevs[usysd->base.xdev_count++] = left;
 	}
 	if (right != NULL) {
 		usysd->base.xdevs[usysd->base.xdev_count++] = right;
+	}
+	if (ht_left != NULL) {
+		usysd->base.xdevs[usysd->base.xdev_count++] = ht_left;
+	}
+	if (ht_right != NULL) {
+		usysd->base.xdevs[usysd->base.xdev_count++] = ht_right;
+	}
+
+	usysd->base.roles.head = head;
+	if (left != NULL) {
+		usysd->base.roles.left = left;
+	} else {
+		usysd->base.roles.left = ht_left;
+	}
+	if (right != NULL) {
+		usysd->base.roles.right = right;
+	} else {
+		usysd->base.roles.right = ht_right;
 	}
 
 	// Find hand tracking devices.
