@@ -326,6 +326,13 @@ wmr_controller_hp_create(struct wmr_controller_connection *conn,
 	wcb->handle_input_packet = handle_input_packet;
 
 	wcb->base.name = XRT_DEVICE_HP_REVERB_G2_CONTROLLER;
+
+	if (controller_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
+		snprintf(wcb->base.str, ARRAY_SIZE(wcb->base.str), "HP Reverb G2 Left Controller");
+	} else {
+		snprintf(wcb->base.str, ARRAY_SIZE(wcb->base.str), "HP Reverb G2 Right Controller");
+	}
+
 	wcb->base.destroy = wmr_controller_hp_destroy;
 	wcb->base.update_inputs = wmr_controller_hp_update_xrt_inputs;
 	wcb->base.set_output = wmr_controller_hp_set_output;
