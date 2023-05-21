@@ -43,7 +43,6 @@
 
 DEBUG_GET_ONCE_LOG_OPTION(remote_log, "REMOTE_LOG", U_LOGGING_INFO)
 
-// clang-format off
 #define R_TRACE(R, ...) U_LOG_IFL_T((R)->rc.log_level, __VA_ARGS__)
 #define R_DEBUG(R, ...) U_LOG_IFL_D((R)->rc.log_level, __VA_ARGS__)
 #define R_INFO(R, ...) U_LOG_IFL_I((R)->rc.log_level, __VA_ARGS__)
@@ -55,7 +54,6 @@ DEBUG_GET_ONCE_LOG_OPTION(remote_log, "REMOTE_LOG", U_LOGGING_INFO)
 #define RC_INFO(RC, ...) U_LOG_IFL_I((RC)->log_level, __VA_ARGS__)
 #define RC_WARN(RC, ...) U_LOG_IFL_W((RC)->log_level, __VA_ARGS__)
 #define RC_ERROR(RC, ...) U_LOG_IFL_E((RC)->log_level, __VA_ARGS__)
-// clang-format on
 
 
 /*
