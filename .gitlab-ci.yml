@@ -142,7 +142,7 @@ win:container_prep:
 .monado.variables.arch:rolling:
   variables:
     FDO_DISTRIBUTION_VERSION: "rolling"
-    FDO_DISTRIBUTION_TAG: "2023-03-13.2"
+    FDO_DISTRIBUTION_TAG: "2023-05-22.0"
 
 ###
 # Container prep jobs
@@ -201,7 +201,7 @@ arch:rolling:container_prep:
     - .fdo.container-build@arch # from ci-templates
 
   variables:
-    FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt5-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
+    FDO_DISTRIBUTION_PACKAGES: 'base-devel bc bluez-libs boost check clang cmake diffutils doxygen eigen ffmpeg fmt gcc git glew glfw-x11 glslang glu graphviz gtest gtk3 hidapi libbsd libusb libxrandr mesa meson ninja opencv patch pipewire-jack pkgconfig python-attrs python-setuptools python3 qt6-base v4l-utils vulkan-headers vulkan-icd-loader wayland wget wireplumber'
     FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/install-arch-additional-deps.sh'
 
 

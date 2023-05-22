@@ -198,7 +198,7 @@ distributions:
   - name: arch
     images:
       - codename: rolling
-        tag: "2023-03-13.2"
+        tag: "2023-05-22.0"
         script: install-arch-additional-deps.sh
         # pipewire-jack wireplumber: Explicitly choose dependencies to avoid pacman asking interactively
         # python-setuptools glu: librealsense
@@ -231,7 +231,7 @@ distributions:
           patch:
           pkgconfig:
           python3:
-          qt5-base:
+          qt6-base:
           v4l-utils:
           vulkan-headers:
           vulkan-icd-loader:
