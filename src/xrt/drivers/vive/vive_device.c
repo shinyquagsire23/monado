@@ -19,6 +19,10 @@
 #include "util/u_time.h"
 #include "util/u_trace_marker.h"
 
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
+
 #include "math/m_api.h"
 #include "math/m_predict.h"
 
@@ -792,7 +796,12 @@ vive_sensors_run_thread(void *ptr)
 	struct vive_device *d = (struct vive_device *)ptr;
 
 	U_TRACE_SET_THREAD_NAME("Vive: Sensors");
+	os_thread_helper_name(&d->sensors_thread, "Vive: Sensors");
 
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(d->log_level, "Vive: Sensors");
+#endif
 
 	/*
 	 * We want to drain all old packets to avoid old ones,
