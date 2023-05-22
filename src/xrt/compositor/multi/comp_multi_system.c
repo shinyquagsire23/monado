@@ -8,6 +8,8 @@
  * @ingroup comp_multi
  */
 
+#include "xrt/xrt_config_os.h"
+
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
@@ -18,6 +20,10 @@
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_distortion_mesh.h"
+
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
 
 #include "multi/comp_multi_private.h"
 #include "multi/comp_multi_interface.h"
@@ -421,6 +427,11 @@ multi_main_loop(struct multi_system_compositor *msc)
 {
 	U_TRACE_SET_THREAD_NAME("Multi Client Module");
 	os_thread_helper_name(&msc->oth, "Multi Client Module");
+
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(U_LOGGING_INFO, "Multi Client Module");
+#endif
 
 	struct xrt_compositor *xc = &msc->xcn->base;
 
