@@ -916,6 +916,11 @@ vive_set_trackers_status(struct vive_device *d, struct vive_tracking_status stat
 
 	d->slam_over_3dof = slam_enabled; // We prefer SLAM over 3dof tracking if possible
 
+	// Update the tracking origin type.
+	if (slam_enabled) {
+		d->base.tracking_origin->type = XRT_TRACKING_TYPE_EXTERNAL_SLAM;
+	}
+
 	const char *slam_status = d->tracking.slam_enabled ? "Enabled"
 	                          : !slam_wanted           ? "Disabled by the user (envvar set to false)"
 	                          : !slam_supported        ? "Unavailable (not built)"
