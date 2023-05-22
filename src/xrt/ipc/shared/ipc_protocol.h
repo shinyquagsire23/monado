@@ -124,6 +124,7 @@ struct ipc_shared_device
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
+	bool eye_gaze_supported;
 	bool force_feedback_supported;
 	bool form_factor_check_supported;
 };
@@ -221,6 +222,7 @@ struct ipc_shared_memory
 		int32_t left;
 		int32_t right;
 		int32_t gamepad;
+		int32_t eyes;
 
 		struct
 		{

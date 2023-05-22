@@ -259,6 +259,7 @@ struct xrt_device
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
+	bool eye_gaze_supported;
 	bool force_feedback_supported;
 	bool form_factor_check_supported;
 

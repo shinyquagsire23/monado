@@ -279,6 +279,7 @@ init_shm(struct ipc_server *s)
 		isdev->hand_tracking_supported = xdev->hand_tracking_supported;
 		isdev->force_feedback_supported = xdev->force_feedback_supported;
 		isdev->form_factor_check_supported = xdev->form_factor_check_supported;
+		isdev->eye_gaze_supported = xdev->eye_gaze_supported;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {
@@ -359,6 +360,7 @@ init_shm(struct ipc_server *s)
 	ism->roles.gamepad = find_xdev_index(s, s->xsysd->roles.gamepad);
 	ism->roles.hand_tracking.left = find_xdev_index(s, s->xsysd->roles.hand_tracking.left);
 	ism->roles.hand_tracking.right = find_xdev_index(s, s->xsysd->roles.hand_tracking.right);
+	ism->roles.eyes = find_xdev_index(s, s->xsysd->roles.eyes);
 
 	// Fill out git version info.
 	snprintf(s->ism->u_git_tag, IPC_VERSION_NAME_LEN, "%s", u_git_tag);

@@ -848,6 +848,7 @@ print_system_devices(u_pp_delegate_t dg, struct xrt_system_devices *xsysd)
 	P(left);
 	P(right);
 	P(gamepad);
+	P(eyes);
 	P(hand_tracking.left);
 	P(hand_tracking.right);
 #undef P

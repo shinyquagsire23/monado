@@ -345,6 +345,7 @@ ipc_client_instance_create_system(struct xrt_instance *xinst,
 	SET_ROLE(left);
 	SET_ROLE(right);
 	SET_ROLE(gamepad);
+	SET_ROLE(eyes);
 	SET_ROLE(hand_tracking.left);
 	SET_ROLE(hand_tracking.right);
 

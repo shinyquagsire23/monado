@@ -117,6 +117,7 @@ debug_print_devices(struct oxr_logger *log, struct oxr_system *sys)
 	struct xrt_device *h = GET_XDEV_BY_ROLE(sys, head);
 	struct xrt_device *l = GET_XDEV_BY_ROLE(sys, left);
 	struct xrt_device *r = GET_XDEV_BY_ROLE(sys, right);
+	struct xrt_device *e = GET_XDEV_BY_ROLE(sys, eyes);
 	struct xrt_device *hl = GET_XDEV_BY_ROLE(sys, hand_tracking.left);
 	struct xrt_device *hr = GET_XDEV_BY_ROLE(sys, hand_tracking.right);
 
@@ -127,9 +128,10 @@ debug_print_devices(struct oxr_logger *log, struct oxr_system *sys)
 	        "\n\tHead: '%s'"
 	        "\n\tLeft: '%s'"
 	        "\n\tRight: '%s'"
+	        "\n\tEyes: '%s'"
 	        "\n\tHand-Tracking Left: '%s'"
 	        "\n\tHand-Tracking Right: '%s'",
-	        P(h), P(l), P(r), P(hl), P(hr));
+	        P(h), P(l), P(r), P(e), P(hl), P(hr));
 
 #undef P
 }
