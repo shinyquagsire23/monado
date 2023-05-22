@@ -130,13 +130,13 @@ struct comp_renderer
  */
 
 static void
-renderer_wait_gpu_idle(struct comp_renderer *r)
+renderer_wait_queue_idle(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
 	struct vk_bundle *vk = &r->c->base.vk;
 
 	os_mutex_lock(&vk->queue_mutex);
-	vk->vkDeviceWaitIdle(vk->device);
+	vk->vkQueueWaitIdle(vk->queue);
 	os_mutex_unlock(&vk->queue_mutex);
 }
 
@@ -493,7 +493,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	 * make sure that validation doesn't complain. This is done
 	 * during resize so isn't time critical.
 	 */
-	renderer_wait_gpu_idle(r);
+	renderer_wait_queue_idle(r);
 
 	// Make we sure we destroy all dependent things before creating new images.
 	renderer_close_renderings_and_fences(r);
@@ -1890,7 +1890,7 @@ comp_renderer_draw(struct comp_renderer *r)
 	 *
 	 * This is done after a swap so isn't time critical.
 	 */
-	renderer_wait_gpu_idle(r);
+	renderer_wait_queue_idle(r);
 
 
 	/*
