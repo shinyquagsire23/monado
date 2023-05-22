@@ -117,6 +117,11 @@ if(WIN32)
 	target_sources(aux_util PRIVATE u_windows.c u_windows.h)
 endif()
 
+# Only uses POSIX/Linux libraries, doesn't add anything extra.
+if(XRT_HAVE_LINUX OR ANDROID)
+	target_sources(aux_util PRIVATE u_linux.c u_linux.h)
+endif()
+
 # Is basically used everywhere, unavoidable.
 if(XRT_HAVE_SYSTEM_CJSON)
 	target_link_libraries(aux_util PUBLIC cJSON::cJSON)
