@@ -38,6 +38,10 @@
 #include "util/u_distortion_mesh.h"
 #include "util/u_sink.h"
 
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
+
 #include "tracking/t_tracking.h"
 
 #include "wmr_hmd.h"
@@ -646,9 +650,16 @@ control_read_packets(struct wmr_hmd *wh)
 static void *
 wmr_run_thread(void *ptr)
 {
-	U_TRACE_SET_THREAD_NAME("WMR: USB-HMD");
-
 	struct wmr_hmd *wh = (struct wmr_hmd *)ptr;
+
+	U_TRACE_SET_THREAD_NAME("WMR: USB-HMD");
+	os_thread_helper_name(&wh->oth, "WMR: USB-HMD");
+
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(wh->log_level, "WMR: USB-HMD");
+#endif
+
 
 	os_thread_helper_lock(&wh->oth);
 	while (os_thread_helper_is_running_locked(&wh->oth)) {
