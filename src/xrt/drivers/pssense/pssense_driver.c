@@ -52,13 +52,17 @@ static struct xrt_binding_input_pair simple_inputs_pssense[4] = {
     {XRT_INPUT_SIMPLE_AIM_POSE, XRT_INPUT_PSSENSE_AIM_POSE},
 };
 
+static struct xrt_binding_output_pair simple_outputs_pssense[1] = {
+    {XRT_OUTPUT_NAME_SIMPLE_VIBRATION, XRT_OUTPUT_NAME_PSSENSE_VIBRATION},
+};
+
 static struct xrt_binding_profile binding_profiles_pssense[1] = {
     {
         .name = XRT_DEVICE_SIMPLE_CONTROLLER,
         .inputs = simple_inputs_pssense,
         .input_count = ARRAY_SIZE(simple_inputs_pssense),
-        .outputs = NULL,
-        .output_count = 0,
+        .outputs = simple_outputs_pssense,
+        .output_count = ARRAY_SIZE(simple_outputs_pssense),
     },
 };
 
@@ -92,19 +96,32 @@ enum pssense_input_index
 	PSSENSE_INDEX_AIM_POSE,
 };
 
-const uint8_t HID_PACKET_REPORT_ID = 0x31;
+const uint8_t INPUT_REPORT_ID = 0x31;
+const uint8_t OUTPUT_REPORT_ID = 0x31;
+const uint8_t OUTPUT_REPORT_TAG = 0x10;
 const uint8_t CALIBRATION_DATA_FEATURE_REPORT_ID = 0x05;
 const uint8_t CALIBRATION_DATA_PART_ID_1 = 0;
 const uint8_t CALIBRATION_DATA_PART_ID_2 = 0x81;
 
-/**
- * Gyro read value range is +-32768.
- */
+const uint8_t INPUT_REPORT_CRC32_SEED = 0xa1;
+const uint8_t OUTPUT_REPORT_CRC32_SEED = 0xa2;
+const uint8_t FEATURE_REPORT_CRC32_SEED = 0xa3;
+
+//! Gyro read value range is +-32768.
 const double PSSENSE_GYRO_SCALE_DEG = 180.0 / 1024;
-/**
- * Accelerometer read value range is +-32768 and covers +-8 g.
- */
+//! Accelerometer read value range is +-32768 and covers +-8 g.
 const double PSSENSE_ACCEL_SCALE = MATH_GRAVITY_M_S2 / 4096;
+
+//! Flag bits to enable setting vibration in an output report
+const uint8_t VIBRATE_ENABLE_BITS = 0x03;
+//! Pure 120Hz vibration
+const uint8_t VIBRATE_MODE_HIGH_120HZ = 0x00;
+//! Pure 60Hz vibration
+const uint8_t VIBRATE_MODE_LOW_60HZ = 0x20;
+//! Emulates a legacy vibration motor
+const uint8_t VIBRATE_MODE_CLASSIC_RUMBLE = 0x40;
+//! Softer rumble emulation, like an engine running
+const uint8_t VIBRATE_MODE_DIET_RUMBLE = 0x60;
 
 /**
  * 16-bit little-endian int
@@ -126,10 +143,11 @@ struct pssense_i32_le
 	uint8_t highest;
 };
 
+#define INPUT_REPORT_LENGTH 78
 /*!
- * HID data packet.
+ * HID input report data packet.
  */
-struct pssense_data_packet
+struct pssense_input_report
 {
 	uint8_t report_id;
 	uint8_t bt_header;
@@ -150,8 +168,26 @@ struct pssense_data_packet
 	uint8_t unknown5[10];
 	uint8_t charging_state; // 0x00 when unplugged, 0x20 when charging
 	uint8_t unknown6[29];
-	uint8_t crc[4];
+	struct pssense_i32_le crc;
 };
+static_assert(sizeof(struct pssense_input_report) == INPUT_REPORT_LENGTH, "Incorrect input report struct length");
+
+#define OUTPUT_REPORT_LENGTH 78
+/**
+ * HID output report data packet.
+ */
+struct pssense_output_report
+{
+	uint8_t report_id;
+	uint8_t seq_no;          // High bits only; low bits are always 0
+	uint8_t tag;             // Needs to be 0x10. Nobody seems to know why.
+	uint8_t vibration_flags; // Vibrate mode and enable flags to set vibrate in this report
+	uint8_t unknown;
+	uint8_t vibration_amplitude; // Vibration amplitude from 0x00-0xff. Sending 0 turns vibration off.
+	uint8_t unknown3[68];
+	struct pssense_i32_le crc;
+};
+static_assert(sizeof(struct pssense_output_report) == OUTPUT_REPORT_LENGTH, "Incorrect output report struct length");
 
 /*!
  * PlayStation Sense state parsed from a data packet.
@@ -210,6 +246,15 @@ struct pssense_device
 
 	//! Input state parsed from most recent packet
 	struct pssense_input_state state;
+	//! Last output state sent to device
+	struct
+	{
+		uint8_t next_seq_no;
+		uint8_t vibration_amplitude;
+		uint8_t vibration_mode;
+		uint64_t vibration_end_timestamp_ns;
+		uint64_t resend_timestamp_ns;
+	} output;
 
 	struct m_imu_3dof fusion;
 	struct xrt_pose pose;
@@ -227,11 +272,38 @@ pssense_i32_le_to_u32(const struct pssense_i32_le *from)
 	return (uint32_t)(from->lowest | from->lower << 8 | from->higher << 16 | from->highest << 24);
 }
 
+static struct pssense_i32_le
+pssense_u32_to_i32_le(uint32_t from)
+{
+	struct pssense_i32_le ret = {
+	    .lowest = (from >> 0) & 0x0ff,
+	    .lower = (from >> 8) & 0x0ff,
+	    .higher = (from >> 16) & 0x0ff,
+	    .highest = (from >> 24) & 0x0ff,
+	};
+
+	return ret;
+}
+
 static int16_t
 pssense_i16_le_to_i16(const struct pssense_i16_le *from)
 {
 	// The cast is important, sign extend properly.
 	return (int16_t)(from->low | from->high << 8);
+}
+
+const uint32_t CRC_POLYNOMIAL = 0xedb88320;
+static uint32_t
+crc32_le(uint32_t crc, uint8_t const *p, size_t len)
+{
+	int i;
+	crc ^= 0xffffffff;
+	while (len--) {
+		crc ^= *p++;
+		for (i = 0; i < 8; i++)
+			crc = (crc >> 1) ^ ((crc & 1) ? CRC_POLYNOMIAL : 0);
+	}
+	return crc ^ 0xffffffff;
 }
 
 /*!
@@ -273,11 +345,19 @@ pssense_read_one_packet(struct pssense_device *pssense, uint8_t *buffer, size_t 
 
 static bool
 pssense_parse_packet(struct pssense_device *pssense,
-                     struct pssense_data_packet *data,
+                     struct pssense_input_report *data,
                      struct pssense_input_state *input)
 {
-	if (data->report_id != HID_PACKET_REPORT_ID) {
+	if (data->report_id != INPUT_REPORT_ID) {
 		PSSENSE_WARN(pssense, "Unrecognized HID report id %u", data->report_id);
+		return false;
+	}
+
+	uint32_t expected_crc = pssense_i32_le_to_u32(&data->crc);
+	uint32_t crc = crc32_le(0, &INPUT_REPORT_CRC32_SEED, 1);
+	crc = crc32_le(crc, (uint8_t *)data, sizeof(struct pssense_input_report) - 4);
+	if (crc != expected_crc) {
+		PSSENSE_WARN(pssense, "CRC mismatch; skipping input. Expected %08X but got %08X", expected_crc, crc);
 		return false;
 	}
 
@@ -349,6 +429,43 @@ pssense_update_fusion(struct pssense_device *pssense)
 	pssense->pose.orientation = pssense->fusion.rot;
 }
 
+static void
+pssense_send_output_report_locked(struct pssense_device *pssense)
+{
+	uint64_t timestamp_ns = os_monotonic_get_ns();
+
+	if (timestamp_ns >= pssense->output.vibration_end_timestamp_ns) {
+		pssense->output.vibration_amplitude = 0;
+	}
+
+	struct pssense_output_report report = {0};
+	report.report_id = OUTPUT_REPORT_ID;
+	report.seq_no = pssense->output.next_seq_no << 4;
+	report.tag = OUTPUT_REPORT_TAG;
+	report.vibration_flags = pssense->output.vibration_mode | VIBRATE_ENABLE_BITS;
+	report.vibration_amplitude = pssense->output.vibration_amplitude;
+
+	pssense->output.next_seq_no = (pssense->output.next_seq_no + 1) % 16;
+
+	uint32_t crc = crc32_le(0, &OUTPUT_REPORT_CRC32_SEED, 1);
+	crc = crc32_le(crc, (uint8_t *)&report, sizeof(struct pssense_output_report) - 4);
+	report.crc = pssense_u32_to_i32_le(crc);
+
+	PSSENSE_DEBUG(pssense, "Setting vibration amplitude: %u, mode: %02X", pssense->output.vibration_amplitude,
+	              pssense->output.vibration_mode);
+	int ret = os_hid_write(pssense->hid, (uint8_t *)&report, sizeof(struct pssense_output_report));
+	if (ret == sizeof(struct pssense_output_report)) {
+		// Controller will vibrate for 5 sec unless we resend the output report. Resend every 2 sec to be safe.
+		pssense->output.resend_timestamp_ns = timestamp_ns + 2000000000;
+		if (pssense->output.resend_timestamp_ns > pssense->output.vibration_end_timestamp_ns) {
+			pssense->output.resend_timestamp_ns = pssense->output.vibration_end_timestamp_ns;
+		}
+	} else {
+		PSSENSE_WARN(pssense, "Failed to send output report: %d", ret);
+		pssense->output.resend_timestamp_ns = timestamp_ns;
+	}
+}
+
 static void *
 pssense_run_thread(void *ptr)
 {
@@ -357,23 +474,27 @@ pssense_run_thread(void *ptr)
 	struct pssense_device *pssense = (struct pssense_device *)ptr;
 
 	union {
-		uint8_t buffer[sizeof(struct pssense_data_packet)];
-		struct pssense_data_packet packet;
+		uint8_t buffer[sizeof(struct pssense_input_report)];
+		struct pssense_input_report report;
 	} data;
 	struct pssense_input_state input_state = {0};
 
 	// The Sense controller starts in compat mode with a different HID report ID and format.
 	// We need to discard packets until we get a correct report.
 	while (pssense_read_one_packet(pssense, data.buffer, sizeof(data), false) &&
-	       data.packet.report_id != HID_PACKET_REPORT_ID) {
+	       data.report.report_id != INPUT_REPORT_ID) {
 		PSSENSE_DEBUG(pssense, "Discarding compat mode HID report");
 	}
 
 	while (pssense_read_one_packet(pssense, data.buffer, sizeof(data), true)) {
-		if (pssense_parse_packet(pssense, &data.packet, &input_state)) {
+		if (pssense_parse_packet(pssense, &data.report, &input_state)) {
 			os_mutex_lock(&pssense->lock);
 			pssense->state = input_state;
 			pssense_update_fusion(pssense);
+			if (pssense->output.vibration_amplitude > 0 &&
+			    pssense->state.timestamp_ns >= pssense->output.resend_timestamp_ns) {
+				pssense_send_output_report_locked(pssense);
+			}
 			os_mutex_unlock(&pssense->lock);
 		}
 	}
@@ -439,6 +560,37 @@ pssense_device_update_inputs(struct xrt_device *xdev)
 	pssense->base.inputs[PSSENSE_INDEX_THUMBSTICK_TOUCH].value.boolean = pssense->state.thumbstick_touch;
 
 	// Done now.
+	os_mutex_unlock(&pssense->lock);
+}
+
+static void
+pssense_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
+{
+	struct pssense_device *pssense = (struct pssense_device *)xdev;
+
+	if (name != XRT_OUTPUT_NAME_PSSENSE_VIBRATION) {
+		PSSENSE_ERROR(pssense, "Unknown output name requested %u", name);
+		return;
+	}
+
+	uint8_t vibration_amplitude = (uint8_t)(value->vibration.amplitude * 255.0f);
+	uint8_t vibration_mode = VIBRATE_MODE_CLASSIC_RUMBLE;
+	if (value->vibration.frequency != XRT_FREQUENCY_UNSPECIFIED) {
+		if (value->vibration.frequency <= 70) {
+			vibration_mode = VIBRATE_MODE_LOW_60HZ;
+		} else if (value->vibration.frequency >= 110) {
+			vibration_mode = VIBRATE_MODE_HIGH_120HZ;
+		}
+	}
+
+	os_mutex_lock(&pssense->lock);
+	if (vibration_amplitude != pssense->output.vibration_amplitude ||
+	    vibration_mode != pssense->output.vibration_mode) {
+		pssense->output.vibration_amplitude = vibration_amplitude;
+		pssense->output.vibration_mode = vibration_mode;
+		pssense->output.vibration_end_timestamp_ns = os_monotonic_get_ns() + value->vibration.duration_ns;
+		pssense_send_output_report_locked(pssense);
+	}
 	os_mutex_unlock(&pssense->lock);
 }
 
@@ -563,12 +715,13 @@ pssense_found(struct xrt_prober *xp,
 	}
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct pssense_device *pssense = U_DEVICE_ALLOCATE(struct pssense_device, flags, 23, 0);
+	struct pssense_device *pssense = U_DEVICE_ALLOCATE(struct pssense_device, flags, 23, 1);
 	PSSENSE_DEBUG(pssense, "PlayStation Sense controller found");
 
 	pssense->base.name = XRT_DEVICE_PSSENSE;
 	snprintf(pssense->base.str, XRT_DEVICE_NAME_LEN, "%s", product_name);
 	pssense->base.update_inputs = pssense_device_update_inputs;
+	pssense->base.set_output = pssense_set_output;
 	pssense->base.get_tracked_pose = pssense_get_tracked_pose;
 	pssense->base.destroy = pssense_device_destroy;
 	pssense->base.orientation_tracking_supported = true;
@@ -616,6 +769,8 @@ pssense_found(struct xrt_prober *xp,
 	SET_INPUT(THUMBSTICK_TOUCH);
 	SET_INPUT(GRIP_POSE);
 	SET_INPUT(AIM_POSE);
+
+	pssense->base.outputs[0].name = XRT_OUTPUT_NAME_PSSENSE_VIBRATION;
 
 	ret = os_mutex_init(&pssense->lock);
 	if (ret != 0) {
