@@ -566,6 +566,7 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 	}
 
 
+	// Prepare sample
 	xrt_imu_sample sample;
 	sample.timestamp_ns = ts;
 	sample.accel_m_s2.x = a.x;
@@ -575,7 +576,36 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 	sample.gyro_rad_secs.x = g.x;
 	sample.gyro_rad_secs.y = g.y;
 	sample.gyro_rad_secs.z = g.z;
+
+	// Sample prepared, now push it out.
 	xrt_sink_push_imu(depthai->imu_sink, &sample);
+
+	// Only do this if we are really debugging stuff.
+#ifdef XRT_FEATURE_TRACING
+	static timepoint_ns last_ns = 0;
+	if (last_ns == 0) {
+		last_ns = ts - U_TIME_1MS_IN_NS; // Just so it isn't zero.
+	}
+
+	timepoint_ns now_ns = (timepoint_ns)os_monotonic_get_ns();
+	timepoint_ns now_diff_ns = ts - now_ns;
+	timepoint_ns last_diff_ns = ts - last_ns;
+	last_ns = ts;
+
+	double now_diff_ms = time_ns_to_ms_f(now_diff_ns);
+	double last_diff_ms = time_ns_to_ms_f(last_diff_ns);
+
+	float gyro_length = m_vec3_len(g);
+	float weighted_gyro_length = gyro_length * time_ns_to_s(last_diff_ns);
+
+#ifdef U_TRACE_TRACY
+	TracyCPlot("DepthAI IMU to now(ms)", now_diff_ms);
+	TracyCPlot("DepthAI IMU to last(ms)", last_diff_ms);
+	TracyCPlot("DepthAI IMU num packets", num_packets);
+	TracyCPlot("DepthAI IMU gyro length", gyro_length);
+	TracyCPlot("DepthAI IMU gyro weighted length", weighted_gyro_length);
+#endif
+#endif
 }
 
 static void *
