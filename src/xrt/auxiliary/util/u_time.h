@@ -22,6 +22,14 @@
 #include <stdint.h>
 #include <time.h>
 
+#if defined(XRT_ENV_MINGW)
+// That define is needed before to include windows.h, to avoid a collision
+// between the 'byte' type defined by windows and std::byte defined in cstddef
+// since C++17
+#define byte win_byte_override
+#include <windows.h>
+#undef byte
+#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -42,7 +42,7 @@
 // example: v21.0.0-560-g586d33b5
 #define IPC_VERSION_NAME_LEN 64
 
-#ifdef XRT_OS_WINDOWS
+#if defined(XRT_OS_WINDOWS) && !defined(XRT_ENV_MINGW)
 typedef int pid_t;
 #endif
 

@@ -29,6 +29,15 @@
 #define XRT_HAVE_TIMEVAL
 
 #elif defined(XRT_OS_WINDOWS)
+#if defined(XRT_ENV_MINGW)
+// That define is needed before to include windows.h, to avoid a collision
+// between the 'byte' type defined by windows and std::byte defined in cstddef
+// since C++17
+#define byte win_byte_override
+#include <windows.h>
+#undef byte
+#endif
+
 #include <time.h>
 #include <timeapi.h>
 #define XRT_HAVE_TIMESPEC
@@ -162,7 +171,7 @@ os_realtime_get_ns(void);
  * @ingroup aux_os_time
  */
 static inline int64_t
-os_ns_per_qpc_tick_get();
+os_ns_per_qpc_tick_get(void);
 #endif
 
 
@@ -273,7 +282,7 @@ os_timeval_to_ns(struct timeval *val)
 
 #if defined(XRT_OS_WINDOWS)
 static inline int64_t
-os_ns_per_qpc_tick_get()
+os_ns_per_qpc_tick_get(void)
 {
 	static int64_t ns_per_qpc_tick = 0;
 	if (ns_per_qpc_tick == 0) {

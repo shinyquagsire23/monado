@@ -34,6 +34,9 @@
 #define XRT_OS_WAS_AUTODETECTED
 #endif
 
+#if defined(__MINGW32__)
+#define XRT_ENV_MINGW
+#endif
 
 #ifndef XRT_OS_WAS_AUTODETECTED
 #error "OS type not found during compile"
