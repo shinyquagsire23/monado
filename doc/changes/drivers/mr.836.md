@@ -15,6 +15,7 @@
 - mr.1649
 - mr.1523
 - mr.1603
+- mr.1839
 ---
 
 dai: Add a new frameserver driver that uses supports the DepthAI cameras.
