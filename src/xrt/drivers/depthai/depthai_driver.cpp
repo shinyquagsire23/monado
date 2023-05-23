@@ -25,6 +25,10 @@
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
+
 #include "tracking/t_tracking.h"
 
 #include "depthai_interface.h"
@@ -615,6 +619,11 @@ depthai_imu_mainloop(void *ptr)
 
 	U_TRACE_SET_THREAD_NAME("DepthAI: IMU");
 	os_thread_helper_name(&depthai->imu_thread, "DepthAI: IMU");
+
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(depthai->log_level, "DepthAI: IMU");
+#endif
 
 	DEPTHAI_DEBUG(depthai, "DepthAI: IMU thread called");
 
