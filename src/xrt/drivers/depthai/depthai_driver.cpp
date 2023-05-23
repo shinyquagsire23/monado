@@ -14,6 +14,7 @@
 #include "os/os_threading.h"
 
 #include "math/m_api.h"
+#include "math/m_vec3.h"
 
 #include "util/u_sink.h"
 #include "util/u_var.h"
@@ -53,6 +54,9 @@
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
 DEBUG_GET_ONCE_NUM_OPTION(depthai_floodlight_brightness, "DEPTHAI_FLOODLIGHT_BRIGHTNESS", 1000)
 DEBUG_GET_ONCE_NUM_OPTION(depthai_startup_wait_frames, "DEPTHAI_STARTUP_WAIT_FRAMES", 0)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_hz, "DEPTHAI_IMU_HZ", 500)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_batch_size, "DEPTHAI_IMU_BATCH_SIZE", 2)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_max_batch_size, "DEPTHAI_IMU_MAX_BATCH_SIZE", 2)
 
 
 
@@ -516,14 +520,13 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 
 
 	std::vector<dai::IMUPacket> imuPackets = imuData->packets;
+	uint32_t num_packets = (uint32_t)imuPackets.size();
 
-	if (imuPackets.size() != 2) {
-		DEPTHAI_ERROR(depthai, "Wrong number of IMU reports!");
-		// Yeah we're not dealing with this. Shouldn't ever happen
-		return;
-	}
-
-	assert(imuPackets.size() == 2);
+	/*
+	 * We used to check num_packets here, but don't since they are now
+	 * configurable. Tho we probably should test them, or warn when the
+	 * number of packets is larger then batch size for too long.
+	 */
 
 	struct xrt_vec3 a = {0, 0, 0};
 	struct xrt_vec3 g = {0, 0, 0};
@@ -540,8 +543,8 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 		int64_t ts_gyro = dai_ts_to_monado_ts(gyro.timestamp);
 		int64_t diff = (ts_gyro - ts_accel);
 
-		ts += ts_accel / 4;
-		ts += ts_gyro / 4;
+		ts += ts_accel / (2 * num_packets);
+		ts += ts_gyro / (2 * num_packets);
 
 		float diff_in_ms = (float)(abs((double)diff) / (double)U_TIME_1MS_IN_NS);
 		if (diff_in_ms > 2.5) {
@@ -556,8 +559,11 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 		math_vec3_accum(&this_g, &g);
 	}
 
-	math_vec3_scalar_mul(0.5, &a);
-	math_vec3_scalar_mul(0.5, &g);
+	if (num_packets > 1) {
+		float scalar = 1.0f / (float)num_packets;
+		math_vec3_scalar_mul(scalar, &a);
+		math_vec3_scalar_mul(scalar, &g);
+	}
 
 
 	xrt_imu_sample sample;
@@ -788,13 +794,54 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	}
 
 	if (depthai->want_imu) {
+		uint32_t imu_hz = (uint32_t)debug_get_num_option_depthai_imu_hz();
+		uint32_t batch_size = (uint32_t)debug_get_num_option_depthai_imu_batch_size();
+		uint32_t max_batch_size = (uint32_t)debug_get_num_option_depthai_imu_max_batch_size();
+
+		/*
+		 * Limitations from:
+		 * https://docs.luxonis.com/projects/api/en/latest/components/nodes/imu/#limitations
+		 */
+		switch (imu_hz) {
+		case 400: // Supposed to be okay
+			DEPTHAI_DEBUG(depthai, "%uHz IMU sample rate is supposed to be ok.", imu_hz);
+			break;
+		case 500: // Maybe ok?
+			DEPTHAI_INFO(depthai, "%uHz IMU sample rate maybe produce jitters.", imu_hz);
+			break;
+		default: // Not known to be good on any (or both IMU and both Gyra/Accel at the same time).
+			DEPTHAI_WARN(depthai, "%uHz IMU sample rate not a known good rate.", imu_hz);
+			break;
+		}
+
+		switch (batch_size) {
+		case 1:
+		case 2: // Seems okay
+			DEPTHAI_DEBUG(depthai, "%u IMU batch size is supposed to be ok.", batch_size);
+			break;
+		default: // Not known to be good on any
+			DEPTHAI_WARN(depthai, "%iHz IMU batch size is not tested!", batch_size);
+			break;
+		}
+
+		if (max_batch_size < 2) {
+			DEPTHAI_WARN(depthai, "Max batch size(%u) smaller then 2, setting two.", max_batch_size);
+			max_batch_size = 2;
+		}
+
+		if (max_batch_size < batch_size) {
+			DEPTHAI_WARN(depthai, "Max batch size(%u) smaller then batch size(%u), setting to batch size.",
+			             max_batch_size, batch_size);
+			max_batch_size = batch_size;
+		}
+
 		std::shared_ptr<dai::node::XLinkOut> xlinkOut_imu = p.create<dai::node::XLinkOut>();
 		xlinkOut_imu->setStreamName(name_imu);
 
 		auto imu = p.create<dai::node::IMU>();
-		imu->enableIMUSensor({dai::IMUSensor::ACCELEROMETER_RAW, dai::IMUSensor::GYROSCOPE_RAW}, 500);
-		imu->setBatchReportThreshold(2);
-		imu->setMaxBatchReports(2);
+		imu->enableIMUSensor({dai::IMUSensor::ACCELEROMETER_RAW, dai::IMUSensor::GYROSCOPE_RAW}, imu_hz);
+		imu->setBatchReportThreshold(batch_size);
+		imu->setMaxBatchReports(max_batch_size);
 		imu->out.link(xlinkOut_imu->input);
 	}
 
