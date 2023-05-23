@@ -608,6 +608,12 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 	} else if (strcmp(d->firmware.model_number, "VIVE Tracker Pro MV") == 0) {
 		d->variant = CONTROLLER_TRACKER_GEN2;
 		VIVE_DEBUG(d, "Found Gen 2 tracker.");
+	} else if (strcmp(d->firmware.model_number, "VIVE Tracker 3.0 MV") == 0) {
+		d->variant = CONTROLLER_TRACKER_GEN3;
+		VIVE_DEBUG(d, "Found Gen 3 tracker.");
+	} else if (strcmp(d->firmware.model_number, "Tundra Tracker") == 0) {
+		d->variant = CONTROLLER_TRACKER_TUNDRA;
+		VIVE_DEBUG(d, "Found Tundra tracker.");
 	} else {
 		VIVE_ERROR(d, "Failed to parse controller variant!\n\tfirmware.model_[number|name]: '%s'",
 		           d->firmware.model_number);
@@ -624,7 +630,9 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 	} break;
 	case CONTROLLER_INDEX_LEFT:
 	case CONTROLLER_INDEX_RIGHT:
-	case CONTROLLER_TRACKER_GEN2: {
+	case CONTROLLER_TRACKER_GEN2:
+	case CONTROLLER_TRACKER_GEN3:
+	case CONTROLLER_TRACKER_TUNDRA: {
 		const cJSON *imu = u_json_get(json, "imu");
 		_get_pose_from_pos_x_z(imu, &d->imu.trackref);
 
@@ -632,7 +640,8 @@ vive_config_parse_controller(struct vive_controller_config *d, char *json_string
 		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
 
-		if (d->variant == CONTROLLER_TRACKER_GEN2)
+		if (d->variant == CONTROLLER_TRACKER_GEN2 || d->variant == CONTROLLER_TRACKER_GEN3 ||
+		    d->variant == CONTROLLER_TRACKER_TUNDRA)
 			JSON_VEC3(imu, "gyro_scale", &d->imu.gyro_scale);
 	} break;
 	default: VIVE_ERROR(d, "Unknown Vive watchman variant."); return false;

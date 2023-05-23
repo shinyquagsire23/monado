@@ -1025,7 +1025,8 @@ _create_controller_device(struct survive_system *sys,
 			U_LOG_IFL_E(sys->log_level, "Only creating 1 right controller!");
 			return false;
 		}
-	} else if (variant == CONTROLLER_TRACKER_GEN1 || variant == CONTROLLER_TRACKER_GEN2) {
+	} else if (variant == CONTROLLER_TRACKER_GEN1 || variant == CONTROLLER_TRACKER_GEN2 ||
+	           variant == CONTROLLER_TRACKER_GEN3 || variant == CONTROLLER_TRACKER_TUNDRA) {
 		for (int i = SURVIVE_NON_CONTROLLER_START; i < MAX_TRACKED_DEVICE_COUNT; i++) {
 			if (sys->controllers[i] == NULL) {
 				idx = i;
@@ -1128,13 +1129,21 @@ _create_controller_device(struct survive_system *sys,
 
 		survive->base.device_type = XRT_DEVICE_TYPE_ANY_HAND_CONTROLLER;
 	} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1 ||
-	           survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
+	           survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2 ||
+	           survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN3 ||
+	           survive->ctrl.config.variant == CONTROLLER_TRACKER_TUNDRA) {
 		if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN1) {
 			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN1;
 			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen1 (libsurvive)");
 		} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN2) {
 			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN2;
 			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen2 (libsurvive)");
+		} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_GEN3) {
+			survive->base.name = XRT_DEVICE_VIVE_TRACKER_GEN3;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen3 (libsurvive)");
+		} else if (survive->ctrl.config.variant == CONTROLLER_TRACKER_TUNDRA) {
+			survive->base.name = XRT_DEVICE_VIVE_TRACKER_TUNDRA;
+			snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Tundra Tracker Gen3 (libsurvive)");
 		}
 
 		survive->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
@@ -1186,6 +1195,8 @@ add_device(struct survive_system *ss, const struct SurviveSimpleConfigEvent *e)
 		case CONTROLLER_INDEX_RIGHT:
 		case CONTROLLER_TRACKER_GEN1:
 		case CONTROLLER_TRACKER_GEN2:
+		case CONTROLLER_TRACKER_GEN3:
+		case CONTROLLER_TRACKER_TUNDRA:
 			U_LOG_IFL_D(ss->log_level, "Adding controller: %s.", config.firmware.model_number);
 			_create_controller_device(ss, sso, &config);
 			break;
