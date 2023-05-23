@@ -469,10 +469,12 @@ depthai_maybe_send_floodlight_command(struct depthai_fs *depthai)
 static void *
 depthai_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
-
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
+
+	U_TRACE_SET_THREAD_NAME("DepthAI: Image");
+	os_thread_helper_name(&depthai->image_thread, "DepthAI: Image");
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Image thread called");
 
 	os_thread_helper_lock(&depthai->image_thread);
 	while (os_thread_helper_is_running_locked(&depthai->image_thread)) {
@@ -488,7 +490,8 @@ depthai_mainloop(void *ptr)
 	}
 	os_thread_helper_unlock(&depthai->image_thread);
 
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
+	DEPTHAI_DEBUG(depthai, "DepthAI: Image thread exiting");
+
 	return nullptr;
 }
 
@@ -572,10 +575,12 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 static void *
 depthai_imu_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
-
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
+
+	U_TRACE_SET_THREAD_NAME("DepthAI: IMU");
+	os_thread_helper_name(&depthai->imu_thread, "DepthAI: IMU");
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: IMU thread called");
 
 	os_thread_helper_lock(&depthai->imu_thread);
 	while (os_thread_helper_is_running_locked(&depthai->imu_thread)) {
@@ -588,7 +593,8 @@ depthai_imu_mainloop(void *ptr)
 	}
 	os_thread_helper_unlock(&depthai->imu_thread);
 
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
+	DEPTHAI_DEBUG(depthai, "DepthAI: IMU thread exiting");
+
 	return nullptr;
 }
 
