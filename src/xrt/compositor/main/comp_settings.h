@@ -36,6 +36,7 @@ XRT_MAYBE_UNUSED static const char *NV_DIRECT_ALLOWLIST[] = {
     "Seiko/Epson SEC144A",         // Samsung Odyssey+
     "HPN",                         // Reverb G2
     "HP Inc.",                     // Also Reverb G2?
+    "PNP",                         // NorthStar (Generic)
 };
 
 /*!
