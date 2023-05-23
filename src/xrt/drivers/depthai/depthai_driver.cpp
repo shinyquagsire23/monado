@@ -8,12 +8,14 @@
  * @ingroup drv_depthai
  */
 
+#include "xrt/xrt_tracking.h"
+
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
-#include "util/u_sink.h"
-#include "xrt/xrt_tracking.h"
+#include "math/m_api.h"
 
+#include "util/u_sink.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -21,7 +23,6 @@
 #include "util/u_format.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
-#include "math/m_api.h"
 
 #include "tracking/t_tracking.h"
 
