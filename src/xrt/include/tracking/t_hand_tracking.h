@@ -173,8 +173,6 @@ struct t_hand_tracking_async
 	                 uint64_t desired_timestamp_ns,
 	                 struct xrt_hand_joint_set *out_value,
 	                 uint64_t *out_timestamp_ns);
-
-	void (*destroy)(struct t_hand_tracking_async *ht_async);
 };
 
 struct t_hand_tracking_async *
