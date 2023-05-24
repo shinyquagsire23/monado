@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,19 +7,25 @@
  * @ingroup drv_ht
  */
 
-#include "tracking/t_hand_tracking.h"
-#include "util/u_misc.h"
-#include "util/u_trace_marker.h"
-#include "util/u_logging.h"
-#include "util/u_var.h"
 #include "os/os_threading.h"
 
 #include "math/m_space.h"
 #include "math/m_relation_history.h"
 
+#include "util/u_var.h"
+#include "util/u_misc.h"
+#include "util/u_logging.h"
+#include "util/u_trace_marker.h"
 
-//!@todo Definitely needs a destroy function, will leak a ton.
+#include "tracking/t_hand_tracking.h"
 
+
+/*!
+ * A synchronous to asynchronous wrapper around the hand-tracker code.
+ *
+ * @todo Definitely needs a destroy function, will leak a ton.
+ * @ingroup drv_ht
+ */
 struct ht_async_impl
 {
 	struct t_hand_tracking_async base;
@@ -54,6 +60,13 @@ struct ht_async_impl
 	volatile bool hand_tracking_work_active;
 };
 
+
+/*
+ *
+ * Misc functions.
+ *
+ */
+
 static inline struct ht_async_impl *
 ht_async_impl(struct t_hand_tracking_async *base)
 {
@@ -85,25 +98,49 @@ ht_async_mainloop(void *ptr)
 
 		os_thread_helper_unlock(&hta->mainloop);
 
-		t_ht_sync_process(hta->provider, hta->frames[0], hta->frames[1], &hta->working.hands[0],
-		                  &hta->working.hands[1], &hta->working.timestamp);
+
+		/*
+		 * Do the hand-tracking now.
+		 */
+
+		t_ht_sync_process(            //
+		    hta->provider,            //
+		    hta->frames[0],           //
+		    hta->frames[1],           //
+		    &hta->working.hands[0],   //
+		    &hta->working.hands[1],   //
+		    &hta->working.timestamp); //
 
 		xrt_frame_reference(&hta->frames[0], NULL);
 		xrt_frame_reference(&hta->frames[1], NULL);
+
+
+		/*
+		 * Post process.
+		 */
+
 		os_mutex_lock(&hta->present.mutex);
+
 		hta->present.timestamp = hta->working.timestamp;
+
 		for (int i = 0; i < 2; i++) {
 			hta->present.hands[i] = hta->working.hands[i];
 
 			struct xrt_space_relation wrist_rel =
 			    hta->working.hands[i].values.hand_joint_set_default[XRT_HAND_JOINT_WRIST].relation;
 
-			m_relation_history_estimate_motion(hta->present.relation_hist[i], //
-			                                   &wrist_rel,                    //
-			                                   hta->working.timestamp,        //
-			                                   &wrist_rel);
-			m_relation_history_push(hta->present.relation_hist[i], &wrist_rel, hta->working.timestamp);
+			m_relation_history_estimate_motion( //
+			    hta->present.relation_hist[i],  //
+			    &wrist_rel,                     //
+			    hta->working.timestamp,         //
+			    &wrist_rel);                    //
+
+			m_relation_history_push(           //
+			    hta->present.relation_hist[i], //
+			    &wrist_rel,                    //
+			    hta->working.timestamp);       //
 		}
+
 		os_mutex_unlock(&hta->present.mutex);
 
 		hta->hand_tracking_work_active = false;
@@ -117,15 +154,28 @@ ht_async_mainloop(void *ptr)
 	return NULL;
 }
 
+
+/*
+ *
+ * Sink receive functions.
+ *
+ */
+
 static void
 ht_async_receive_left(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(sink, struct t_hand_tracking_async, left));
+
+	// See comment in ht_async_receive_right.
 	if (hta->hand_tracking_work_active) {
 		// Throw away this frame
 		return;
 	}
+
+	// Ensure a strict left then right order of frames.
 	assert(hta->frames[0] == NULL);
+
+	// Keep onto this frame.
 	xrt_frame_reference(&hta->frames[0], frame);
 }
 
@@ -133,21 +183,72 @@ static void
 ht_async_receive_right(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(sink, struct t_hand_tracking_async, right));
+
+	/*
+	 * Throw away this frame - either the hand tracking work is running now,
+	 * or it was a very short time ago, and ht_async_receive_left threw away
+	 * its frame or there's some other bug where left isn't pushed before
+	 * right.
+	 */
 	if (hta->hand_tracking_work_active || hta->frames[0] == NULL) {
-		// Throw away this frame - either the hand tracking work is running now,
-		// or it was a very short time ago, and ht_async_receive_left threw away its frame
-		// or there's some other bug where left isn't pushed before right.
 		return;
 	}
+
+	// Just to sanity check the above.
 	assert(hta->frames[0] != NULL);
 	assert(hta->frames[1] == NULL);
+
+	// Keep onto this frame.
 	xrt_frame_reference(&hta->frames[1], frame);
+
+	// We have both frames, now work is active.
 	hta->hand_tracking_work_active = true;
-	// hta->working.timestamp = frame->timestamp;
+
+	// Wake up the worker thread.
 	os_thread_helper_lock(&hta->mainloop);
 	os_thread_helper_signal_locked(&hta->mainloop);
 	os_thread_helper_unlock(&hta->mainloop);
 }
+
+
+/*
+ *
+ * Sink node functions.
+ *
+ */
+
+static void
+ht_async_break_apart(struct xrt_frame_node *node)
+{
+	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
+
+	// Stop the thread, unsure nothing else is pushed into the tracker.
+	os_thread_helper_stop_and_wait(&hta->mainloop);
+}
+
+static void
+ht_async_destroy(struct xrt_frame_node *node)
+{
+	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
+
+	os_thread_helper_destroy(&hta->mainloop);
+	os_mutex_destroy(&hta->present.mutex);
+
+	t_ht_sync_destroy(&hta->provider);
+
+	for (int i = 0; i < 2; i++) {
+		m_relation_history_destroy(&hta->present.relation_hist[i]);
+	}
+
+	free(hta);
+}
+
+
+/*
+ *
+ * Member functions.
+ *
+ */
 
 static void
 ht_async_get_hand(struct t_hand_tracking_async *ht_async,
@@ -204,28 +305,12 @@ ht_async_get_hand(struct t_hand_tracking_async *ht_async,
 	*out_timestamp_ns = desired_timestamp_ns;
 }
 
-static void
-ht_async_break_apart(struct xrt_frame_node *node)
-{
-	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
-	os_thread_helper_stop_and_wait(&hta->mainloop);
-}
 
-static void
-ht_async_destroy(struct xrt_frame_node *node)
-{
-	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
-	os_thread_helper_destroy(&hta->mainloop);
-	os_mutex_destroy(&hta->present.mutex);
-
-	t_ht_sync_destroy(&hta->provider);
-
-	for (int i = 0; i < 2; i++) {
-		m_relation_history_destroy(&hta->present.relation_hist[i]);
-	}
-
-	free(hta);
-}
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
 
 struct t_hand_tracking_async *
 t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_hand_tracking_sync *sync)
@@ -239,39 +324,45 @@ t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_h
 	hta->base.node.break_apart = ht_async_break_apart;
 	hta->base.node.destroy = ht_async_destroy;
 	hta->base.get_hand = ht_async_get_hand;
-
 	hta->provider = sync;
 
 	for (int i = 0; i < 2; i++) {
 		m_relation_history_create(&hta->present.relation_hist[i]);
 	}
 
-	u_var_add_root(hta, "Hand-tracking async shim!", 0);
-
-	//!@todo We came up with this value just by seeing what worked - with Index and WMR, we'd be around 40ms late by
-	//! the time the camera frames arrived and were processed.
-
-	// We _really_ need a way to calibrate this live - something like an exponential filter that looks at the
-	// typical maximum time between the time at which we were asked for a sample and most recent processed sample
-	// timestamp.
-
-	hta->prediction_offset_ms.val = -40;
-	hta->prediction_offset_ms.step = 0.5;
+	/*!
+	 * @todo We came up with this value just by seeing what worked. With
+	 * Index and WMR, we'd be around 40ms late by the time the camera frames
+	 * arrived and were processed.
+	 *
+	 * We _really_ need a way to calibrate this live - something like an
+	 * exponential filter that looks at the typical maximum time between the
+	 * time at which we were asked for a sample and most recent processed
+	 * sample timestamp.
+	 */
+	float prediction_offset_ms = -40.0f;
 
 	hta->use_prediction = true;
+	hta->prediction_offset_ms = (struct u_var_draggable_f32){
+	    .val = prediction_offset_ms,
+	    .step = 0.5,
+	    // No need to enforce limits, although generally around -40 is what you want.
+	    .min = -1000000,
+	    .max = 1000000,
+	};
 
-	// No need to enforce limits, although generally around -40 is what you want.
-	hta->prediction_offset_ms.min = -1000000;
-	hta->prediction_offset_ms.max = 1000000;
-
-	u_var_add_bool(hta, &hta->use_prediction, "Predict wrist movement");
-	u_var_add_draggable_f32(hta, &hta->prediction_offset_ms, "Amount to time-travel (ms)");
-
-
+	// In reality never fails.
 	os_mutex_init(&hta->present.mutex);
 	os_thread_helper_init(&hta->mainloop);
 	os_thread_helper_start(&hta->mainloop, ht_async_mainloop, hta);
+
+	// Everything setup, add to frame context.
 	xrt_frame_context_add(xfctx, &hta->base.node);
+
+	// Now that everything initialised add to u_var.
+	u_var_add_root(hta, "Hand-tracking async shim!", 0);
+	u_var_add_bool(hta, &hta->use_prediction, "Predict wrist movement");
+	u_var_add_draggable_f32(hta, &hta->prediction_offset_ms, "Amount to time-travel (ms)");
 
 	return &hta->base;
 }
