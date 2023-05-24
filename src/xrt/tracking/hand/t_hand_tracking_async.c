@@ -14,10 +14,15 @@
 
 #include "util/u_var.h"
 #include "util/u_misc.h"
+#include "util/u_debug.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
 #include "tracking/t_hand_tracking.h"
+
+
+DEBUG_GET_ONCE_BOOL_OPTION(hta_prediction_disable, "HTA_PREDICTION_DISABLE", false)
+DEBUG_GET_ONCE_FLOAT_OPTION(hta_prediction_offset_ms, "HTA_PREDICTION_OFFSET_MS", -40.0f)
 
 
 /*!
@@ -339,9 +344,9 @@ t_hand_tracking_async_default_create(struct xrt_frame_context *xfctx, struct t_h
 	 * time at which we were asked for a sample and most recent processed
 	 * sample timestamp.
 	 */
-	float prediction_offset_ms = -40.0f;
+	float prediction_offset_ms = debug_get_float_option_hta_prediction_offset_ms();
 
-	hta->use_prediction = true;
+	hta->use_prediction = !debug_get_bool_option_hta_prediction_disable();
 	hta->prediction_offset_ms = (struct u_var_draggable_f32){
 	    .val = prediction_offset_ms,
 	    .step = 0.5,
