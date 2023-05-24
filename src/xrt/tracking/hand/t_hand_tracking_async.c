@@ -23,7 +23,6 @@
 /*!
  * A synchronous to asynchronous wrapper around the hand-tracker code.
  *
- * @todo Definitely needs a destroy function, will leak a ton.
  * @ingroup drv_ht
  */
 struct ht_async_impl
