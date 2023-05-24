@@ -149,7 +149,7 @@ ht_async_receive_right(struct xrt_frame_sink *sink, struct xrt_frame *frame)
 	os_thread_helper_unlock(&hta->mainloop);
 }
 
-void
+static void
 ht_async_get_hand(struct t_hand_tracking_async *ht_async,
                   enum xrt_input_name name,
                   uint64_t desired_timestamp_ns,
@@ -204,14 +204,14 @@ ht_async_get_hand(struct t_hand_tracking_async *ht_async,
 	*out_timestamp_ns = desired_timestamp_ns;
 }
 
-void
+static void
 ht_async_break_apart(struct xrt_frame_node *node)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
 	os_thread_helper_stop_and_wait(&hta->mainloop);
 }
 
-void
+static void
 ht_async_destroy(struct xrt_frame_node *node)
 {
 	struct ht_async_impl *hta = ht_async_impl(container_of(node, struct t_hand_tracking_async, node));
