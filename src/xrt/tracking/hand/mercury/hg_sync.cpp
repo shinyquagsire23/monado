@@ -1130,7 +1130,7 @@ t_hand_tracking_sync_mercury_create(struct t_stereo_camera_calibration *calib,
 	u_var_add_ro_f32(hgt, &hgt->refinement.hand_size_refinement_schedule_y, "Schedule (Y value)");
 
 
-	u_var_add_bool(hgt, &hgt->tuneable_values.new_user_event, "Trigger new-user event!");
+	u_var_add_bool(hgt, &hgt->tuneable_values.new_user_event, "Estimate hand sizes");
 
 	hgt->tuneable_values.optimize_hand_size = debug_get_bool_option_mercury_optimize_hand_size();
 
