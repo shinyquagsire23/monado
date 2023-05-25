@@ -245,6 +245,7 @@ oxr_instance_create(struct oxr_logger *log,
 	struct xrt_instance_info i_info = {0};
 	snprintf(i_info.application_name, sizeof(inst->xinst->instance_info.application_name), "%s",
 	         createInfo->applicationInfo.applicationName);
+	i_info.ext_hand_tracking_enabled = extensions->EXT_hand_tracking;
 
 #ifdef XRT_OS_ANDROID
 	XrInstanceCreateInfoAndroidKHR const *create_info_android = OXR_GET_INPUT_FROM_CHAIN(

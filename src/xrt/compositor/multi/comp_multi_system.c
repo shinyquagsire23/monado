@@ -361,14 +361,17 @@ update_session_state_locked(struct multi_system_compositor *msc)
 {
 	struct xrt_compositor *xc = &msc->xcn->base;
 
-	//! @todo Don't make this a hack.
-	enum xrt_view_type view_type = XRT_VIEW_TYPE_STEREO;
+	//! @todo Make this not be hardcoded.
+	const struct xrt_begin_session_info begin_session_info = {
+	    .view_type = XRT_VIEW_TYPE_STEREO,
+	    .ext_hand_tracking_enabled = false,
+	};
 
 	switch (msc->sessions.state) {
 	case MULTI_SYSTEM_STATE_INIT_WARM_START:
 		// Produce at least one frame on init.
 		msc->sessions.state = MULTI_SYSTEM_STATE_STOPPING;
-		xrt_comp_begin_session(xc, view_type);
+		xrt_comp_begin_session(xc, &begin_session_info);
 		U_LOG_I("Doing warm start, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 
@@ -378,7 +381,7 @@ update_session_state_locked(struct multi_system_compositor *msc)
 		}
 
 		msc->sessions.state = MULTI_SYSTEM_STATE_RUNNING;
-		xrt_comp_begin_session(xc, view_type);
+		xrt_comp_begin_session(xc, &begin_session_info);
 		U_LOG_I("Started native session, %u active app session(s).", (uint32_t)msc->sessions.active_count);
 		break;
 

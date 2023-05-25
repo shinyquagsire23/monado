@@ -816,6 +816,16 @@ struct xrt_compositor_info
 };
 
 /*!
+ * Begin Session information not known until clients have created an xrt-instance such as which
+ * extensions are enabled, view type, etc.
+ */
+struct xrt_begin_session_info
+{
+	enum xrt_view_type view_type;
+	bool ext_hand_tracking_enabled;
+};
+
+/*!
  * @interface xrt_compositor
  *
  * Common compositor client interface/base.
@@ -896,7 +906,7 @@ struct xrt_compositor
 	/*!
 	 * See xrBeginSession.
 	 */
-	xrt_result_t (*begin_session)(struct xrt_compositor *xc, enum xrt_view_type view_type);
+	xrt_result_t (*begin_session)(struct xrt_compositor *xc, const struct xrt_begin_session_info *info);
 
 	/*!
 	 * See xrEndSession, unlike the OpenXR one the state tracker is
@@ -1300,9 +1310,9 @@ xrt_comp_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
+xrt_comp_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
-	return xc->begin_session(xc, view_type);
+	return xc->begin_session(xc, info);
 }
 
 /*!

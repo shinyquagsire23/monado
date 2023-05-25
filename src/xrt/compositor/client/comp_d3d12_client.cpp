@@ -572,12 +572,12 @@ try {
 
 
 static xrt_result_t
-client_d3d12_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+client_d3d12_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_begin_session(&c->xcn->base, type);
+	return xrt_comp_begin_session(&c->xcn->base, info);
 }
 
 static xrt_result_t

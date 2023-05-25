@@ -174,12 +174,12 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_gl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+client_gl_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_begin_session(&c->xcn->base, type);
+	return xrt_comp_begin_session(&c->xcn->base, info);
 }
 
 static xrt_result_t

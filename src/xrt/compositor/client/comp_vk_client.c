@@ -383,14 +383,14 @@ client_vk_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_vk_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+client_vk_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	COMP_TRACE_MARKER();
 
 	struct client_vk_compositor *c = client_vk_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_begin_session(&c->xcn->base, type);
+	return xrt_comp_begin_session(&c->xcn->base, info);
 }
 
 static xrt_result_t

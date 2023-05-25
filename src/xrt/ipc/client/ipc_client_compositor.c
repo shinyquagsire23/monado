@@ -483,7 +483,7 @@ ipc_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event
 }
 
 static xrt_result_t
-ipc_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
+ipc_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 

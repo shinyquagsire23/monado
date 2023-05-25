@@ -140,8 +140,12 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 			                 view_type);
 		}
 
-		enum xrt_view_type xvt = (enum xrt_view_type)beginInfo->primaryViewConfigurationType;
-		xrt_result_t xret = xrt_comp_begin_session(xc, xvt);
+		const struct xrt_begin_session_info begin_session_info = {
+		    .view_type = (enum xrt_view_type)beginInfo->primaryViewConfigurationType,
+		    .ext_hand_tracking_enabled = sess->sys->inst->extensions.EXT_hand_tracking,
+		};
+
+		xrt_result_t xret = xrt_comp_begin_session(xc, &begin_session_info);
 		OXR_CHECK_XRET(log, sess, xret, xrt_comp_begin_session);
 	}
 

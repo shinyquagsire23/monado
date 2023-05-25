@@ -125,7 +125,7 @@ static bool
 compositor_init_renderer(struct comp_compositor *c);
 
 static xrt_result_t
-compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct comp_compositor *c = comp_compositor(xc);
 	COMP_DEBUG(c, "BEGIN_SESSION");

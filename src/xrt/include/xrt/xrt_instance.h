@@ -38,6 +38,7 @@ struct xrt_system_compositor;
 struct xrt_instance_info
 {
 	char application_name[XRT_MAX_APPLICATION_NAME_SIZE];
+	bool ext_hand_tracking_enabled;
 };
 
 /*!

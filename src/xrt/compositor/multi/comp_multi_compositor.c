@@ -500,7 +500,7 @@ multi_compositor_create_semaphore(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-multi_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+multi_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	COMP_TRACE_MARKER();
 

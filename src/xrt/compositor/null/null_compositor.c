@@ -305,7 +305,7 @@ compositor_init_sys_info(struct null_compositor *c, struct xrt_device *xdev)
  */
 
 static xrt_result_t
-null_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+null_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *type)
 {
 	struct null_compositor *c = null_compositor(xc);
 	NULL_DEBUG(c, "BEGIN_SESSION");

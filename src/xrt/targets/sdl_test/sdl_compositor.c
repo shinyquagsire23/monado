@@ -313,7 +313,7 @@ compositor_init_sys_info(struct sdl_compositor *c, struct sdl_program *sp, struc
  */
 
 static xrt_result_t
-sdl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+sdl_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct sdl_compositor *c = &from_comp(xc)->c;
 	SC_DEBUG(c, "BEGIN_SESSION");
