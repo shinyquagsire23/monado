@@ -214,6 +214,7 @@ ipc_handle_session_begin(volatile struct ipc_client_state *ics)
 	const struct xrt_begin_session_info begin_session_info = {
 	    .view_type = XRT_VIEW_TYPE_STEREO,
 	    .ext_hand_tracking_enabled = ics->client_state.info.ext_hand_tracking_enabled,
+	    .ext_eye_gaze_interaction_enabled = ics->client_state.info.ext_eye_gaze_interaction_enabled,
 	};
 
 	return xrt_comp_begin_session(ics->xc, &begin_session_info);

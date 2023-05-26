@@ -861,6 +861,7 @@ struct xrt_begin_session_info
 {
 	enum xrt_view_type view_type;
 	bool ext_hand_tracking_enabled;
+	bool ext_eye_gaze_interaction_enabled;
 };
 
 /*!

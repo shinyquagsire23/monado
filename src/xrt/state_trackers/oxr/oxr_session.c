@@ -1,10 +1,11 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Holds session related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -139,9 +140,12 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 			                 view_type);
 		}
 
+		const struct oxr_extension_status *extensions = &sess->sys->inst->extensions;
+
 		const struct xrt_begin_session_info begin_session_info = {
 		    .view_type = (enum xrt_view_type)beginInfo->primaryViewConfigurationType,
-		    .ext_hand_tracking_enabled = sess->sys->inst->extensions.EXT_hand_tracking,
+		    .ext_hand_tracking_enabled = extensions->EXT_hand_tracking,
+		    .ext_eye_gaze_interaction_enabled = extensions->EXT_eye_gaze_interaction,
 		};
 
 		xrt_result_t xret = xrt_comp_begin_session(xc, &begin_session_info);

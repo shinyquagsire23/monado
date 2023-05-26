@@ -4,6 +4,7 @@
  * @file
  * @brief  Holds instance related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -245,10 +246,12 @@ oxr_instance_create(struct oxr_logger *log,
 	// fill in our application info - @todo - replicate all createInfo
 	// fields?
 
-	struct xrt_instance_info i_info = {0};
+	struct xrt_instance_info i_info = {
+	    .ext_hand_tracking_enabled = extensions->EXT_hand_tracking,
+	    .ext_eye_gaze_interaction_enabled = extensions->EXT_eye_gaze_interaction,
+	};
 	snprintf(i_info.application_name, sizeof(inst->xinst->instance_info.application_name), "%s",
 	         createInfo->applicationInfo.applicationName);
-	i_info.ext_hand_tracking_enabled = extensions->EXT_hand_tracking;
 
 #ifdef XRT_OS_ANDROID
 	XrInstanceCreateInfoAndroidKHR const *create_info_android = OXR_GET_INPUT_FROM_CHAIN(

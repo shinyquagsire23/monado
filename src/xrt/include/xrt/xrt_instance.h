@@ -4,6 +4,7 @@
  * @file
  * @brief  Header for @ref xrt_instance object.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -39,6 +40,7 @@ struct xrt_instance_info
 {
 	char application_name[XRT_MAX_APPLICATION_NAME_SIZE];
 	bool ext_hand_tracking_enabled;
+	bool ext_eye_gaze_interaction_enabled;
 };
 
 /*!

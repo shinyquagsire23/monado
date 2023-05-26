@@ -1,10 +1,11 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Multi client wrapper compositor.
  * @author Pete Black <pblack@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup comp_multi
  */
 
@@ -371,6 +372,7 @@ update_session_state_locked(struct multi_system_compositor *msc)
 	const struct xrt_begin_session_info begin_session_info = {
 	    .view_type = XRT_VIEW_TYPE_STEREO,
 	    .ext_hand_tracking_enabled = false,
+	    .ext_eye_gaze_interaction_enabled = false,
 	};
 
 	switch (msc->sessions.state) {
