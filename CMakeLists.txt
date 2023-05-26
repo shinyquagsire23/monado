@@ -27,10 +27,11 @@ option(
 	"If XRT_OPENXR_INSTALL_ABSOLUTE_RUNTIME_PATH is off, use a relative path from the manifest to the runtime."
 	ON
 	)
-if(NOT WIN32)
+if(NOT WIN32 AND NOT ANDROID)
 	option(
 		XRT_OPENXR_INSTALL_ACTIVE_RUNTIME
-		"Make Monado the default OpenXR runtime on install" ON
+		"Make Monado the system-wide default OpenXR runtime on install (requires superuser permissions)"
+		OFF
 		)
 endif()
 
