@@ -19,6 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef XRT_OS_ANDROID
+#include <sys/system_properties.h>
+#endif
+
 
 DEBUG_GET_ONCE_BOOL_OPTION(print, "XRT_PRINT_OPTIONS", false)
 
@@ -40,6 +44,39 @@ get_option_raw(char *chars, size_t char_count, const char *name)
 	if (required_size == 0) {
 		return NULL;
 	}
+
+	return chars;
+}
+
+#elif defined XRT_OS_ANDROID
+
+struct android_read_arg
+{
+	char *chars;
+	size_t char_count;
+};
+
+static void
+android_on_property_read(void *cookie, const char *name, const char *value, uint32_t serial)
+{
+	struct android_read_arg *a = (struct android_read_arg *)cookie;
+
+	snprintf(a->chars, a->char_count, "%s", value);
+}
+
+static const char *
+get_option_raw(char *chars, size_t char_count, const char *name)
+{
+	char prefixed[1024];
+	snprintf(prefixed, ARRAY_SIZE(prefixed), "debug.xrt.%s", name);
+
+	const struct prop_info *pi = __system_property_find(prefixed);
+	if (pi == NULL) {
+		return NULL;
+	}
+
+	struct android_read_arg a = {.chars = chars, .char_count = char_count};
+	__system_property_read_callback(pi, &android_on_property_read, &a);
 
 	return chars;
 }
