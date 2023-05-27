@@ -119,6 +119,39 @@ u_file_open_file_in_config_dir(const char *filename, const char *mode)
 	return fopen(file_str, mode);
 }
 
+FILE *
+u_file_open_file_in_config_dir_subpath(const char *subpath, const char *filename, const char *mode)
+{
+	char tmp[PATH_MAX];
+	int i = u_file_get_config_dir(tmp, sizeof(tmp));
+	if (i < 0 || i >= (int)sizeof(tmp)) {
+		return NULL;
+	}
+
+	char fullpath[PATH_MAX];
+	i = snprintf(fullpath, sizeof(fullpath), "%s/%s", tmp, subpath);
+	if (i < 0 || i >= (int)sizeof(fullpath)) {
+		return NULL;
+	}
+
+	char file_str[PATH_MAX + 15];
+	i = snprintf(file_str, sizeof(file_str), "%s/%s", fullpath, filename);
+	if (i < 0 || i >= (int)sizeof(file_str)) {
+		return NULL;
+	}
+
+	FILE *file = fopen(file_str, mode);
+	if (file != NULL) {
+		return file;
+	}
+
+	// Try creating the path.
+	mkpath(fullpath);
+
+	// Do not report error.
+	return fopen(file_str, mode);
+}
+
 ssize_t
 u_file_get_hand_tracking_models_dir(char *out_path, size_t out_path_size)
 {
