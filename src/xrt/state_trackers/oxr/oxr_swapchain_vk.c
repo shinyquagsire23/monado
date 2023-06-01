@@ -37,7 +37,7 @@ vk_implicit_acquire_image(struct oxr_logger *log,
 	 * to be able to insert our transition.
 	 */
 	if (WAIT_IN_ACQUIRE) {
-		xret = xrt_swapchain_wait_image(xsc, 0, index);
+		xret = xrt_swapchain_wait_image(xsc, XR_INFINITE_DURATION, index);
 		OXR_CHECK_XRET(log, sc->sess, xret, xrt_swapchain_wait_image);
 	}
 
