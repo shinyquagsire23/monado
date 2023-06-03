@@ -535,8 +535,12 @@ wmr_controller_base_init(struct wmr_controller_base *wcb,
 
 	if (controller_type == XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER) {
 		snprintf(wcb->base.str, ARRAY_SIZE(wcb->base.str), "WMR Left Controller");
+		/* TODO: use proper serial from read_controller_config()? */
+		snprintf(wcb->base.serial, XRT_DEVICE_NAME_LEN, "Left Controller");
 	} else {
 		snprintf(wcb->base.str, ARRAY_SIZE(wcb->base.str), "WMR Right Controller");
+		/* TODO: use proper serial from read_controller_config()? */
+		snprintf(wcb->base.serial, XRT_DEVICE_NAME_LEN, "Right Controller");
 	}
 
 	wcb->base.get_tracked_pose = wmr_controller_base_get_tracked_pose;
