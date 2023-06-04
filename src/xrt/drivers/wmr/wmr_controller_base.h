@@ -38,10 +38,12 @@ struct wmr_controller_base;
  * The controller implementation doesn't need to care how
  * the communication is implemented.
  *
- * The connection is reference counted and mutex protected,
- * as both the controller and the connection implementation
- * may need to hold a reference to it, and to detach
- * safely when shutting down.
+ * The HMD-tunnelled version of the connection is reference
+ * counted and mutex protected, as both the controller and
+ * the HMD need to hold a reference to it to clean up safely.
+ * For bluetooth controllers, destruction of the controller
+ * xrt_device calls disconnect and destroys the connection
+ * object (and bluetooth listener) immediately.
  */
 struct wmr_controller_connection
 {
