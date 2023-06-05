@@ -373,6 +373,7 @@ update_session_state_locked(struct multi_system_compositor *msc)
 	    .view_type = XRT_VIEW_TYPE_STEREO,
 	    .ext_hand_tracking_enabled = false,
 	    .ext_eye_gaze_interaction_enabled = false,
+	    .ext_hand_interaction_enabled = false,
 	};
 
 	switch (msc->sessions.state) {

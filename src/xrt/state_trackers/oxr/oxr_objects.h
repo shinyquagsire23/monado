@@ -4,6 +4,7 @@
  * @file
  * @brief  The objects representing OpenXR handles, and prototypes for internal functions used in the state tracker.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -1366,6 +1367,7 @@ struct oxr_instance
 		XrPath mndx_ball_on_a_stick_controller;
 		XrPath msft_hand_interaction;
 		XrPath ext_eye_gaze_interaction;
+		XrPath ext_hand_interaction;
 	} path_cache;
 
 	struct

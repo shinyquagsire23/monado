@@ -54,6 +54,7 @@ EXTENSIONS = (
     ['XR_EXT_debug_utils', 'XRT_FEATURE_OPENXR_DEBUG_UTILS'],
     ['XR_EXT_dpad_binding'],
     ['XR_EXT_eye_gaze_interaction'],
+    ['XR_EXT_hand_interaction'],
     ['XR_EXT_hand_tracking'],
     ['XR_EXT_hp_mixed_reality_controller'],
     ['XR_EXT_palm_pose', 'ALWAYS_DISABLED'],

@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,6 +7,7 @@
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Christoph Haag <christoph.haag@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -862,6 +863,7 @@ struct xrt_begin_session_info
 	enum xrt_view_type view_type;
 	bool ext_hand_tracking_enabled;
 	bool ext_eye_gaze_interaction_enabled;
+	bool ext_hand_interaction_enabled;
 };
 
 /*!

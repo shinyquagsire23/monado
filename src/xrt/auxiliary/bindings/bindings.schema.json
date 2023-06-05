@@ -33,7 +33,8 @@
                 "value",
                 "haptic",
                 "force",
-                "pose"
+                "pose",
+                "ready_ext"
             ]
         },
         "subActionPathName": {
@@ -93,6 +94,9 @@
                     "$ref": "#/definitions/monadoBindingDefine"
                 },
                 "pose": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "ready_ext": {
                     "$ref": "#/definitions/monadoBindingDefine"
                 }
             }
@@ -197,7 +201,7 @@
                     "type": "object",
                     "title": "Paths provided by this profile",
                     "propertyNames": {
-                        "pattern": "^(/input/(select|menu|grip|aim|trackpad|system|squeeze|trigger|volume_up|volume_down|mute_mic|thumbrest|home|start|gaze_ext|([a-z]+)_mndx|[1-4]|thumbstick(_left|_right)?|view|a|b|x|y|dpad_(up|down|left|right)|shoulder(_left|_right)?))|(/output/haptic(_left|_right|_left_trigger|_right_trigger)?)$"
+                        "pattern": "^(/input/(select|menu|grip|aim|pinch|poke|trackpad|system|squeeze|trigger|volume_up|volume_down|mute_mic|thumbrest|home|start|gaze_ext|ready_ext|([a-z]+)_mndx|[1-4]|thumbstick(_left|_right)?|view|a|b|x|y|dpad_(up|down|left|right)|shoulder(_left|_right)?))|(/output/haptic(_left|_right|_left_trigger|_right_trigger)?)$"
                     },
                     "additionalProperties": {
                         "$ref": "#/definitions/subpathData"

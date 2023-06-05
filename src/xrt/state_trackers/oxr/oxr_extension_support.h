@@ -258,6 +258,17 @@
 
 
 /*
+ * XR_EXT_hand_interaction
+ */
+#if defined(XR_EXT_hand_interaction)
+#define OXR_HAVE_EXT_hand_interaction
+#define OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_) _(EXT_hand_interaction, EXT_HAND_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_)
+#endif
+
+
+/*
  * XR_EXT_hand_tracking
  */
 #if defined(XR_EXT_hand_tracking)
@@ -472,6 +483,7 @@
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
     OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_) \
+    OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \
     OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_) \
     OXR_EXTENSION_SUPPORT_EXT_palm_pose(_) \

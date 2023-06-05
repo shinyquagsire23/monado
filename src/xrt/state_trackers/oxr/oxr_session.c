@@ -146,6 +146,7 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 		    .view_type = (enum xrt_view_type)beginInfo->primaryViewConfigurationType,
 		    .ext_hand_tracking_enabled = extensions->EXT_hand_tracking,
 		    .ext_eye_gaze_interaction_enabled = extensions->EXT_eye_gaze_interaction,
+		    .ext_hand_interaction_enabled = extensions->EXT_hand_interaction,
 		};
 
 		xrt_result_t xret = xrt_comp_begin_session(xc, &begin_session_info);

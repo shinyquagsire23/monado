@@ -305,6 +305,16 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 		subpath_fn = oxr_verify_ext_eye_gaze_interaction_subpath;
 		dpad_path_fn = oxr_verify_ext_eye_gaze_interaction_dpad_path;
 		dpad_emulator_fn = oxr_verify_ext_eye_gaze_interaction_dpad_emulator;
+	} else if (ip == inst->path_cache.ext_hand_interaction) {
+		if (!inst->extensions.EXT_hand_interaction) {
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->interactionProfile == \"%s\") used but "
+			                 "XR_EXT_hand_interaction not enabled",
+			                 ip_str);
+		}
+		subpath_fn = oxr_verify_ext_hand_interaction_ext_subpath;
+		dpad_path_fn = oxr_verify_ext_hand_interaction_ext_dpad_path;
+		dpad_emulator_fn = oxr_verify_ext_hand_interaction_ext_dpad_emulator;
 	} else {
 		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(suggestedBindings->interactionProfile == \"%s\") is not "
@@ -318,6 +328,9 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 	const struct oxr_verify_extension_status verify_ext_status = {
 #ifdef OXR_HAVE_EXT_palm_pose
 	    .EXT_palm_pose = inst->extensions.EXT_palm_pose,
+#endif
+#ifdef OXR_HAVE_EXT_hand_interaction
+	    .EXT_hand_interaction = inst->extensions.EXT_hand_interaction,
 #endif
 	    .EXT_hp_mixed_reality_controller = inst->extensions.EXT_hp_mixed_reality_controller,
 	    .EXT_samsung_odyssey_controller = inst->extensions.EXT_samsung_odyssey_controller,
