@@ -50,6 +50,8 @@ enum wmr_controller_hp_input_index
 	WMR_CONTROLLER_INDEX_AIM_POSE,
 	WMR_CONTROLLER_INDEX_X_A_CLICK,
 	WMR_CONTROLLER_INDEX_Y_B_CLICK,
+	/* keep as last: */
+	WMR_CONTROLLER_INDEX_COUNT
 };
 
 #define SET_INPUT(wcb, INDEX, NAME)                                                                                    \
@@ -315,7 +317,8 @@ wmr_controller_hp_create(struct wmr_controller_connection *conn,
 	DRV_TRACE_MARKER();
 
 	enum u_device_alloc_flags flags = U_DEVICE_ALLOC_TRACKING_NONE;
-	struct wmr_controller_hp *ctrl = U_DEVICE_ALLOCATE(struct wmr_controller_hp, flags, 11, 1);
+	struct wmr_controller_hp *ctrl =
+	    U_DEVICE_ALLOCATE(struct wmr_controller_hp, flags, WMR_CONTROLLER_INDEX_COUNT, 1);
 	struct wmr_controller_base *wcb = (struct wmr_controller_base *)(ctrl);
 
 	if (!wmr_controller_base_init(wcb, conn, controller_type, log_level)) {
