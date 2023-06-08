@@ -115,12 +115,6 @@ struct wmr_hmd
 	//! Distortion related parameters
 	struct wmr_hmd_distortion_params distortion_params[2];
 
-	//! Precomputed transforms, @see precompute_sensor_transforms.
-	struct xrt_pose P_oxr_acc; //!< Converts accel samples into OpenXR coordinates
-	struct xrt_pose P_oxr_gyr; //!< Converts gyro samples into OpenXR coordinates
-	struct xrt_pose P_ht0_me;  //!< ME="middle of the eyes". HT0-to-ME transform but in OpenXR coordinates
-	struct xrt_pose P_imu_me;  //!< IMU=accel. IMU-to-ME transform but in OpenXR coordinates
-
 	struct hololens_sensors_packet packet;
 
 	struct

@@ -395,8 +395,8 @@ hololens_handle_sensors_avg(struct wmr_hmd *wh, const unsigned char *buffer, int
 	math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, &avg_raw_gyro, &avg_calib_gyro);
 	math_vec3_accum(&wh->config.sensors.accel.bias_offsets, &avg_calib_accel);
 	math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, &avg_calib_gyro);
-	math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, &avg_calib_accel, &avg_calib_accel);
-	math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, &avg_calib_gyro, &avg_calib_gyro);
+	math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_acc.orientation, &avg_calib_accel, &avg_calib_accel);
+	math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_gyr.orientation, &avg_calib_gyro, &avg_calib_gyro);
 
 	// Fusion tracking
 	os_mutex_lock(&wh->fusion.mutex);
@@ -431,14 +431,14 @@ hololens_handle_sensors_all(struct wmr_hmd *wh, const unsigned char *buffer, int
 		vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
 		math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
-		math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, cg, cg);
+		math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_gyr.orientation, cg, cg);
 
 		struct xrt_vec3 *ra = &raw_accel[i];
 		struct xrt_vec3 *ca = &calib_accel[i];
 		vec3_from_hololens_accel(wh->packet.accel, i, ra);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
 		math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
-		math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, ca, ca);
+		math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_acc.orientation, ca, ca);
 	}
 
 	// Fusion tracking
@@ -1145,7 +1145,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 	}
 
 	if (wh->tracking.imu2me) {
-		math_pose_transform(&wh->pose, &wh->P_imu_me, &wh->pose);
+		math_pose_transform(&wh->pose, &wh->config.sensors.transforms.P_imu_me, &wh->pose);
 	}
 
 	out_relation->pose = wh->pose;
@@ -1613,7 +1613,7 @@ wmr_hmd_slam_track(struct wmr_hmd *wh)
 static enum t_camera_orientation
 wmr_hmd_guess_camera_orientation(struct wmr_hmd *wh)
 {
-	struct xrt_quat Q_ht0_me = wh->P_ht0_me.orientation;
+	struct xrt_quat Q_ht0_me = wh->config.sensors.transforms.P_ht0_me.orientation;
 	struct xrt_vec2 swing = {0};
 	float twist = 0;
 	math_quat_to_swing_twist(&Q_ht0_me, &swing, &twist);
@@ -1684,7 +1684,7 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 	}
 
 	device = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, device, &wh->base,
-	                                        XRT_INPUT_GENERIC_HEAD_POSE, &wh->P_ht0_me);
+	                                        XRT_INPUT_GENERIC_HEAD_POSE, &wh->config.sensors.transforms.P_ht0_me);
 
 	WMR_DEBUG(wh, "WMR HMD hand tracker successfully created");
 #endif
@@ -1851,69 +1851,6 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	return true;
 }
 
-/*!
- * Precompute transforms to convert between OpenXR and WMR coordinate systems.
- *
- * OpenXR: X: Right, Y: Up, Z: Backward
- * WMR: X: Right, Y: Down, Z: Forward
- * ┌────────────────────┐
- * │   OXR       WMR    │
- * │                    │
- * │ ▲ y                │
- * │ │         ▲ z      │
- * │ │    x    │    x   │
- * │ ├──────►  ├──────► │
- * │ │         │        │
- * │ ▼ z       │        │
- * │           ▼ y      │
- * └────────────────────┘
- */
-static void
-precompute_sensor_transforms(struct wmr_hmd *wh)
-{
-	// P_A_B is such that B = P_A_B * A. See conventions.md
-	struct xrt_pose P_oxr_wmr = {{.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0}, XRT_VEC3_ZERO};
-	struct xrt_pose P_wmr_oxr = {0};
-	struct xrt_pose P_acc_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_gyr_ht0 = wh->config.sensors.gyro.pose;
-	struct xrt_pose P_ht0_acc = {0};
-	struct xrt_pose P_ht0_gyr = {0};
-	struct xrt_pose P_me_ht0 = {0}; // "me" == "middle of the eyes"
-	struct xrt_pose P_me_acc = {0};
-	struct xrt_pose P_me_gyr = {0};
-	struct xrt_pose P_ht0_me = {0};
-	struct xrt_pose P_acc_me = {0};
-	struct xrt_pose P_oxr_ht0_me = {0}; // P_ht0_me in OpenXR coordinates
-	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
-
-	// All of the observed headsets have reported a zero translation for its gyro
-	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
-
-	// Initialize transforms
-
-	// All of these are in WMR coordinates.
-	math_pose_invert(&P_oxr_wmr, &P_wmr_oxr); // P_wmr_oxr == P_oxr_wmr
-	math_pose_invert(&P_acc_ht0, &P_ht0_acc);
-	math_pose_invert(&P_gyr_ht0, &P_ht0_gyr);
-	math_pose_interpolate(&wh->config.eye_params[0].pose, &wh->config.eye_params[1].pose, 0.5, &P_me_ht0);
-	math_pose_transform(&P_me_ht0, &P_ht0_acc, &P_me_acc);
-	math_pose_transform(&P_me_ht0, &P_ht0_gyr, &P_me_gyr);
-	math_pose_invert(&P_me_ht0, &P_ht0_me);
-	math_pose_invert(&P_me_acc, &P_acc_me);
-
-	// Express P_*_me pose in OpenXR coordinates through sandwich products.
-	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
-	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
-	math_pose_transform(&P_ht0_me, &P_wmr_oxr, &P_oxr_ht0_me);
-	math_pose_transform(&P_oxr_wmr, &P_oxr_ht0_me, &P_oxr_ht0_me);
-
-	// Save transforms
-	math_pose_transform(&P_oxr_wmr, &P_me_acc, &wh->P_oxr_acc);
-	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &wh->P_oxr_gyr);
-	wh->P_ht0_me = P_oxr_ht0_me;
-	wh->P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
-}
-
 static bool
 wmr_hmd_request_controller_status(struct wmr_hmd *wh)
 {
@@ -2044,7 +1981,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
-	precompute_sensor_transforms(wh);
+	wmr_config_precompute_transforms(&wh->config.sensors, wh->config.eye_params);
 
 	struct u_extents_2d exts;
 	exts.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;

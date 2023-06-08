@@ -7,7 +7,7 @@
  * @author Jan Schmidt <jan@centricular.com>
  * @ingroup drv_wmr
  */
-#include <string.h>
+
 #include "math/m_api.h"
 
 #include "util/u_debug.h"
@@ -15,6 +15,10 @@
 #include "util/u_json.h"
 
 #include "wmr_config.h"
+
+#include <assert.h>
+#include <string.h>
+
 
 #define WMR_TRACE(log_level, ...) U_LOG_IFL_T(log_level, __VA_ARGS__)
 #define WMR_DEBUG(log_level, ...) U_LOG_IFL_D(log_level, __VA_ARGS__)
@@ -583,4 +587,71 @@ wmr_controller_config_parse(struct wmr_controller_config *c, char *json_string, 
 	cJSON_Delete(json_root);
 
 	return true;
+}
+
+/*!
+ * Precompute transforms to convert between OpenXR and WMR coordinate systems.
+ *
+ * OpenXR: X: Right, Y: Up, Z: Backward
+ * WMR: X: Right, Y: Down, Z: Forward
+ * ┌────────────────────┐
+ * │   OXR       WMR    │
+ * │                    │
+ * │ ▲ y                │
+ * │ │         ▲ z      │
+ * │ │    x    │    x   │
+ * │ ├──────►  ├──────► │
+ * │ │         │        │
+ * │ ▼ z       │        │
+ * │           ▼ y      │
+ * └────────────────────┘
+ */
+void
+wmr_config_precompute_transforms(struct wmr_inertial_sensors_config *sensors,
+                                 struct wmr_distortion_eye_config *eye_params)
+{
+	// P_A_B is such that B = P_A_B * A. See conventions.md
+	struct xrt_pose P_oxr_wmr = {{.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0}, XRT_VEC3_ZERO};
+	struct xrt_pose P_wmr_oxr = {0};
+	struct xrt_pose P_acc_ht0 = sensors->accel.pose;
+	struct xrt_pose P_gyr_ht0 = sensors->gyro.pose;
+	struct xrt_pose P_ht0_acc = {0};
+	struct xrt_pose P_ht0_gyr = {0};
+	struct xrt_pose P_me_ht0 = {0}; // "me" == "middle of the eyes"
+	struct xrt_pose P_me_acc = {0};
+	struct xrt_pose P_me_gyr = {0};
+	struct xrt_pose P_ht0_me = {0};
+	struct xrt_pose P_acc_me = {0};
+	struct xrt_pose P_oxr_ht0_me = {0}; // P_ht0_me in OpenXR coordinates
+	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
+
+	// All of the observed headsets have reported a zero translation for its gyro
+	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
+
+	// Initialize transforms
+
+	// All of these are in WMR coordinates.
+	math_pose_invert(&P_oxr_wmr, &P_wmr_oxr); // P_wmr_oxr == P_oxr_wmr
+	math_pose_invert(&P_acc_ht0, &P_ht0_acc);
+	math_pose_invert(&P_gyr_ht0, &P_ht0_gyr);
+	if (eye_params)
+		math_pose_interpolate(&eye_params[0].pose, &eye_params[1].pose, 0.5, &P_me_ht0);
+	else
+		math_pose_identity(&P_me_ht0);
+	math_pose_transform(&P_me_ht0, &P_ht0_acc, &P_me_acc);
+	math_pose_transform(&P_me_ht0, &P_ht0_gyr, &P_me_gyr);
+	math_pose_invert(&P_me_ht0, &P_ht0_me);
+	math_pose_invert(&P_me_acc, &P_acc_me);
+
+	// Express P_*_me pose in OpenXR coordinates through sandwich products.
+	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
+	math_pose_transform(&P_ht0_me, &P_wmr_oxr, &P_oxr_ht0_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_ht0_me, &P_oxr_ht0_me);
+
+	// Save transforms
+	math_pose_transform(&P_oxr_wmr, &P_me_acc, &sensors->transforms.P_oxr_acc);
+	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &sensors->transforms.P_oxr_gyr);
+	sensors->transforms.P_ht0_me = P_oxr_ht0_me;
+	sensors->transforms.P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
 }
