@@ -284,6 +284,7 @@ wmr_controller_hp_update_xrt_inputs(struct xrt_device *xdev)
 	xrt_inputs[WMR_CONTROLLER_INDEX_X_A_CLICK].value.boolean = cur_inputs->x_a;
 	xrt_inputs[WMR_CONTROLLER_INDEX_Y_B_CLICK].value.boolean = cur_inputs->y_b;
 	xrt_inputs[WMR_CONTROLLER_INDEX_SQUEEZE_CLICK].value.boolean = cur_inputs->squeeze;
+	xrt_inputs[WMR_CONTROLLER_INDEX_SQUEEZE_VALUE].value.vec1.x = cur_inputs->squeeze;
 	xrt_inputs[WMR_CONTROLLER_INDEX_TRIGGER_VALUE].value.vec1.x = cur_inputs->trigger;
 	xrt_inputs[WMR_CONTROLLER_INDEX_THUMBSTICK_CLICK].value.boolean = cur_inputs->thumbstick.click;
 	xrt_inputs[WMR_CONTROLLER_INDEX_THUMBSTICK].value.vec2 = cur_inputs->thumbstick.values;
@@ -343,6 +344,7 @@ wmr_controller_hp_create(struct wmr_controller_connection *conn,
 	SET_INPUT(wcb, MENU_CLICK, MENU_CLICK);
 	SET_INPUT(wcb, HOME_CLICK, HOME_CLICK);
 	SET_INPUT(wcb, SQUEEZE_CLICK, SQUEEZE_CLICK);
+	SET_INPUT(wcb, SQUEEZE_VALUE, SQUEEZE_VALUE);
 	SET_INPUT(wcb, TRIGGER_VALUE, TRIGGER_VALUE);
 	SET_INPUT(wcb, THUMBSTICK_CLICK, THUMBSTICK_CLICK);
 	SET_INPUT(wcb, THUMBSTICK, THUMBSTICK);
