@@ -581,6 +581,8 @@ wmr_controller_base_init(struct wmr_controller_base *wcb,
 		return false;
 	}
 
+	wmr_config_precompute_transforms(&wcb->config.sensors, NULL);
+
 	/* Enable the status reports, IMU and control status reports */
 	const unsigned char wmr_controller_status_enable_cmd[64] = {0x06, 0x03, 0x01, 0x00, 0x02};
 	wmr_controller_send_bytes(wcb, wmr_controller_status_enable_cmd, sizeof(wmr_controller_status_enable_cmd));
