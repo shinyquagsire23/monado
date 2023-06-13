@@ -163,7 +163,7 @@ namespace tyti
             typedef CharT char_type;
             std::basic_string<char_type> name;
             std::unordered_map<std::basic_string<char_type>, std::basic_string<char_type>> attribs;
-            std::unordered_map<std::basic_string<char_type>, std::shared_ptr<basic_object<char_type>>> childs;
+            std::unordered_map<std::basic_string<char_type>, std::shared_ptr<basic_object<char_type>>> children;
 
             void add_attribute(std::basic_string<char_type> key, std::basic_string<char_type> value)
             {
@@ -172,7 +172,7 @@ namespace tyti
             void add_child(std::unique_ptr<basic_object<char_type>> child)
             {
                 std::shared_ptr<basic_object<char_type>> obj{ child.release() };
-                childs.emplace(obj->name, obj);
+                children.emplace(obj->name, obj);
             }
             void set_name(std::basic_string<char_type> n)
             {
@@ -186,7 +186,7 @@ namespace tyti
             typedef CharT char_type;
             std::basic_string<char_type> name;
             std::unordered_multimap<std::basic_string<char_type>, std::basic_string<char_type>> attribs;
-            std::unordered_multimap<std::basic_string<char_type>, std::shared_ptr<basic_multikey_object<char_type>>> childs;
+            std::unordered_multimap<std::basic_string<char_type>, std::shared_ptr<basic_multikey_object<char_type>>> children;
 
             void add_attribute(std::basic_string<char_type> key, std::basic_string<char_type> value)
             {
@@ -195,7 +195,7 @@ namespace tyti
             void add_child(std::unique_ptr<basic_multikey_object<char_type>> child)
             {
                 std::shared_ptr<basic_multikey_object<char_type>> obj{ child.release() };
-                childs.emplace(obj->name, obj);
+                children.emplace(obj->name, obj);
             }
             void set_name(std::basic_string<char_type> n)
             {
@@ -234,7 +234,7 @@ namespace tyti
             s << tab << TYTI_L(charT, '"') << r.name << TYTI_L(charT, "\"\n") << tab << TYTI_L(charT, "{\n");
             for (const auto& i : r.attribs)
                 s << tab + 1 << TYTI_L(charT, '"') << i.first << TYTI_L(charT, "\"\t\t\"") << i.second << TYTI_L(charT, "\"\n");
-            for (const auto& i : r.childs)
+            for (const auto& i : r.children)
                 if (i.second)
                     write(s, *i.second, tab + 1);
             s << tab << TYTI_L(charT, "}\n");
