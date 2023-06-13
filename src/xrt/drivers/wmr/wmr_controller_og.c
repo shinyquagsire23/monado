@@ -226,6 +226,9 @@ wmr_controller_og_packet_parse(struct wmr_controller_og *ctrl, const unsigned ch
 	acc[1] = read24(&p); // y
 	acc[2] = read24(&p); // z
 	vec3_from_wmr_controller_accel(acc, &last_input->imu.acc);
+	math_matrix_3x3_transform_vec3(&wcb->config.sensors.accel.mix_matrix, &last_input->imu.acc,
+	                               &last_input->imu.acc);
+	math_vec3_accum(&wcb->config.sensors.accel.bias_offsets, &last_input->imu.acc);
 	math_quat_rotate_vec3(&wcb->config.sensors.transforms.P_oxr_acc.orientation, &last_input->imu.acc,
 	                      &last_input->imu.acc);
 
@@ -242,6 +245,9 @@ wmr_controller_og_packet_parse(struct wmr_controller_og *ctrl, const unsigned ch
 	gyro[1] = read24(&p);
 	gyro[2] = read24(&p);
 	vec3_from_wmr_controller_gyro(gyro, &last_input->imu.gyro);
+	math_matrix_3x3_transform_vec3(&wcb->config.sensors.gyro.mix_matrix, &last_input->imu.gyro,
+	                               &last_input->imu.gyro);
+	math_vec3_accum(&wcb->config.sensors.gyro.bias_offsets, &last_input->imu.gyro);
 	math_quat_rotate_vec3(&wcb->config.sensors.transforms.P_oxr_gyr.orientation, &last_input->imu.gyro,
 	                      &last_input->imu.gyro);
 
