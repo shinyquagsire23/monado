@@ -24,6 +24,7 @@
 
 #include "target_builder_interface.h"
 
+#include "vive/vive_common.h"
 #include "vive/vive_config.h"
 #include "vive/vive_calibration.h"
 #include "v4l2/v4l2_interface.h"
@@ -31,6 +32,7 @@
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_results.h"
 #include "xrt/xrt_tracking.h"
+
 
 #include <assert.h>
 

@@ -28,19 +28,6 @@ extern "C" {
  * @brief Driver for the HTC Vive and Valve Index family of HMDs.
  */
 
-#define HTC_VID 0x0bb4
-#define VALVE_VID 0x28de
-
-#define VIVE_PID 0x2c87
-#define VIVE_LIGHTHOUSE_FPGA_RX 0x2000
-
-#define VIVE_PRO_MAINBOARD_PID 0x0309
-#define VIVE_PRO_LHR_PID 0x2300
-
-#define VIVE_WATCHMAN_DONGLE 0x2101
-#define VIVE_WATCHMAN_DONGLE_GEN2 0x2102
-
-
 /*!
  * Probing function for Vive devices.
  *

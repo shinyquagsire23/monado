@@ -14,6 +14,8 @@
 #include "util/u_prober.h"
 #include "util/u_trace_marker.h"
 
+#include "vive/vive_common.h"
+
 #include "vive_device.h"
 #include "vive_controller.h"
 #include "vive_prober.h"
