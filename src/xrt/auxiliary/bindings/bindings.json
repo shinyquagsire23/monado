@@ -1355,6 +1355,26 @@
 					}
 				}
 			}
+		},
+
+		"/interaction_profiles/ext/eye_gaze_interaction": {
+			"title": "Extension Eye Gaze Interaction",
+			"type": "eye_tracker",
+			"monado_device": "XRT_DEVICE_EYE_GAZE_INTERACTION",
+			"extension": "XR_EXT_eye_gaze_interaction",
+			"subaction_paths": [
+				"/user/eyes_ext"
+			],
+			"subpaths": {
+				"/input/gaze_ext": {
+					"type": "pose",
+					"localized_name": "Gaze",
+					"components": ["pose"],
+					"monado_bindings": {
+						"pose": "XRT_INPUT_GENERIC_EYE_GAZE_POSE"
+					}
+				}
+			}
 		}
 	}
 }

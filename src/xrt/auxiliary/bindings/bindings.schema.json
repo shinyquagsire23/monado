@@ -7,7 +7,8 @@
             "enum": [
                 "tracked_controller",
                 "untracked_controller",
-                "tracked_hmd"
+                "tracked_hmd",
+                "eye_tracker"
             ]
         },
         "subpathType": {
@@ -42,7 +43,8 @@
                 "/user/hand/left",
                 "/user/hand/right",
                 "/user/head",
-                "/user/gamepad"
+                "/user/gamepad",
+                "/user/eyes_ext"
             ]
         },
         "steamVrControllerType": {
@@ -195,7 +197,7 @@
                     "type": "object",
                     "title": "Paths provided by this profile",
                     "propertyNames": {
-                        "pattern": "^(/input/(select|menu|grip|aim|trackpad|system|squeeze|trigger|volume_up|volume_down|mute_mic|thumbrest|home|start|([a-z]+)_mndx|[1-4]|thumbstick(_left|_right)?|view|a|b|x|y|dpad_(up|down|left|right)|shoulder(_left|_right)?))|(/output/haptic(_left|_right|_left_trigger|_right_trigger)?)$"
+                        "pattern": "^(/input/(select|menu|grip|aim|trackpad|system|squeeze|trigger|volume_up|volume_down|mute_mic|thumbrest|home|start|gaze_ext|([a-z]+)_mndx|[1-4]|thumbstick(_left|_right)?|view|a|b|x|y|dpad_(up|down|left|right)|shoulder(_left|_right)?))|(/output/haptic(_left|_right|_left_trigger|_right_trigger)?)$"
                     },
                     "additionalProperties": {
                         "$ref": "#/definitions/subpathData"
