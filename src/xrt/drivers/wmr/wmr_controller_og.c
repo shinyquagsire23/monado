@@ -8,6 +8,8 @@
  * @author Jan Schmidt <jan@centricular.com>
  * @ingroup drv_wmr
  */
+#include "math/m_api.h"
+
 #include "util/u_device.h"
 #include "util/u_trace_marker.h"
 #include "util/u_var.h"
@@ -224,6 +226,8 @@ wmr_controller_og_packet_parse(struct wmr_controller_og *ctrl, const unsigned ch
 	acc[1] = read24(&p); // y
 	acc[2] = read24(&p); // z
 	vec3_from_wmr_controller_accel(acc, &last_input->imu.acc);
+	math_quat_rotate_vec3(&wcb->config.sensors.transforms.P_oxr_acc.orientation, &last_input->imu.acc,
+	                      &last_input->imu.acc);
 
 	U_LOG_IFL_T(wcb->log_level, "Accel [m/s^2] : %f",
 	            sqrtf(last_input->imu.acc.x * last_input->imu.acc.x +
@@ -238,6 +242,8 @@ wmr_controller_og_packet_parse(struct wmr_controller_og *ctrl, const unsigned ch
 	gyro[1] = read24(&p);
 	gyro[2] = read24(&p);
 	vec3_from_wmr_controller_gyro(gyro, &last_input->imu.gyro);
+	math_quat_rotate_vec3(&wcb->config.sensors.transforms.P_oxr_gyr.orientation, &last_input->imu.gyro,
+	                      &last_input->imu.gyro);
 
 
 	uint32_t prev_ticks = last_input->imu.timestamp_ticks & UINT32_C(0xFFFFFFFF);
