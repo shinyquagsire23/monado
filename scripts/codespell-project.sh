@@ -19,7 +19,8 @@
 set -e
 
 # Comma-delimited list of words for codespell to not try to correct.
-IGNORE_WORDS_LIST="ang,sinc,sie,inout,stoll,wil,daa,localy,od,ser,unknwn,parm"
+IGNORE_WORDS_LIST="ang,sinc,sie,stoll,wil,daa,localy,od,ser,unknwn,parm"
+IGNORE_REGEX="\b(pEvent|inout)\b"
 
 SCRIPTDIR=$(cd "$(dirname "$0")" && pwd)
 
@@ -44,6 +45,7 @@ SCRIPTDIR=$(cd "$(dirname "$0")" && pwd)
                 -o -name "CMakeLists.txt" \) \
                 -exec codespell \
                     "--exclude-file=${SCRIPTDIR}/monado-codespell.exclude" \
+                    "--ignore-regex=${IGNORE_REGEX}" \
                     --ignore-words-list="${IGNORE_WORDS_LIST}" \
                     -w \
                     "$@" \
