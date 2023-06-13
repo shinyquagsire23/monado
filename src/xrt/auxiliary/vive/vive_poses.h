@@ -4,7 +4,7 @@
  * @file
  * @brief  vive poses header
  * @author Daniel Willmott <web@dan-w.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #pragma once

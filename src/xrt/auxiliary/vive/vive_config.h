@@ -5,7 +5,7 @@
  * @brief  vive json header
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #pragma once
@@ -41,7 +41,7 @@ extern "C" {
 /*!
  * Headset variant.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 enum VIVE_VARIANT
 {
@@ -54,7 +54,7 @@ enum VIVE_VARIANT
 /*!
  * Controller variant.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 enum VIVE_CONTROLLER_VARIANT
 {
@@ -69,7 +69,7 @@ enum VIVE_CONTROLLER_VARIANT
 /*!
  * A calibrated camera on an Index.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 struct index_camera
 {
@@ -108,7 +108,7 @@ struct index_camera
 /*!
  * A single lighthouse senosor point and normal, in IMU space.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 struct lh_sensor
 {
@@ -123,7 +123,7 @@ struct lh_sensor
  *
  * All sensors are placed in IMU space.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 struct lh_model
 {
@@ -134,7 +134,7 @@ struct lh_model
 /*!
  * headset config.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 struct vive_config
 {
@@ -211,7 +211,7 @@ struct vive_config
 /*!
  * Controller config.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 struct vive_controller_config
 {
@@ -255,7 +255,7 @@ struct vive_controller_config
 /*!
  * Parse a headset config.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 bool
 vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level);
@@ -263,7 +263,7 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 /*!
  * Free any allocated resources on this config.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 void
 vive_config_teardown(struct vive_config *config);
@@ -271,7 +271,7 @@ vive_config_teardown(struct vive_config *config);
 /*!
  * Parse a controller config.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 bool
 vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level);

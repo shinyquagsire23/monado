@@ -5,7 +5,7 @@
  * @brief  Shared bindings structs for @ref drv_vive & @ref drv_survive.
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #include "vive/vive_bindings.h"

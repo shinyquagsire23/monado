@@ -5,7 +5,7 @@
  * @brief  Vive calibration getters.
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #include "math/m_api.h"

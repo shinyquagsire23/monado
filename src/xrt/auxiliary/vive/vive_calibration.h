@@ -5,7 +5,7 @@
  * @brief  Vive calibration getters.
  * @author Mateo de Mayo <mateo.demayo@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #pragma once
@@ -24,7 +24,7 @@ struct vive_config;
 /*!
  * Get a @ref t_stereo_camera_calibration and @ref xrt_pose from left camera to head translation.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 bool
 vive_get_stereo_camera_calibration(const struct vive_config *d,
@@ -34,7 +34,7 @@ vive_get_stereo_camera_calibration(const struct vive_config *d,
 /*!
  * Get a @ref t_slam_camera_calibration one for each camera.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 void
 vive_get_slam_cams_calib(const struct vive_config *d,
@@ -44,7 +44,7 @@ vive_get_slam_cams_calib(const struct vive_config *d,
 /*!
  * Get a @ref t_imu_calibration for the IMU.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 void
 vive_get_imu_calibration(const struct vive_config *d, struct t_imu_calibration *out_calib);
@@ -52,7 +52,7 @@ vive_get_imu_calibration(const struct vive_config *d, struct t_imu_calibration *
 /*!
  * Get a @ref t_slam_imu_calibration for the IMU.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 void
 vive_get_slam_imu_calibration(const struct vive_config *d, struct t_slam_imu_calibration *out_calib);

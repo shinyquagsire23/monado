@@ -4,7 +4,7 @@
  * @file
  * @brief  Vive poses implementation
  * @author Daniel Willmott <web@dan-w.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #include "vive_poses.h"

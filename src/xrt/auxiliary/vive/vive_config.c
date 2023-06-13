@@ -5,7 +5,7 @@
  * @brief  Vive json implementation
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #include "math/m_api.h"

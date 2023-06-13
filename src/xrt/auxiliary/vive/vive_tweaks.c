@@ -4,7 +4,7 @@
  * @file
  * @brief  Tweaks for various bits on Vive and Index headsets.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #include "xrt/xrt_defines.h"

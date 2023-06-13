@@ -4,7 +4,7 @@
  * @file
  * @brief  Tweaks for various bits on Vive and Index headsets.
  * @author Jakob Bornecrantz <jakob@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #pragma once
@@ -22,7 +22,7 @@ struct vive_config;
 /*!
  * Tweak the fov for the views on the given config, to make it better.
  *
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 void
 vive_tweak_fov(struct vive_config *config);
