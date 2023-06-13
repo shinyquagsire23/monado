@@ -246,6 +246,10 @@ get_subaction_path_from_path(struct oxr_logger *log,
 		*out_subaction_path = OXR_SUB_ACTION_PATH_GAMEPAD;
 		return true;
 	}
+	if (length >= 14 && strncmp("/user/eyes_ext", str, 14) == 0) {
+		*out_subaction_path = OXR_SUB_ACTION_PATH_EYES;
+		return true;
+	}
 
 	return false;
 }
@@ -332,6 +336,7 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER: FIND_PROFILE(samsung_odyssey_controller); return;
 	case XRT_DEVICE_ML2_CONTROLLER: FIND_PROFILE(ml_ml2_controller); return;
 	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
+	case XRT_DEVICE_EYE_GAZE_INTERACTION: FIND_PROFILE(ext_eye_gaze_interaction); return;
 
 	// no interaction
 	default:

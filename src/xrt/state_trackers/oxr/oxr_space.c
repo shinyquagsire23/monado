@@ -230,6 +230,11 @@ oxr_space_locate(
 
 	// Used in a lot of places.
 	XrSpaceVelocity *vel = OXR_GET_OUTPUT_FROM_CHAIN(location->next, XR_TYPE_SPACE_VELOCITY, XrSpaceVelocity);
+	XrEyeGazeSampleTimeEXT *gaze_sample_time =
+	    OXR_GET_OUTPUT_FROM_CHAIN(location->next, XR_TYPE_EYE_GAZE_SAMPLE_TIME_EXT, XrEyeGazeSampleTimeEXT);
+	if (gaze_sample_time) {
+		gaze_sample_time->time = 0;
+	}
 
 
 	/*
@@ -296,6 +301,10 @@ oxr_space_locate(
 
 	OXR_XRT_POSE_TO_XRPOSEF(result.pose, location->pose);
 	location->locationFlags = xrt_to_xr_space_location_flags(result.relation_flags);
+
+	if (gaze_sample_time) {
+		(void)gaze_sample_time; //! @todo Implement.
+	}
 
 	if (vel) {
 		vel->velocityFlags = 0;

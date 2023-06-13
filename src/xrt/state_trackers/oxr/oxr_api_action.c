@@ -292,6 +292,17 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 		subpath_fn = oxr_verify_microsoft_hand_interaction_subpath;
 		dpad_path_fn = oxr_verify_microsoft_hand_interaction_dpad_path;
 		dpad_emulator_fn = oxr_verify_microsoft_hand_interaction_dpad_emulator;
+	} else if (ip == inst->path_cache.ext_eye_gaze_interaction) {
+		if (!inst->extensions.EXT_eye_gaze_interaction) {
+			return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
+			                 "(suggestedBindings->interactionProfile == \"%s\") used but "
+			                 "EXT_eye_gaze_interaction not enabled",
+			                 ip_str);
+		}
+
+		subpath_fn = oxr_verify_ext_eye_gaze_interaction_subpath;
+		dpad_path_fn = oxr_verify_ext_eye_gaze_interaction_dpad_path;
+		dpad_emulator_fn = oxr_verify_ext_eye_gaze_interaction_dpad_emulator;
 	} else {
 		return oxr_error(&log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(suggestedBindings->interactionProfile == \"%s\") is not "

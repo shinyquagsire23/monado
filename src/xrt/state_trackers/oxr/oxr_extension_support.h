@@ -245,6 +245,15 @@
 #define OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_)
 #endif
 
+/*
+ * XR_EXT_eye_gaze_interaction
+ */
+#if defined(XR_EXT_eye_gaze_interaction)
+#define OXR_HAVE_EXT_eye_gaze_interaction
+#define OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_) _(EXT_eye_gaze_interaction, EXT_EYE_GAZE_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_)
+#endif
 
 /*
  * XR_EXT_hand_tracking
@@ -415,6 +424,7 @@
     OXR_EXTENSION_SUPPORT_KHR_win32_convert_performance_counter_time(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
+    OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \
     OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_) \
     OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_) \

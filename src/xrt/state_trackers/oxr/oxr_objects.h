@@ -889,6 +889,9 @@ bool
 oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 bool
+oxr_system_get_eye_gaze_support(struct oxr_logger *log, struct oxr_instance *inst);
+
+bool
 oxr_system_get_force_feedback_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 /*
@@ -1362,6 +1365,7 @@ struct oxr_instance
 		XrPath ml_ml2_controller;
 		XrPath mndx_ball_on_a_stick_controller;
 		XrPath msft_hand_interaction;
+		XrPath ext_eye_gaze_interaction;
 	} path_cache;
 
 	struct
