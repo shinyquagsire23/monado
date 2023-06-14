@@ -6,3 +6,4 @@
 #include <asm/byteorder.h>
 	if (stream.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
 	    TEXT("(A;OICI;GA;;;BA)");    // Administrator: full control
+[sur]vive: Add support for Gen 3.0 and Tundra trackers.
