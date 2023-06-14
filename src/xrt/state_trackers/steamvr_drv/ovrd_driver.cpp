@@ -408,7 +408,9 @@ public:
 			break;
 		case XRT_DEVICE_VIVE_WAND: m_render_model = "vr_controller_vive_1_5"; break;
 		case XRT_DEVICE_VIVE_TRACKER_GEN1:
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
+		case XRT_DEVICE_VIVE_TRACKER_GEN2:
+		case XRT_DEVICE_VIVE_TRACKER_GEN3:
+		case XRT_DEVICE_VIVE_TRACKER_TUNDRA: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
 		case XRT_DEVICE_PSMV:
 		case XRT_DEVICE_HYDRA:
 		case XRT_DEVICE_DAYDREAM:
@@ -617,11 +619,13 @@ public:
 			AddOutputControl(XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION, "/output/haptic");
 		} break;
 
-		case XRT_DEVICE_TOUCH_CONTROLLER: break;  // TODO
-		case XRT_DEVICE_WMR_CONTROLLER: break;    // TODO
-		case XRT_DEVICE_XBOX_CONTROLLER: break;   // TODO
-		case XRT_DEVICE_VIVE_TRACKER_GEN1: break; // TODO
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: break; // TODO
+		case XRT_DEVICE_TOUCH_CONTROLLER: break;    // TODO
+		case XRT_DEVICE_WMR_CONTROLLER: break;      // TODO
+		case XRT_DEVICE_XBOX_CONTROLLER: break;     // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN1: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN2: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN3: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_TUNDRA: break; // TODO
 		case XRT_DEVICE_REALSENSE: break;
 		case XRT_DEVICE_DEPTHAI: break;
 

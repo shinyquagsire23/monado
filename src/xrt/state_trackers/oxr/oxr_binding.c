@@ -346,7 +346,9 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_REALSENSE:
 	case XRT_DEVICE_HAND_TRACKER:
 	case XRT_DEVICE_VIVE_TRACKER_GEN1:
-	case XRT_DEVICE_VIVE_TRACKER_GEN2: return;
+	case XRT_DEVICE_VIVE_TRACKER_GEN2:
+	case XRT_DEVICE_VIVE_TRACKER_GEN3:
+	case XRT_DEVICE_VIVE_TRACKER_TUNDRA: return;
 	}
 
 #undef FIND_PROFILE
