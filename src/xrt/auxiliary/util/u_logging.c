@@ -115,7 +115,13 @@ u_log_hex(const char *file,
 		u_log(file, line, func, level, "%s", tmp);
 
 		offset += 16;
-		if (offset > 0xffffffff) { /* Limit the dump length to 4GB(!) */
+		/*
+		 * Limit the dump length to 16MB, this used to be 4GB which
+		 * would on 32bit system always evaltuate to false. So we have
+		 * the limit on something more sensible.
+		 */
+		if (offset > 0x00ffffff) {
+			u_log(file, line, func, level, "Truncating output over 16MB");
 			break;
 		}
 	}
@@ -138,7 +144,13 @@ u_log_xdev_hex(const char *file,
 		u_log_xdev(file, line, func, level, xdev, "%s", tmp);
 
 		offset += 16;
-		if (offset > 0xffffffff) { /* Limit the dump length to 4GB(!) */
+		/*
+		 * Limit the dump length to 16MB, this used to be 4GB which
+		 * would on 32bit system always evaltuate to false. So we have
+		 * the limit on something more sensible.
+		 */
+		if (offset > 0x00ffffff) {
+			u_log_xdev(file, line, func, level, xdev, "Truncating output over 16MB");
 			break;
 		}
 	}
