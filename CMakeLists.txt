@@ -282,7 +282,7 @@ option_with_deps(XRT_MODULE_MONADO_GUI "Build monado-gui" DEPENDS XRT_HAVE_SDL2)
 option(XRT_MODULE_AUX_VIVE "Build aux_vive" ON)
 
 # Feature configuration (sorted)
-option(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" ON)
+option_with_deps(XRT_FEATURE_COLOR_LOG "Enable logging in color on supported platforms" DEPENDS XRT_HAVE_LINUX)
 option_with_deps(XRT_FEATURE_OPENXR "Build OpenXR runtime target" DEPENDS "XRT_MODULE_COMPOSITOR_MAIN OR XRT_MODULE_COMPOSITOR_NULL")
 set(XRT_FEATURE_OPENXR_DEBUG_UTILS OFF) # Has never been enabled
 option_with_deps(XRT_FEATURE_RENDERDOC "Enable RenderDoc API" DEPENDS "RT_LIBRARY OR WIN32")
