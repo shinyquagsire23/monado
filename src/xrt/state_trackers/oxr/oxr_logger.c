@@ -1,4 +1,4 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_truncate_printf.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
@@ -60,58 +61,6 @@ is_fmt_func_arg_start(const char *fmt)
 }
 
 /*!
- * We want to truncate the value, not get the possible written.
- *
- * There are no version of the *many* Windows versions of this functions that
- * truncates and returns the number of bytes written (not including null).
- */
-static int
-truncate_vsnprintf(char *chars, size_t char_count, const char *fmt, va_list args)
-{
-	/*
-	 * We always want to be able to write null terminator, and
-	 * something propbly went wrong if char_count larger then INT_MAX.
-	 */
-	if (char_count == 0 || char_count > INT_MAX) {
-		return -1;
-	}
-
-	// Will always be able to write null terminator.
-	int ret = vsnprintf(chars, char_count, fmt, args);
-	if (ret < 0) {
-		return ret;
-	}
-
-	// Safe, ret is checked for negative above.
-	if ((size_t)ret > char_count - 1) {
-		return (int)char_count - 1;
-	}
-
-	return ret;
-}
-
-/*!
- * We want to truncate the value, not get the possible written.
- */
-static int
-truncate_snprintf(char *chars, size_t char_count, const char *fmt, ...)
-{
-	/*
-	 * We always want to be able to write null terminator, and
-	 * something propbly went wrong if char_count larger then INT_MAX.
-	 */
-	if (char_count == 0 || char_count > INT_MAX) {
-		return -1;
-	}
-
-	va_list args;
-	va_start(args, fmt);
-	int ret = truncate_vsnprintf(chars, char_count, fmt, args);
-	va_end(args);
-	return ret;
-}
-
-/*!
  * Prints the first part of a logging message, has three forms.
  *
  * ```c++
@@ -130,12 +79,12 @@ print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix, cha
 {
 	if (logger->api_func_name != NULL) {
 		if (is_fmt_func_arg_start(fmt)) {
-			return truncate_snprintf(buf, remaining, "%s: %s", prefix, logger->api_func_name);
+			return u_truncate_snprintf(buf, remaining, "%s: %s", prefix, logger->api_func_name);
 		} else {
-			return truncate_snprintf(buf, remaining, "%s in %s: ", prefix, logger->api_func_name);
+			return u_truncate_snprintf(buf, remaining, "%s in %s: ", prefix, logger->api_func_name);
 		}
 	} else {
-		return truncate_snprintf(buf, remaining, "%s: ", prefix);
+		return u_truncate_snprintf(buf, remaining, "%s: ", prefix);
 	}
 }
 
@@ -169,7 +118,7 @@ do_print(struct oxr_logger *logger, const char *fmt, const char *prefix, va_list
 	}
 	printed += ret;
 
-	ret = truncate_vsnprintf(buf + printed, remaining - printed, fmt, args);
+	ret = u_truncate_vsnprintf(buf + printed, remaining - printed, fmt, args);
 	if (ret < 0) {
 		U_LOG_E("Internal OpenXR logging error!");
 		return;
@@ -187,7 +136,7 @@ static void
 do_print_func(const char *api_func_name)
 {
 	char buf[LOG_BUFFER_SIZE];
-	truncate_snprintf(buf, sizeof(buf), "%s\n", api_func_name);
+	u_truncate_snprintf(buf, sizeof(buf), "%s\n", api_func_name);
 	do_output(buf);
 }
 
