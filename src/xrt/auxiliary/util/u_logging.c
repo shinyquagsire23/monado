@@ -17,6 +17,13 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+
+/*
+ *
+ * Global log level functions.
+ *
+ */
+
 DEBUG_GET_ONCE_LOG_OPTION(global_log, "XRT_LOG", U_LOGGING_WARN)
 
 enum u_logging_level
@@ -24,6 +31,13 @@ u_log_get_global_level(void)
 {
 	return debug_get_log_option_global_log();
 }
+
+
+/*
+ *
+ * Logging sink.
+ *
+ */
 
 // Logging sink global data.
 static u_log_sink_func_t g_log_sink_func;
@@ -43,6 +57,13 @@ u_log_set_sink(u_log_sink_func_t func, void *data)
 		g_log_sink_func(FILE, LINE, FUNC, LEVEL, FORMAT, copy, g_log_sink_data);                               \
 		va_end(copy);                                                                                          \
 	}
+
+
+/*
+ *
+ * Hexdump functions.
+ *
+ */
 
 static void
 u_log_hexdump_line(char *buf, size_t offset, const uint8_t *data, size_t data_size)
@@ -123,6 +144,12 @@ u_log_xdev_hex(const char *file,
 	}
 }
 
+
+/*
+ *
+ * General logging functions.
+ *
+ */
 
 #if defined(XRT_OS_ANDROID)
 
