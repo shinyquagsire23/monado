@@ -46,6 +46,10 @@
 #include "survive/survive_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+#include "steamvr_lh/steamvr_lh_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 #include "ht/ht_interface.h"
 #include "ht_ctrl_emu/ht_ctrl_emu_interface.h"
@@ -57,9 +61,16 @@
 #include "opengloves/opengloves_interface.h"
 #endif
 
+#if defined(XRT_BUILD_DRIVER_SURVIVE)
+#define DEFAULT_DRIVER "survive"
+#elif defined(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
+#define DEFAULT_DRIVER "steamvr"
+#else
+#define DEFAULT_DRIVER "vive"
+#endif
 
 DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
+DEBUG_GET_ONCE_OPTION(lh_impl, "LH_DRIVER", DEFAULT_DRIVER)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_slam, "VIVE_SLAM", false)
 DEBUG_GET_ONCE_TRISTATE_OPTION(lh_handtracking, "LH_HANDTRACKING")
 
@@ -80,6 +91,10 @@ DEBUG_GET_ONCE_TRISTATE_OPTION(lh_handtracking, "LH_HANDTRACKING")
 #define LH_ASSERT_(predicate) LH_ASSERT(predicate, "Assertion failed " #predicate)
 
 static const char *driver_list[] = {
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+    "steamvr_lh",
+#endif
+
 #ifdef XRT_BUILD_DRIVER_SURVIVE
     "survive",
 #endif
@@ -93,12 +108,18 @@ static const char *driver_list[] = {
 #endif
 };
 
+enum lighthouse_driver
+{
+	DRIVER_VIVE,
+	DRIVER_SURVIVE,
+	DRIVER_STEAMVR
+};
 
 struct lighthouse_system
 {
 	struct xrt_builder base;
 	struct u_system_devices *devices;
-	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
+	enum lighthouse_driver driver; //!< Which lighthouse implementation we are using
 	bool is_valve_index; //!< Is our HMD a Valve Index? If so, try to set up hand-tracking and SLAM as needed
 	struct vive_tracking_status vive_tstatus; //!< Visual tracking status for Index under Vive driver
 	struct xrt_fs *xfs;                       //!< Frameserver for Valve Index camera, if we have one.
@@ -277,30 +298,34 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 	bool have_survive_drv = false;
 #endif
 
-	bool vive_over_survive = debug_get_bool_option_vive_over_survive();
-	if (have_survive_drv && have_vive_drv) {
-		// We have both drivers - default to libsurvive, but if the user asks specifically for vive we'll give
-		// it to them
-		if (vive_over_survive) {
-			LH_DEBUG("Using driver vive (over survive)!");
-		} else {
-			LH_DEBUG("Using driver survive (both)!");
-		}
-		lhs->use_libsurvive = !vive_over_survive;
-	} else if (have_survive_drv) {
-		// We only have libsurvive - don't listen to the env var
-		// Note: this is a super edge-case, Vive gets built by default on Linux.
-		if (vive_over_survive) {
-			LH_WARN("Asked for vive driver, but it isn't built. Using libsurvive.");
-		}
-		LH_DEBUG("Using driver survive (only built)!");
-		lhs->use_libsurvive = true;
-	} else if (have_vive_drv) {
-		LH_DEBUG("Using driver vive (only built)!");
-		// We only have vive
-		lhs->use_libsurvive = false;
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+	bool have_steamvr_drv = true;
+#else
+	bool have_steamvr_drv = false;
+#endif
+
+	const char *drv = debug_get_option_lh_impl();
+	if (have_steamvr_drv && strcmp(drv, "steamvr") == 0) {
+		lhs->driver = DRIVER_STEAMVR;
+	} else if (have_survive_drv && strcmp(drv, "survive") == 0) {
+		lhs->driver = DRIVER_SURVIVE;
+	} else if (have_vive_drv && strcmp(drv, "vive") == 0) {
+		lhs->driver = DRIVER_VIVE;
 	} else {
-		LH_ASSERT_(false);
+		const char *selected;
+		if (have_survive_drv) {
+			selected = "survive";
+			lhs->driver = DRIVER_SURVIVE;
+		} else if (have_steamvr_drv) {
+			selected = "steamvr";
+			lhs->driver = DRIVER_STEAMVR;
+		} else if (have_vive_drv) {
+			selected = "vive";
+			lhs->driver = DRIVER_VIVE;
+		} else {
+			LH_ASSERT_(false);
+		}
+		LH_WARN("Requested driver %s was not available, so we went with %s instead", drv, selected);
 	}
 
 	U_ZERO(estimate);
@@ -325,7 +350,7 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 
 	if (have_vive || have_vive_pro || lhs->is_valve_index) {
 		estimate->certain.head = true;
-		if (lhs->use_libsurvive) {
+		if (lhs->driver != DRIVER_VIVE) {
 			estimate->maybe.dof6 = true;
 			estimate->certain.dof6 = true;
 		}
@@ -415,7 +440,7 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 
 	t_stereo_camera_calibration_reference(&stereo_calib, NULL);
 
-	if (!lhs->use_libsurvive) { // Refresh trackers status in vive driver
+	if (lhs->driver == DRIVER_VIVE) { // Refresh trackers status in vive driver
 		struct vive_device *d = (struct vive_device *)lhs->devices->base.roles.head;
 		vive_set_trackers_status(d, lhs->vive_tstatus);
 	}
@@ -552,7 +577,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 	// Decide whether to initialize the SLAM tracker
 	bool slam_wanted = debug_get_bool_option_vive_slam();
 #ifdef XRT_FEATURE_SLAM
-	bool slam_supported = !lhs->use_libsurvive; // Only with vive driver
+	bool slam_supported = lhs->driver == DRIVER_VIVE; // Only with vive driver
 #else
 	bool slam_supported = false;
 #endif
@@ -573,12 +598,21 @@ lighthouse_open_system(struct xrt_builder *xb,
 	                                       .hand_wanted = debug_get_tristate_option_lh_handtracking()};
 	lhs->vive_tstatus = tstatus;
 
-	if (lhs->use_libsurvive) {
+	switch (lhs->driver) {
+	case DRIVER_STEAMVR: {
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+		usysd->base.xdev_count += steamvr_lh_get_devices(&usysd->base.xdevs[usysd->base.xdev_count]);
+#endif
+		break;
+	}
+	case DRIVER_SURVIVE: {
 #ifdef XRT_BUILD_DRIVER_SURVIVE
 		usysd->base.xdev_count +=
 		    survive_get_devices(&usysd->base.xdevs[usysd->base.xdev_count], &lhs->hmd_config);
 #endif
-	} else {
+		break;
+	}
+	case DRIVER_VIVE: {
 #ifdef XRT_BUILD_DRIVER_VIVE
 		struct xrt_prober_device **xpdevs = NULL;
 		size_t xpdev_count = 0;
@@ -617,7 +651,14 @@ lighthouse_open_system(struct xrt_builder *xb,
 		}
 		xrt_prober_unlock_list(xp, &xpdevs);
 #endif
+		break;
 	}
+	default: {
+		LH_ASSERT(false, "Driver was not set to a known value");
+		break;
+	}
+	}
+
 	int head_idx = -1;
 	int left_idx = -1;
 	int right_idx = -1;

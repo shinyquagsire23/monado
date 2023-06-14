@@ -28,7 +28,10 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 	target_sources(target_lists PRIVATE target_builder_rift_s.c)
 endif()
 
-if(XRT_BUILD_DRIVER_SURVIVE OR XRT_BUILD_DRIVER_VIVE)
+if(XRT_BUILD_DRIVER_SURVIVE
+   OR XRT_BUILD_DRIVER_VIVE
+   OR XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+	)
 	target_sources(target_lists PRIVATE target_builder_lighthouse.c)
 endif()
 
@@ -147,6 +150,10 @@ endif()
 
 if(XRT_BUILD_DRIVER_SURVIVE)
 	target_link_libraries(target_lists PRIVATE drv_survive)
+endif()
+
+if(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
+	target_link_libraries(target_lists PRIVATE drv_steamvr_lh)
 endif()
 
 if(XRT_BUILD_DRIVER_ANDROID)
