@@ -52,6 +52,38 @@ DEBUG_GET_ONCE_BOOL_OPTION(relaxed, "IPC_RELAXED_CONNECTION_SECURITY", false)
  *
  */
 
+template <unsigned int N>
+static char *
+get_current_process_name(char (&path)[N])
+{
+	GetModuleFileNameA(NULL, path, N);
+	char *exe = strrchr(path, '\\');
+	if (exe) {
+		return exe + 1;
+	}
+	return path;
+}
+
+ULONG
+get_pipe_server_pid(const char *pipe_name)
+{
+	ULONG pid = 0;
+	HANDLE h = CreateNamedPipeA(                                                              //
+	    pipe_name,                                                                            //
+	    PIPE_ACCESS_DUPLEX,                                                                   //
+	    PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS, //
+	    IPC_MAX_CLIENTS,                                                                      //
+	    IPC_BUF_SIZE,                                                                         //
+	    IPC_BUF_SIZE,                                                                         //
+	    0,                                                                                    //
+	    nullptr);
+	if (h != INVALID_HANDLE_VALUE) {
+		GetNamedPipeServerProcessId(h, &pid);
+		CloseHandle(h);
+	}
+	return pid;
+}
+
 static bool
 create_pipe_instance(struct ipc_server_mainloop *ml, bool first)
 {
@@ -124,6 +156,21 @@ create_pipe_instance(struct ipc_server_mainloop *ml, bool first)
 		        ipc_winerror(err));
 	} else {
 		U_LOG_E("CreateNamedPipeA failed: %d %s", err, ipc_winerror(err));
+		if (err == ERROR_ACCESS_DENIED && first) {
+			char path[MAX_PATH];
+			char *exe = get_current_process_name(path);
+			ULONG pid = get_pipe_server_pid(ml->pipe_name);
+			if (pid) {
+				U_LOG_E(
+				    "An existing process id %d has the communication pipe already created. You likely "
+				    "have \"%s\" running already. This service instance cannot continue...",
+				    pid, exe);
+			} else {
+				U_LOG_E(
+				    "You likely have \"%s\" running already. This service instance cannot continue...",
+				    exe);
+			}
+		}
 	}
 
 	return false;
