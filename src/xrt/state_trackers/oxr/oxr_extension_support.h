@@ -245,6 +245,7 @@
 #define OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_)
 #endif
 
+
 /*
  * XR_EXT_eye_gaze_interaction
  */
@@ -254,6 +255,7 @@
 #else
 #define OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_)
 #endif
+
 
 /*
  * XR_EXT_hand_tracking
