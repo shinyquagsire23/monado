@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,6 +8,11 @@
  */
 
 #pragma once
+
+#include "xrt/xrt_compiler.h"
+
+#include <stdint.h>
+#include <stddef.h>
 
 
 #define U_MAX_FIFO_INDICES 16
