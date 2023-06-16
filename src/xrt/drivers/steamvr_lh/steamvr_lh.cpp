@@ -24,7 +24,8 @@
 #include "util/u_device.h"
 
 namespace {
-DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LIGHTHOUSE_LOG", U_LOGGING_INFO);
+
+DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LIGHTHOUSE_LOG", U_LOGGING_INFO)
 
 // ~/.steam/root is a symlink to where the Steam root is
 const std::string STEAM_INSTALL_DIR = std::string(getenv("HOME")) + "/.steam/root";

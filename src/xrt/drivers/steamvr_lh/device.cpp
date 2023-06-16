@@ -18,6 +18,7 @@
 #include "util/u_device.h"
 #include "util/u_logging.h"
 #include "util/u_json.hpp"
+#include "xrt/xrt_device.h"
 
 #define DEV_ERR(...) U_LOG_IFL_E(ctx->log_level, __VA_ARGS__)
 #define DEV_WARN(...) U_LOG_IFL_W(ctx->log_level, __VA_ARGS__)
@@ -95,7 +96,8 @@ ControllerDevice::ControllerDevice(vr::PropertyContainerHandle_t handle, const D
 
 Device::Device(const DeviceBuilder &builder) : xrt_device({}), ctx(builder.ctx), driver(builder.driver)
 {
-	std::strncpy(this->serial, builder.serial, XRT_DEVICE_NAME_LEN);
+	std::strncpy(this->serial, builder.serial, XRT_DEVICE_NAME_LEN - 1);
+	this->serial[XRT_DEVICE_NAME_LEN - 1] = 0;
 	this->tracking_origin = ctx.get();
 	this->orientation_tracking_supported = true;
 	this->position_tracking_supported = true;

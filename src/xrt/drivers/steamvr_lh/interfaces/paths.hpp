@@ -14,7 +14,7 @@
 namespace vr {
 inline const char *IVRPaths_Version = "IVRPaths_001";
 typedef uint64_t PathHandle_t;
-}; // namespace vr
+} // namespace vr
 
 /** This interface is missing in the C++ header but present in the C one, and the lighthouse driver requires it. */
 class Paths
