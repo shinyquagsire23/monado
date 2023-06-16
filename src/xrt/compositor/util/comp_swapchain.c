@@ -150,14 +150,14 @@ swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t in
 				os_mutex_unlock(&sc->images[index].use_mutex);
 				SWAPCHAIN_TRACE_END(swapchain_wait_image);
 				return XRT_SUCCESS;
-			} else {
-				// cond got signaled but image is still in use, continue waiting
-				VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: woken at %" PRIu64 " after %fms but still (%d use)",
-				         (void *)sc, index, now_rt, diff, sc->images[index].use_count);
-				continue;
 			}
+			// cond got signaled but image is still in use, continue waiting
+			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: woken at %" PRIu64 " after %fms but still (%d use)",
+			         (void *)sc, index, now_rt, diff, sc->images[index].use_count);
+			continue;
+		}
 
-		} else if (ret == ETIMEDOUT) {
+		if (ret == ETIMEDOUT) {
 			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d): timeout at %" PRIu64 " after %fms", (void *)sc,
 			         index, sc->images[index].use_count, now_rt, diff);
 
@@ -168,22 +168,19 @@ swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t in
 				os_mutex_unlock(&sc->images[index].use_mutex);
 				SWAPCHAIN_TRACE_END(swapchain_wait_image);
 				return XRT_TIMEOUT;
-
-			} else {
-				// spurious cond wakeup
-				VK_TRACE(sc->vk,
-				         "%p WAIT_IMAGE %d (use %d): spurious timeout at %" PRIu64 " (%fms to timeout)",
-				         (void *)sc, index, sc->images[index].use_count, now_rt,
-				         time_ns_to_ms_f(end_wait_rt - now_rt));
-				continue;
 			}
-
-		} else {
-			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: condition variable error %d", (void *)sc, index, ret);
-			os_mutex_unlock(&sc->images[index].use_mutex);
-			SWAPCHAIN_TRACE_END(swapchain_wait_image);
-			return XRT_ERROR_VULKAN;
+			// spurious cond wakeup
+			VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d): spurious timeout at %" PRIu64 " (%fms to timeout)",
+			         (void *)sc, index, sc->images[index].use_count, now_rt,
+			         time_ns_to_ms_f(end_wait_rt - now_rt));
+			continue;
 		}
+
+		// if no other case applied
+		VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: condition variable error %d", (void *)sc, index, ret);
+		os_mutex_unlock(&sc->images[index].use_mutex);
+		SWAPCHAIN_TRACE_END(swapchain_wait_image);
+		return XRT_ERROR_VULKAN;
 	}
 
 	VK_TRACE(sc->vk, "%p WAIT_IMAGE %d: became available before spurious wakeup %d", (void *)sc, index, ret);
@@ -476,9 +473,11 @@ comp_swapchain_create_init(struct comp_swapchain *sc,
 	ret = vk_ic_allocate(vk, info, xsccp->image_count, &sc->vkic);
 	if (ret == VK_ERROR_FEATURE_NOT_PRESENT) {
 		return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
-	} else if (ret == VK_ERROR_FORMAT_NOT_SUPPORTED) {
+	}
+	if (ret == VK_ERROR_FORMAT_NOT_SUPPORTED) {
 		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
-	} else if (ret != VK_SUCCESS) {
+	}
+	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}
 
