@@ -37,7 +37,6 @@
 #include "oxr_handle.h"
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
-#include "oxr_chain.h"
 #include "oxr_pretty_print.h"
 #include "oxr_conversions.h"
 #include "oxr_xret.h"
@@ -539,9 +538,9 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 	}
 
 	int64_t frame_id = -1;
-	uint64_t predicted_display_time;
-	uint64_t predicted_display_period;
-	XrTime converted_time;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
+	XrTime converted_time = 0;
 
 	XrResult ret = do_wait_frame_and_checks( //
 	    log,                                 // log
@@ -557,6 +556,9 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 		// Error already logged.
 		return ret;
 	}
+	assert(predicted_display_time != 0);
+	assert(predicted_display_period != 0);
+	assert(converted_time != 0);
 
 	/*
 	 * We set the frame_id along with the number of active waited frames to
