@@ -387,10 +387,6 @@ U_VAR_ADD_FUNCS()
 
 #undef ADD_FUNC
 
-/*!
- * @}
- */
-
 
 #ifdef __cplusplus
 }
