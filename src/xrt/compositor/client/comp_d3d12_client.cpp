@@ -396,8 +396,24 @@ client_d3d12_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 static void
 client_d3d12_swapchain_destroy(struct xrt_swapchain *xsc)
 {
-	// letting destruction do it all
+	/*
+	 * Letting automatic destruction do it all, happens at the end of
+	 * this function once the sc variable goes out of scope.
+	 */
 	std::unique_ptr<client_d3d12_swapchain> sc(as_client_d3d12_swapchain(xsc));
+
+	// this swapchain resources may be in flight, wait till compositor finishes using them
+	struct client_d3d12_compositor *c = sc->c;
+	if (c && c->fence) {
+		c->timeline_semaphore_value++;
+		HRESULT hr = c->app_queue->Signal(c->fence.get(), c->timeline_semaphore_value);
+
+		xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout( //
+		    c->fence,                                       //
+		    c->local_wait_event,                            //
+		    c->timeline_semaphore_value,                    //
+		    kFenceTimeout);                                 //
+	}
 }
 
 
