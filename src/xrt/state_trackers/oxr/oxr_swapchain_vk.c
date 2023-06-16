@@ -14,6 +14,7 @@
 #include "oxr_logger.h"
 #include "oxr_swapchain_common.h"
 #include "oxr_xret.h"
+#include <stdint.h>
 
 #define WAIT_IN_ACQUIRE (true)
 
@@ -59,8 +60,11 @@ vk_implicit_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const X
 {
 	CHECK_OXR_RET(oxr_swapchain_verify_wait_state(log, sc));
 
-	uint32_t index;
-	u_index_fifo_pop(&sc->acquired.fifo, &index);
+	uint32_t index = UINT32_MAX;
+	if (u_index_fifo_pop(&sc->acquired.fifo, &index) != 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "u_index_fifo_pop: failed!");
+	}
+	assert(index < INT32_MAX);
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
@@ -74,7 +78,7 @@ vk_implicit_wait_image(struct oxr_logger *log, struct oxr_swapchain *sc, const X
 
 	// The app can only wait on one image.
 	sc->inflight.yes = true;
-	sc->inflight.index = index;
+	sc->inflight.index = (int)index;
 	sc->images[index].state = OXR_IMAGE_STATE_WAITED;
 
 	return XR_SUCCESS;

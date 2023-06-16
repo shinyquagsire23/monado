@@ -220,8 +220,11 @@ oxr_swapchain_common_acquire(struct oxr_logger *log, struct oxr_swapchain *sc, u
 XrResult
 oxr_swapchain_common_wait(struct oxr_logger *log, struct oxr_swapchain *sc, XrDuration timeout)
 {
-	uint32_t index;
-	u_index_fifo_pop(&sc->acquired.fifo, &index);
+	uint32_t index = UINT32_MAX;
+	if (u_index_fifo_pop(&sc->acquired.fifo, &index) != 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "u_index_fifo_pop: failed!");
+	}
+	assert(index < INT32_MAX);
 
 	struct xrt_swapchain *xsc = (struct xrt_swapchain *)sc->swapchain;
 
@@ -230,7 +233,7 @@ oxr_swapchain_common_wait(struct oxr_logger *log, struct oxr_swapchain *sc, XrDu
 
 	// The app can only wait on one image.
 	sc->inflight.yes = true;
-	sc->inflight.index = index;
+	sc->inflight.index = (int)index;
 	sc->images[index].state = OXR_IMAGE_STATE_WAITED;
 
 	return XR_SUCCESS;
