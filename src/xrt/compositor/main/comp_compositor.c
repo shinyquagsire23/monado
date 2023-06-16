@@ -1181,6 +1181,7 @@ comp_main_create_system_compositor(struct xrt_device *xdev,
 	struct u_pacing_app_factory *upaf = NULL;
 	xrt_result_t xret = u_pa_factory_create(&upaf);
 	assert(xret == XRT_SUCCESS && upaf != NULL);
+	(void)xret;
 
 	return comp_multi_create_system_compositor(&c->base.base, upaf, sys_info, !c->deferred_surface, out_xsysc);
 }

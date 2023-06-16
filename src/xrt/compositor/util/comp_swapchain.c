@@ -133,7 +133,7 @@ swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t in
 	VK_TRACE(sc->vk, "%p WAIT_IMAGE %d (use %d) start wait at: %" PRIu64 " (timeout at %" PRIu64 ")", (void *)sc,
 	         index, sc->images[index].use_count, start_wait_rt, end_wait_rt);
 
-	int ret;
+	int ret = 0;
 	while (sc->images[index].use_count > 0) {
 		// use pthread_cond_timedwait to implement timeout behavior
 		ret = pthread_cond_timedwait(&sc->images[index].use_cond, &sc->images[index].use_mutex.mutex, &spec);
