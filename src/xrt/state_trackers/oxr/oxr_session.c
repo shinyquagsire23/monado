@@ -55,8 +55,8 @@ static bool
 should_render(XrSessionState state)
 {
 	switch (state) {
-	case XR_SESSION_STATE_VISIBLE: return true;
-	case XR_SESSION_STATE_FOCUSED: return true;
+	case XR_SESSION_STATE_VISIBLE:
+	case XR_SESSION_STATE_FOCUSED:
 	case XR_SESSION_STATE_STOPPING: return true;
 	default: return false;
 	}
@@ -718,7 +718,8 @@ oxr_session_allocate_and_init(struct oxr_logger *log, struct oxr_system *sys, st
 		xrt_result_t xret = xrt_syscomp_create_native_compositor((SESS)->sys->xsysc, (XSI), &(SESS)->xcn);     \
 		if (xret == XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED) {                                                 \
 			return oxr_error((LOG), XR_ERROR_LIMIT_REACHED, "Per instance multi-session not supported.");  \
-		} else if (xret != XRT_SUCCESS) {                                                                      \
+		}                                                                                                      \
+		if (xret != XRT_SUCCESS) {                                                                             \
 			return oxr_error((LOG), XR_ERROR_RUNTIME_FAILURE, "Failed to create native compositor! '%i'",  \
 			                 xret);                                                                        \
 		}                                                                                                      \
