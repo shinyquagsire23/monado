@@ -269,6 +269,7 @@ wmr_open_system(struct xrt_builder *xb,
 
 	xret_unlock = xrt_prober_unlock_list(xp, &xpdevs);
 	assert(xret_unlock == XRT_SUCCESS);
+	(void)xret_unlock;
 
 	struct u_system_devices *usysd = u_system_devices_allocate();
 
