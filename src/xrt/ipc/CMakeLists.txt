@@ -59,6 +59,7 @@ add_library(
 	${CMAKE_CURRENT_BINARY_DIR}/ipc_client_generated.h
 	client/ipc_client.h
 	client/ipc_client_compositor.c
+	client/ipc_client_connection.c
 	client/ipc_client_device.c
 	client/ipc_client_hmd.c
 	client/ipc_client_instance.c
