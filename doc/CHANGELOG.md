@@ -48,7 +48,7 @@ SPDX-FileCopyrightText: 2020 Collabora, Ltd. and the Monado contributors
     length, normalize if not within float epsilon.
     ([!659](https://gitlab.freedesktop.org/monado/monado/merge_requests/659))
 - Drivers
-  - North Star: Fix memory leak in math code.
+  - ns: Fix memory leak in math code.
     ([!564](https://gitlab.freedesktop.org/monado/monado/merge_requests/564))
   - psvr: Rename some variables for better readability.
     ([!597](https://gitlab.freedesktop.org/monado/monado/merge_requests/597))
