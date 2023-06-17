@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -26,17 +26,43 @@ enum debug_tristate_option
 	DEBUG_TRISTATE_ON
 };
 
-const char *
-debug_get_option(const char *name, const char *_default);
+
+/*
+ *
+ * Conversion functions.
+ *
+ */
 
 bool
 debug_string_to_bool(const char *string);
 
 enum debug_tristate_option
-debug_get_tristate_option(const char *name);
+debug_string_to_tristate(const char *string);
+
+long
+debug_string_to_num(const char *string, long _default);
+
+float
+debug_string_to_float(const char *string, float _default);
+
+enum u_logging_level
+debug_string_to_log_level(const char *string, enum u_logging_level _default);
+
+
+/*
+ *
+ * Get functions.
+ *
+ */
+
+const char *
+debug_get_option(const char *name, const char *_default);
 
 bool
 debug_get_bool_option(const char *name, bool _default);
+
+enum debug_tristate_option
+debug_get_tristate_option(const char *name);
 
 long
 debug_string_to_num(const char *string, long _default);
@@ -49,6 +75,13 @@ debug_get_float_option(const char *name, float _default);
 
 enum u_logging_level
 debug_get_log_option(const char *name, enum u_logging_level _default);
+
+
+/*
+ *
+ * Get once helpers.
+ *
+ */
 
 #define DEBUG_GET_ONCE_OPTION(suffix, name, _default)                                                                  \
 	static const char *debug_get_option_##suffix(void)                                                             \
