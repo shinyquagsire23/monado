@@ -1,2 +1,68 @@
-New WinMR driver, the initial commit only adds simple 3DoF support and not
-distortion support.
+---
+- mr.780
+- mr.782
+- mr.784
+- mr.850
+- mr.989
+- mr.990
+- mr.991
+- mr.999
+- mr.1000
+- mr.1003
+- mr.1006
+- mr.1010
+- mr.1011
+- mr.1014
+- mr.1018
+- mr.1025
+- mr.1030
+- mr.1035
+- mr.1041
+- mr.1048
+- mr.1051
+- mr.1052
+- mr.1055
+- mr.1056
+- mr.1060
+- mr.1063
+- mr.1088
+- mr.1101
+- mr.1103
+- mr.1111
+- mr.1134
+- mr.1227
+- mr.1234
+- mr.1244
+- mr.1264
+- mr.1291
+- mr.1334
+- mr.1382
+- mr.1418
+- mr.1446
+- mr.1498
+- mr.1506
+- mr.1550
+- mr.1590
+- mr.1596
+- mr.1602
+- mr.1619
+- mr.1636
+- mr.1643
+- mr.1665
+- mr.1719
+- mr.1744
+- mr.1752
+- mr.1754
+- mr.1797
+- mr.1845
+- mr.1852
+- mr.1855
+- mr.1857
+- mr.1859
+---
+
+Added WinMR driver, it supports most headsets and controllers. Controllers can
+be connected both via host-Bluetooth and tunneled with the onboard radio chip.
+By default has 3DoF tracking, it can do 6DoF if used with the Basalt SLAM
+tracking software. Distortion is there but doesn't work perfectly on all
+hardware, best results is on Reverb G2.
