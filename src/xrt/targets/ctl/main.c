@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,18 +7,15 @@
  * @ingroup ipc
  */
 
+#include "util/u_file.h"
+
 #include "client/ipc_client.h"
+#include "client/ipc_client_connection.h"
+
 #include "ipc_client_generated.h"
 
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <ctype.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/mman.h>
-#include <limits.h>
 
-#include "util/u_file.h"
 
 #define P(...) fprintf(stdout, __VA_ARGS__)
 #define PE(...) fprintf(stderr, __VA_ARGS__)
@@ -30,9 +27,6 @@ typedef enum op_mode
 	MODE_SET_FOCUSED,
 	MODE_TOGGLE_IO,
 } op_mode_t;
-
-static int
-do_connect(struct ipc_connection *ipc_c);
 
 
 int
@@ -183,16 +177,17 @@ main(int argc, char *argv[])
 		}
 	}
 
-	// Initializing the logging level also zeroes the rest of the struct.
-	struct ipc_connection ipc_c = {
-	    .log_level = U_LOGGING_INFO,
+	// Connection struct on the stack, super simple.
+	struct ipc_connection ipc_c = {0};
+
+	struct xrt_instance_info info = {
+	    .application_name = "monado-ctl",
 	};
 
-	os_mutex_init(&ipc_c.mutex);
-
-	int ret = do_connect(&ipc_c);
-	if (ret != 0) {
-		return ret;
+	xrt_result_t xret = ipc_client_connection_init(&ipc_c, U_LOGGING_INFO, &info);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("ipc_client_connection_init: %u", xret);
+		return -1;
 	}
 
 	switch (op_mode) {
@@ -201,84 +196,6 @@ main(int argc, char *argv[])
 	case MODE_SET_FOCUSED: exit(set_focused(&ipc_c, s_val)); break;
 	case MODE_TOGGLE_IO: exit(toggle_io(&ipc_c, s_val)); break;
 	default: P("Unrecognised operation mode.\n"); exit(1);
-	}
-
-	return 0;
-}
-
-static int
-do_connect(struct ipc_connection *ipc_c)
-{
-	int ret;
-
-
-	/*
-	 * Connenct.
-	 */
-
-	ipc_c->imc.ipc_handle = socket(PF_UNIX, SOCK_STREAM, 0);
-	if (ipc_c->imc.ipc_handle < 0) {
-		ret = ipc_c->imc.ipc_handle;
-		PE("Socket create error '%i'!\n", ret);
-		return -1;
-	}
-
-	char sock_file[PATH_MAX];
-
-	int rt_size = u_file_get_path_in_runtime_dir(XRT_IPC_MSG_SOCK_FILENAME, sock_file, PATH_MAX);
-	if (rt_size == -1) {
-		PE("Could not get socket file name");
-		return -1;
-	}
-
-	struct sockaddr_un addr = {0};
-	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, sock_file);
-
-	ret = connect(ipc_c->imc.ipc_handle,    // socket
-	              (struct sockaddr *)&addr, // address
-	              sizeof(addr));            // size
-	if (ret < 0) {
-		PE("Socket connect error '%i'!\n", ret);
-		return -1;
-	}
-
-
-	/*
-	 * Client info.
-	 */
-
-	struct ipc_app_state cs;
-	cs.pid = getpid();
-	snprintf(cs.info.application_name, sizeof(cs.info.application_name), "%s", "monado-ctl");
-
-	xrt_result_t xret = ipc_call_system_set_client_info(ipc_c, &cs);
-	if (xret != XRT_SUCCESS) {
-		PE("Failed to set client info '%i'!\n", xret);
-		return -1;
-	}
-
-
-	/*
-	 * Shared memory.
-	 */
-
-	// get our xdev shm from the server and mmap it
-	xret = ipc_call_instance_get_shm_fd(ipc_c, &ipc_c->ism_handle, 1);
-	if (xret != XRT_SUCCESS) {
-		PE("Failed to retrieve shm fd '%i'!\n", xret);
-		return -1;
-	}
-
-	const int flags = MAP_SHARED;
-	const int access = PROT_READ | PROT_WRITE;
-	const size_t size = sizeof(struct ipc_shared_memory);
-
-	ipc_c->ism = mmap(NULL, size, access, flags, ipc_c->ism_handle, 0);
-	if (ipc_c->ism == NULL) {
-		ret = errno;
-		PE("Failed to mmap shm '%i'!\n", ret);
-		return -1;
 	}
 
 	return 0;
