@@ -9,9 +9,7 @@
  * Debug get option helpers heavily inspired from mesa ones.
  */
 
-#if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
-#define _CRT_SECURE_NO_WARNINGS
-#endif
+#include "xrt/xrt_config_os.h"
 
 #include "util/u_debug.h"
 #include "util/u_logging.h"
@@ -31,6 +29,23 @@ DEBUG_GET_ONCE_BOOL_OPTION(print, "XRT_PRINT_OPTIONS", false)
  *
  */
 
+#if defined XRT_OS_WINDOWS
+
+static const char *
+get_option_raw(char *chars, size_t char_count, const char *name)
+{
+	size_t required_size;
+
+	getenv_s(&required_size, chars, char_count, name);
+	if (required_size == 0) {
+		return NULL;
+	}
+
+	return chars;
+}
+
+#elif defined XRT_OS_LINUX
+
 static const char *
 get_option_raw(char *chars, size_t char_count, const char *name)
 {
@@ -43,6 +58,11 @@ get_option_raw(char *chars, size_t char_count, const char *name)
 		return chars;
 	}
 }
+
+#else
+#error "Please provide port of this function!"
+#endif
+
 
 static const char *
 level_to_str(enum u_logging_level level)
