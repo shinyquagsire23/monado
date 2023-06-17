@@ -51,6 +51,69 @@
 			}
 		},
 
+		"/virtual_profiles/mndx/winmr_system_button": {
+			"title": "WinMR system button",
+			"type": "tracked_controller",
+			"monado_device": "XRT_DEVICE_WMR_CONTROLLER",
+			"extension": "XR_MNDX_system_buttons",
+			"subaction_paths": [
+				"/user/hand/left",
+				"/user/hand/right"
+			],
+			"subpaths": {
+				"/input/system": {
+					"type": "button",
+					"localized_name": "System",
+					"components": ["click"],
+					"monado_bindings": {
+						"click": "XRT_INPUT_WMR_HOME_CLICK"
+					}
+				}
+			}
+		},
+
+		"/virtual_profiles/mndx/samsung_odyssey_system_button": {
+			"title": "Samsung Odyssey system button",
+			"type": "tracked_controller",
+			"monado_device": "XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER",
+			"extension": "XR_MNDX_system_buttons",
+			"subaction_paths": [
+				"/user/hand/left",
+				"/user/hand/right"
+			],
+			"subpaths": {
+				"/input/system": {
+					"type": "button",
+					"localized_name": "System",
+					"components": ["click"],
+					"monado_bindings": {
+						"click": "XRT_INPUT_ODYSSEY_CONTROLLER_HOME_CLICK"
+					}
+				}
+			}
+		},
+
+		"/virtual_profiles/mndx/hp_reverb_g2_system_button": {
+			"title": "HP Reverb G2 system button",
+			"type": "tracked_controller",
+			"monado_device": "XRT_DEVICE_HP_REVERB_G2_CONTROLLER",
+			"extension": "XR_MNDX_system_buttons",
+			"subaction_paths": [
+				"/user/hand/left",
+				"/user/hand/right"
+			],
+			"subpaths": {
+				"/input/system": {
+					"type": "button",
+					"localized_name": "System",
+					"components": ["click"],
+					"monado_bindings": {
+						"click": "XRT_INPUT_G2_CONTROLLER_HOME_CLICK"
+					}
+				}
+			}
+		},
+
 		"/interaction_profiles/ext/hand_interaction_ext": {
 			"title": "Ext Hand Interaction",
 			"type": "tracked_controller",
@@ -351,7 +414,11 @@
 			"type": "tracked_controller",
 			"steamvr_controllertype": "holographic_controller",
 			"monado_device": "XRT_DEVICE_WMR_CONTROLLER",
-			"extended_by": ["ext/palm_pose", "ext/hand_interaction_poses"],
+			"extended_by": [
+				"ext/palm_pose",
+				"ext/hand_interaction_poses",
+				"mndx/winmr_system_button"
+			],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -941,7 +1008,11 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_HP_REVERB_G2_CONTROLLER",
 			"extension": "XR_EXT_hp_mixed_reality_controller",
-			"extended_by": ["ext/palm_pose", "ext/hand_interaction_poses"],
+			"extended_by": [
+				"ext/palm_pose",
+				"ext/hand_interaction_poses",
+				"mndx/hp_reverb_g2_system_button"
+			],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1052,7 +1123,11 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER",
 			"extension": "XR_EXT_samsung_odyssey_controller",
-			"extended_by": ["ext/palm_pose", "ext/hand_interaction_poses"],
+			"extended_by": [
+				"ext/palm_pose",
+				"ext/hand_interaction_poses",
+				"mndx/samsung_odyssey_system_button"
+			],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
