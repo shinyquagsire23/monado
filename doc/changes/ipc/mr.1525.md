@@ -5,4 +5,4 @@
 - mr.1807
 ---
 
-Add Windows support to the IPC layer, this is based on named pipes.
+all: Add Windows support to the IPC layer, this is based on named pipes.

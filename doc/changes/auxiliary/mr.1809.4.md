@@ -3,4 +3,4 @@
 - mr.1828
 ---
 
-pacing: Add minimum application frame time.
+u/pacing: Add minimum application frame time.

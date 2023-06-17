@@ -1,1 +1,1 @@
-vulkan: Make it possible to create a compute only queue.
+vk: Make it possible to create a compute only queue.

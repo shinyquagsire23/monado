@@ -1,1 +1,1 @@
-vulkan: Refactor and tidy extension handling.
+vk: Refactor and tidy extension handling.

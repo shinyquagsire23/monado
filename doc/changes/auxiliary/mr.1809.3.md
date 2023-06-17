@@ -1,1 +1,1 @@
-pacing: Add minimum compositor frame time.
+u/pacing: Add minimum compositor frame time.
