@@ -18,7 +18,6 @@
 
 #include <ctype.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,9 +32,16 @@ DEBUG_GET_ONCE_BOOL_OPTION(print, "XRT_PRINT_OPTIONS", false)
  */
 
 static const char *
-os_getenv(const char *name)
+get_option_raw(char *chars, size_t char_count, const char *name)
 {
-	return getenv(name);
+	const char *raw = getenv(name);
+
+	if (raw == NULL) {
+		return NULL;
+	} else {
+		snprintf(chars, char_count, "%s", raw);
+		return chars;
+	}
 }
 
 static const char *
@@ -211,15 +217,16 @@ debug_string_to_log_level(const char *string, enum u_logging_level _default)
  */
 
 const char *
-debug_get_option(const char *name, const char *_default)
+debug_get_option(char *chars, size_t char_count, const char *name, const char *_default)
 {
-	const char *raw = os_getenv(name);
-	const char *ret;
+	const char *raw = get_option_raw(chars, char_count, name);
+	const char *ret = raw;
 
-	if (raw == NULL) {
-		ret = _default;
-	} else {
-		ret = raw;
+	if (ret == NULL) {
+		if (_default != NULL) {
+			snprintf(chars, char_count, "%s", _default);
+			ret = chars; // Return a value.
+		}
 	}
 
 	if (debug_get_bool_option_print()) {
@@ -232,7 +239,9 @@ debug_get_option(const char *name, const char *_default)
 bool
 debug_get_bool_option(const char *name, bool _default)
 {
-	const char *raw = os_getenv(name);
+	char chars[DEBUG_CHAR_STORAGE_SIZE];
+	const char *raw = get_option_raw(chars, ARRAY_SIZE(chars), name);
+
 	bool ret = raw == NULL ? _default : debug_string_to_bool(raw);
 
 	if (debug_get_bool_option_print()) {
@@ -245,7 +254,9 @@ debug_get_bool_option(const char *name, bool _default)
 enum debug_tristate_option
 debug_get_tristate_option(const char *name)
 {
-	const char *raw = os_getenv(name);
+	char chars[DEBUG_CHAR_STORAGE_SIZE];
+	const char *raw = get_option_raw(chars, ARRAY_SIZE(chars), name);
+
 	enum debug_tristate_option ret = debug_string_to_tristate(raw);
 
 	if (debug_get_bool_option_print()) {
@@ -259,7 +270,9 @@ debug_get_tristate_option(const char *name)
 long
 debug_get_num_option(const char *name, long _default)
 {
-	const char *raw = os_getenv(name);
+	char chars[DEBUG_CHAR_STORAGE_SIZE];
+	const char *raw = get_option_raw(chars, ARRAY_SIZE(chars), name);
+
 	long ret = debug_string_to_num(raw, _default);
 
 	if (debug_get_bool_option_print()) {
@@ -272,7 +285,9 @@ debug_get_num_option(const char *name, long _default)
 float
 debug_get_float_option(const char *name, float _default)
 {
-	const char *raw = os_getenv(name);
+	char chars[DEBUG_CHAR_STORAGE_SIZE];
+	const char *raw = get_option_raw(chars, ARRAY_SIZE(chars), name);
+
 	float ret = debug_string_to_float(raw, _default);
 
 	if (debug_get_bool_option_print()) {
@@ -285,7 +300,9 @@ debug_get_float_option(const char *name, float _default)
 enum u_logging_level
 debug_get_log_option(const char *name, enum u_logging_level _default)
 {
-	const char *raw = os_getenv(name);
+	char chars[DEBUG_CHAR_STORAGE_SIZE];
+	const char *raw = get_option_raw(chars, ARRAY_SIZE(chars), name);
+
 	enum u_logging_level ret = debug_string_to_log_level(raw, _default);
 
 	if (debug_get_bool_option_print()) {

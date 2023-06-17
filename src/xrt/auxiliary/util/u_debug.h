@@ -19,6 +19,15 @@
 extern "C" {
 #endif
 
+
+/*
+ *
+ * Definitions.
+ *
+ */
+
+#define DEBUG_CHAR_STORAGE_SIZE (1024)
+
 enum debug_tristate_option
 {
 	DEBUG_TRISTATE_OFF,
@@ -56,7 +65,7 @@ debug_string_to_log_level(const char *string, enum u_logging_level _default);
  */
 
 const char *
-debug_get_option(const char *name, const char *_default);
+debug_get_option(char *chars, size_t char_count, const char *name, const char *_default);
 
 bool
 debug_get_bool_option(const char *name, bool _default);
@@ -86,11 +95,12 @@ debug_get_log_option(const char *name, enum u_logging_level _default);
 #define DEBUG_GET_ONCE_OPTION(suffix, name, _default)                                                                  \
 	static const char *debug_get_option_##suffix(void)                                                             \
 	{                                                                                                              \
+		static char storage[DEBUG_CHAR_STORAGE_SIZE];                                                          \
 		static bool gotten = false;                                                                            \
 		static const char *stored;                                                                             \
 		if (!gotten) {                                                                                         \
 			gotten = true;                                                                                 \
-			stored = debug_get_option(name, _default);                                                     \
+			stored = debug_get_option(storage, ARRAY_SIZE(storage), name, _default);                       \
 		}                                                                                                      \
 		return stored;                                                                                         \
 	}
