@@ -85,7 +85,7 @@ XrResult
 oxr_swapchain_common_release(struct oxr_logger *log, struct oxr_swapchain *sc);
 
 /*!
- * Shared create function for swapchains, called by grahpics API specific
+ * Shared create function for swapchains, called by graphics API specific
  * implementations list below. Does most init, but not @ref xrt_swapchain
  * allocation and other API specific things.
  *
