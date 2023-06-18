@@ -70,7 +70,7 @@ client_loop(volatile struct ipc_client_state *ics)
 {
 	U_TRACE_SET_THREAD_NAME("IPC Client");
 
-	IPC_INFO(ics->server, "Client connected");
+	IPC_INFO(ics->server, "Client %u connected", ics->client_state.id);
 
 	// Claim the client fd.
 	int epoll_fd = setup_epoll(ics);

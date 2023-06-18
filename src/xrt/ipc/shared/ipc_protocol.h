@@ -285,7 +285,8 @@ struct ipc_client_description
 
 struct ipc_client_list
 {
-	int32_t ids[IPC_MAX_CLIENTS];
+	uint32_t ids[IPC_MAX_CLIENTS];
+	uint32_t id_count;
 };
 
 /*!
@@ -295,6 +296,9 @@ struct ipc_client_list
  */
 struct ipc_app_state
 {
+	// Stable and unique ID of the client, only unique within this instance.
+	uint32_t id;
+
 	bool primary_application;
 	bool session_active;
 	bool session_visible;

@@ -16,7 +16,7 @@
 			{"name": "id", "type": "uint32_t"}
 		],
 		"out": [
-			{"name": "desc", "type": "struct ipc_app_state"}
+			{"name": "ias", "type": "struct ipc_app_state"}
 		]
 	},
 

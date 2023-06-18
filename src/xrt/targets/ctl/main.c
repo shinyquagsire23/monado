@@ -43,15 +43,13 @@ get_mode(struct ipc_connection *ipc_c)
 	}
 
 	P("Clients:\n");
-	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
-		if (clients.ids[i] < 0) {
-			continue;
-		}
+	for (uint32_t i = 0; i < clients.id_count; i++) {
+		uint32_t id = clients.ids[i];
 
 		struct ipc_app_state cs;
-		r = ipc_call_system_get_client_info(ipc_c, i, &cs);
+		r = ipc_call_system_get_client_info(ipc_c, id, &cs);
 		if (r != XRT_SUCCESS) {
-			PE("Failed to get client info for client %d.\n", i);
+			PE("Failed to get client info for client %d.\n", id);
 			return 1;
 		}
 
@@ -145,21 +143,15 @@ main(int argc, char *argv[])
 		switch (c) {
 		case 'p':
 			s_val = atoi(optarg);
-			if (s_val >= 0 && s_val < IPC_MAX_CLIENTS) {
-				op_mode = MODE_SET_PRIMARY;
-			}
+			op_mode = MODE_SET_PRIMARY;
 			break;
 		case 'f':
 			s_val = atoi(optarg);
-			if (s_val >= 0 && s_val < IPC_MAX_CLIENTS) {
-				op_mode = MODE_SET_FOCUSED;
-			}
+			op_mode = MODE_SET_FOCUSED;
 			break;
 		case 'i':
 			s_val = atoi(optarg);
-			if (s_val >= 0 && s_val < IPC_MAX_CLIENTS) {
-				op_mode = MODE_TOGGLE_IO;
-			}
+			op_mode = MODE_TOGGLE_IO;
 			break;
 		case '?':
 			if (optopt == 's') {

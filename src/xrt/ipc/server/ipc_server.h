@@ -342,6 +342,9 @@ struct ipc_server
 
 	volatile uint32_t current_slot_index;
 
+	//! Generator for IDs.
+	uint32_t id_generator;
+
 	struct
 	{
 		int active_client_index;
@@ -378,12 +381,28 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 #endif
 
 /*!
+ * Get the current state of a client.
+ *
+ * @ingroup ipc_server
+ */
+xrt_result_t
+ipc_server_get_client_app_state(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias);
+
+/*!
  * Set the new active client.
  *
  * @ingroup ipc_server
  */
-void
-ipc_server_set_active_client(struct ipc_server *s, int client_id);
+xrt_result_t
+ipc_server_set_active_client(struct ipc_server *s, uint32_t client_id);
+
+/*!
+ * Toggle the io for this client.
+ *
+ * @ingroup ipc_server
+ */
+xrt_result_t
+ipc_server_toggle_io_client(struct ipc_server *s, uint32_t client_id);
 
 /*!
  * Called by client threads to set a session to active.

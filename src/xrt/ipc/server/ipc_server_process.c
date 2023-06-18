@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 /*
  *
@@ -431,10 +432,21 @@ ipc_server_handle_client_connected(struct ipc_server *vs, xrt_ipc_handle_t ipc_h
 	}
 
 	it->state = IPC_THREAD_STARTING;
+
+	// Allocate a new ID, avoid zero.
+	//! @todo validate ID.
+	uint32_t id = ++vs->id_generator;
+
+	// Reset everything.
+	U_ZERO((struct ipc_client_state *)ics);
+
+	// Set state.
+	ics->client_state.id = id;
 	ics->imc.ipc_handle = ipc_handle;
 	ics->server = vs;
 	ics->server_thread_index = cs_index;
 	ics->io_active = true;
+
 	os_thread_start(&it->thread, ipc_server_client_thread, (void *)ics);
 
 	// Unlock when we are done.
@@ -695,13 +707,94 @@ update_server_state_locked(struct ipc_server *s)
 	s->global_state.last_active_client_index = s->global_state.active_client_index;
 }
 
-static void
-set_active_client_locked(struct ipc_server *s, int client_id)
+static volatile struct ipc_client_state *
+find_client_locked(struct ipc_server *s, uint32_t client_id)
 {
-	if (client_id != s->global_state.active_client_index) {
-		s->global_state.active_client_index = client_id;
+	// Check for invalid IDs.
+	if (client_id == 0 || client_id > INT_MAX) {
+		IPC_WARN(s, "Invalid ID '%u', failing operation.", client_id);
+		return NULL;
 	}
+
+	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
+		volatile struct ipc_client_state *ics = &s->threads[i].ics;
+
+		// Is this the client we are looking for?
+		if (ics->client_state.id != client_id) {
+			continue;
+		}
+
+		// Just in case of state data.
+		if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
+			IPC_WARN(s, "Encountered invalid state while searching for client with ID '%d'", client_id);
+			return NULL;
+		}
+
+		return ics;
+	}
+
+	IPC_WARN(s, "No client with ID '%u', failing operation.", client_id);
+
+	return NULL;
 }
+
+static xrt_result_t
+get_client_app_state_locked(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct ipc_app_state ias = ics->client_state;
+	ias.io_active = ics->io_active;
+
+	// @todo: track this data in the ipc_client_state struct
+	ias.primary_application = false;
+
+	// The active client is decided by index, so get that from the ics.
+	int index = ics->server_thread_index;
+
+	if (s->global_state.active_client_index == index) {
+		ias.primary_application = true;
+	}
+
+	*out_ias = ias;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+set_active_client_locked(struct ipc_server *s, uint32_t client_id)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	// The active client is decided by index, so get that from the ics.
+	int index = ics->server_thread_index;
+
+	if (index != s->global_state.active_client_index) {
+		s->global_state.active_client_index = index;
+	}
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+toggle_io_client_locked(struct ipc_server *s, uint32_t client_id)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	ics->io_active = !ics->io_active;
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -709,12 +802,35 @@ set_active_client_locked(struct ipc_server *s, int client_id)
  *
  */
 
-void
-ipc_server_set_active_client(struct ipc_server *s, int client_id)
+
+xrt_result_t
+ipc_server_get_client_app_state(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias)
 {
 	os_mutex_lock(&s->global_state.lock);
-	set_active_client_locked(s, client_id);
+	xrt_result_t xret = get_client_app_state_locked(s, client_id, out_ias);
 	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
+}
+
+xrt_result_t
+ipc_server_set_active_client(struct ipc_server *s, uint32_t client_id)
+{
+	os_mutex_lock(&s->global_state.lock);
+	xrt_result_t xret = set_active_client_locked(s, client_id);
+	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
+}
+
+xrt_result_t
+ipc_server_toggle_io_client(struct ipc_server *s, uint32_t client_id)
+{
+	os_mutex_lock(&s->global_state.lock);
+	xrt_result_t xret = toggle_io_client_locked(s, client_id);
+	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
 }
 
 void
@@ -742,7 +858,8 @@ ipc_server_activate_session(volatile struct ipc_client_state *ics)
 		                             s->global_state.last_active_client_index);
 	} else {
 		// Update active client
-		set_active_client_locked(s, ics->server_thread_index);
+		set_active_client_locked(s, ics->client_state.id);
+
 		// For new active regular sessions update all clients.
 		update_server_state_locked(s);
 	}

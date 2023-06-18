@@ -938,48 +938,52 @@ ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union x
 }
 
 xrt_result_t
-ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
-                                  uint32_t id,
-                                  struct ipc_app_state *out_client_desc)
-{
-	if (id >= IPC_MAX_CLIENTS) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-	volatile struct ipc_client_state *ics = &_ics->server->threads[id].ics;
-
-	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	*out_client_desc = ics->client_state;
-	out_client_desc->io_active = ics->io_active;
-
-	//@todo: track this data in the ipc_client_state struct
-	out_client_desc->primary_application = false;
-	if (ics->server->global_state.active_client_index == (int)id) {
-		out_client_desc->primary_application = true;
-	}
-
-	return XRT_SUCCESS;
-}
-
-xrt_result_t
 ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics, struct ipc_client_list *list)
 {
+	struct ipc_server *s = _ics->server;
+
+	// Look client list.
+	os_mutex_lock(&s->global_state.lock);
+
+	uint32_t count = 0;
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
-		list->ids[i] = _ics->server->threads[i].ics.server_thread_index;
+
+		volatile struct ipc_client_state *ics = &s->threads[i].ics;
+
+		// Is this thread running?
+		if (ics->server_thread_index < 0) {
+			continue;
+		}
+
+		list->ids[count++] = ics->client_state.id;
 	}
+
+	list->id_count = count;
+
+	// Unlock now.
+	os_mutex_unlock(&s->global_state.lock);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics, uint32_t client_id)
+ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
+                                  uint32_t client_id,
+                                  struct ipc_app_state *out_ias)
 {
-	IPC_INFO(ics->server, "System setting active client to %d.", client_id);
+	struct ipc_server *s = _ics->server;
 
-	ipc_server_set_active_client(ics->server, client_id);
+	return ipc_server_get_client_app_state(s, client_id, out_ias);
+}
 
-	return XRT_SUCCESS;
+xrt_result_t
+ipc_handle_system_set_primary_client(volatile struct ipc_client_state *_ics, uint32_t client_id)
+{
+	struct ipc_server *s = _ics->server;
+
+	IPC_INFO(s, "System setting active client to %d.", client_id);
+
+	return ipc_server_set_active_client(s, client_id);
 }
 
 xrt_result_t
@@ -993,21 +997,11 @@ ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics, uint
 xrt_result_t
 ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics, uint32_t client_id)
 {
-	volatile struct ipc_client_state *ics = NULL;
+	struct ipc_server *s = _ics->server;
 
-	if (client_id >= IPC_MAX_CLIENTS) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
+	IPC_INFO(s, "System toggling io for client %u.", client_id);
 
-	ics = &_ics->server->threads[client_id].ics;
-
-	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	ics->io_active = !ics->io_active;
-
-	return XRT_SUCCESS;
+	return ipc_server_toggle_io_client(s, client_id);
 }
 
 xrt_result_t
