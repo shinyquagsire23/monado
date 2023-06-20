@@ -534,6 +534,41 @@ vk_has_error(VkResult res, const char *fun, const char *file, int line);
 
 /*
  *
+ * Debug helper functions, in the vk_debug.c file.
+ *
+ */
+
+#if defined(VK_EXT_debug_marker) || defined(XRT_DOXYGEN)
+
+/*!
+ * Uses VK_EXT_debug_marker to name objects for easier debugging.
+ *
+ * @ingroup aux_vk
+ */
+void
+vk_name_object(struct vk_bundle *vk, VkDebugReportObjectTypeEXT object_type, uint64_t object, const char *name);
+
+/*!
+ * Small helper for @ref vk_name_object that makes use of pre-process to avoid
+ * writing out long type names.
+ *
+ * @ingroup aux_vk
+ */
+#define VK_NAME_OBJECT(vk, TYPE, obj, name)                                                                            \
+	if (vk->has_EXT_debug_marker) {                                                                                \
+		vk_name_object(vk, VK_DEBUG_REPORT_OBJECT_TYPE_##TYPE##_EXT, (uint64_t)obj, name);                     \
+	}
+
+#else
+
+#define VK_NAME_OBJECT(vk, TYPE, obj name)                                                                             \
+	do {                                                                                                           \
+	} while (false)
+
+#endif
+
+/*
+ *
  * Printing helpers, in the vk_print.c file.
  *
  */

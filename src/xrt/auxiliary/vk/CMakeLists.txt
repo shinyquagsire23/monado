@@ -9,6 +9,7 @@ add_library(
 	vk_cmd_pool.c
 	vk_cmd_pool.h
 	vk_compositor_flags.c
+	vk_debug.c
 	vk_documentation.h
 	vk_function_loaders.c
 	vk_helpers.c
