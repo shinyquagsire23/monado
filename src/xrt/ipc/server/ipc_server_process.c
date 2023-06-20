@@ -385,7 +385,7 @@ ipc_server_handle_shutdown_signal(struct ipc_server *vs)
 }
 
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle)
+ipc_server_handle_client_connected(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle)
 {
 	volatile struct ipc_client_state *ics = NULL;
 	int32_t cs_index = -1;

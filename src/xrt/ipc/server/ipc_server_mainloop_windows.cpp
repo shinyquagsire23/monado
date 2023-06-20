@@ -192,7 +192,10 @@ handle_connected_client(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 
 	bRet = SetNamedPipeHandleState(ml->pipe_handle, &mode, nullptr, nullptr);
 	if (bRet) {
-		ipc_server_start_client_listener_thread(vs, ml->pipe_handle);
+		// Call into the generic client connected handling code.
+		ipc_server_handle_client_connected(vs, ml->pipe_handle);
+
+		// Create another pipe to wait on.
 		create_another_pipe_instance(vs, ml);
 		return;
 	}

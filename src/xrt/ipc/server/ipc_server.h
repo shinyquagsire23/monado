@@ -431,11 +431,16 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics);
  * @{
  */
 /*!
- * Start a thread for a client connected at the other end of the ipc handle @p ipc_handle.
+ * Called when a client has connected, it takes the client's ipc handle.
+ * Handles all things needed to be done for a client connecting, like starting
+ * it's thread.
+ *
+ * @param vs         The IPC server.
+ * @param ipc_handle Handle to communicate over.
  * @memberof ipc_server
  */
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle);
+ipc_server_handle_client_connected(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle);
 
 /*!
  * Perform whatever needs to be done when the mainloop polling encounters a failure.
