@@ -134,6 +134,9 @@ vk_create_and_submit_fence_native(struct vk_bundle *vk, xrt_graphics_sync_handle
 		return ret;
 	}
 
+	// Won't be returned, but name for debbuging.
+	VK_NAME_OBJECT(vk, FENCE, fence, "VK Create Submit Sync");
+
 
 	/*
 	 * Submit fence.
@@ -348,6 +351,10 @@ vk_create_fence_sync_from_native(struct vk_bundle *vk, xrt_graphics_sync_handle_
 		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
 		return ret;
 	}
+
+	// Should be overwritten by caller, but name here for debugging.
+	VK_NAME_OBJECT(vk, FENCE, fence, "VK Import");
+
 
 #ifdef XRT_GRAPHICS_SYNC_HANDLE_IS_FD
 	// This is what is used on Linux Mesa when importing fences from OpenGL.
