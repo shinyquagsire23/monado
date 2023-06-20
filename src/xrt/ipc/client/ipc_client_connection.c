@@ -289,13 +289,13 @@ ipc_client_connection_init(struct ipc_connection *ipc_c,
 		return xret;
 	}
 
-	struct ipc_app_state desc = {0};
+	struct ipc_client_description desc = {0};
 	desc.info = *i_info;
 	desc.pid = getpid(); // Extra info.
 
-	xret = ipc_call_system_set_client_info(ipc_c, &desc);
+	xret = ipc_call_instance_describe_client(ipc_c, &desc);
 	if (xret != XRT_SUCCESS) {
-		IPC_ERROR(ipc_c, "Failed to set instance info!");
+		IPC_ERROR(ipc_c, "Failed to set instance description!");
 		ipc_client_connection_fini(ipc_c);
 
 

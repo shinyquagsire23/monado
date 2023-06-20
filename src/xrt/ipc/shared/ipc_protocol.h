@@ -274,6 +274,15 @@ struct ipc_shared_memory
 	uint64_t startup_timestamp;
 };
 
+/*!
+ * Initial info from a client when it connects.
+ */
+struct ipc_client_description
+{
+	pid_t pid;
+	struct xrt_instance_info info;
+};
+
 struct ipc_client_list
 {
 	int32_t ids[IPC_MAX_CLIENTS];

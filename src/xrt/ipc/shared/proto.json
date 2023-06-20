@@ -5,17 +5,17 @@
 		"out_handles": {"type": "xrt_shmem_handle_t"}
 	},
 
+	"instance_describe_client": {
+		"in": [
+			{"name": "desc", "type": "struct ipc_client_description"}
+		]
+	},
+
 	"system_get_client_info": {
 		"in": [
 			{"name": "id", "type": "uint32_t"}
 		],
 		"out": [
-			{"name": "desc", "type": "struct ipc_app_state"}
-		]
-	},
-
-	"system_set_client_info": {
-		"in": [
 			{"name": "desc", "type": "struct ipc_app_state"}
 		]
 	},

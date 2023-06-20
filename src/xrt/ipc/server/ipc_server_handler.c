@@ -164,6 +164,23 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
+ipc_handle_instance_describe_client(volatile struct ipc_client_state *ics,
+                                    const struct ipc_client_description *client_desc)
+{
+	ics->client_state.info = client_desc->info;
+	ics->client_state.pid = client_desc->pid;
+
+	IPC_INFO(ics->server,
+	         "Client info\n"
+	         "\tapplication_name: '%s'\n"
+	         "\tpid: %i",
+	         client_desc->info.application_name, //
+	         client_desc->pid);                  //
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
 ipc_handle_system_compositor_get_info(volatile struct ipc_client_state *ics,
                                       struct xrt_system_compositor_info *out_info)
 {
@@ -942,22 +959,6 @@ ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
 	if (ics->server->global_state.active_client_index == (int)id) {
 		out_client_desc->primary_application = true;
 	}
-
-	return XRT_SUCCESS;
-}
-
-xrt_result_t
-ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, const struct ipc_app_state *client_desc)
-{
-	ics->client_state.info = client_desc->info;
-	ics->client_state.pid = client_desc->pid;
-
-	IPC_INFO(ics->server,
-	         "Client info\n"
-	         "\tapplication_name: '%s'\n"
-	         "\tpid: %i",
-	         client_desc->info.application_name, //
-	         client_desc->pid);                  //
 
 	return XRT_SUCCESS;
 }
