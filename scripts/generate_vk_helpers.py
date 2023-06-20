@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Simple script to update vk_helpers.{c,h}."""
 
@@ -170,6 +170,12 @@ def get_device_cmds():
         Cmd("vkRegisterDisplayEventEXT", requires=("VK_EXT_display_control",)),
         None,
         Cmd("vkGetImageDrmFormatModifierPropertiesEXT", requires=("VK_EXT_image_drm_format_modifier",)),
+        None,
+        Cmd("vkCmdDebugMarkerBeginEXT", requires=("VK_EXT_debug_marker",)),
+        Cmd("vkCmdDebugMarkerEndEXT", requires=("VK_EXT_debug_marker",)),
+        Cmd("vkCmdDebugMarkerInsertEXT", requires=("VK_EXT_debug_marker",)),
+        Cmd("vkDebugMarkerSetObjectNameEXT", requires=("VK_EXT_debug_marker",)),
+        Cmd("vkDebugMarkerSetObjectTagEXT", requires=("VK_EXT_debug_marker",)),
     ]
 
 
@@ -269,6 +275,7 @@ DEVICE_EXTENSIONS_TO_CHECK = [
     "VK_KHR_maintenance4",
     "VK_KHR_timeline_semaphore",
     "VK_EXT_calibrated_timestamps",
+    "VK_EXT_debug_marker",
     "VK_EXT_display_control",
     "VK_EXT_external_memory_dma_buf",
     "VK_EXT_global_priority",

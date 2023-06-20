@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -130,6 +130,7 @@ struct vk_bundle
 	bool has_KHR_maintenance4;
 	bool has_KHR_timeline_semaphore;
 	bool has_EXT_calibrated_timestamps;
+	bool has_EXT_debug_marker;
 	bool has_EXT_display_control;
 	bool has_EXT_external_memory_dma_buf;
 	bool has_EXT_global_priority;
@@ -413,7 +414,16 @@ struct vk_bundle
 
 #if defined(VK_EXT_image_drm_format_modifier)
 	PFN_vkGetImageDrmFormatModifierPropertiesEXT vkGetImageDrmFormatModifierPropertiesEXT;
+
 #endif // defined(VK_EXT_image_drm_format_modifier)
+
+#if defined(VK_EXT_debug_marker)
+	PFN_vkCmdDebugMarkerBeginEXT vkCmdDebugMarkerBeginEXT;
+	PFN_vkCmdDebugMarkerEndEXT vkCmdDebugMarkerEndEXT;
+	PFN_vkCmdDebugMarkerInsertEXT vkCmdDebugMarkerInsertEXT;
+	PFN_vkDebugMarkerSetObjectNameEXT vkDebugMarkerSetObjectNameEXT;
+	PFN_vkDebugMarkerSetObjectTagEXT vkDebugMarkerSetObjectTagEXT;
+#endif // defined(VK_EXT_debug_marker)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 };
