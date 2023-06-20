@@ -448,6 +448,9 @@ vblank_event_func(struct comp_target *ct, uint64_t *out_timestamp_ns)
 		return false;
 	}
 
+	// Name for debugging.
+	VK_NAME_OBJECT(vk, FENCE, vblank_event_fence, "Comp VBlank");
+
 	// Not scoped to not effect timing.
 	COMP_TRACE_IDENT(vblank);
 

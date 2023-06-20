@@ -393,6 +393,10 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vkCreateFence: %s", vk_result_string(ret));
 		}
+
+		char buf[] = "Comp Renderer X_XXXX_XXXX";
+		snprintf(buf, ARRAY_SIZE(buf), "Comp Renderer %u", i);
+		VK_NAME_OBJECT(vk, FENCE, r->fences[i], buf);
 	}
 }
 
