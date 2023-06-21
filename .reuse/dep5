@@ -10,6 +10,7 @@ Files: doc/changes/drivers/*
   doc/changes/xrt/*
   doc/changes/auxiliary/*
   doc/changes/compositor/*
+  doc/changes/doc/*
   doc/changes/big/*
   doc/changes/tracking/*
 Copyright: 2020-2021, Collabora, Ltd. and the Monado contributors
