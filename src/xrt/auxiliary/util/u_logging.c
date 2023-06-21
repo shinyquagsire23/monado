@@ -15,6 +15,7 @@
 #include "util/u_truncate_printf.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -31,6 +32,22 @@
  */
 #define LOG_BUFFER_SIZE (3 * 1024)
 
+/*
+ * 16MB max binary data
+ */
+#define LOG_MAX_HEX_DUMP (0x00ffffff)
+
+#define LOG_MAX_HEX_DUMP_HUMAN_READABLE "16MB"
+
+/*
+ * Hex dumps put 16 bytes per line
+ */
+#define LOG_HEX_BYTES_PER_LINE (16)
+
+/*
+ * This is enough space for the line's bytes to be in both hex and ascii
+ */
+#define LOG_HEX_LINE_BUF_SIZE (128)
 
 /*
  *
@@ -84,13 +101,13 @@ u_log_hexdump_line(char *buf, size_t offset, const uint8_t *data, size_t data_si
 {
 	char *pos = buf;
 
-	if (data_size > 16) {
-		data_size = 16;
+	if (data_size > LOG_HEX_BYTES_PER_LINE) {
+		data_size = LOG_HEX_BYTES_PER_LINE;
 	}
 
 	pos += sprintf(pos, "%08x: ", (uint32_t)offset);
 
-	char *ascii = pos + (16 * 3) + 1;
+	char *ascii = pos + ((ptrdiff_t)LOG_HEX_BYTES_PER_LINE * 3) + 1;
 	size_t i;
 
 	for (i = 0; i < data_size; i++) {
@@ -104,7 +121,7 @@ u_log_hexdump_line(char *buf, size_t offset, const uint8_t *data, size_t data_si
 	}
 
 	/* Pad short lines with spaces, and null terminate */
-	while (i++ < 16) {
+	while (i++ < LOG_HEX_BYTES_PER_LINE) {
 		pos += sprintf(pos, "   ");
 	}
 	/* Replace the first NULL terminator with a space */
@@ -124,18 +141,18 @@ u_log_hex(const char *file,
 	size_t offset = 0;
 
 	while (offset < data_size) {
-		char tmp[128];
+		char tmp[LOG_HEX_LINE_BUF_SIZE];
 		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
 		u_log(file, line, func, level, "%s", tmp);
 
-		offset += 16;
+		offset += LOG_HEX_BYTES_PER_LINE;
 		/*
 		 * Limit the dump length to 16MB, this used to be 4GB which
 		 * would on 32bit system always evaltuate to false. So we have
 		 * the limit on something more sensible.
 		 */
-		if (offset > 0x00ffffff) {
-			u_log(file, line, func, level, "Truncating output over 16MB");
+		if (offset > LOG_MAX_HEX_DUMP) {
+			u_log(file, line, func, level, "Truncating output over " LOG_MAX_HEX_DUMP_HUMAN_READABLE);
 			break;
 		}
 	}
@@ -153,18 +170,19 @@ u_log_xdev_hex(const char *file,
 	size_t offset = 0;
 
 	while (offset < data_size) {
-		char tmp[128];
+		char tmp[LOG_HEX_LINE_BUF_SIZE];
 		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
 		u_log_xdev(file, line, func, level, xdev, "%s", tmp);
 
-		offset += 16;
+		offset += LOG_HEX_BYTES_PER_LINE;
 		/*
 		 * Limit the dump length to 16MB, this used to be 4GB which
 		 * would on 32bit system always evaltuate to false. So we have
 		 * the limit on something more sensible.
 		 */
-		if (offset > 0x00ffffff) {
-			u_log_xdev(file, line, func, level, xdev, "Truncating output over 16MB");
+		if (offset > LOG_MAX_HEX_DUMP) {
+			u_log_xdev(file, line, func, level, xdev,
+			           "Truncating output over " LOG_MAX_HEX_DUMP_HUMAN_READABLE);
 			break;
 		}
 	}
