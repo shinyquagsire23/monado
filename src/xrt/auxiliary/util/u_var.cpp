@@ -41,6 +41,7 @@ class Obj
 {
 public:
 	std::string name = {};
+	std::string raw_name = {};
 	struct u_var_root_info info = {};
 	std::vector<Var> vars = {};
 };
@@ -130,6 +131,7 @@ u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 	}
 
 	auto name = std::string(c_name);
+	auto raw_name = name;
 	uint32_t count = 0; // Zero means no number.
 
 	if (suffix_with_number) {
@@ -142,7 +144,9 @@ u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 
 	auto &obj = gTracker.map[(ptrdiff_t)root] = Obj();
 	obj.name = name;
+	obj.raw_name = raw_name;
 	obj.info.name = obj.name.c_str();
+	obj.info.raw_name = obj.raw_name.c_str();
 	obj.info.number = count;
 }
 

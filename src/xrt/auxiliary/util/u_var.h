@@ -286,7 +286,10 @@ struct u_var_root_info
 	//! The displayed name.
 	const char *name;
 
-	//! The number of the window, or zero.
+	//! Raw name without any suffix.
+	const char *raw_name;
+
+	//! The number of the window, or zero (name and raw_name are the same).
 	uint32_t number;
 };
 
