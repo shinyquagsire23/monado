@@ -399,6 +399,13 @@ oxr_xrConvertWin32PerformanceCounterToTimeKHR(XrInstance instance,
 	OXR_VERIFY_EXTENSION(&log, inst, KHR_win32_convert_performance_counter_time);
 	OXR_VERIFY_ARG_NOT_NULL(&log, performanceCounter);
 	OXR_VERIFY_ARG_NOT_NULL(&log, time);
+
+	if (performanceCounter->QuadPart <= 0) {
+		return oxr_error(&log, XR_ERROR_TIME_INVALID,
+		                 "(time == %" PRIi64 ") is not a valid performance counter time.",
+		                 performanceCounter->QuadPart);
+	}
+
 	return oxr_instance_convert_win32perfcounter_to_time(&log, inst, performanceCounter, time);
 }
 
