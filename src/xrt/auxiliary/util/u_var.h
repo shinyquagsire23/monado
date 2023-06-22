@@ -293,7 +293,7 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
 /*!
  * Add a named root object, the u_var subsystem is completely none-invasive
  * to the object it's tracking. The root pointer is used as a entry into a
- * hashmap of hidden objecrs. When not active all calls are stubs and have no
+ * hashmap of hidden objects. When not active all calls are stubs and have no
  * side-effects.
  *
  * This is intended only for debugging and is turned off by default, as this all
@@ -313,6 +313,10 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
  * // On destroy, only need to destroy the root object.
  * u_var_remove_root((void*)psmv);
  * ```
+ *
+ * @param root               Object to be tracked.
+ * @param c_name             Name of object, null terminated "C" string.
+ * @param suffix_with_number Should name be suffixed with a number.
  *
  * @ingroup aux_util
  */
