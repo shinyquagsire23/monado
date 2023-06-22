@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -300,6 +300,10 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
  * very very unsafe. It is only pointers straight into objects, completely
  * ignores ownership or any safe practices.
  *
+ * The parameter @p suffix_with_number makes the variable tracking code suffix
+ * the name of the object with with a number. This allows multiple objects of
+ * the same name name.
+ *
  * ```c
  * // On create
  * u_var_add_root((void*)psmv, "PS Move Controller", true);
@@ -313,7 +317,7 @@ typedef void (*u_var_elm_cb)(struct u_var_info *info, void *);
  * @ingroup aux_util
  */
 void
-u_var_add_root(void *root, const char *c_name, bool number);
+u_var_add_root(void *root, const char *c_name, bool suffix_with_number);
 
 /*!
  * Remove the root node.

@@ -122,7 +122,7 @@ u_var_force_on(void)
 }
 
 extern "C" void
-u_var_add_root(void *root, const char *c_name, bool number)
+u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 {
 	if (!get_on()) {
 		return;
@@ -130,7 +130,7 @@ u_var_add_root(void *root, const char *c_name, bool number)
 
 	auto name = std::string(c_name);
 
-	if (number) {
+	if (suffix_with_number) {
 		int count = gTracker.getNumber(name);
 
 		std::stringstream ss;
