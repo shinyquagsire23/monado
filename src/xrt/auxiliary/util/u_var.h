@@ -277,11 +277,25 @@ struct u_var_info
 };
 
 /*!
+ * Struct containing the information about a root object.
+ *
+ * @ingroup aux_util
+ */
+struct u_var_root_info
+{
+	//! The displayed name.
+	const char *name;
+
+	//! The number of the window, or zero.
+	uint32_t number;
+};
+
+/*!
  * Callback for entering and leaving root nodes.
  *
  * @ingroup aux_util
  */
-typedef void (*u_var_root_cb)(const char *, void *);
+typedef void (*u_var_root_cb)(struct u_var_root_info *info, void *);
 
 /*!
  * Callback on each variable a root node has.

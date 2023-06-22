@@ -41,6 +41,7 @@ class Obj
 {
 public:
 	std::string name = {};
+	struct u_var_root_info info = {};
 	std::vector<Var> vars = {};
 };
 
@@ -50,17 +51,17 @@ public:
 class Tracker
 {
 public:
-	std::unordered_map<std::string, size_t> counters = {};
+	std::unordered_map<std::string, uint32_t> counters = {};
 	std::unordered_map<ptrdiff_t, Obj> map = {};
 	bool on = false;
 	bool tested = false;
 
 public:
-	int
+	uint32_t
 	getNumber(const std::string &name)
 	{
 		auto s = counters.find(name);
-		int count = int(s != counters.end() ? s->second : 0) + 1;
+		uint32_t count = (s != counters.end() ? s->second : 0u) + 1u;
 		counters[name] = count;
 
 		return count;
@@ -129,9 +130,10 @@ u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 	}
 
 	auto name = std::string(c_name);
+	uint32_t count = 0; // Zero means no number.
 
 	if (suffix_with_number) {
-		int count = gTracker.getNumber(name);
+		count = gTracker.getNumber(name);
 
 		std::stringstream ss;
 		ss << name << " #" << count;
@@ -140,6 +142,8 @@ u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 
 	auto &obj = gTracker.map[(ptrdiff_t)root] = Obj();
 	obj.name = name;
+	obj.info.name = obj.name.c_str();
+	obj.info.number = count;
 }
 
 extern "C" void
@@ -172,13 +176,13 @@ u_var_visit(u_var_root_cb enter_cb, u_var_root_cb exit_cb, u_var_elm_cb elem_cb,
 	}
 
 	for (Obj *obj : tmp) {
-		enter_cb(obj->name.c_str(), priv);
+		enter_cb(&obj->info, priv);
 
 		for (auto &var : obj->vars) {
 			elem_cb(&var.info, priv);
 		}
 
-		exit_cb(obj->name.c_str(), priv);
+		exit_cb(&obj->info, priv);
 	}
 }
 

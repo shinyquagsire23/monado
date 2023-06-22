@@ -323,13 +323,13 @@ on_draggable_u16_var(const char *name, void *ptr)
 }
 
 static void
-on_root_enter(const char *name, void *priv)
+on_root_enter(struct u_var_root_info *info, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
 	state->vis_i = 0;
 	state->vis_stack[0] = true;
 
-	igBegin(name, NULL, 0);
+	igBegin(info->name, NULL, 0);
 }
 
 static float
@@ -493,7 +493,7 @@ on_elem(struct u_var_info *info, void *priv)
 }
 
 static void
-on_root_exit(const char *name, void *priv)
+on_root_exit(struct u_var_root_info *info, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
 	assert(state->vis_i == 0 && "Unbalanced GUI_HEADER_BEGIN/END pairs");
@@ -511,7 +511,7 @@ on_root_exit(const char *name, void *priv)
  */
 
 static void
-on_root_enter_sink(const char *name, void *priv)
+on_root_enter_sink(struct u_var_root_info *info, void *priv)
 {}
 
 static void
@@ -529,7 +529,7 @@ on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
 }
 
 static void
-on_root_exit_sink(const char *name, void *priv)
+on_root_exit_sink(struct u_var_root_info *info, void *priv)
 {}
 
 
