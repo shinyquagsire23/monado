@@ -423,9 +423,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	};
 
 	// Done writing commands, submit to queue.
-	os_mutex_lock(&vk->queue_mutex);
-	ret = vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
-	os_mutex_unlock(&vk->queue_mutex);
+	ret = vk_cmd_submit_locked(vk, 1, &submit, VK_NULL_HANDLE);
 
 	// Done submitting commands, unlock pool.
 	vk_cmd_pool_unlock(&w->pool);
