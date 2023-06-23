@@ -5,6 +5,8 @@ Copyright 2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
+[TOC]
+
 Monado has a work-in-progress port to Windows. While it's not ready for
 widespread usage due to some rough edges and lack of drivers, it does build and
 can serve as a base for further development.

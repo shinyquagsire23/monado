@@ -17,6 +17,11 @@ Copyright: 2020-2021, Collabora, Ltd. and the Monado contributors
 License: CC0-1.0
 Comment: Prevents needing a license header per fragment between releases.
 
+Files: doc/doxygen-awesome-css/*
+Copyright: 2021-2023, jothepro
+License: MIT
+Comment: SPDX-License-Identifier missing.
+
 Files: src/external/cjson/*
 Copyright: 2009-2017, Dave Gamble and cJSON contributors
 License: MIT

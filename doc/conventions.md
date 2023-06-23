@@ -14,6 +14,8 @@ mentioned in these examples.
 
 -->
 
+[TOC]
+
 Here are some general code style guidelines we follow.
 
 Note that we aim to "code with respect", to avoid terminology that may limit our
