@@ -34,6 +34,16 @@ stages:
   - pages
   - deploy
 
+###
+# Extra rules for packaging
+.monado.packaging.conditions:
+  rules:
+    # Only the default branch of the "upstream" repo.
+    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
+      when: on_success
+    # Otherwise, don't build packages.
+    - when: never
+
 
 # # # 
 ###
@@ -111,7 +121,6 @@ win:container_prep:
     - .monado.variables.windows:vs2022
     - .build-rules
   image: $MONADO_IMAGE
-
 
 # Variables for build and usage of Debian bullseye image
 .monado.variables.debian:bullseye:
@@ -278,6 +287,7 @@ reuse:
 debian:cmake:
   stage: build
   extends:
+    - .monado.packaging.conditions
     - .monado.image.debian:bullseye
   before_script:
     - pushd doc/changes
@@ -515,15 +525,6 @@ windows:
     paths:
       - install
       - build/Testing/Temporary
-
-# Packaging
-.monado.packaging.conditions:
-  rules:
-    # Only the default branch of the "upstream" repo.
-    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
-      when: on_success
-    # Otherwise, don't build packages.
-    - when: never
 
 
 

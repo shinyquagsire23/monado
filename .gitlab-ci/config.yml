@@ -62,6 +62,9 @@ fdo_ci_templates_sha: 7811ba9814a3bad379377241c6c6b62d78b20eac
   Eigen3_DIR: /usr/lib/cmake/eigen3/
   EIGEN3_INCLUDE_DIR: /usr/include/eigen3
 
+# Which build job do we use to build the documentation.
+documentation_build: "debian:cmake"
+
 # The distributions we'll make an image for
 distributions:
   - name: debian

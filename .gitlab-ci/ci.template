@@ -50,6 +50,16 @@ stages:
   - pages
   - deploy
 
+###
+# Extra rules for packaging
+.monado.packaging.conditions:
+  rules:
+    # Only the default branch of the "upstream" repo.
+    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
+      when: on_success
+    # Otherwise, don't build packages.
+    - when: never
+
 
 {% include 'win_containers.yml' %}
 {% include 'ci-containers-variables.yml.jinja' %}
@@ -93,6 +103,9 @@ reuse:
 {{job.name}}:
   stage: build
   extends:
+{% if job.name == documentation_build %}
+    - .monado.packaging.conditions
+{% endif %}
     - {{base_job_to_use_image(distro, image)}}
 
 {%- if job.before_script or "android" in job.name %}
@@ -162,15 +175,6 @@ windows:
       - install
       - build/Testing/Temporary
 
-# Packaging
-.monado.packaging.conditions:
-  rules:
-    # Only the default branch of the "upstream" repo.
-    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
-      when: on_success
-    # Otherwise, don't build packages.
-    - when: never
-
 {% macro packaging_job_name(distro, image) -%}
 {{distro.name}}:{{image.codename}}:package
 {%- endmacro %}
@@ -230,7 +234,7 @@ pages:
   extends:
     - .monado.packaging.conditions
   needs:
-    - debian:cmake
+    - {{ documentation_build }}
     - reprepro:package
   script:
     - mkdir -p public
