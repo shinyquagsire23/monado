@@ -160,19 +160,40 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 static VkResult
 create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 {
+	struct u_string_list *instance_ext_list = NULL;
 	VkResult ret;
 
 	assert(vk_args->required_instance_version != 0);
 
-	struct u_string_list *instance_ext_list = vk_build_instance_extensions(
-	    vk, vk_args->required_instance_extensions, vk_args->optional_instance_extensions);
 
+	/*
+	 * Extension handling.
+	 */
+
+	// Check required extensions, results in clearer error message.
+	ret = vk_check_required_instance_extensions(vk, vk_args->required_instance_extensions);
+	if (ret == VK_ERROR_EXTENSION_NOT_PRESENT) {
+		return ret; // Already printed.
+	}
+	if (ret != VK_SUCCESS) {
+		VK_ERROR_RET(vk, "vk_check_required_instance_extensions", "Failed to check required extension(s)", ret);
+		return ret;
+	}
+
+	// Build extension list.
+	instance_ext_list = vk_build_instance_extensions( //
+	    vk,                                           //
+	    vk_args->required_instance_extensions,        //
+	    vk_args->optional_instance_extensions);       //
 	if (!instance_ext_list) {
+		VK_ERROR(vk, "vk_build_instance_extensions: Failed to be list");
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
-	// Fill this out here.
-	vk_fill_in_has_instance_extensions(vk, instance_ext_list);
+
+	/*
+	 * Direct arguments.
+	 */
 
 	VkApplicationInfo app_info = {
 	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -194,7 +215,16 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 		return ret;
 	}
 
+
+	/*
+	 * Post creation setup of Vulkan bundle.
+	 */
+
+	// Set information about instance after it has been created.
 	vk->version = vk_args->required_instance_version;
+
+	// Needs to be filled in before getting functions.
+	vk_fill_in_has_instance_extensions(vk, instance_ext_list);
 
 	u_string_list_destroy(&instance_ext_list);
 
