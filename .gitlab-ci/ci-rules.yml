@@ -21,10 +21,12 @@
         - ".gitlab-ci/**/*"
       when: on_success
     # All paths, 1 hours have been wasted trying to combine the above arrays.
-    - changes: &paths-ci-code-sys-files
+    - changes: &paths-all-files
         # Code
         - "scripts/**/*"
         - "src/**/*"
+        # Doc
+        - "doc/**/*"
         # Build sys
         - CMakeLists.txt
         - "*.cmake"
@@ -36,14 +38,13 @@
         - ".gitlab-ci/**/*"
       when: on_success
 
-
 # When to automatically run the CI for build jobs
 .build-rules:
   rules:
     # If any files affecting the pipeline are changed, build/test jobs run
     # automatically once all dependency jobs have passed
     - changes:
-        *paths-ci-code-sys-files
+        *paths-all-files
       when: on_success
     # Don't build on forked repos.
     - if: *is-forked-branch
@@ -63,7 +64,7 @@
     # affecting the pipeline were changed
     - if: *is-pre-merge
       changes:
-        *paths-ci-code-sys-files
+        *paths-all-files
       when: on_success
     # Allow triggering jobs manually in other cases if any files affecting the
     # pipeline were changed: Disabled for now because it causes the pipeline on
