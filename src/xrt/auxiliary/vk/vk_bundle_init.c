@@ -37,6 +37,28 @@ append_to_pnext_chain(VkBaseInStructure *head, VkBaseInStructure *new_struct)
 	head->pNext = (void *)new_struct;
 }
 
+static VkResult
+enumerate_instance_extensions_properties(struct vk_bundle *vk,
+                                         VkExtensionProperties **out_props,
+                                         uint32_t *out_prop_count)
+{
+	VkExtensionProperties *props = NULL;
+	uint32_t prop_count = 0;
+	VkResult ret;
+
+	ret = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
+	vk_check_error("vkEnumerateInstanceExtensionProperties", ret, false);
+
+	props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
+	ret = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
+	vk_check_error_with_free("vkEnumerateInstanceExtensionProperties", ret, false, props);
+
+	*out_props = props;
+	*out_prop_count = prop_count;
+
+	return VK_SUCCESS;
+}
+
 static bool
 should_skip_optional_instance_ext(struct vk_bundle *vk,
                                   struct u_string_list *required_instance_ext_list,
@@ -81,18 +103,20 @@ vk_build_instance_extensions(struct vk_bundle *vk,
                              struct u_string_list *required_instance_ext_list,
                              struct u_string_list *optional_instance_ext_list)
 {
-	VkResult res;
-
+	VkExtensionProperties *props = NULL;
 	uint32_t prop_count = 0;
-	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
-	vk_check_error("vkEnumerateInstanceExtensionProperties", res, NULL);
+	VkResult ret;
 
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
-	vk_check_error_with_free("vkEnumerateInstanceExtensionProperties", res, NULL, props);
+	// Two call.
+	ret = enumerate_instance_extensions_properties(vk, &props, &prop_count);
+	if (ret != VK_SUCCESS) {
+		return NULL; // Already logged.
+	}
 
-	struct u_string_list *ret = u_string_list_create_from_list(required_instance_ext_list);
+	// Assumed to be supported.
+	struct u_string_list *list = u_string_list_create_from_list(required_instance_ext_list);
 
+	// Check any supported extensions.
 	uint32_t optional_instance_ext_count = u_string_list_get_size(optional_instance_ext_list);
 	const char *const *optional_instance_exts = u_string_list_get_data(optional_instance_ext_list);
 	for (uint32_t i = 0; i < optional_instance_ext_count; i++) {
@@ -108,7 +132,7 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 			continue;
 		}
 
-		int added = u_string_list_append_unique(ret, optional_ext);
+		int added = u_string_list_append_unique(list, optional_ext);
 		if (added == 1) {
 			VK_DEBUG(vk, "Using optional instance ext %s", optional_ext);
 		} else {
@@ -117,7 +141,8 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 	}
 
 	free(props);
-	return ret;
+
+	return list;
 }
 
 void
