@@ -17,6 +17,7 @@
  * @ingroup aux_vk
  */
 
+#include "util/u_pretty_print.h"
 #include "vk/vk_helpers.h"
 
 #include <stdio.h>
@@ -97,6 +98,49 @@ is_instance_ext_supported(VkExtensionProperties *props, uint32_t prop_count, con
  * 'Exported' instance functions.
  *
  */
+
+VkResult
+vk_check_required_instance_extensions(struct vk_bundle *vk, struct u_string_list *required_instance_ext_list)
+{
+	struct u_pp_sink_stack_only sink;
+	VkExtensionProperties *props = NULL;
+	uint32_t prop_count = 0;
+	VkResult ret;
+
+	// Two call.
+	ret = enumerate_instance_extensions_properties(vk, &props, &prop_count);
+	if (ret != VK_SUCCESS) {
+		return ret; // Already logged.
+	}
+
+	// We want to print all missing extensions.
+	bool have_missing = false;
+
+	// Used to build a nice pretty list of missing extensions.
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	// Check if required extensions are supported.
+	uint32_t required_instance_ext_count = u_string_list_get_size(required_instance_ext_list);
+	const char *const *required_instance_exts = u_string_list_get_data(required_instance_ext_list);
+	for (uint32_t i = 0; i < required_instance_ext_count; i++) {
+		const char *required_ext = required_instance_exts[i];
+
+		if (is_instance_ext_supported(props, prop_count, required_ext)) {
+			continue;
+		}
+
+		u_pp(dg, "\n\t%s", required_ext);
+		have_missing = true;
+	}
+
+	if (!have_missing) {
+		return VK_SUCCESS;
+	}
+
+	VK_ERROR(vk, "Missing required instance extensions:%s", sink.buffer);
+
+	return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
 
 struct u_string_list *
 vk_build_instance_extensions(struct vk_bundle *vk,

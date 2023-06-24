@@ -648,6 +648,16 @@ vk_get_device_functions(struct vk_bundle *vk);
  */
 
 /*!
+ * Check if the required instance extensions are supported, if not print error
+ * message with all extensions missing, returns VK_ERROR_EXTENSION_NOT_PRESENT
+ * if not all extensions are supported.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_check_required_instance_extensions(struct vk_bundle *vk, struct u_string_list *required_instance_ext_list);
+
+/*!
  * Only requires @ref vk_get_loader_functions to have been called.
  *
  * @ingroup aux_vk
