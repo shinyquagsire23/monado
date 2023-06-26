@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -32,6 +32,14 @@ struct comp_semaphore
 	struct vk_bundle *vk;
 
 	VkSemaphore semaphore;
+
+	/*!
+	 * Shared handle, the layer above compositor, such as IPC & st/oxr,
+	 * doesn't consume this handle, instead it has dup  semantics. So we
+	 * need to keep track of the handle and free it once done. This is
+	 * because the platform may be required by the platform.
+	 */
+	xrt_graphics_sync_handle_t handle;
 };
 
 
