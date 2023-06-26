@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -53,10 +53,13 @@ semaphore_destroy(struct xrt_compositor_semaphore *xcsem)
 	struct comp_semaphore *csem = comp_semaphore(xcsem);
 	struct vk_bundle *vk = csem->vk;
 
-	vk->vkDestroySemaphore( //
-	    vk->device,         // device
-	    csem->semaphore,    // semaphore
-	    NULL);              // pAllocator
+	if (csem->semaphore != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore( //
+		    vk->device,         // device
+		    csem->semaphore,    // semaphore
+		    NULL);              // pAllocator
+		csem->semaphore = VK_NULL_HANDLE;
+	}
 
 	free(csem);
 }
