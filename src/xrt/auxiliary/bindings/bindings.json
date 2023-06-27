@@ -1023,7 +1023,7 @@
 			"title": "Magic Leap 2 Controller",
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_ML2_CONTROLLER",
-			"extension": "XR_ML_ml2_controller",
+			"extension": "XR_ML_ml2_controller_interaction",
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
