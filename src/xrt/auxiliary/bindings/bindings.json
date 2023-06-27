@@ -1,11 +1,33 @@
 {
 	"$schema": "./bindings.schema.json",
 	"profiles": {
+		"/virtual_profiles/ext/palm_pose": {
+			"title": "Ext Palm Pose",
+			"type": "tracked_controller",
+			"extension": "XR_EXT_palm_pose",
+			"monado_device": "XRT_DEVICE_SIMPLE_CONTROLLER",
+			"subaction_paths": [
+				"/user/hand/left",
+				"/user/hand/right"
+			],
+			"subpaths": {
+				"/input/palm_ext": {
+					"type": "pose",
+					"localized_name": "Palm Pose",
+					"components": ["pose"],
+					"monado_bindings": {
+						"pose": "XRT_INPUT_GENERIC_PALM_POSE"
+					}
+				}
+			}
+		},
+
 		"/interaction_profiles/khr/simple_controller": {
 			"title": "Khronos Simple Controller",
 			"type": "tracked_controller",
 			"steamvr_controllertype": "khr_simple_controller",
 			"monado_device": "XRT_DEVICE_SIMPLE_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -58,6 +80,7 @@
 			"title": "Google Daydream Controller",
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_DAYDREAM",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -110,6 +133,7 @@
 			"type": "tracked_controller",
 			"steamvr_controllertype": "vive_controller",
 			"monado_device": "XRT_DEVICE_VIVE_WAND",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -196,6 +220,7 @@
 			"type": "tracked_hmd",
 			"steamvr_controllertype": "vive_pro",
 			"monado_device": "XRT_DEVICE_VIVE_PRO",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/head"
 			],
@@ -240,6 +265,7 @@
 			"type": "tracked_controller",
 			"steamvr_controllertype": "holographic_controller",
 			"monado_device": "XRT_DEVICE_WMR_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -329,6 +355,7 @@
 			"type": "untracked_controller",
 			"steamvr_controllertype": "gamepad",
 			"monado_device": "XRT_DEVICE_XBOX_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/gamepad"
 			],
@@ -510,6 +537,7 @@
 			"title": "Oculus Go Controller",
 			"type": "untracked_controller",
 			"monado_device": "XRT_DEVICE_GO_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -578,6 +606,7 @@
 			"type": "tracked_controller",
 			"steamvr_controllertype": "oculus_touch",
 			"monado_device": "XRT_DEVICE_TOUCH_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -712,6 +741,7 @@
 			"type": "tracked_controller",
 			"steamvr_controllertype": "knuckles",
 			"monado_device": "XRT_DEVICE_INDEX_CONTROLLER",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -825,6 +855,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_HP_REVERB_G2_CONTROLLER",
 			"extension": "XR_EXT_hp_mixed_reality_controller",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -935,6 +966,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER",
 			"extension": "XR_EXT_samsung_odyssey_controller",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1024,6 +1056,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_ML2_CONTROLLER",
 			"extension": "XR_ML_ml2_controller_interaction",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1110,6 +1143,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_HAND_INTERACTION",
 			"extension": "XR_MSFT_hand_interaction",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1155,6 +1189,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_PSMV",
 			"extension": "XR_MNDX_ball_on_a_stick_controller",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1280,6 +1315,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_HYDRA",
 			"extension": "XR_MNDX_hydra",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"
@@ -1362,6 +1398,7 @@
 			"type": "eye_tracker",
 			"monado_device": "XRT_DEVICE_EYE_GAZE_INTERACTION",
 			"extension": "XR_EXT_eye_gaze_interaction",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/eyes_ext"
 			],
@@ -1381,6 +1418,7 @@
 			"type": "tracked_controller",
 			"monado_device": "XRT_DEVICE_VIVE_TRACKER",
 			"extension": "XR_HTCX_vive_tracker_interaction",
+			"extended_by": ["ext/palm_pose"],
 			"subaction_paths": [
 				"/user/hand/left",
 				"/user/hand/right"

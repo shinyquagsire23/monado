@@ -1,9 +1,10 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Action related API entrypoint functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_api
  */
 
@@ -25,7 +26,7 @@
 #include "bindings/b_generated_bindings.h"
 
 
-typedef bool (*path_verify_fn_t)(const char *, size_t);
+typedef bool (*path_verify_fn_t)(const struct oxr_verify_extension_status *, const char *, size_t);
 
 
 /*
@@ -41,6 +42,7 @@ process_dpad(struct oxr_logger *log,
              struct oxr_dpad_state *state,
              const XrInteractionProfileDpadBindingEXT *dpad,
              path_verify_fn_t dpad_emulator_fn,
+             const struct oxr_verify_extension_status *verify_ext_status,
              const char *prefix,
              const char *ip_str)
 {
@@ -54,7 +56,7 @@ process_dpad(struct oxr_logger *log,
 		                 dpad->binding);
 	}
 
-	if (!dpad_emulator_fn(str, length)) {
+	if (!dpad_emulator_fn(verify_ext_status, str, length)) {
 		return oxr_error(log, XR_ERROR_PATH_UNSUPPORTED,
 		                 "(%s->binding == \"%s\") is not a valid dpad binding path for profile \"%s\"", prefix,
 		                 str, ip_str);
@@ -313,6 +315,23 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 	// Needed in various paths here.
 	const char *str = NULL;
 	size_t length;
+	const struct oxr_verify_extension_status verify_ext_status = {
+#ifdef OXR_HAVE_EXT_palm_pose
+	    .EXT_palm_pose = inst->extensions.EXT_palm_pose,
+#endif
+	    .EXT_hp_mixed_reality_controller = inst->extensions.EXT_hp_mixed_reality_controller,
+	    .EXT_samsung_odyssey_controller = inst->extensions.EXT_samsung_odyssey_controller,
+	    .ML_ml2_controller_interaction = inst->extensions.ML_ml2_controller_interaction,
+#ifdef OXR_HAVE_MSFT_hand_interaction
+	    .MSFT_hand_interaction = inst->extensions.MSFT_hand_interaction,
+#endif
+	    .MNDX_ball_on_a_stick_controller = inst->extensions.MNDX_ball_on_a_stick_controller,
+	    .MNDX_hydra = inst->extensions.MNDX_hydra,
+	    .EXT_eye_gaze_interaction = inst->extensions.EXT_eye_gaze_interaction,
+#ifdef OXR_HAVE_HTCX_vive_tracker_interaction
+	    .HTCX_vive_tracker_interaction = inst->extensions.HTCX_vive_tracker_interaction,
+#endif
+	};
 
 	for (size_t i = 0; i < suggestedBindings->countSuggestedBindings; i++) {
 		const XrActionSuggestedBinding *s = &suggestedBindings->suggestedBindings[i];
@@ -335,12 +354,12 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 			                 i, s->binding);
 		}
 
-		if (subpath_fn(str, length)) {
+		if (subpath_fn(&verify_ext_status, str, length)) {
 			continue;
 		}
 
 #ifdef XR_EXT_dpad_binding
-		if (dpad_path_fn(str, length)) {
+		if (dpad_path_fn(&verify_ext_status, str, length)) {
 			if (!has_dpad) {
 				return oxr_error(
 				    &log, XR_ERROR_PATH_UNSUPPORTED,
@@ -387,7 +406,8 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 			         "XrInteractionProfileDpadBindingEXT>",
 			         i);
 
-			ret = process_dpad(&log, inst, &dpad_state, dpad, dpad_emulator_fn, temp, ip_str);
+			ret = process_dpad(&log, inst, &dpad_state, dpad, dpad_emulator_fn, &verify_ext_status, temp,
+			                   ip_str);
 			if (ret != XR_SUCCESS) {
 				// Teardown the state.
 				oxr_dpad_state_deinit(&dpad_state);
