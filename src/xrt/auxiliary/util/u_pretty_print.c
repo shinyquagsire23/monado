@@ -1,9 +1,10 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Pretty printing various Monado things.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup aux_pretty
  */
 
@@ -115,6 +116,7 @@ u_pp_xrt_input_name(struct u_pp_delegate dg, enum xrt_input_name name)
 	case XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT: DG("XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT"); return;
 	case XRT_INPUT_GENERIC_TRACKER_POSE: DG("XRT_INPUT_GENERIC_TRACKER_POSE"); return;
 	case XRT_INPUT_GENERIC_EYE_GAZE_POSE: DG("XRT_INPUT_GENERIC_EYE_GAZE_POSE"); return;
+	case XRT_INPUT_GENERIC_PALM_POSE: DG("XRT_INPUT_GENERIC_PALM_POSE"); return;
 	case XRT_INPUT_SIMPLE_SELECT_CLICK: DG("XRT_INPUT_SIMPLE_SELECT_CLICK"); return;
 	case XRT_INPUT_SIMPLE_MENU_CLICK: DG("XRT_INPUT_SIMPLE_MENU_CLICK"); return;
 	case XRT_INPUT_SIMPLE_GRIP_POSE: DG("XRT_INPUT_SIMPLE_GRIP_POSE"); return;

@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,6 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
  * @author Nis Madsen <nima_zero_one@protonmail.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -755,6 +756,8 @@ enum xrt_input_name
 	XRT_INPUT_GENERIC_STAGE_SPACE_POSE                = XRT_INPUT_NAME(0x0006, POSE),
 	XRT_INPUT_GENERIC_LOCAL_SPACE_POSE                = XRT_INPUT_NAME(0x0007, POSE),
 	XRT_INPUT_GENERIC_EYE_GAZE_POSE                   = XRT_INPUT_NAME(0x0008, POSE),
+	//! XR_EXT_palm_pose
+	XRT_INPUT_GENERIC_PALM_POSE                       = XRT_INPUT_NAME(0x0009, POSE),
 
 	XRT_INPUT_SIMPLE_SELECT_CLICK                     = XRT_INPUT_NAME(0x0010, BOOLEAN),
 	XRT_INPUT_SIMPLE_MENU_CLICK                       = XRT_INPUT_NAME(0x0011, BOOLEAN),
