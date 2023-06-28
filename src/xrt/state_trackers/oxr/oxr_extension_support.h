@@ -350,6 +350,17 @@
 
 
 /*
+ * XR_MSFT_hand_interaction
+ */
+#if defined(XR_MSFT_hand_interaction) && defined(ALWAYS_DISABLED)
+#define OXR_HAVE_MSFT_hand_interaction
+#define OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_) _(MSFT_hand_interaction, MSFT_HAND_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_)
+#endif
+
+
+/*
  * XR_EXTX_overlay
  */
 #if defined(XR_EXTX_overlay)
@@ -469,6 +480,7 @@
     OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
+    OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
     OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \

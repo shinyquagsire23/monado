@@ -62,6 +62,7 @@ EXTENSIONS = (
     ['XR_ML_ml2_controller_interaction'],
     ['XR_MND_headless'],
     ['XR_MND_swapchain_usage_input_attachment_bit'],
+    ['XR_MSFT_hand_interaction', 'ALWAYS_DISABLED'],
     ['XR_EXTX_overlay'],
     ['XR_HTCX_vive_tracker_interaction', 'ALWAYS_DISABLED'],
     ['XR_MNDX_ball_on_a_stick_controller'],
