@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -382,6 +382,17 @@
 #define OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
 #endif
 
+
+/*
+ * XR_MNDX_hydra
+ */
+#if defined(XR_MNDX_hydra)
+#define OXR_HAVE_MNDX_hydra
+#define OXR_EXTENSION_SUPPORT_MNDX_hydra(_) _(MNDX_hydra, MNDX_HYDRA)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_hydra(_)
+#endif
+
 // end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
@@ -437,5 +448,6 @@
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
-    OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
+    OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_hydra(_)
 // clang-format on

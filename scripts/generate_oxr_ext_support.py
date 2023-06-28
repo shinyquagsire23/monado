@@ -65,6 +65,7 @@ EXTENSIONS = (
     ['XR_MNDX_ball_on_a_stick_controller'],
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MNDX_force_feedback_curl'],
+    ['XR_MNDX_hydra'],
 )
 
 

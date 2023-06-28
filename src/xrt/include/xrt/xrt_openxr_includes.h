@@ -1,9 +1,10 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Include all of the openxr headers in one place.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -48,3 +49,6 @@ typedef __eglMustCastToProperFunctionPointerType (*PFNEGLGETPROCADDRESSPROC)(con
 #include "openxr/openxr.h"
 #include "openxr/openxr_platform.h"
 #include "openxr/loader_interfaces.h"
+
+#include "openxr/XR_MNDX_hydra.h"
+#include "openxr/XR_MNDX_ball_on_a_stick_controller.h"
