@@ -27,7 +27,7 @@
 
 #ifdef XRT_OS_WINDOWS
 #define DEFAULT_NO_STDERR (true)
-#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing_stderr())
+#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing())
 #else
 #define DEFAULT_NO_STDERR (false)
 #define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing() || debug_get_bool_option_no_printing_stderr())
