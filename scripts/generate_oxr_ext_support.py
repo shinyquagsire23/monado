@@ -56,6 +56,7 @@ EXTENSIONS = (
     ['XR_EXT_eye_gaze_interaction'],
     ['XR_EXT_hand_tracking'],
     ['XR_EXT_hp_mixed_reality_controller'],
+    ['XR_EXT_palm_pose', 'ALWAYS_DISABLED'],
     ['XR_EXT_samsung_odyssey_controller'],
     ['XR_FB_display_refresh_rate'],
     ['XR_ML_ml2_controller_interaction'],
