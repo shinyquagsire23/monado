@@ -350,6 +350,18 @@
 
 
 /*
+ * XR_HTCX_vive_tracker_interaction
+ */
+#if defined(XR_HTCX_vive_tracker_interaction) && defined(ALWAYS_DISABLED)
+#define OXR_HAVE_HTCX_vive_tracker_interaction
+#define OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_)                                                         \
+	_(HTCX_vive_tracker_interaction, HTCX_VIVE_TRACKER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_)
+#endif
+
+
+/*
  * XR_MNDX_ball_on_a_stick_controller
  */
 #if defined(XR_MNDX_ball_on_a_stick_controller)
@@ -446,6 +458,7 @@
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
+    OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) \

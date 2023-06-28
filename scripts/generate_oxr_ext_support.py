@@ -62,6 +62,7 @@ EXTENSIONS = (
     ['XR_MND_headless'],
     ['XR_MND_swapchain_usage_input_attachment_bit'],
     ['XR_EXTX_overlay'],
+    ['XR_HTCX_vive_tracker_interaction', 'ALWAYS_DISABLED'],
     ['XR_MNDX_ball_on_a_stick_controller'],
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MNDX_force_feedback_curl'],
