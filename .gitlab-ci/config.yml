@@ -94,17 +94,14 @@ distributions:
 
           - name: "debian:cmake-no-opencv"
             cmake_defines:
-              BUILD_DOC: "OFF"
               XRT_HAVE_OPENCV: "OFF"
 
           - name: "debian:cmake-no-sdl2"
             cmake_defines:
-              BUILD_DOC: "OFF"
               XRT_HAVE_SDL2: "OFF"
 
           - name: "debian:cmake-no-service"
             cmake_defines:
-              BUILD_DOC: "OFF"
               XRT_FEATURE_SERVICE: "OFF"
 
           - name: "debian:cmake:32bit"
@@ -144,13 +141,11 @@ distributions:
           - name: "ndk:armeabi-v7a"
             cmake_defines:
               <<: *android_cmake_defines
-              BUILD_DOC: "OFF"
               ANDROID_ABI: armeabi-v7a
 
           - name: "ndk:arm64-v8a"
             cmake_defines:
               <<: *android_cmake_defines
-              BUILD_DOC: "OFF"
               ANDROID_ABI: arm64-v8a
 
           - name: android:spotlessCheck
@@ -184,7 +179,6 @@ distributions:
         build_jobs:
           - name: "ubuntu:focal:cmake"
             cmake_defines:
-              BUILD_DOC: "OFF"
 
       - codename: jammy
         distro_version: "22.04"
@@ -196,7 +190,6 @@ distributions:
         build_jobs:
           - name: "ubuntu:jammy:cmake"
             cmake_defines:
-              BUILD_DOC: "OFF"
 
   - name: arch
     images:

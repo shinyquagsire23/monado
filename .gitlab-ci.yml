@@ -45,7 +45,7 @@ stages:
     - when: never
 
 
-# # # 
+# # #
 ###
 # Windows container-related jobs (prep and usage)
 
@@ -295,9 +295,8 @@ debian:cmake:
     - popd
 
   script:
-
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh
+    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=on
     - cd build && ctest --output-on-failure
   artifacts:
     paths:
@@ -310,7 +309,7 @@ debian:cmake-no-opencv:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_HAVE_OPENCV=OFF
+    - .gitlab-ci/ci-cmake-build.sh -DXRT_HAVE_OPENCV=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake-no-sdl2:
@@ -320,7 +319,7 @@ debian:cmake-no-sdl2:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_HAVE_SDL2=OFF
+    - .gitlab-ci/ci-cmake-build.sh -DXRT_HAVE_SDL2=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake-no-service:
@@ -330,7 +329,7 @@ debian:cmake-no-service:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF -DXRT_FEATURE_SERVICE=OFF
+    - .gitlab-ci/ci-cmake-build.sh -DXRT_FEATURE_SERVICE=OFF
     - cd build && ctest --output-on-failure
 
 debian:cmake:32bit:
@@ -350,7 +349,7 @@ ndk:armeabi-v7a:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
+    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=26 -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
 
 ndk:arm64-v8a:
   stage: build
@@ -359,7 +358,7 @@ ndk:arm64-v8a:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DBUILD_DOC=OFF -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
+    - .gitlab-ci/ci-cmake-build.sh -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=26 -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake -DEigen3_DIR=/usr/lib/cmake/eigen3/ -DEIGEN3_INCLUDE_DIR=/usr/include/eigen3
 
 android:spotlessCheck:
   stage: build
@@ -480,7 +479,7 @@ ubuntu:focal:cmake:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF
+    - .gitlab-ci/ci-cmake-build.sh
     - cd build && ctest --output-on-failure
 
 ubuntu:jammy:cmake:
@@ -490,7 +489,7 @@ ubuntu:jammy:cmake:
   script:
 
     - .gitlab-ci/prebuild.sh
-    - .gitlab-ci/ci-cmake-build.sh -DBUILD_DOC=OFF
+    - .gitlab-ci/ci-cmake-build.sh
     - cd build && ctest --output-on-failure
 
 arch:cmake:
