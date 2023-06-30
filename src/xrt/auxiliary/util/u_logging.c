@@ -345,13 +345,14 @@ do_print(const char *file, int line, const char *func, enum u_logging_level leve
 
 #elif defined XRT_OS_WINDOWS || defined XRT_OS_LINUX
 
-#if defined XRT_OS_WINDOWS
-	OutputDebugStringA(storage); // No newline.
-#endif
-
 	// We want a newline, so add it, then null-terminate again.
 	storage[printed++] = '\n';
 	storage[printed] = '\0'; // Don't count zero termination as printed.
+
+#if defined XRT_OS_WINDOWS
+	// Visual Studio output needs the newline char
+	OutputDebugStringA(storage);
+#endif
 
 	fwrite(storage, printed, 1, stderr);
 
