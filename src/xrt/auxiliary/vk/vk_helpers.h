@@ -612,6 +612,62 @@ vk_print_external_handles_info(struct vk_bundle *vk, enum u_logging_level log_le
 
 /*
  *
+ * Enumeration helpers, in the vk_enumerate.c file.
+ *
+ */
+
+/*!
+ * Return the @p VkExtensionProperties of the given @p layer_name, NULL means
+ * the "base" driver instance.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_enumerate_instance_extensions_properties(struct vk_bundle *vk,
+                                            const char *layer_name,
+                                            uint32_t *out_prop_count,
+                                            VkExtensionProperties **out_props);
+
+/*!
+ * Enumerate the physical devices of the @VkInstance that has been opened on
+ * the given @ref vk_bundle.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_enumerate_physical_devices(struct vk_bundle *vk,
+                              uint32_t *out_physical_device_count,
+                              VkPhysicalDevice **out_physical_devices);
+
+/*!
+ * Enumerate the extension properties of the given @p VkPhysicalDevice for the
+ * named @p layer_name, NULL means the "base" driver physical device.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_enumerate_physical_device_extension_properties(struct vk_bundle *vk,
+                                                  VkPhysicalDevice physical_device,
+                                                  const char *layer_name,
+                                                  uint32_t *out_prop_count,
+                                                  VkExtensionProperties **out_props);
+
+#if defined(VK_USE_PLATFORM_DISPLAY_KHR) || defined(XRT_DOXYGEN)
+/*!
+ * Enumerate the display properties of the given @p VkPhysicalDevice.
+ *
+ * @ingroup aux_vk
+ */
+VkResult
+vk_enumerate_physical_device_display_properties(struct vk_bundle *vk,
+                                                VkPhysicalDevice physical_device,
+                                                uint32_t *out_prop_count,
+                                                VkDisplayPropertiesKHR **out_props);
+#endif
+
+
+/*
+ *
  * Struct init functions, in the vk_function_loaders.c file.
  *
  */

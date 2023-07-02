@@ -11,6 +11,7 @@ add_library(
 	vk_compositor_flags.c
 	vk_debug.c
 	vk_documentation.h
+	vk_enumerate.c
 	vk_function_loaders.c
 	vk_helpers.c
 	vk_helpers.h
