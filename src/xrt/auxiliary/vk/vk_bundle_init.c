@@ -38,28 +38,6 @@ append_to_pnext_chain(VkBaseInStructure *head, VkBaseInStructure *new_struct)
 	head->pNext = (void *)new_struct;
 }
 
-static VkResult
-enumerate_instance_extensions_properties(struct vk_bundle *vk,
-                                         VkExtensionProperties **out_props,
-                                         uint32_t *out_prop_count)
-{
-	VkExtensionProperties *props = NULL;
-	uint32_t prop_count = 0;
-	VkResult ret;
-
-	ret = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
-	vk_check_error("vkEnumerateInstanceExtensionProperties", ret, false);
-
-	props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-	ret = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
-	vk_check_error_with_free("vkEnumerateInstanceExtensionProperties", ret, false, props);
-
-	*out_props = props;
-	*out_prop_count = prop_count;
-
-	return VK_SUCCESS;
-}
-
 static bool
 should_skip_optional_instance_ext(struct vk_bundle *vk,
                                   struct u_string_list *required_instance_ext_list,
@@ -108,7 +86,11 @@ vk_check_required_instance_extensions(struct vk_bundle *vk, struct u_string_list
 	VkResult ret;
 
 	// Two call.
-	ret = enumerate_instance_extensions_properties(vk, &props, &prop_count);
+	ret = vk_enumerate_instance_extensions_properties( //
+	    vk,                                            // vk_bundle
+	    NULL,                                          // layer_name
+	    &prop_count,                                   // out_prop_count
+	    &props);                                       // out_props
 	if (ret != VK_SUCCESS) {
 		return ret; // Already logged.
 	}
@@ -152,7 +134,11 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 	VkResult ret;
 
 	// Two call.
-	ret = enumerate_instance_extensions_properties(vk, &props, &prop_count);
+	ret = vk_enumerate_instance_extensions_properties( //
+	    vk,                                            // vk_bundle
+	    NULL,                                          // layer_name
+	    &prop_count,                                   // out_prop_count
+	    &props);                                       // out_props
 	if (ret != VK_SUCCESS) {
 		return NULL; // Already logged.
 	}
@@ -553,19 +539,21 @@ select_preferred_device(struct vk_bundle *vk, VkPhysicalDevice *devices, uint32_
 static VkResult
 select_physical_device(struct vk_bundle *vk, int forced_index)
 {
-	VkPhysicalDevice physical_devices[16];
-	uint32_t gpu_count = ARRAY_SIZE(physical_devices);
+	VkPhysicalDevice *physical_devices = NULL;
+	uint32_t gpu_count = 0;
 	VkResult ret;
 
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, physical_devices);
+	ret = vk_enumerate_physical_devices( //
+	    vk,                              // vk_bundle
+	    &gpu_count,                      // out_physical_device_count
+	    &physical_devices);              // out_physical_devices
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkEnumeratePhysicalDevices: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_enumerate_physical_devices: %s", vk_result_string(ret));
 		return ret;
 	}
-
 	if (gpu_count == 0) {
-		VK_DEBUG(vk, "No physical device found!");
-		return VK_ERROR_DEVICE_LOST;
+		VK_ERROR(vk, "No physical device found!");
+		return VK_ERROR_DEVICE_LOST; // No need to free if zero devices.
 	}
 
 	VK_DEBUG(vk, "Choosing Vulkan device index");
@@ -575,6 +563,7 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 		if (uint_index + 1 > gpu_count) {
 			VK_ERROR(vk, "Attempted to force GPU index %u, but only %u GPUs are available", uint_index,
 			         gpu_count);
+			free(physical_devices);
 			return VK_ERROR_DEVICE_LOST;
 		}
 		gpu_index = uint_index;
@@ -584,11 +573,21 @@ select_physical_device(struct vk_bundle *vk, int forced_index)
 		gpu_index = select_preferred_device(vk, physical_devices, gpu_count);
 	}
 
+	// Setup the physical device on the bundle.
 	vk->physical_device = physical_devices[gpu_index];
 	vk->physical_device_index = gpu_index;
 
+	// Free the array.
+	free(physical_devices);
+	physical_devices = NULL;
+
+
+	/*
+	 * Have now selected device, get properties of it.
+	 */
+
 	VkPhysicalDeviceProperties pdp;
-	vk->vkGetPhysicalDeviceProperties(physical_devices[gpu_index], &pdp);
+	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &pdp);
 
 	char title[20];
 	(void)snprintf(title, sizeof(title), "Selected GPU: %u\n", gpu_index);
@@ -869,28 +868,6 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	// end of GENERATED device extension code - do not modify - used by scripts
 }
 
-static VkResult
-get_device_ext_props(struct vk_bundle *vk,
-                     VkPhysicalDevice physical_device,
-                     VkExtensionProperties **out_props,
-                     uint32_t *out_prop_count)
-{
-	uint32_t prop_count = 0;
-	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, NULL);
-	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
-
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-
-	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
-	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
-
-	// The preceding check returns on failure.
-	*out_props = props;
-	*out_prop_count = prop_count;
-
-	return VK_SUCCESS;
-}
-
 static bool
 should_skip_optional_device_ext(struct vk_bundle *vk,
                                 struct u_string_list *required_device_ext_list,
@@ -921,7 +898,16 @@ build_device_extensions(struct vk_bundle *vk,
 {
 	VkExtensionProperties *props = NULL;
 	uint32_t prop_count = 0;
-	if (get_device_ext_props(vk, physical_device, &props, &prop_count) != VK_SUCCESS) {
+	VkResult ret;
+
+	ret = vk_enumerate_physical_device_extension_properties( //
+	    vk,                                                  // vk_bundle
+	    physical_device,                                     // physical_device
+	    NULL,                                                // layer_name
+	    &prop_count,                                         // out_prop_count
+	    &props);                                             // out_props
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_enumerate_physical_device_extension_properties: %s", vk_result_string(ret));
 		return false;
 	}
 
