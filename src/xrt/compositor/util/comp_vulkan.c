@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -45,7 +45,7 @@ snprint_uuid(char *str, size_t size, xrt_uuid_t *uuid)
 }
 
 static bool
-get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+get_device_id_props(struct vk_bundle *vk, int gpu_index, VkPhysicalDeviceIDProperties *out_id_props)
 {
 	VkPhysicalDeviceIDProperties pdidp = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
@@ -56,17 +56,43 @@ get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 	    .pNext = &pdidp,
 	};
 
-	VkPhysicalDevice phys[16];
-	uint32_t gpu_count = ARRAY_SIZE(phys);
+	VkPhysicalDevice *phys = NULL;
+	uint32_t gpu_count = 0;
 	VkResult ret;
 
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
+	ret = vk_enumerate_physical_devices( //
+	    vk,                              // vk_bundle
+	    &gpu_count,                      // out_physical_device_count
+	    &phys);                          // out_physical_devices
 	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
+		VK_ERROR_RET(vk, "vk_enumerate_physical_devices", "Failed to enumerate physical devices.", ret);
+		return false;
+	}
+	if (gpu_count == 0) {
+		VK_ERROR(vk, "vk_enumerate_physical_devices: Returned zero physical devices!");
 		return false;
 	}
 
 	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	free(phys);
+
+	*out_id_props = pdidp;
+
+	return true;
+}
+
+static bool
+get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+{
+	VkPhysicalDeviceIDProperties pdidp = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
+	};
+
+	if (!get_device_id_props(vk, gpu_index, &pdidp)) {
+		VK_ERROR(vk, "get_device_id_props: false");
+		return false;
+	}
+
 	memcpy(uuid->data, pdidp.deviceUUID, ARRAY_SIZE(uuid->data));
 
 	return true;
@@ -79,25 +105,16 @@ get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_luid_t *luid)
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
 	};
 
-	VkPhysicalDeviceProperties2 pdp2 = {
-	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-	    .pNext = &pdidp,
-	};
-
-	VkPhysicalDevice phys[16];
-	uint32_t gpu_count = ARRAY_SIZE(phys);
-	VkResult ret;
-
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
+	if (!get_device_id_props(vk, gpu_index, &pdidp)) {
+		VK_ERROR(vk, "get_device_id_props: false");
 		return false;
 	}
 
-	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	// Is the LUID even valid?
 	if (pdidp.deviceLUIDValid != VK_TRUE) {
 		return false;
 	}
+
 	memcpy(luid->data, pdidp.deviceLUID, ARRAY_SIZE(luid->data));
 
 	return true;
