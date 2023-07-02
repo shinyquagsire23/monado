@@ -1,4 +1,4 @@
-// Copyright 2019-2020, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,14 +9,19 @@
  */
 
 #include "util/u_misc.h"
+#include "util/u_pretty_print.h"
 
 #include "main/comp_window_direct.h"
 
+
 /*
  *
- * Private structs
+ * Private structs and defines.
  *
  */
+
+//! NVIDIA Vendor ID.
+#define NVIDIA_VENDOR_ID (0x10DE)
 
 /*!
  * Probed display.
@@ -42,6 +47,7 @@ struct comp_window_direct_nvidia
 	struct comp_window_direct_nvidia_display *displays;
 	uint16_t display_count;
 };
+
 
 /*
  *
@@ -85,6 +91,34 @@ _update_window_title(struct comp_target *ct, const char *title)
 {
 	(void)ct;
 	(void)title;
+}
+
+static VkResult
+enumerate_physical_device_display_properties(struct vk_bundle *vk,
+                                             VkPhysicalDevice physical_device,
+                                             VkDisplayPropertiesKHR **out_props,
+                                             uint32_t *out_prop_count)
+{
+	VkDisplayPropertiesKHR *props = NULL;
+	uint32_t prop_count = 0;
+	VkResult ret;
+
+	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(NULL, &prop_count, NULL);
+	vk_check_error("vkGetPhysicalDeviceDisplayPropertiesKHR", ret, ret);
+	if (prop_count == 0) {
+		*out_props = props;
+		*out_prop_count = prop_count;
+		return VK_SUCCESS;
+	}
+
+	props = U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, prop_count);
+	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(NULL, &prop_count, props);
+	vk_check_error_with_free("vkGetPhysicalDeviceDisplayPropertiesKHR", ret, ret, props);
+
+	*out_props = props;
+	*out_prop_count = prop_count;
+
+	return VK_SUCCESS;
 }
 
 struct comp_target *
@@ -294,35 +328,33 @@ _match_allowlist_entry(const char *al_entry, VkDisplayPropertiesKHR *disp)
 static bool
 _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 {
+	VkDisplayPropertiesKHR *display_props;
+	uint32_t display_count;
 	VkResult ret;
 
 	VkPhysicalDeviceProperties physical_device_properties;
 	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &physical_device_properties);
 
-	if (physical_device_properties.vendorID != 0x10DE)
-		return false;
-
-	// get a list of attached displays
-	uint32_t display_count;
-
-	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count, NULL);
-	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "vkGetPhysicalDeviceDisplayPropertiesKHR", "Failed to get vulkan display count", ret);
+	// Only run this code on NVIDIA hardware.
+	if (physical_device_properties.vendorID != NVIDIA_VENDOR_ID) {
 		return false;
 	}
 
-	VkDisplayPropertiesKHR *display_props = U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, display_count);
-
-	if (display_props && vk->vkGetPhysicalDeviceDisplayPropertiesKHR(vk->physical_device, &display_count,
-	                                                                 display_props) != VK_SUCCESS) {
-		CVK_ERROR(c, "vkGetPhysicalDeviceDisplayPropertiesKHR", "Failed to get display properties", ret);
-		free(display_props);
+	// Get a list of attached displays.
+	ret = enumerate_physical_device_display_properties( //
+	    vk,                                             //
+	    vk->physical_device,                            //
+	    &display_props,                                 //
+	    &display_count);                                //
+	if (ret != VK_SUCCESS) {
+		CVK_ERROR(c, "enumerate_physical_device_display_properties", "Failed to get display properties ", ret);
 		return false;
 	}
 
 	for (uint32_t i = 0; i < display_count; i++) {
 		VkDisplayPropertiesKHR *disp = display_props + i;
-		// check this display against our allowlist
+
+		// Check this display against our allowlist.
 		for (uint32_t j = 0; j < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); j++) {
 			if (_match_allowlist_entry(NV_DIRECT_ALLOWLIST[j], disp)) {
 				free(display_props);
@@ -330,22 +362,33 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 			}
 		}
 
+		// Also check against any extra displays given by the user.
 		if (c->settings.nvidia_display && _match_allowlist_entry(c->settings.nvidia_display, disp)) {
 			free(display_props);
 			return true;
 		}
 	}
 
-	COMP_ERROR(c, "NVIDIA: No allowlisted displays found!");
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
 
-	COMP_ERROR(c, "== Current Allowlist ==");
-	for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); i++)
-		COMP_ERROR(c, "%s", NV_DIRECT_ALLOWLIST[i]);
+	u_pp(dg, "NVIDIA: No allowlisted displays found!");
 
-	COMP_ERROR(c, "== Found Displays ==");
-	for (uint32_t i = 0; i < display_count; i++)
-		COMP_ERROR(c, "%s", display_props[i].displayName);
+	u_pp(dg, "\n\t== Current Allowlist (%u) ==", (uint32_t)ARRAY_SIZE(NV_DIRECT_ALLOWLIST));
+	for (uint32_t i = 0; i < ARRAY_SIZE(NV_DIRECT_ALLOWLIST); i++) {
+		u_pp(dg, "\n\t\t%s", NV_DIRECT_ALLOWLIST[i]);
+	}
 
+	if (c->settings.nvidia_display != NULL) {
+		u_pp(dg, "\n\t\t%s (extra)", c->settings.nvidia_display);
+	}
+
+	u_pp(dg, "\n\t== Found Displays (%u) ==", display_count);
+	for (uint32_t i = 0; i < display_count; i++) {
+		u_pp(dg, "\n\t\t%s", display_props[i].displayName);
+	}
+
+	COMP_ERROR(c, "%s", sink.buffer);
 
 	free(display_props);
 
@@ -376,7 +419,10 @@ check_vulkan_caps(struct comp_compositor *c, bool *out_detected)
 		return false;
 	}
 
-	const char *extension_names[] = {COMP_INSTANCE_EXTENSIONS_COMMON, VK_KHR_DISPLAY_EXTENSION_NAME};
+	const char *extension_names[] = {
+	    COMP_INSTANCE_EXTENSIONS_COMMON,
+	    VK_KHR_DISPLAY_EXTENSION_NAME,
+	};
 
 	VkInstanceCreateInfo instance_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
