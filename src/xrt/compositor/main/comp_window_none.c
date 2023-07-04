@@ -360,7 +360,6 @@ comp_target_none_present(struct comp_target *ct,
 		os_thread_helper_unlock(&cts->vblank.event_thread);
 	}
 #endif
-#endif
 	VkSemaphoreSignalInfo info = {
 		.sType = VK_SEMAPHORE_TYPE_TIMELINE,
 		.pNext = NULL,
