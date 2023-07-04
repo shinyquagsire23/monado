@@ -1105,12 +1105,6 @@ oxr_session_populate_gl_xlib(struct oxr_logger *log,
                              struct oxr_session *sess);
 #endif // XR_USE_PLATFORM_XLIB
 
-XrResult
-oxr_session_populate_gl_sdl(struct oxr_logger *log,
-                             struct oxr_system *sys,
-                             XrGraphicsBindingOpenGLSDLEXT const *next,
-                             struct oxr_session *sess);
-
 #ifdef XR_USE_PLATFORM_WIN32
 XrResult
 oxr_session_populate_gl_win32(struct oxr_logger *log,

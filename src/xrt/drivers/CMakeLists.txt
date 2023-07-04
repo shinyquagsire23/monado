@@ -111,7 +111,7 @@ if(XRT_BUILD_DRIVER_WIVRN)
 	target_include_directories(drv_wivrn INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/wivrn)
 	target_link_libraries(
 		drv_wivrn
-		PRIVATE xrt-interfaces aux_util aux_os aux_vk
+		PRIVATE xrt-interfaces aux_util aux_os aux_vk nlohmann_json
 		PUBLIC Boost::pfr xrt-external-openxr
 		)
 

@@ -1412,13 +1412,6 @@ XR_ENUM_STR(XrResult);
     _(glxDrawable) \
     _(glxContext) \
 
-// ADDED TODO TODO
-#define XR_LIST_STRUCT_XrGraphicsBindingOpenGLSDLEXT(_) \
-    _(type) \
-    _(next) \
-    _(sdlWindow) \
-    _(sdlContext) \
-
 #define XR_LIST_STRUCT_XrGraphicsBindingOpenGLXcbKHR(_) \
     _(type) \
     _(next) \
@@ -2996,10 +2989,6 @@ XR_ENUM_STR(XrResult);
 #define XR_LIST_STRUCTURE_TYPES_XR_USE_GRAPHICS_API_OPENGL_XR_USE_PLATFORM_XLIB(_)
 #endif
 
-// ADDED TODO TODO
-#define XR_LIST_STRUCTURE_TYPES_XR_USE_GRAPHICS_API_OPENGL_XR_USE_PLATFORM_SDL(_) \
-    _(XrGraphicsBindingOpenGLSDLEXT, XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT) \
-
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 #define XR_LIST_STRUCTURE_TYPES_XR_USE_GRAPHICS_API_OPENGL_ES(_) \
@@ -3068,11 +3057,6 @@ XR_ENUM_STR(XrResult);
 #else
 #define XR_LIST_STRUCTURE_TYPES_XR_USE_PLATFORM_WIN32(_)
 #endif
-
-// ADDED TODO TODO
-#define XR_LIST_STRUCTURE_TYPES_XR_USE_GRAPHICS_API_OPENGL_XR_USE_PLATFORM_SDL(_) \
-    _(XrGraphicsBindingOpenSDLEXT, XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT) \
-
 
 #define XR_LIST_STRUCTURE_TYPES(_) \
     XR_LIST_STRUCTURE_TYPES_CORE(_) \

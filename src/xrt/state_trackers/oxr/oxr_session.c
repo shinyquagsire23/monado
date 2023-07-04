@@ -712,22 +712,6 @@ oxr_session_create_impl(struct oxr_logger *log,
 	}
 #endif
 
-#if defined(XR_USE_PLATFORM_SDL) && defined(XR_USE_GRAPHICS_API_OPENGL)
-	XrGraphicsBindingOpenGLSDLEXT const *opengl_sdl = OXR_GET_INPUT_FROM_CHAIN(
-	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_SDL_EXT, XrGraphicsBindingOpenGLSDLEXT);
-	if (opengl_sdl != NULL) {
-		if (!sys->gotten_requirements) {
-			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
-			                 "Has not called "
-			                 "xrGetOpenGL[ES]GraphicsRequirementsKHR");
-		}
-
-		OXR_SESSION_ALLOCATE_AND_INIT(log, sys, *out_session);
-		OXR_ALLOCATE_NATIVE_COMPOSITOR(log, xsi, *out_session);
-		return oxr_session_populate_gl_sdl(log, sys, opengl_sdl, *out_session);
-	}
-#endif
-
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_USE_GRAPHICS_API_OPENGL_ES)
 	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR, XrGraphicsBindingOpenGLESAndroidKHR);

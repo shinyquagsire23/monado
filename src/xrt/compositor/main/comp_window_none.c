@@ -14,8 +14,7 @@
 #include "vk/vk_helpers.h"
 
 #include "main/comp_window_direct.h"
-#include <SDL.h>
-#include <SDL_vulkan.h>
+
 
 
 
@@ -333,13 +332,6 @@ comp_target_none_acquire_next_image(struct comp_target *ct, uint32_t *out_index)
 
 	static int inc = 0;
 
-	/*return vk->vkAcquireNextImageKHR(          //
-	    vk->device,                            // device
-	    cts->swapchain.handle,                 // swapchain
-	    UINT64_MAX,                            // timeout
-	    cts->base.semaphores.present_complete, // semaphore
-	    VK_NULL_HANDLE,                        // fence
-	    out_index);                            // pImageIndex*/
 	*out_index = inc++;
 	inc = inc % 3;
 	return VK_SUCCESS;
@@ -357,32 +349,6 @@ comp_target_none_present(struct comp_target *ct,
 	struct vk_bundle *vk = get_vk_cts(cts);
 
 	VkResult ret = VK_SUCCESS;
-#if 0
-	assert(cts->current_frame_id >= 0);
-	assert(cts->current_frame_id <= UINT32_MAX);
-
-	VkPresentTimeGOOGLE times = {
-	    .presentID = (uint32_t)cts->current_frame_id,
-	    .desiredPresentTime = desired_present_time_ns - present_slop_ns,
-	};
-
-	VkPresentTimesInfoGOOGLE timings = {
-	    .sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
-	    .swapchainCount = 1,
-	    .pTimes = &times,
-	};
-
-	VkPresentInfoKHR presentInfo = {
-	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-	    .pNext = vk->has_GOOGLE_display_timing ? &timings : NULL,
-	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &cts->base.semaphores.render_complete,
-	    .swapchainCount = 1,
-	    .pSwapchains = &cts->swapchain.handle,
-	    .pImageIndices = &index,
-	};
-
-	VkResult ret = VK_SUCCESS;//vk->vkQueuePresentKHR(queue, &presentInfo);
 
 #ifdef VK_EXT_display_control
 	if (cts->vblank.has_started) {
@@ -765,79 +731,6 @@ comp_window_none_create_surface(struct comp_target_none *cts,
 {
 	struct vk_bundle *vk = get_vk_cts(cts);
 
-	//printf("asdf %p\n", vk);
-
-	uint32_t plane_index = 0;
-
-	//VkDisplayModeKHR display_mode = comp_window_direct_get_primary_display_mode(cts, display);
-
-	//VkDisplayPlaneCapabilitiesKHR plane_caps;
-	//vk->vkGetDisplayPlaneCapabilitiesKHR(vk->physical_device, display_mode, plane_index, &plane_caps);
-
-	/*VkDisplaySurfaceCreateInfoKHR surface_info = {
-	    .sType = VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,
-	    .pNext = NULL,
-	    .flags = 0,
-	    .displayMode = 0, // display_mode
-	    .planeIndex = 0, // plane_index
-	    .planeStackIndex = 0,
-	    .transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-	    .globalAlpha = 1.0,
-	    .alphaMode = VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,//choose_alpha_mode(plane_caps.supportedAlpha),
-	    .imageExtent =
-	        {
-	            .width = width,
-	            .height = height,
-	        },
-	};
-
-	VkResult result = vk->vkCreateDisplayPlaneSurfaceKHR(vk->instance, &surface_info, NULL, &cts->surface.handle);
-	*/
-#if 0
-	SDL_Window* window =
-	    SDL_CreateWindow("OpenXR Exampleee", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1024,
-	                     1024, SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN);
-
-	unsigned int extensionCount = 0;
-    SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, NULL);
-    const char** extensionNames = malloc(sizeof(char*) * extensionCount);
-    SDL_Vulkan_GetInstanceExtensions(window, &extensionCount, extensionNames);
-
-    for (int i = 0; i < extensionCount; i++) {
-    	printf("%u %s\n", i, extensionNames[i]);
-    }
-
-    VkApplicationInfo appInfo = {};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
-
-    VkInstanceCreateInfo instanceCreateInfo = {};
-    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pApplicationInfo = &appInfo;
-    instanceCreateInfo.enabledLayerCount = 0;
-    instanceCreateInfo.ppEnabledLayerNames = NULL;
-    instanceCreateInfo.enabledExtensionCount = extensionCount;
-    instanceCreateInfo.ppEnabledExtensionNames = extensionNames;
-    
-    //vk->vkCreateInstance(&instanceCreateInfo, NULL, &vk->instance);
-
-	VkResult result = VK_SUCCESS;
-
-	VkSurfaceKHR surface;
-
-	//SDL_Init(SDL_INIT_EVERYTHING);
-	
-	
-	int b = 0;
-	printf("init? %x %x\n", window, b);
-	b = SDL_Vulkan_CreateSurface(window, vk->instance, &surface); // cts->surface.handle
-	printf("init? %x %x\n", window, b);
-	//free(plane_properties);
-#endif
 	VkResult result = VK_SUCCESS;
 	cts->surface.handle = malloc(sizeof(VkSurfaceKHR)); // HACK
 
