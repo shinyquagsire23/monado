@@ -56,12 +56,6 @@ struct debug_scene
 	uint32_t num_recrs;
 };
 
-struct priv_tuple
-{
-	struct gui_program *p;
-	struct debug_scene *ds;
-};
-
 
 /*
  *
@@ -515,7 +509,7 @@ on_root_enter_sink(struct u_var_root_info *info, void *priv)
 {}
 
 static void
-on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
+on_elem_sink_debug_remove(struct u_var_info *info, void *null_ptr)
 {
 	void *ptr = info->ptr;
 	enum u_var_kind kind = info->kind;
@@ -554,8 +548,7 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 	struct debug_scene *ds = (struct debug_scene *)scene;
 
 	// Remove the sink interceptors.
-	struct priv_tuple pt = {p, ds};
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_remove, &pt);
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_remove, NULL);
 
 	if (ds->xfctx != NULL) {
 		xrt_frame_context_destroy_nodes(ds->xfctx);
