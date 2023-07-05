@@ -36,6 +36,25 @@
 
 #include <float.h>
 
+/*
+ *
+ * Structs and defines.
+ *
+ */
+
+/*!
+ * @defgroup gui_debug Debug GUI
+ * @ingroup gui
+ *
+ * @brief GUI for live inspecting Monado.
+ */
+
+/*!
+ * A single record window, here only used to draw a single element in a object
+ * window, holds all the needed state.
+ *
+ * @ingroup gui_debug
+ */
 struct debug_record
 {
 	void *ptr;
@@ -44,8 +63,11 @@ struct debug_record
 };
 
 /*!
- * A GUI scene showing the variable tracking provided by @ref util/u_var.h
+ * A GUI scene for debugging Monado while it is running, it uses the variable
+ * tracking code in the @ref util/u_var.h file to provide live updates state.
+ *
  * @implements gui_scene
+ * @ingroup gui_debug
  */
 struct debug_scene
 {
@@ -54,6 +76,43 @@ struct debug_scene
 
 	struct debug_record recs[32];
 	uint32_t num_recrs;
+};
+
+//! How many nested gui headers can we show, overly large.
+#define MAX_HEADER_NESTING 256
+
+/*!
+ * One "frame" of draw state, what is passed to the variable tracking visitor
+ * functions, holds pointers to the program and live state such as visibility
+ * stack of gui headers.
+ *
+ * @ingroup gui_debug
+ */
+struct draw_state
+{
+	struct gui_program *p;
+	struct debug_scene *ds;
+
+	//! Visibility stack for nested headers.
+	bool vis_stack[MAX_HEADER_NESTING];
+	int vis_i;
+
+	//! Should we show the GUI headers for record sinks.
+	bool inhibit_sink_headers;
+};
+
+/*!
+ * State for plotting @ref m_ff_vec3_f32, assumes it's relative to now.
+ *
+ * @ingroup gui_debug
+ */
+struct plot_state
+{
+	//! The filter fifo we are plotting.
+	struct m_ff_vec3_f32 *ff;
+
+	//! When now is, all entries are made relative to this.
+	uint64_t now;
 };
 
 
@@ -104,22 +163,6 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 	// And make sure it's a unit rotation.
 	math_quat_normalize(q);
 }
-
-#define MAX_HEADER_NESTING 256
-struct draw_state
-{
-	struct gui_program *p;
-	struct debug_scene *ds;
-	bool vis_stack[MAX_HEADER_NESTING]; //!< Visibility stack for nested headers
-	int vis_i;
-	bool inhibit_sink_headers;
-};
-
-struct plot_state
-{
-	struct m_ff_vec3_f32 *ff;
-	uint64_t now;
-};
 
 #define PLOT_HELPER(elm)                                                                                               \
 	ImPlotPoint plot_##elm(void *ptr, int index)                                                                   \
