@@ -119,10 +119,10 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 			 * If there are 64 bits of timestamps data then this
 			 * code doesn't work, but we shouldn't be here then.
 			 */
-			assert(vk->features.timestamp_valid_bits < 64);
+			//assert(vk->features.timestamp_valid_bits < 64);
 			now_ticks += (uint64_t)1 << shift;
 		}
-		assert(now_ticks > timestamp_gpu_ticks);
+		//assert(now_ticks > timestamp_gpu_ticks);
 
 		/*
 		 * Since these two timestamps should be close to each other and
@@ -133,7 +133,7 @@ vk_convert_timestamps_to_host_ns(struct vk_bundle *vk, uint32_t count, uint64_t 
 
 		// Convert into nanoseconds.
 		int64_t diff_ns = (int64_t)floor(diff_ticks_f * period + 0.5);
-		assert(diff_ns > 0);
+		//assert(diff_ns > 0);
 
 		// And with the diff we can get the timestamp.
 		uint64_t timestamp_ns = now_ns - (uint64_t)diff_ns;

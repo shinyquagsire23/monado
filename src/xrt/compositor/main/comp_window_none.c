@@ -761,6 +761,12 @@ comp_window_none_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t
 		return false;
 	}
 
+	// TODO HACK HACK HACK
+	//if (!d->display_properties.displayName) 
+	{
+		d->display_properties.displayName = "";
+	}
+	COMP_ERROR(ct->c, "%p %p %s %u\n", d, d->display_properties.displayName, d->display_properties.displayName, w_direct->display_count);
 	COMP_DEBUG(ct->c, "Will use display: %s", d->display_properties.displayName);
 
 	struct comp_target_none *cts = (struct comp_target_none *)ct;

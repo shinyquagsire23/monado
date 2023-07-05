@@ -339,13 +339,18 @@ create_compute_layer_pipeline(struct vk_bundle *vk,
 	    .pData = params,
 	};
 
-	return vk_create_compute_pipeline( //
+	VkResult ret = vk_create_compute_pipeline( //
 	    vk,                            // vk_bundle
 	    pipeline_cache,                // pipeline_cache
 	    shader,                        // shader
 	    pipeline_layout,               // pipeline_layout
 	    &specialization_info,          // specialization_info
 	    out_compute_pipeline);         // out_compute_pipeline
+
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_create_compute_pipeline failed: %s", vk_result_string(ret));
+	}
+	return ret;
 }
 
 static VkResult
@@ -376,13 +381,18 @@ create_compute_distortion_pipeline(struct vk_bundle *vk,
 	    .pData = params,
 	};
 
-	return vk_create_compute_pipeline( //
+	VkResult ret = vk_create_compute_pipeline( //
 	    vk,                            // vk_bundle
 	    pipeline_cache,                // pipeline_cache
 	    shader,                        // shader
 	    pipeline_layout,               // pipeline_layout
 	    &specialization_info,          // specialization_info
 	    out_compute_pipeline);         // out_compute_pipeline
+
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_create_compute_pipeline failed: %s", vk_result_string(ret));
+	}
+	return ret;
 }
 
 static VkResult

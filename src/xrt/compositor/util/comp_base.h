@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#define COMP_MAX_LAYERS 16
+#define COMP_MAX_LAYERS 4
 
 /*!
  * A single layer.

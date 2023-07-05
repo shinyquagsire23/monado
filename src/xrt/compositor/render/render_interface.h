@@ -10,9 +10,9 @@
 
 #pragma once
 
-#define COMP_MAX_LAYERS 16
+#define COMP_MAX_LAYERS 8
 #define COMP_VIEWS_PER_LAYER 2
-#define COMP_MAX_IMAGES 32
+#define COMP_MAX_IMAGES 16
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_defines.h"
