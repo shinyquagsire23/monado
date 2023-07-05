@@ -12,6 +12,7 @@
 #include "xrt/xrt_config_build.h"
 
 #include "util/u_debug.h"
+#include "u_json.h"
 #include "util/u_truncate_printf.h"
 
 #include <assert.h>
@@ -56,6 +57,7 @@
  */
 
 DEBUG_GET_ONCE_LOG_OPTION(global_log, "XRT_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(json_log, "XRT_JSON_LOG", false)
 
 enum u_logging_level
 u_log_get_global_level(void)
@@ -311,8 +313,48 @@ print_prefix(const char *func, enum u_logging_level level, char *buf, int remain
 }
 
 static int
+log_as_json(const char *file, const char *func, enum u_logging_level level, const char *format, va_list args)
+{
+	cJSON *root = cJSON_CreateObject();
+
+	char *level_s;
+	switch (level) {
+	case U_LOGGING_TRACE: level_s = "trace"; break;
+	case U_LOGGING_DEBUG: level_s = "debug"; break;
+	case U_LOGGING_INFO: level_s = "info"; break;
+	case U_LOGGING_WARN: level_s = "warn"; break;
+	case U_LOGGING_ERROR: level_s = "error"; break;
+	default: level_s = "raw"; break;
+	}
+
+	// Add metadata.
+	cJSON_AddItemToObject(root, "level", cJSON_CreateString(level_s));
+	cJSON_AddItemToObject(root, "file", cJSON_CreateString(file));
+	cJSON_AddItemToObject(root, "func", cJSON_CreateString(func));
+
+	// Add message.
+	char msg_buf[LOG_BUFFER_SIZE];
+	vsprintf(msg_buf, format, args);
+	cJSON_AddItemToObject(root, "message", cJSON_CreateString(msg_buf));
+
+	// Get string and print to stderr.
+	char *out = cJSON_PrintUnformatted(root);
+	int printed = fprintf(stderr, "%s\n", out);
+
+	// Clean up after us.
+	cJSON_Delete(root);
+	cJSON_free(out);
+
+	return printed;
+}
+
+static int
 do_print(const char *file, int line, const char *func, enum u_logging_level level, const char *format, va_list args)
 {
+	if (debug_get_bool_option_json_log()) {
+		return log_as_json(file, func, level, format, args);
+	}
+
 	char storage[LOG_BUFFER_SIZE];
 
 	int remaining = sizeof(storage) - 2; // 2 for \n\0
