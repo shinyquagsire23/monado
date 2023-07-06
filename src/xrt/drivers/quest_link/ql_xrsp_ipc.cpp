@@ -319,6 +319,18 @@ void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_
     {
         ql_xrsp_ipc_handle_body(segpkt, host, read_ptr);
     }
+    else if (!strcmp(name, "SystemPerformanceState"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "PerformanceManagerState"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "KPIFeatureMeasurementsState"))
+    {
+        // TODO
+    }
     else
     {
         printf("Unhandled state: %s\n", name);
