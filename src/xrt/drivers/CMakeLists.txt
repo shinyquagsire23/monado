@@ -374,7 +374,7 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 		${quest_link_proto_srcs}
 		)
 	target_include_directories(drv_quest_link SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/quest_link/ ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../compositor)
-	target_include_directories(drv_quest_link PUBLIC ${LIBUSB1_INCLUDE_DIRS})
+	target_include_directories(drv_quest_link PUBLIC ${LIBUSB1_INCLUDE_DIRS} ${Vulkan_INCLUDE_DIR})
 	target_link_libraries(drv_quest_link PRIVATE ${LIBUSB1_LIBRARIES} CapnProto::capnp)
 	target_link_libraries(
 		drv_quest_link
