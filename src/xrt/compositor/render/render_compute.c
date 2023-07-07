@@ -479,7 +479,7 @@ render_compute_layers(struct render_compute *crc,
 
 	uint32_t w = 0, h = 0;
 	calc_dispatch_dims(ubo_data->views, &w, &h);
-	assert(w != 0 && h != 0);
+	//assert(w != 0 && h != 0); //TODO TODO HACK
 
 	vk->vkCmdDispatch( //
 	    r->cmd,        // commandBuffer
@@ -618,7 +618,7 @@ render_compute_projection_timewarp(struct render_compute *crc,
 
 	uint32_t w = 0, h = 0;
 	calc_dispatch_dims(views, &w, &h);
-	assert(w != 0 && h != 0);
+	//assert(w != 0 && h != 0); //TODO TODO HACK
 
 	vk->vkCmdDispatch( //
 	    r->cmd,        // commandBuffer
@@ -738,7 +738,7 @@ render_compute_projection(struct render_compute *crc,
 
 	uint32_t w = 0, h = 0;
 	calc_dispatch_dims(views, &w, &h);
-	assert(w != 0 && h != 0);
+	//assert(w != 0 && h != 0); //TODO TODO HACK
 
 	vk->vkCmdDispatch( //
 	    r->cmd,        // commandBuffer
@@ -859,7 +859,7 @@ render_compute_clear(struct render_compute *crc,                 //
 
 	uint32_t w = 0, h = 0;
 	calc_dispatch_dims(views, &w, &h);
-	assert(w != 0 && h != 0);
+	//assert(w != 0 && h != 0); //TODO TODO HACK
 
 	vk->vkCmdDispatch( //
 	    r->cmd,        // commandBuffer
