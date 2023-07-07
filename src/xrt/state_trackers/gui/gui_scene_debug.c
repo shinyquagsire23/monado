@@ -118,7 +118,7 @@ struct plot_state
 
 /*
  *
- * Internal functions.
+ * Helper functions.
  *
  */
 
@@ -164,8 +164,15 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 	math_quat_normalize(q);
 }
 
+
+/*
+ *
+ * Plot helpers.
+ *
+ */
+
 #define PLOT_HELPER(elm)                                                                                               \
-	ImPlotPoint plot_##elm(void *ptr, int index)                                                                   \
+	static ImPlotPoint plot_vec3_f32_##elm(void *ptr, int index)                                                   \
 	{                                                                                                              \
 		struct plot_state *state = (struct plot_state *)ptr;                                                   \
 		struct xrt_vec3 value;                                                                                 \
@@ -178,6 +185,29 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 PLOT_HELPER(x)
 PLOT_HELPER(y)
 PLOT_HELPER(z)
+
+static ImPlotPoint
+plot_curve_point(void *ptr, int i)
+{
+	struct u_var_curve *c = (struct u_var_curve *)ptr;
+	struct u_var_curve_point point = c->getter(c->data, i);
+	ImPlotPoint implot_point = {point.x, point.y};
+	return implot_point;
+}
+
+static float
+plot_f32_array_value(void *ptr, int i)
+{
+	float *arr = ptr;
+	return arr[i];
+}
+
+
+/*
+ *
+ * Main debug gui visitor functions.
+ *
+ */
 
 static void
 on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
@@ -222,9 +252,9 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 	}
 
 	size_t num = m_ff_vec3_f32_get_num(ff);
-	ImPlot_PlotLineG("z", plot_z, &state, num, 0); // ZXY order to match RGB colors with default color map
-	ImPlot_PlotLineG("x", plot_x, &state, num, 0);
-	ImPlot_PlotLineG("y", plot_y, &state, num, 0);
+	ImPlot_PlotLineG("z", plot_vec3_f32_z, &state, num, 0); // ZXY order to match RGB colors with default color map
+	ImPlot_PlotLineG("x", plot_vec3_f32_x, &state, num, 0);
+	ImPlot_PlotLineG("y", plot_vec3_f32_y, &state, num, 0);
 
 	ImPlot_EndPlot();
 }
@@ -302,16 +332,6 @@ on_histogram_f32_var(const char *name, void *ptr)
 	igPlotHistogramFloatPtr(name, h->values, h->count, 0, NULL, FLT_MAX, FLT_MAX, zero, sizeof(float));
 }
 
-
-static ImPlotPoint
-curve_var_implot_getter(void *ptr, int i)
-{
-	struct u_var_curve *c = (struct u_var_curve *)ptr;
-	struct u_var_curve_point point = c->getter(c->data, i);
-	ImPlotPoint implot_point = {point.x, point.y};
-	return implot_point;
-}
-
 static void
 on_curve_var(const char *name, void *ptr)
 {
@@ -323,7 +343,7 @@ on_curve_var(const char *name, void *ptr)
 		return;
 	}
 
-	ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+	ImPlot_PlotLineG(c->label, plot_curve_point, c, c->count, 0);
 	ImPlot_EndPlot();
 }
 
@@ -340,7 +360,7 @@ on_curves_var(const char *name, void *ptr)
 
 	for (int i = 0; i < cs->curve_count; i++) {
 		struct u_var_curve *c = &cs->curves[i];
-		ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+		ImPlot_PlotLineG(c->label, plot_curve_point, c, c->count, 0);
 	}
 	ImPlot_EndPlot();
 }
@@ -367,13 +387,6 @@ on_root_enter(struct u_var_root_info *info, void *priv)
 	state->vis_stack[0] = true;
 
 	igBegin(info->name, NULL, 0);
-}
-
-static float
-get_float_arr_val(void *_data, int _idx)
-{
-	float *arr = _data;
-	return arr[_idx];
 }
 
 static void
@@ -446,8 +459,16 @@ on_elem(struct u_var_info *info, void *priv)
 		float stats_min = FLT_MAX;
 		float stats_max = FLT_MAX;
 
-		igPlotLinesFnFloatPtr(name, get_float_arr_val, arr, length, index, NULL, stats_min, stats_max,
-		                      graph_size);
+		igPlotLinesFnFloatPtr(    //
+		    name,                 //
+		    plot_f32_array_value, //
+		    arr,                  //
+		    length,               //
+		    index,                //
+		    NULL,                 //
+		    stats_min,            //
+		    stats_max,            //
+		    graph_size);          //
 		break;
 	}
 	case U_VAR_KIND_TIMING: {
@@ -471,9 +492,21 @@ on_elem(struct u_var_info *info, void *priv)
 				stats_max = arr[f];
 		}
 
-		igPlotTimings(name, get_float_arr_val, arr, length, index, NULL, 0, stats_max, graph_size,
-		              frametime_arr->reference_timing, frametime_arr->center_reference_timing,
-		              frametime_arr->range, frametime_arr->unit, frametime_arr->dynamic_rescale);
+		igPlotTimings(                              //
+		    name,                                   //
+		    plot_f32_array_value,                   //
+		    arr,                                    //
+		    length,                                 //
+		    index,                                  //
+		    NULL,                                   //
+		    0,                                      //
+		    stats_max,                              //
+		    graph_size,                             //
+		    frametime_arr->reference_timing,        //
+		    frametime_arr->center_reference_timing, //
+		    frametime_arr->range,                   //
+		    frametime_arr->unit,                    //
+		    frametime_arr->dynamic_rescale);        //
 		break;
 	}
 	case U_VAR_KIND_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", i_flags); break;
