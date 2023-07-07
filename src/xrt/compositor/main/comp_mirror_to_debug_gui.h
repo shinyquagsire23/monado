@@ -41,7 +41,6 @@ struct comp_mirror_to_debug_gui
 
 	struct u_sink_debug debug_sink;
 	VkExtent2D image_extent;
-	uint64_t sequence;
 
 	struct vk_image_readback_to_xf_pool *pool;
 
@@ -119,6 +118,7 @@ comp_mirror_is_ready_and_active(struct comp_mirror_to_debug_gui *m,
 void
 comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
                     struct vk_bundle *vk,
+                    uint64_t frame_id,
                     uint64_t predicted_display_time_ns,
                     VkImage from_image,
                     VkImageView from_view,

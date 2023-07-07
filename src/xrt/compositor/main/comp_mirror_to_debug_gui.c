@@ -399,6 +399,7 @@ comp_mirror_is_ready_and_active(struct comp_mirror_to_debug_gui *m,
 void
 comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
                     struct vk_bundle *vk,
+                    uint64_t frame_id,
                     uint64_t predicted_display_time_ns,
                     VkImage from_image,
                     VkImageView from_view,
@@ -613,7 +614,7 @@ comp_mirror_do_blit(struct comp_mirror_to_debug_gui *m,
 	}
 
 	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp = predicted_display_time_ns;
-	wrap->base_frame.source_id = m->sequence++;
+	wrap->base_frame.source_sequence = frame_id;
 
 	struct xrt_frame *frame = &wrap->base_frame;
 	wrap = NULL;

@@ -1861,6 +1861,7 @@ comp_renderer_draw(struct comp_renderer *r)
 			comp_mirror_do_blit(               //
 			    &r->mirror_to_debug_gui,       //
 			    &c->base.vk,                   //
+			    frame_id,                      //
 			    predicted_display_time_ns,     //
 			    c->nr.scratch.color.image,     //
 			    c->nr.scratch.color.srgb_view, //
@@ -1874,6 +1875,7 @@ comp_renderer_draw(struct comp_renderer *r)
 			comp_mirror_do_blit(              //
 			    &r->mirror_to_debug_gui,      //
 			    &c->base.vk,                  //
+			    frame_id,                     //
 			    predicted_display_time_ns,    //
 			    r->lr->framebuffers[0].image, //
 			    r->lr->framebuffers[0].view,  //
