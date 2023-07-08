@@ -340,8 +340,6 @@ oxr_xrPathToString(
 	// null termination character (but a extra null byte is always
 	// reserved).
 	OXR_TWO_CALL_HELPER(&log, bufferCapacityInput, bufferCountOutput, buffer, length + 1, str, XR_SUCCESS);
-
-	return XR_SUCCESS;
 }
 
 // ---- XR_KHR_convert_timespec_time extension
