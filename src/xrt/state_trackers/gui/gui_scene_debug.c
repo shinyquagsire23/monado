@@ -81,6 +81,9 @@ struct debug_scene
 //! How many nested gui headers can we show, overly large.
 #define MAX_HEADER_NESTING 256
 
+//! Shared flags for color gui elements.
+#define COLOR_FLAGS (ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel)
+
 /*!
  * One "frame" of draw state, what is passed to the variable tracking visitor
  * functions, holds pointers to the program and live state such as visibility
@@ -208,6 +211,103 @@ plot_f32_array_value(void *ptr, int i)
  * Main debug gui visitor functions.
  *
  */
+
+
+static void
+on_color_rgb_f32(const char *name, void *ptr)
+{
+	igColorEdit3(name, (float *)ptr, COLOR_FLAGS);
+	igSameLine(0.0f, 4.0f);
+	igText("%s", name);
+}
+
+static void
+on_color_rgb_u8(const char *name, void *ptr)
+{
+	struct xrt_colour_rgb_f32 tmp;
+	conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
+	igColorEdit3(name, (float *)&tmp, COLOR_FLAGS);
+	igSameLine(0.0f, 4.0f);
+	igText("%s", name);
+	conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
+}
+
+static void
+on_f32_arr(const char *name, void *ptr)
+{
+	struct u_var_f32_arr *f32_arr = ptr;
+	int index = *f32_arr->index_ptr;
+	int length = f32_arr->length;
+	float *arr = (float *)f32_arr->data;
+
+	float w = igGetWindowContentRegionWidth();
+	ImVec2 graph_size = {w, 200};
+
+	float stats_min = FLT_MAX;
+	float stats_max = FLT_MAX;
+
+	igPlotLinesFnFloatPtr(    //
+	    name,                 //
+	    plot_f32_array_value, //
+	    arr,                  //
+	    length,               //
+	    index,                //
+	    NULL,                 //
+	    stats_min,            //
+	    stats_max,            //
+	    graph_size);          //
+}
+
+static void
+on_timing(const char *name, void *ptr)
+{
+	struct u_var_timing *frametime_arr = ptr;
+	struct u_var_f32_arr *f32_arr = &frametime_arr->values;
+	int index = *f32_arr->index_ptr;
+	int length = f32_arr->length;
+	float *arr = (float *)f32_arr->data;
+
+	float w = igGetWindowContentRegionWidth();
+	ImVec2 graph_size = {w, 200};
+
+
+	float stats_min = FLT_MAX;
+	float stats_max = 0;
+
+	for (int f = 0; f < length; f++) {
+		if (arr[f] < stats_min)
+			stats_min = arr[f];
+		if (arr[f] > stats_max)
+			stats_max = arr[f];
+	}
+
+	igPlotTimings(                              //
+	    name,                                   //
+	    plot_f32_array_value,                   //
+	    arr,                                    //
+	    length,                                 //
+	    index,                                  //
+	    NULL,                                   //
+	    0,                                      //
+	    stats_max,                              //
+	    graph_size,                             //
+	    frametime_arr->reference_timing,        //
+	    frametime_arr->center_reference_timing, //
+	    frametime_arr->range,                   //
+	    frametime_arr->unit,                    //
+	    frametime_arr->dynamic_rescale);        //
+}
+
+static void
+on_pose(const char *name, void *ptr)
+{
+	struct xrt_pose *pose = (struct xrt_pose *)ptr;
+	char text[512];
+	snprintf(text, 512, "%s.position", name);
+	handle_draggable_vec3_f32(text, &pose->position);
+	snprintf(text, 512, "%s.orientation", name);
+	handle_draggable_quat(text, &pose->orientation);
+}
 
 static void
 on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
@@ -380,6 +480,31 @@ on_draggable_u16_var(const char *name, void *ptr)
 }
 
 static void
+on_gui_header(const char *name, struct draw_state *state)
+{
+
+	assert(state->vis_i == 0 && "Do not mix GUI_HEADER with GUI_HEADER_BEGIN/END");
+	state->vis_stack[state->vis_i] = igCollapsingHeaderBoolPtr(name, NULL, 0);
+}
+
+static void
+on_gui_header_begin(const char *name, struct draw_state *state)
+{
+	bool is_open = igCollapsingHeaderBoolPtr(name, NULL, 0);
+	state->vis_stack[state->vis_i] = is_open;
+	if (is_open) {
+		igIndent(8.0f);
+	}
+}
+
+static void
+on_gui_header_end(void)
+{
+	igDummy((ImVec2){0, 8.0f});
+	igUnindent(8.0f);
+}
+
+static void
 on_root_enter(struct u_var_root_info *info, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
@@ -400,45 +525,37 @@ on_elem(struct u_var_info *info, void *priv)
 
 	bool visible = state->vis_stack[state->vis_i];
 
-	if (kind == U_VAR_KIND_GUI_HEADER_BEGIN) {
+	// Handle the visibility stack.
+	switch (kind) {
+	case U_VAR_KIND_GUI_HEADER_BEGIN: // Increment stack and copy the current visible stack.
 		state->vis_i++;
 		state->vis_stack[state->vis_i] = visible;
-	} else if (kind == U_VAR_KIND_GUI_HEADER_END) {
+		break;
+	case U_VAR_KIND_GUI_HEADER_END: // Decrement the stack.
 		state->vis_i--;
+		break;
+	case U_VAR_KIND_GUI_HEADER: // Always visible.
+		on_gui_header(name, state);
+		return; // Not doing anything more.
+	default: break;
 	}
 
 	// Check balanced GUI_HEADER_BEGIN/END pairs
 	assert(state->vis_i >= 0 && state->vis_i < MAX_HEADER_NESTING);
 
-	if (!visible && kind != U_VAR_KIND_GUI_HEADER) {
+	if (!visible) {
 		return;
 	}
 
 	const float drag_speed = 0.2f;
 	const float power = 1.0f;
-	const ImVec2 scratch = {0, 0};
-	ImGuiColorEditFlags flags =
-	    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel;
-	(void)scratch;
 	ImGuiInputTextFlags i_flags = ImGuiInputTextFlags_None;
 	ImGuiInputTextFlags ro_i_flags = ImGuiInputTextFlags_ReadOnly;
 
 	switch (kind) {
 	case U_VAR_KIND_BOOL: igCheckbox(name, (bool *)ptr); break;
-	case U_VAR_KIND_RGB_F32:
-		igColorEdit3(name, (float *)ptr, flags);
-		igSameLine(0.0f, 4.0f);
-		igText("%s", name);
-		break;
-	case U_VAR_KIND_RGB_U8: {
-		struct xrt_colour_rgb_f32 tmp;
-		conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
-		igColorEdit3(name, (float *)&tmp, flags);
-		igSameLine(0.0f, 4.0f);
-		igText("%s", name);
-		conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
-		break;
-	}
+	case U_VAR_KIND_RGB_F32: on_color_rgb_f32(name, ptr); break;
+	case U_VAR_KIND_RGB_U8: on_color_rgb_u8(name, ptr); break;
 	case U_VAR_KIND_U8: igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_U16: igDragScalar(name, ImGuiDataType_U16, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_U64: igDragScalar(name, ImGuiDataType_U64, ptr, drag_speed, NULL, NULL, NULL, power); break;
@@ -447,78 +564,10 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
 	case U_VAR_KIND_F32: igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags); break;
 	case U_VAR_KIND_F64: igInputDouble(name, (double *)ptr, 0.1, 1, "%+f", i_flags); break;
-	case U_VAR_KIND_F32_ARR: {
-		struct u_var_f32_arr *f32_arr = ptr;
-		int index = *f32_arr->index_ptr;
-		int length = f32_arr->length;
-		float *arr = (float *)f32_arr->data;
-
-		float w = igGetWindowContentRegionWidth();
-		ImVec2 graph_size = {w, 200};
-
-		float stats_min = FLT_MAX;
-		float stats_max = FLT_MAX;
-
-		igPlotLinesFnFloatPtr(    //
-		    name,                 //
-		    plot_f32_array_value, //
-		    arr,                  //
-		    length,               //
-		    index,                //
-		    NULL,                 //
-		    stats_min,            //
-		    stats_max,            //
-		    graph_size);          //
-		break;
-	}
-	case U_VAR_KIND_TIMING: {
-		struct u_var_timing *frametime_arr = ptr;
-		struct u_var_f32_arr *f32_arr = &frametime_arr->values;
-		int index = *f32_arr->index_ptr;
-		int length = f32_arr->length;
-		float *arr = (float *)f32_arr->data;
-
-		float w = igGetWindowContentRegionWidth();
-		ImVec2 graph_size = {w, 200};
-
-
-		float stats_min = FLT_MAX;
-		float stats_max = 0;
-
-		for (int f = 0; f < length; f++) {
-			if (arr[f] < stats_min)
-				stats_min = arr[f];
-			if (arr[f] > stats_max)
-				stats_max = arr[f];
-		}
-
-		igPlotTimings(                              //
-		    name,                                   //
-		    plot_f32_array_value,                   //
-		    arr,                                    //
-		    length,                                 //
-		    index,                                  //
-		    NULL,                                   //
-		    0,                                      //
-		    stats_max,                              //
-		    graph_size,                             //
-		    frametime_arr->reference_timing,        //
-		    frametime_arr->center_reference_timing, //
-		    frametime_arr->range,                   //
-		    frametime_arr->unit,                    //
-		    frametime_arr->dynamic_rescale);        //
-		break;
-	}
+	case U_VAR_KIND_F32_ARR: on_f32_arr(name, ptr); break;
+	case U_VAR_KIND_TIMING: on_timing(name, ptr); break;
 	case U_VAR_KIND_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", i_flags); break;
-	case U_VAR_KIND_POSE: {
-		struct xrt_pose *pose = (struct xrt_pose *)ptr;
-		char text[512];
-		snprintf(text, 512, "%s.position", name);
-		handle_draggable_vec3_f32(text, &pose->position);
-		snprintf(text, 512, "%s.orientation", name);
-		handle_draggable_quat(text, &pose->orientation);
-		break;
-	}
+	case U_VAR_KIND_POSE: on_pose(name, ptr); break;
 	case U_VAR_KIND_LOG_LEVEL: igComboStr(name, (int *)ptr, "Trace\0Debug\0Info\0Warn\0Error\0\0", 5); break;
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_FTEXT: igText(ptr ? (char *)ptr : "%s", name); break;
@@ -532,24 +581,9 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_RO_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_QUAT_F32: igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_FF_VEC3_F32: on_ff_vec3_var(info, state->p); break;
-	case U_VAR_KIND_GUI_HEADER: {
-		assert(state->vis_i == 0 && "Do not mix GUI_HEADER with GUI_HEADER_BEGIN/END");
-		state->vis_stack[state->vis_i] = igCollapsingHeaderBoolPtr(name, NULL, 0);
-		break;
-	}
-	case U_VAR_KIND_GUI_HEADER_BEGIN: {
-		bool is_open = igCollapsingHeaderBoolPtr(name, NULL, 0);
-		state->vis_stack[state->vis_i] = is_open;
-		if (is_open) {
-			igIndent(8.0f);
-		}
-		break;
-	}
-	case U_VAR_KIND_GUI_HEADER_END: {
-		igDummy((ImVec2){0, 8.0f});
-		igUnindent(8.0f);
-		break;
-	}
+	case U_VAR_KIND_GUI_HEADER: assert(false && "Should be handled before this"); break;
+	case U_VAR_KIND_GUI_HEADER_BEGIN: on_gui_header_begin(name, state); break;
+	case U_VAR_KIND_GUI_HEADER_END: on_gui_header_end(); break;
 	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state); break;
 	case U_VAR_KIND_DRAGGABLE_F32: on_draggable_f32_var(name, ptr); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
