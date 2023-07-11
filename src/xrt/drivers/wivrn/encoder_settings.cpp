@@ -35,7 +35,7 @@
 using namespace xrt::drivers::wivrn;
 
 // TODO: size independent bitrate
-static const uint64_t default_bitrate = 2'500'000'000;
+static const uint64_t default_bitrate = 130'000'000; // 11'000'000 one slice
 
 static bool is_nvidia(vk_bundle * vk)
 {

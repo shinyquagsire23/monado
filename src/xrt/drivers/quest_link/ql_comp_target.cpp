@@ -534,7 +534,7 @@ static void * comp_ql_present_thread(void * void_param)
 		vk_check_error("vkWaitForFences", res, NULL);
 
 		const auto & psc_image = cn->psc.images[presenting_index];
-#if 1
+#ifdef XRT_HAVE_VT // TODO: nvenc etc etc
 		for (int i = 0; i < QL_NUM_SLICES; i++) {
 			cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
 		}
@@ -554,7 +554,7 @@ static void * comp_ql_present_thread(void * void_param)
 		{
 			// Ignore errors
 		}
-#if 0
+#ifndef XRT_HAVE_VT // TODO: nvenc etc etc
 		for (int i = 0; i < QL_NUM_SLICES; i++) {
 			cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
 		}

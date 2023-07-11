@@ -129,7 +129,7 @@ VideoEncoderX264::VideoEncoderX264(
 
 	x264_param_default_preset(&param, "ultrafast", "zerolatency");
 	param.nalu_process = &ProcessCb;
-	// param.i_slice_max_size = 1300;
+	//param.i_slice_max_size = 0x3E000 / num_slices;
 	param.i_slice_count = 1; // host->num_slices, 5
 	param.i_width = settings.width;
 	param.i_height = settings.height / num_slices;
@@ -157,7 +157,7 @@ VideoEncoderX264::VideoEncoderX264(
 	param.vui.i_sar_width = settings.width;
 	param.vui.i_sar_height = settings.height / num_slices;
 	param.rc.i_rc_method = X264_RC_ABR;
-	param.rc.i_bitrate = settings.bitrate / 1000; // x264 uses kbit/s
+	param.rc.i_bitrate = settings.bitrate / (num_slices*1000); // x264 uses kbit/s
 	param.i_keyint_min = 1;
 	param.i_keyint_max = 72*5;
 

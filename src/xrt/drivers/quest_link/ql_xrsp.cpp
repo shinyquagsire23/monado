@@ -192,6 +192,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     host->usb_speed = LIBUSB_SPEED_LOW;
     host->usb_valid = false;
     host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
+    host->ready_to_send_frames = false;
 
     host->dev = libusb_open_device_with_vid_pid(host->ctx, host->vid, host->pid);
     if (host->dev == NULL) {
@@ -507,7 +508,7 @@ void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t*
     {
         if (idx >= to_send) break;
 
-        int32_t amt = 0x7FFF8; // FFF8?
+        int32_t amt = 0x3FFF8; // FFF8?
         if (idx+amt >= to_send) {
             amt = to_send - idx;
         }
@@ -991,7 +992,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         hmd->device_type = description.getDeviceType();
 
         if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
-            hmd->fps = 120;
+            hmd->fps = 90;
         }
         else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
             hmd->fps = 90;
@@ -1357,6 +1358,14 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     sending_pose = host->stream_poses[QL_IDX_SLICE(0, index)]; // always pull slice 0's pose
     int64_t sending_pose_ns = host->stream_pose_ns[QL_IDX_SLICE(0, index)];
 
+#if 0
+    // If we haven't gotten a pose for a whole second, reset
+    if (xrsp_ts_ns(host) - sending_pose_ns > 1000000000) {
+        //host->ready_to_send_frames = false;
+        libusb_reset_device(host->dev);
+    }
+#endif
+
     msg.setFrameIdx(frame_idx);
     msg.setUnk0p1(0);
     msg.setRectifyMeshId(QL_MESH_FOVEATED); // QL_MESH_NONE
@@ -1424,15 +1433,25 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     uint64_t ts_before = xrsp_ts_ns(host);
 
-    //printf("Send capnp\n");
-    xrsp_send_to_topic_capnp_wrapped(host, TOPIC_SLICE_0+slice_idx, 0, packed_data, packed_data_size);
-    //printf("Send csd %x\n", csd_len);
-    if (csd_len)
-        xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, csd_dat, csd_len);
-    //printf("Send vid %x\n", video_len);
-    if (video_len)
+    // Safety fallback: xrsp kicks us out if we exceed this.
+    //if (video_len < 0x40000)
+    {
+        //printf("Send capnp\n");
+        xrsp_send_to_topic_capnp_wrapped(host, TOPIC_SLICE_0+slice_idx, 0, packed_data, packed_data_size);
+        //printf("Send csd %x\n", csd_len);
+        if (csd_len)
+            xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, csd_dat, csd_len);
+        //printf("Send vid %x\n", video_len);
+        /*for (int i = 0; i < video_len; i += 0x40000) {
+            xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat + i, (video_len - i) > 0x40000 ? 0x40000 : (video_len - i));
+        }*/
         xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat, video_len);
-    //printf("done\n");    
+        //printf("done\n");  
+    }
+    /*else 
+    {
+        QUEST_LINK_ERROR("Bitrate is too high, cannot send to device!! Frame size: 0x%x > 0x40000", video_len);
+    }*/
 
     uint64_t ts_after = xrsp_ts_ns(host);
 
