@@ -992,7 +992,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
         hmd->device_type = description.getDeviceType();
 
         if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
-            hmd->fps = 90;
+            hmd->fps = 120;
         }
         else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
             hmd->fps = 90;
