@@ -85,6 +85,7 @@ public:
 	            uint64_t frame_index,
 	            int index,
 	            bool idr);
+	virtual void ModifyBitrate(int amount){}
 
 	void SetXrspHost(struct ql_xrsp_host* host)
 	{

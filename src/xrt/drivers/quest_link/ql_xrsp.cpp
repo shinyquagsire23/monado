@@ -1390,7 +1390,10 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(0.0);
     msg.setPoseZ(0.0);*/
 
-    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns)-29502900);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
+    //uint64_t pipeline_pred_delta_ma = 29502900;
+    uint64_t pipeline_pred_delta_ma = 0;
+
+    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns)-pipeline_pred_delta_ma);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
     msg.setSliceNum(slice_idx);
     msg.setUnk6p1(bits);
     msg.setUnk6p2(0);
@@ -1398,12 +1401,22 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setBlitYPos((hmd->encode_height / host->num_slices) * slice_idx);
     msg.setCropBlocks((hmd->encode_height/16) / host->num_slices); // 24 for slice count 5
     
+
+    //uint64_t duration_a = 9415134; // 9ms
+    //uint64_t duration_b = 14299184; // 14ms
+    //uint64_t duration_c = 4999157; // 4ms
+
+    uint64_t duration_a = 9415134; // 9ms
+    uint64_t duration_b = 14299184; // 14ms
+    uint64_t duration_c = 4999157; // 4ms
+
+    //host->encode_duration_ns[
     msg.setUnk8p1(0);
-    msg.setTimestamp09(xrsp_target_ts_ns(host)-29502900);//18787833654115 transmission start?
-    msg.setUnkA(29502900); // pipeline prediction delta MA? 29502900
-    msg.setTimestamp0B(xrsp_target_ts_ns(host)+28713475);////18278296859411
-    msg.setTimestamp0C(xrsp_target_ts_ns(host)+23714318);////18278292486840
-    msg.setTimestamp0D(xrsp_target_ts_ns(host)+9415134);//18787848654114
+    msg.setTimestamp09(xrsp_target_ts_ns(host)-pipeline_pred_delta_ma);//18787833654115 transmission start?
+    msg.setUnkA(pipeline_pred_delta_ma); // pipeline prediction delta MA? 29502900
+    msg.setTimestamp0B(xrsp_target_ts_ns(host)+duration_a+duration_b+duration_c);////18278296859411
+    msg.setTimestamp0C(xrsp_target_ts_ns(host)+duration_a+duration_b);////18278292486840
+    msg.setTimestamp0D(xrsp_target_ts_ns(host)+duration_a);//18787848654114
     //printf("%x\n", host->ns_offset);
 
     // left eye orientation? for foveated compression weirdness?

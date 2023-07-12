@@ -95,6 +95,8 @@ public:
 
 	void Encode(int index, bool idr, std::chrono::steady_clock::time_point pts) override;
 
+	void ModifyBitrate(int amount) override;
+
 	~VideoEncoderVT();
 
 private:

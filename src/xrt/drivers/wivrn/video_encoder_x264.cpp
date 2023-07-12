@@ -158,8 +158,12 @@ VideoEncoderX264::VideoEncoderX264(
 	param.vui.i_sar_height = settings.height / num_slices;
 	param.rc.i_rc_method = X264_RC_ABR;
 	param.rc.i_bitrate = settings.bitrate / (num_slices*1000); // x264 uses kbit/s
+	//param.rc.i_vbv_max_bitrate = param.rc.i_bitrate;
 	param.i_keyint_min = 1;
 	param.i_keyint_max = 72*5;
+
+	desired_bitrate = settings.bitrate;
+	original_bitrate = settings.bitrate;
 
 	x264_param_apply_profile(&param, "baseline");
 
@@ -213,6 +217,93 @@ void VideoEncoderX264::Encode(int index, bool idr, std::chrono::steady_clock::ti
 	{
 		return;
 	}
+}
+
+void VideoEncoderX264::ModifyBitrate(int amount)
+{
+#if 0
+	x264_encoder_parameters(enc, &param);
+	uint64_t orig_desired_bitrate = desired_bitrate;
+	desired_bitrate += amount;
+	if (desired_bitrate <= 0 || (amount < 0 && -amount > orig_desired_bitrate)) {
+		desired_bitrate = this->num_slices*1000;
+	}
+	else if (desired_bitrate > original_bitrate * 2) {
+		desired_bitrate = original_bitrate * 2;
+	}
+	
+
+	if (orig_desired_bitrate != desired_bitrate) 
+	{
+		//x264_param_apply_profile(&param, "baseline");
+		//param.rc.i_bitrate = desired_bitrate;
+		//param.rc.i_vbv_max_bitrate = param.rc.i_bitrate;
+		//x264_encoder_reconfig(enc, &param);
+		
+
+		uint32_t orig_w = param.i_width;
+		uint32_t orig_h = param.i_height;
+		uint32_t orig_fps = param.i_fps_num;
+
+		x264_encoder_close(enc);
+
+		param = {};
+		x264_param_default_preset(&param, "ultrafast", "zerolatency");
+		param.nalu_process = &ProcessCb;
+		//param.i_slice_max_size = 0x3E000 / num_slices;
+		param.i_slice_count = 1; // host->num_slices, 5
+		param.i_width = orig_w;
+		param.i_height = orig_h;
+		param.i_log_level = X264_LOG_WARNING;
+		param.i_fps_num = orig_fps;
+		param.i_fps_den = 1'000'000;
+		param.b_repeat_headers = 1;
+		param.b_aud = 1;
+		param.b_annexb = 1;
+
+		// colour definitions, actually ignored by decoder
+		param.vui.i_vidformat = 5;
+		param.vui.b_fullrange = 1;
+		param.vui.i_colorprim = 1; // BT.709
+		param.vui.i_transfer = 1; // sRGB
+		param.vui.i_colmatrix = 1; // BT.709
+		param.vui.i_chroma_loc = 1;
+
+		param.analyse.i_chroma_qp_offset = -2;
+		
+		param.vui.i_sar_width = orig_w;
+		param.vui.i_sar_height = orig_h;
+		param.rc.i_rc_method = X264_RC_ABR;
+		param.rc.i_bitrate = desired_bitrate / (this->num_slices*1000);
+		//param.rc.i_vbv_max_bitrate = param.rc.i_bitrate;
+		param.i_keyint_min = 1;
+		param.i_keyint_max = 72*5;
+
+		x264_param_apply_profile(&param, "baseline");
+
+		enc = x264_encoder_open(&param);
+		if (not enc)
+		{
+			throw std::runtime_error("failed to create x264 encoder");
+		}
+
+		assert(x264_encoder_maximum_delayed_frames(enc) == 0);
+
+		auto & pic = pic_in;
+		x264_picture_init(&pic);
+		pic.opaque = this;
+		pic.img.i_csp = X264_CSP_NV12;
+		pic.img.i_plane = 2;
+
+		pic.img.i_stride[0] = converter->y.stride;
+		pic.img.plane[0] = (uint8_t *)converter->y.mapped_memory;
+		pic.img.i_stride[1] = converter->uv.stride;
+		pic.img.plane[1] = (uint8_t *)converter->uv.mapped_memory;
+
+		x264_encoder_parameters(enc, &param);
+		U_LOG_W("Bitrate changed to %zu kbits per second", (size_t)param.rc.i_bitrate);
+	}
+#endif
 }
 
 VideoEncoderX264::~VideoEncoderX264()

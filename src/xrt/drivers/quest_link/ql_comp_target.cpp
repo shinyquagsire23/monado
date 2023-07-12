@@ -67,6 +67,7 @@ struct ql_comp_target : public comp_target
 
 	int64_t last_avg_tx;
 	int64_t last_avg_enc;
+	int frames_since_encode_adjust;
 
 	// Monotonic counter, for video stream
 	uint64_t frame_index = 0;
@@ -157,6 +158,7 @@ static void create_encoders(ql_comp_target * cn, std::vector<xrt::drivers::wivrn
 
 	cn->last_avg_tx = 0;
 	cn->last_avg_enc = 0;
+	cn->frames_since_encode_adjust = 0;
 
 	std::map<int, encoder_thread_param> thread_params;
 
@@ -533,6 +535,24 @@ static void * comp_ql_present_thread(void * void_param)
 		VkResult res = vk->vkWaitForFences(vk->device, nb_fences, fences.data(), VK_TRUE, UINT64_MAX);
 		vk_check_error("vkWaitForFences", res, NULL);
 
+		if (++cn->frames_since_encode_adjust > 120)
+		{
+			if (cn->last_avg_enc / 1000000.0 > 1.0) {
+				for (auto & encoder: param->encoders)
+				{
+					encoder->ModifyBitrate(-1000000);
+				}
+			}
+			else if (cn->last_avg_enc / 1000000.0 < 1.0) {
+				for (auto & encoder: param->encoders)
+				{
+					encoder->ModifyBitrate(100000);
+				}
+			}
+			cn->frames_since_encode_adjust = 0;
+		}
+		
+
 		const auto & psc_image = cn->psc.images[presenting_index];
 #ifdef XRT_HAVE_VT // TODO: nvenc etc etc
 		for (int i = 0; i < QL_NUM_SLICES; i++) {
@@ -546,7 +566,9 @@ static void * comp_ql_present_thread(void * void_param)
 			{
 				bool idr_requested = false;
 
-				//cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, encoder->slice_idx);
+#ifndef XRT_HAVE_VT // TODO: nvenc etc etc
+				cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, encoder->slice_idx);
+#endif
 				encoder->Encode(nullptr, psc_image.view_info, psc_image.frame_index, presenting_index, idr_requested);
 			}
 		}
@@ -554,7 +576,7 @@ static void * comp_ql_present_thread(void * void_param)
 		{
 			// Ignore errors
 		}
-#ifndef XRT_HAVE_VT // TODO: nvenc etc etc
+#if 0
 		for (int i = 0; i < QL_NUM_SLICES; i++) {
 			cn->host->start_encode(cn->host, psc_image.view_info.display_time, presenting_index, i);
 		}

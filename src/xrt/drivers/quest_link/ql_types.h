@@ -129,7 +129,11 @@ typedef struct ql_xrsp_host ql_xrsp_host;
 #define QL_MESH_FOVEATED (1002)
 
 #define QL_SWAPCHAIN_DEPTH (3)
+#ifdef XRT_HAVE_VT
 #define QL_NUM_SLICES (5)
+#else
+#define QL_NUM_SLICES (1)
+#endif
 #define QL_IDX_SLICE(_slice_idx, _frame_idx) ((_slice_idx*QL_SWAPCHAIN_DEPTH)+_frame_idx)
 
 typedef struct ql_xrsp_host

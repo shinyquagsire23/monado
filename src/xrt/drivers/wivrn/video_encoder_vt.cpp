@@ -490,6 +490,11 @@ void VideoEncoderVT::Encode(int index, bool idr, std::chrono::steady_clock::time
     }
 }
 
+void VideoEncoderVT::ModifyBitrate(int amount)
+{
+	
+}
+
 VideoEncoderVT::~VideoEncoderVT()
 {
 	VTCompressionSessionInvalidate(compression_session);

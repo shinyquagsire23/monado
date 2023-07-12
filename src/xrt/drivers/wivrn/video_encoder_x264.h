@@ -51,6 +51,8 @@ class VideoEncoderX264 : public VideoEncoder
 	int next_mb;
 	std::list<pending_nal> pending_nals;
 	int current_index;
+	uint64_t original_bitrate;
+	uint64_t desired_bitrate;
 
 public:
 	VideoEncoderX264(vk_bundle * vk, encoder_settings & settings, int input_width, int input_height, int slice_idx, int num_slices, float fps);
@@ -66,6 +68,8 @@ public:
 	void PresentImage(int index, VkCommandBuffer * out_buffer) override;
 
 	void Encode(int index, bool idr, std::chrono::steady_clock::time_point pts) override;
+
+	void ModifyBitrate(int amount) override;
 
 	~VideoEncoderX264();
 
