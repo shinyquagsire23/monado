@@ -633,7 +633,7 @@ int64_t xrsp_ts_ns_from_target(struct ql_xrsp_host *host, int64_t ts)
 {
     int64_t option_1 = (ts) - host->ns_offset;
     int64_t option_2 = (ts) + host->ns_offset_from_target;
-    return option_1;
+    return option_2; // HACK: really need to figure out how to calculate ns_offset
     //return (option_1+option_2)>>1;
 }
 
@@ -641,7 +641,7 @@ int64_t xrsp_ts_ns_to_target(struct ql_xrsp_host *host, int64_t ts)
 {
     int64_t option_1 = (ts) + host->ns_offset;
     int64_t option_2 = (ts) - host->ns_offset_from_target;
-    return option_1;
+    return option_2; // HACK: really need to figure out how to calculate ns_offset
     //return (option_1+option_2)>>1;
 }
    
@@ -961,6 +961,8 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
         xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, request_echo_ping, request_echo_ping_len);
         free(request_echo_ping);
     }  
+
+    //printf("%lld %lld\n", host->ns_offset_from_target, host->ns_offset);
 }
 
 static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
@@ -1001,7 +1003,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 72;
         }
 
-        float scale = 0.5;
+        float scale = 1.0;
         if (host->usb_slow_cable) {
             scale = 0.5;
             if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
@@ -1390,10 +1392,17 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(0.0);
     msg.setPoseZ(0.0);*/
 
-    //uint64_t pipeline_pred_delta_ma = 29502900;
-    uint64_t pipeline_pred_delta_ma = 0;
+    uint64_t pipeline_pred_delta_ma = host->encode_done_ns[QL_IDX_SLICE(slice_idx, index)] - host->encode_started_ns[QL_IDX_SLICE(0, index)];//2916100;
+    //uint64_t pipeline_pred_delta_ma = 0;
+    //printf("%llu\n", pipeline_pred_delta_ma);
 
-    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns)-pipeline_pred_delta_ma);//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
+    uint64_t duration_a = 9116997; // 9ms
+    uint64_t duration_b = 14516438; // 14ms
+    uint64_t duration_c = 4999157; // 4ms
+    uint64_t base_ts = xrsp_ts_ns_to_target(host, host->encode_started_ns[QL_IDX_SLICE(0, index)]);
+
+    // all timestamps are all the same between different slices, only pipeline_pred_delta_ma changes
+    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns));//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
     msg.setSliceNum(slice_idx);
     msg.setUnk6p1(bits);
     msg.setUnk6p2(0);
@@ -1401,22 +1410,60 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setBlitYPos((hmd->encode_height / host->num_slices) * slice_idx);
     msg.setCropBlocks((hmd->encode_height/16) / host->num_slices); // 24 for slice count 5
     
+    /*
+    unk0p0 = 74,
+  unk0p1 = 0,
+  unk1p0 = 1000,
+  poseQuatX = -0.50216717,
+  poseQuatY = 0.10189699,
+  poseQuatZ = -0.093296453,
+  poseQuatW = -0.85366327,
+  poseX = 0.010952883,
+  poseY = 0.17921059,
+  poseZ = 0.18543391,
+  timestamp05 = 18789777081583,
+  sliceNum = 4,
+  unk6p1 = 2,
+  unk6p2 = 0,
+  unk6p3 = 0,
+  blitYPos = 1536,
+  unk7p0 = 24,
+  csdSize = 0,
+  videoSize = 1387,
+  unk8p1 = 0,
+  timestamp09 = 18789735622294,
+  unkA = 5472800,
+  timestamp0B = 18789764254886,
+  timestamp0C = 18789759255729,
+  timestamp0D = 18789744739291,
 
-    //uint64_t duration_a = 9415134; // 9ms
-    //uint64_t duration_b = 14299184; // 14ms
-    //uint64_t duration_c = 4999157; // 4ms
 
-    uint64_t duration_a = 9415134; // 9ms
-    uint64_t duration_b = 14299184; // 14ms
-    uint64_t duration_c = 4999157; // 4ms
+    unkA = 2916100 ... 5472800,    2.92ms ... 5.47ms
+  
+  timestamp09 = 18789735622294, +0          0.00ms   +0          0.00ms       transmission start?? more likely, encoding start?
+  timestamp0D = 18789744739291, +9116997    9.11ms   +9116997    9.11ms       estimated GPU end
+  timestamp0C = 18789759255729, +14516438  14.51ms   +23633435   23.63ms      deadline?
+  timestamp0B = 18789764254886, +4999157    4.99ms   +28632592   28.62ms      unknown B
+  timestamp05 = 18789777081583, +12826697  12.82ms   +41459289   41.45ms      predicted pose
+  
+  ( unk0 = 0,
+      timestampUs = 18789759065,
+      data = "Frame 74 decoded, delta in prediction time: 0.000000ms" ),
+    ( unk0 = 0,
+      timestampUs = 18789759084,
+      data = "Glitches: 1, Mispredicts: 44, Deadline: 12.06ms, Transmission:  3.02ms, Pipeline Prediction Delta M" ),
+    ( unk0 = 0,
+      timestampUs = 18789759180,
+      data = "Rectify: Frame using rectify meshId = 1000" ) ] )
+    */
 
-    //host->encode_duration_ns[
+    //
     msg.setUnk8p1(0);
-    msg.setTimestamp09(xrsp_target_ts_ns(host)-pipeline_pred_delta_ma);//18787833654115 transmission start?
-    msg.setUnkA(pipeline_pred_delta_ma); // pipeline prediction delta MA? 29502900
-    msg.setTimestamp0B(xrsp_target_ts_ns(host)+duration_a+duration_b+duration_c);////18278296859411
-    msg.setTimestamp0C(xrsp_target_ts_ns(host)+duration_a+duration_b);////18278292486840
-    msg.setTimestamp0D(xrsp_target_ts_ns(host)+duration_a);//18787848654114
+    msg.setTimestamp09(base_ts);// transmission start
+    msg.setUnkA(pipeline_pred_delta_ma); // pipeline prediction delta MA?
+    msg.setTimestamp0B(base_ts+duration_a+duration_b+duration_c); // unknown
+    msg.setTimestamp0C(base_ts+duration_a+duration_b); // deadline
+    msg.setTimestamp0D(base_ts+duration_a); // unknown
     //printf("%x\n", host->ns_offset);
 
     // left eye orientation? for foveated compression weirdness?
