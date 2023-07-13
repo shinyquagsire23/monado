@@ -151,8 +151,8 @@ ql_update_inputs(struct xrt_device *xdev)
         ql_update_input_bool(ctrl, OCULUS_TOUCH_Y_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_B_Y);
     }
     
-    ql_update_input_analog(ctrl, OCULUS_TOUCH_SQUEEZE_VALUE, ctrl->pose_ns, ctrl->grip_z);
-    ql_update_input_analog(ctrl, OCULUS_TOUCH_TRIGGER_VALUE, ctrl->pose_ns, ctrl->trigger_z);
+    ql_update_input_analog(ctrl, OCULUS_TOUCH_SQUEEZE_VALUE, ctrl->pose_ns, 1.0 - ctrl->grip_z);
+    ql_update_input_analog(ctrl, OCULUS_TOUCH_TRIGGER_VALUE, ctrl->pose_ns, 1.0 - ctrl->trigger_z);
     ql_update_input_bool(ctrl, OCULUS_TOUCH_TRIGGER_TOUCH, ctrl->pose_ns, ctrl->capacitance & OVR_TOUCH_CAP_TRIGGER);
 
     ql_update_input_bool(ctrl, OCULUS_TOUCH_THUMBSTICK_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_STICKS);

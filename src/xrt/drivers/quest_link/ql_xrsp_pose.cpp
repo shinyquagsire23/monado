@@ -57,9 +57,9 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     //std::cout << pose << "\n";
     
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
-        int idx = 0;
+        int idx = 1;
         if (!(controller.getFeatures() & OVR_TOUCH_FEAT_RIGHT)) {
-            idx = 1;
+            idx = 0;
         }
 
         struct ql_controller* ctrl = host->sys->controllers[idx++];
