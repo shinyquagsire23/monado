@@ -890,7 +890,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_1, "com.oculus.systemdriver", "com.oculus.vrruntimeservice", "RuntimeServiceServer");
 
     // Disable for now, causes lag.
-#if 0
+#if 1
     xrsp_ripc_ensure_service_started(host, host->client_id+1, "com.oculus.bodyapiservice", "com.oculus.bodyapiservice.BodyApiService");
     xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_2, "com.oculus.bodyapiservice", "com.oculus.bodyapiservice", "BodyApiServiceServer");
 
@@ -901,7 +901,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //xrsp_ripc_ensure_service_started(host, host->client_id+4, "com.oculus.vrshell", "com.oculus.panelapp.debug.ShellDebugMultiInstanceService");
 
     //xrsp_ripc_ensure_service_started(host, host->client_id+3, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost.DialogHostService");
-    xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_4, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
+    //xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_4, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
 #endif
 }
 
@@ -1522,7 +1522,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     host->tx_duration_ns[read_index] = ts_diff;
 
     
-    //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
+    xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "SendSwitchToHandsNotif");
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "SystemButtonEventRequest");

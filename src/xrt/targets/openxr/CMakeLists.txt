@@ -59,7 +59,7 @@ if (XRT_HAVE_APPLE)
 		APPEND_STRING
 		PROPERTY
 			LINK_FLAGS
-			"-Wl,-exported_symbol,_xrNegotiateLoaderRuntimeInterface"
+			"-Wl,-exported_symbol,_xrNegotiateLoaderRuntimeInterface -Wl,-exported_symbol,_ql_xrsp_sidechannel_eye_l_orient -Wl,-exported_symbol,_ql_xrsp_sidechannel_eye_r_orient"
 		)
 endif()
 

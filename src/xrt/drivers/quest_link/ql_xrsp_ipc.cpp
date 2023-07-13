@@ -174,8 +174,8 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
 
     if (segpkt->client_id == host->client_id) {
         if (!host->runtime_connected) {
-            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
-            //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
+            xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
+            xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
         }
         host->runtime_connected = true;
         ql_xrsp_handle_runtimeservice_ipc(segpkt, host);
@@ -195,7 +195,7 @@ void ql_xrsp_handle_ipc(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* 
         hex_dump(segpkt->segs[1], segpkt->segs_valid[1]);
 
         //xrsp_ripc_panel_cmd(host, host->client_id+3);
-        //xrsp_ripc_void_bool_cmd(host, host->client_id+3, "EnableEyeTrackingForPCLink"); 
+        xrsp_ripc_void_bool_cmd(host, host->client_id+3, "EnableEyeTrackingForPCLink"); 
     }
     else if (segpkt->client_id == RIPC_FAKE_CLIENT_1) {
         ql_xrsp_handle_runtimeservice_events(segpkt, host);
@@ -269,6 +269,12 @@ typedef struct ovrOneEyeGaze
     uint32_t is_valid;
 } ovrOneEyeGaze;
 
+extern "C"
+{
+    __attribute__((visibility("default"))) float ql_xrsp_sidechannel_eye_l_orient[4] = {0.0, 0.0, 0.0, 1.0};
+    __attribute__((visibility("default"))) float ql_xrsp_sidechannel_eye_r_orient[4] = {0.0, 0.0, 0.0, 1.0};
+}
+
 void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, uint8_t* read_ptr)
 {
     read_ptr += 0x1E;
@@ -278,6 +284,16 @@ void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
 
     //printf("Left:  %f %f %f %f, %f %f %f, %f, %u\n", eye_l->pose.orient.x, eye_l->pose.orient.y, eye_l->pose.orient.z, eye_l->pose.orient.w, eye_l->pose.pos.x, eye_l->pose.pos.y, eye_l->pose.pos.z, eye_l->confidence, eye_l->is_valid);
     //printf("Right: %f %f %f %f, %f %f %f, %f, %u\n", eye_r->pose.orient.x, eye_r->pose.orient.y, eye_r->pose.orient.z, eye_r->pose.orient.w, eye_r->pose.pos.x, eye_r->pose.pos.y, eye_r->pose.pos.z, eye_r->confidence, eye_r->is_valid);
+
+    ql_xrsp_sidechannel_eye_l_orient[0] = eye_l->pose.orient.x;
+    ql_xrsp_sidechannel_eye_l_orient[1] = eye_l->pose.orient.y;
+    ql_xrsp_sidechannel_eye_l_orient[2] = eye_l->pose.orient.z;
+    ql_xrsp_sidechannel_eye_l_orient[3] = eye_l->pose.orient.w;
+
+    ql_xrsp_sidechannel_eye_r_orient[0] = eye_r->pose.orient.x;
+    ql_xrsp_sidechannel_eye_r_orient[1] = eye_r->pose.orient.y;
+    ql_xrsp_sidechannel_eye_r_orient[2] = eye_r->pose.orient.z;
+    ql_xrsp_sidechannel_eye_r_orient[3] = eye_r->pose.orient.w;
 
 #if 0
     {
@@ -307,6 +323,7 @@ void ql_xrsp_ipc_handle_body(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
 
 void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, const char* name, uint8_t* read_ptr, uint32_t read_len)
 {
+    //printf("state: %s\n", name);
     if (!strcmp(name, "expressionWeights_"))
     {
         ql_xrsp_ipc_handle_face(segpkt, host, read_ptr);
