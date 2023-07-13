@@ -195,6 +195,18 @@ ensure_debug_record_created(void *ptr, struct draw_state *state)
 	return NULL;
 }
 
+// Currently unused.
+XRT_MAYBE_UNUSED static void
+draw_sink_to_background(struct u_var_info *var, struct draw_state *state)
+{
+	struct debug_record *dr = ensure_debug_record_created(var->ptr, state);
+	if (dr == NULL) {
+		return;
+	}
+
+	gui_window_record_to_background(&dr->rw, state->p);
+}
+
 
 /*
  *
