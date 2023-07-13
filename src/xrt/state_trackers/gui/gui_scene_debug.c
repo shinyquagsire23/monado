@@ -167,6 +167,34 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 	math_quat_normalize(q);
 }
 
+static struct debug_record *
+ensure_debug_record_created(void *ptr, struct draw_state *state)
+{
+	struct debug_scene *ds = state->ds;
+	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
+
+	if (usd->sink == NULL) {
+		struct debug_record *dr = &ds->recs[ds->num_recrs++];
+
+		dr->ptr = ptr;
+
+		gui_window_record_init(&dr->rw);
+		u_sink_debug_set_sink(usd, &dr->rw.sink);
+
+		return dr;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
+		struct debug_record *dr = &ds->recs[i];
+
+		if ((ptrdiff_t)dr->ptr == (ptrdiff_t)ptr) {
+			return dr;
+		}
+	}
+
+	return NULL;
+}
+
 
 /*
  *
@@ -362,36 +390,21 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 static void
 on_sink_debug_var(const char *name, void *ptr, struct draw_state *state)
 {
-	struct gui_program *p = state->p;
-	struct debug_scene *ds = state->ds;
 	bool gui_header = !state->inhibit_sink_headers;
 
-	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
-	if (usd->sink == NULL) {
-		struct debug_record *dr = &ds->recs[ds->num_recrs++];
-
-		dr->ptr = ptr;
-
-		gui_window_record_init(&dr->rw);
-		u_sink_debug_set_sink(usd, &dr->rw.sink);
+	struct debug_record *dr = ensure_debug_record_created(ptr, state);
+	if (dr == NULL) {
+		return;
 	}
 
-	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
-		struct debug_record *dr = &ds->recs[i];
-
-		if ((ptrdiff_t)dr->ptr != (ptrdiff_t)ptr) {
-			continue;
+	if (gui_header) {
+		const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
+			return;
 		}
-
-		if (gui_header) {
-			const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
-			if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
-				continue;
-			}
-		}
-
-		gui_window_record_render(&dr->rw, p);
 	}
+
+	gui_window_record_render(&dr->rw, state->p);
 }
 
 static void
