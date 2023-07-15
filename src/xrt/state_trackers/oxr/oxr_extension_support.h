@@ -449,6 +449,17 @@
 #define OXR_EXTENSION_SUPPORT_MNDX_hydra(_)
 #endif
 
+
+/*
+ * XR_MNDX_system_buttons
+ */
+#if defined(XR_MNDX_system_buttons)
+#define OXR_HAVE_MNDX_system_buttons
+#define OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_) _(MNDX_system_buttons, MNDX_SYSTEM_BUTTONS)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_)
+#endif
+
 // end of GENERATED per-extension defines - do not modify - used by scripts
 
 /*!
@@ -510,5 +521,6 @@
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
     OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) \
-    OXR_EXTENSION_SUPPORT_MNDX_hydra(_)
+    OXR_EXTENSION_SUPPORT_MNDX_hydra(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_)
 // clang-format on

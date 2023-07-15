@@ -71,6 +71,7 @@ EXTENSIONS = (
     ['XR_MNDX_egl_enable', 'XR_USE_PLATFORM_EGL', 'XR_USE_GRAPHICS_API_OPENGL'],
     ['XR_MNDX_force_feedback_curl'],
     ['XR_MNDX_hydra'],
+    ['XR_MNDX_system_buttons'],
 )
 
 

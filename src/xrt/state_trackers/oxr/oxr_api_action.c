@@ -351,6 +351,9 @@ oxr_xrSuggestInteractionProfileBindings(XrInstance instance,
 #endif
 	    .MNDX_ball_on_a_stick_controller = inst->extensions.MNDX_ball_on_a_stick_controller,
 	    .MNDX_hydra = inst->extensions.MNDX_hydra,
+#ifdef OXR_HAVE_MNDX_system_buttons
+	    .MNDX_system_buttons = inst->extensions.MNDX_system_buttons,
+#endif
 	    .EXT_eye_gaze_interaction = inst->extensions.EXT_eye_gaze_interaction,
 #ifdef OXR_HAVE_HTCX_vive_tracker_interaction
 	    .HTCX_vive_tracker_interaction = inst->extensions.HTCX_vive_tracker_interaction,
