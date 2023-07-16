@@ -633,7 +633,7 @@ int64_t xrsp_ts_ns_from_target(struct ql_xrsp_host *host, int64_t ts)
 {
     int64_t option_1 = (ts) - host->ns_offset;
     int64_t option_2 = (ts) + host->ns_offset_from_target;
-    return option_2; // HACK: really need to figure out how to calculate ns_offset
+    return option_1; // HACK: really need to figure out how to calculate ns_offset
     //return (option_1+option_2)>>1;
 }
 
@@ -641,7 +641,7 @@ int64_t xrsp_ts_ns_to_target(struct ql_xrsp_host *host, int64_t ts)
 {
     int64_t option_1 = (ts) + host->ns_offset;
     int64_t option_2 = (ts) - host->ns_offset_from_target;
-    return option_2; // HACK: really need to figure out how to calculate ns_offset
+    return option_1; // HACK: really need to figure out how to calculate ns_offset
     //return (option_1+option_2)>>1;
 }
    
@@ -927,7 +927,7 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
             host->ns_offset /= 2;
         }
 
-        //printf("Ping offs: %x", self.ns_offset);
+        //printf("Ping offs: %zx %zx %zd/%zd\n", host->ns_offset, -host->ns_offset_from_target, host->ns_offset-host->ns_offset_from_target, host->ns_offset_from_target-host->ns_offset);
 
         //printf("Pong get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
 
@@ -946,8 +946,8 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
 
         if (payload->offset) {
             host->ns_offset_from_target = payload->offset;
-            //host->ns_offset -= host->ns_offset_from_target;
-            //host->ns_offset /= 2;
+            host->ns_offset -= host->ns_offset_from_target;
+            host->ns_offset /= 2;
         }
 
         //printf("Ping get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
@@ -960,6 +960,10 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
 
         xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, request_echo_ping, request_echo_ping_len);
         free(request_echo_ping);
+
+        if (host->pairing_state == PAIRINGSTATE_PAIRED) {
+            xrsp_send_ping(host);
+        }
     }  
 
     //printf("%lld %lld\n", host->ns_offset_from_target, host->ns_offset);
@@ -1340,11 +1344,13 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     }
 
     int read_index = QL_IDX_SLICE(slice_idx, index);
-
     struct ql_hmd* hmd = host->sys->hmd;
 
     struct xrt_pose sending_pose;
     U_ZERO(&sending_pose);
+
+    uint64_t ts_before = xrsp_ts_ns(host);
+    host->tx_started_ns[read_index] = ts_before;
 
     //printf("a %llx\n", frame_started_ns);
 
@@ -1392,14 +1398,17 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(0.0);
     msg.setPoseZ(0.0);*/
 
+    // TODO this might include render time?
     uint64_t pipeline_pred_delta_ma = host->encode_done_ns[QL_IDX_SLICE(slice_idx, index)] - host->encode_started_ns[QL_IDX_SLICE(0, index)];//2916100;
     //uint64_t pipeline_pred_delta_ma = 0;
     //printf("%llu\n", pipeline_pred_delta_ma);
 
-    uint64_t duration_a = 9116997; // 9ms
-    uint64_t duration_b = 14516438; // 14ms
-    uint64_t duration_c = 4999157; // 4ms
+    // TODO maybe pull a round-trip delta time?
+    uint64_t duration_a = (uint64_t)(1000000000.0/hmd->fps) /*+ 9116997*/; // 9ms this might also include the slice 0 pipeline_pred_delta_ma, but we don't include render time yet?
+    uint64_t duration_c = pipeline_pred_delta_ma; // 4ms
+    uint64_t duration_b = duration_a+duration_c; // 14ms
     uint64_t base_ts = xrsp_ts_ns_to_target(host, host->encode_started_ns[QL_IDX_SLICE(0, index)]);
+    uint64_t tx_start_ts = host->tx_started_ns[QL_IDX_SLICE(0, index)];
 
     // all timestamps are all the same between different slices, only pipeline_pred_delta_ma changes
     msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns));//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
@@ -1459,7 +1468,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     //
     msg.setUnk8p1(0);
-    msg.setTimestamp09(base_ts);// transmission start
+    msg.setTimestamp09(xrsp_ts_ns_to_target(host, tx_start_ts)-pipeline_pred_delta_ma);// transmission start
     msg.setUnkA(pipeline_pred_delta_ma); // pipeline prediction delta MA?
     msg.setTimestamp0B(base_ts+duration_a+duration_b+duration_c); // unknown
     msg.setTimestamp0C(base_ts+duration_a+duration_b); // deadline
@@ -1491,7 +1500,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     //printf("adsf %zx %zx\n", csd_len, video_len);
 
-    uint64_t ts_before = xrsp_ts_ns(host);
+    
 
     // Safety fallback: xrsp kicks us out if we exceed this.
     //if (video_len < 0x40000)
@@ -1515,7 +1524,6 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     uint64_t ts_after = xrsp_ts_ns(host);
 
-    host->tx_started_ns[read_index] = ts_before;
     host->tx_done_ns[read_index] = ts_after;
 
     int64_t ts_diff = ts_after - ts_before;
@@ -1644,7 +1652,7 @@ ql_xrsp_write_thread(void *ptr)
         
 
         //printf("%zx\n", xrsp_ts_ns(host) - host->paired_ns);
-        if (xrsp_ts_ns(host) - host->paired_ns > 5000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000
+        if (xrsp_ts_ns(host) - host->paired_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000
         {
             host->ready_to_send_frames = true;
         }

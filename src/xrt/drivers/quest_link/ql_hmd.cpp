@@ -35,6 +35,7 @@
 #include "math/m_vec3.h"
 #include "math/m_space.h"
 #include "math/m_predict.h"
+#include "math/m_filter_one_euro.h"
 
 #include "os/os_time.h"
 
@@ -335,7 +336,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 
 	hmd->base.hmd->screens[0].w_pixels = eye_width * 2;
 	hmd->base.hmd->screens[0].h_pixels = eye_height;
-	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps*4); // HACK
+	hmd->base.hmd->screens[0].nominal_frame_interval_ns = 1000000000 / (fps); // HACK
 
 	// Left
 	hmd->base.hmd->views[0].display.w_pixels = eye_width;
@@ -523,6 +524,13 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->ipd_meters = 0.063;
 
 	ql_hmd_set_per_eye_resolution(hmd, eye_width, eye_height, 10.0);
+
+	const float min_cutoff = M_PI; //!< Default minimum cutoff frequency
+	const float min_dcutoff = 1;   //!< Default minimum cutoff frequency for the derivative
+	const float beta = 0.16;       //!< Default speed coefficient
+
+	m_filter_euro_quat_init(&hmd->eye_l_oe, min_cutoff, min_dcutoff, beta);
+	m_filter_euro_quat_init(&hmd->eye_r_oe, min_cutoff, min_dcutoff, beta);
 
 
 #if 0

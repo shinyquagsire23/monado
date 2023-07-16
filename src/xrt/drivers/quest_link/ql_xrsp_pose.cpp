@@ -62,7 +62,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
             idx = 0;
         }
 
-        struct ql_controller* ctrl = host->sys->controllers[idx++];
+        struct ql_controller* ctrl = host->sys->controllers[idx];
         OvrPoseF::Reader controllerPose = controller.getPose();
 
         ctrl->pose.position.x = controllerPose.getPosX();

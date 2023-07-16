@@ -14,6 +14,7 @@
 
 #include "math/m_api.h"
 #include "math/m_vec3.h"
+#include "math/m_filter_one_euro.h"
 
 #include "ql_xrsp.h"
 #include "ql_xrsp_segmented_pkt.h"
@@ -277,14 +278,35 @@ extern "C"
 
 void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, uint8_t* read_ptr)
 {
+    struct ql_hmd* hmd = host->sys->hmd;
+
     read_ptr += 0x1E;
 
     ovrOneEyeGaze* eye_l = (ovrOneEyeGaze*) read_ptr;
     ovrOneEyeGaze* eye_r = eye_l + 1;
 
+    timepoint_ns now = os_monotonic_get_ns();
+
+    struct xrt_quat eye_l_filtered, eye_r_filtered;
+
+    m_filter_euro_quat_run(&hmd->eye_l_oe, now, &eye_l->pose.orient, &eye_l_filtered);
+    m_filter_euro_quat_run(&hmd->eye_r_oe, now, &eye_r->pose.orient, &eye_r_filtered);
+
+    ql_xrsp_sidechannel_eye_l_orient[0] = eye_l_filtered.x;
+    ql_xrsp_sidechannel_eye_l_orient[1] = eye_l_filtered.y;
+    ql_xrsp_sidechannel_eye_l_orient[2] = eye_l_filtered.z;
+    ql_xrsp_sidechannel_eye_l_orient[3] = eye_l_filtered.w;
+
+    ql_xrsp_sidechannel_eye_r_orient[0] = eye_r_filtered.x;
+    ql_xrsp_sidechannel_eye_r_orient[1] = eye_r_filtered.y;
+    ql_xrsp_sidechannel_eye_r_orient[2] = eye_r_filtered.z;
+    ql_xrsp_sidechannel_eye_r_orient[3] = eye_r_filtered.w;
+    
+
     //printf("Left:  %f %f %f %f, %f %f %f, %f, %u\n", eye_l->pose.orient.x, eye_l->pose.orient.y, eye_l->pose.orient.z, eye_l->pose.orient.w, eye_l->pose.pos.x, eye_l->pose.pos.y, eye_l->pose.pos.z, eye_l->confidence, eye_l->is_valid);
     //printf("Right: %f %f %f %f, %f %f %f, %f, %u\n", eye_r->pose.orient.x, eye_r->pose.orient.y, eye_r->pose.orient.z, eye_r->pose.orient.w, eye_r->pose.pos.x, eye_r->pose.pos.y, eye_r->pose.pos.z, eye_r->confidence, eye_r->is_valid);
 
+#if 0
     if (eye_l->confidence > 0.5) {
         ql_xrsp_sidechannel_eye_l_orient[0] = eye_l->pose.orient.x;
         ql_xrsp_sidechannel_eye_l_orient[1] = eye_l->pose.orient.y;
@@ -307,6 +329,7 @@ void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
         ql_xrsp_sidechannel_eye_r_orient[2] = 0.0;
         ql_xrsp_sidechannel_eye_r_orient[3] = 1.0;
     }
+#endif
     
 #if 0
     {
@@ -348,6 +371,34 @@ void ql_xrsp_ipc_handle_state_data(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_
     else if (!strcmp(name, "bodyPose_"))
     {
         ql_xrsp_ipc_handle_body(segpkt, host, read_ptr);
+    }
+    else if (!strcmp(name, "bodyPoseFullBody_"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "bodyState_"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "bodySkeleton_"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "bodySkeletonFullBody_"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "tongueExpressionWeights"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "serviceInfo_"))
+    {
+        // TODO
+    }
+    else if (!strcmp(name, "CurrentPrimaryPackageState"))
+    {
+        // TODO
     }
     else if (!strcmp(name, "SystemPerformanceState"))
     {
