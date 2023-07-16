@@ -602,7 +602,7 @@ multi_compositor_wait_frame(struct xrt_compositor *xc,
 	    out_predicted_display_period_ns); //
 
 	// Wait until the given wake up time.
-	u_wait_until(&mc->frame_sleeper, wake_up_time_ns);
+	//u_wait_until(&mc->frame_sleeper, wake_up_time_ns); // TODO HACK
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
