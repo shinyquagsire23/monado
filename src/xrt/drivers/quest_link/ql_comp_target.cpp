@@ -768,11 +768,11 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	int64_t frame_id = ++cn->current_frame_id; //-1;
 	uint64_t now_ns = os_monotonic_get_ns();
 	uint64_t desired_present_time_ns = now_ns + (U_TIME_1S_IN_NS / (cn->fps));
-	uint64_t wake_up_time_ns = desired_present_time_ns - 5 * U_TIME_1MS_IN_NS - encode_display_delay;
+	uint64_t wake_up_time_ns = desired_present_time_ns - 33 * U_TIME_1MS_IN_NS - encode_display_delay;
 	uint64_t present_slop_ns = encode_display_delay;//U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_time_ns = desired_present_time_ns + encode_display_delay;
 
-	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (cn->fps) + encode_display_delay;
+	uint64_t predicted_display_period_ns = U_TIME_1S_IN_NS / (cn->fps);// + encode_display_delay;
 	uint64_t min_display_period_ns = predicted_display_period_ns;
 	
 	//u_pc_update_present_offset(cn->upc, frame_id, encode_display_delay);

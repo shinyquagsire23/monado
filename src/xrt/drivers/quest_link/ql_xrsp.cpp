@@ -53,6 +53,7 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
 static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
+static void xrsp_send_mesh(struct ql_xrsp_host *host);
 
 int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, int if_num)
 {
@@ -903,6 +904,11 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //xrsp_ripc_ensure_service_started(host, host->client_id+3, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost.DialogHostService");
     //xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_4, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
 #endif
+
+    //if (!host->sent_mesh)
+    {
+        xrsp_send_mesh(host);
+    }
 }
 
 static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
@@ -1337,11 +1343,6 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 {
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
-
-    if (!host->sent_mesh)
-    {
-        xrsp_send_mesh(host);
-    }
 
     int read_index = QL_IDX_SLICE(slice_idx, index);
     struct ql_hmd* hmd = host->sys->hmd;
