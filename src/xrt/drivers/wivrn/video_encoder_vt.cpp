@@ -369,25 +369,67 @@ VideoEncoderVT::VideoEncoderVT(
     }
     //VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_Quality, cfQuality);
     //VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_SourceFrameCount, cfFrames);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AverageBitRate, cfBitrate);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxFrameDelayCount, cfFrames);
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AverageBitRate, cfBitrate);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_AverageBitRate fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxFrameDelayCount, cfFrames);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_MaxFrameDelayCount fail?\n");
+    }
 
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_RealTime, kCFBooleanFalse);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowTemporalCompression, kCFBooleanTrue);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowOpenGOP, kCFBooleanFalse);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxKeyFrameInterval, cfMaxKeyframe);
-	VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, kCFBooleanTrue);
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_RealTime, kCFBooleanFalse);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_RealTime fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_AllowFrameReordering fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowTemporalCompression, kCFBooleanTrue);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_AllowTemporalCompression fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_AllowOpenGOP, kCFBooleanFalse);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_AllowOpenGOP fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_MaxKeyFrameInterval, cfMaxKeyframe);
+	if(err != noErr) {
+        printf("kVTCompressionPropertyKey_MaxKeyFrameInterval fail?\n");
+    }
+	err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality, kCFBooleanTrue);
+	if(err != noErr) {
+        printf("kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality fail?\n");
+    }
 
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ColorPrimaries, kCVImageBufferColorPrimaries_ITU_R_709_2);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_TransferFunction, kCVImageBufferTransferFunction_ITU_R_709_2);
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_YCbCrMatrix, kCVImageBufferYCbCrMatrix_ITU_R_709_2);
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ColorPrimaries, kCVImageBufferColorPrimaries_ITU_R_709_2);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_ColorPrimaries fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_TransferFunction, kCVImageBufferTransferFunction_ITU_R_709_2);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_TransferFunction fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_YCbCrMatrix, kCVImageBufferYCbCrMatrix_ITU_R_709_2);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_YCbCrMatrix fail?\n");
+    }
 
-    VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ProfileLevel, kVTProfileLevel_HEVC_Main_AutoLevel);
+    err = VTSessionSetProperty(compression_session, kVTCompressionPropertyKey_ProfileLevel, kVTProfileLevel_HEVC_Main_AutoLevel);
+    if(err != noErr) {
+        printf("kVTCompressionPropertyKey_ProfileLevel fail?\n");
+    }
 
     // Secret keys
-    VTSessionSetProperty(compression_session, CFSTR("LowLatencyMode"), CFSTR("Minimum"));
-    VTSessionSetProperty(compression_session, CFSTR("NumberOfSlices"), cfNumSlices); 
+    err = VTSessionSetProperty(compression_session, CFSTR("LowLatencyMode"), CFSTR("Minimum"));
+    if(err != noErr) {
+        printf("LowLatencyMode fail?\n");
+    }
+    err = VTSessionSetProperty(compression_session, CFSTR("NumberOfSlices"), cfNumSlices); 
+    if(err != noErr) {
+        printf("NumberOfSlices fail?\n");
+    }
 
     VTCompressionSessionPrepareToEncodeFrames(compression_session);
 
