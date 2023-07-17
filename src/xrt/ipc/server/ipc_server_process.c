@@ -141,6 +141,8 @@ teardown_all(struct ipc_server *s)
 	u_process_destroy(s->process);
 
 	os_mutex_destroy(&s->global_state.lock);
+
+	ipc_shmem_destroy(&s->ism_handle, (void **)&s->ism, sizeof(struct ipc_shared_memory));
 }
 
 static int

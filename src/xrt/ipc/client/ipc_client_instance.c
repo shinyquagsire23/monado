@@ -25,6 +25,7 @@
 #include "util/u_system_helpers.h"
 
 #include "shared/ipc_protocol.h"
+#include "shared/ipc_shmem.h"
 #include "client/ipc_client.h"
 #include "client/ipc_client_connection.h"
 
@@ -201,6 +202,8 @@ ipc_client_instance_destroy(struct xrt_instance *xinst)
 		ii->xtracks[i] = NULL;
 	}
 	ii->xtrack_count = 0;
+
+	ipc_shmem_destroy(&ii->ipc_c.ism_handle, (void **)&ii->ipc_c.ism, sizeof(struct ipc_shared_memory));
 
 	free(ii);
 }
