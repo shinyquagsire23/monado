@@ -372,6 +372,17 @@
 
 
 /*
+ * XR_OPPO_controller_interaction
+ */
+#if defined(XR_OPPO_controller_interaction)
+#define OXR_HAVE_OPPO_controller_interaction
+#define OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_) _(OPPO_controller_interaction, OPPO_CONTROLLER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_)
+#endif
+
+
+/*
  * XR_EXTX_overlay
  */
 #if defined(XR_EXTX_overlay)
@@ -493,6 +504,7 @@
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
     OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_) \
+    OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
     OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \

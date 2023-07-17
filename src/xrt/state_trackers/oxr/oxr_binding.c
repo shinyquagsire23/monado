@@ -337,6 +337,7 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_ML2_CONTROLLER: FIND_PROFILE(ml_ml2_controller); return;
 	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
 	case XRT_DEVICE_EYE_GAZE_INTERACTION: FIND_PROFILE(ext_eye_gaze_interaction); return;
+	case XRT_DEVICE_OPPO_MR_CONTROLLER: FIND_PROFILE(oppo_mr_controller); return;
 
 	// no interaction
 	default:

@@ -241,6 +241,7 @@ oxr_instance_create(struct oxr_logger *log,
 	cache_path(log, inst, "/interaction_profiles/microsoft/hand_interaction", &inst->path_cache.msft_hand_interaction);
 	cache_path(log, inst, "/interaction_profiles/ext/eye_gaze_interaction", &inst->path_cache.ext_eye_gaze_interaction);
 	cache_path(log, inst, "/interaction_profiles/ext/hand_interaction_ext", &inst->path_cache.ext_hand_interaction);
+	cache_path(log, inst, "/interaction_profiles/oppo/mr_controller_oppo", &inst->path_cache.oppo_mr_controller);
 
 	// clang-format on
 

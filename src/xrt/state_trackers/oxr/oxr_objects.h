@@ -1368,6 +1368,7 @@ struct oxr_instance
 		XrPath msft_hand_interaction;
 		XrPath ext_eye_gaze_interaction;
 		XrPath ext_hand_interaction;
+		XrPath oppo_mr_controller;
 	} path_cache;
 
 	struct
