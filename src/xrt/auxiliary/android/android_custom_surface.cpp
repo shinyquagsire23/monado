@@ -187,14 +187,19 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 			displayRefreshRate = 60.0f;
 		}
 
-		*out_metrics = {.width_pixels = displayMetrics.get<int>("widthPixels"),
-		                .height_pixels = displayMetrics.get<int>("heightPixels"),
-		                .density_dpi = displayMetrics.get<int>("densityDpi"),
-		                .density = displayMetrics.get<float>("xdpi"),
-		                .scaled_density = displayMetrics.get<float>("ydpi"),
-		                .xdpi = displayMetrics.get<float>("density"),
-		                .ydpi = displayMetrics.get<float>("scaledDensity"),
-		                .refresh_rate = displayRefreshRate};
+		struct xrt_android_display_metrics metrics = {
+		    .width_pixels = displayMetrics.get<int>("widthPixels"),
+		    .height_pixels = displayMetrics.get<int>("heightPixels"),
+		    .density_dpi = displayMetrics.get<int>("densityDpi"),
+		    .density = displayMetrics.get<float>("xdpi"),
+		    .scaled_density = displayMetrics.get<float>("ydpi"),
+		    .xdpi = displayMetrics.get<float>("density"),
+		    .ydpi = displayMetrics.get<float>("scaledDensity"),
+		    .refresh_rate = displayRefreshRate,
+		};
+
+		*out_metrics = metrics;
+
 		return true;
 	} catch (std::exception const &e) {
 		U_LOG_E("Could not get display metrics: %s", e.what());
