@@ -183,6 +183,7 @@ android_custom_surface_get_display_metrics(struct _JavaVM *vm,
 		//! @todo implement non-deprecated codepath for api 30+
 		float displayRefreshRate = MonadoView::getDisplayRefreshRate(Context((jobject)context));
 		if (displayRefreshRate == 0.0) {
+			U_LOG_W("Could not get refresh rate, returning 60hz");
 			displayRefreshRate = 60.0f;
 		}
 
