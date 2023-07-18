@@ -537,7 +537,7 @@ enum xrt_space_relation_flags
 	                                 (uint32_t)XRT_SPACE_RELATION_ANGULAR_VELOCITY_VALID_BIT | //
 	                                 (uint32_t)XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT |    //
 	                                 (uint32_t)XRT_SPACE_RELATION_POSITION_TRACKED_BIT,
-	XRT_SPACE_RELATION_BITMASK_NONE = 0
+	XRT_SPACE_RELATION_BITMASK_NONE = 0,
 };
 
 /*!
@@ -1056,7 +1056,7 @@ enum xrt_hand_joint
 enum xrt_hand
 {
 	XRT_HAND_LEFT = 0,
-	XRT_HAND_RIGHT = 1
+	XRT_HAND_RIGHT = 1,
 };
 
 /*!
@@ -1142,7 +1142,7 @@ enum xrt_output_type
 {
 	// clang-format off
 	XRT_OUTPUT_TYPE_VIBRATION             = 0x00,
-	XRT_OUTPUT_TYPE_FORCE_FEEDBACK        = 0x01
+	XRT_OUTPUT_TYPE_FORCE_FEEDBACK        = 0x01,
 	// clang-format on
 };
 
@@ -1214,7 +1214,7 @@ enum xrt_force_feedback_location
 	XRT_FORCE_FEEDBACK_LOCATION_LEFT_INDEX,
 	XRT_FORCE_FEEDBACK_LOCATION_LEFT_MIDDLE,
 	XRT_FORCE_FEEDBACK_LOCATION_LEFT_RING,
-	XRT_FORCE_FEEDBACK_LOCATION_LEFT_PINKY
+	XRT_FORCE_FEEDBACK_LOCATION_LEFT_PINKY,
 };
 
 struct xrt_output_force_feedback
@@ -1266,8 +1266,8 @@ xrt_reference_inc(struct xrt_reference *xref)
 
 enum xrt_form_factor
 {
-	XRT_FORM_FACTOR_HMD,     //!< Head mounted display.
-	XRT_FORM_FACTOR_HANDHELD //!< Handheld display.
+	XRT_FORM_FACTOR_HMD,      //!< Head mounted display.
+	XRT_FORM_FACTOR_HANDHELD, //!< Handheld display.
 };
 
 #ifdef __cplusplus
