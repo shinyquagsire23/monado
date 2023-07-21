@@ -352,6 +352,12 @@ _calculate_fov(struct vive_config *d)
 		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
 		eye_to_screen_distance = 0.0255;
 	}
+	if (d->variant == VIVE_VARIANT_PRO2) {
+		lens_horizontal_separation = 0.055;
+		h_meters = 0.07;
+		// eye relief knob adjusts this around [0.0255(near)-0.275(far)]
+		eye_to_screen_distance = 0.0255;
+	}
 
 	double fov = 2 * atan2(w_meters - lens_horizontal_separation / 2.0, eye_to_screen_distance);
 
@@ -432,6 +438,10 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 	           strcmp(d->firmware.model_number, "VIVE_Pro MV") == 0) {
 		d->variant = VIVE_VARIANT_PRO;
 		VIVE_DEBUG(d, "Found HTC Vive Pro HMD");
+	} else if (strcmp(d->firmware.model_number, "Vive_Pro 2 MV") == 0 ||
+	           strcmp(d->firmware.model_number, "VIVE_Pro 2 MV") == 0) {
+		d->variant = VIVE_VARIANT_PRO2;
+		VIVE_DEBUG(d, "Found HTC Vive Pro 2 HMD");
 	} else {
 		VIVE_ERROR(d, "Failed to parse Vive HMD variant!\n\tfirmware.model_[number|name]: '%s'",
 		           d->firmware.model_number);
@@ -461,6 +471,26 @@ vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level
 		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
 		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
 		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
+
+		_get_lighthouse(d, json);
+
+		struct xrt_pose trackref_to_head;
+		struct xrt_pose imu_to_head;
+
+		math_pose_invert(&d->display.trackref, &trackref_to_head);
+		math_pose_transform(&trackref_to_head, &d->imu.trackref, &imu_to_head);
+
+		d->display.imuref = imu_to_head;
+
+		const cJSON *cameras_json = u_json_get(json, "tracked_cameras");
+		_get_cameras(d, cameras_json);
+	} break;
+	case VIVE_VARIANT_PRO2: {
+		const cJSON *imu = cJSON_GetObjectItemCaseSensitive(json, "imu");
+		JSON_VEC3(imu, "acc_bias", &d->imu.acc_bias);
+		JSON_VEC3(imu, "acc_scale", &d->imu.acc_scale);
+		JSON_VEC3(imu, "gyro_bias", &d->imu.gyro_bias);
+		JSON_VEC3(imu, "gyro_scale", &d->imu.gyro_scale);
 
 		_get_lighthouse(d, json);
 
