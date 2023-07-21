@@ -397,7 +397,7 @@ update_imu(struct vive_device *d, const void *buffer)
 			angular_velocity.y = -angular_velocity.y;
 			angular_velocity.z = -angular_velocity.z;
 			break;
-		case VIVE_VARIANT_PRO:
+		case VIVE_VARIANT_PRO: {
 			// flip all except y axis
 			acceleration.x = -acceleration.x;
 			acceleration.y = +acceleration.y;
@@ -407,6 +407,17 @@ update_imu(struct vive_device *d, const void *buffer)
 			angular_velocity.y = +angular_velocity.y;
 			angular_velocity.z = -angular_velocity.z;
 			break;
+		}
+		case VIVE_VARIANT_PRO2: {
+			acceleration.x = -acceleration.x;
+			acceleration.y = acceleration.y;
+			acceleration.z = -acceleration.z;
+
+			angular_velocity.x = -angular_velocity.x;
+			angular_velocity.y = angular_velocity.y;
+			angular_velocity.z = -angular_velocity.z;
+		} break;
+
 		case VIVE_VARIANT_INDEX: {
 			// Flip all axis and re-order.
 			struct xrt_vec3 acceleration_fixed;
@@ -891,7 +902,15 @@ compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, str
 	XRT_TRACE_MARKER();
 
 	struct vive_device *d = vive_device(xdev);
-	return u_compute_distortion_vive(&d->config.distortion.values[view], u, v, result);
+	bool status = u_compute_distortion_vive(&d->config.distortion.values[view], u, v, result);
+
+	if (d->config.variant == VIVE_VARIANT_PRO2) {
+		// Flip Y coordinates
+		result->r.y = 1.0f - result->r.y;
+		result->g.y = 1.0f - result->g.y;
+		result->b.y = 1.0f - result->b.y;
+	}
+	return status;
 }
 
 void
@@ -1108,6 +1127,7 @@ vive_device_create(struct os_hid_device *mainboard_dev,
 	switch (d->config.variant) {
 	case VIVE_VARIANT_VIVE: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (vive)"); break;
 	case VIVE_VARIANT_PRO: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro (vive)"); break;
+	case VIVE_VARIANT_PRO2: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro 2 (vive)"); break;
 	case VIVE_VARIANT_INDEX: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Valve Index (vive)"); break;
 	case VIVE_UNKNOWN: snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (vive)"); break;
 	}

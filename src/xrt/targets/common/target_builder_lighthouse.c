@@ -633,6 +633,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 			switch (device->product_id) {
 			case VIVE_PID:
 			case VIVE_PRO_MAINBOARD_PID:
+			case VIVE_PRO2_MAINBOARD_PID:
 			case VIVE_PRO_LHR_PID: {
 				struct vive_source *vs = vive_source_create(&usysd->xfctx);
 				int num_devices =
