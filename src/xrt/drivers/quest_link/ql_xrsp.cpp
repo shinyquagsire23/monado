@@ -672,7 +672,7 @@ request_echo_ping = HostInfoPkt.craft_echo(self, result=ECHO_PING, echo_id=self.
 self.send_to_topic(TOPIC_HOSTINFO_ADV, request_echo_ping)
 */
 
-    printf("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
+    //printf("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
 
     int32_t request_echo_ping_len = 0;
     uint8_t* request_echo_ping = ql_xrsp_craft_echo(ECHO_PING, host->echo_idx, 0, 0, host->echo_req_sent_ns, host->ns_offset, &request_echo_ping_len);
