@@ -402,6 +402,12 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 		free(hmd->quest_indices);
 	}
 
+	uint32_t num = (uint32_t)debug_get_num_option_mesh_size();
+	uint32_t cells_cols = num;
+	uint32_t cells_rows = num;
+	uint32_t vert_cols = cells_cols + 1;
+	uint32_t vert_rows = cells_rows + 1;
+
 	hmd->quest_vtx_count = hmd->base.hmd->distortion.mesh.vertex_count;
 	hmd->quest_vertices = (float*)malloc(hmd->quest_vtx_count * sizeof(float) * 4);
 
@@ -409,7 +415,6 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 	{
 		float* vtx_dat = hmd->base.hmd->distortion.mesh.vertices + ((hmd->base.hmd->distortion.mesh.stride / sizeof(float)) * i);
 		float* vtx_out = hmd->quest_vertices + (4 * i);
-
 
 		xrt_vec2 undist = {0., 0.};
 		ql_hmd_compute_undistortion(&hmd->base, (i >= hmd->quest_vtx_count/2) ? 1 : 0, vtx_dat[0], vtx_dat[1], &undist);
@@ -423,6 +428,14 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 		if (i >= hmd->quest_vtx_count/2) {
 			u2 += 0.5;
 		}
+
+		if ((i % vert_cols) >= vert_cols-1)
+		{
+			//u2 = 0.0;
+			//printf("%u: %f %f, %f %f\n", i, u1, v1, u2, v2);
+		}
+		//u1 = 0.0;
+		//v1 = 0.0;
 		
 		vtx_out[0] = u1;
 		vtx_out[1] = v1;
@@ -430,11 +443,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 		vtx_out[3] = v2;
 	}
 
-	uint32_t num = (uint32_t)debug_get_num_option_mesh_size();
-	uint32_t cells_cols = num;
-	uint32_t cells_rows = num;
-	uint32_t vert_cols = cells_cols + 1;
-	uint32_t vert_rows = cells_rows + 1;
+	
 
 	const int num_views = 2;
 	const int tris_per_cell = 2;

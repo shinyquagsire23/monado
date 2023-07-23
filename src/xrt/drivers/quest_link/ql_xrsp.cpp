@@ -484,13 +484,28 @@ void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, 
     xrsp_send_to_topic(host, topic, data, data_size);
 }
 
-void xrsp_send_to_topic_capnp_wrapped_3(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size, const uint8_t* data2, int32_t data2_size, const uint8_t* data3, int32_t data3_size)
+void xrsp_send_to_topic_capnp_segments(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>>& data)
 {
-    uint32_t preamble[4] = {idx, static_cast<uint32_t>(data_size) >> 3, static_cast<uint32_t>(data2_size) >> 3, static_cast<uint32_t>(data3_size) >> 3};
-    xrsp_send_to_topic(host, topic, (uint8_t*)preamble, sizeof(uint32_t) * 4);
-    xrsp_send_to_topic(host, topic, data, data_size);
-    xrsp_send_to_topic(host, topic, data2, data2_size);
-    xrsp_send_to_topic(host, topic, data3, data3_size);
+    int num_segments = data.size();
+
+    uint32_t* preamble = (uint32_t*)malloc(sizeof(uint32_t) * (num_segments + 1));
+    preamble[0] = idx;
+    for (int i = 0; i < num_segments; i++)
+    {
+        size_t packed_data_size = data[i].size()*sizeof(uint64_t);
+
+        preamble[i+1] = static_cast<uint32_t>(packed_data_size) >> 3;
+    }
+
+    xrsp_send_to_topic(host, topic, (uint8_t*)preamble, sizeof(uint32_t) * (num_segments + 1));
+
+    for (int i = 0; i < num_segments; i++)
+    {
+        uint8_t* packed_data = (uint8_t*)data[i].begin();
+        size_t packed_data_size = data[i].size()*sizeof(uint64_t);
+
+        xrsp_send_to_topic(host, topic, packed_data, packed_data_size);
+    }
 }
 
 void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size)
@@ -1326,22 +1341,8 @@ static void xrsp_send_mesh(struct ql_xrsp_host *host)
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
 
-    uint8_t* packed_data_0 = (uint8_t*)out[0].begin();
-    size_t packed_data_0_size = out[0].size()*sizeof(uint64_t);
-
-    uint8_t* packed_data_1 = (uint8_t*)out[1].begin();
-    size_t packed_data_1_size = out[1].size()*sizeof(uint64_t);
-
-    uint8_t* packed_data_2 = (uint8_t*)out[2].begin();
-    size_t packed_data_2_size = out[2].size()*sizeof(uint64_t);
-
-    //hex_dump(packed_data_0, packed_data_0_size);
-    //hex_dump(packed_data_1, packed_data_1_size);
-    //hex_dump(packed_data_2, packed_data_2_size);
-    //printf("Sizes: %x %x %x\n", packed_data_0_size, packed_data_1_size, packed_data_2_size);
-
-    xrsp_send_to_topic_capnp_wrapped_3(host, TOPIC_MESH, 2, packed_data_0, packed_data_0_size, packed_data_1, packed_data_1_size, packed_data_2, packed_data_2_size);
-
+    xrsp_send_to_topic_capnp_segments(host, TOPIC_MESH, 2, out);
+    
     host->sent_mesh = true;
 }
 
@@ -1506,9 +1507,6 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
 
-    uint8_t* packed_data = (uint8_t*)out[0].begin();
-    size_t packed_data_size = out[0].size()*sizeof(uint64_t);
-
     //hex_dump(packed_data, packed_data_size);
 
     //printf("adsf %zx %zx\n", csd_len, video_len);
@@ -1519,7 +1517,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     //if (video_len < 0x40000)
     {
         //printf("Send capnp\n");
-        xrsp_send_to_topic_capnp_wrapped(host, TOPIC_SLICE_0+slice_idx, 0, packed_data, packed_data_size);
+        xrsp_send_to_topic_capnp_segments(host, TOPIC_SLICE_0+slice_idx, 0, out);
         //printf("Send csd %x\n", csd_len);
         if (csd_len)
             xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, csd_dat, csd_len);
