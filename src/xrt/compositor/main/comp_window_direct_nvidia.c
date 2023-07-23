@@ -93,34 +93,6 @@ _update_window_title(struct comp_target *ct, const char *title)
 	(void)title;
 }
 
-static VkResult
-enumerate_physical_device_display_properties(struct vk_bundle *vk,
-                                             VkPhysicalDevice physical_device,
-                                             VkDisplayPropertiesKHR **out_props,
-                                             uint32_t *out_prop_count)
-{
-	VkDisplayPropertiesKHR *props = NULL;
-	uint32_t prop_count = 0;
-	VkResult ret;
-
-	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(NULL, &prop_count, NULL);
-	vk_check_error("vkGetPhysicalDeviceDisplayPropertiesKHR", ret, ret);
-	if (prop_count == 0) {
-		*out_props = props;
-		*out_prop_count = prop_count;
-		return VK_SUCCESS;
-	}
-
-	props = U_TYPED_ARRAY_CALLOC(VkDisplayPropertiesKHR, prop_count);
-	ret = vk->vkGetPhysicalDeviceDisplayPropertiesKHR(NULL, &prop_count, props);
-	vk_check_error_with_free("vkGetPhysicalDeviceDisplayPropertiesKHR", ret, ret, props);
-
-	*out_props = props;
-	*out_prop_count = prop_count;
-
-	return VK_SUCCESS;
-}
-
 struct comp_target *
 comp_window_direct_nvidia_create(struct comp_compositor *c)
 {
@@ -341,13 +313,14 @@ _test_for_nvidia(struct comp_compositor *c, struct vk_bundle *vk)
 	}
 
 	// Get a list of attached displays.
-	ret = enumerate_physical_device_display_properties( //
-	    vk,                                             //
-	    vk->physical_device,                            //
-	    &display_props,                                 //
-	    &display_count);                                //
+	ret = vk_enumerate_physical_device_display_properties( //
+	    vk,                                                //
+	    vk->physical_device,                               //
+	    &display_count,                                    //
+	    &display_props);                                   //
 	if (ret != VK_SUCCESS) {
-		CVK_ERROR(c, "enumerate_physical_device_display_properties", "Failed to get display properties ", ret);
+		CVK_ERROR(c, "vk_enumerate_physical_device_display_properties", "Failed to get display properties ",
+		          ret);
 		return false;
 	}
 
