@@ -134,6 +134,12 @@ ql_update_inputs(struct xrt_device *xdev)
 {
     struct ql_controller *ctrl = (struct ql_controller *)(xdev);
 
+    // If we haven't received anything for this controller, 
+    // don't update anything.
+    if (!ctrl->feat_2 && !ctrl->features && !ctrl->battery) {
+        return;
+    }
+
     if (ctrl->features & OVR_TOUCH_FEAT_RIGHT) {
         ql_update_input_bool(ctrl, OCULUS_TOUCH_A_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_A);
         ql_update_input_bool(ctrl, OCULUS_TOUCH_B_CLICK, ctrl->pose_ns, ctrl->buttons & OVR_TOUCH_BTN_B);

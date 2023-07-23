@@ -117,6 +117,7 @@ extern "C" {
 #define DEVICE_TYPE_QUEST_1   (1)
 #define DEVICE_TYPE_QUEST_2   (2)
 #define DEVICE_TYPE_QUEST_PRO (3)
+#define DEVICE_TYPE_QUEST_3   (4)
 
 const char* xrsp_topic_str(int idx);
 const char* xrsp_builtin_type_str(int idx);

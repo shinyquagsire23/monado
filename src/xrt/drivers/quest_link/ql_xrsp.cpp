@@ -618,6 +618,7 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
     host->frame_sent_ns = 0;
     host->add_test = 0;
     host->sent_mesh = false;
+    host->is_inactive = false;
 
     ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
     ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, host, ql_xrsp_handle_ipc);
@@ -671,7 +672,7 @@ request_echo_ping = HostInfoPkt.craft_echo(self, result=ECHO_PING, echo_id=self.
 self.send_to_topic(TOPIC_HOSTINFO_ADV, request_echo_ping)
 */
 
-    //printf("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
+    printf("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
 
     int32_t request_echo_ping_len = 0;
     uint8_t* request_echo_ping = ql_xrsp_craft_echo(ECHO_PING, host->echo_idx, 0, 0, host->echo_req_sent_ns, host->ns_offset, &request_echo_ping_len);
@@ -840,6 +841,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     struct cmd_pkt_idk send_cmd_asw_toggle = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 0, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_asw_disable = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 1, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_dropframestate_toggle = {0x0005EC94E91B9D83, COMMAND_DROP_FRAMES_STATE, 0, 0, 0, 0, 0};
+    struct cmd_pkt_idk send_cmd_dropframestate_disable = {0x0005EC94E91B9D83, COMMAND_DROP_FRAMES_STATE, 0, 1, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_camerastream = {0x0005EC94E91B9D83, COMMAND_ENABLE_CAMERA_STREAM, 0, 0, 0, 0, 0};
 
     struct audio_pkt_idk send_cmd_body = {0, 2, 2, 1, 0, 0, 0};
@@ -849,6 +851,8 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     printf("Echo send\n");
     xrsp_send_ping(host);
+
+    //xrsp_send_mesh(host);
 
     printf("Audio Control cmd send\n");
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_AUDIO_CONTROL, 0, (uint8_t*)&send_audiocontrol_idk, sizeof(send_audiocontrol_idk));
@@ -861,16 +865,12 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
 
     //print ("2 sends")
-    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle));
-    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
-    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle)); // link sharpening
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
+    //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_toggle, sizeof(send_cmd_dropframestate_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, &send_cmd_camerastream, sizeof(send_cmd_camerastream));
-
-    //self.send_to_topic(TOPIC_COMMAND, send_cmd_chemx_toggle)
-    //self.send_to_topic(TOPIC_COMMAND, send_cmd_asw_toggle)
-    //self.send_to_topic(TOPIC_COMMAND, send_cmd_dropframestate_toggle)
-    //self.send_to_topic(TOPIC_COMMAND, send_cmd_camerastream)
+    xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_dropframestate_disable, sizeof(send_cmd_dropframestate_disable));
 
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_hands, sizeof(send_cmd_hands));
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_INPUT_CONTROL, 0, (uint8_t*)&send_cmd_body, sizeof(send_cmd_body));
@@ -1007,6 +1007,9 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 120;
         }
         else if (hmd->device_type == DEVICE_TYPE_QUEST_PRO) {
+            hmd->fps = 90;
+        }
+        else if (hmd->device_type == DEVICE_TYPE_QUEST_3) {
             hmd->fps = 90;
         }
         else {
@@ -1151,6 +1154,10 @@ static void xrsp_handle_pkt(struct ql_xrsp_host *host)
     {
         xrsp_trigger_bye(host, NULL);
         ql_xrsp_usb_init(host, true);
+    }
+
+    if (host->pairing_state == PAIRINGSTATE_PAIRED && xrsp_ts_ns(host) - host->echo_req_sent_ns > 1000000000) {
+        xrsp_send_ping(host);
     }
 }
 
@@ -1349,6 +1356,11 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     struct xrt_pose sending_pose;
     U_ZERO(&sending_pose);
+
+    /*if (!host->sent_mesh)
+    {
+        xrsp_send_mesh(host);
+    }*/
 
     uint64_t ts_before = xrsp_ts_ns(host);
     host->tx_started_ns[read_index] = ts_before;
@@ -1663,7 +1675,15 @@ ql_xrsp_write_thread(void *ptr)
             xrsp_trigger_bye(host, NULL);
             host->last_read_ns = xrsp_ts_ns(host);
         }
-        
+
+        if (host->sys) {
+            struct ql_hmd* hmd = host->sys->hmd;
+
+            if (hmd && xrsp_ts_ns(host) - hmd->pose_ns > 1000000000) {
+                host->is_inactive = true;
+            }
+        }
+
         os_thread_helper_lock(&host->write_thread);
 
         //if (!success) {

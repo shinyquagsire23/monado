@@ -121,6 +121,7 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     struct ql_hmd* hmd = host->sys->hmd;
 
     int64_t pose_ns = xrsp_ts_ns_from_target(host, headsetPose.getTimestamp());
+    host->is_inactive = false;
 
     //printf("%zx vs %zx/%zx\n", host->ns_offset, host->ns_offset_from_target, -host->ns_offset_from_target);
     //if (pose_ns >= hmd->pose_ns) 

@@ -107,50 +107,6 @@ void ql_xrsp_segpkt_consume(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* 
             }
         }
     }
-    
-
-    /*
-    if len(b) < 8:
-        print ("Bad pose pkt!")
-        hex_dump(b)
-        return
-
-    self.host = host
-    self.payload = b[0x0:]
-
-    self.printable = ""
-
-    if self.host.pose_state.state == STATE_SEGMENT_META:
-        self.host.pose_state.reset()
-        self.host.pose_state.type_idx, self.host.pose_state.seg0_size = struct.unpack("<LL", self.payload[:8])
-
-        self.host.pose_state.seg0_size *= 8
-
-        self.host.pose_state.state = STATE_SEGMENT_READ
-    elif self.host.pose_state.state == STATE_SEGMENT_READ:
-
-        if len(self.host.pose_state.seg0) < self.host.pose_state.seg0_size:
-            self.host.pose_state.seg0 += self.payload
-        
-        seg0_left = self.host.pose_state.seg0_size - len(self.host.pose_state.seg0)
-        
-        if seg0_left <= 0:
-            try:
-                # TODO: store this
-                pose_payload = PayloadPose.from_segments([self.host.pose_state.seg0])
-                self.printable = pose_payload
-
-                if len(pose_payload.controllers) >= 1:
-                    self.host.touchpad_pos = ((pose_payload.controllers[0].touchpadX * (1280/2)) + (1280/2), (pose_payload.controllers[0].touchpadY * (-1024/2)) + (1024/2))
-                    self.host.touchpad_z = pose_payload.controllers[0].touchpadPressure
-                    #self.host.update()
-
-                #print (self.host.touchpad_pos, self.host.touchpad_z)
-            except Exception as e:
-                print ("Exception in PosePkt:", e)
-                hex_dump(self.host.pose_state.seg0)
-            self.host.pose_state.state = STATE_SEGMENT_META
-    */
 }
 
 }

@@ -182,6 +182,7 @@ typedef struct ql_xrsp_host
     int64_t paired_ns;
     int64_t last_read_ns;
     int64_t add_test;
+    int64_t last_echo_sent_ns;
 
     struct os_mutex usb_mutex;
     struct os_mutex pose_mutex;
@@ -221,6 +222,7 @@ typedef struct ql_xrsp_host
     bool eyetrack_connected;
     bool shell_connected;
     bool sent_mesh;
+    bool is_inactive;
 
     void (*start_encode)(struct ql_xrsp_host* host,  int64_t target_ns, int index, int slice_idx);
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
