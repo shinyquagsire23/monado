@@ -1062,6 +1062,43 @@ ensure_scratch_image(struct comp_renderer *r,
 	*out_r_viewport_data = r_viewport_data;
 }
 
+// HACK: allow dynamic IPD
+static void
+calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalized_rect *out_rect)
+{
+	const struct xrt_fov fov = xdev->hmd->distortion.fov[view];
+
+	printf("%f %f %f %f\n", fov.angle_left, fov.angle_right, fov.angle_down, fov.angle_up);
+	const double tan_left = tan(fov.angle_left);
+	const double tan_right = tan(fov.angle_right);
+
+	const double tan_down = tan(fov.angle_down);
+	const double tan_up = tan(fov.angle_up);
+
+	const double tan_width = tan_right - tan_left;
+	const double tan_height = tan_up - tan_down;
+
+	/*
+	 * I do not know why we have to calculate the offsets like this, but
+	 * this one is the one that seems to work with what is currently in the
+	 * calc timewarp matrix function and the distortion shader. It works
+	 * with Index (unbalanced left and right angles) and WMR (unbalanced up
+	 * and down angles) so here it is. In so far it matches what the gfx
+	 * and non-timewarp compute pipeline produces.
+	 */
+	const double tan_offset_x = ((tan_right + tan_left) - tan_width) / 2;
+	const double tan_offset_y = (-(tan_up + tan_down) - tan_height) / 2;
+
+	struct xrt_normalized_rect transform = {
+	    .x = (float)tan_offset_x,
+	    .y = (float)tan_offset_y,
+	    .w = (float)tan_width,
+	    .h = (float)tan_height,
+	};
+
+	*out_rect = transform;
+}
+
 static void
 do_layers(struct comp_renderer *r,
           struct render_compute *crc,
@@ -1199,6 +1236,10 @@ do_layers(struct comp_renderer *r,
 
 			// unused if timewarp is off
 			if (!r->c->debug.atw_off) {
+				// HACK: allow dynamic IPD
+				calc_uv_to_tanangle(r->c->xdev, 0, &r->c->nr.distortion.uv_to_tanangle[0]);
+				calc_uv_to_tanangle(r->c->xdev, 1, &r->c->nr.distortion.uv_to_tanangle[1]);
+
 				render_calc_time_warp_matrix(                         //
 				    &lvd->pose,                                       //
 				    &lvd->fov,                                        //
@@ -1438,6 +1479,10 @@ do_projection_layers(struct comp_renderer *r,
 		    target_image_view,     //
 		    views);                //
 	} else {
+		// HACK: allow dynamic IPD
+		calc_uv_to_tanangle(r->c->xdev, 0, &r->c->nr.distortion.uv_to_tanangle[0]);
+		calc_uv_to_tanangle(r->c->xdev, 1, &r->c->nr.distortion.uv_to_tanangle[1]);
+		
 		render_compute_projection_timewarp( //
 		    crc,                            //
 		    src_samplers,                   //

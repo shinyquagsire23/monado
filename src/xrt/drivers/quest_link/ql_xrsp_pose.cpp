@@ -175,8 +175,16 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     }
 
     // Pull FOV information
-    hmd->base.hmd->distortion.fov[0].angle_left = -angle_calc * M_PI / 180;
-    hmd->base.hmd->distortion.fov[1].angle_right = angle_calc * M_PI / 180;
+    float next_angle_left = -angle_calc * M_PI / 180;
+    float next_angle_right = angle_calc * M_PI / 180;
+
+    if (hmd->base.hmd->distortion.fov[0].angle_left != next_angle_left || hmd->base.hmd->distortion.fov[1].angle_right != next_angle_right)
+    {
+        hmd->base.hmd->distortion.fov[0].angle_left = next_angle_left;
+        hmd->base.hmd->distortion.fov[1].angle_right = next_angle_right;
+
+        //ql_hmd_set_per_eye_resolution(hmd, hmd->base.hmd->screens[0].w_pixels, hmd->base.hmd->screens[0].h_pixels, hmd->fps);
+    }
 
     {
         struct ql_hands* ctrl = host->sys->hands;
