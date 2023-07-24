@@ -870,7 +870,15 @@ static bool
 compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct survive_device *d = (struct survive_device *)xdev;
-	return u_compute_distortion_vive(&d->hmd.config.distortion.values[view], u, v, result);
+	bool status = u_compute_distortion_vive(&d->hmd.config.distortion.values[view], u, v, result);
+
+	if (d->hmd.config.variant == VIVE_VARIANT_PRO2) {
+		// Flip Y coordinates
+		result->r.y = 1.0f - result->r.y;
+		result->g.y = 1.0f - result->g.y;
+		result->b.y = 1.0f - result->b.y;
+	}
+	return status;
 }
 
 static bool
@@ -912,6 +920,7 @@ _create_hmd_device(struct survive_system *sys, const struct SurviveSimpleObject 
 	case VIVE_VARIANT_VIVE: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive (libsurvive)"); break;
 	case VIVE_VARIANT_PRO: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro (libsurvive)"); break;
 	case VIVE_VARIANT_INDEX: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Valve Index (libsurvive)"); break;
+	case VIVE_VARIANT_PRO2: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "HTC Vive Pro 2 (libsurvive)"); break;
 	case VIVE_UNKNOWN: snprintf(survive->base.str, XRT_DEVICE_NAME_LEN, "Unknown HMD (libsurvive)"); break;
 	}
 	snprintf(survive->base.serial, XRT_DEVICE_NAME_LEN, "%s", survive->hmd.config.firmware.device_serial_number);
