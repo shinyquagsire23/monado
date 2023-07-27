@@ -1068,7 +1068,6 @@ calc_uv_to_tanangle(struct xrt_device *xdev, uint32_t view, struct xrt_normalize
 {
 	const struct xrt_fov fov = xdev->hmd->distortion.fov[view];
 
-	printf("%f %f %f %f\n", fov.angle_left, fov.angle_right, fov.angle_down, fov.angle_up);
 	const double tan_left = tan(fov.angle_left);
 	const double tan_right = tan(fov.angle_right);
 
