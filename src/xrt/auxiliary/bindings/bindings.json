@@ -25,7 +25,7 @@
 		"/virtual_profiles/ext/hand_interaction_poses": {
 			"title": "Ext Hand Interaction Poses",
 			"type": "tracked_controller",
-			"monado_device": "XRT_DEVICE_HAND_INTERACTION",
+			"monado_device": "XRT_DEVICE_EXT_HAND_INTERACTION",
 			"extension": "XR_EXT_hand_interaction",
 			"subaction_paths": [
 				"/user/hand/left",
@@ -117,7 +117,7 @@
 		"/interaction_profiles/ext/hand_interaction_ext": {
 			"title": "Ext Hand Interaction",
 			"type": "tracked_controller",
-			"monado_device": "XRT_DEVICE_HAND_INTERACTION",
+			"monado_device": "XRT_DEVICE_EXT_HAND_INTERACTION",
 			"extension": "XR_EXT_hand_interaction",
 			"extended_by": ["ext/palm_pose", "ext/hand_interaction_poses"],
 			"subaction_paths": [

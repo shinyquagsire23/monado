@@ -1,9 +1,10 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2020,2023 Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Holds binding related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -338,6 +339,7 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
 	case XRT_DEVICE_EYE_GAZE_INTERACTION: FIND_PROFILE(ext_eye_gaze_interaction); return;
 	case XRT_DEVICE_OPPO_MR_CONTROLLER: FIND_PROFILE(oppo_mr_controller); return;
+	case XRT_DEVICE_EXT_HAND_INTERACTION: FIND_PROFILE(ext_hand_interaction); return;
 
 	// no interaction
 	default:

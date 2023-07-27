@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020,2023 Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,6 +7,7 @@
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Daniel Willmott <web@dan-w.com>
  * @author Moses Turner <moses@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup st_ovrd
  */
 
@@ -637,6 +638,7 @@ public:
 		case XRT_DEVICE_HAND_TRACKER: break;      // shouldn't happen
 		case XRT_DEVICE_GENERIC_HMD:
 		case XRT_DEVICE_VIVE_PRO: break; // no
+		case XRT_DEVICE_EXT_HAND_INTERACTION: break;
 
 		default: break;
 		}
