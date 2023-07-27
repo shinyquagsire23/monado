@@ -134,7 +134,7 @@ void main()
 		1);
 
 	// Do colour correction here since there are no automatic conversion in hardware available.
-	colour = vec4(from_linear_to_srgb(colour.rgb), 1);
+	colour = vec4(colour.rgb, 1); // HACK modified
 
 	imageStore(target, ivec2(offset.x + ix, offset.y + iy), colour);
 }

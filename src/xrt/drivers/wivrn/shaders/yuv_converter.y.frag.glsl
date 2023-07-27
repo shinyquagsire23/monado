@@ -35,8 +35,7 @@ float gamma(float x)
 
 vec4 gamma4(vec4 x)
 {
-    //TODO: Why is this needed w/o XRT_COMPOSITOR_COMPUTE enabled?
-	return x;//vec4(gamma(x.r), gamma(x.g), gamma(x.b), gamma(x.a));
+	return vec4(gamma(x.r), gamma(x.g), gamma(x.b), gamma(x.a));
 }
 
 void main() {
