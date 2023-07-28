@@ -220,7 +220,7 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 
 		// This frame is for the next frame, drop the old one no matter what.
 		if (!mc->msc->xcn->base.never_repeat_frames && time_is_within_half_ms(mc->progress.display_time_ns, mc->slot_next_frame_display)) {
-			U_LOG_W("Dropping old missed frame in favour for completed new frame");
+			//U_LOG_W("Dropping old missed frame in favour for completed new frame");//HACK
 			break;
 		}
 
@@ -230,6 +230,8 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 			break;
 		}
 
+		//HACK
+#if 0
 		U_LOG_D(
 		    "Two frames have completed GPU work and are waiting to be displayed."
 		    "\n\tnext frame: %fms (%" PRIu64
@@ -243,7 +245,7 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 		    v_mc->progress.display_time_ns,                                     //
 		    time_ns_to_ms_f((int64_t)v_mc->scheduled.display_time_ns - now_ns), //
 		    v_mc->scheduled.display_time_ns);                                   //
-
+#endif
 		os_mutex_unlock(&mc->slot_lock);
 
 		os_precise_sleeper_nanosleep(&mc->scheduled_sleeper, U_TIME_1MS_IN_NS);

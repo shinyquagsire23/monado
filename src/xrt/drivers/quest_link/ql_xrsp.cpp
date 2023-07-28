@@ -1031,7 +1031,7 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             hmd->fps = 72;
         }
 
-        float scale = 1.0;
+        float scale = 0.75;
         if (host->usb_slow_cable) {
             scale = 0.5;
             if (hmd->device_type == DEVICE_TYPE_QUEST_2) {
