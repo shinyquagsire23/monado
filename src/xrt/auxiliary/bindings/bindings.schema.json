@@ -1,0 +1,224 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "definitions": {
+        "profileType": {
+            "title": "Type of device",
+            "type": "string",
+            "enum": [
+                "tracked_controller",
+                "untracked_controller",
+                "tracked_hmd",
+                "eye_tracker"
+            ]
+        },
+        "subpathType": {
+            "title": "Type of an input/output sub-path",
+            "type": "string",
+            "enum": [
+                "button",
+                "joystick",
+                "pose",
+                "trackpad",
+                "trigger",
+                "vibration"
+            ]
+        },
+        "componentNames": {
+            "title": "Name of an input/output component",
+            "type": "string",
+            "enum": [
+                "click",
+                "touch",
+                "position",
+                "value",
+                "haptic",
+                "force",
+                "pose",
+                "ready_ext"
+            ]
+        },
+        "subActionPathName": {
+            "title": "Sub-action path",
+            "type": "string",
+            "enum": [
+                "/user/hand/left",
+                "/user/hand/right",
+                "/user/head",
+                "/user/gamepad",
+                "/user/eyes_ext"
+            ]
+        },
+        "steamVrControllerType": {
+            "title": "Controller type constant for SteamVR",
+            "type": "string",
+            "enum": [
+                "gamepad",
+                "holographic_controller",
+                "khr_simple_controller",
+                "knuckles",
+                "oculus_touch",
+                "vive_controller",
+                "vive_pro"
+            ]
+        },
+        "monadoDeviceName": {
+            "type": "string",
+            "pattern": "^XRT_DEVICE_([A-Z0-9_]+)$"
+        },
+        "monadoBindingDefine": {
+            "type": "string",
+            "pattern": "^XRT_(INPUT|OUTPUT)_([A-Z0-9_]+)$"
+        },
+        "monadoBindings": {
+            "title": "Components and their Monado define",
+            "description": "The keys/property names here must match the list of components on this path",
+            "type": "object",
+            "$comment": "Keep properties in sync with #/definitions/componentNames - not using that in propertyNames for the sake of json-editor",
+            "properties": {
+                "click": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "touch": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "position": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "value": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "haptic": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "force": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "pose": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                },
+                "ready_ext": {
+                    "$ref": "#/definitions/monadoBindingDefine"
+                }
+            }
+        },
+        "dpadEmulation": {
+            "title": "Controlling input mapping to d-pad",
+            "type": "object",
+            "required": [
+                "position",
+                "center"
+            ],
+            "properties": {
+                "position": {
+                    "title": "The input component to associate with dpad position",
+                    "$ref": "#/definitions/componentNames"
+                },
+                "center": {
+                    "title": "Provide center zone in dpad?",
+                    "description": "True for touchpads, false for joysticks",
+                    "type": "boolean"
+                },
+                "activate": {
+                    "allOf": [
+                        {
+                            "title": "The input component to associate with dpad activation"
+                        },
+                        {
+                            "$ref": "#/definitions/componentNames"
+                        }
+                    ]
+                }
+            }
+        },
+        "subpathData": {
+            "description": "Data for a single sub-path of an interaction profile",
+            "type": "object",
+            "properties": {
+                "type": {
+                    "$ref": "#/definitions/subpathType"
+                },
+                "localized_name": {
+                    "type": "string",
+                    "title": "Human-readable string for this input/output"
+                },
+                "components": {
+                    "type": "array",
+                    "title": "Components on this path",
+                    "items": {
+                        "$ref": "#/definitions/componentNames"
+                    },
+                    "minItems": 1
+                },
+                "monado_bindings": {
+                    "$ref": "#/definitions/monadoBindings"
+                },
+                "dpad_emulation": {
+                    "$ref": "#/definitions/dpadEmulation"
+                },
+                "steamvr_path": {
+                    "title": "Path in SteamVR for this data",
+                    "type": "string"
+                }
+            }
+        },
+        "profileData": {
+            "title": "Interaction Profile Data",
+            "type": "object",
+            "required": [
+                "title",
+                "type",
+                "monado_device",
+                "subaction_paths",
+                "subpaths"
+            ],
+            "properties": {
+                "title": {
+                    "title": "Name of the device",
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/profileType"
+                },
+                "monado_device": {
+                    "title": "Monado define corresponding to this profile",
+                    "$ref": "#/definitions/monadoDeviceName"
+                },
+                "extension": {
+                    "title": "OpenXR extension required to expose this profile",
+                    "type": "string"
+                },
+                "steamvr_controllertype": {
+                    "$ref": "#/definitions/steamVrControllerType"
+                },
+                "subaction_paths": {
+                    "title": "Subaction paths accepted for this profile",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/subActionPathName"
+                    }
+                },
+                "subpaths": {
+                    "type": "object",
+                    "title": "Paths provided by this profile",
+                    "propertyNames": {
+                        "pattern": "^(/input/(select|menu|grip|aim|pinch|poke|trackpad|system|squeeze|trigger|volume_up|volume_down|mute_mic|thumbrest|home|start|gaze_ext|ready_ext|([a-z]+)_mndx|[1-4]|thumbstick(_left|_right)?|view|a|b|x|y|dpad_(up|down|left|right)|shoulder(_left|_right)?))|(/output/haptic(_left|_right|_left_trigger|_right_trigger)?)$"
+                    },
+                    "additionalProperties": {
+                        "$ref": "#/definitions/subpathData"
+                    }
+                }
+            }
+        }
+    },
+    "type": "object",
+    "properties": {
+        "profiles": {
+            "type": "object",
+            "patternProperties": {
+                "^/interaction_profiles/([a-z0-9_]+)/([a-z0-9_]+)$": {
+                    "$ref": "#/definitions/profileData"
+                }
+            }
+        }
+    }
+}

@@ -99,7 +99,7 @@ arduino_prober_autoprobe(struct xrt_auto_prober *xap,
  */
 
 struct xrt_auto_prober *
-arduino_create_auto_prober()
+arduino_create_auto_prober(void)
 {
 	struct arduino_prober *ap = U_TYPED_CALLOC(struct arduino_prober);
 	ap->base.name = "Arduino";

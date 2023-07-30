@@ -12,6 +12,8 @@
 
 #include "os/os_threading.h"
 
+#include "math/m_api.h"
+
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_sink.h"
@@ -302,6 +304,51 @@ gui_window_record_init(struct gui_record_window *rw)
 	u_sink_simple_queue_create(&rw->texture.xfctx, tmp, &rw->texture.sink);
 
 	return true;
+}
+
+void
+gui_window_record_to_background(struct gui_record_window *rw, struct gui_program *p)
+{
+	struct gui_ogl_texture *tex = rw->texture.ogl;
+
+	gui_ogl_sink_update(tex);
+
+	ImVec2 uv0 = {0, 0};
+	ImVec2 uv1 = {1, 1};
+
+	// Note: We can't easily do 90 or 270-degree rotations: https://github.com/ocornut/imgui/issues/3267
+	if (rw->texture.rotate_180) {
+		uv0 = (ImVec2){1, 1};
+		uv1 = (ImVec2){0, 0};
+	}
+
+	const ImU32 white = 0xffffffff;
+	ImTextureID id = (ImTextureID)(intptr_t)tex->id;
+
+	ImGuiIO *io = igGetIO();
+
+	// Shamelessly stolen from hg_model.cpp
+	float in_w = tex->w;
+	float in_h = tex->h;
+	float out_w = io->DisplaySize.x;
+	float out_h = io->DisplaySize.y;
+
+	float scale_w = (float)out_w / in_w; // 128 / 1280 = 0.1
+	float scale_h = (float)out_h / in_h; // 128 / 800 =  0.16
+
+	float scale = MIN(scale_w, scale_h); // 0.1
+
+	float inside_w = in_w * scale;
+	float inside_h = in_h * scale;
+
+	float translate_x = (out_w - inside_w) / 2; // Should be 0 for 1280x800
+	float translate_y = (out_h - inside_h) / 2; // Should be (1280 - 800) / 2 = 240
+
+	ImVec2 p_min = {translate_x, translate_y};
+	ImVec2 p_max = {translate_x + inside_w, translate_y + inside_h};
+
+	ImDrawList *bg = igGetBackgroundDrawList();
+	ImDrawList_AddImage(bg, id, p_min, p_max, uv0, uv1, white);
 }
 
 void

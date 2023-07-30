@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -247,6 +247,28 @@
 
 
 /*
+ * XR_EXT_eye_gaze_interaction
+ */
+#if defined(XR_EXT_eye_gaze_interaction)
+#define OXR_HAVE_EXT_eye_gaze_interaction
+#define OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_) _(EXT_eye_gaze_interaction, EXT_EYE_GAZE_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_)
+#endif
+
+
+/*
+ * XR_EXT_hand_interaction
+ */
+#if defined(XR_EXT_hand_interaction)
+#define OXR_HAVE_EXT_hand_interaction
+#define OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_) _(EXT_hand_interaction, EXT_HAND_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_)
+#endif
+
+
+/*
  * XR_EXT_hand_tracking
  */
 #if defined(XR_EXT_hand_tracking)
@@ -258,6 +280,41 @@
 
 
 /*
+ * XR_EXT_hp_mixed_reality_controller
+ */
+#if defined(XR_EXT_hp_mixed_reality_controller)
+#define OXR_HAVE_EXT_hp_mixed_reality_controller
+#define OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_)                                                       \
+	_(EXT_hp_mixed_reality_controller, EXT_HP_MIXED_REALITY_CONTROLLER)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_)
+#endif
+
+
+/*
+ * XR_EXT_palm_pose
+ */
+#if defined(XR_EXT_palm_pose) && defined(ALWAYS_DISABLED)
+#define OXR_HAVE_EXT_palm_pose
+#define OXR_EXTENSION_SUPPORT_EXT_palm_pose(_) _(EXT_palm_pose, EXT_PALM_POSE)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_palm_pose(_)
+#endif
+
+
+/*
+ * XR_EXT_samsung_odyssey_controller
+ */
+#if defined(XR_EXT_samsung_odyssey_controller)
+#define OXR_HAVE_EXT_samsung_odyssey_controller
+#define OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_)                                                        \
+	_(EXT_samsung_odyssey_controller, EXT_SAMSUNG_ODYSSEY_CONTROLLER)
+#else
+#define OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_)
+#endif
+
+
+/*
  * XR_FB_display_refresh_rate
  */
 #if defined(XR_FB_display_refresh_rate)
@@ -265,6 +322,18 @@
 #define OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_) _(FB_display_refresh_rate, FB_DISPLAY_REFRESH_RATE)
 #else
 #define OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_)
+#endif
+
+
+/*
+ * XR_ML_ml2_controller_interaction
+ */
+#if defined(XR_ML_ml2_controller_interaction)
+#define OXR_HAVE_ML_ml2_controller_interaction
+#define OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_)                                                         \
+	_(ML_ml2_controller_interaction, ML_ML2_CONTROLLER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_)
 #endif
 
 
@@ -292,6 +361,28 @@
 
 
 /*
+ * XR_MSFT_hand_interaction
+ */
+#if defined(XR_MSFT_hand_interaction) && defined(ALWAYS_DISABLED)
+#define OXR_HAVE_MSFT_hand_interaction
+#define OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_) _(MSFT_hand_interaction, MSFT_HAND_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_)
+#endif
+
+
+/*
+ * XR_OPPO_controller_interaction
+ */
+#if defined(XR_OPPO_controller_interaction)
+#define OXR_HAVE_OPPO_controller_interaction
+#define OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_) _(OPPO_controller_interaction, OPPO_CONTROLLER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_)
+#endif
+
+
+/*
  * XR_EXTX_overlay
  */
 #if defined(XR_EXTX_overlay)
@@ -299,6 +390,18 @@
 #define OXR_EXTENSION_SUPPORT_EXTX_overlay(_) _(EXTX_overlay, EXTX_OVERLAY)
 #else
 #define OXR_EXTENSION_SUPPORT_EXTX_overlay(_)
+#endif
+
+
+/*
+ * XR_HTCX_vive_tracker_interaction
+ */
+#if defined(XR_HTCX_vive_tracker_interaction) && defined(ALWAYS_DISABLED)
+#define OXR_HAVE_HTCX_vive_tracker_interaction
+#define OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_)                                                         \
+	_(HTCX_vive_tracker_interaction, HTCX_VIVE_TRACKER_INTERACTION)
+#else
+#define OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_)
 #endif
 
 
@@ -333,6 +436,28 @@
 #define OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) _(MNDX_force_feedback_curl, MNDX_FORCE_FEEDBACK_CURL)
 #else
 #define OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
+#endif
+
+
+/*
+ * XR_MNDX_hydra
+ */
+#if defined(XR_MNDX_hydra)
+#define OXR_HAVE_MNDX_hydra
+#define OXR_EXTENSION_SUPPORT_MNDX_hydra(_) _(MNDX_hydra, MNDX_HYDRA)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_hydra(_)
+#endif
+
+
+/*
+ * XR_MNDX_system_buttons
+ */
+#if defined(XR_MNDX_system_buttons)
+#define OXR_HAVE_MNDX_system_buttons
+#define OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_) _(MNDX_system_buttons, MNDX_SYSTEM_BUTTONS)
+#else
+#define OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_)
 #endif
 
 // end of GENERATED per-extension defines - do not modify - used by scripts
@@ -379,12 +504,23 @@
     OXR_EXTENSION_SUPPORT_KHR_win32_convert_performance_counter_time(_) \
     OXR_EXTENSION_SUPPORT_EXT_debug_utils(_) \
     OXR_EXTENSION_SUPPORT_EXT_dpad_binding(_) \
+    OXR_EXTENSION_SUPPORT_EXT_eye_gaze_interaction(_) \
+    OXR_EXTENSION_SUPPORT_EXT_hand_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXT_hand_tracking(_) \
+    OXR_EXTENSION_SUPPORT_EXT_hp_mixed_reality_controller(_) \
+    OXR_EXTENSION_SUPPORT_EXT_palm_pose(_) \
+    OXR_EXTENSION_SUPPORT_EXT_samsung_odyssey_controller(_) \
     OXR_EXTENSION_SUPPORT_FB_display_refresh_rate(_) \
+    OXR_EXTENSION_SUPPORT_ML_ml2_controller_interaction(_) \
     OXR_EXTENSION_SUPPORT_MND_headless(_) \
     OXR_EXTENSION_SUPPORT_MND_swapchain_usage_input_attachment_bit(_) \
+    OXR_EXTENSION_SUPPORT_MSFT_hand_interaction(_) \
+    OXR_EXTENSION_SUPPORT_OPPO_controller_interaction(_) \
     OXR_EXTENSION_SUPPORT_EXTX_overlay(_) \
+    OXR_EXTENSION_SUPPORT_HTCX_vive_tracker_interaction(_) \
     OXR_EXTENSION_SUPPORT_MNDX_ball_on_a_stick_controller(_) \
     OXR_EXTENSION_SUPPORT_MNDX_egl_enable(_) \
-    OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_)
+    OXR_EXTENSION_SUPPORT_MNDX_force_feedback_curl(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_hydra(_) \
+    OXR_EXTENSION_SUPPORT_MNDX_system_buttons(_)
 // clang-format on

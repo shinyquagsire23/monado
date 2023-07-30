@@ -1,9 +1,10 @@
-// Copyright 2018-2020, Collabora, Ltd.
+// Copyright 2018-2020,2023 Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Holds binding related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -246,6 +247,10 @@ get_subaction_path_from_path(struct oxr_logger *log,
 		*out_subaction_path = OXR_SUB_ACTION_PATH_GAMEPAD;
 		return true;
 	}
+	if (length >= 14 && strncmp("/user/eyes_ext", str, 14) == 0) {
+		*out_subaction_path = OXR_SUB_ACTION_PATH_EYES;
+		return true;
+	}
 
 	return false;
 }
@@ -328,7 +333,13 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_GO_CONTROLLER: FIND_PROFILE(oculus_go_controller); return;
 	case XRT_DEVICE_VIVE_PRO: FIND_PROFILE(htc_vive_pro); return;
 	case XRT_DEVICE_XBOX_CONTROLLER: FIND_PROFILE(microsoft_xbox_controller); return;
+	case XRT_DEVICE_HP_REVERB_G2_CONTROLLER: FIND_PROFILE(hp_mixed_reality_controller); return;
+	case XRT_DEVICE_SAMSUNG_ODYSSEY_CONTROLLER: FIND_PROFILE(samsung_odyssey_controller); return;
+	case XRT_DEVICE_ML2_CONTROLLER: FIND_PROFILE(ml_ml2_controller); return;
 	case XRT_DEVICE_HAND_INTERACTION: FIND_PROFILE(msft_hand_interaction); return;
+	case XRT_DEVICE_EYE_GAZE_INTERACTION: FIND_PROFILE(ext_eye_gaze_interaction); return;
+	case XRT_DEVICE_OPPO_MR_CONTROLLER: FIND_PROFILE(oppo_mr_controller); return;
+	case XRT_DEVICE_EXT_HAND_INTERACTION: FIND_PROFILE(ext_hand_interaction); return;
 
 	// no interaction
 	default:
@@ -338,7 +349,9 @@ get_profile_for_device_name(struct oxr_logger *log,
 	case XRT_DEVICE_REALSENSE:
 	case XRT_DEVICE_HAND_TRACKER:
 	case XRT_DEVICE_VIVE_TRACKER_GEN1:
-	case XRT_DEVICE_VIVE_TRACKER_GEN2: return;
+	case XRT_DEVICE_VIVE_TRACKER_GEN2:
+	case XRT_DEVICE_VIVE_TRACKER_GEN3:
+	case XRT_DEVICE_VIVE_TRACKER_TUNDRA: return;
 	}
 
 #undef FIND_PROFILE

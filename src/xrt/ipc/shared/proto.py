@@ -6,7 +6,8 @@
 import argparse
 
 from ipcproto.common import (Proto, write_decl, write_invocation,
-                             write_result_handler)
+                             write_result_handler, write_cpp_header_guard_start,
+                             write_cpp_header_guard_end)
 
 header = '''// Copyright 2020, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
@@ -221,13 +222,16 @@ def generate_client_h(file, p):
 #include "ipc_protocol_generated.h"
 #include "client/ipc_client.h"
 
-
-
 ''')
+    write_cpp_header_guard_start(f)
+    f.write("\n")
 
     for call in p.calls:
         call.write_call_decl(f)
         f.write(";\n")
+
+    write_cpp_header_guard_end(f)
+
     f.close()
 
 
@@ -383,6 +387,10 @@ def generate_server_header(file, p):
 
 
 ''')
+
+    write_cpp_header_guard_start(f)
+    f.write("\n")
+
     # This decl is constant, but we must write it here
     # because it depends on a generated enum.
     write_decl(
@@ -399,6 +407,8 @@ def generate_server_header(file, p):
     for call in p.calls:
         call.write_handler_decl(f)
         f.write(";\n")
+
+    write_cpp_header_guard_end(f)
     f.close()
 
 

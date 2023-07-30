@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 // Inline implementations: do not include on its own!
@@ -9,6 +9,8 @@
 #include "android.database.h"
 #include "android.net.h"
 #include "android.os.h"
+#include "android.view.h"
+#include "java.io.h"
 #include "java.lang.h"
 #include <string>
 
@@ -52,6 +54,12 @@ inline java::lang::ClassLoader Context::getClassLoader() {
         object().call<jni::Object>(Meta::data().getClassLoader));
 }
 
+inline java::io::File Context::getExternalFilesDir(std::string const &type) {
+    assert(!isNull());
+    return java::io::File(
+        object().call<jni::Object>(Meta::data().getExternalFilesDir, type));
+}
+
 inline void Context::startActivity(Intent const &intent) {
     assert(!isNull());
     return object().call<void>(Meta::data().startActivity, intent.object());
@@ -64,11 +72,22 @@ inline void Context::startActivity(Intent const &intent,
                                bundle.object());
 }
 
+inline jni::Object Context::getSystemService(std::string const &name) {
+    assert(!isNull());
+    return object().call<jni::Object>(Meta::data().getSystemService, name);
+}
+
 inline Context Context::createPackageContext(std::string const &packageName,
                                              int32_t flags) {
     assert(!isNull());
     return Context(object().call<jni::Object>(Meta::data().createPackageContext,
                                               packageName, flags));
+}
+
+inline Context Context::createDisplayContext(view::Display const &display) {
+    assert(!isNull());
+    return Context(object().call<jni::Object>(Meta::data().createDisplayContext,
+                                              display.object()));
 }
 
 inline net::Uri_Builder ContentUris::appendId(net::Uri_Builder &uri_Builder,

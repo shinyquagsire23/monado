@@ -1,1 +1,1 @@
-vulkan: Add code to handle optional device features.
+vk: Add code to handle optional device features.

@@ -11,6 +11,7 @@
 #include "util/u_trace_marker.h"
 #include "util/u_logging.h"
 
+#include <inttypes.h>
 
 /*!
  * An @ref xrt_imu_sink splitter.
@@ -34,11 +35,13 @@ split_sample(struct xrt_imu_sink *xfs, struct xrt_imu_sample *sample)
 	struct u_imu_sink_force_monotonic *s = (struct u_imu_sink_force_monotonic *)xfs;
 
 	if (sample->timestamp_ns == s->last_ts) {
-		U_LOG_W("Got an IMU sample with a duplicate timestamp! Old: %lu; New: %lu", s->last_ts,
+		U_LOG_W("Got an IMU sample with a duplicate timestamp! Old: %" PRId64 "; New: %" PRId64 "", s->last_ts,
 		        sample->timestamp_ns);
 		return;
-	} else if (sample->timestamp_ns < s->last_ts) {
-		U_LOG_W("Got an IMU sample with a non-monotonically-increasing timestamp! Old: %lu; New: %lu",
+	}
+	if (sample->timestamp_ns < s->last_ts) {
+		U_LOG_W("Got an IMU sample with a non-monotonically-increasing timestamp! Old: %" PRId64
+		        "; New: %" PRId64 "",
 		        s->last_ts, sample->timestamp_ns);
 		return;
 	}

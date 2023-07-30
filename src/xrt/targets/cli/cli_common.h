@@ -18,6 +18,9 @@ int
 cli_cmd_calibrate(int argc, const char **argv);
 
 int
+cli_cmd_calibration_dump(int argc, const char **argv);
+
+int
 cli_cmd_lighthouse(int argc, const char **argv);
 
 int

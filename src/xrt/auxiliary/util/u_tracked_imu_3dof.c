@@ -7,7 +7,8 @@
  * @ingroup aux_util
  */
 
-#include "u_tracked_imu_3dof.h"
+#include "util/u_misc.h"
+#include "util/u_tracked_imu_3dof.h"
 
 
 static void

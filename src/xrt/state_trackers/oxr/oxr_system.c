@@ -25,6 +25,15 @@
 
 DEBUG_GET_ONCE_NUM_OPTION(scale_percentage, "OXR_VIEWPORT_SCALE_PERCENTAGE", 100)
 
+static enum xrt_form_factor
+convert_form_factor(XrFormFactor form_factor)
+{
+	switch (form_factor) {
+	case XR_FORM_FACTOR_HANDHELD_DISPLAY: return XRT_FORM_FACTOR_HANDHELD;
+	case XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY: return XRT_FORM_FACTOR_HMD;
+	default: return XRT_FORM_FACTOR_HMD;
+	}
+}
 
 static bool
 oxr_system_matches(struct oxr_logger *log, struct oxr_system *sys, XrFormFactor form_factor)
@@ -57,6 +66,13 @@ oxr_system_select(struct oxr_logger *log,
 		                 "(getInfo->formFactor) no matching system "
 		                 "(given: %i, first: %i)",
 		                 form_factor, systems[0]->form_factor);
+	}
+
+	struct xrt_device *xdev = GET_XDEV_BY_ROLE(selected, head);
+	if (xdev->form_factor_check_supported &&
+	    !xrt_device_is_form_factor_available(xdev, convert_form_factor(form_factor))) {
+		return oxr_error(log, XR_ERROR_FORM_FACTOR_UNAVAILABLE, "request form factor %i is unavailable now",
+		                 form_factor);
 	}
 
 	*out_selected = selected;
@@ -184,6 +200,15 @@ oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance
 }
 
 bool
+oxr_system_get_eye_gaze_support(struct oxr_logger *log, struct oxr_instance *inst)
+{
+	struct oxr_system *sys = &inst->system;
+	struct xrt_device *eyes = GET_XDEV_BY_ROLE(sys, eyes);
+
+	return eyes && eyes->eye_gaze_supported;
+}
+
+bool
 oxr_system_get_force_feedback_support(struct oxr_logger *log, struct oxr_instance *inst)
 {
 	struct oxr_system *sys = &inst->system;
@@ -230,6 +255,17 @@ oxr_system_get_properties(struct oxr_logger *log, struct oxr_system *sys, XrSyst
 
 	if (hand_tracking_props) {
 		hand_tracking_props->supportsHandTracking = oxr_system_get_hand_tracking_support(log, sys->inst);
+	}
+
+	XrSystemEyeGazeInteractionPropertiesEXT *eye_gaze_props = NULL;
+	if (sys->inst->extensions.EXT_eye_gaze_interaction) {
+		eye_gaze_props =
+		    OXR_GET_OUTPUT_FROM_CHAIN(properties, XR_TYPE_SYSTEM_EYE_GAZE_INTERACTION_PROPERTIES_EXT,
+		                              XrSystemEyeGazeInteractionPropertiesEXT);
+	}
+
+	if (eye_gaze_props) {
+		eye_gaze_props->supportsEyeGazeInteraction = oxr_system_get_eye_gaze_support(log, sys->inst);
 	}
 
 	XrSystemForceFeedbackCurlPropertiesMNDX *force_feedback_props = NULL;

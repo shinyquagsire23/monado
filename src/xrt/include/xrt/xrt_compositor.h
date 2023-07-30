@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,6 +7,7 @@
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Christoph Haag <christoph.haag@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -61,40 +62,12 @@ typedef uint64_t VkDeviceMemory;
  * @{
  */
 
-/*!
- * Special flags for creating swapchain images.
- */
-enum xrt_swapchain_create_flags
-{
-	//! Our compositor just ignores this bit.
-	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1 << 0),
-	//! Signals that the allocator should only allocate one image.
-	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1 << 1),
-};
 
-/*!
- * Usage of the swapchain images.
+/*
+ *
+ * Layers.
+ *
  */
-enum xrt_swapchain_usage_bits
-{
-	XRT_SWAPCHAIN_USAGE_COLOR = 0x00000001,
-	XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL = 0x00000002,
-	XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS = 0x00000004,
-	XRT_SWAPCHAIN_USAGE_TRANSFER_SRC = 0x00000008,
-	XRT_SWAPCHAIN_USAGE_TRANSFER_DST = 0x00000010,
-	XRT_SWAPCHAIN_USAGE_SAMPLED = 0x00000020,
-	XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT = 0x00000040,
-	XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT = 0x00000080,
-};
-
-/*!
- * View type to be rendered to by the compositor.
- */
-enum xrt_view_type
-{
-	XRT_VIEW_TYPE_MONO = 1,
-	XRT_VIEW_TYPE_STEREO = 2,
-};
 
 /*!
  * Layer type.
@@ -115,14 +88,14 @@ enum xrt_layer_type
  */
 enum xrt_layer_composition_flags
 {
-	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1 << 0,
-	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1 << 1,
-	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1 << 2,
+	XRT_LAYER_COMPOSITION_CORRECT_CHROMATIC_ABERRATION_BIT = 1u << 0u,
+	XRT_LAYER_COMPOSITION_BLEND_TEXTURE_SOURCE_ALPHA_BIT = 1u << 1u,
+	XRT_LAYER_COMPOSITION_UNPREMULTIPLIED_ALPHA_BIT = 1u << 2u,
 	/*!
 	 * The layer is locked to the device and the pose should only be
 	 * adjusted for the IPD.
 	 */
-	XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT = 1 << 3,
+	XRT_LAYER_COMPOSITION_VIEW_SPACE_BIT = 1u << 3u,
 };
 
 /*!
@@ -363,6 +336,59 @@ struct xrt_layer_data
 };
 
 /*!
+ * Per frame data for the layer submission calls, used in
+ * @ref xrt_compositor::layer_begin.
+ */
+struct xrt_layer_frame_data
+{
+	int64_t frame_id;
+	uint64_t display_time_ns;
+	enum xrt_blend_mode env_blend_mode;
+};
+
+
+/*
+ *
+ * Swapchain.
+ *
+ */
+
+/*!
+ * Special flags for creating swapchain images.
+ */
+enum xrt_swapchain_create_flags
+{
+	//! Our compositor just ignores this bit.
+	XRT_SWAPCHAIN_CREATE_PROTECTED_CONTENT = (1u << 0u),
+	//! Signals that the allocator should only allocate one image.
+	XRT_SWAPCHAIN_CREATE_STATIC_IMAGE = (1u << 1u),
+};
+
+/*!
+ * Usage of the swapchain images.
+ */
+enum xrt_swapchain_usage_bits
+{
+	XRT_SWAPCHAIN_USAGE_COLOR = 0x00000001,
+	XRT_SWAPCHAIN_USAGE_DEPTH_STENCIL = 0x00000002,
+	XRT_SWAPCHAIN_USAGE_UNORDERED_ACCESS = 0x00000004,
+	XRT_SWAPCHAIN_USAGE_TRANSFER_SRC = 0x00000008,
+	XRT_SWAPCHAIN_USAGE_TRANSFER_DST = 0x00000010,
+	XRT_SWAPCHAIN_USAGE_SAMPLED = 0x00000020,
+	XRT_SWAPCHAIN_USAGE_MUTABLE_FORMAT = 0x00000040,
+	XRT_SWAPCHAIN_USAGE_INPUT_ATTACHMENT = 0x00000080,
+};
+
+/*!
+ * The direction of a transition.
+ */
+enum xrt_barrier_direction
+{
+	XRT_BARRIER_TO_APP = 1,
+	XRT_BARRIER_TO_COMP = 2,
+};
+
+/*!
  * @interface xrt_swapchain
  *
  * Common swapchain interface/base.
@@ -386,7 +412,7 @@ struct xrt_swapchain
 	uint32_t image_count;
 
 	/*!
-	 * Must have called release_image before calling this function.
+	 * @ref dec_image_use must have been called as often as @ref inc_image_use.
 	 */
 	void (*destroy)(struct xrt_swapchain *xsc);
 
@@ -407,6 +433,18 @@ struct xrt_swapchain
 	xrt_result_t (*acquire_image)(struct xrt_swapchain *xsc, uint32_t *out_index);
 
 	/*!
+	 * @brief Increments the use counter of a swapchain image.
+	 */
+	xrt_result_t (*inc_image_use)(struct xrt_swapchain *xsc, uint32_t index);
+
+	/*!
+	 * @brief Decrements the use counter of a swapchain image.
+	 *
+	 * @ref wait_image will return once the image use counter is 0.
+	 */
+	xrt_result_t (*dec_image_use)(struct xrt_swapchain *xsc, uint32_t index);
+
+	/*!
 	 * Wait until image @p index is available for exclusive use, or until @p timeout_ns expires.
 	 *
 	 * See xrWaitSwapchainImage, which is the basis for this API.
@@ -417,6 +455,15 @@ struct xrt_swapchain
 	 * @param index Image index to wait for.
 	 */
 	xrt_result_t (*wait_image)(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index);
+
+	/*!
+	 * Do any barrier transitions to and from the application.
+	 *
+	 * @param xsc       Self pointer
+	 * @param direction Direction of the barrier transition.
+	 * @param index     Image index to barrier transition.
+	 */
+	xrt_result_t (*barrier_image)(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index);
 
 	/*!
 	 * See xrReleaseSwapchainImage, state tracker needs to track index.
@@ -471,6 +518,32 @@ xrt_swapchain_acquire_image(struct xrt_swapchain *xsc, uint32_t *out_index)
 }
 
 /*!
+ * @copydoc xrt_swapchain::inc_image_use
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_inc_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	return xsc->inc_image_use(xsc, index);
+}
+
+/*!
+ * @copydoc xrt_swapchain::dec_image_use
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_dec_image_use(struct xrt_swapchain *xsc, uint32_t index)
+{
+	return xsc->dec_image_use(xsc, index);
+}
+
+/*!
  * @copydoc xrt_swapchain::wait_image
  *
  * Helper for calling through the function pointer.
@@ -481,6 +554,19 @@ static inline xrt_result_t
 xrt_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, uint32_t index)
 {
 	return xsc->wait_image(xsc, timeout_ns, index);
+}
+
+/*!
+ * @copydoc xrt_swapchain::barrier_image
+ *
+ * Helper for calling through the function pointer.
+ *
+ * @public @memberof xrt_swapchain
+ */
+static inline xrt_result_t
+xrt_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return xsc->barrier_image(xsc, direction, index);
 }
 
 /*!
@@ -642,6 +728,8 @@ enum xrt_compositor_event_type
 	XRT_COMPOSITOR_EVENT_NONE = 0,
 	XRT_COMPOSITOR_EVENT_STATE_CHANGE = 1,
 	XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE = 2,
+	XRT_COMPOSITOR_EVENT_LOSS_PENDING = 3,
+	XRT_COMPOSITOR_EVENT_LOST = 4,
 };
 
 /*!
@@ -664,12 +752,31 @@ struct xrt_compositor_event_overlay
 };
 
 /*!
+ * Loss pending event.
+ */
+struct xrt_compositor_event_loss_pending
+{
+	enum xrt_compositor_event_type type;
+	uint64_t loss_time_ns;
+};
+
+/*!
+ * Lost event.
+ */
+struct xrt_compositor_event_lost
+{
+	enum xrt_compositor_event_type type;
+};
+
+/*!
  * Compositor events union.
  */
 union xrt_compositor_event {
 	enum xrt_compositor_event_type type;
 	struct xrt_compositor_event_state_change state;
 	struct xrt_compositor_event_state_change overlay;
+	struct xrt_compositor_event_loss_pending loss_pending;
+	struct xrt_compositor_event_lost lost;
 };
 
 
@@ -678,6 +785,15 @@ union xrt_compositor_event {
  * Compositor.
  *
  */
+
+/*!
+ * View type to be rendered to by the compositor.
+ */
+enum xrt_view_type
+{
+	XRT_VIEW_TYPE_MONO = 1,
+	XRT_VIEW_TYPE_STEREO = 2,
+};
 
 enum xrt_compositor_frame_point
 {
@@ -709,6 +825,9 @@ struct xrt_swapchain_create_properties
 {
 	//! How many images the compositor want in the swapchain.
 	uint32_t image_count;
+
+	//! New creation bits.
+	enum xrt_swapchain_usage_bits extra_bits;
 };
 
 /*!
@@ -733,6 +852,18 @@ struct xrt_compositor_info
 
 	//! Supported formats, never changes.
 	int64_t formats[XRT_MAX_SWAPCHAIN_FORMATS];
+};
+
+/*!
+ * Begin Session information not known until clients have created an xrt-instance such as which
+ * extensions are enabled, view type, etc.
+ */
+struct xrt_begin_session_info
+{
+	enum xrt_view_type view_type;
+	bool ext_hand_tracking_enabled;
+	bool ext_eye_gaze_interaction_enabled;
+	bool ext_hand_interaction_enabled;
 };
 
 /*!
@@ -818,7 +949,7 @@ struct xrt_compositor
 	/*!
 	 * See xrBeginSession.
 	 */
-	xrt_result_t (*begin_session)(struct xrt_compositor *xc, enum xrt_view_type view_type);
+	xrt_result_t (*begin_session)(struct xrt_compositor *xc, const struct xrt_begin_session_info *info);
 
 	/*!
 	 * See xrEndSession, unlike the OpenXR one the state tracker is
@@ -949,10 +1080,7 @@ struct xrt_compositor
 	 * From the point of view of the swapchain, the image is used as
 	 * soon as it's given in a call.
 	 */
-	xrt_result_t (*layer_begin)(struct xrt_compositor *xc,
-	                            int64_t frame_id,
-	                            uint64_t display_time_ns,
-	                            enum xrt_blend_mode env_blend_mode);
+	xrt_result_t (*layer_begin)(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data);
 
 	/*!
 	 * @brief Adds a stereo projection layer for submissions.
@@ -1084,9 +1212,7 @@ struct xrt_compositor
 	 *
 	 * Only after this call will the compositor actually use the layers.
 	 */
-	xrt_result_t (*layer_commit)(struct xrt_compositor *xc,
-	                             int64_t frame_id,
-	                             xrt_graphics_sync_handle_t sync_handle);
+	xrt_result_t (*layer_commit)(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle);
 
 	/*!
 	 * @brief Commits all of the submitted layers, with a semaphore.
@@ -1099,7 +1225,6 @@ struct xrt_compositor
 	 * @param value       Semaphore value upone completion of GPU work.
 	 */
 	xrt_result_t (*layer_commit_with_semaphore)(struct xrt_compositor *xc,
-	                                            int64_t frame_id,
 	                                            struct xrt_compositor_semaphore *xcsem,
 	                                            uint64_t value);
 
@@ -1228,9 +1353,9 @@ xrt_comp_poll_events(struct xrt_compositor *xc, union xrt_compositor_event *out_
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
+xrt_comp_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
-	return xc->begin_session(xc, view_type);
+	return xc->begin_session(xc, info);
 }
 
 /*!
@@ -1354,12 +1479,9 @@ xrt_comp_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_begin(struct xrt_compositor *xc,
-                     int64_t frame_id,
-                     uint64_t display_time_ns,
-                     enum xrt_blend_mode env_blend_mode)
+xrt_comp_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
-	return xc->layer_begin(xc, frame_id, display_time_ns, env_blend_mode);
+	return xc->layer_begin(xc, data);
 }
 
 /*!
@@ -1487,9 +1609,9 @@ xrt_comp_layer_equirect2(struct xrt_compositor *xc,
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+xrt_comp_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
-	return xc->layer_commit(xc, frame_id, sync_handle);
+	return xc->layer_commit(xc, sync_handle);
 }
 
 /*!
@@ -1500,12 +1622,9 @@ xrt_comp_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_
  * @public @memberof xrt_compositor
  */
 static inline xrt_result_t
-xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc,
-                                     int64_t frame_id,
-                                     struct xrt_compositor_semaphore *xcsem,
-                                     uint64_t value)
+xrt_comp_layer_commit_with_semaphore(struct xrt_compositor *xc, struct xrt_compositor_semaphore *xcsem, uint64_t value)
 {
-	return xc->layer_commit_with_semaphore(xc, frame_id, xcsem, value);
+	return xc->layer_commit_with_semaphore(xc, xcsem, value);
 }
 
 /*! @} */
@@ -1768,6 +1887,11 @@ struct xrt_image_native
 	 * Is the image created with a dedicated allocation or not.
 	 */
 	bool use_dedicated_allocation;
+
+	/*!
+	 * Is the native buffer handle a DXGI handle?
+	 */
+	bool is_dxgi_handle;
 };
 
 /*!
@@ -1960,6 +2084,20 @@ struct xrt_multi_compositor_control
 	xrt_result_t (*set_main_app_visibility)(struct xrt_system_compositor *xsc,
 	                                        struct xrt_compositor *xc,
 	                                        bool visible);
+
+	/*!
+	 * Notify this client/session if the compositor is going to lose the ability of rendering.
+	 *
+	 * @param loss_time_ns System monotonic timestamps, such as returned by os_monotonic_get_ns().
+	 */
+	xrt_result_t (*notify_loss_pending)(struct xrt_system_compositor *xsc,
+	                                    struct xrt_compositor *xc,
+	                                    uint64_t loss_time_ns);
+
+	/*!
+	 * Notify this client/session if the compositor lost the ability of rendering.
+	 */
+	xrt_result_t (*notify_lost)(struct xrt_system_compositor *xsc, struct xrt_compositor *xc);
 };
 
 /*!
@@ -2069,6 +2207,46 @@ xrt_syscomp_set_main_app_visibility(struct xrt_system_compositor *xsc, struct xr
 	}
 
 	return xsc->xmcc->set_main_app_visibility(xsc, xc, visible);
+}
+
+/*!
+ * @copydoc xrt_multi_compositor_control::notify_loss_pending
+ *
+ * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_notify_loss_pending(struct xrt_system_compositor *xsc, struct xrt_compositor *xc, uint64_t loss_time_ns)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->notify_loss_pending(xsc, xc, loss_time_ns);
+}
+
+/*!
+ * @copydoc xrt_multi_compositor_control::notify_lost
+ *
+ * Helper for calling through the function pointer.
+ *
+ * If the system compositor @p xsc does not implement @ref xrt_multi_composition_control,
+ * this returns @ref XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED.
+ *
+ * @public @memberof xrt_system_compositor
+ */
+static inline xrt_result_t
+xrt_syscomp_notify_lost(struct xrt_system_compositor *xsc, struct xrt_compositor *xc)
+{
+	if (xsc->xmcc == NULL) {
+		return XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED;
+	}
+
+	return xsc->xmcc->notify_lost(xsc, xc);
 }
 
 /*!

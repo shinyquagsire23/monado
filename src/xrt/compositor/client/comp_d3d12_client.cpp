@@ -1,10 +1,11 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  D3D12 client side glue to compositor implementation.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Fernando Velazquez Innella <finnella@magicleap.com>
  * @ingroup comp_client
  */
 
@@ -50,7 +51,6 @@ using namespace std::chrono_literals;
 using namespace std::chrono;
 
 DEBUG_GET_ONCE_LOG_OPTION(log, "D3D_COMPOSITOR_LOG", U_LOGGING_INFO)
-DEBUG_GET_ONCE_BOOL_OPTION(allow_depth, "D3D_COMPOSITOR_ALLOW_DEPTH", false);
 
 DEBUG_GET_ONCE_BOOL_OPTION(barriers, "D3D12_COMPOSITOR_BARRIERS", false);
 DEBUG_GET_ONCE_BOOL_OPTION(initial_transition, "D3D12_COMPOSITOR_INITIAL_TRANSITION", true);
@@ -189,8 +189,8 @@ struct client_d3d12_swapchain_data
 
 	xrt::compositor::client::KeyedMutexCollection keyed_mutex_collection;
 
-	//! The shared handles for all our images
-	std::vector<wil::unique_handle> handles;
+	//! The shared DXGI handles for our images
+	std::vector<HANDLE> dxgi_handles;
 
 	//! D3D11 Images
 	std::vector<wil::com_ptr<ID3D11Texture2D1>> d3d11_images;
@@ -357,12 +357,23 @@ client_d3d12_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns
 		// OK, we got the image in the native compositor, now need the keyed mutex in d3d11.
 		xret = sc->data->keyed_mutex_collection.waitKeyedMutex(index, timeout_ns);
 	}
-	if (xret == XRT_SUCCESS) {
-		// OK, we got the image in the native compositor, now need the transition in d3d12.
-		xret = client_d3d12_swapchain_barrier_to_app(sc, index);
-	}
 
 	//! @todo discard old contents?
+	return xret;
+}
+
+static xrt_result_t
+client_d3d12_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	struct client_d3d12_swapchain *sc = as_client_d3d12_swapchain(xsc);
+	xrt_result_t xret;
+
+	switch (direction) {
+	case XRT_BARRIER_TO_APP: xret = client_d3d12_swapchain_barrier_to_app(sc, index); break;
+	case XRT_BARRIER_TO_COMP: xret = client_d3d12_swapchain_barrier_to_compositor(sc, index); break;
+	default: assert(false);
+	}
+
 	return xret;
 }
 
@@ -379,17 +390,30 @@ client_d3d12_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 		xret = sc->data->keyed_mutex_collection.releaseKeyedMutex(index);
 	}
 
-	if (xret == XRT_SUCCESS) {
-		xret = client_d3d12_swapchain_barrier_to_compositor(sc, index);
-	}
 	return xret;
 }
 
 static void
 client_d3d12_swapchain_destroy(struct xrt_swapchain *xsc)
 {
-	// letting destruction do it all
+	/*
+	 * Letting automatic destruction do it all, happens at the end of
+	 * this function once the sc variable goes out of scope.
+	 */
 	std::unique_ptr<client_d3d12_swapchain> sc(as_client_d3d12_swapchain(xsc));
+
+	// this swapchain resources may be in flight, wait till compositor finishes using them
+	struct client_d3d12_compositor *c = sc->c;
+	if (c && c->fence) {
+		c->timeline_semaphore_value++;
+		HRESULT hr = c->app_queue->Signal(c->fence.get(), c->timeline_semaphore_value);
+
+		xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout( //
+		    c->fence,                                       //
+		    c->local_wait_event,                            //
+		    c->timeline_semaphore_value,                    //
+		    kFenceTimeout);                                 //
+	}
 }
 
 
@@ -425,7 +449,11 @@ try {
 
 	struct xrt_swapchain_create_info xinfo = *info;
 	struct xrt_swapchain_create_info vkinfo = *info;
+
+	// Update the create info.
+	xinfo.bits = (enum xrt_swapchain_usage_bits)(xsccp.extra_bits | xinfo.bits);
 	vkinfo.format = vk_format;
+	vkinfo.bits = (enum xrt_swapchain_usage_bits)(xsccp.extra_bits | vkinfo.bits);
 
 	std::unique_ptr<struct client_d3d12_swapchain> sc = std::make_unique<struct client_d3d12_swapchain>();
 	sc->data = std::make_unique<client_d3d12_swapchain_data>(c->log_level);
@@ -433,7 +461,7 @@ try {
 
 	// Make images with D3D11
 	xret = xrt::auxiliary::d3d::d3d11::allocateSharedImages(*(c->d3d11_device), xinfo, image_count, true,
-	                                                        data->d3d11_images, data->handles);
+	                                                        data->d3d11_images, data->dxgi_handles);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -442,9 +470,9 @@ try {
 
 	// Import to D3D12 from the handle.
 	for (uint32_t i = 0; i < image_count; ++i) {
-		const auto &handle = data->handles[i];
-		wil::unique_handle dupedForD3D12{u_graphics_buffer_ref(handle.get())};
-		auto d3d12Image = xrt::auxiliary::d3d::d3d12::importImage(*(c->device), dupedForD3D12.get());
+		wil::com_ptr<ID3D12Resource> d3d12Image =
+		    xrt::auxiliary::d3d::d3d12::importImage(*(c->device), data->dxgi_handles[i]);
+
 		// Put the image where the OpenXR state tracker can get it
 		sc->base.images[i] = d3d12Image.get();
 
@@ -523,8 +551,8 @@ try {
 	}
 
 	// Import into the native compositor, to create the corresponding swapchain which we wrap.
-	xret = xrt::compositor::client::importFromHandleDuplicates(
-	    *(c->xcn), data->handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
+	xret = xrt::compositor::client::importFromDxgiHandles(
+	    *(c->xcn), data->dxgi_handles, vkinfo, false /** @todo not sure - dedicated allocation */, sc->xsc);
 	if (xret != XRT_SUCCESS) {
 		D3D_ERROR(c, "Error importing D3D swapchain into native compositor");
 		return xret;
@@ -533,6 +561,7 @@ try {
 	sc->base.base.destroy = client_d3d12_swapchain_destroy;
 	sc->base.base.acquire_image = client_d3d12_swapchain_acquire_image;
 	sc->base.base.wait_image = client_d3d12_swapchain_wait_image;
+	sc->base.base.barrier_image = client_d3d12_swapchain_barrier_image;
 	sc->base.base.release_image = client_d3d12_swapchain_release_image;
 	sc->c = c;
 	sc->base.base.image_count = image_count;
@@ -559,12 +588,12 @@ try {
 
 
 static xrt_result_t
-client_d3d12_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+client_d3d12_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_begin_session(&c->xcn->base, type);
+	return xrt_comp_begin_session(&c->xcn->base, info);
 }
 
 static xrt_result_t
@@ -607,15 +636,12 @@ client_d3d12_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_i
 }
 
 static xrt_result_t
-client_d3d12_compositor_layer_begin(struct xrt_compositor *xc,
-                                    int64_t frame_id,
-                                    uint64_t display_time_ns,
-                                    enum xrt_blend_mode env_blend_mode)
+client_d3d12_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, data);
 }
 
 static xrt_result_t
@@ -739,9 +765,7 @@ client_d3d12_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
-                                     int64_t frame_id,
-                                     xrt_graphics_sync_handle_t sync_handle)
+client_d3d12_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
@@ -751,24 +775,29 @@ client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
 	xrt_result_t xret = XRT_SUCCESS;
 	if (c->fence) {
 		c->timeline_semaphore_value++;
-		HRESULT hr = c->fence->Signal(c->timeline_semaphore_value);
+		HRESULT hr = c->app_queue->Signal(c->fence.get(), c->timeline_semaphore_value);
 		if (!SUCCEEDED(hr)) {
 			char buf[kErrorBufSize];
 			formatMessage(hr, buf);
 			D3D_ERROR(c, "Error signaling fence: %s", buf);
-			return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+			return xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 		}
 	}
 	if (c->timeline_semaphore) {
 		// We got this from the native compositor, so we can pass it back
-		return xrt_comp_layer_commit_with_semaphore(&c->xcn->base, frame_id, c->timeline_semaphore.get(),
-		                                            c->timeline_semaphore_value);
+		return xrt_comp_layer_commit_with_semaphore( //
+		    &c->xcn->base,                           //
+		    c->timeline_semaphore.get(),             //
+		    c->timeline_semaphore_value);            //
 	}
 
 	if (c->fence) {
 		// Wait on it ourselves, if we have it and didn't tell the native compositor to wait on it.
-		xret = xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout(c->fence, c->local_wait_event,
-		                                                          c->timeline_semaphore_value, kFenceTimeout);
+		xret = xrt::auxiliary::d3d::d3d12::waitOnFenceWithTimeout( //
+		    c->fence,                                              //
+		    c->local_wait_event,                                   //
+		    c->timeline_semaphore_value,                           //
+		    kFenceTimeout);                                        //
 		if (xret != XRT_SUCCESS) {
 			struct u_pp_sink_stack_only sink; // Not inited, very large.
 			u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
@@ -780,7 +809,7 @@ client_d3d12_compositor_layer_commit(struct xrt_compositor *xc,
 		}
 	}
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	return xrt_comp_layer_commit(&c->xcn->base, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
 }
 
 
@@ -791,7 +820,16 @@ client_d3d12_compositor_get_swapchain_create_properties(struct xrt_compositor *x
 {
 	struct client_d3d12_compositor *c = as_client_d3d12_compositor(xc);
 
-	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
+	int64_t vk_format = d3d_dxgi_format_to_vk((DXGI_FORMAT)info->format);
+	if (vk_format == 0) {
+		D3D_ERROR(c, "Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
+	struct xrt_swapchain_create_info xinfo = *info;
+	xinfo.format = vk_format;
+
+	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, &xinfo, xsccp);
 }
 
 static xrt_result_t
@@ -967,12 +1005,6 @@ try {
 		if (typeless == f) {
 			continue;
 		}
-		// Sometimes we have to forbid depth formats to avoid errors in Vulkan.
-		if (!debug_get_bool_option_allow_depth() &&
-		    (f == DXGI_FORMAT_D32_FLOAT || f == DXGI_FORMAT_D16_UNORM || f == DXGI_FORMAT_D24_UNORM_S8_UINT)) {
-			continue;
-		}
-
 		c->base.base.info.formats[count++] = f;
 	}
 	c->base.base.info.format_count = count;

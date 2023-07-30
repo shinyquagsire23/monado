@@ -17,6 +17,7 @@
 #include "util/u_misc.h"
 #include "util/u_logging.h"
 #include "util/u_debug.h"
+#include "util/u_handles.h"
 
 #include <xrt/xrt_config_have.h>
 #include <xrt/xrt_config_os.h>
@@ -73,9 +74,11 @@ client_gl_eglimage_swapchain_teardown_storage(struct client_gl_eglimage_swapchai
 		glDeleteTextures(image_count, &sc->base.base.images[0]);
 		U_ZERO_ARRAY(sc->base.base.images);
 		for (uint32_t i = 0; i < image_count; ++i) {
-			if (sc->egl_images[i] != NULL) {
-				eglDestroyImageKHR(sc->display, &(sc->egl_images[i]));
+			if (sc->egl_images[i] == EGL_NO_IMAGE_KHR) {
+				continue;
 			}
+			eglDestroyImageKHR(sc->display, sc->egl_images[i]);
+			sc->egl_images[i] = EGL_NO_IMAGE_KHR;
 		}
 		U_ZERO_ARRAY(sc->egl_images);
 	}
@@ -85,8 +88,12 @@ static void
 client_gl_eglimage_swapchain_destroy(struct xrt_swapchain *xsc)
 {
 	struct client_gl_eglimage_swapchain *sc = client_gl_eglimage_swapchain(xsc);
+	uint32_t image_count = sc->base.base.base.image_count;
 
 	client_gl_eglimage_swapchain_teardown_storage(sc);
+	for (uint32_t i = 0; i < image_count; i++) {
+		u_graphics_buffer_unref(&sc->base.xscn->images[i].handle);
+	}
 	sc->base.base.base.image_count = 0;
 
 	// Drop our reference, does NULL checking.

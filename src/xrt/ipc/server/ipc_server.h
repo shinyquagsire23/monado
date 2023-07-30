@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -13,6 +13,7 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_system.h"
+#include "xrt/xrt_space.h"
 
 #include "util/u_logging.h"
 
@@ -47,6 +48,7 @@ extern "C" {
 
 #define IPC_MAX_CLIENT_SEMAPHORES 8
 #define IPC_MAX_CLIENT_SWAPCHAINS 32
+#define IPC_MAX_CLIENT_SPACES 128
 //#define IPC_MAX_CLIENTS 8
 
 struct xrt_instance;
@@ -99,6 +101,20 @@ struct ipc_client_state
 
 	//! Ptrs to the semaphores.
 	struct xrt_compositor_semaphore *xcsems[IPC_MAX_CLIENT_SEMAPHORES];
+
+	struct
+	{
+		uint32_t root;
+		uint32_t local;
+		uint32_t stage;
+		uint32_t unbounded;
+	} semantic_spaces;
+
+	//! Number of spaces.
+	uint32_t space_count;
+
+	//! Ptrs to the spaces.
+	struct xtr_space *xspcs[IPC_MAX_CLIENT_SPACES];
 
 	//! Socket fd used for client comms
 	struct ipc_message_channel imc;
@@ -295,12 +311,13 @@ struct ipc_server
 	//! Handle for the current process, e.g. pidfile on linux
 	struct u_process *process;
 
-	/* ---- HACK ---- */
-	void *hack;
-	/* ---- HACK ---- */
+	struct u_debug_gui *debug_gui;
 
 	//! System devices.
 	struct xrt_system_devices *xsysd;
+
+	//! Space overseer.
+	struct xrt_space_overseer *xso;
 
 	//! System compositor.
 	struct xrt_system_compositor *xsysc;
@@ -324,6 +341,9 @@ struct ipc_server
 	struct ipc_thread threads[IPC_MAX_CLIENTS];
 
 	volatile uint32_t current_slot_index;
+
+	//! Generator for IDs.
+	uint32_t id_generator;
 
 	struct
 	{
@@ -361,12 +381,28 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 #endif
 
 /*!
+ * Get the current state of a client.
+ *
+ * @ingroup ipc_server
+ */
+xrt_result_t
+ipc_server_get_client_app_state(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias);
+
+/*!
  * Set the new active client.
  *
  * @ingroup ipc_server
  */
-void
-ipc_server_set_active_client(struct ipc_server *s, int client_id);
+xrt_result_t
+ipc_server_set_active_client(struct ipc_server *s, uint32_t client_id);
+
+/*!
+ * Toggle the io for this client.
+ *
+ * @ingroup ipc_server
+ */
+xrt_result_t
+ipc_server_toggle_io_client(struct ipc_server *s, uint32_t client_id);
 
 /*!
  * Called by client threads to set a session to active.
@@ -414,11 +450,16 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics);
  * @{
  */
 /*!
- * Start a thread for a client connected at the other end of the ipc handle @p ipc_handle.
+ * Called when a client has connected, it takes the client's ipc handle.
+ * Handles all things needed to be done for a client connecting, like starting
+ * it's thread.
+ *
+ * @param vs         The IPC server.
+ * @param ipc_handle Handle to communicate over.
  * @memberof ipc_server
  */
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle);
+ipc_server_handle_client_connected(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle);
 
 /*!
  * Perform whatever needs to be done when the mainloop polling encounters a failure.

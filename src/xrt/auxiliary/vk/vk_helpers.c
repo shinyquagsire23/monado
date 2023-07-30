@@ -478,7 +478,26 @@ XRT_CHECK_RESULT const char *
 vk_color_space_string(VkColorSpaceKHR code)
 {
 	switch (code) {
-		ENUM_TO_STR(VK_COLORSPACE_SRGB_NONLINEAR_KHR);
+		ENUM_TO_STR(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+#ifdef VK_EXT_swapchain_colorspace
+		ENUM_TO_STR(VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_DCI_P3_NONLINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_BT709_LINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_BT709_NONLINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_BT2020_LINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_HDR10_ST2084_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_DOLBYVISION_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_HDR10_HLG_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_PASS_THROUGH_EXT);
+		ENUM_TO_STR(VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT);
+#endif
+#ifdef VK_AMD_display_native_hdr
+		ENUM_TO_STR(VK_COLOR_SPACE_DISPLAY_NATIVE_AMD);
+#endif
 	default: return "UNKNOWN COLOR SPACE";
 	}
 }
@@ -849,7 +868,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 		return VK_ERROR_FEATURE_NOT_PRESENT;
 	}
 
-	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk, image_native);
 
 	// HACK
 	bool importable = true;
@@ -909,7 +928,7 @@ vk_create_image_from_native(struct vk_bundle *vk,
 	VkImportMemoryWin32HandleInfoKHR import_memory_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
 	    .pNext = NULL,
-	    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,
+	    .handleType = handle_type,
 	    .handle = image_native->handle,
 	};
 #elif defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_XPC)
@@ -1246,6 +1265,10 @@ vk_create_view_usage(struct vk_bundle *vk,
 {
 	VkBaseInStructure *next_chain = NULL;
 
+	/*
+	 * @todo Handle Vulkan 1.0 instance without VK_KHR_maintenance2 on GPUs that don't support srgb with storage
+	 * usage.
+	 */
 #ifdef VK_KHR_maintenance2
 	VkImageViewUsageCreateInfo image_view_usage_create_info = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
@@ -1253,10 +1276,11 @@ vk_create_view_usage(struct vk_bundle *vk,
 	    .usage = image_usage,
 	};
 
-	if (vk->has_KHR_maintenance2) {
+	if (vk->has_KHR_maintenance2 || vk->version >= VK_VERSION_1_1) {
 		CHAIN(image_view_usage_create_info, next_chain);
 	} else {
-		VK_WARN(vk, "VK_KHR_maintenance2 not supported can't use usage image view");
+		VK_WARN(vk,
+		        "Using Vulkan 1.0 instance without VK_KHR_maintenance2 support, can't use usage image view.");
 	}
 #endif
 
@@ -1407,166 +1431,6 @@ vk_update_buffer(struct vk_bundle *vk, float *buffer, size_t buffer_size, VkDevi
  * Command buffer code.
  *
  */
-
-VkResult
-vk_cmd_buffer_create(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
-{
-	VkCommandBuffer cmd_buffer;
-	VkResult ret;
-
-	// Allocate the command buffer.
-	VkCommandBufferAllocateInfo cmd_buffer_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-	    .commandPool = vk->cmd_pool,
-	    .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-	    .commandBufferCount = 1,
-	};
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
-	ret = vk->vkAllocateCommandBuffers(vk->device, &cmd_buffer_info, &cmd_buffer);
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkAllocateCommandBuffers: %s", vk_result_string(ret));
-		// Nothing to cleanup
-		return ret;
-	}
-
-	*out_cmd_buffer = cmd_buffer;
-
-	return VK_SUCCESS;
-}
-
-VkResult
-vk_cmd_buffer_create_and_begin(struct vk_bundle *vk, VkCommandBuffer *out_cmd_buffer)
-{
-	VkCommandBuffer cmd_buffer;
-	VkResult ret;
-
-	ret = vk_cmd_buffer_create(vk, &cmd_buffer);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vk_cmd_buffer_create: %s", vk_result_string(ret));
-		// Nothing to cleanup
-		return ret;
-	}
-
-	// Start the command buffer as well.
-	VkCommandBufferBeginInfo begin_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-	};
-
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkBeginCommandBuffer(cmd_buffer, &begin_info);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkBeginCommandBuffer: %s", vk_result_string(ret));
-		goto err_buffer;
-	}
-
-	*out_cmd_buffer = cmd_buffer;
-
-	return VK_SUCCESS;
-
-
-err_buffer:
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
-
-	return ret;
-}
-
-XRT_CHECK_RESULT VkResult
-vk_cmd_buffer_submit(struct vk_bundle *vk, VkCommandBuffer cmd_buffer)
-{
-	VkResult ret = VK_SUCCESS;
-	VkFence fence;
-	VkFenceCreateInfo fence_info = {
-	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-	};
-	VkSubmitInfo submitInfo = {
-	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-	    .commandBufferCount = 1,
-	    .pCommandBuffers = &cmd_buffer,
-	};
-
-	// Finish the command buffer first.
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkEndCommandBuffer(cmd_buffer);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkEndCommandBuffer: %s", vk_result_string(ret));
-		goto out;
-	}
-
-	// Create the fence.
-	ret = vk->vkCreateFence(vk->device, &fence_info, NULL, &fence);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateFence: %s", vk_result_string(ret));
-		goto out;
-	}
-
-	// Do the actual submitting.
-	ret = vk_locked_submit(vk, vk->queue, 1, &submitInfo, fence);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "Error: Could not submit to queue.\n");
-		goto out_fence;
-	}
-
-	// Then wait for the fence.
-	ret = vk->vkWaitForFences(vk->device, 1, &fence, VK_TRUE, 1000000000);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkWaitForFences: %s", vk_result_string(ret));
-		goto out_fence;
-	}
-
-	// Yes fall through.
-
-out_fence:
-	vk->vkDestroyFence(vk->device, fence, NULL);
-out:
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &cmd_buffer);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	return ret;
-}
-
-XRT_CHECK_RESULT VkResult
-vk_locked_submit(struct vk_bundle *vk, VkQueue queue, uint32_t count, const VkSubmitInfo *infos, VkFence fence)
-{
-	VkResult ret;
-	os_mutex_lock(&vk->queue_mutex);
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkQueueSubmit(queue, count, infos, fence);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	os_mutex_unlock(&vk->queue_mutex);
-	return ret;
-}
-
-void
-vk_cmd_image_barrier_gpu(struct vk_bundle *vk,
-                         VkCommandBuffer cmd_buffer,
-                         VkImage image,
-                         VkAccessFlags src_access_mask,
-                         VkAccessFlags dst_access_mask,
-                         VkImageLayout old_layout,
-                         VkImageLayout new_layout,
-                         VkImageSubresourceRange subresource_range)
-{
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	vk_cmd_image_barrier_gpu_locked( //
-	    vk,                          // vk_bundle
-	    cmd_buffer,                  // cmd_buffer
-	    image,                       // image
-	    src_access_mask,             // src_access_mask
-	    dst_access_mask,             // dst_access_mask
-	    old_layout,                  // old_image_layout
-	    new_layout,                  // new_image_layout
-	    subresource_range);          // subresource_range
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-}
 
 void
 vk_cmd_image_barrier_locked(struct vk_bundle *vk,

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,9 @@ extern "C" {
 
 
 extern const char u_git_tag[];
+extern const uint16_t u_version_major;
+extern const uint16_t u_version_minor;
+extern const uint16_t u_version_patch;
 
 
 #ifdef __cplusplus

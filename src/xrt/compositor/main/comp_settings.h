@@ -34,27 +34,10 @@ XRT_MAYBE_UNUSED static const char *NV_DIRECT_ALLOWLIST[] = {
     "Oculus VR Inc. Rift",         // DK1, DK2 and CV1
     "Valve Corporation Index HMD", // Valve Index
     "Seiko/Epson SEC144A",         // Samsung Odyssey+
+    "HPN",                         // Reverb G2
+    "HP Inc.",                     // Also Reverb G2?
+    "PNP",                         // NorthStar (Generic)
 };
-
-/*!
- * Window type to use.
- *
- * @ingroup comp_main
- */
-enum window_type
-{
-	WINDOW_NONE = 0,
-	WINDOW_AUTO,
-	WINDOW_XCB,
-	WINDOW_WAYLAND,
-	WINDOW_DIRECT_WAYLAND,
-	WINDOW_DIRECT_RANDR,
-	WINDOW_DIRECT_NVIDIA,
-	WINDOW_ANDROID,
-	WINDOW_MSWIN,
-	WINDOW_VK_DISPLAY,
-};
-
 
 /*!
  * Settings for the compositor.
@@ -71,8 +54,8 @@ struct comp_settings
 	VkColorSpaceKHR color_space;
 	VkPresentModeKHR present_mode;
 
-	//! Window type to use.
-	enum window_type window_type;
+	//! Preferred window type to use, not actual used.
+	const char *target_identifier;
 
 	//! display string forced by user or NULL
 	const char *nvidia_display;

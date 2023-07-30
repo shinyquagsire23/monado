@@ -1,10 +1,13 @@
 # Copyright 2019-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
+xrt_optimized_math_flags()
+
 add_library(
 	aux_math STATIC
 	m_api.h
 	m_base.cpp
+	m_clock_offset.h
 	m_eigen_interop.hpp
 	m_filter_fifo.c
 	m_filter_fifo.h
@@ -36,5 +39,14 @@ add_library(
 	m_vec2.h
 	m_vec3.h
 	)
-target_link_libraries(aux_math PUBLIC aux-includes aux_util)
+target_link_libraries(
+	aux_math
+	PUBLIC aux-includes aux_util
+	PRIVATE xrt-optimized-math
+	)
 target_include_directories(aux_math SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+
+if(MSVC)
+	get_target_property(options aux_math COMPILE_OPTIONS)
+	message(STATUS "COMPILE_OPTIONS: ${options}")
+endif()

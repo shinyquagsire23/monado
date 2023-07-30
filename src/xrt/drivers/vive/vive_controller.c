@@ -13,7 +13,13 @@
  * originally written by Ryan Pavlik and available under the BSL-1.0.
  */
 
+#include "xrt/xrt_defines.h"
 #include "xrt/xrt_prober.h"
+
+#include "math/m_imu_3dof.h"
+#include "math/m_relation_history.h"
+
+#include "util/u_var.h"
 
 #include "os/os_hid.h"
 #include "os/os_threading.h"
@@ -32,6 +38,7 @@
 
 #include "vive/vive_config.h"
 #include "vive/vive_bindings.h"
+#include "vive/vive_poses.h"
 
 #include "vive.h"
 #include "vive_protocol.h"
@@ -95,6 +102,13 @@ enum vive_controller_input_index
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
+
+/*
+ *
+ * Helper functions.
+ *
+ */
+
 static inline struct vive_controller_device *
 vive_controller_device(struct xrt_device *xdev)
 {
@@ -102,6 +116,53 @@ vive_controller_device(struct xrt_device *xdev)
 	struct vive_controller_device *ret = (struct vive_controller_device *)xdev;
 	return ret;
 }
+
+static inline void
+get_pose(struct vive_controller_device *d,
+         enum xrt_input_name name,
+         uint64_t at_timestamp_ns,
+         struct xrt_space_relation *out_relation)
+{
+	struct xrt_space_relation imu_relation = {0};
+	imu_relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL;
+
+	os_mutex_lock(&d->fusion.mutex);
+	m_relation_history_get(d->fusion.relation_hist, at_timestamp_ns, &imu_relation);
+	os_mutex_unlock(&d->fusion.mutex);
+
+	imu_relation.relation_flags = XRT_SPACE_RELATION_BITMASK_ALL; // Needed after history_get
+
+	// Get the offset to the pose (this is from libsurvive's reporting position currently)
+	struct xrt_pose pose_offset = XRT_POSE_IDENTITY;
+	vive_poses_get_pose_offset(d->base.name, d->base.device_type, name, &pose_offset);
+
+	// We want this to make grip the center of rotation.
+	struct xrt_pose grip = XRT_POSE_IDENTITY;
+	enum xrt_input_name grip_name = XRT_INPUT_INDEX_GRIP_POSE; //! @todo Vive poses only have index poses.
+	vive_poses_get_pose_offset(d->base.name, d->base.device_type, grip_name, &grip);
+
+	// Build proper relation.
+	struct xrt_relation_chain chain = {0};
+	m_relation_chain_push_pose(&chain, &pose_offset);
+	m_relation_chain_push_inverted_pose_if_not_identity(&chain, &grip);
+	m_relation_chain_push_relation(&chain, &imu_relation);
+	m_relation_chain_push_pose_if_not_identity(&chain, &d->offset);
+
+	// And resolve it.
+	struct xrt_space_relation relation = {0};
+	m_relation_chain_resolve(&chain, &relation);
+
+	relation.linear_velocity = (struct xrt_vec3){0, 0, 0};
+
+	*out_relation = relation;
+}
+
+
+/*
+ *
+ * Member functions.
+ *
+ */
 
 static void
 vive_controller_device_destroy(struct xrt_device *xdev)
@@ -113,7 +174,9 @@ vive_controller_device_destroy(struct xrt_device *xdev)
 	// Now that the thread is not running we can destroy the lock.
 	os_mutex_destroy(&d->lock);
 
-	m_imu_3dof_close(&d->fusion);
+	os_mutex_destroy(&d->fusion.mutex);
+	m_relation_history_destroy(&d->fusion.relation_hist);
+	m_imu_3dof_close(&d->fusion.i3dof);
 
 	if (d->controller_hid)
 		os_hid_destroy(d->controller_hid);
@@ -340,56 +403,15 @@ vive_controller_get_hand_tracking(struct xrt_device *xdev,
 	    .thumb = thumb_curl,
 	};
 
-	struct xrt_space_relation ident;
-	m_space_relation_ident(&ident);
-	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &ident, out_value);
+	struct xrt_space_relation hand_relation;
+	get_pose(d, name, requested_timestamp_ns, &hand_relation);
 
+	u_hand_sim_simulate_for_valve_index_knuckles(&values, hand, &hand_relation, out_value);
 
-	/* Because IMU is at the very -z end of the controller, the rotation
-	 * pivot point is there too. By offsetting the IMU pose by this z value
-	 * we move the pivot point of the hand.
-	 * This only makes sense with 3dof.
-	 */
-
-#if 0
-	float pivot_offset_z = 0.15;
-
-	struct xrt_space_relation controller_relation = {
-	    .pose = {.orientation = d->rot_filtered, .position = {0, 0, pivot_offset_z}},
-	};
-	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
-#endif
-
-	struct xrt_vec3 static_offset = {0, 0, 0};
-
-	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
-
-	// This is a lie: currently, no pose-prediction or history is implemented for this driver.
+	// This is the truth - we pose-predicted or interpolated all the way up to `at_timestamp_ns`.
 	*out_timestamp_ns = requested_timestamp_ns;
 
 	out_value->is_active = true;
-}
-
-static void
-predict_pose(struct vive_controller_device *d, uint64_t at_timestamp_ns, struct xrt_space_relation *out_relation)
-{
-	timepoint_ns prediction_ns = at_timestamp_ns - d->imu.ts_received_ns;
-	double prediction_s = time_ns_to_s(prediction_ns);
-
-	timepoint_ns monotonic_now_ns = os_monotonic_get_ns();
-	timepoint_ns remaining_ns = at_timestamp_ns - monotonic_now_ns;
-	VIVE_TRACE(d, "dev %s At %ldns: Pose requested for +%ldns (%ldns), predicting %ldns", d->base.str,
-	           monotonic_now_ns, remaining_ns, at_timestamp_ns, prediction_ns);
-
-	//! @todo integrate position here
-	struct xrt_space_relation relation = {0};
-	relation.pose.orientation = d->rot_filtered;
-	relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
-
-	m_predict_relation(&relation, prediction_s, out_relation);
 }
 
 static void
@@ -407,17 +429,7 @@ vive_controller_device_get_tracked_pose(struct xrt_device *xdev,
 		return;
 	}
 
-	// Clear out the relation.
-	U_ZERO(out_relation);
-
-	os_mutex_lock(&d->lock);
-	predict_pose(d, at_timestamp_ns, out_relation);
-	os_mutex_unlock(&d->lock);
-
-	struct xrt_vec3 pos = out_relation->pose.position;
-	struct xrt_quat quat = out_relation->pose.orientation;
-	VIVE_TRACE(d, "GET_TRACKED_POSE (%f, %f, %f) (%f, %f, %f, %f) ", pos.x, pos.y, pos.z, quat.x, quat.y, quat.z,
-	           quat.w);
+	get_pose(d, name, at_timestamp_ns, out_relation);
 }
 
 static int
@@ -498,6 +510,13 @@ vive_controller_device_set_output(struct xrt_device *xdev,
 	os_mutex_unlock(&d->lock);
 }
 
+
+/*
+ *
+ * Misc functions.
+ *
+ */
+
 static void
 controller_handle_battery(struct vive_controller_device *d, struct vive_controller_battery_sample *sample)
 {
@@ -538,11 +557,11 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 {
 	XRT_TRACE_MARKER();
 
+	uint64_t now_ns = os_monotonic_get_ns();
+
 	/* ouvrt: "Time in 48 MHz ticks, but we are missing the low byte" */
 	uint32_t time_raw = d->last_ticks | (sample->timestamp_hi << 8);
 	ticks_to_ns(time_raw, &d->imu.last_sample_ticks, &d->imu.last_sample_ts_ns);
-
-	d->imu.ts_received_ns = os_monotonic_get_ns();
 
 	int16_t acc[3] = {
 	    __le16_to_cpu(sample->acc[0]),
@@ -601,12 +620,17 @@ vive_controller_handle_imu_sample(struct vive_controller_device *d, struct watch
 	d->last.acc = acceleration;
 	d->last.gyro = angular_velocity;
 
-	m_imu_3dof_update(&d->fusion, d->imu.last_sample_ts_ns, &acceleration, &angular_velocity);
+	struct xrt_space_relation rel = {0};
+	rel.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT | XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT;
 
-	d->rot_filtered = d->fusion.rot;
+	os_mutex_lock(&d->fusion.mutex);
+	m_imu_3dof_update(&d->fusion.i3dof, d->imu.last_sample_ts_ns, &acceleration, &angular_velocity);
+	rel.pose.orientation = d->fusion.i3dof.rot;
+	m_relation_history_push(d->fusion.relation_hist, &rel, now_ns);
+	os_mutex_unlock(&d->fusion.mutex);
 
-	//      VIVE_TRACE(d, "Rot %f %f %f", d->rot_filtered.x,
-	//                           d->rot_filtered.y, d->rot_filtered.z);
+	// Update the pose we show in the GUI.
+	d->pose = rel.pose;
 }
 
 static void
@@ -971,6 +995,41 @@ vive_controller_run_thread(void *ptr)
 	return NULL;
 }
 
+void
+vive_controller_reset_pose_cb(void *ptr)
+{
+	struct vive_controller_device *d = (struct vive_controller_device *)ptr;
+	os_mutex_lock(&d->fusion.mutex);
+	m_imu_3dof_reset(&d->fusion.i3dof);
+	d->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+	os_mutex_unlock(&d->fusion.mutex);
+}
+
+static void
+vive_controller_setup_ui(struct vive_controller_device *d)
+{
+	char tmp[256] = {0};
+	snprintf(tmp, sizeof(tmp), "Vive Controller %zu", d->index);
+
+	u_var_add_root(d, tmp, false);
+	u_var_add_log_level(d, &d->log_level, "Log level");
+
+	u_var_add_gui_header(d, NULL, "Tracking");
+	u_var_add_pose(d, &d->pose, "Tracked Pose");
+	u_var_add_pose(d, &d->offset, "Pose Offset");
+
+	d->gui.reset_pose_btn.cb = vive_controller_reset_pose_cb;
+	d->gui.reset_pose_btn.ptr = d;
+	u_var_add_button(d, &d->gui.reset_pose_btn, "Reset pose");
+
+	u_var_add_gui_header(d, NULL, "3DoF Tracking");
+	m_imu_3dof_add_vars(&d->fusion.i3dof, d, "");
+	u_var_add_gui_header(d, NULL, "Calibration");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_scale, "acc_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.acc_bias, "acc_bias");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_scale, "gyro_scale");
+	u_var_add_vec3_f32(d, &d->config.imu.gyro_bias, "gyro_bias");
+}
 
 /*
  *
@@ -999,10 +1058,19 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->log_level = debug_get_log_option_vive_log();
 	d->watchman_gen = WATCHMAN_GEN_UNKNOWN;
 	d->config.variant = CONTROLLER_UNKNOWN;
+	d->index = controller_num;
+	d->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
+	d->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 
 	d->watchman_gen = watchman_gen;
 
-	m_imu_3dof_init(&d->fusion, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+	m_imu_3dof_init(&d->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
+	m_relation_history_create(&d->fusion.relation_hist);
+	int ret = os_mutex_init(&d->fusion.mutex);
+	if (ret != 0) {
+		VIVE_ERROR(d, "Failed to init 3dof mutex");
+		return false;
+	}
 
 	/* default values, will be queried from device */
 	d->config.imu.gyro_range = 8.726646f;
@@ -1132,6 +1200,16 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 		d->base.update_inputs = _update_tracker_inputs;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
 		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen2 (vive)");
+	} else if (d->config.variant == CONTROLLER_TRACKER_GEN3) {
+		d->base.name = XRT_DEVICE_VIVE_TRACKER_GEN3;
+		d->base.update_inputs = _update_tracker_inputs;
+		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Vive Tracker Gen3 (vive)");
+	} else if (d->config.variant == CONTROLLER_TRACKER_TUNDRA) {
+		d->base.name = XRT_DEVICE_VIVE_TRACKER_TUNDRA;
+		d->base.update_inputs = _update_tracker_inputs;
+		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
+		snprintf(d->base.str, XRT_DEVICE_NAME_LEN, "Tundra Tracker Gen3 (vive)");
 	} else {
 		d->base.name = XRT_DEVICE_GENERIC_HMD;
 		d->base.device_type = XRT_DEVICE_TYPE_GENERIC_TRACKER;
@@ -1152,6 +1230,8 @@ vive_controller_create(struct os_hid_device *controller_hid, enum watchman_gen w
 	d->base.position_tracking_supported = false;
 	d->base.hand_tracking_supported =
 	    d->config.variant == CONTROLLER_INDEX_LEFT || d->config.variant == CONTROLLER_INDEX_RIGHT;
+
+	vive_controller_setup_ui(d);
 
 	return d;
 }

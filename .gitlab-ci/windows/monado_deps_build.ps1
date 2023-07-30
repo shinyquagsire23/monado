@@ -59,6 +59,6 @@ Set-Location vcpkg
 
 Get-Date
 Write-Host "Installing some base deps from vcpkg"
-./vcpkg.exe install cjson:x64-windows eigen3:x64-windows wil:x64-windows pthreads:x64-windows glslang:x64-windows libusb:x64-windows hidapi:x64-windows
+./vcpkg.exe install cjson:x64-windows eigen3:x64-windows wil:x64-windows pthreads:x64-windows glslang:x64-windows libusb:x64-windows hidapi:x64-windows sdl2[base,vulkan]:x64-windows
 Remove-Item -Recurse -Path downloads
 Remove-Item -Recurse -Path buildtrees

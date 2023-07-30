@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -22,6 +22,8 @@
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
 
+#include "simulated_interface.h"
+
 #include <stdio.h>
 
 
@@ -30,13 +32,6 @@
  * Structs and defines.
  *
  */
-
-enum simulated_movement
-{
-	SIMULATED_WOBBLE,
-	SIMULATED_ROTATE,
-};
-
 
 /*!
  * A example HMD device.
@@ -48,7 +43,7 @@ struct simulated_hmd
 	struct xrt_device base;
 
 	struct xrt_pose pose;
-	struct xrt_vec3 center;
+	struct xrt_pose center;
 
 	uint64_t created_ns;
 	float diameter_m;
@@ -71,7 +66,6 @@ simulated_hmd(struct xrt_device *xdev)
 }
 
 DEBUG_GET_ONCE_LOG_OPTION(simulated_log, "SIMULATED_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(simulated_rotate, "SIMULATED_ROTATE", false)
 
 #define DH_TRACE(p, ...) U_LOG_XDEV_IFL_T(&dh->base, dh->log_level, __VA_ARGS__)
 #define DH_DEBUG(p, ...) U_LOG_XDEV_IFL_D(&dh->base, dh->log_level, __VA_ARGS__)
@@ -118,22 +112,32 @@ simulated_hmd_get_tracked_pose(struct xrt_device *xdev,
 
 	switch (dh->movement) {
 	default:
-	case SIMULATED_WOBBLE:
+	case SIMULATED_MOVEMENT_WOBBLE: {
+		struct xrt_pose tmp = XRT_POSE_IDENTITY;
+
 		// Wobble time.
-		dh->pose.position.x = dh->center.x + sin((time_s / t2) * M_PI) * d2 - d;
-		dh->pose.position.y = dh->center.y + sin((time_s / t) * M_PI) * d;
-		dh->pose.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
-		dh->pose.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
-		dh->pose.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
-		dh->pose.orientation.w = 1;
-		math_quat_normalize(&dh->pose.orientation);
-		break;
-	case SIMULATED_ROTATE:
-		// Reset position.
-		dh->pose.position = dh->center;
+		tmp.position.x = sin((time_s / t2) * M_PI) * d2 - d;
+		tmp.position.y = sin((time_s / t) * M_PI) * d;
+		tmp.orientation.x = sin((time_s / t3) * M_PI) / 64.0f;
+		tmp.orientation.y = sin((time_s / t4) * M_PI) / 16.0f;
+		tmp.orientation.z = sin((time_s / t4) * M_PI) / 64.0f;
+		math_quat_normalize(&tmp.orientation);
+
+		// Transform with center to set it.
+		math_pose_transform(&dh->center, &tmp, &dh->pose);
+	} break;
+	case SIMULATED_MOVEMENT_ROTATE: {
+		struct xrt_pose tmp = XRT_POSE_IDENTITY;
 
 		// Rotate around the up vector.
 		math_quat_from_angle_vector(time_s / 4, &up, &dh->pose.orientation);
+
+		// Transform with center to set it.
+		math_pose_transform(&dh->center, &tmp, &dh->pose);
+	} break;
+	case SIMULATED_MOVEMENT_STATIONARY:
+		// Reset pose.
+		dh->pose = dh->center;
 		break;
 	}
 
@@ -156,8 +160,21 @@ simulated_hmd_get_view_poses(struct xrt_device *xdev,
 	                        out_poses);
 }
 
+
+/*
+ *
+ * 'Exported' functions.
+ *
+ */
+
+enum u_logging_level
+simulated_log_level(void)
+{
+	return debug_get_log_option_simulated_log();
+}
+
 struct xrt_device *
-simulated_hmd_create(void)
+simulated_hmd_create(enum simulated_movement movement, const struct xrt_pose *center)
 {
 	enum u_device_alloc_flags flags =
 	    (enum u_device_alloc_flags)(U_DEVICE_ALLOC_HMD | U_DEVICE_ALLOC_TRACKING_NONE);
@@ -169,9 +186,11 @@ simulated_hmd_create(void)
 	dh->base.name = XRT_DEVICE_GENERIC_HMD;
 	dh->base.device_type = XRT_DEVICE_TYPE_HMD;
 	dh->pose.orientation.w = 1.0f; // All other values set to zero.
+	dh->center = *center;
 	dh->created_ns = os_monotonic_get_ns();
 	dh->diameter_m = 0.05f;
-	dh->log_level = debug_get_log_option_simulated_log();
+	dh->log_level = simulated_log_level();
+	dh->movement = movement;
 
 	// Print name.
 	snprintf(dh->base.str, XRT_DEVICE_NAME_LEN, "Simulated HMD");
@@ -197,16 +216,10 @@ simulated_hmd_create(void)
 		return NULL;
 	}
 
-	// Select the type of movement.
-	dh->movement = SIMULATED_WOBBLE;
-	if (debug_get_bool_option_simulated_rotate()) {
-		dh->movement = SIMULATED_ROTATE;
-	}
-
 	// Setup variable tracker.
 	u_var_add_root(dh, "Simulated HMD", true);
 	u_var_add_pose(dh, &dh->pose, "pose");
-	u_var_add_vec3_f32(dh, &dh->center, "center");
+	u_var_add_pose(dh, &dh->center, "center");
 	u_var_add_f32(dh, &dh->diameter_m, "diameter_m");
 	u_var_add_log_level(dh, &dh->log_level, "log_level");
 

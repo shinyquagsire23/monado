@@ -92,7 +92,7 @@ t_hsv_build_optimized_table(struct t_hsv_filter_params *params, struct t_hsv_fil
 	struct t_hsv_filter_large_table *temp = U_TYPED_CALLOC(struct t_hsv_filter_large_table);
 	t_hsv_build_large_table(params, temp);
 
-	// Half of step, minues one
+	// Half of step, minus one
 	int offset = (T_HSV_STEP / 2) - 1;
 
 	for (int y = 0; y < T_HSV_SIZE; y++) {

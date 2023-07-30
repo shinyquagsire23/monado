@@ -91,9 +91,14 @@ handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 	if (read(ml->pipe_read, &newfd, sizeof(newfd)) == sizeof(newfd)) {
 		// client_push_mutex should prevent dropping acknowledgements
 		assert(ml->last_accepted_fd == 0);
+
 		// Release the thread that gave us this fd.
 		ml->last_accepted_fd = newfd;
-		ipc_server_start_client_listener_thread(vs, newfd);
+
+		// Call into the generic client connected handling code.
+		ipc_server_handle_client_connected(vs, newfd);
+
+		// If we are waiting to shutdown, wake that thread up.
 		pthread_cond_broadcast(&ml->accept_cond);
 	} else {
 		U_LOG_E("error on pipe read");

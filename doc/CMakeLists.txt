@@ -4,7 +4,11 @@
 # check if Doxygen is installed
 find_package(Doxygen)
 
-option_with_deps(BUILD_DOC "Build documentation" DEPENDS DOXYGEN_FOUND)
+option_with_deps(
+	BUILD_DOC "Build documentation"
+	DEFAULT OFF
+	DEPENDS DOXYGEN_FOUND
+	)
 option_with_deps(
 	BUILD_DOC_WARN_UNDOCUMENTED "Warn on undocumented entities when building documentation"
 	DEFAULT OFF

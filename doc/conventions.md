@@ -14,6 +14,8 @@ mentioned in these examples.
 
 -->
 
+[TOC]
+
 Here are some general code style guidelines we follow.
 
 Note that we aim to "code with respect", to avoid terminology that may limit our
@@ -27,6 +29,49 @@ comments, and docs are understandable by the worldwide Monado community.
 
 [Android Coding with Respect]: https://source.android.com/setup/contribute/respectful-code
 [Write Inclusive Documentation]: https://developers.google.com/style/inclusive-documentation
+
+## Changelog fragments
+
+In Monado we strongly prefer if all MRs merged into the main Monado repository
+also includes changelog fragments. A changelog fragment is a small file
+detailing the changes in the MR on a per area basis. They are slightly more
+detailed then a commit subject line, but usually just one or two lines, usually
+providing a little bit of context to the change. Sometimes for "big" changes
+they are more detailed and provide paragraph of description, such as for adding
+of new drivers, or large refactors. The changelog fragments are used to generate
+the @ref CHANGELOG file, updated on each release (and running on the CI). The
+changelog is generated with [proclamation][].
+
+The changelog fragments are located in the `doc/changes` folder, organised into
+sub-categories in subfolders. There isn't a 1-to-1 mapping of changelog fragment
+to commit, but instead they are per change. A changelog fragment file is named
+`mr.` + MR number + `.md`, for MR 1234 it would be named `mr.1234.md`. If a MR
+has multiple changes for one sub-category a number is added between the MR
+number and file extension, example `mr.1234.1.md` and `mr.1234.2.md`. If a
+change spans multiple MRs, such as fixing a feature introduced in a earlier MR
+we imply the use if YAML headers to mark a changelog fragment applying to
+multiple MRs, can also be used to link issues.
+
+```
+---
+- mr.1234
+- issue.42
+- mr.2000
+---
+
+Add cool feature X, it gives the answer to life, the universe and everything
+else.
+```
+
+Generally the last commit in a MR adds the changelog fragments, as unfortunately
+MR numbers are allocated when opened, also provides a nice readable separation
+between MRs in the git history. Examples for commits adding changelog fragments
+can be seen [here][example1], [here][example2] and [here][example3].
+
+[example1]: https://gitlab.freedesktop.org/monado/monado/-/commit/5e0f0866a6f74116acbc46c6e2447fdb8c716d02
+[example2]: https://gitlab.freedesktop.org/monado/monado/-/commit/98a5b18e0f90dab9f2ea5c2bbfd4ccd4998121c4
+[example3]: https://gitlab.freedesktop.org/monado/monado/-/commit/785e99f115df87dd4561fe6f88a7988b5834b650
+[proclamation]: https://gitlab.com/ryanpavlik/proclamation
 
 ## APIs
 

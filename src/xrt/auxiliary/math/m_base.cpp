@@ -190,6 +190,14 @@ math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, str
 	map_quat(*result) = Eigen::AngleAxisf(angle_rads, copy(vector));
 }
 
+void
+math_quat_from_euler_angles(const struct xrt_vec3 *angles, struct xrt_quat *result)
+{
+	map_quat(*result) = Eigen::AngleAxisf(angles->z, Eigen::Vector3f::UnitZ()) *
+	                    Eigen::AngleAxisf(angles->y, Eigen::Vector3f::UnitY()) *
+	                    Eigen::AngleAxisf(angles->x, Eigen::Vector3f::UnitX());
+}
+
 extern "C" void
 math_quat_from_matrix_3x3(const struct xrt_matrix_3x3 *mat, struct xrt_quat *result)
 {
@@ -409,26 +417,107 @@ math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result)
 	}
 }
 
+// See https://gitlab.freedesktop.org/slitcch/rotation_visualizer/-/blob/main/lm_rotations_story.inl for the derivation
 extern "C" void
 math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result)
 {
 	assert(swing != NULL);
 	assert(result != NULL);
 
-	struct xrt_quat swing_quat;
-	struct xrt_quat twist_quat;
+	float swing_x = swing->x;
+	float swing_y = swing->y;
 
-	struct xrt_vec3 aax_twist;
+	float theta_squared_swing = swing_x * swing_x + swing_y * swing_y;
 
-	aax_twist.x = 0.f;
-	aax_twist.y = 0.f;
-	aax_twist.z = twist;
+	if (theta_squared_swing > float(0.0)) {
+		// theta_squared_swing is nonzero, so we the regular derived conversion.
 
-	math_quat_from_swing(swing, &swing_quat);
+		float theta = sqrt(theta_squared_swing);
 
-	math_quat_exp(&aax_twist, &twist_quat);
+		float half_theta = theta * float(0.5);
 
-	math_quat_rotate(&swing_quat, &twist_quat, result);
+		// the "other" theta
+		float half_twist = twist * float(0.5);
+
+		float cos_half_theta = cos(half_theta);
+		float cos_half_twist = cos(half_twist);
+
+		float sin_half_theta = sin(half_theta);
+		float sin_half_twist = sin(half_twist);
+
+		float sin_half_theta_over_theta = sin_half_theta / theta;
+
+		result->w = cos_half_theta * cos_half_twist;
+
+		float x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		float x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result->x = x_part_1 + x_part_2;
+
+		float y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		float y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result->y = y_part_1 - y_part_2;
+
+		result->z = cos_half_theta * sin_half_twist;
+
+	} else {
+		// sin_half_theta/theta would be undefined, but
+		// the limit approaches 0.5, so we do this.
+		// Note the differences w/ lm_rotations.inl - we can skip some things as we're not using this to compute
+		// a jacobian.
+
+		float half_twist = twist * float(0.5);
+
+		float cos_half_twist = cos(half_twist);
+
+		float sin_half_twist = sin(half_twist);
+
+		float sin_half_theta_over_theta = float(0.5);
+
+		// cos(0) is 1 so no cos_half_theta necessary
+		result->w = cos_half_twist;
+
+		float x_part_1 = (swing_x * cos_half_twist * sin_half_theta_over_theta);
+		float x_part_2 = (swing_y * sin_half_twist * sin_half_theta_over_theta);
+
+		result->x = x_part_1 + x_part_2;
+
+		float y_part_1 = (swing_y * cos_half_twist * sin_half_theta_over_theta);
+		float y_part_2 = (swing_x * sin_half_twist * sin_half_theta_over_theta);
+
+		result->y = y_part_1 - y_part_2;
+
+		result->z = sin_half_twist;
+	}
+}
+
+/*!
+ * Converts a quaternion to XY-swing and Z-twist
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+extern "C" void
+math_quat_to_swing_twist(const struct xrt_quat *in, struct xrt_vec2 *out_swing, float *out_twist)
+{
+	Eigen::Quaternionf rot = map_quat(*in);
+
+	Eigen::Vector3f our_z = rot * (Eigen::Vector3f::UnitZ());
+
+	Eigen::Quaternionf swing = Eigen::Quaternionf().setFromTwoVectors(Eigen::Vector3f::UnitZ(), our_z);
+
+	Eigen::Quaternionf twist = swing.inverse() * rot;
+
+	Eigen::AngleAxisf twist_aax = Eigen::AngleAxisf(twist);
+
+	Eigen::AngleAxisf swing_aax = Eigen::AngleAxisf(swing);
+
+	out_swing->x = swing_aax.axis().x() * swing_aax.angle();
+	out_swing->y = swing_aax.axis().y() * swing_aax.angle();
+	assert(swing_aax.axis().z() < 0.001);
+
+	*out_twist = twist_aax.axis().z() * twist_aax.angle();
 }
 
 /*
@@ -437,35 +526,7 @@ math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, stru
  *
  */
 
-extern "C" void
-math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
-                         const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result_out)
-{
-	const struct xrt_matrix_2x2 l = *left;
-	const struct xrt_matrix_2x2 r = *right;
 
-	// Initialisers: struct, union, v[4]
-	struct xrt_matrix_2x2 result = {{{
-	    l.v[0] * r.v[0] + l.v[1] * r.v[2],
-	    l.v[0] * r.v[1] + l.v[1] * r.v[3],
-	    l.v[2] * r.v[0] + l.v[3] * r.v[2],
-	    l.v[2] * r.v[1] + l.v[3] * r.v[3],
-	}}};
-
-	*result_out = result;
-}
-
-extern "C" void
-math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
-                               const struct xrt_vec2 *right,
-                               struct xrt_vec2 *result_out)
-{
-	const struct xrt_matrix_2x2 l = *left;
-	const struct xrt_vec2 r = *right;
-	struct xrt_vec2 result = {l.v[0] * r.x + l.v[1] * r.y, l.v[2] * r.x + l.v[3] * r.y};
-	*result_out = result;
-}
 
 extern "C" void
 math_matrix_3x3_identity(struct xrt_matrix_3x3 *mat)

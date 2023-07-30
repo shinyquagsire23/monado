@@ -1,4 +1,4 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,20 +7,34 @@
  * @ingroup oxr_main
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-
 #include "xrt/xrt_compiler.h"
+
 #include "util/u_misc.h"
 #include "util/u_debug.h"
+#include "util/u_truncate_printf.h"
 
 #include "oxr_objects.h"
 #include "oxr_logger.h"
 
 #include "openxr/openxr_reflection.h"
 
+#include <stdio.h>
+#include <stdarg.h>
+#include <limits.h>
 
-DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_STDERR_PRINTING", false)
+
+#define LOG_BUFFER_SIZE (1024)
+
+#ifdef XRT_OS_WINDOWS
+#define DEFAULT_NO_STDERR (true)
+#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing())
+#else
+#define DEFAULT_NO_STDERR (false)
+#define CHECK_SHOULD_NOT_PRINT (debug_get_bool_option_no_printing() || debug_get_bool_option_no_printing_stderr())
+#endif
+
+DEBUG_GET_ONCE_BOOL_OPTION(no_printing, "OXR_NO_PRINTING", false)
+DEBUG_GET_ONCE_BOOL_OPTION(no_printing_stderr, "OXR_NO_PRINTING_STDERR", DEFAULT_NO_STDERR)
 DEBUG_GET_ONCE_BOOL_OPTION(entrypoints, "OXR_DEBUG_ENTRYPOINTS", false)
 DEBUG_GET_ONCE_BOOL_OPTION(break_on_error, "OXR_BREAK_ON_ERROR", false)
 
@@ -60,18 +74,70 @@ is_fmt_func_arg_start(const char *fmt)
  * // LOG: No function set now
  * ```
  */
-static void
-print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix)
+static int
+print_prefix(struct oxr_logger *logger, const char *fmt, const char *prefix, char *buf, int remaining)
 {
 	if (logger->api_func_name != NULL) {
 		if (is_fmt_func_arg_start(fmt)) {
-			fprintf(stderr, "%s: %s", prefix, logger->api_func_name);
+			return u_truncate_snprintf(buf, remaining, "%s: %s", prefix, logger->api_func_name);
 		} else {
-			fprintf(stderr, "%s in %s: ", prefix, logger->api_func_name);
+			return u_truncate_snprintf(buf, remaining, "%s in %s: ", prefix, logger->api_func_name);
 		}
 	} else {
-		fprintf(stderr, "%s: ", prefix);
+		return u_truncate_snprintf(buf, remaining, "%s: ", prefix);
 	}
+}
+
+static void
+do_output(const char *buf)
+{
+#ifdef XRT_OS_WINDOWS
+	OutputDebugStringA(buf);
+
+	if (debug_get_bool_option_no_printing_stderr()) {
+		return;
+	}
+#endif
+
+	fprintf(stderr, "%s", buf);
+}
+
+static void
+do_print(struct oxr_logger *logger, const char *fmt, const char *prefix, va_list args)
+{
+	char buf[LOG_BUFFER_SIZE];
+
+	int remaining = sizeof(buf) - 2; // 2 for \n\0
+	int printed = 0;
+	int ret;
+
+	ret = print_prefix(logger, fmt, prefix, buf, remaining);
+	if (ret < 0) {
+		U_LOG_E("Internal OpenXR logging error!");
+		return;
+	}
+	printed += ret;
+
+	ret = u_truncate_vsnprintf(buf + printed, remaining - printed, fmt, args);
+	if (ret < 0) {
+		U_LOG_E("Internal OpenXR logging error!");
+		return;
+	}
+	printed += ret;
+
+	// Always add newline.
+	buf[printed++] = '\n';
+	buf[printed++] = '\0';
+
+	do_output(buf);
+}
+
+static void
+do_print_func(const char *api_func_name)
+{
+	char buf[LOG_BUFFER_SIZE];
+	u_truncate_snprintf(buf, sizeof(buf), "%s\n", api_func_name);
+	do_output(buf);
 }
 
 
@@ -85,7 +151,7 @@ void
 oxr_log_init(struct oxr_logger *logger, const char *api_func_name)
 {
 	if (debug_get_bool_option_entrypoints()) {
-		fprintf(stderr, "%s\n", api_func_name);
+		do_print_func(api_func_name);
 	}
 
 	logger->inst = NULL;
@@ -101,56 +167,41 @@ oxr_log_set_instance(struct oxr_logger *logger, struct oxr_instance *inst)
 void
 oxr_log(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return;
 	}
 
-	print_prefix(logger, fmt, "LOG");
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, "LOG", args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
 
 void
 oxr_warn(struct oxr_logger *logger, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return;
 	}
 
-	print_prefix(logger, fmt, "WARNING");
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, "WARNING", args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
 
 XrResult
 oxr_error(struct oxr_logger *logger, XrResult result, const char *fmt, ...)
 {
-	if (debug_get_bool_option_no_printing()) {
+	if (CHECK_SHOULD_NOT_PRINT) {
 		return result;
 	}
 
-	if (debug_get_bool_option_entrypoints()) {
-		fprintf(stderr, "\t");
-	}
-
-	print_prefix(logger, fmt, oxr_result_to_string(result));
-
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
+	do_print(logger, fmt, oxr_result_to_string(result), args);
 	va_end(args);
 
-	fprintf(stderr, "\n");
 	if (debug_get_bool_option_break_on_error() && result != XR_ERROR_FUNCTION_UNSUPPORTED) {
 		/// Trigger a debugger breakpoint.
 		XRT_DEBUGBREAK();

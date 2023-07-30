@@ -7,12 +7,15 @@
  * @ingroup drv_multi
  */
 
-#include "multi.h"
-#include "util/u_device.h"
-#include "util/u_debug.h"
-
 #include "math/m_api.h"
 #include "math/m_space.h"
+
+#include "util/u_misc.h"
+#include "util/u_debug.h"
+#include "util/u_device.h"
+
+#include "multi.h"
+
 
 DEBUG_GET_ONCE_LOG_OPTION(multi_log, "MULTI_LOG", U_LOGGING_WARN)
 
@@ -66,13 +69,12 @@ attached_override(struct multi_device *d,
 
 	// XXX TODO tracking origin offsets
 	// m_relation_chain_push_inverted_pose_if_not_identity(&xrc, tracker_offset);
-	// m_relation_chain_push_inverted_relation(&xrc, tracker_relation);
+	// m_relation_chain_push_pose_if_not_identity(&xrc, target_offset);
 
 	struct xrt_relation_chain xrc = {0};
 	m_relation_chain_push_relation(&xrc, target_relation);
 	m_relation_chain_push_pose_if_not_identity(&xrc, &d->tracking_override.offset_inv);
 	m_relation_chain_push_relation(&xrc, tracker_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, tracker_offset);
 	m_relation_chain_push_relation(&xrc, in_target_space);
 	m_relation_chain_resolve(&xrc, out_relation);
 }
@@ -200,7 +202,7 @@ get_view_poses(struct xrt_device *xdev,
 }
 
 static bool
-compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+compute_distortion(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct multi_device *d = (struct multi_device *)xdev;
 	struct xrt_device *target = d->tracking_override.target;

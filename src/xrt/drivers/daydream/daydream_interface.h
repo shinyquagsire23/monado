@@ -26,7 +26,7 @@ extern "C" {
  * @ingroup drv_daydream
  */
 struct xrt_auto_prober *
-daydream_create_auto_prober();
+daydream_create_auto_prober(void);
 
 
 /*!

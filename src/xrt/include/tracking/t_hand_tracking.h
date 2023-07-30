@@ -105,18 +105,6 @@ struct t_camera_extra_info
 };
 
 /*!
- * @brief Which hand-tracking algorithm should we use?
- *
- * Never use HT_ALGORITHM_OLD_RGB. The tracking quality is extremely poor.
- * @ingroup xrt_iface
- */
-enum t_hand_tracking_algorithm
-{
-	HT_ALGORITHM_MERCURY,
-	HT_ALGORITHM_OLD_RGB
-};
-
-/*!
  * Synchronously processes frames and returns two hands.
  */
 struct t_hand_tracking_sync
@@ -185,8 +173,6 @@ struct t_hand_tracking_async
 	                 uint64_t desired_timestamp_ns,
 	                 struct xrt_hand_joint_set *out_value,
 	                 uint64_t *out_timestamp_ns);
-
-	void (*destroy)(struct t_hand_tracking_async *ht_async);
 };
 
 struct t_hand_tracking_async *

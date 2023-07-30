@@ -1,14 +1,16 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  The objects representing OpenXR handles, and prototypes for internal functions used in the state tracker.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
 #pragma once
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_limits.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_device.h"
@@ -28,6 +30,7 @@
 
 #include "oxr_extension_support.h"
 #include "oxr_subaction.h"
+#include "oxr_defines.h"
 
 #if defined(XRT_HAVE_D3D11) || defined(XRT_HAVE_D3D12)
 #include <dxgi.h>
@@ -86,21 +89,6 @@ extern "C" {
  * @{
  */
 
-// For corruption and layer checking.
-// clang-format off
-#define OXR_XR_DEBUG_INSTANCE  (*(uint64_t *)"oxrinst\0")
-#define OXR_XR_DEBUG_SESSION   (*(uint64_t *)"oxrsess\0")
-#define OXR_XR_DEBUG_SPACE     (*(uint64_t *)"oxrspac\0")
-#define OXR_XR_DEBUG_PATH      (*(uint64_t *)"oxrpath\0")
-#define OXR_XR_DEBUG_ACTION    (*(uint64_t *)"oxracti\0")
-#define OXR_XR_DEBUG_SWAPCHAIN (*(uint64_t *)"oxrswap\0")
-#define OXR_XR_DEBUG_ACTIONSET (*(uint64_t *)"oxraset\0")
-#define OXR_XR_DEBUG_MESSENGER (*(uint64_t *)"oxrmess\0")
-#define OXR_XR_DEBUG_SOURCESET (*(uint64_t *)"oxrsrcs\0")
-#define OXR_XR_DEBUG_SOURCE    (*(uint64_t *)"oxrsrc_\0")
-#define OXR_XR_DEBUG_HTRACKER  (*(uint64_t *)"oxrhtra\0")
-// clang-format on
-
 
 /*
  *
@@ -145,55 +133,6 @@ struct time_state;
  */
 typedef XrResult (*oxr_handle_destroyer)(struct oxr_logger *log, struct oxr_handle_base *hb);
 
-/*!
- * State of a handle base, to reduce likelihood of going "boom" on
- * out-of-order destruction or other unsavory behavior.
- */
-enum oxr_handle_state
-{
-	/*! State during/before oxr_handle_init, or after failure */
-	OXR_HANDLE_STATE_UNINITIALIZED = 0,
-
-	/*! State after successful oxr_handle_init */
-	OXR_HANDLE_STATE_LIVE,
-
-	/*! State after successful oxr_handle_destroy */
-	OXR_HANDLE_STATE_DESTROYED,
-};
-
-/*!
- * Sub action paths.
- */
-enum oxr_subaction_path
-{
-	OXR_SUB_ACTION_PATH_USER,
-	OXR_SUB_ACTION_PATH_HEAD,
-	OXR_SUB_ACTION_PATH_LEFT,
-	OXR_SUB_ACTION_PATH_RIGHT,
-	OXR_SUB_ACTION_PATH_GAMEPAD,
-};
-
-/*!
- * Region of a dpad binding that an input is mapped to
- */
-enum oxr_dpad_region
-{
-	OXR_DPAD_REGION_CENTER = 0,
-	OXR_DPAD_REGION_UP = (1 << 0),
-	OXR_DPAD_REGION_DOWN = (1 << 1),
-	OXR_DPAD_REGION_LEFT = (1 << 2),
-	OXR_DPAD_REGION_RIGHT = (1 << 3),
-};
-
-/*!
- * Tracks the state of a image that belongs to a @ref oxr_swapchain.
- */
-enum oxr_image_state
-{
-	OXR_IMAGE_STATE_READY,
-	OXR_IMAGE_STATE_ACQUIRED,
-	OXR_IMAGE_STATE_WAITED,
-};
 
 
 /*
@@ -395,7 +334,7 @@ oxr_path_only_get(struct oxr_logger *log, struct oxr_instance *inst, const char 
  */
 XrResult
 oxr_path_get_string(
-    struct oxr_logger *log, struct oxr_instance *inst, XrPath path, const char **out_str, size_t *out_length);
+    struct oxr_logger *log, const struct oxr_instance *inst, XrPath path, const char **out_str, size_t *out_length);
 
 /*!
  * Destroy the path system and all paths that the instance has created.
@@ -456,19 +395,19 @@ oxr_action_to_openxr(struct oxr_action *act)
  * Sets all members of @p subaction_paths ( @ref oxr_subaction_paths ) as
  * appropriate based on the subaction paths found in the list.
  *
- * If no paths are provided, @p sub_paths->any will be true.
+ * If no paths are provided, @p subaction_paths->any will be true.
  *
  * @return false if an invalid subaction path is provided.
  *
  * @public @memberof oxr_instance
- * @see oxr_sub_paths
+ * @see oxr_subaction_paths
  */
 bool
-oxr_classify_sub_action_paths(struct oxr_logger *log,
-                              struct oxr_instance *inst,
-                              uint32_t subaction_path_count,
-                              const XrPath *subaction_paths,
-                              struct oxr_subaction_paths *subaction_paths_out);
+oxr_classify_subaction_paths(struct oxr_logger *log,
+                             const struct oxr_instance *inst,
+                             uint32_t subaction_path_count,
+                             const XrPath *subaction_paths,
+                             struct oxr_subaction_paths *subaction_paths_out);
 
 /*!
  * Find the pose input for the set of subaction_paths
@@ -755,7 +694,7 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
  * Change the state of the session, queues a event.
  */
 void
-oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state);
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state, XrTime time);
 
 XrResult
 oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo);
@@ -796,7 +735,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 XrResult
 oxr_session_apply_force_feedback(struct oxr_logger *log,
                                  struct oxr_hand_tracker *hand_tracker,
-                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations);
+                                 const XrForceFeedbackCurlApplyLocationsMNDX *locations);
 
 /*
  *
@@ -826,77 +765,29 @@ oxr_space_reference_create(struct oxr_logger *log,
                            const XrReferenceSpaceCreateInfo *createInfo,
                            struct oxr_space **out_space);
 
-/*!
- * Transforms a relation given in pure global space into the oxr_space @p spc.
- * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_relation_in_space(struct oxr_logger *log,
-                                 XrTime time,
-                                 struct xrt_space_relation *relation,
-                                 struct oxr_space *spc,
-                                 bool apply_space_pose,
-                                 struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a pose given in pure global space into a relation in the oxr_space @p spc.
- * If @p apply_space_pose is true, the pose offset of @p spc will be included in @p out_relation.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_pose_in_space(struct oxr_logger *log,
-                             XrTime time,
-                             struct xrt_pose *pose,
-                             struct oxr_space *spc,
-                             bool apply_space_pose,
-                             struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a relation in an given oxr_space @p spc into pure global space, taking the pose offset of @p spc into
- * account.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_relation_from_space(struct oxr_logger *log,
-                                   XrTime time,
-                                   struct xrt_space_relation *relation,
-                                   struct oxr_space *spc,
-                                   struct xrt_space_relation *out_relation);
-
-/*!
- * Transforms a posen in a given oxr_space @p spc into a relation in "pure" global space, taking the pose offset of @p
- * spc into account.
- */
-XRT_CHECK_RESULT bool
-oxr_space_pure_pose_from_space(struct oxr_logger *log,
-                               XrTime time,
-                               struct xrt_pose *pose,
-                               struct oxr_space *spc,
-                               struct xrt_space_relation *out_relation);
-
-/*!
- * Returns the pure relation in global space of an oxr_space, meaning the tracking_origin offsets are already applied
- * and sets @p out_xdev to the device the space is associated with.
- *
- * @todo: This function currently assumes all reference spaces are associated with the HMD.
- */
-XRT_CHECK_RESULT bool
-oxr_space_get_pure_relation(struct oxr_logger *log,
-                            struct oxr_space *spc,
-                            XrTime time,
-                            struct xrt_space_relation *out_relation,
-                            struct xrt_device **out_xdev);
-
 XrResult
 oxr_space_locate(
     struct oxr_logger *log, struct oxr_space *spc, struct oxr_space *baseSpc, XrTime time, XrSpaceLocation *location);
 
-XRT_CHECK_RESULT bool
-is_local_space_set_up(struct oxr_session *sess);
+/*!
+ * Locate the @ref xrt_device in the given base space, useful for implementing
+ * hand tracking location look ups and the like.
+ *
+ * @param      log          Logging struct.
+ * @param      xdev         Device to locate in the base space.
+ * @param      baseSpc      Base space where the device is to be located.
+ * @param[in]  time         Time in OpenXR domain.
+ * @param[out] out_relation Returns T_base_xdev, aka xdev in base space.
+ *
+ * @return Any errors, XR_SUCCESS, pose might not be valid on XR_SUCCESS.
+ */
+XRT_CHECK_RESULT XrResult
+oxr_space_locate_device(struct oxr_logger *log,
+                        struct xrt_device *xdev,
+                        struct oxr_space *baseSpc,
+                        XrTime time,
+                        struct xrt_space_relation *out_relation);
 
-XrSpaceLocationFlags
-xrt_to_xr_space_location_flags(enum xrt_space_relation_flags relation_flags);
-
-XRT_CHECK_RESULT bool
-global_to_local_space(struct oxr_logger *log, struct oxr_session *sess, XrTime time, struct xrt_space_relation *rel);
 
 /*
  *
@@ -912,12 +803,6 @@ oxr_swapchain_to_openxr(struct oxr_swapchain *sc)
 {
 	return XRT_CAST_PTR_TO_OXR_HANDLE(XrSwapchain, sc);
 }
-
-XrResult
-oxr_create_swapchain(struct oxr_logger * /*log*/,
-                     struct oxr_session *sess,
-                     const XrSwapchainCreateInfo * /*createInfo*/,
-                     struct oxr_swapchain **out_swapchain);
 
 
 /*
@@ -1005,6 +890,9 @@ bool
 oxr_system_get_hand_tracking_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 bool
+oxr_system_get_eye_gaze_support(struct oxr_logger *log, struct oxr_instance *inst);
+
+bool
 oxr_system_get_force_feedback_support(struct oxr_logger *log, struct oxr_instance *inst);
 
 /*
@@ -1061,22 +949,6 @@ oxr_xdev_find_input(struct xrt_device *xdev, enum xrt_input_name name, struct xr
 bool
 oxr_xdev_find_output(struct xrt_device *xdev, enum xrt_output_name name, struct xrt_output **out_output);
 
-void
-oxr_xdev_get_relation_chain(struct oxr_logger *log,
-                            struct oxr_instance *inst,
-                            struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            XrTime at_time,
-                            struct xrt_relation_chain *xrc);
-
-void
-oxr_xdev_get_space_relation(struct oxr_logger *log,
-                            struct oxr_instance *inst,
-                            struct xrt_device *xdev,
-                            enum xrt_input_name name,
-                            XrTime at_time,
-                            struct xrt_space_relation *out_relation);
-
 /*!
  * Returns the hand tracking value of the named input from the device.
  * Does NOT apply tracking origin offset to each joint.
@@ -1088,6 +960,7 @@ oxr_xdev_get_hand_tracking_at(struct oxr_logger *log,
                               enum xrt_input_name name,
                               XrTime at_time,
                               struct xrt_hand_joint_set *out_value);
+
 
 /*
  *
@@ -1362,6 +1235,9 @@ struct oxr_system
 	//! System devices used in all session types.
 	struct xrt_system_devices *xsysd;
 
+	//! Space overseer used in all session types.
+	struct xrt_space_overseer *xso;
+
 	//! System compositor, used to create session compositors.
 	struct xrt_system_compositor *xsysc;
 
@@ -1426,9 +1302,7 @@ struct oxr_instance
 	//! Common structure for things referred to by OpenXR handles.
 	struct oxr_handle_base handle;
 
-	/* ---- HACK ---- */
-	void *hack;
-	/* ---- HACK ---- */
+	struct u_debug_gui *debug_ui;
 
 	struct xrt_instance *xinst;
 
@@ -1487,8 +1361,14 @@ struct oxr_instance
 		XrPath oculus_go_controller;
 		XrPath oculus_touch_controller;
 		XrPath valve_index_controller;
+		XrPath hp_mixed_reality_controller;
+		XrPath samsung_odyssey_controller;
+		XrPath ml_ml2_controller;
 		XrPath mndx_ball_on_a_stick_controller;
 		XrPath msft_hand_interaction;
+		XrPath ext_eye_gaze_interaction;
+		XrPath ext_hand_interaction;
+		XrPath oppo_mr_controller;
 	} path_cache;
 
 	struct
@@ -1509,6 +1389,8 @@ struct oxr_instance
 	{
 		//! Unreal has a bug in the VulkanRHI backend.
 		bool disable_vulkan_format_depth_stencil;
+		//! Unreal 4 has a bug calling xrEndSession; the function should just exit
+		bool skip_end_session;
 	} quirks;
 
 	//! Debug messengers
@@ -1649,6 +1531,8 @@ struct oxr_session
 	/*! initial relation of head in "global" space.
 	 * Used as reference for local space.  */
 	struct xrt_space_relation local_space_pure_relation;
+
+	bool has_lost;
 };
 
 /*!
@@ -2009,16 +1893,6 @@ struct oxr_action_attachment
  * @}
  */
 
-enum oxr_space_type
-{
-	OXR_SPACE_TYPE_REFERENCE_VIEW = 1,
-	OXR_SPACE_TYPE_REFERENCE_LOCAL = 2,
-	OXR_SPACE_TYPE_REFERENCE_STAGE = 3,
-	OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT,
-	OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO,
-
-	OXR_SPACE_TYPE_ACTION,
-};
 
 static inline bool
 oxr_space_type_is_reference(enum oxr_space_type space_type)
@@ -2026,6 +1900,7 @@ oxr_space_type_is_reference(enum oxr_space_type space_type)
 	switch (space_type) {
 	case OXR_SPACE_TYPE_REFERENCE_VIEW:
 	case OXR_SPACE_TYPE_REFERENCE_LOCAL:
+	case OXR_SPACE_TYPE_REFERENCE_LOCAL_FLOOR:
 	case OXR_SPACE_TYPE_REFERENCE_STAGE:
 	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT:
 	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return true;
@@ -2035,37 +1910,6 @@ oxr_space_type_is_reference(enum oxr_space_type space_type)
 	return false;
 }
 
-static inline XrReferenceSpaceType
-oxr_ref_space_to_xr(enum oxr_space_type space_type)
-{
-	switch (space_type) {
-	case OXR_SPACE_TYPE_REFERENCE_VIEW: return XR_REFERENCE_SPACE_TYPE_VIEW;
-	case OXR_SPACE_TYPE_REFERENCE_LOCAL: return XR_REFERENCE_SPACE_TYPE_LOCAL;
-	case OXR_SPACE_TYPE_REFERENCE_STAGE: return XR_REFERENCE_SPACE_TYPE_STAGE;
-	case OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT: return XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT;
-	case OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO: return XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO;
-
-	case OXR_SPACE_TYPE_ACTION: return XR_REFERENCE_SPACE_TYPE_MAX_ENUM;
-	}
-	return XR_REFERENCE_SPACE_TYPE_MAX_ENUM;
-}
-
-static inline enum oxr_space_type
-xr_ref_space_to_oxr(XrReferenceSpaceType space_type)
-{
-	switch (space_type) {
-	case XR_REFERENCE_SPACE_TYPE_VIEW: return OXR_SPACE_TYPE_REFERENCE_VIEW;
-	case XR_REFERENCE_SPACE_TYPE_LOCAL: return OXR_SPACE_TYPE_REFERENCE_LOCAL;
-	case XR_REFERENCE_SPACE_TYPE_STAGE: return OXR_SPACE_TYPE_REFERENCE_STAGE;
-	case XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT: return OXR_SPACE_TYPE_REFERENCE_UNBOUNDED_MSFT;
-	case XR_REFERENCE_SPACE_TYPE_COMBINED_EYE_VARJO: return OXR_SPACE_TYPE_REFERENCE_COMBINED_EYE_VARJO;
-
-	case XR_REFERENCE_SPACE_TYPE_MAX_ENUM: return (enum oxr_space_type) - 1;
-	}
-
-	// wrap around or negative depending on enum data type, invalid value either way.
-	return (enum oxr_space_type) - 1;
-}
 
 /*!
  * Can be one of several reference space types, or a space that is bound to an
@@ -2095,6 +1939,13 @@ struct oxr_space
 
 	//! Which sub action path is this?
 	struct oxr_subaction_paths subaction_paths;
+
+	struct
+	{
+		struct xrt_space *xs;
+		struct xrt_device *xdev;
+		enum xrt_input_name name;
+	} action;
 };
 
 /*!
@@ -2140,7 +1991,7 @@ struct oxr_swapchain
 	{
 		bool yes;
 		int index;
-	} waited;
+	} inflight; // This is the image that the app is working on.
 
 	struct
 	{

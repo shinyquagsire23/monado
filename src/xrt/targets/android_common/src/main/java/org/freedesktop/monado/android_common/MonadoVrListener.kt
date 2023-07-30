@@ -25,11 +25,9 @@ class MonadoVrListener : VrListenerService() {
         if (component == null) {
             Toast.makeText(this, "Now in VR for 2D", Toast.LENGTH_SHORT).show()
             Log.i("OpenXRListener", "Got VR mode for 2D")
-
         } else {
             Toast.makeText(this, "Now in VR for $component", Toast.LENGTH_SHORT).show()
             Log.i("OpenXRListener", "Got VR mode for component: $component")
         }
-
     }
 }

@@ -1,13 +1,13 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Handling functions called from generated dispatch function.
  * @author Pete Black <pblack@collabora.com>
+ * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup ipc_server
  */
-
-#include "xrt/xrt_gfx_native.h"
 
 #include "util/u_misc.h"
 #include "util/u_handles.h"
@@ -26,6 +26,25 @@
  * Helper functions.
  *
  */
+
+static xrt_result_t
+validate_device_id(volatile struct ipc_client_state *ics, int64_t device_id, struct xrt_device **out_device)
+{
+	if (device_id >= XRT_SYSTEM_MAX_DEVICES) {
+		IPC_ERROR(ics->server, "Invalid device ID (device_id >= XRT_SYSTEM_MAX_DEVICES)!");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct xrt_device *xdev = ics->server->idevs[device_id].xdev;
+	if (xdev == NULL) {
+		IPC_ERROR(ics->server, "Invalid device ID (xdev is NULL)!");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	*out_device = xdev;
+
+	return XRT_SUCCESS;
+}
 
 static xrt_result_t
 validate_swapchain_state(volatile struct ipc_client_state *ics, uint32_t *out_index)
@@ -62,6 +81,65 @@ set_swapchain_info(volatile struct ipc_client_state *ics,
 	ics->swapchain_data[index].image_count = xsc->image_count;
 }
 
+static xrt_result_t
+validate_space_id(volatile struct ipc_client_state *ics, int64_t space_id, struct xrt_space **out_xspc)
+{
+	if (space_id < 0) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	if (space_id >= IPC_MAX_CLIENT_SPACES) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	if (ics->xspcs[space_id] == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	*out_xspc = (struct xrt_space *)ics->xspcs[space_id];
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+get_new_space_id(volatile struct ipc_client_state *ics, uint32_t *out_id)
+{
+	// Our handle is just the index for now.
+	uint32_t index = 0;
+	for (; index < IPC_MAX_CLIENT_SPACES; index++) {
+		if (ics->xspcs[index] == NULL) {
+			break;
+		}
+	}
+
+	if (index >= IPC_MAX_CLIENT_SPACES) {
+		IPC_ERROR(ics->server, "Too many spaces!");
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	*out_id = index;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+track_space(volatile struct ipc_client_state *ics, struct xrt_space *xs, uint32_t *out_id)
+{
+	uint32_t id = UINT32_MAX;
+	xrt_result_t xret = get_new_space_id(ics, &id);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	// Remove volatile
+	struct xrt_space **xs_ptr = (struct xrt_space **)&ics->xspcs[id];
+	xrt_space_reference(xs_ptr, xs);
+
+	*out_id = id;
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -81,6 +159,23 @@ ipc_handle_instance_get_shm_fd(volatile struct ipc_client_state *ics,
 
 	out_handles[0] = ics->server->ism_handle;
 	*out_handle_count = 1;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_instance_describe_client(volatile struct ipc_client_state *ics,
+                                    const struct ipc_client_description *client_desc)
+{
+	ics->client_state.info = client_desc->info;
+	ics->client_state.pid = client_desc->pid;
+
+	IPC_INFO(ics->server,
+	         "Client info\n"
+	         "\tapplication_name: '%s'\n"
+	         "\tpid: %i",
+	         client_desc->info.application_name, //
+	         client_desc->pid);                  //
 
 	return XRT_SUCCESS;
 }
@@ -133,7 +228,15 @@ ipc_handle_session_begin(volatile struct ipc_client_state *ics)
 		return XRT_ERROR_IPC_SESSION_NOT_CREATED;
 	}
 
-	return xrt_comp_begin_session(ics->xc, 0);
+	//! @todo Pass the view type down.
+	const struct xrt_begin_session_info begin_session_info = {
+	    .view_type = XRT_VIEW_TYPE_STEREO,
+	    .ext_hand_tracking_enabled = ics->client_state.info.ext_hand_tracking_enabled,
+	    .ext_eye_gaze_interaction_enabled = ics->client_state.info.ext_eye_gaze_interaction_enabled,
+	    .ext_hand_interaction_enabled = ics->client_state.info.ext_hand_interaction_enabled,
+	};
+
+	return xrt_comp_begin_session(ics->xc, &begin_session_info);
 }
 
 xrt_result_t
@@ -158,6 +261,215 @@ ipc_handle_session_destroy(volatile struct ipc_client_state *ics)
 	}
 
 	ipc_server_client_destroy_compositor(ics);
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_space_create_semantic_ids(volatile struct ipc_client_state *ics,
+                                     uint32_t *out_root_id,
+                                     uint32_t *out_view_id,
+                                     uint32_t *out_local_id,
+                                     uint32_t *out_stage_id,
+                                     uint32_t *out_unbounded_id)
+{
+	IPC_TRACE_MARKER();
+
+	struct xrt_space_overseer *xso = ics->server->xso;
+
+#define CREATE(NAME)                                                                                                   \
+	do {                                                                                                           \
+		*out_##NAME##_id = UINT32_MAX;                                                                         \
+		if (xso->semantic.NAME == NULL) {                                                                      \
+			break;                                                                                         \
+		}                                                                                                      \
+		uint32_t id = 0;                                                                                       \
+		xrt_result_t xret = track_space(ics, xso->semantic.NAME, &id);                                         \
+		if (xret != XRT_SUCCESS) {                                                                             \
+			break;                                                                                         \
+		}                                                                                                      \
+		*out_##NAME##_id = id;                                                                                 \
+	} while (false)
+
+	CREATE(root);
+	CREATE(view);
+	CREATE(local);
+	CREATE(stage);
+	CREATE(unbounded);
+
+#undef CREATE
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_space_create_offset(volatile struct ipc_client_state *ics,
+                               uint32_t parent_id,
+                               const struct xrt_pose *offset,
+                               uint32_t *out_space_id)
+{
+	IPC_TRACE_MARKER();
+
+	struct xrt_space_overseer *xso = ics->server->xso;
+
+	struct xrt_space *parent = NULL;
+	xrt_result_t xret = validate_space_id(ics, parent_id, &parent);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+
+	struct xrt_space *xs = NULL;
+	xret = xrt_space_overseer_create_offset_space(xso, parent, offset, &xs);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	uint32_t space_id = UINT32_MAX;
+	xret = track_space(ics, xs, &space_id);
+
+	// Track space grabs a reference, or it errors and we don't want to keep it around.
+	xrt_space_reference(&xs, NULL);
+
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	*out_space_id = space_id;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_space_create_pose(volatile struct ipc_client_state *ics,
+                             uint32_t xdev_id,
+                             enum xrt_input_name name,
+                             uint32_t *out_space_id)
+{
+	IPC_TRACE_MARKER();
+
+	struct xrt_space_overseer *xso = ics->server->xso;
+
+	struct xrt_device *xdev = NULL;
+	xrt_result_t xret = validate_device_id(ics, xdev_id, &xdev);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid device_id!");
+		return xret;
+	}
+
+	struct xrt_space *xs = NULL;
+	xret = xrt_space_overseer_create_pose_space(xso, xdev, name, &xs);
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	uint32_t space_id = UINT32_MAX;
+	xret = track_space(ics, xs, &space_id);
+
+	// Track space grabs a reference, or it errors and we don't want to keep it around.
+	xrt_space_reference(&xs, NULL);
+
+	if (xret != XRT_SUCCESS) {
+		return xret;
+	}
+
+	*out_space_id = space_id;
+
+	return xret;
+}
+
+xrt_result_t
+ipc_handle_space_locate_space(volatile struct ipc_client_state *ics,
+                              uint32_t base_space_id,
+                              const struct xrt_pose *base_offset,
+                              uint64_t at_timestamp,
+                              uint32_t space_id,
+                              const struct xrt_pose *offset,
+                              struct xrt_space_relation *out_relation)
+{
+	IPC_TRACE_MARKER();
+
+	struct xrt_space_overseer *xso = ics->server->xso;
+	struct xrt_space *base_space = NULL;
+	struct xrt_space *space = NULL;
+	xrt_result_t xret;
+
+	xret = validate_space_id(ics, base_space_id, &base_space);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid base_space_id!");
+		return xret;
+	}
+
+	xret = validate_space_id(ics, space_id, &space);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid space_id!");
+		return xret;
+	}
+
+	return xrt_space_overseer_locate_space( //
+	    xso,                                //
+	    base_space,                         //
+	    base_offset,                        //
+	    at_timestamp,                       //
+	    space,                              //
+	    offset,                             //
+	    out_relation);                      //
+}
+
+xrt_result_t
+ipc_handle_space_locate_device(volatile struct ipc_client_state *ics,
+                               uint32_t base_space_id,
+                               const struct xrt_pose *base_offset,
+                               uint64_t at_timestamp,
+                               uint32_t xdev_id,
+                               struct xrt_space_relation *out_relation)
+{
+	IPC_TRACE_MARKER();
+
+	struct xrt_space_overseer *xso = ics->server->xso;
+	struct xrt_space *base_space = NULL;
+	struct xrt_device *xdev = NULL;
+	xrt_result_t xret;
+
+	xret = validate_space_id(ics, base_space_id, &base_space);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid base_space_id!");
+		return xret;
+	}
+
+	xret = validate_device_id(ics, xdev_id, &xdev);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid device_id!");
+		return xret;
+	}
+
+	return xrt_space_overseer_locate_device( //
+	    xso,                                 //
+	    base_space,                          //
+	    base_offset,                         //
+	    at_timestamp,                        //
+	    xdev,                                //
+	    out_relation);                       //
+}
+
+xrt_result_t
+ipc_handle_space_destroy(volatile struct ipc_client_state *ics, uint32_t space_id)
+{
+	struct xrt_space *xs = NULL;
+	xrt_result_t xret;
+
+	xret = validate_space_id(ics, space_id, &xs);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Invalid space_id!");
+		return xret;
+	}
+
+	assert(xs != NULL);
+	xs = NULL;
+
+	// Remove volatile
+	struct xrt_space **xs_ptr = (struct xrt_space **)&ics->xspcs[space_id];
+	xrt_space_reference(xs_ptr, NULL);
 
 	return XRT_SUCCESS;
 }
@@ -501,7 +813,6 @@ _update_layers(volatile struct ipc_client_state *ics, struct xrt_compositor *xc,
 
 xrt_result_t
 ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
-                                 int64_t frame_id,
                                  uint32_t slot_id,
                                  uint32_t *out_free_slot_id,
                                  const xrt_graphics_sync_handle_t *handles,
@@ -537,11 +848,11 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 	 * Transfer data to underlying compositor.
 	 */
 
-	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+	xrt_comp_layer_begin(ics->xc, &copy.data);
 
 	_update_layers(ics, ics->xc, &copy);
 
-	xrt_comp_layer_commit(ics->xc, frame_id, sync_handle);
+	xrt_comp_layer_commit(ics->xc, sync_handle);
 
 
 	/*
@@ -560,7 +871,6 @@ ipc_handle_compositor_layer_sync(volatile struct ipc_client_state *ics,
 
 xrt_result_t
 ipc_handle_compositor_layer_sync_with_semaphore(volatile struct ipc_client_state *ics,
-                                                int64_t frame_id,
                                                 uint32_t slot_id,
                                                 uint32_t semaphore_id,
                                                 uint64_t semaphore_value,
@@ -594,11 +904,11 @@ ipc_handle_compositor_layer_sync_with_semaphore(volatile struct ipc_client_state
 	 * Transfer data to underlying compositor.
 	 */
 
-	xrt_comp_layer_begin(ics->xc, frame_id, copy.display_time_ns, copy.env_blend_mode);
+	xrt_comp_layer_begin(ics->xc, &copy.data);
 
 	_update_layers(ics, ics->xc, &copy);
 
-	xrt_comp_layer_commit_with_semaphore(ics->xc, frame_id, xcsem, semaphore_value);
+	xrt_comp_layer_commit_with_semaphore(ics->xc, xcsem, semaphore_value);
 
 
 	/*
@@ -628,64 +938,52 @@ ipc_handle_compositor_poll_events(volatile struct ipc_client_state *ics, union x
 }
 
 xrt_result_t
-ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
-                                  uint32_t id,
-                                  struct ipc_app_state *out_client_desc)
-{
-	if (id >= IPC_MAX_CLIENTS) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-	volatile struct ipc_client_state *ics = &_ics->server->threads[id].ics;
-
-	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	*out_client_desc = ics->client_state;
-	out_client_desc->io_active = ics->io_active;
-
-	//@todo: track this data in the ipc_client_state struct
-	out_client_desc->primary_application = false;
-	if (ics->server->global_state.active_client_index == (int)id) {
-		out_client_desc->primary_application = true;
-	}
-
-	return XRT_SUCCESS;
-}
-
-xrt_result_t
-ipc_handle_system_set_client_info(volatile struct ipc_client_state *ics, const struct ipc_app_state *client_desc)
-{
-	ics->client_state.info = client_desc->info;
-	ics->client_state.pid = client_desc->pid;
-
-	IPC_INFO(ics->server,
-	         "Client info\n"
-	         "\tapplication_name: '%s'\n"
-	         "\tpid: %i",
-	         client_desc->info.application_name, //
-	         client_desc->pid);                  //
-
-	return XRT_SUCCESS;
-}
-
-xrt_result_t
 ipc_handle_system_get_clients(volatile struct ipc_client_state *_ics, struct ipc_client_list *list)
 {
+	struct ipc_server *s = _ics->server;
+
+	// Look client list.
+	os_mutex_lock(&s->global_state.lock);
+
+	uint32_t count = 0;
 	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
-		list->ids[i] = _ics->server->threads[i].ics.server_thread_index;
+
+		volatile struct ipc_client_state *ics = &s->threads[i].ics;
+
+		// Is this thread running?
+		if (ics->server_thread_index < 0) {
+			continue;
+		}
+
+		list->ids[count++] = ics->client_state.id;
 	}
+
+	list->id_count = count;
+
+	// Unlock now.
+	os_mutex_unlock(&s->global_state.lock);
+
 	return XRT_SUCCESS;
 }
 
 xrt_result_t
-ipc_handle_system_set_primary_client(volatile struct ipc_client_state *ics, uint32_t client_id)
+ipc_handle_system_get_client_info(volatile struct ipc_client_state *_ics,
+                                  uint32_t client_id,
+                                  struct ipc_app_state *out_ias)
 {
-	IPC_INFO(ics->server, "System setting active client to %d.", client_id);
+	struct ipc_server *s = _ics->server;
 
-	ipc_server_set_active_client(ics->server, client_id);
+	return ipc_server_get_client_app_state(s, client_id, out_ias);
+}
 
-	return XRT_SUCCESS;
+xrt_result_t
+ipc_handle_system_set_primary_client(volatile struct ipc_client_state *_ics, uint32_t client_id)
+{
+	struct ipc_server *s = _ics->server;
+
+	IPC_INFO(s, "System setting active client to %d.", client_id);
+
+	return ipc_server_set_active_client(s, client_id);
 }
 
 xrt_result_t
@@ -699,21 +997,11 @@ ipc_handle_system_set_focused_client(volatile struct ipc_client_state *ics, uint
 xrt_result_t
 ipc_handle_system_toggle_io_client(volatile struct ipc_client_state *_ics, uint32_t client_id)
 {
-	volatile struct ipc_client_state *ics = NULL;
+	struct ipc_server *s = _ics->server;
 
-	if (client_id >= IPC_MAX_CLIENTS) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
+	IPC_INFO(s, "System toggling io for client %u.", client_id);
 
-	ics = &_ics->server->threads[client_id].ics;
-
-	if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
-		return XRT_ERROR_IPC_FAILURE;
-	}
-
-	ics->io_active = !ics->io_active;
-
-	return XRT_SUCCESS;
+	return ipc_server_toggle_io_client(s, client_id);
 }
 
 xrt_result_t
@@ -830,10 +1118,18 @@ ipc_handle_swapchain_import(volatile struct ipc_client_state *ics,
 		return xret;
 	}
 
-	struct xrt_image_native xins[XRT_MAX_SWAPCHAIN_IMAGES] = {0};
+	struct xrt_image_native xins[XRT_MAX_SWAPCHAIN_IMAGES] = XRT_STRUCT_INIT;
 	for (uint32_t i = 0; i < handle_count; i++) {
 		xins[i].handle = handles[i];
 		xins[i].size = args->sizes[i];
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+		// DXGI handles need to be dealt with differently, they are identified
+		// by having their lower bit set to 1 during transfer
+		if ((size_t)xins[i].handle & 1) {
+			xins[i].handle = (HANDLE)((size_t)xins[i].handle - 1);
+			xins[i].is_dxgi_handle = true;
+		}
+#endif
 	}
 
 	// create the swapchain
@@ -1132,6 +1428,25 @@ ipc_handle_device_get_view_poses_2(volatile struct ipc_client_state *ics,
 }
 
 xrt_result_t
+ipc_handle_device_compute_distortion(volatile struct ipc_client_state *ics,
+                                     uint32_t id,
+                                     uint32_t view,
+                                     float u,
+                                     float v,
+                                     bool *out_ret,
+                                     struct xrt_uv_triplet *out_triplet)
+{
+	// To make the code a bit more readable.
+	uint32_t device_id = id;
+	struct xrt_device *xdev = get_xdev(ics, device_id);
+
+	bool ret = xrt_device_compute_distortion(xdev, view, u, v, out_triplet);
+	*out_ret = ret;
+
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
 ipc_handle_device_set_output(volatile struct ipc_client_state *ics,
                              uint32_t id,
                              enum xrt_output_name name,
@@ -1144,5 +1459,18 @@ ipc_handle_device_set_output(volatile struct ipc_client_state *ics,
 	// Set the output.
 	xrt_device_set_output(xdev, name, value);
 
+	return XRT_SUCCESS;
+}
+
+xrt_result_t
+ipc_handle_device_is_form_factor_available(volatile struct ipc_client_state *ics,
+                                           uint32_t id,
+                                           enum xrt_form_factor form_factor,
+                                           bool *out_available)
+{
+	// To make the code a bit more readable.
+	uint32_t device_id = id;
+	struct xrt_device *xdev = get_xdev(ics, device_id);
+	*out_available = xrt_device_is_form_factor_available(xdev, form_factor);
 	return XRT_SUCCESS;
 }

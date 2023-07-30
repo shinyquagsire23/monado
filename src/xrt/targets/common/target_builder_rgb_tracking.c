@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -130,11 +130,16 @@ setup_pipeline(struct xrt_prober *xp, struct build_state *build)
 	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}};
 
 	// We create the two psmv trackers up front, but don't start them.
-	// clang-format off
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSMV)
 	t_psmv_create(build->xfctx, &rgb[0], data, &build->psmv_red, &xsinks[0]);
 	t_psmv_create(build->xfctx, &rgb[1], data, &build->psmv_purple, &xsinks[1]);
+#endif
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSVR)
 	t_psvr_create(build->xfctx, data, &build->psvr, &xsinks[2]);
-	// clang-format on
+#endif
+
+	// No longer needed.
+	t_stereo_camera_calibration_reference(&data, NULL);
 
 	// Setup origin to the common one.
 	build->psvr->origin = build->origin;
@@ -271,7 +276,11 @@ rgb_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp
 }
 
 static xrt_result_t
-rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+rgb_open_system(struct xrt_builder *xb,
+                cJSON *config,
+                struct xrt_prober *xp,
+                struct xrt_system_devices **out_xsysd,
+                struct xrt_space_overseer **out_xso)
 {
 	struct u_builder_search_results results = {0};
 	struct xrt_prober_device **xpdevs = NULL;
@@ -337,7 +346,8 @@ rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 		}
 #endif
 	} else {
-		head = simulated_hmd_create();
+		const struct xrt_pose center = XRT_POSE_IDENTITY;
+		head = simulated_hmd_create(SIMULATED_MOVEMENT_WOBBLE, &center);
 	}
 
 
@@ -397,6 +407,7 @@ rgb_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, st
 	 */
 
 	*out_xsysd = &usysd->base;
+	u_builder_create_space_overseer(&usysd->base, out_xso);
 
 	return XRT_SUCCESS;
 }

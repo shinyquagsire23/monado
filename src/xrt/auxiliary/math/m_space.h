@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -32,7 +32,7 @@ extern "C" {
  */
 
 static inline bool
-m_pose_is_identity(struct xrt_pose *pose)
+m_pose_is_identity(const struct xrt_pose *pose)
 {
 	struct xrt_pose p = *pose;
 

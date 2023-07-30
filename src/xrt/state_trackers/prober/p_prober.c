@@ -8,6 +8,7 @@
  */
 
 #include "xrt/xrt_config_drivers.h"
+#include "xrt/xrt_system.h"
 #include "xrt/xrt_settings.h"
 
 #include "util/u_var.h"
@@ -88,7 +89,7 @@ static int
 p_dump(struct xrt_prober *xp);
 
 static xrt_result_t
-p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd, struct xrt_space_overseer **out_xso);
 
 static int
 p_select_device(struct xrt_prober *xp, struct xrt_device **xdevs, size_t xdev_count);
@@ -200,8 +201,12 @@ p_dev_get_usb_dev(struct prober *p,
 }
 
 int
-p_dev_get_bluetooth_dev(
-    struct prober *p, uint64_t id, uint16_t vendor_id, uint16_t product_id, struct prober_device **out_pdev)
+p_dev_get_bluetooth_dev(struct prober *p,
+                        uint64_t id,
+                        uint16_t vendor_id,
+                        uint16_t product_id,
+                        const char *product_name,
+                        struct prober_device **out_pdev)
 {
 	struct prober_device *pdev;
 
@@ -231,6 +236,7 @@ p_dev_get_bluetooth_dev(
 	pdev->base.product_id = product_id;
 	pdev->base.bus = XRT_BUS_TYPE_BLUETOOTH;
 	pdev->bluetooth.id = id;
+	snprintf(pdev->bluetooth.product, ARRAY_SIZE(pdev->bluetooth.product), "%s", product_name);
 
 	*out_pdev = pdev;
 
@@ -252,13 +258,8 @@ fill_out_product(struct prober *p, struct prober_device *pdev)
 	char *str = NULL;
 	int ret = 0;
 	do {
-		if (strlen(pdev->base.product_name)) {
-
-			ret = snprintf(str, ret, "%s device: %s", bus, pdev->base.product_name);
-		} else {
-			ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus, pdev->base.vendor_id,
-			               pdev->base.product_id);
-		}
+		ret = snprintf(str, ret, "Unknown %s device: %04x:%04x", bus, pdev->base.vendor_id,
+		               pdev->base.product_id);
 		if (ret <= 0) {
 			return;
 		}
@@ -839,6 +840,28 @@ find_builder_by_identifier(struct prober *p, const char *ident)
 	return NULL;
 }
 
+static void
+print_system_devices(u_pp_delegate_t dg, struct xrt_system_devices *xsysd)
+{
+	u_pp(dg, "\n\tGot devices:");
+
+	for (uint32_t i = 0; i < xsysd->xdev_count; i++) {
+		u_pp(dg, "\n\t\t%u: %s", i, xsysd->xdevs[i]->str);
+	}
+
+	u_pp(dg, "\n\tIn roles:");
+
+#define P(IDENT) u_pp(dg, "\n\t\t%s: %s", #IDENT, xsysd->roles.IDENT ? xsysd->roles.IDENT->str : "<none>")
+	P(head);
+	P(left);
+	P(right);
+	P(gamepad);
+	P(eyes);
+	P(hand_tracking.left);
+	P(hand_tracking.right);
+#undef P
+}
+
 
 /*
  *
@@ -950,7 +973,7 @@ p_dump(struct xrt_prober *xp)
 }
 
 static xrt_result_t
-p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd, struct xrt_space_overseer **out_xso)
 {
 	XRT_TRACE_MARKER();
 
@@ -1048,7 +1071,12 @@ p_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
 
 	if (select != NULL) {
 		u_pp(dg, "\n\tUsing builder %s: %s", select->identifier, select->name);
-		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd);
+		xret = xrt_builder_open_system(select, p->json.root, xp, out_xsysd, out_xso);
+
+		if (xret == XRT_SUCCESS) {
+			print_system_devices(dg, *out_xsysd);
+		}
+
 		u_pp(dg, "\n\tResult: ");
 		u_pp_xrt_result(dg, xret);
 	}
@@ -1327,7 +1355,7 @@ p_get_string_descriptor(struct xrt_prober *xp,
 			               u.arr[3], u.arr[2], u.arr[1], u.arr[0]);
 		}; break;
 		case XRT_PROBER_STRING_PRODUCT:
-			ret = snprintf((char *)buffer, max_length, "%s", pdev->base.product_name);
+			ret = snprintf((char *)buffer, max_length, "%s", pdev->bluetooth.product);
 			break;
 		default: ret = 0; break;
 		}

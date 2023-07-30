@@ -242,7 +242,7 @@ rift_s_parse_camera_calibration_block(char *json_string, struct rift_s_camera_ca
 	int camera_id = 0;
 	cJSON_ArrayForEach(item, cameras)
 	{
-		if (camera_id == RIFT_S_MAX_CAMERAS) {
+		if (camera_id == RIFT_S_CAMERA_COUNT) {
 			RIFT_S_ERROR("Too many camera calibration entries");
 			goto fail;
 		}

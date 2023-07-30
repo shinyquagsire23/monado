@@ -86,28 +86,18 @@ dump_distortion(struct t_camera_calibration *view)
 {
 	char buf[1024];
 	ssize_t curr = 0;
+	U_LOG_RAW("distortion_model = %s", t_stringify_camera_distortion_model(view->distortion_model));
 
-	U_LOG_RAW("use_fisheye = %s", view->use_fisheye ? "true" : "false");
-
-	if (view->use_fisheye) {
-		P("distortion_fisheye = [");
-		for (uint32_t col = 0; col < 4; col++) {
-			P("%f", view->distortion_fisheye[col]);
-			if (col < 3) {
-				P(", ");
-			}
+	P("distortion = [");
+	size_t num = t_num_params_from_distortion_model(view->distortion_model);
+	for (uint32_t col = 0; col < num; col++) {
+		P("%f", view->distortion_parameters_as_array[col]);
+		if (col < num - 1) {
+			P(", ");
 		}
-		P("]");
-	} else {
-		P("distortion = [");
-		for (uint32_t col = 0; col < view->distortion_num; col++) {
-			P("%f", view->distortion[col]);
-			if (col < view->distortion_num - 1) {
-				P(", ");
-			}
-		}
-		P("]");
 	}
+	P("]");
+
 	U_LOG_RAW("%s", buf);
 }
 
@@ -119,15 +109,12 @@ dump_distortion(struct t_camera_calibration *view)
  */
 
 void
-t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **out_c, uint32_t distortion_num)
+t_stereo_camera_calibration_alloc(struct t_stereo_camera_calibration **out_c,
+                                  const enum t_camera_distortion_model distortion_model)
 {
-	// Four parameters for kannala-brandt, 5, 8, 12, or 14 for the normal OpenCV pinhole distortion model
-	assert(distortion_num == 4 || distortion_num == 5 || distortion_num == 8 || distortion_num == 12 ||
-	       distortion_num == 14);
-
 	struct t_stereo_camera_calibration *c = U_TYPED_CALLOC(struct t_stereo_camera_calibration);
-	c->view[0].distortion_num = distortion_num;
-	c->view[1].distortion_num = distortion_num;
+	c->view[0].distortion_model = distortion_model;
+	c->view[1].distortion_model = distortion_model;
 	t_stereo_camera_calibration_reference(out_c, c);
 }
 

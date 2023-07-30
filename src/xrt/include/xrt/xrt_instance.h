@@ -1,9 +1,10 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Header for @ref xrt_instance object.
  * @author Jakob Bornecrantz <jakob@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup xrt_iface
  */
 
@@ -20,6 +21,7 @@ extern "C" {
 
 struct xrt_prober;
 struct xrt_device;
+struct xrt_space_overseer;
 struct xrt_system_devices;
 struct xrt_system_compositor;
 
@@ -37,6 +39,9 @@ struct xrt_system_compositor;
 struct xrt_instance_info
 {
 	char application_name[XRT_MAX_APPLICATION_NAME_SIZE];
+	bool ext_hand_tracking_enabled;
+	bool ext_eye_gaze_interaction_enabled;
+	bool ext_hand_interaction_enabled;
 };
 
 /*!
@@ -83,6 +88,7 @@ struct xrt_instance
 	 */
 	xrt_result_t (*create_system)(struct xrt_instance *xinst,
 	                              struct xrt_system_devices **out_xsysd,
+	                              struct xrt_space_overseer **out_xso,
 	                              struct xrt_system_compositor **out_xsysc);
 
 	/*!
@@ -134,9 +140,10 @@ struct xrt_instance
 static inline xrt_result_t
 xrt_instance_create_system(struct xrt_instance *xinst,
                            struct xrt_system_devices **out_xsysd,
+                           struct xrt_space_overseer **out_xso,
                            struct xrt_system_compositor **out_xsysc)
 {
-	return xinst->create_system(xinst, out_xsysd, out_xsysc);
+	return xinst->create_system(xinst, out_xsysd, out_xso, out_xsysc);
 }
 
 /*!

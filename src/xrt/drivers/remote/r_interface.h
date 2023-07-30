@@ -38,7 +38,7 @@ struct xrt_system_devices;
  *
  * @ingroup drv_remote
  */
-#define R_HEADER_VALUE (*(uint64_t *)"mndrmt2\0")
+#define R_HEADER_VALUE (*(uint64_t *)"mndrmt3\0")
 
 /*!
  * Data per controller.
@@ -78,6 +78,30 @@ struct r_remote_controller_data
 	// active(2) + bools(11) + pad(3) = 16
 };
 
+struct r_head_data
+{
+	struct
+	{
+		//! The field of view values of this view.
+		struct xrt_fov fov;
+
+		//! The pose of this view relative to @ref r_head_data::center.
+		struct xrt_pose pose;
+
+		//! Padded to fov(16) + pose(16 + 12) + 4 = 48
+		uint32_t _pad;
+	} views[2];
+
+	//! The center of the head, in OpenXR terms the view space.
+	struct xrt_pose center;
+
+	//! Is the per view data valid and should be used?
+	bool per_view_data_valid;
+
+	//! pose(16 + 12) bool(1) + pad(3) = 32.
+	bool _pad0, _pad1, _pad2;
+};
+
 /*!
  * Remote data sent from the debugger to the hub.
  *
@@ -87,10 +111,7 @@ struct r_remote_data
 {
 	uint64_t header;
 
-	struct
-	{
-		struct xrt_pose pose;
-	} hmd;
+	struct r_head_data head;
 
 	struct r_remote_controller_data left, right;
 };

@@ -1,0 +1,14 @@
+{#
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
+#}
+
+{# Macro to compute job name to extend to use image given a package we want#}
+{% macro base_job_to_use_image_containing(package) %}
+{% for distro in distributions -%} {%- for image in distro.images if package in image.packages %}
+{{ base_job_to_use_image(distro, image) if loop.first }}
+{% endfor -%} {%- endfor %}
+{% endmacro -%}
+
+{# Macro to compute job name to extend to use image given distro and image objects#}
+{% macro base_job_to_use_image(distro, image) %}.monado.image.{{distro.name}}:{{image.codename}}{% endmacro -%}

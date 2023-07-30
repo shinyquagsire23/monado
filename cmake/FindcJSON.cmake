@@ -37,6 +37,7 @@ include(FindPackageHandleStandardArgs)
 # Check for CMake config first.
 find_package(cJSON QUIET CONFIG)
 if(cJSON_FOUND AND TARGET cjson)
+    set_target_properties(cjson PROPERTIES IMPORTED_GLOBAL TRUE)
     # Found config, let's prefer it.
     find_package_handle_standard_args(cJSON CONFIG_MODE)
     set(CJSON_LIBRARY cjson)

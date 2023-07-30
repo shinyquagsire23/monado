@@ -72,38 +72,18 @@ hsv2rgb(float fH, float fS, float fV)
 	return {fR * 255.0f, fG * 255.0f, fB * 255.0f};
 }
 
-
-//! @todo Make it take an array of vec2's and give out an array of vec2's, then
-// put it in its own target so we don't have to link to OpenCV.
-// Oooorrrrr... actually add good undistortion stuff to Monado so that we don't have to depend on OpenCV at all.
-
-XRT_MAYBE_UNUSED static struct xrt_vec2
-raycoord(ht_view *htv, struct xrt_vec2 model_out)
-{
-	model_out.x *= htv->hgt->multiply_px_coord_for_undistort;
-	model_out.y *= htv->hgt->multiply_px_coord_for_undistort;
-	cv::Mat in_px_coords(1, 1, CV_32FC2);
-	float *write_in;
-	write_in = in_px_coords.ptr<float>(0);
-	write_in[0] = model_out.x;
-	write_in[1] = model_out.y;
-	cv::Mat out_ray(1, 1, CV_32FC2);
-
-	if (htv->hgt->use_fisheye) {
-		cv::fisheye::undistortPoints(in_px_coords, out_ray, htv->cameraMatrix, htv->distortion);
-	} else {
-		cv::undistortPoints(in_px_coords, out_ray, htv->cameraMatrix, htv->distortion);
-	}
-
-	float n_x = out_ray.at<float>(0, 0);
-	float n_y = out_ray.at<float>(0, 1);
-
-	return {n_x, n_y};
-}
-
-static void
+inline void
 handDot(cv::Mat &mat, xrt_vec2 place, float radius, float hue, float intensity, int type)
 {
 	cv::circle(mat, {(int)place.x, (int)place.y}, radius, hsv2rgb(hue * 360.0f, intensity, intensity), type);
 }
+
+inline void
+handSquare(cv::Mat &debug_frame, xrt_vec2 center, float radius, cv::Scalar color)
+{
+	cv::Point2i pt((int)center.x, (int)center.y);
+	cv::rectangle(debug_frame, cv::Rect(pt - cv::Point2i(radius / 2, radius / 2), cv::Size(radius, radius)), color,
+	              1);
+}
+
 } // namespace xrt::tracking::hand::mercury

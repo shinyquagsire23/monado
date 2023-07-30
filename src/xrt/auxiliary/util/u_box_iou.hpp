@@ -23,9 +23,9 @@ struct Box
 
 	// No uninitialized memory!
 	Box() : cx(0.0f), cy(0.0f), w(0.0f), h(0.0f) {}
-	Box(float cx, float cy, float w, float h) : cx(cx), cy(cy), w(w), h(h) {}
-	Box(float cx, float cy, float size) : cx(cx), cy(cy), w(size), h(size) {}
-	Box(xrt_vec2 &center, float size) : cx(center.x), cy(center.y), w(size), h(size) {}
+	Box(const float cx, const float cy, const float w, const float h) : cx(cx), cy(cy), w(w), h(h) {}
+	Box(const float cx, const float cy, const float size) : cx(cx), cy(cy), w(size), h(size) {}
+	Box(const xrt_vec2 &center, const float size) : cx(center.x), cy(center.y), w(size), h(size) {}
 };
 
 static float

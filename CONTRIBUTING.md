@@ -34,6 +34,8 @@ Let us know and we'll figure out a way to help you get involved successfully.
   or by "re-writing history" (with your permission and leaving your commit authorship intact),
   revising each commit to apply formatting.
 
+  - Android Java and Kotlin code can be formatted using "Spotless" by running `./gradlew spotlessApply`.
+
 - Avoid including whitespace or other formatting changes to unrelated code when committing.
   The `git add -p` command or the "stage selected lines/hunks" feature of various Git GUIs are
   great ways of making sure you only stage and commit the changes that you mean to.
@@ -81,4 +83,3 @@ bug reports should include:
     otherwise a description of expected and actual behavior
   - if you cannot disclose your code, or even if you can,
     an "artificial", minimally-sized example can be very valuable.
-

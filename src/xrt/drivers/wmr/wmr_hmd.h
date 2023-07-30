@@ -1,6 +1,6 @@
 // Copyright 2018, Philipp Zabel.
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "tracking/t_tracking.h"
 #include "xrt/xrt_device.h"
 #include "xrt/xrt_frame.h"
 #include "xrt/xrt_prober.h"
@@ -26,22 +27,16 @@
 #include "wmr_protocol.h"
 #include "wmr_config.h"
 #include "wmr_camera.h"
+#include "wmr_common.h"
+#include "wmr_hmd_controller.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum wmr_headset_type
-{
-	WMR_HEADSET_GENERIC,
-	WMR_HEADSET_HP_VR1000,
-	WMR_HEADSET_REVERB_G1,
-	WMR_HEADSET_REVERB_G2,
-	WMR_HEADSET_SAMSUNG_XE700X3AI,
-	WMR_HEADSET_SAMSUNG_800ZAA,
-	WMR_HEADSET_LENOVO_EXPLORER,
-	WMR_HEADSET_MEDION_ERAZER_X1000,
-};
+/* Support 2 controllers on HP Reverb G2 */
+#define WMR_MAX_CONTROLLERS 2
 
 struct wmr_hmd;
 
@@ -95,11 +90,12 @@ struct wmr_hmd
 	 * IMU data and read the config from.
 	 *
 	 * During start it is owned by the thread creating the device, after
-	 * init it is owned by the reading thread, there is no mutex protecting
-	 * this field as it's only used by the reading thread in @p oth.
+	 * init it is owned by the reading thread. Read/write access is
+	 * protected by the hid_lock
 	 */
 
 	struct os_hid_device *hid_hololens_sensors_dev;
+	struct os_mutex hid_lock;
 
 	/*!
 	 * This is the vendor specific companion device of the Hololens Sensors.
@@ -118,12 +114,6 @@ struct wmr_hmd
 
 	//! Distortion related parameters
 	struct wmr_hmd_distortion_params distortion_params[2];
-
-	//! Precomputed transforms, @see precompute_sensor_transforms.
-	struct xrt_pose P_oxr_acc; //!< Converts accel samples into OpenXR coordinates
-	struct xrt_pose P_oxr_gyr; //!< Converts gyro samples into OpenXR coordinates
-	struct xrt_pose P_ht0_me;  //!< ME="middle of the eyes". HT0-to-ME transform but in OpenXR coordinates
-	struct xrt_pose P_imu_me;  //!< IMU=accel. IMU-to-ME transform but in OpenXR coordinates
 
 	struct hololens_sensors_packet packet;
 
@@ -157,6 +147,9 @@ struct wmr_hmd
 		//! an equivalent for hand tracking.
 		struct xrt_tracked_slam *slam;
 
+		//! Calibration data for SLAM
+		struct t_slam_calibration slam_calib;
+
 		//! Set at start. Whether the SLAM tracker was initialized.
 		bool slam_enabled;
 
@@ -179,6 +172,13 @@ struct wmr_hmd
 	//! Average 4 IMU samples before sending them to the trackers
 	bool average_imus;
 
+	/*!
+	 * Offset for tracked pose offsets (applies to both fusion and SLAM).
+	 * Applied when getting the tracked poses, so is effectivily a offset
+	 * to increase or decrease prediction.
+	 */
+	struct u_var_draggable_f32 tracked_offset_ms;
+
 	struct
 	{
 		struct u_var_button hmd_screen_enable_btn;
@@ -186,6 +186,14 @@ struct wmr_hmd
 		char hand_status[128];
 		char slam_status[128];
 	} gui;
+
+	/* Tunnelled controller devices (Reverb G2, Odyssey+) handling */
+	struct os_mutex controller_status_lock;
+	struct os_cond controller_status_cond;
+	bool have_left_controller_status;
+	bool have_right_controller_status;
+
+	struct wmr_hmd_controller_connection *controller[WMR_MAX_CONTROLLERS];
 };
 
 static inline struct wmr_hmd *
@@ -201,15 +209,14 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level,
                struct xrt_device **out_hmd,
-               struct xrt_device **out_handtracker);
+               struct xrt_device **out_handtracker,
+               struct xrt_device **out_left_controller,
+               struct xrt_device **out_right_controller);
 
-#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
-#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
-
-
+bool
+wmr_hmd_send_controller_packet(struct wmr_hmd *hmd, const uint8_t *buffer, uint32_t buf_size);
+int
+wmr_hmd_read_sync_from_controller(struct wmr_hmd *hmd, uint8_t *buffer, uint32_t buf_size, int timeout_ms);
 #ifdef __cplusplus
 }
 #endif

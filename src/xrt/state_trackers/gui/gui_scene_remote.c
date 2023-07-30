@@ -298,10 +298,8 @@ render_cheat_menu(struct gui_remote *gr, struct gui_program *p)
 
 #define POSE(prefix)                                                                                                   \
 	do {                                                                                                           \
-		handle_draggable_vec3_f32(#prefix ".pose.position", &d->prefix.pose.position,                          \
-		                          &r->prefix.pose.position);                                                   \
-		handle_draggable_quat(#prefix ".pose.orientation", &d->prefix.pose.orientation,                        \
-		                      &r->prefix.pose.orientation);                                                    \
+		handle_draggable_vec3_f32(#prefix ".pose.position", &d->prefix.position, &r->prefix.position);         \
+		handle_draggable_quat(#prefix ".pose.orientation", &d->prefix.orientation, &r->prefix.orientation);    \
 	} while (false)
 
 #define LIN_ANG(prefix)                                                                                                \
@@ -334,19 +332,19 @@ on_connected(struct gui_remote *gr, struct gui_program *p)
 	const struct r_remote_data *r = &gr->reset;
 	struct r_remote_data *d = &gr->data;
 
-	igPushIDPtr(&d->hmd); // Make all IDs unique.
-	POSE(hmd);
+	igPushIDPtr(&d->head); // Make all IDs unique.
+	POSE(head.center);
 	igPopID(); // Pop unique IDs
 
 	igPushIDPtr(&d->left); // Make all IDs unique.
-	POSE(left);
+	POSE(left.pose);
 	LIN_ANG(left);
 	BUTTONS(left);
 	HAND(left);
 	igPopID(); // Pop unique IDs
 
 	igPushIDPtr(&d->right); // Make all IDs unique.
-	POSE(right);
+	POSE(right.pose);
 	LIN_ANG(right);
 	BUTTONS(right);
 	HAND(right);

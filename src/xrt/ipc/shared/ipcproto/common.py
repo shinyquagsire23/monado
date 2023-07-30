@@ -6,6 +6,21 @@
 import json
 import re
 
+def write_cpp_header_guard_start(f):
+    """Write the starting C in C++ header guard"""
+    f.write('''
+#ifdef __cplusplus
+extern "C" {
+#endif
+''')
+
+def write_cpp_header_guard_end(f):
+    """Write the ending C in C++ header guard"""
+    f.write('''
+#ifdef __cplusplus
+}
+#endif
+''')
 
 def write_with_wrapped_args(f, start, args, indent):
     """Write something like a declaration or call."""

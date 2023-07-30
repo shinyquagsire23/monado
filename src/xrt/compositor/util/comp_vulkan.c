@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -45,7 +45,7 @@ snprint_uuid(char *str, size_t size, xrt_uuid_t *uuid)
 }
 
 static bool
-get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+get_device_id_props(struct vk_bundle *vk, int gpu_index, VkPhysicalDeviceIDProperties *out_id_props)
 {
 	VkPhysicalDeviceIDProperties pdidp = {
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
@@ -56,17 +56,43 @@ get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
 	    .pNext = &pdidp,
 	};
 
-	VkPhysicalDevice phys[16];
-	uint32_t gpu_count = ARRAY_SIZE(phys);
+	VkPhysicalDevice *phys = NULL;
+	uint32_t gpu_count = 0;
 	VkResult ret;
 
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
+	ret = vk_enumerate_physical_devices( //
+	    vk,                              // vk_bundle
+	    &gpu_count,                      // out_physical_device_count
+	    &phys);                          // out_physical_devices
 	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
+		VK_ERROR_RET(vk, "vk_enumerate_physical_devices", "Failed to enumerate physical devices.", ret);
+		return false;
+	}
+	if (gpu_count == 0) {
+		VK_ERROR(vk, "vk_enumerate_physical_devices: Returned zero physical devices!");
 		return false;
 	}
 
 	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	free(phys);
+
+	*out_id_props = pdidp;
+
+	return true;
+}
+
+static bool
+get_device_uuid(struct vk_bundle *vk, int gpu_index, xrt_uuid_t *uuid)
+{
+	VkPhysicalDeviceIDProperties pdidp = {
+	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
+	};
+
+	if (!get_device_id_props(vk, gpu_index, &pdidp)) {
+		VK_ERROR(vk, "get_device_id_props: false");
+		return false;
+	}
+
 	memcpy(uuid->data, pdidp.deviceUUID, ARRAY_SIZE(uuid->data));
 
 	return true;
@@ -79,25 +105,16 @@ get_device_luid(struct vk_bundle *vk, int gpu_index, xrt_luid_t *luid)
 	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
 	};
 
-	VkPhysicalDeviceProperties2 pdp2 = {
-	    .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-	    .pNext = &pdidp,
-	};
-
-	VkPhysicalDevice phys[16];
-	uint32_t gpu_count = ARRAY_SIZE(phys);
-	VkResult ret;
-
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, phys);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vkEnumeratePhysicalDevices", "Failed to enumerate physical devices.", ret);
+	if (!get_device_id_props(vk, gpu_index, &pdidp)) {
+		VK_ERROR(vk, "get_device_id_props: false");
 		return false;
 	}
 
-	vk->vkGetPhysicalDeviceProperties2(phys[gpu_index], &pdp2);
+	// Is the LUID even valid?
 	if (pdidp.deviceLUIDValid != VK_TRUE) {
 		return false;
 	}
+
 	memcpy(luid->data, pdidp.deviceLUID, ARRAY_SIZE(luid->data));
 
 	return true;
@@ -160,19 +177,40 @@ fill_in_results(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 static VkResult
 create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 {
+	struct u_string_list *instance_ext_list = NULL;
 	VkResult ret;
 
 	assert(vk_args->required_instance_version != 0);
 
-	struct u_string_list *instance_ext_list = vk_build_instance_extensions(
-	    vk, vk_args->required_instance_extensions, vk_args->optional_instance_extensions);
 
+	/*
+	 * Extension handling.
+	 */
+
+	// Check required extensions, results in clearer error message.
+	ret = vk_check_required_instance_extensions(vk, vk_args->required_instance_extensions);
+	if (ret == VK_ERROR_EXTENSION_NOT_PRESENT) {
+		return ret; // Already printed.
+	}
+	if (ret != VK_SUCCESS) {
+		VK_ERROR_RET(vk, "vk_check_required_instance_extensions", "Failed to check required extension(s)", ret);
+		return ret;
+	}
+
+	// Build extension list.
+	instance_ext_list = vk_build_instance_extensions( //
+	    vk,                                           //
+	    vk_args->required_instance_extensions,        //
+	    vk_args->optional_instance_extensions);       //
 	if (!instance_ext_list) {
+		VK_ERROR(vk, "vk_build_instance_extensions: Failed to be list");
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
 	}
 
-	// Fill this out here.
-	vk_fill_in_has_instance_extensions(vk, instance_ext_list);
+
+	/*
+	 * Direct arguments.
+	 */
 
 	VkApplicationInfo app_info = {
 	    .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -193,6 +231,17 @@ create_instance(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_arg
 		VK_ERROR_RET(vk, "vkCreateInstance", "Failed to create Vulkan instance", ret);
 		return ret;
 	}
+
+
+	/*
+	 * Post creation setup of Vulkan bundle.
+	 */
+
+	// Set information about instance after it has been created.
+	vk->version = vk_args->required_instance_version;
+
+	// Needs to be filled in before getting functions.
+	vk_fill_in_has_instance_extensions(vk, instance_ext_list);
 
 	u_string_list_destroy(&instance_ext_list);
 
@@ -270,12 +319,6 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
 		return ret;
 	}
 
-	ret = vk_init_cmd_pool(vk);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR_RET(vk, "vk_init_cmd_pool", "Failed to init command pool.", ret);
-		return ret;
-	}
-
 	// Print device information.
 	vk_print_opened_device_info(vk, U_LOGGING_INFO);
 
@@ -295,12 +338,73 @@ create_device(struct vk_bundle *vk, const struct comp_vulkan_arguments *vk_args)
  *
  */
 
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+static bool
+has_ahardware_buffer_format_conversion(VkFormat format)
+{
+	/*
+	 * Format mappings from official Android docs:
+	 *
+	 * | AHardwareBuffer Format                    | Vulkan format                                |
+	 * |-------------------------------------------|----------------------------------------------|
+	 * | AHARDWAREBUFFER_FORMAT_BLOB               | N/A                                          |
+	 * | AHARDWAREBUFFER_FORMAT_D16_UNORM          | VK_FORMAT_D16_UNORM                          |
+	 * | AHARDWAREBUFFER_FORMAT_D24_UNORM          | VK_FORMAT_X8_D24_UNORM_PACK32                |
+	 * | AHARDWAREBUFFER_FORMAT_D24_UNORM_S8_UINT  | VK_FORMAT_D24_UNORM_S8_UINT                  |
+	 * | AHARDWAREBUFFER_FORMAT_D32_FLOAT          | VK_FORMAT_D32_SFLOAT                         |
+	 * | AHARDWAREBUFFER_FORMAT_D32_FLOAT_S8_UINT  | VK_FORMAT_D32_SFLOAT_S8_UINT                 |
+	 * | AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM | VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16 |
+	 * | AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM  | VK_FORMAT_A2B10G10R10_UNORM_PACK32           |
+	 * | AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT | VK_FORMAT_R16G16B16A16_SFLOAT                |
+	 * | AHARDWAREBUFFER_FORMAT_R16G16_UINT        | VK_FORMAT_R16G16_UINT                        |
+	 * | AHARDWAREBUFFER_FORMAT_R16_UINT           | VK_FORMAT_R16_UINT                           |
+	 * | AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM       | VK_FORMAT_R5G6B5_UNORM_PACK16                |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM     | VK_FORMAT_R8G8B8A8_UNORM                     |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8X8_UNORM     | VK_FORMAT_R8G8B8A8_UNORM                     |
+	 * | AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM       | VK_FORMAT_R8G8B8_UNORM                       |
+	 * | AHARDWAREBUFFER_FORMAT_R8_UNORM           | VK_FORMAT_R8_UNORM                           |
+	 * | AHARDWAREBUFFER_FORMAT_S8_UINT            | VK_FORMAT_S8_UINT                            |
+	 * | AHARDWAREBUFFER_FORMAT_Y8Cb8Cr8_420       | N/A                                          |
+	 * | AHARDWAREBUFFER_FORMAT_YCbCr_P010         | N/A                                          |
+	 *
+	 * The VK_FORMAT_R8G8B8A8_SRGB format maps to AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM.
+	 */
+
+	switch (format) {
+	case VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16: return true; // AHARDWAREBUFFER_FORMAT_R10G10B10A10_UNORM
+	case VK_FORMAT_D16_UNORM: return true;                          // AHARDWAREBUFFER_FORMAT_D16_UNORM
+	case VK_FORMAT_X8_D24_UNORM_PACK32: return true;                // AHARDWAREBUFFER_FORMAT_D24_UNORM
+	case VK_FORMAT_D24_UNORM_S8_UINT: return true;                  // AHARDWAREBUFFER_FORMAT_D24_UNORM_S8_UINT
+	case VK_FORMAT_D32_SFLOAT: return true;                         // AHARDWAREBUFFER_FORMAT_D32_FLOAT
+	case VK_FORMAT_D32_SFLOAT_S8_UINT: return true;                 // AHARDWAREBUFFER_FORMAT_D32_FLOAT_S8_UINT
+	case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return true;           // AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM
+	case VK_FORMAT_R16G16B16A16_SFLOAT: return true;                // AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT
+	case VK_FORMAT_R16G16_UINT: return true;                        // AHARDWAREBUFFER_FORMAT_R16G16_UINT
+	case VK_FORMAT_R16_UINT: return true;                           // AHARDWAREBUFFER_FORMAT_R16_UINT
+	case VK_FORMAT_R5G6B5_UNORM_PACK16: return true;                // AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM
+	case VK_FORMAT_R8G8B8A8_UNORM: return true;                     // AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM
+	case VK_FORMAT_R8G8B8A8_SRGB: return true;                      // AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM
+	case VK_FORMAT_R8G8B8_UNORM: return true;                       // AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM
+	case VK_FORMAT_R8_UNORM: return true;                           // AHARDWAREBUFFER_FORMAT_R8_UNORM
+	case VK_FORMAT_S8_UINT: return true;                            // AHARDWAREBUFFER_FORMAT_S8_UINT
+	default: return false;
+	}
+}
+#endif
+
 static bool
 is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_usage_bits xbits)
 {
 	/*
 	 * First check if the format is supported at all.
 	 */
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_AHARDWAREBUFFER)
+	if (!has_ahardware_buffer_format_conversion(format)) {
+		VK_DEBUG(vk, "Format '%s' does not map to a AHardwareBuffer format!", vk_format_string(format));
+		return false;
+	}
+#endif
 
 	VkFormatProperties prop;
 	vk->vkGetPhysicalDeviceFormatProperties(vk->physical_device, format, &prop);
@@ -329,7 +433,7 @@ is_format_supported(struct vk_bundle *vk, VkFormat format, enum xrt_swapchain_us
 	 * Check exportability.
 	 */
 
-	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk);
+	VkExternalMemoryHandleTypeFlags handle_type = vk_csci_get_image_external_handle_type(vk, NULL);
 	VkResult ret;
 
 	VkImageUsageFlags usage = vk_csci_get_image_usage_flags(vk, format, xbits);

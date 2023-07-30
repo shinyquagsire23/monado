@@ -242,7 +242,7 @@ cleanup_l3d:
 
 /*
  *
- * Moses Turner's meshgrid-based distortion correction
+ * Moshi Turner's meshgrid-based distortion correction
  *
  */
 
@@ -251,7 +251,7 @@ ns_mt_parse(struct ns_hmd *ns, const cJSON *json)
 {
 	struct u_ns_meshgrid_values *values = &ns->config.dist_meshgrid;
 
-	if (strcmp(cJSON_GetStringValue(u_json_get(json, "type")), "Moses Turner's distortion correction") != 0) {
+	if (strcmp(cJSON_GetStringValue(u_json_get(json, "type")), "meshgrid") != 0) {
 		goto cleanup_mt;
 	}
 	int version = 0;
@@ -296,7 +296,7 @@ ns_mt_parse(struct ns_hmd *ns, const cJSON *json)
 		}
 	}
 	// locked in
-	ns->config.distortion_type = NS_DISTORTION_TYPE_MOSES_MESHGRID;
+	ns->config.distortion_type = NS_DISTORTION_TYPE_MOSHI_MESHGRID;
 
 	float baseline = values->ipd;
 
@@ -359,7 +359,7 @@ ns_hmd_destroy(struct xrt_device *xdev)
 	if (ns->config.distortion_type == NS_DISTORTION_TYPE_GEOMETRIC_3D) {
 		ns_3d_free_optical_system(&ns->config.dist_3d.eyes[0].optical_system);
 		ns_3d_free_optical_system(&ns->config.dist_3d.eyes[1].optical_system);
-	} else if (ns->config.distortion_type == NS_DISTORTION_TYPE_MOSES_MESHGRID) {
+	} else if (ns->config.distortion_type == NS_DISTORTION_TYPE_MOSHI_MESHGRID) {
 		free(ns->config.dist_meshgrid.grid[0]);
 		free(ns->config.dist_meshgrid.grid[1]);
 	}
@@ -414,7 +414,7 @@ ns_hmd_get_view_poses(struct xrt_device *xdev,
 }
 
 bool
-ns_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+ns_mesh_calc(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct ns_hmd *ns = ns_hmd(xdev);
 	NS_DEBUG(ns, "Called!");
@@ -437,7 +437,7 @@ ns_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_
 	case NS_DISTORTION_TYPE_POLYNOMIAL_2D: {
 		return u_compute_distortion_ns_p2d(&ns->config.dist_p2d, view, u, v, result);
 	}
-	case NS_DISTORTION_TYPE_MOSES_MESHGRID: {
+	case NS_DISTORTION_TYPE_MOSHI_MESHGRID: {
 		return u_compute_distortion_ns_meshgrid(&ns->config.dist_meshgrid, view, u, v, result);
 	}
 	default: {

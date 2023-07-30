@@ -7,22 +7,24 @@
  * @ingroup drv_qwerty
  */
 
-#include "qwerty_device.h"
+#include "xrt/xrt_device.h"
+
+#include "math/m_api.h"
+#include "math/m_space.h"
+#include "math/m_mathinclude.h"
 
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
 #include "util/u_var.h"
 #include "util/u_logging.h"
 #include "util/u_time.h"
+#include "util/u_misc.h"
 
-#include "math/m_api.h"
-#include "math/m_space.h"
-#include "math/m_mathinclude.h"
-
-#include "xrt/xrt_device.h"
+#include "qwerty_device.h"
 
 #include <stdio.h>
 #include <assert.h>
+
 
 #define QWERTY_HMD_INITIAL_MOVEMENT_SPEED 0.002f // in meters per frame
 #define QWERTY_HMD_INITIAL_LOOK_SPEED 0.02f      // in radians per frame

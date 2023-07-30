@@ -248,7 +248,7 @@ rift_s_camera_create(struct xrt_prober *xp,
 	u_var_add_draggable_u16(cam, &cam->exposure_ui, "Exposure");
 	u_var_add_u8(cam, &cam->target_gain, "Gain");
 	u_var_add_gui_header(cam, NULL, "Auto exposure and gain control");
-	u_autoexpgain_add_vars(cam->aeg, cam);
+	u_autoexpgain_add_vars(cam->aeg, cam, "");
 
 	u_var_add_gui_header(cam, NULL, "Camera Streams");
 	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
@@ -398,18 +398,22 @@ receive_cam_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
 		u_sink_debug_push_frame(&cam->debug_sinks[0], xf_crop);
 		xrt_frame_reference(&xf_crop, NULL);
 
-		/* Extract left and right frames and push to the tracker */
-		struct xrt_frame *left = rift_s_camera_extract_frame(cam, RIFT_S_CAMERA_FRONT_LEFT, xf, &row_data);
-		struct xrt_frame *right = rift_s_camera_extract_frame(cam, RIFT_S_CAMERA_FRONT_RIGHT, xf, &row_data);
+		/* Extract camera frames and push to the tracker */
+		struct xrt_frame *frames[RIFT_S_CAMERA_COUNT] = {0};
+		for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+			frames[i] = rift_s_camera_extract_frame(cam, CAM_IDX_TO_ID[i], xf, &row_data);
+		}
 
 		/* Update the exposure for all cameras based on the auto exposure for the left camera view */
-		update_expgain(cam, left);
+		//! @todo Update expgain independently for each camera like in WMR
+		update_expgain(cam, frames[0]);
 
 		uint64_t frame_ts_ns = (uint64_t)__le64_to_cpu(row_data.data.frame_ts) * OS_NS_PER_USEC;
-		rift_s_tracker_push_slam_frames(cam->tracker, frame_ts_ns, left, right);
+		rift_s_tracker_push_slam_frames(cam->tracker, frame_ts_ns, frames);
 
-		xrt_frame_reference(&left, NULL);
-		xrt_frame_reference(&right, NULL);
+		for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+			xrt_frame_reference(&frames[i], NULL);
+		}
 	} else {
 		struct xrt_rect roi = {.offset = {0, 40}, .extent = {.w = xf->width, .h = 480}};
 		struct xrt_frame *xf_crop = NULL;

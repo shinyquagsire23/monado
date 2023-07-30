@@ -26,35 +26,185 @@
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_file.h"
+#include "util/u_windows.h"
 
 #include "shared/ipc_shmem.h"
 #include "server/ipc_server.h"
 
 #include <conio.h>
+#include <sddl.h>
+
+
+/*
+ *
+ * Helpers.
+ *
+ */
+
+#define ERROR_STR(BUF, ERR) (u_winerror(BUF, ARRAY_SIZE(BUF), ERR, true))
+
+DEBUG_GET_ONCE_BOOL_OPTION(relaxed, "IPC_RELAXED_CONNECTION_SECURITY", false)
+
 
 /*
  *
  * Static functions.
  *
  */
-static void
-ipc_server_create_another_pipe_instance(struct ipc_server *vs, struct ipc_server_mainloop *ml)
+
+template <unsigned int N>
+static char *
+get_current_process_name(char (&path)[N])
 {
-	ml->pipe_handle =
-	    CreateNamedPipeA(ml->pipe_name, PIPE_ACCESS_DUPLEX,
-	                     PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS,
-	                     IPC_MAX_CLIENTS, IPC_BUF_SIZE, IPC_BUF_SIZE, 0, NULL);
-	if (ml->pipe_handle == INVALID_HANDLE_VALUE) {
+	GetModuleFileNameA(NULL, path, N);
+	char *exe = strrchr(path, '\\');
+	if (exe) {
+		return exe + 1;
+	}
+	return path;
+}
+
+ULONG
+get_pipe_server_pid(const char *pipe_name)
+{
+	ULONG pid = 0;
+	HANDLE h = CreateNamedPipeA(                                                              //
+	    pipe_name,                                                                            //
+	    PIPE_ACCESS_DUPLEX,                                                                   //
+	    PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS, //
+	    IPC_MAX_CLIENTS,                                                                      //
+	    IPC_BUF_SIZE,                                                                         //
+	    IPC_BUF_SIZE,                                                                         //
+	    0,                                                                                    //
+	    nullptr);
+	if (h != INVALID_HANDLE_VALUE) {
+		GetNamedPipeServerProcessId(h, &pid);
+		CloseHandle(h);
+	}
+	return pid;
+}
+
+static bool
+create_pipe_instance(struct ipc_server_mainloop *ml, bool first)
+{
+	SECURITY_ATTRIBUTES sa{};
+	sa.nLength = sizeof(sa);
+	sa.lpSecurityDescriptor = nullptr;
+	sa.bInheritHandle = FALSE;
+
+	/*
+	 * Change the pipe's DACL to allow other users access.
+	 *
+	 * https://learn.microsoft.com/en-us/windows/win32/secbp/creating-a-dacl
+	 * https://learn.microsoft.com/en-us/windows/win32/secauthz/sid-strings
+	 */
+	const TCHAR *str =               //
+	    TEXT("D:")                   // Discretionary ACL
+	    TEXT("(D;OICI;GA;;;BG)")     // Guest: deny
+	    TEXT("(D;OICI;GA;;;AN)")     // Anonymous: deny
+	    TEXT("(A;OICI;GRGWGX;;;AC)") // UWP/AppContainer packages: read/write/execute
+	    TEXT("(A;OICI;GRGWGX;;;AU)") // Authenticated user: read/write/execute
+	    TEXT("(A;OICI;GA;;;BA)");    // Administrator: full control
+
+	BOOL bret = ConvertStringSecurityDescriptorToSecurityDescriptor( //
+	    str,                                                         // StringSecurityDescriptor
+	    SDDL_REVISION_1,                                             // StringSDRevision
+	    &sa.lpSecurityDescriptor,                                    // SecurityDescriptor
+	    NULL);                                                       // SecurityDescriptorSize
+	if (!bret) {
 		DWORD err = GetLastError();
-		if (err == ERROR_PIPE_BUSY) {
-			U_LOG_W("CreateNamedPipeA failed: %d %s An existing client must disconnect first!", err,
-			        ipc_winerror(err));
-		} else {
-			U_LOG_E("CreateNamedPipeA failed: %d %s", err, ipc_winerror(err));
-			ipc_server_handle_failure(vs);
+		char buffer[1024];
+		U_LOG_E("ConvertStringSecurityDescriptorToSecurityDescriptor: %u %s", err, ERROR_STR(buffer, err));
+	}
+
+	LPSECURITY_ATTRIBUTES lpsa = nullptr;
+	if (debug_get_bool_option_relaxed()) {
+		U_LOG_W("Using relax security permissions on pipe");
+		lpsa = &sa;
+	}
+
+	DWORD dwOpenMode = PIPE_ACCESS_DUPLEX;
+	DWORD dwPipeMode = PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS;
+
+	if (first) {
+		dwOpenMode |= FILE_FLAG_FIRST_PIPE_INSTANCE;
+	}
+
+	ml->pipe_handle = CreateNamedPipeA( //
+	    ml->pipe_name,                  //
+	    dwOpenMode,                     //
+	    dwPipeMode,                     //
+	    IPC_MAX_CLIENTS,                //
+	    IPC_BUF_SIZE,                   //
+	    IPC_BUF_SIZE,                   //
+	    0,                              //
+	    lpsa);                          //
+
+	if (sa.lpSecurityDescriptor != nullptr) {
+		// Need to free the security descriptor.
+		LocalFree(sa.lpSecurityDescriptor);
+		sa.lpSecurityDescriptor = nullptr;
+	}
+
+	if (ml->pipe_handle != INVALID_HANDLE_VALUE) {
+		return true;
+	}
+
+	DWORD err = GetLastError();
+	if (err == ERROR_PIPE_BUSY) {
+		U_LOG_W("CreateNamedPipeA failed: %d %s An existing client must disconnect first!", err,
+		        ipc_winerror(err));
+	} else {
+		U_LOG_E("CreateNamedPipeA failed: %d %s", err, ipc_winerror(err));
+		if (err == ERROR_ACCESS_DENIED && first) {
+			char path[MAX_PATH];
+			char *exe = get_current_process_name(path);
+			ULONG pid = get_pipe_server_pid(ml->pipe_name);
+			if (pid) {
+				U_LOG_E(
+				    "An existing process id %d has the communication pipe already created. You likely "
+				    "have \"%s\" running already. This service instance cannot continue...",
+				    pid, exe);
+			} else {
+				U_LOG_E(
+				    "You likely have \"%s\" running already. This service instance cannot continue...",
+				    exe);
+			}
 		}
 	}
+
+	return false;
 }
+
+static void
+create_another_pipe_instance(struct ipc_server *vs, struct ipc_server_mainloop *ml)
+{
+	if (!create_pipe_instance(ml, false)) {
+		ipc_server_handle_failure(vs);
+	}
+}
+
+static void
+handle_connected_client(struct ipc_server *vs, struct ipc_server_mainloop *ml)
+{
+	DWORD mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
+	BOOL bRet;
+
+	bRet = SetNamedPipeHandleState(ml->pipe_handle, &mode, nullptr, nullptr);
+	if (bRet) {
+		// Call into the generic client connected handling code.
+		ipc_server_handle_client_connected(vs, ml->pipe_handle);
+
+		// Create another pipe to wait on.
+		create_another_pipe_instance(vs, ml);
+		return;
+	}
+
+	DWORD err = GetLastError();
+	U_LOG_E("SetNamedPipeHandleState(PIPE_READMODE_MESSAGE | PIPE_WAIT) failed: %d %s", err, ipc_winerror(err));
+	ipc_server_handle_failure(vs);
+}
+
 
 /*
  *
@@ -74,33 +224,22 @@ ipc_server_mainloop_poll(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 	}
 
 	if (!ml->pipe_handle) {
-		ipc_server_create_another_pipe_instance(vs, ml);
+		create_another_pipe_instance(vs, ml);
 	}
 	if (!ml->pipe_handle) {
-		return;
+		return; // Errors already logged.
 	}
 
-	if (ConnectNamedPipe(ml->pipe_handle, NULL)) {
-		U_LOG_E("ConnectNamedPipe unexpected return TRUE (last error: %d). Treating as failure...",
-		        GetLastError());
+	if (ConnectNamedPipe(ml->pipe_handle, nullptr)) {
+		DWORD err = GetLastError();
+		U_LOG_E("ConnectNamedPipe unexpected return TRUE treating as failure: %d %s", err, ipc_winerror(err));
 		ipc_server_handle_failure(vs);
 		return;
 	}
+
 	switch (DWORD err = GetLastError()) {
 	case ERROR_PIPE_LISTENING: return;
-	case ERROR_PIPE_CONNECTED: {
-		DWORD mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
-		if (!SetNamedPipeHandleState(ml->pipe_handle, &mode, NULL, NULL)) {
-			err = GetLastError();
-			U_LOG_E("SetNamedPipeHandleState(PIPE_READMODE_MESSAGE | PIPE_WAIT) failed: %d %s", err,
-			        ipc_winerror(err));
-			ipc_server_handle_failure(vs);
-			return;
-		}
-		ipc_server_start_client_listener_thread(vs, ml->pipe_handle);
-		ipc_server_create_another_pipe_instance(vs, ml);
-		return;
-	}
+	case ERROR_PIPE_CONNECTED: handle_connected_client(vs, ml); return;
 	default:
 		U_LOG_E("ConnectNamedPipe failed: %d %s", err, ipc_winerror(err));
 		ipc_server_handle_failure(vs);
@@ -127,20 +266,21 @@ ipc_server_mainloop_init(struct ipc_server_mainloop *ml)
 	}
 
 	ml->pipe_name = _strdup(pipe_name);
-	if (!ml->pipe_name) {
+	if (ml->pipe_name == nullptr) {
 		U_LOG_E("_strdup(\"%s\") failed!", pipe_name);
-	} else {
-		ml->pipe_handle = CreateNamedPipeA(ml->pipe_name, PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
-		                                   PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_NOWAIT |
-		                                       PIPE_REJECT_REMOTE_CLIENTS,
-		                                   IPC_MAX_CLIENTS, IPC_BUF_SIZE, IPC_BUF_SIZE, 0, NULL);
-		if (ml->pipe_handle != INVALID_HANDLE_VALUE) {
-			return 0;
-		}
-		DWORD err = GetLastError();
-		U_LOG_E("CreateNamedPipeA \"%s\" first instance failed: %d %s", ml->pipe_name, err, ipc_winerror(err));
+		goto err;
 	}
+
+	if (!create_pipe_instance(ml, true)) {
+		U_LOG_E("CreateNamedPipeA \"%s\" first instance failed, see above.", ml->pipe_name);
+		goto err;
+	}
+
+	return 0;
+
+err:
 	ipc_server_mainloop_deinit(ml);
+
 	return -1;
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,7 +11,7 @@
 
 /* keep sorted */
 
-#cmakedefine XRT_HAVE_BASALT_SLAM
+#cmakedefine XRT_HAVE_BASALT
 #cmakedefine XRT_HAVE_BLUETOOTH
 #cmakedefine XRT_HAVE_CUDA
 #cmakedefine XRT_HAVE_D3D11
@@ -23,7 +23,7 @@
 #cmakedefine XRT_HAVE_GST
 #cmakedefine XRT_HAVE_HIDAPI
 #cmakedefine XRT_HAVE_JPEG
-#cmakedefine XRT_HAVE_KIMERA_SLAM
+#cmakedefine XRT_HAVE_KIMERA
 #cmakedefine XRT_HAVE_LIBBSD
 #cmakedefine XRT_HAVE_LIBUDEV
 #cmakedefine XRT_HAVE_LIBUSB
@@ -31,9 +31,11 @@
 #cmakedefine XRT_HAVE_OPENCV
 #cmakedefine XRT_HAVE_OPENGL
 #cmakedefine XRT_HAVE_OPENGLES
+#cmakedefine XRT_HAVE_OPENVR
 #cmakedefine XRT_HAVE_PERCETTO
 #cmakedefine XRT_HAVE_SDL2
 #cmakedefine XRT_HAVE_SYSTEMD
+#cmakedefine XRT_HAVE_TRACY
 #cmakedefine XRT_HAVE_V4L2
 #cmakedefine XRT_HAVE_VULKAN
 #cmakedefine XRT_HAVE_WAYLAND

@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -24,12 +24,15 @@
 
 #include "target_builder_interface.h"
 
+#include "vive/vive_common.h"
 #include "vive/vive_config.h"
+#include "vive/vive_calibration.h"
 #include "v4l2/v4l2_interface.h"
 
 #include "xrt/xrt_frameserver.h"
 #include "xrt/xrt_results.h"
 #include "xrt/xrt_tracking.h"
+
 
 #include <assert.h>
 
@@ -43,6 +46,10 @@
 #include "survive/survive_interface.h"
 #endif
 
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+#include "steamvr_lh/steamvr_lh_interface.h"
+#endif
+
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 #include "ht/ht_interface.h"
 #include "ht_ctrl_emu/ht_ctrl_emu_interface.h"
@@ -54,12 +61,18 @@
 #include "opengloves/opengloves_interface.h"
 #endif
 
+#if defined(XRT_BUILD_DRIVER_SURVIVE)
+#define DEFAULT_DRIVER "survive"
+#elif defined(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
+#define DEFAULT_DRIVER "steamvr"
+#else
+#define DEFAULT_DRIVER "vive"
+#endif
 
 DEBUG_GET_ONCE_LOG_OPTION(lh_log, "LH_LOG", U_LOGGING_WARN)
-DEBUG_GET_ONCE_BOOL_OPTION(vive_over_survive, "VIVE_OVER_SURVIVE", false)
+DEBUG_GET_ONCE_OPTION(lh_impl, "LH_DRIVER", DEFAULT_DRIVER)
 DEBUG_GET_ONCE_BOOL_OPTION(vive_slam, "VIVE_SLAM", false)
 DEBUG_GET_ONCE_TRISTATE_OPTION(lh_handtracking, "LH_HANDTRACKING")
-DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 
 #define LH_TRACE(...) U_LOG_IFL_T(debug_get_log_option_lh_log(), __VA_ARGS__)
 #define LH_DEBUG(...) U_LOG_IFL_D(debug_get_log_option_lh_log(), __VA_ARGS__)
@@ -78,6 +91,10 @@ DEBUG_GET_ONCE_BOOL_OPTION(ht_use_old_rgb, "HT_USE_OLD_RGB", false)
 #define LH_ASSERT_(predicate) LH_ASSERT(predicate, "Assertion failed " #predicate)
 
 static const char *driver_list[] = {
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+    "steamvr_lh",
+#endif
+
 #ifdef XRT_BUILD_DRIVER_SURVIVE
     "survive",
 #endif
@@ -91,16 +108,23 @@ static const char *driver_list[] = {
 #endif
 };
 
+enum lighthouse_driver
+{
+	DRIVER_VIVE,
+	DRIVER_SURVIVE,
+	DRIVER_STEAMVR
+};
 
 struct lighthouse_system
 {
 	struct xrt_builder base;
 	struct u_system_devices *devices;
-	bool use_libsurvive; //!< Whether we are using survive driver or vive driver
+	enum lighthouse_driver driver; //!< Which lighthouse implementation we are using
 	bool is_valve_index; //!< Is our HMD a Valve Index? If so, try to set up hand-tracking and SLAM as needed
 	struct vive_tracking_status vive_tstatus; //!< Visual tracking status for Index under Vive driver
 	struct xrt_fs *xfs;                       //!< Frameserver for Valve Index camera, if we have one.
 	struct vive_config *hmd_config;
+	struct t_slam_calibration slam_calib; //!< Calibration data for SLAM
 };
 
 
@@ -151,21 +175,17 @@ on_video_device(struct xrt_prober *xp,
 }
 
 static struct xrt_slam_sinks *
-valve_index_slam_track(struct lighthouse_system *lhs,
-                       struct t_stereo_camera_calibration *stereo_calib,
-                       struct t_imu_calibration *imu_calib,
-                       struct t_slam_calib_extras *extra_calib)
+valve_index_slam_track(struct lighthouse_system *lhs)
 {
 	struct xrt_slam_sinks *sinks = NULL;
 
+#ifdef XRT_FEATURE_SLAM
 	struct vive_device *d = (struct vive_device *)lhs->devices->base.roles.head;
 
-#ifdef XRT_FEATURE_SLAM
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
-	config.stereo_calib = stereo_calib; // Won't hold stereo_calib so no refcount
-	config.imu_calib = imu_calib;
-	config.extra_calib = extra_calib;
+	config.cam_count = 2;
+	config.slam_calib = &lhs->slam_calib;
 
 	int create_status = t_slam_create(&lhs->devices->xfctx, &config, &d->tracking.slam, &sinks);
 	if (create_status != 0) {
@@ -220,13 +240,9 @@ valve_index_hand_track(struct lighthouse_system *lhs,
 	info.views[0].boundary.circle.normalized_radius = 0.55;
 	info.views[1].boundary.circle.normalized_radius = 0.55;
 
-	bool old_rgb = debug_get_bool_option_ht_use_old_rgb();
-	enum t_hand_tracking_algorithm ht_algorithm = old_rgb ? HT_ALGORITHM_OLD_RGB : HT_ALGORITHM_MERCURY;
-
 	struct xrt_device *ht_device = NULL;
 	int create_status = ht_device_create(&lhs->devices->xfctx, //
 	                                     stereo_calib,         //
-	                                     ht_algorithm,         //
 	                                     info,                 //
 	                                     &sinks,               //
 	                                     &ht_device);
@@ -282,23 +298,34 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 	bool have_survive_drv = false;
 #endif
 
-	bool vive_over_survive = debug_get_bool_option_vive_over_survive();
-	if (have_survive_drv && have_vive_drv) {
-		// We have both drivers - default to libsurvive, but if the user asks specifically for vive we'll give
-		// it to them
-		lhs->use_libsurvive = !vive_over_survive;
-	} else if (have_survive_drv) {
-		// We only have libsurvive - don't listen to the env var
-		// Note: this is a super edge-case, Vive gets built by default on Linux.
-		if (vive_over_survive) {
-			LH_WARN("Asked for vive driver, but it isn't built. Using libsurvive.");
-		}
-		lhs->use_libsurvive = true;
-	} else if (have_vive_drv) {
-		// We only have vive
-		lhs->use_libsurvive = false;
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+	bool have_steamvr_drv = true;
+#else
+	bool have_steamvr_drv = false;
+#endif
+
+	const char *drv = debug_get_option_lh_impl();
+	if (have_steamvr_drv && strcmp(drv, "steamvr") == 0) {
+		lhs->driver = DRIVER_STEAMVR;
+	} else if (have_survive_drv && strcmp(drv, "survive") == 0) {
+		lhs->driver = DRIVER_SURVIVE;
+	} else if (have_vive_drv && strcmp(drv, "vive") == 0) {
+		lhs->driver = DRIVER_VIVE;
 	} else {
-		LH_ASSERT_(false);
+		const char *selected;
+		if (have_survive_drv) {
+			selected = "survive";
+			lhs->driver = DRIVER_SURVIVE;
+		} else if (have_steamvr_drv) {
+			selected = "steamvr";
+			lhs->driver = DRIVER_STEAMVR;
+		} else if (have_vive_drv) {
+			selected = "vive";
+			lhs->driver = DRIVER_VIVE;
+		} else {
+			LH_ASSERT_(false);
+		}
+		LH_WARN("Requested driver %s was not available, so we went with %s instead", drv, selected);
 	}
 
 	U_ZERO(estimate);
@@ -323,7 +350,7 @@ lighthouse_estimate_system(struct xrt_builder *xb,
 
 	if (have_vive || have_vive_pro || lhs->is_valve_index) {
 		estimate->certain.head = true;
-		if (lhs->use_libsurvive) {
+		if (lhs->driver != DRIVER_VIVE) {
 			estimate->maybe.dof6 = true;
 			estimate->certain.dof6 = true;
 		}
@@ -377,16 +404,20 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	bool slam_enabled = lhs->vive_tstatus.slam_enabled;
 	bool hand_enabled = lhs->vive_tstatus.hand_enabled;
 
+	// Hand tracking calibration
 	struct t_stereo_camera_calibration *stereo_calib = NULL;
 	struct xrt_pose head_in_left_cam;
 	vive_get_stereo_camera_calibration(lhs->hmd_config, &stereo_calib, &head_in_left_cam);
-	struct t_imu_calibration imu_calib = vive_get_imu_calibration(lhs->hmd_config);
-	struct t_slam_calib_extras extra_calib = vive_get_extra_calibration(lhs->hmd_config);
+
+	// SLAM calibration
+	lhs->slam_calib.cam_count = 2;
+	vive_get_slam_cams_calib(lhs->hmd_config, &lhs->slam_calib.cams[0], &lhs->slam_calib.cams[1]);
+	vive_get_slam_imu_calibration(lhs->hmd_config, &lhs->slam_calib.imu);
 
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (slam_enabled) {
-		slam_sinks = valve_index_slam_track(lhs, stereo_calib, &imu_calib, &extra_calib);
+		slam_sinks = valve_index_slam_track(lhs);
 		if (slam_sinks == NULL) {
 			lhs->vive_tstatus.slam_enabled = false;
 			slam_enabled = false;
@@ -409,7 +440,7 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 
 	t_stereo_camera_calibration_reference(&stereo_calib, NULL);
 
-	if (!lhs->use_libsurvive) { // Refresh trackers status in vive driver
+	if (lhs->driver == DRIVER_VIVE) { // Refresh trackers status in vive driver
 		struct vive_device *d = (struct vive_device *)lhs->devices->base.roles.head;
 		vive_set_trackers_status(d, lhs->vive_tstatus);
 	}
@@ -419,36 +450,25 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	struct xrt_frame_sink *entry_left_sink = NULL;
 	struct xrt_frame_sink *entry_right_sink = NULL;
 	struct xrt_frame_sink *entry_sbs_sink = NULL;
-	bool old_rgb_ht = debug_get_bool_option_ht_use_old_rgb();
 
-	if (slam_enabled && hand_enabled && !old_rgb_ht) {
-		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+	if (slam_enabled && hand_enabled) {
+		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
+		u_sink_split_create(&lhs->devices->xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
-	} else if (slam_enabled && hand_enabled && old_rgb_ht) {
-		struct xrt_frame_sink *hand_sbs = NULL;
-		struct xrt_frame_sink *slam_sbs = NULL;
-		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, hand_sinks->left, hand_sinks->right,
-		                                     &hand_sbs);
-		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, slam_sinks->left, slam_sinks->right,
-		                                     &slam_sbs);
-		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, slam_sbs, &slam_sbs);
-		u_sink_split_create(&lhs->devices->xfctx, slam_sbs, hand_sbs, &entry_sbs_sink);
 	} else if (slam_enabled) {
-		entry_left_sink = slam_sinks->left;
-		entry_right_sink = slam_sinks->right;
+		entry_left_sink = slam_sinks->cams[0];
+		entry_right_sink = slam_sinks->cams[1];
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
 		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else if (hand_enabled) {
-		enum xrt_format fmt = old_rgb_ht ? XRT_FORMAT_R8G8B8 : XRT_FORMAT_L8;
-		entry_left_sink = hand_sinks->left;
-		entry_right_sink = hand_sinks->right;
+		entry_left_sink = hand_sinks->cams[0];
+		entry_right_sink = hand_sinks->cams[1];
 		u_sink_stereo_sbs_to_slam_sbs_create(&lhs->devices->xfctx, entry_left_sink, entry_right_sink,
 		                                     &entry_sbs_sink);
-		u_sink_create_format_converter(&lhs->devices->xfctx, fmt, entry_sbs_sink, &entry_sbs_sink);
+		u_sink_create_format_converter(&lhs->devices->xfctx, XRT_FORMAT_L8, entry_sbs_sink, &entry_sbs_sink);
 	} else {
 		LH_WARN("No visual trackers were set");
 		return false;
@@ -457,8 +477,8 @@ valve_index_setup_visual_trackers(struct lighthouse_system *lhs,
 	u_sink_simple_queue_create(&lhs->devices->xfctx, entry_sbs_sink, &entry_sbs_sink);
 
 	struct xrt_slam_sinks entry_sinks = {
-	    .left = entry_sbs_sink,
-	    .right = NULL, // v4l2 streams a single SBS frame so we ignore the right sink
+	    .cam_count = 1,
+	    .cams = {entry_sbs_sink},
 	    .imu = slam_enabled ? slam_sinks->imu : NULL,
 	    .gt = slam_enabled ? slam_sinks->gt : NULL,
 	};
@@ -495,7 +515,7 @@ stream_data_sources(struct lighthouse_system *lhs, struct xrt_prober *xp, struct
 		vive_source_hook_into_sinks(vs, &sinks);
 	}
 
-	success = xrt_fs_stream_start(lhs->xfs, sinks.left, XRT_FS_CAPTURE_TYPE_TRACKING, mode);
+	success = xrt_fs_stream_start(lhs->xfs, sinks.cams[0], XRT_FS_CAPTURE_TYPE_TRACKING, mode);
 
 	if (!success) {
 		LH_ERROR("Unable to start data streaming");
@@ -539,7 +559,8 @@ static xrt_result_t
 lighthouse_open_system(struct xrt_builder *xb,
                        cJSON *config,
                        struct xrt_prober *xp,
-                       struct xrt_system_devices **out_xsysd)
+                       struct xrt_system_devices **out_xsysd,
+                       struct xrt_space_overseer **out_xso)
 {
 	struct lighthouse_system *lhs = (struct lighthouse_system *)xb;
 	lhs->devices = u_system_devices_allocate();
@@ -556,7 +577,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 	// Decide whether to initialize the SLAM tracker
 	bool slam_wanted = debug_get_bool_option_vive_slam();
 #ifdef XRT_FEATURE_SLAM
-	bool slam_supported = !lhs->use_libsurvive; // Only with vive driver
+	bool slam_supported = lhs->driver == DRIVER_VIVE; // Only with vive driver
 #else
 	bool slam_supported = false;
 #endif
@@ -577,12 +598,21 @@ lighthouse_open_system(struct xrt_builder *xb,
 	                                       .hand_wanted = debug_get_tristate_option_lh_handtracking()};
 	lhs->vive_tstatus = tstatus;
 
-	if (lhs->use_libsurvive) {
+	switch (lhs->driver) {
+	case DRIVER_STEAMVR: {
+#ifdef XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+		usysd->base.xdev_count += steamvr_lh_get_devices(&usysd->base.xdevs[usysd->base.xdev_count]);
+#endif
+		break;
+	}
+	case DRIVER_SURVIVE: {
 #ifdef XRT_BUILD_DRIVER_SURVIVE
 		usysd->base.xdev_count +=
 		    survive_get_devices(&usysd->base.xdevs[usysd->base.xdev_count], &lhs->hmd_config);
 #endif
-	} else {
+		break;
+	}
+	case DRIVER_VIVE: {
 #ifdef XRT_BUILD_DRIVER_VIVE
 		struct xrt_prober_device **xpdevs = NULL;
 		size_t xpdev_count = 0;
@@ -603,6 +633,7 @@ lighthouse_open_system(struct xrt_builder *xb,
 			switch (device->product_id) {
 			case VIVE_PID:
 			case VIVE_PRO_MAINBOARD_PID:
+			case VIVE_PRO2_MAINBOARD_PID:
 			case VIVE_PRO_LHR_PID: {
 				struct vive_source *vs = vive_source_create(&usysd->xfctx);
 				int num_devices =
@@ -621,7 +652,14 @@ lighthouse_open_system(struct xrt_builder *xb,
 		}
 		xrt_prober_unlock_list(xp, &xpdevs);
 #endif
+		break;
 	}
+	default: {
+		LH_ASSERT(false, "Driver was not set to a known value");
+		break;
+	}
+	}
+
 	int head_idx = -1;
 	int left_idx = -1;
 	int right_idx = -1;
@@ -718,6 +756,7 @@ end:
 
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;
+		u_builder_create_space_overseer(&usysd->base, out_xso);
 	} else {
 		u_system_devices_destroy(&usysd);
 	}

@@ -24,11 +24,6 @@ interface IMonado {
     void passAppSurface(in Surface surface);
 
     /*!
-     * Asking service to create surface and attach it to the display matches given display id.
-     */
-    boolean createSurface(int displayId, boolean focusable);
-
-    /*!
      * Asking service whether it has the capbility to draw over other apps or not.
      */
     boolean canDrawOverOtherApps();

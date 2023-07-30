@@ -25,7 +25,7 @@
 #include <inttypes.h>
 
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainFormats(XrSession session,
                                 uint32_t formatCapacityInput,
                                 uint32_t *formatCountOutput,
@@ -36,11 +36,12 @@ oxr_xrEnumerateSwapchainFormats(XrSession session,
 	struct oxr_session *sess;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrEnumerateSwapchainFormats");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 
 	return oxr_session_enumerate_formats(&log, sess, formatCapacityInput, formatCountOutput, formats);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo, XrSwapchain *out_swapchain)
 {
 	OXR_TRACE_MARKER();
@@ -50,6 +51,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateSwapchain");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	if (sess->compositor == NULL) {
 		return oxr_error(&log, XR_ERROR_VALIDATION_FAILURE, "Is illegal in headless sessions");
 	}
@@ -111,7 +113,7 @@ oxr_xrCreateSwapchain(XrSession session, const XrSwapchainCreateInfo *createInfo
 	return oxr_session_success_result(sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySwapchain(XrSwapchain swapchain)
 {
 	OXR_TRACE_MARKER();
@@ -123,7 +125,7 @@ oxr_xrDestroySwapchain(XrSwapchain swapchain)
 	return oxr_handle_destroy(&log, &sc->handle);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
                                uint32_t imageCapacityInput,
                                uint32_t *imageCountOutput,
@@ -134,6 +136,7 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc, "xrEnumerateSwapchainImages");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sc->sess);
 	struct xrt_swapchain *xsc = sc->swapchain;
 
 	if (imageCountOutput != NULL) {
@@ -149,7 +152,7 @@ oxr_xrEnumerateSwapchainImages(XrSwapchain swapchain,
 	return sc->enumerate_images(&log, sc, xsc->image_count, images);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquireInfo *acquireInfo, uint32_t *index)
 {
 	OXR_TRACE_MARKER();
@@ -157,13 +160,14 @@ oxr_xrAcquireSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageAcquire
 	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc, "xrAcquireSwapchainImage");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sc->sess);
 	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, acquireInfo, XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO);
 	OXR_VERIFY_ARG_NOT_NULL(&log, index);
 
 	return sc->acquire_image(&log, sc, acquireInfo, index);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo *waitInfo)
 {
 	OXR_TRACE_MARKER();
@@ -171,12 +175,13 @@ oxr_xrWaitSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageWaitInfo *
 	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc, "xrWaitSwapchainImage");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sc->sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, waitInfo, XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO);
 
 	return sc->wait_image(&log, sc, waitInfo);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageReleaseInfo *releaseInfo)
 {
 	OXR_TRACE_MARKER();
@@ -184,6 +189,7 @@ oxr_xrReleaseSwapchainImage(XrSwapchain swapchain, const XrSwapchainImageRelease
 	struct oxr_swapchain *sc;
 	struct oxr_logger log;
 	OXR_VERIFY_SWAPCHAIN_AND_INIT_LOG(&log, swapchain, sc, "xrReleaseSwapchainImage");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sc->sess);
 	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, releaseInfo, XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO);
 
 	return sc->release_image(&log, sc, releaseInfo);

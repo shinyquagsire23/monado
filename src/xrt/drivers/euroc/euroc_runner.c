@@ -92,6 +92,7 @@ euroc_run_dataset(const char *euroc_path,
 {
 	struct euroc_player_config *ep_config = make_euroc_player_config(euroc_path);
 	struct t_slam_tracker_config *st_config = make_slam_tracker_config(slam_config, output_path);
+	st_config->cam_count = ep_config->dataset.cam_count;
 
 	// Frame context that will manage SLAM tracker and euroc player lifetimes
 	struct xrt_frame_context xfctx = {0};

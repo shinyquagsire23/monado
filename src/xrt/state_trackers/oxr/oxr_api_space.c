@@ -27,7 +27,7 @@
 #include <inttypes.h>
 
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo *createInfo, XrSpace *space)
 {
 	OXR_TRACE_MARKER();
@@ -36,6 +36,7 @@ oxr_xrCreateActionSpace(XrSession session, const XrActionSpaceCreateInfo *create
 	struct oxr_action *act;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateActionSpace");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_ACTION_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInActionSpace);
 	OXR_VERIFY_ACTION_NOT_NULL(&log, createInfo->action, act);
@@ -57,7 +58,7 @@ static const XrReferenceSpaceType session_spaces[] = {
     XR_REFERENCE_SPACE_TYPE_STAGE,
 };
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateReferenceSpaces(XrSession session,
                                uint32_t spaceCapacityInput,
                                uint32_t *spaceCountOutput,
@@ -73,7 +74,7 @@ oxr_xrEnumerateReferenceSpaces(XrSession session,
 	                    session_spaces, oxr_session_success_result(sess));
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType referenceSpaceType, XrExtent2Df *bounds)
 {
 	OXR_TRACE_MARKER();
@@ -102,7 +103,7 @@ oxr_xrGetReferenceSpaceBoundsRect(XrSession session, XrReferenceSpaceType refere
 	return XR_SPACE_BOUNDS_UNAVAILABLE;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *createInfo, XrSpace *out_space)
 {
 	OXR_TRACE_MARKER();
@@ -112,6 +113,7 @@ oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *
 	struct oxr_space *spc = NULL;
 	struct oxr_logger log;
 	OXR_VERIFY_SESSION_AND_INIT_LOG(&log, session, sess, "xrCreateReferenceSpace");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, sess);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, createInfo, XR_TYPE_REFERENCE_SPACE_CREATE_INFO);
 	OXR_VERIFY_POSE(&log, createInfo->poseInReferenceSpace);
 
@@ -125,7 +127,7 @@ oxr_xrCreateReferenceSpace(XrSession session, const XrReferenceSpaceCreateInfo *
 	return oxr_session_success_result(sess);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation *location)
 {
 	OXR_TRACE_MARKER();
@@ -134,10 +136,9 @@ oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation
 	struct oxr_space *baseSpc;
 	struct oxr_logger log;
 	OXR_VERIFY_SPACE_AND_INIT_LOG(&log, space, spc, "xrLocateSpace");
+	OXR_VERIFY_SESSION_NOT_LOST(&log, spc->sess);
 	OXR_VERIFY_SPACE_NOT_NULL(&log, baseSpace, baseSpc);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, location, XR_TYPE_SPACE_LOCATION);
-
-	OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(&log, ((XrSpaceVelocity *)location->next), XR_TYPE_SPACE_VELOCITY);
 
 	if (time <= (XrTime)0) {
 		return oxr_error(&log, XR_ERROR_TIME_INVALID, "(time == %" PRIi64 ") is not a valid time.", time);
@@ -146,7 +147,7 @@ oxr_xrLocateSpace(XrSpace space, XrSpace baseSpace, XrTime time, XrSpaceLocation
 	return oxr_space_locate(&log, spc, baseSpc, time, location);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrDestroySpace(XrSpace space)
 {
 	OXR_TRACE_MARKER();

@@ -24,7 +24,8 @@
 	_(left)                                                                                                        \
 	_(right)                                                                                                       \
 	_(head)                                                                                                        \
-	_(gamepad)
+	_(gamepad)                                                                                                     \
+	_(eyes)
 
 
 /*!
@@ -56,7 +57,8 @@
 	_(left, LEFT, "/user/hand/left")                                                                               \
 	_(right, RIGHT, "/user/hand/right")                                                                            \
 	_(head, HEAD, "/user/head")                                                                                    \
-	_(gamepad, GAMEPAD, "/user/gamepad")
+	_(gamepad, GAMEPAD, "/user/gamepad")                                                                           \
+	_(eyes, EYES, "/user/eyes_ext")
 
 /*!
  * Expansion macro (x-macro) that calls the macro you pass for each subaction

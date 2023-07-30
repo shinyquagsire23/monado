@@ -11,10 +11,11 @@
 #pragma once
 
 #include "hg_interface.h"
-
-#include "tracking/t_calibration_opencv.hpp"
+#include "hg_debug_instrumentation.hpp"
 
 #include "tracking/t_hand_tracking.h"
+#include "tracking/t_camera_models.h"
+
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_frame.h"
 
@@ -22,6 +23,7 @@
 #include "math/m_vec2.h"
 #include "math/m_vec3.h"
 #include "math/m_mathinclude.h"
+#include "math/m_eigen_interop.hpp"
 
 #include "util/u_frame_times_widget.h"
 #include "util/u_logging.h"
@@ -32,8 +34,6 @@
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_var.h"
-
-#include "util/u_template_historybuf.hpp"
 
 #include <assert.h>
 #include <stdio.h>
@@ -46,13 +46,12 @@
 
 #include "kine_common.hpp"
 #include "kine_lm/lm_interface.hpp"
-#include "kine_ccdik/ccdik_interface.hpp"
-
 
 
 namespace xrt::tracking::hand::mercury {
 
 using namespace xrt::auxiliary::util;
+using namespace xrt::auxiliary::math;
 
 #define HG_TRACE(hgt, ...) U_LOG_IFL_T(hgt->log_level, __VA_ARGS__)
 #define HG_DEBUG(hgt, ...) U_LOG_IFL_D(hgt->log_level, __VA_ARGS__)
@@ -69,30 +68,85 @@ static constexpr uint16_t kVisSpacerSize = 8;
 static const cv::Scalar RED(255, 30, 30);
 static const cv::Scalar YELLOW(255, 255, 0);
 static const cv::Scalar PINK(255, 0, 255);
+static const cv::Scalar GREEN(0, 255, 0);
 
 static const cv::Scalar colors[2] = {YELLOW, RED};
+
+constexpr enum xrt_hand_joint joints_5x5_to_26[5][5] = {
+    {
+        XRT_HAND_JOINT_WRIST,
+        XRT_HAND_JOINT_THUMB_METACARPAL,
+        XRT_HAND_JOINT_THUMB_PROXIMAL,
+        XRT_HAND_JOINT_THUMB_DISTAL,
+        XRT_HAND_JOINT_THUMB_TIP,
+    },
+    {
+        XRT_HAND_JOINT_INDEX_METACARPAL,
+        XRT_HAND_JOINT_INDEX_PROXIMAL,
+        XRT_HAND_JOINT_INDEX_INTERMEDIATE,
+        XRT_HAND_JOINT_INDEX_DISTAL,
+        XRT_HAND_JOINT_INDEX_TIP,
+    },
+    {
+        XRT_HAND_JOINT_MIDDLE_METACARPAL,
+        XRT_HAND_JOINT_MIDDLE_PROXIMAL,
+        XRT_HAND_JOINT_MIDDLE_INTERMEDIATE,
+        XRT_HAND_JOINT_MIDDLE_DISTAL,
+        XRT_HAND_JOINT_MIDDLE_TIP,
+    },
+    {
+        XRT_HAND_JOINT_RING_METACARPAL,
+        XRT_HAND_JOINT_RING_PROXIMAL,
+        XRT_HAND_JOINT_RING_INTERMEDIATE,
+        XRT_HAND_JOINT_RING_DISTAL,
+        XRT_HAND_JOINT_RING_TIP,
+    },
+    {
+        XRT_HAND_JOINT_LITTLE_METACARPAL,
+        XRT_HAND_JOINT_LITTLE_PROXIMAL,
+        XRT_HAND_JOINT_LITTLE_INTERMEDIATE,
+        XRT_HAND_JOINT_LITTLE_DISTAL,
+        XRT_HAND_JOINT_LITTLE_TIP,
+    },
+};
+
+namespace ROIProvenance {
+	enum ROIProvenance
+	{
+		HAND_DETECTION,
+		POSE_PREDICTION
+	};
+}
+
 
 // Forward declaration for ht_view
 struct HandTracking;
 struct ht_view;
 
-// Using the compiler to stop me from getting 2D space mixed up with 3D space.
-struct Hand2D
-{
-	struct xrt_vec2 kps[21];
-	float confidences[21];
-};
 
 struct Hand3D
 {
 	struct xrt_vec3 kps[21];
 };
 
+using hand21_2d = std::array<vec2_5, 21>;
+
+struct projection_instructions
+{
+	Eigen::Quaternionf rot_quat = Eigen::Quaternionf::Identity();
+	float stereographic_radius = 0;
+	bool flip = false;
+	const t_camera_model_params &dist;
+
+	projection_instructions(const t_camera_model_params &dist) : dist(dist) {}
+};
+
 struct model_input_wrap
 {
 	float *data = nullptr;
-	// int64_t isn't a bug; that's what onnxruntime wants.
-	std::vector<int64_t> dimensions = {};
+	int64_t dimensions[4];
+	size_t num_dimensions = 0;
+
 	OrtValue *tensor = nullptr;
 	const char *name;
 };
@@ -105,30 +159,36 @@ struct onnx_wrap
 	OrtMemoryInfo *meminfo = nullptr;
 	OrtSession *session = nullptr;
 
-	std::vector<model_input_wrap> wraps;
+	std::vector<model_input_wrap> wraps = {};
 };
 
-struct hand_bounding_box
+// Multipurpose.
+// * Hand detector writes into center_px, size_px, found and hand_detection_confidence
+// * Keypoint estimator operates on this to a direction/radius for the stereographic projection, and for the associated
+// keypoints.
+struct hand_region_of_interest
 {
-	xrt_vec2 center;
+	ROIProvenance::ROIProvenance provenance;
+
+	// Either set by the detection model or by predict_new_regions_of_interest/back_project
+	xrt_vec2 center_px;
 	float size_px;
+
 	bool found;
-	float confidence;
+	bool hand_detection_confidence;
 };
+
+
 
 struct hand_detection_run_info
 {
 	ht_view *view;
-	hand_bounding_box *outputs[2];
+	// These are not duplicates of ht_view's regions_of_interest_this_frame!
+	// If some hands are already tracked, we have logic that only copies new ROIs to this frame's regions of
+	// interest.
+	hand_region_of_interest outputs[2];
 };
 
-
-struct keypoint_output
-{
-	Hand2D hand_px_coord;
-	Hand2D hand_tan_space;
-	float confidences[21];
-};
 
 struct keypoint_estimation_run_info
 {
@@ -145,33 +205,19 @@ struct ht_view
 
 	struct t_camera_extra_info_one_view camera_info;
 
-	cv::Mat distortion;
-	cv::Matx<double, 3, 3> cameraMatrix;
-	cv::Matx33d rotate_camera_to_stereo_camera; // R1 or R2
+	t_camera_model_params hgdist_orig;
+	// With fx, fy, cx, cy scaled to the current camera resolution as appropriate.
+	t_camera_model_params hgdist;
+
 
 	cv::Mat run_model_on_this;
 	cv::Mat debug_out_to_this;
 
-	struct hand_bounding_box bboxes_this_frame[2]; // left, right
+	struct hand_region_of_interest regions_of_interest_this_frame[2]; // left, right
 
 	struct keypoint_estimation_run_info run_info[2];
-
-	struct keypoint_output keypoint_outputs[2];
 };
 
-struct hand_history
-{
-	HistoryBuffer<xrt_hand_joint_set, 5> hands;
-	HistoryBuffer<uint64_t, 5> timestamps;
-};
-
-struct output_struct_one_frame
-{
-	xrt_vec2 left[21];
-	float confidences_left[21];
-	xrt_vec2 right[21];
-	float confidences_right[21];
-};
 
 struct hand_size_refinement
 {
@@ -210,7 +256,6 @@ public:
 
 	float multiply_px_coord_for_undistort;
 
-	bool use_fisheye;
 
 	struct t_stereo_camera_calibration *calib;
 
@@ -240,24 +285,48 @@ public:
 	enum u_logging_level log_level = U_LOGGING_INFO;
 
 	lm::KinematicHandLM *kinematic_hands[2];
-	ccdik::KinematicHandCCDIK *kinematic_hands_ccdik[2];
 
-	// struct hand_detection_state_tracker st_det[2] = {};
+	// These are produced by the keypoint estimator and consumed by the nonlinear optimizer
+	// left hand, right hand THEN left view, right view
+	struct one_frame_input keypoint_outputs[2];
+
+	// Used to track whether this hand has *ever* been seen during this user's session, so that we can spend some
+	// extra time optimizing their hand size if one of their hands isn't visible for the first bit.
 	bool hand_seen_before[2] = {false, false};
+
+	// Used to:
+	// * see if a hand is currently being tracked.
+	// * If so, don't replace the bounding box with that from a hand detection.
+	// * Also, if both hands are being tracked, we just don't run the hand detector.
 	bool last_frame_hand_detected[2] = {false, false};
+
+	// Used to decide whether to run the keypoint estimator/nonlinear optimizer.
 	bool this_frame_hand_detected[2] = {false, false};
 
-	struct hand_history histories[2];
+	// Used to determine pose-predicted regions of interest. Contains the last 2 hand keypoint positions, or less
+	// if the hand has just started being tracked.
+	HistoryBuffer<Eigen::Array<float, 3, 21>, 2> history_hands[2] = {};
+
+	// Contains the last 2 timestamps, or less if hand tracking has just started.
+	HistoryBuffer<uint64_t, 2> history_timestamps = {};
+
+	// It'd be a staring contest between your hand and the heat death of the universe!
+	uint64_t hand_tracked_for_num_frames[2] = {0, 0};
+
+
+	// left hand, right hand
+	Eigen::Array<float, 3, 21> pose_predicted_keypoints[2];
 
 	int detection_counter = 0;
 
 	struct hand_size_refinement refinement = {};
-	// Moses hand size is ~0.095; they has big-ish hands so let's do 0.09
-	float target_hand_size = 0.09;
+	float target_hand_size = STANDARD_HAND_SIZE;
 
 
 	xrt_frame *debug_frame;
 
+
+	// This should be removed.
 	void (*keypoint_estimation_run_func)(void *);
 
 
@@ -266,21 +335,7 @@ public:
 
 	u_frame_times_widget ft_widget = {};
 
-	struct
-	{
-		bool new_user_event = false;
-		struct u_var_draggable_f32 dyn_radii_fac;
-		struct u_var_draggable_f32 dyn_joint_y_angle_error;
-		struct u_var_draggable_f32 amount_to_lerp_prediction;
-		struct u_var_draggable_f32 max_permissible_iou;
-		bool scribble_predictions_into_this_frame = false;
-		bool scribble_keypoint_model_outputs = false;
-		bool scribble_optimizer_outputs = true;
-		bool always_run_detection_model = false;
-		bool use_ccdik = false;
-		int max_num_outside_view = 3;
-	} tuneable_values;
-
+	struct hg_tuneable_values tuneable_values;
 
 public:
 	explicit HandTracking();
@@ -319,5 +374,34 @@ run_keypoint_estimation(void *ptr);
 
 void
 release_onnx_wrap(onnx_wrap *wrap);
+
+
+void
+make_projection_instructions(t_camera_model_params &dist,
+                             bool flip_after,
+                             float expand_val,
+                             float twist,
+                             Eigen::Array<float, 3, 21> &joints,
+                             projection_instructions &out_instructions,
+                             hand21_2d &out_hand);
+
+
+void
+make_projection_instructions_angular(xrt_vec3 direction_3d,
+                                     bool flip_after,
+                                     float angular_radius,
+                                     float expand_val,
+                                     float twist,
+                                     projection_instructions &out_instructions);
+
+void
+stereographic_project_image(const t_camera_model_params &dist,
+                            const projection_instructions &instructions,
+                            cv::Mat &input_image,
+                            cv::Mat *debug_image,
+                            const cv::Scalar boundary_color,
+                            cv::Mat &out);
+
+
 
 } // namespace xrt::tracking::hand::mercury

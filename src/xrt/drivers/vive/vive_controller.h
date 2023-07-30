@@ -55,18 +55,31 @@ struct vive_controller_device
 	{
 		timepoint_ns last_sample_ts_ns;
 		uint32_t last_sample_ticks;
-		timepoint_ns ts_received_ns;
 	} imu;
 
-	struct m_imu_3dof fusion;
+	struct
+	{
+		struct u_var_button reset_pose_btn;
+	} gui;
+
+	// struct m_imu_3dof fusion;
+	struct
+	{
+		//! Protects all members of the `fusion` substruct.
+		struct os_mutex mutex;
+
+		//! Main fusion calculator.
+		struct m_imu_3dof i3dof;
+
+		//! Prediction
+		struct m_relation_history *relation_hist;
+	} fusion;
 
 	struct
 	{
 		struct xrt_vec3 acc;
 		struct xrt_vec3 gyro;
 	} last;
-
-	struct xrt_quat rot_filtered;
 
 	enum u_logging_level log_level;
 
@@ -102,6 +115,12 @@ struct vive_controller_device
 	struct u_hand_tracking hand_tracking;
 
 	struct vive_controller_config config;
+
+	//! Last tracked pose
+	struct xrt_pose pose;
+
+	//! Additional offset to apply to `pose`
+	struct xrt_pose offset;
 };
 
 struct vive_controller_device *

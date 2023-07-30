@@ -7,29 +7,28 @@
  * @ingroup ipc_android
  */
 
-
 package org.freedesktop.monado.ipc;
 
+import android.content.Context;
 import android.os.ParcelFileDescriptor;
+import android.os.RemoteException;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceHolder;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
 /**
  * Java implementation of the IMonado IPC interface.
- * <p>
- * (This is the server-side code.)
- * <p>
- * All this does is delegate calls to native JNI implementations.
- * The warning suppression is because Android Studio tends to have a hard time finding
- * the (very real) implementations of these in service-lib.
+ *
+ * <p>(This is the server-side code.)
+ *
+ * <p>All this does is delegate calls to native JNI implementations. The warning suppression is
+ * because Android Studio tends to have a hard time finding the (very real) implementations of these
+ * in service-lib.
  */
 @Keep
 public class MonadoImpl extends IMonado.Stub {
@@ -42,29 +41,15 @@ public class MonadoImpl extends IMonado.Stub {
         System.loadLibrary("monado-service");
     }
 
-    private SurfaceManager surfaceManager;
+    private final Context context;
 
-    public MonadoImpl(@NonNull SurfaceManager surfaceManager) {
-        this.surfaceManager = surfaceManager;
-        this.surfaceManager.setCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                Log.i(TAG, "surfaceCreated");
-                passAppSurface(holder.getSurface());
-            }
-
-            @Override
-            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-            }
-
-            @Override
-            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-            }
-        });
+    public MonadoImpl(@NonNull Context context) {
+        this.context = context.getApplicationContext();
+        nativeStartServer(this.context);
     }
 
     @Override
-    public void connect(@NotNull ParcelFileDescriptor parcelFileDescriptor) {
+    public void connect(@NonNull ParcelFileDescriptor parcelFileDescriptor) throws RemoteException {
         int fd = parcelFileDescriptor.getFd();
         Log.i(TAG, "connect: given fd " + fd);
         if (nativeAddClient(fd) != 0) {
@@ -74,6 +59,9 @@ public class MonadoImpl extends IMonado.Stub {
             } catch (IOException e) {
                 // do nothing, probably already closed.
             }
+
+            // throw an exception so that client can gracefully fail
+            throw new IllegalStateException("server not available");
         } else {
             Log.i(TAG, "connect: fd ownership transferred");
             parcelFileDescriptor.detachFd();
@@ -88,19 +76,12 @@ public class MonadoImpl extends IMonado.Stub {
             return;
         }
         nativeAppSurface(surface);
-        nativeStartServer();
-    }
-
-    @Override
-    public boolean createSurface(int displayId, boolean focusable) {
-        Log.i(TAG, "createSurface");
-        return surfaceManager.createSurfaceOnDisplay(displayId, focusable);
     }
 
     @Override
     public boolean canDrawOverOtherApps() {
         Log.i(TAG, "canDrawOverOtherApps");
-        return surfaceManager.canDrawOverlays();
+        return Settings.canDrawOverlays(context);
     }
 
     public void shutdown() {
@@ -110,16 +91,22 @@ public class MonadoImpl extends IMonado.Stub {
 
     /**
      * Native method that starts server.
+     *
+     * <p>This is essentially the entry point for the monado service on Android.
+     *
+     * <p>
+     *
+     * @param context Context object.
      */
     @SuppressWarnings("JavaJniMissingFunction")
-    private native void nativeStartServer();
+    private native void nativeStartServer(@NonNull Context context);
 
     /**
      * Native handling of receiving a surface: should convert it to an ANativeWindow then do stuff
      * with it.
-     * <p>
-     * Ignore warnings that this function is missing: it is not, it is just in a different module.
-     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
+     *
+     * <p>Ignore warnings that this function is missing: it is not, it is just in a different
+     * module. See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param surface The surface to pass to native code
      * @todo figure out a good way to have a client ID
@@ -130,13 +117,9 @@ public class MonadoImpl extends IMonado.Stub {
     /**
      * Native handling of receiving an FD for a new client: the FD should be used to start up the
      * rest of the native IPC code on that socket.
-     * <p>
-     * This is essentially the entry point for the monado service on Android: if it's already
-     * running, this will be called in it. If it's not already running, a process will be created,
-     * and this will be the first native code executed in that process.
-     * <p>
-     * Ignore warnings that this function is missing: it is not, it is just in a different module.
-     * See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
+     *
+     * <p>Ignore warnings that this function is missing: it is not, it is just in a different
+     * module. See `src/xrt/targets/service-lib/service_target.cpp` for the implementation.
      *
      * @param fd The incoming file descriptor: ownership is transferred to native code here.
      * @return 0 on success, anything else means the fd wasn't sent and ownership not transferred.

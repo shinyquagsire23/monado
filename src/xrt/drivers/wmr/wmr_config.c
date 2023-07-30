@@ -7,13 +7,18 @@
  * @author Jan Schmidt <jan@centricular.com>
  * @ingroup drv_wmr
  */
-#include <string.h>
+
 #include "math/m_api.h"
 
+#include "util/u_debug.h"
 #include "util/u_misc.h"
 #include "util/u_json.h"
 
 #include "wmr_config.h"
+
+#include <assert.h>
+#include <string.h>
+
 
 #define WMR_TRACE(log_level, ...) U_LOG_IFL_T(log_level, __VA_ARGS__)
 #define WMR_DEBUG(log_level, ...) U_LOG_IFL_D(log_level, __VA_ARGS__)
@@ -27,6 +32,9 @@
 #define JSON_VEC3(a, b, c) u_json_get_vec3_array(u_json_get(a, b), c)
 #define JSON_MATRIX_3X3(a, b, c) u_json_get_matrix_3x3(u_json_get(a, b), c)
 #define JSON_STRING(a, b, c) u_json_get_string_into_array(u_json_get(a, b), c, sizeof(c))
+
+//! Specifies the maximum number of cameras to use for SLAM tracking
+DEBUG_GET_ONCE_NUM_OPTION(wmr_max_slam_cams, "WMR_MAX_SLAM_CAMS", WMR_MAX_CAMERAS)
 
 static void
 wmr_hmd_config_init_defaults(struct wmr_hmd_config *c)
@@ -274,18 +282,18 @@ wmr_inertial_sensors_config_parse(struct wmr_inertial_sensors_config *c, cJSON *
 static bool
 wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_logging_level log_level)
 {
-	if (c->n_cameras == WMR_MAX_CAMERAS) {
+	if (c->cam_count == WMR_MAX_CAMERAS) {
 		WMR_ERROR(log_level, "Too many camera entries. Enlarge WMR_MAX_CAMERAS");
 		return false;
 	}
 
-	struct wmr_camera_config *cam_config = c->cameras + c->n_cameras;
+	struct wmr_camera_config *cam_config = c->cams + c->cam_count;
 
 	/* Camera purpose */
 	cJSON *json_purpose = cJSON_GetObjectItem(camera, "Purpose");
 	char *json_purpose_name = cJSON_GetStringValue(json_purpose);
 	if (json_purpose_name == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - camera purpose not found", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - camera purpose not found", c->cam_count);
 		return false;
 	}
 
@@ -294,14 +302,14 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_purpose_name, "CALIBRATION_CameraPurposeDisplayObserver")) {
 		cam_config->purpose = WMR_CAMERA_PURPOSE_DISPLAY_OBSERVER;
 	} else {
-		WMR_ERROR(log_level, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera purpose: \"%s\" (camera %d)", json_purpose_name, c->cam_count);
 		return false;
 	}
 
 	cJSON *json_location = cJSON_GetObjectItem(camera, "Location");
 	char *json_location_name = cJSON_GetStringValue(json_location);
 	if (json_location_name == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - location", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - location", c->cam_count);
 		return false;
 	}
 
@@ -318,7 +326,7 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	} else if (!strcmp(json_location_name, "CALIBRATION_CameraLocationDO1")) {
 		cam_config->location = WMR_CAMERA_LOCATION_DO1;
 	} else {
-		WMR_ERROR(log_level, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->n_cameras);
+		WMR_ERROR(log_level, "Unknown camera location: \"%s\" (camera %d)", json_location_name, c->cam_count);
 		return false;
 	}
 
@@ -329,12 +337,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	cJSON *rt = cJSON_GetObjectItem(camera, "Rt");
 	cJSON *rx = cJSON_GetObjectItem(rt, "Rotation");
 	if (rt == NULL || rx == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->cam_count);
 		return false;
 	}
 
 	if (!JSON_VEC3(rt, "Translation", &translation) || u_json_get_float_array(rx, rotation.v, 9) != 9) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - pose", c->cam_count);
 		return false;
 	}
 
@@ -344,28 +352,28 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	if (!JSON_INT(camera, "SensorWidth", &cam_config->roi.extent.w) ||
 	    !JSON_INT(camera, "SensorHeight", &cam_config->roi.extent.h)) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - sensor size", c->cam_count);
 		return false;
 	}
-	cam_config->roi.offset.w = c->n_ht_cameras * cam_config->roi.extent.w; // Assume all HT cams have same width
-	cam_config->roi.offset.h = 1;                                          // Ignore first metadata row
+	cam_config->roi.offset.w = c->tcam_count * cam_config->roi.extent.w; // Assume all tracking cams have same width
+	cam_config->roi.offset.h = 1;                                        // Ignore first metadata row
 
 	/* Distortion information */
 	cJSON *dist = cJSON_GetObjectItemCaseSensitive(camera, "Intrinsics");
 	if (!dist) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - distortion", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - distortion", c->cam_count);
 		return false;
 	}
 
 	const char *model_type = cJSON_GetStringValue(cJSON_GetObjectItemCaseSensitive(dist, "ModelType"));
 	if (model_type == NULL) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion type", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion type", c->cam_count);
 		return false;
 	}
 
 	if (!strcmp(model_type, "CALIBRATION_LensDistortionModelRational6KT")) {
 	} else {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown distortion type %s", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - unknown distortion type %s", c->cam_count,
 		          model_type);
 		return false;
 	}
@@ -374,12 +382,12 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 
 	int param_count;
 	if (!JSON_INT(dist, "ModelParameterCount", &param_count)) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - no ModelParameterCount", c->n_cameras);
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - no ModelParameterCount", c->cam_count);
 		return false;
 	}
 
 	if (param_count != 15) {
-		WMR_ERROR(log_level, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->n_cameras,
+		WMR_ERROR(log_level, "Invalid camera calibration block %d - wrong ModelParameterCount %d", c->cam_count,
 		          param_count);
 		return false;
 	}
@@ -388,15 +396,16 @@ wmr_config_parse_camera_config(struct wmr_hmd_config *c, cJSON *camera, enum u_l
 	if (params_json == NULL ||
 	    u_json_get_float_array(params_json, distortion6KT->v, param_count) != (size_t)param_count) {
 		WMR_ERROR(log_level, "Invalid camera calibration block %d - missing distortion parameters",
-		          c->n_cameras);
+		          c->cam_count);
 		return false;
 	}
 
 	if (cam_config->purpose == WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-		c->n_ht_cameras++;
+		c->tcams[c->tcam_count] = cam_config;
+		c->tcam_count++;
 	}
 
-	c->n_cameras++;
+	c->cam_count++;
 	return true;
 }
 
@@ -444,6 +453,7 @@ wmr_config_parse_calibration(struct wmr_hmd_config *c, cJSON *calib_info, enum u
 		if (!wmr_config_parse_camera_config(c, item, log_level))
 			return false;
 	}
+	c->slam_cam_count = MIN(c->tcam_count, (int)debug_get_num_option_wmr_max_slam_cams());
 
 	return true;
 }
@@ -577,4 +587,71 @@ wmr_controller_config_parse(struct wmr_controller_config *c, char *json_string, 
 	cJSON_Delete(json_root);
 
 	return true;
+}
+
+/*!
+ * Precompute transforms to convert between OpenXR and WMR coordinate systems.
+ *
+ * OpenXR: X: Right, Y: Up, Z: Backward
+ * WMR: X: Right, Y: Down, Z: Forward
+ * ┌────────────────────┐
+ * │   OXR       WMR    │
+ * │                    │
+ * │ ▲ y                │
+ * │ │         ▲ z      │
+ * │ │    x    │    x   │
+ * │ ├──────►  ├──────► │
+ * │ │         │        │
+ * │ ▼ z       │        │
+ * │           ▼ y      │
+ * └────────────────────┘
+ */
+void
+wmr_config_precompute_transforms(struct wmr_inertial_sensors_config *sensors,
+                                 struct wmr_distortion_eye_config *eye_params)
+{
+	// P_A_B is such that B = P_A_B * A. See conventions.md
+	struct xrt_pose P_oxr_wmr = {{.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0}, XRT_VEC3_ZERO};
+	struct xrt_pose P_wmr_oxr = {0};
+	struct xrt_pose P_acc_ht0 = sensors->accel.pose;
+	struct xrt_pose P_gyr_ht0 = sensors->gyro.pose;
+	struct xrt_pose P_ht0_acc = {0};
+	struct xrt_pose P_ht0_gyr = {0};
+	struct xrt_pose P_me_ht0 = {0}; // "me" == "middle of the eyes"
+	struct xrt_pose P_me_acc = {0};
+	struct xrt_pose P_me_gyr = {0};
+	struct xrt_pose P_ht0_me = {0};
+	struct xrt_pose P_acc_me = {0};
+	struct xrt_pose P_oxr_ht0_me = {0}; // P_ht0_me in OpenXR coordinates
+	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
+
+	// All of the observed headsets have reported a zero translation for its gyro
+	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
+
+	// Initialize transforms
+
+	// All of these are in WMR coordinates.
+	math_pose_invert(&P_oxr_wmr, &P_wmr_oxr); // P_wmr_oxr == P_oxr_wmr
+	math_pose_invert(&P_acc_ht0, &P_ht0_acc);
+	math_pose_invert(&P_gyr_ht0, &P_ht0_gyr);
+	if (eye_params)
+		math_pose_interpolate(&eye_params[0].pose, &eye_params[1].pose, 0.5, &P_me_ht0);
+	else
+		math_pose_identity(&P_me_ht0);
+	math_pose_transform(&P_me_ht0, &P_ht0_acc, &P_me_acc);
+	math_pose_transform(&P_me_ht0, &P_ht0_gyr, &P_me_gyr);
+	math_pose_invert(&P_me_ht0, &P_ht0_me);
+	math_pose_invert(&P_me_acc, &P_acc_me);
+
+	// Express P_*_me pose in OpenXR coordinates through sandwich products.
+	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
+	math_pose_transform(&P_ht0_me, &P_wmr_oxr, &P_oxr_ht0_me);
+	math_pose_transform(&P_oxr_wmr, &P_oxr_ht0_me, &P_oxr_ht0_me);
+
+	// Save transforms
+	math_pose_transform(&P_oxr_wmr, &P_me_acc, &sensors->transforms.P_oxr_acc);
+	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &sensors->transforms.P_oxr_gyr);
+	sensors->transforms.P_ht0_me = P_oxr_ht0_me;
+	sensors->transforms.P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
 }

@@ -29,7 +29,17 @@
 #define XRT_HAVE_TIMEVAL
 
 #elif defined(XRT_OS_WINDOWS)
+#if defined(XRT_ENV_MINGW)
+// That define is needed before to include windows.h, to avoid a collision
+// between the 'byte' type defined by windows and std::byte defined in cstddef
+// since C++17
+#define byte win_byte_override
+#include <windows.h>
+#undef byte
+#endif
+
 #include <time.h>
+#include <timeapi.h>
 #define XRT_HAVE_TIMESPEC
 
 #elif defined(XRT_DOXYGEN)
@@ -161,13 +171,23 @@ static inline uint64_t
 os_realtime_get_ns(void);
 #endif
 
+#if defined(XRT_OS_WINDOWS)
+/*!
+ * Return a realtime clock in nanoseconds
+ *
+ * @ingroup aux_os_time_extra
+ */
+uint64_t
+os_realtime_get_ns(void);
+#endif
+
 #if defined(XRT_OS_WINDOWS) || defined(XRT_DOXYGEN)
 /*!
  * @brief Return a qpc freq in nanoseconds.
  * @ingroup aux_os_time
  */
 static inline int64_t
-os_ns_per_qpc_tick_get();
+os_ns_per_qpc_tick_get(void);
 #endif
 
 
@@ -222,12 +242,14 @@ static inline void
 os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 {
 #if defined(XRT_OS_WINDOWS)
+	timeBeginPeriod(1);
 	if (ops->timer) {
 		LARGE_INTEGER timeperiod;
 		timeperiod.QuadPart = -(nsec / 100);
 		if (SetWaitableTimer(ops->timer, &timeperiod, 0, NULL, NULL, FALSE)) {
 			// OK we could set up the timer, now let's wait.
 			WaitForSingleObject(ops->timer, INFINITE);
+			timeEndPeriod(1);
 			return;
 		}
 	}
@@ -235,6 +257,10 @@ os_precise_sleeper_nanosleep(struct os_precise_sleeper *ops, int32_t nsec)
 	// If we fall through from an implementation, or there's no implementation needed for a platform, we
 	// delegate to the regular os_nanosleep.
 	os_nanosleep(nsec);
+
+#if defined(XRT_OS_WINDOWS)
+	timeEndPeriod(1);
+#endif
 }
 
 #if defined(XRT_HAVE_TIMESPEC)
@@ -272,7 +298,7 @@ os_timeval_to_ns(struct timeval *val)
 
 #if defined(XRT_OS_WINDOWS)
 static inline int64_t
-os_ns_per_qpc_tick_get()
+os_ns_per_qpc_tick_get(void)
 {
 	static int64_t ns_per_qpc_tick = 0;
 	if (ns_per_qpc_tick == 0) {

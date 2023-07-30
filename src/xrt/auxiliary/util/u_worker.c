@@ -40,6 +40,9 @@ struct thread
 
 	// Native thread.
 	struct os_thread thread;
+
+	//! Thread name.
+	char name[64];
 };
 
 struct pool
@@ -78,6 +81,9 @@ struct pool
 
 	//! Is the pool up and running?
 	bool running;
+
+	//! Prefix to use for thread names.
+	char prefix[32];
 };
 
 struct group
@@ -335,6 +341,9 @@ run_func(void *ptr)
 	struct thread *t = (struct thread *)ptr;
 	struct pool *p = t->p;
 
+	snprintf(t->name, sizeof(t->name), "%s: Worker", p->prefix);
+	U_TRACE_SET_THREAD_NAME(t->name);
+
 	os_mutex_lock(&p->mutex);
 
 	while (p->running) {
@@ -387,7 +396,7 @@ run_func(void *ptr)
  */
 
 struct u_worker_thread_pool *
-u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_count)
+u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_count, const char *prefix)
 {
 	XRT_TRACE_MARKER();
 	int ret;
@@ -408,6 +417,7 @@ u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_coun
 	p->worker_limit = starting_worker_count;
 	p->thread_count = thread_count;
 	p->running = true;
+	snprintf(p->prefix, sizeof(p->prefix), "%s", prefix);
 
 	ret = os_mutex_init(&p->mutex);
 	if (ret != 0) {

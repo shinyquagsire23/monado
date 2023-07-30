@@ -171,6 +171,15 @@ with dai.Device(pipeline) as device:
 
   calh = dai.CalibrationHandler()
 
+  current_eeprom = device.readCalibration().getEepromData()
+
+  # currently only copies whatever is on the device to the new calibration
+  calh.setBoardInfo(productName = current_eeprom.productName, boardName = current_eeprom.boardName,
+                    boardRev = current_eeprom.boardRev, boardConf = current_eeprom.boardConf,
+                    hardwareConf = current_eeprom.hardwareConf, batchName = current_eeprom.batchName,
+                    batchTime = current_eeprom.batchTime, boardOptions = current_eeprom.boardOptions,
+                    boardCustom = current_eeprom.boardCustom)
+
   calh.setCameraExtrinsics(dai.CameraBoardSocket.LEFT, dai.CameraBoardSocket.RIGHT,
                            R, translation=T, specTranslation=[args.baseline, 0, 0])
 

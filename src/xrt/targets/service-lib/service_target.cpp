@@ -88,6 +88,7 @@ public:
 			server_thread->join();
 			server_thread.reset(nullptr);
 			server = NULL;
+			startup_complete = false;
 		}
 
 		return 0;
@@ -100,12 +101,16 @@ private:
 	waitForStartupComplete()
 	{
 		std::unique_lock<std::mutex> lock{server_mutex};
-		bool completed = startup_cond.wait_for(lock, START_TIMEOUT_SECONDS,
-		                                       [&]() { return server != NULL && startup_complete; });
+		bool completed = startup_cond.wait_for(lock, START_TIMEOUT_SECONDS, [&]() { return startup_complete; });
+
+		if (!server) {
+			U_LOG_E("Failed to create ipc server");
+		}
+
 		if (!completed) {
 			U_LOG_E("Server startup timeout!");
 		}
-		return completed;
+		return server && completed;
 	}
 
 	//! Reference to the ipc_server, managed by ipc_server_process
@@ -128,12 +133,19 @@ private:
 };
 } // namespace
 
-extern "C" void
-Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz)
+extern "C" JNIEXPORT void JNICALL
+Java_org_freedesktop_monado_ipc_MonadoImpl_nativeStartServer(JNIEnv *env, jobject thiz, jobject context)
 {
+	JavaVM *jvm = nullptr;
+	jint result = env->GetJavaVM(&jvm);
+	assert(result == JNI_OK);
+	assert(jvm);
+
 	jni::init(env);
 	jni::Object monadoImpl(thiz);
 	U_LOG_D("service: Called nativeStartServer");
+
+	android_globals_store_vm_and_context(jvm, context);
 
 	IpcServerHelper::instance().startServer();
 }
@@ -168,18 +180,4 @@ Java_org_freedesktop_monado_ipc_MonadoImpl_nativeShutdownServer(JNIEnv *env, job
 	jni::Object monadoImpl(thiz);
 
 	return IpcServerHelper::instance().shutdownServer();
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_org_freedesktop_monado_openxr_1runtime_MonadoOpenXrApplication_nativeStoreContext(JNIEnv *env,
-                                                                                       jobject thiz,
-                                                                                       jobject context)
-{
-	JavaVM *jvm = nullptr;
-	jint result = env->GetJavaVM(&jvm);
-	assert(result == JNI_OK);
-	assert(jvm);
-
-	jni::init(env);
-	android_globals_store_vm_and_context(jvm, context);
 }

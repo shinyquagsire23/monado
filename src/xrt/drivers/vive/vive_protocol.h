@@ -87,7 +87,8 @@ struct vive_mainboard_status_report
 	uint16_t lens_separation;
 	uint16_t reserved1;
 	uint8_t button;
-	uint8_t reserved2[3];
+	uint8_t audio_button;
+	uint8_t reserved2[2];
 	uint8_t proximity_change;
 	uint8_t reserved3;
 	uint16_t proximity;
@@ -284,6 +285,13 @@ struct vive_headset_lighthouse_v2_pulse_report
 	/* Always 0xde40daa */
 	uint32_t unknown3;
 
+} __attribute__((packed));
+
+#define VIVE_HEADSET_LIGHTHOUSE_V2_PULSE_RAW_REPORT_ID 0x28
+
+struct vive_headset_lighthouse_v2_pulse_raw_report
+{
+	uint8_t unknown[64];
 } __attribute__((packed));
 
 struct vive_headset_lighthouse_pulse

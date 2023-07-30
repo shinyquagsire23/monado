@@ -105,9 +105,13 @@ ipc_shmem_create(size_t size, xrt_shmem_handle_t *out_handle, void **out_map)
 #endif
 
 #if defined(XRT_OS_UNIX)
+
 void
-ipc_shmem_destroy(xrt_shmem_handle_t *handle_ptr)
+ipc_shmem_destroy(xrt_shmem_handle_t *handle_ptr, void **map_ptr, size_t size)
 {
+	// Checks for NULL.
+	ipc_shmem_unmap((void **)map_ptr, size);
+
 	if (handle_ptr == NULL) {
 		return;
 	}
@@ -132,10 +136,25 @@ ipc_shmem_map(xrt_shmem_handle_t handle, size_t size, void **out_map)
 	*out_map = ptr;
 	return XRT_SUCCESS;
 }
-#elif defined(XRT_OS_WINDOWS)
+
 void
-ipc_shmem_destroy(xrt_shmem_handle_t *handle_ptr)
+ipc_shmem_unmap(void **map_ptr, size_t size)
 {
+	if (map_ptr == NULL) {
+		return;
+	}
+	munmap(*map_ptr, size);
+	*map_ptr = NULL;
+}
+
+#elif defined(XRT_OS_WINDOWS)
+
+void
+ipc_shmem_destroy(xrt_shmem_handle_t *handle_ptr, void **map_ptr, size_t size)
+{
+	// Checks for NULL.
+	ipc_shmem_unmap((void **)map_ptr, size);
+
 	if (handle_ptr == NULL) {
 		return;
 	}
@@ -155,7 +174,20 @@ ipc_shmem_map(xrt_shmem_handle_t handle, size_t size, void **out_map)
 	return XRT_SUCCESS;
 }
 
-// BUGBUG: unmap?
+void
+ipc_shmem_unmap(void **map_ptr, size_t size)
+{
+	if (map_ptr == NULL) {
+		return;
+	}
+	void *map = *map_ptr;
+	if (map == NULL) {
+		return;
+	}
+	UnmapViewOfFile(map);
+	*map_ptr = NULL;
+}
+
 #else
 #error "OS not yet supported"
 #endif

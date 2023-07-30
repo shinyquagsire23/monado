@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,8 +11,6 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup comp_null
  */
-
-#include "xrt/xrt_gfx_native.h"
 
 #include "os/os_time.h"
 
@@ -220,6 +218,12 @@ compositor_init_vulkan(struct null_compositor *c)
 	c->sys_info.client_d3d_deviceLUID = vk_res.client_gpu_deviceLUID;
 	c->sys_info.client_d3d_deviceLUID_valid = vk_res.client_gpu_deviceLUID_valid;
 
+	// Tie the lifetimes of swapchains to Vulkan.
+	xrt_result_t xret = comp_swapchain_shared_init(&c->base.cscs, vk);
+	if (xret != XRT_SUCCESS) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -310,7 +314,7 @@ compositor_init_sys_info(struct null_compositor *c, struct xrt_device *xdev)
  */
 
 static xrt_result_t
-null_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+null_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *type)
 {
 	struct null_compositor *c = null_compositor(xc);
 	NULL_DEBUG(c, "BEGIN_SESSION");
@@ -417,12 +421,14 @@ null_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-null_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+null_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
 	struct null_compositor *c = null_compositor(xc);
 	NULL_TRACE(c, "LAYER_COMMIT");
+
+	int64_t frame_id = c->base.slot.data.frame_id;
 
 	/*
 	 * The null compositor doesn't render and frames, but needs to do
@@ -450,7 +456,7 @@ null_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gr
 	}
 
 	// Now is a good point to garbage collect.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
 	return XRT_SUCCESS;
 }
@@ -507,13 +513,10 @@ null_compositor_destroy(struct xrt_compositor *xc)
 	NULL_DEBUG(c, "NULL_COMP_DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
-
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
+	// Must be destroyed before Vulkan.
+	comp_swapchain_shared_destroy(&c->base.cscs, vk);
 
 	if (vk->device != VK_NULL_HANDLE) {
 		vk->vkDestroyDevice(vk->device, NULL);

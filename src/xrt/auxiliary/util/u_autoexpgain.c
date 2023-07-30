@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 
 DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
 
@@ -41,7 +42,7 @@ DEBUG_GET_ONCE_LOG_OPTION(aeg_log, "AEG_LOG", U_LOGGING_WARN)
 #define INITIAL_BRIGHTNESS 0.5
 #define INITIAL_MAX_BRIGHTNESS_STEP 0.1
 #define INITIAL_THRESHOLD 0.1
-#define GRID_COLS 40 //!< Amount of columns for the histogram sample grid
+#define GRID_COLS 32 //!< Amount of columns for the histogram sample grid
 
 //! AEG State machine states
 enum u_aeg_state
@@ -453,17 +454,41 @@ u_autoexpgain_create(enum u_aeg_strategy strategy, bool enabled_from_start, int 
 }
 
 void
-u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root)
+u_autoexpgain_add_vars(struct u_autoexpgain *aeg, void *root, char *prefix)
 {
-	u_var_add_bool(root, &aeg->enable, "Update brightness automatically");
-	u_var_add_i32(root, &aeg->frame_delay, "Frame update delay");
-	u_var_add_combo(root, &aeg->strategy_combo, "Strategy");
-	u_var_add_draggable_f32(root, &aeg->brightness, "Brightness");
-	u_var_add_f32(root, &aeg->threshold, "Score threshold");
-	u_var_add_f32(root, &aeg->max_brightness_step, "Max brightness step");
-	u_var_add_ro_f32(root, &aeg->current_score, "Image score");
-	u_var_add_histogram_f32(root, &aeg->histogram_ui, "Intensity histogram");
-	u_var_add_log_level(root, &aeg->log_level, "AEG log level");
+	char tmp[256];
+
+	(void)snprintf(tmp, sizeof(tmp), "%sAuto exposure and gain control", prefix);
+	u_var_add_gui_header_begin(root, NULL, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sUpdate brightness automatically", prefix);
+	u_var_add_bool(root, &aeg->enable, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sFrame update delay", prefix);
+	u_var_add_i32(root, &aeg->frame_delay, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sStrategy", prefix);
+	u_var_add_combo(root, &aeg->strategy_combo, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sBrightness", prefix);
+	u_var_add_draggable_f32(root, &aeg->brightness, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sScore threshold", prefix);
+	u_var_add_f32(root, &aeg->threshold, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sMax brightness step", prefix);
+	u_var_add_f32(root, &aeg->max_brightness_step, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sImage score", prefix);
+	u_var_add_ro_f32(root, &aeg->current_score, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sIntensity histogram", prefix);
+	u_var_add_histogram_f32(root, &aeg->histogram_ui, tmp);
+
+	(void)snprintf(tmp, sizeof(tmp), "%sAEG log level", prefix);
+	u_var_add_log_level(root, &aeg->log_level, tmp);
+
+	u_var_add_gui_header_end(root, NULL, tmp);
 }
 
 void

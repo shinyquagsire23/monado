@@ -42,7 +42,7 @@
 // example: v21.0.0-560-g586d33b5
 #define IPC_VERSION_NAME_LEN 64
 
-#ifdef XRT_OS_WINDOWS
+#if defined(XRT_OS_WINDOWS) && !defined(XRT_ENV_MINGW)
 typedef int pid_t;
 #endif
 
@@ -106,6 +106,9 @@ struct ipc_shared_device
 	//! A string describing the device.
 	char str[XRT_DEVICE_NAME_LEN];
 
+	//! A unique identifier. Persistent across configurations, if possible.
+	char serial[XRT_DEVICE_NAME_LEN];
+
 	//! Number of bindings.
 	uint32_t binding_profile_count;
 	//! 'Offset' into the array of bindings where the bindings starts.
@@ -124,7 +127,9 @@ struct ipc_shared_device
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
+	bool eye_gaze_supported;
 	bool force_feedback_supported;
+	bool form_factor_check_supported;
 };
 
 /*!
@@ -160,8 +165,7 @@ struct ipc_layer_entry
  */
 struct ipc_layer_slot
 {
-	uint64_t display_time_ns;
-	enum xrt_blend_mode env_blend_mode;
+	struct xrt_layer_frame_data data;
 	uint32_t layer_count;
 	struct ipc_layer_entry layers[IPC_MAX_LAYERS];
 };
@@ -221,6 +225,7 @@ struct ipc_shared_memory
 		int32_t left;
 		int32_t right;
 		int32_t gamepad;
+		int32_t eyes;
 
 		struct
 		{
@@ -269,9 +274,19 @@ struct ipc_shared_memory
 	uint64_t startup_timestamp;
 };
 
+/*!
+ * Initial info from a client when it connects.
+ */
+struct ipc_client_description
+{
+	pid_t pid;
+	struct xrt_instance_info info;
+};
+
 struct ipc_client_list
 {
-	int32_t ids[IPC_MAX_CLIENTS];
+	uint32_t ids[IPC_MAX_CLIENTS];
+	uint32_t id_count;
 };
 
 /*!
@@ -281,6 +296,9 @@ struct ipc_client_list
  */
 struct ipc_app_state
 {
+	// Stable and unique ID of the client, only unique within this instance.
+	uint32_t id;
+
 	bool primary_application;
 	bool session_active;
 	bool session_visible;

@@ -24,11 +24,6 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "XRT_FEATURE_SERVICE": "ON"
-            },
-            "condition": {
-                "lhs": "${hostSystemName}",
-                "type": "notEquals",
-                "rhs": "Windows"
             }
         },
         {
@@ -57,11 +52,6 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "BUILD_DOC": "ON",
                 "BUILD_DOC_EXTRACT_ALL": "ON"
-            },
-            "condition": {
-                "lhs": "${hostSystemName}",
-                "type": "notEquals",
-                "rhs": "Windows"
             }
         },
         {
@@ -80,11 +70,6 @@
             "inherits": "service-debug",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-            },
-            "condition": {
-                "lhs": "${hostSystemName}",
-                "type": "notEquals",
-                "rhs": "Windows"
             }
         },
         {

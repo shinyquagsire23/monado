@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,7 +6,7 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  */
 
-#include "xrt/xrt_gfx_native.h"
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
 
@@ -16,12 +16,16 @@
 #include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
 
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
+#include "main/comp_main_interface.h"
+#endif
+
 #include "target_instance_parts.h"
 
 #include <assert.h>
 
 
-#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
 #define USE_NULL_DEFAULT (false)
 #else
 #define USE_NULL_DEFAULT (true)
@@ -43,17 +47,23 @@ null_compositor_create_system(struct xrt_device *xdev, struct xrt_system_composi
 static xrt_result_t
 t_instance_create_system(struct xrt_instance *xinst,
                          struct xrt_system_devices **out_xsysd,
+                         struct xrt_space_overseer **out_xso,
                          struct xrt_system_compositor **out_xsysc)
 {
+	XRT_TRACE_MARKER();
+
 	assert(out_xsysd != NULL);
 	assert(*out_xsysd == NULL);
+	assert(out_xso != NULL);
+	assert(*out_xso == NULL);
 	assert(out_xsysc == NULL || *out_xsysc == NULL);
 
 	struct xrt_system_compositor *xsysc = NULL;
+	struct xrt_space_overseer *xso = NULL;
 	struct xrt_system_devices *xsysd = NULL;
 	xrt_result_t xret = XRT_SUCCESS;
 
-	xret = u_system_devices_create_from_prober(xinst, &xsysd);
+	xret = u_system_devices_create_from_prober(xinst, &xsysd, &xso);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -68,7 +78,7 @@ t_instance_create_system(struct xrt_instance *xinst,
 
 	bool use_null = debug_get_bool_option_use_null();
 
-#ifdef XRT_FEATURE_COMPOSITOR_NULL
+#ifdef XRT_MODULE_COMPOSITOR_NULL
 	if (use_null) {
 		xret = null_compositor_create_system(head, &xsysc);
 	}
@@ -79,9 +89,9 @@ t_instance_create_system(struct xrt_instance *xinst,
 	}
 #endif
 
-#ifdef XRT_FEATURE_COMPOSITOR_MAIN
+#ifdef XRT_MODULE_COMPOSITOR_MAIN
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
-		xret = xrt_gfx_provider_create_system(head, &xsysc);
+		xret = comp_main_create_system_compositor(head, NULL, &xsysc);
 	}
 #else
 	if (!use_null) {
@@ -91,11 +101,13 @@ t_instance_create_system(struct xrt_instance *xinst,
 #endif
 
 	if (xret != XRT_SUCCESS) {
+		xrt_space_overseer_destroy(&xso);
 		xrt_system_devices_destroy(&xsysd);
 		return xret;
 	}
 
 	*out_xsysd = xsysd;
+	*out_xso = xso;
 	*out_xsysc = xsysc;
 
 	return xret;
@@ -122,6 +134,8 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	if (debug_get_bool_option_wivrn_target_hack())
 		return wivrn_xrt_instance_create(ii, out_xinst);
+
+	XRT_TRACE_MARKER();
 
 	int ret = xrt_prober_create_with_lists(&xp, &target_lists);
 	if (ret < 0) {

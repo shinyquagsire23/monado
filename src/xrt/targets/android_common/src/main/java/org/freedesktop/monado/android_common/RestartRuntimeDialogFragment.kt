@@ -23,23 +23,26 @@ class RestartRuntimeDialogFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val message = arguments!!.getString(ARGS_KEY_MESSAGE)
         val builder = AlertDialog.Builder(requireActivity())
-        builder.setMessage(message)
-            .setCancelable(false)
-            .setPositiveButton(R.string.restart) { _: DialogInterface?, _: Int ->
-                delayRestart(DELAY_RESTART_DURATION)
-                //! @todo elegant way to stop service? A bounded service might be restarted by
-                //        framework automatically.
-                Process.killProcess(Process.myPid())
-            }
+        builder.setMessage(message).setCancelable(false).setPositiveButton(R.string.restart) {
+            _: DialogInterface?,
+            _: Int ->
+            delayRestart(DELAY_RESTART_DURATION)
+            // ! @todo elegant way to stop service? A bounded service might be restarted by
+            //        framework automatically.
+            Process.killProcess(Process.myPid())
+        }
         return builder.create()
     }
 
     private fun delayRestart(delayMillis: Long) {
         val intent = Intent(requireContext(), AboutActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            requireContext(), REQUEST_CODE,
-            intent, PendingIntent.FLAG_CANCEL_CURRENT
-        )
+        val pendingIntent =
+            PendingIntent.getActivity(
+                requireContext(),
+                REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_CANCEL_CURRENT
+            )
         val am = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         am.setExact(AlarmManager.RTC, System.currentTimeMillis() + delayMillis, pendingIntent)
     }

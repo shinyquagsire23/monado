@@ -11,11 +11,29 @@ plugins {
 
     // SVG files in the "raw" resource directory will be transformed into vector drawables of the same name.
     id 'com.quittle.svg-2-android-vector'
+
+    // Use spotless to format Java and Kotlin code.
+    id 'com.diffplug.spotless'
 }
 
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+        // apply a specific flavor of google-java-format.
+        googleJavaFormat('1.8').aosp().reflowLongStrings()
+        // fix formatting of type annotations.
+        formatAnnotations()
+    }
+
+    kotlin {
+        target 'src/main/java/**/*.kt'
+        // Use ktfmt(https://github.com/facebook/ktfmt) as the default Kotlin formatter. .
+        ktfmt('0.43').kotlinlangStyle()
+    }
+}
 
 android {
-    compileSdkVersion project.sharedTargetSdk
+    compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
     defaultConfig {
@@ -31,15 +49,18 @@ android {
         }
     }
 
-    lintOptions {
-        fatal 'StopShip'
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     packagingOptions {
-        exclude("META-INF/*.kotlin_module")
+        resources {
+            excludes += ['META-INF/*.kotlin_module']
+        }
+    }
+    namespace 'org.freedesktop.monado.android_common'
+    lint {
+        fatal 'StopShip'
     }
 }
 
@@ -49,6 +70,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.constraintlayout:constraintlayout:$androidxConstraintLayoutVersion"
     implementation "com.google.android.material:material:$materialVersion"
+
+    // Not directly used but included to avoid version conflicts
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$androidxLifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$androidxLifecycleVersion"
 
     // for Hilt dependency injection
     implementation "com.google.dagger:hilt-android:$hiltVersion"

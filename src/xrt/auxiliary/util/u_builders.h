@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_prober.h"
 
 
@@ -76,6 +77,26 @@ u_builder_search(struct xrt_prober *xp,
                  const struct u_builder_search_filter *filters,
                  size_t filter_count,
                  struct u_builder_search_results *results);
+
+/*!
+ * Helper function for setting up tracking origins. Applies 3dof offsets for devices with XRT_TRACKING_TYPE_NONE.
+ *
+ * @ingroup aux_util
+ */
+void
+u_builder_setup_tracking_origins(struct xrt_device *head,
+                                 struct xrt_device *left,
+                                 struct xrt_device *right,
+                                 struct xrt_vec3 *global_tracking_origin_offset);
+
+/*!
+ * Create a legacy space overseer, most builders probably want to have more
+ * smart then this especially stand alone ones.
+ *
+ * @ingroup aux_util
+ */
+void
+u_builder_create_space_overseer(struct xrt_system_devices *xsysd, struct xrt_space_overseer **out_xso);
 
 
 #ifdef __cplusplus

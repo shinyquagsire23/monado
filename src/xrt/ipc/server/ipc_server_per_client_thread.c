@@ -8,9 +8,8 @@
  * @ingroup ipc_server
  */
 
-#include "xrt/xrt_gfx_native.h"
-
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 #include "server/ipc_server.h"
 #include "ipc_server_generated.h"
@@ -46,7 +45,7 @@ setup_epoll(volatile struct ipc_client_state *ics)
 
 	int epoll_fd = ret;
 
-	struct epoll_event ev = {0};
+	struct epoll_event ev = XRT_STRUCT_INIT;
 
 	ev.events = EPOLLIN;
 	ev.data.fd = listen_socket;
@@ -69,7 +68,9 @@ setup_epoll(volatile struct ipc_client_state *ics)
 static void
 client_loop(volatile struct ipc_client_state *ics)
 {
-	IPC_INFO(ics->server, "Client connected");
+	U_TRACE_SET_THREAD_NAME("IPC Client");
+
+	IPC_INFO(ics->server, "Client %u connected", ics->client_state.id);
 
 	// Claim the client fd.
 	int epoll_fd = setup_epoll(ics);
@@ -81,7 +82,7 @@ client_loop(volatile struct ipc_client_state *ics)
 
 	while (ics->server->running) {
 		const int half_a_second_ms = 500;
-		struct epoll_event event = {0};
+		struct epoll_event event = XRT_STRUCT_INIT;
 
 		// We use epoll here to be able to timeout.
 		int ret = epoll_wait(epoll_fd, &event, 1, half_a_second_ms);
@@ -110,8 +111,12 @@ client_loop(volatile struct ipc_client_state *ics)
 		}
 
 		// Check the first 4 bytes of the message and dispatch.
-		ipc_command_t *ipc_command = (uint32_t *)buf;
+		ipc_command_t *ipc_command = (ipc_command_t *)buf;
+
+		IPC_TRACE_BEGIN(ipc_dispatch);
 		xrt_result_t result = ipc_dispatch(ics, ipc_command);
+		IPC_TRACE_END(ipc_dispatch);
+
 		if (result != XRT_SUCCESS) {
 			IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
 			break;
@@ -133,6 +138,12 @@ client_loop(volatile struct ipc_client_state *ics)
 	os_mutex_unlock(&ics->server->global_state.lock);
 
 	ipc_server_client_destroy_compositor(ics);
+
+	// Make sure undestroyed spaces are unreferenced
+	for (uint32_t i = 0; i < IPC_MAX_CLIENT_SPACES; i++) {
+		// Cast away volatile.
+		xrt_space_reference((struct xrt_space **)&ics->xspcs[i], NULL);
+	}
 
 	// Should we stop the server when a client disconnects?
 	if (ics->server->exit_on_disconnect) {
@@ -273,6 +284,8 @@ client_loop(volatile struct ipc_client_state *ics)
 static void
 client_loop(volatile struct ipc_client_state *ics)
 {
+	U_TRACE_SET_THREAD_NAME("IPC Client");
+
 	IPC_INFO(ics->server, "Client connected");
 
 	uint8_t buf[IPC_BUF_SIZE];
@@ -294,7 +307,11 @@ client_loop(volatile struct ipc_client_state *ics)
 		} else {
 			// Check the first 4 bytes of the message and dispatch.
 			ipc_command_t *ipc_command = (ipc_command_t *)buf;
+
+			IPC_TRACE_BEGIN(ipc_dispatch);
 			xrt_result_t result = ipc_dispatch(ics, ipc_command);
+			IPC_TRACE_END(ipc_dispatch);
+
 			if (result != XRT_SUCCESS) {
 				IPC_ERROR(ics->server, "During packet handling, disconnecting client.");
 				break;
@@ -314,6 +331,12 @@ client_loop(volatile struct ipc_client_state *ics)
 	os_mutex_unlock(&ics->server->global_state.lock);
 
 	ipc_server_client_destroy_compositor(ics);
+
+	// Make sure undestroyed spaces are unreferenced
+	for (uint32_t i = 0; i < IPC_MAX_CLIENT_SPACES; i++) {
+		// Cast away volatile.
+		xrt_space_reference((struct xrt_space **)&ics->xspcs[i], NULL);
+	}
 
 	// Should we stop the server when a client disconnects?
 	if (ics->server->exit_on_disconnect) {
@@ -364,7 +387,7 @@ ipc_server_client_destroy_compositor(volatile struct ipc_client_state *ics)
 void *
 ipc_server_client_thread(void *_ics)
 {
-	volatile struct ipc_client_state *ics = _ics;
+	volatile struct ipc_client_state *ics = (volatile struct ipc_client_state *)_ics;
 
 	client_loop(ics);
 

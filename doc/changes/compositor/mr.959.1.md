@@ -5,4 +5,7 @@
 - mr.982
 - mr.1021
 ---
-Refactor and reorganize compositor to improve modularity and ease of reuse.
+
+render: Refactor and reorganize compositor to improve modularity and ease of
+reuse. This introduces the render folder which aims to be useful Vulkan render
+code that can be used outside of the compositor.

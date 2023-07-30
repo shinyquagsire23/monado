@@ -17,6 +17,25 @@ plugins {
 
     // SVG files in the "raw" resource directory will be transformed into vector drawables of the same name.
     id 'com.quittle.svg-2-android-vector'
+
+    // Use spotless to format Java and Kotlin code
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+        // apply a specific flavor of google-java-format.
+        googleJavaFormat('1.8').aosp().reflowLongStrings()
+        // fix formatting of type annotations.
+        formatAnnotations()
+    }
+
+    kotlin {
+        target 'src/main/java/**/*.kt'
+        // Use ktfmt(https://github.com/facebook/ktfmt) as the default Kotlin formatter.
+        ktfmt('0.43').kotlinlangStyle()
+    }
 }
 
 // apply from: file("../android_common/fetch-eigen.gradle")
@@ -31,7 +50,7 @@ def parseOpenXRVersion(def fn) {
     def matches = file(fn).readLines().find {
         it.contains('XR_CURRENT_API_VERSION')
     } =~ ~/XR_MAKE_VERSION\(([^)]+)\)/
-    def components = matches[0][1].split(',').each { it.replace(' ', '').trim() }
+    def components = matches[0][1].split(',').collect { it.replace(' ', '').trim() }
     String.join('.', components)
 }
 
@@ -49,29 +68,14 @@ project.ext.filterLicense = { String line ->
     }
 }
 
-// TODO: this copies to the source dir for simplicity right now, but it's not great!
+project.ext.licenseDir = new File(project.buildDir, 'generated/licenses/main/res/raw')
+
 task copyLicenses(type: Copy) {
     from "${rootDir}/LICENSES/"
     include 'BSL-1.0.txt'
     rename(renameLicense)
-    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
+    into project.licenseDir
     filter(filterLicense)
-}
-project.ext.licenseDir = new File(project.buildDir, 'intermediates/licenses/')
-
-// For JSR250 used by Hilt
-task downloadCddl(type: Download) {
-    src 'https://spdx.org/licenses/CDDL-1.0.txt'
-    dest "${project.licenseDir}/CDDL-1.0.txt"
-    overwrite false
-}
-
-task copyDownloadedLicenses(type: Copy) {
-    from downloadCddl.dest
-    rename(renameLicense)
-    into project.layout.projectDirectory.dir('src/main/res/raw').asFile
-    filter(filterLicense)
-    dependsOn downloadCddl
 }
 
 // Grab Eigen if we can't find it on the system.
@@ -95,8 +99,17 @@ if (!(new File(project.file(project.eigenIncludeDir), "Eigen/Core")).exists()) {
     unpackEigen.enabled = false
 }
 
+// Pass -PsharedStl=true on the gradle command line to build with the shared runtime library.
+// This has potential compatibility issues and should only be used if you're consuming another
+// library that exposes a C++ interface.
+project.ext.stl = "c++_static"
+if (project.hasProperty("sharedStl") && project.getProperty("sharedStl")) {
+    project.ext.stl = "c++_shared"
+    println "Using SHARED C++ standard library"
+}
+
 android {
-    compileSdk sharedTargetSdk
+    compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
     ndkVersion "${ndk_version}"
@@ -117,7 +130,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=26", "-DANDROID_STL=c++_shared", "-DANDROID_ARM_NEON=TRUE"
+                arguments "-DEIGEN3_INCLUDE_DIR=${project.eigenIncludeDir}", "-DANDROID_PLATFORM=${project.sharedMinSdk}", "-DANDROID_STL=${project.stl}", "-DANDROID_ARM_NEON=TRUE"
 
             }
             if (project.pythonBinary != null) {
@@ -128,7 +141,6 @@ android {
 
         // Be sure to copy over licenses formatted as required.
         preBuild.dependsOn(copyLicenses)
-        preBuild.dependsOn(copyDownloadedLicenses)
 
         // We also need the unpacked Eigen
         preBuild.dependsOn(unpackEigen)
@@ -148,9 +160,6 @@ android {
         }
     }
 
-    lintOptions {
-        fatal 'StopShip'
-    }
 
     flavorDimensions 'deployment'
     productFlavors {
@@ -160,6 +169,7 @@ android {
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=OFF"
             externalNativeBuild.cmake.targets "openxr_monado"
 
+            buildConfigField "boolean", "inProcess", "true"
             resValue "string", "app_name", "Monado XR"
         }
         outOfProcess {
@@ -168,27 +178,36 @@ android {
             externalNativeBuild.cmake.arguments += "-DXRT_FEATURE_SERVICE=ON"
             externalNativeBuild.cmake.targets "openxr_monado", "monado-service"
 
+            buildConfigField "boolean", "inProcess", "false"
             resValue "string", "app_name", "Monado XR (Out-of-Proc)"
         }
+    }
+    hilt {
+        enableAggregatingTask = true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     packagingOptions {
-        exclude("META-INF/*.kotlin_module")
+        resources {
+            excludes += ['META-INF/*.kotlin_module']
+        }
+    }
+    namespace 'org.freedesktop.monado.openxr_runtime'
+    lint {
+        fatal 'StopShip'
     }
 
 }
 
 aboutLibraries {
-    configPath = "${projectDir}/config"
-
     // Full license text for license IDs mentioned here
     // will be included, even if no detected dependency uses them.
     additionalLicenses {
         mit
         mpl_2_0
+        bsl_1_0
     }
 }
 

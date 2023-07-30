@@ -59,7 +59,7 @@ rs_source_create(struct xrt_frame_context *xfctx, int device_idx);
  * @return An xrt_device that you can call get_tracked_pose on with XRT_INPUT_GENERIC_TRACKER_POSE
  */
 struct xrt_device *
-rs_create_tracked_device_internal_slam();
+rs_create_tracked_device_internal_slam(void);
 
 /*!
  * @dir drivers/realsense

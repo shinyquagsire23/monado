@@ -17,7 +17,7 @@
 
 #include "os/os_time.h"
 
-#if defined(XRT_OS_LINUX)
+#if defined(XRT_OS_LINUX) || defined(XRT_ENV_MINGW)
 #include <pthread.h>
 #include <semaphore.h>
 #include <assert.h>
@@ -548,7 +548,7 @@ os_semaphore_release(struct os_semaphore *os)
 static inline int
 os_semaphore_get_realtime_clock(struct timespec *ts, uint64_t timeout_ns)
 {
-#if defined(XRT_OS_WINDOWS)
+#if defined(XRT_OS_WINDOWS) && !defined(XRT_ENV_MINGW)
 	struct timespec relative;
 	os_ns_to_timespec(timeout_ns, &relative);
 	pthread_win32_getabstime_np(ts, &relative);

@@ -76,13 +76,11 @@ client_gl_win32_compositor_destroy(struct xrt_compositor *xc)
 }
 
 static xrt_result_t
-client_gl_context_begin(struct xrt_compositor *xc)
+client_gl_context_begin_locked(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_win32_compositor *c = client_gl_win32_compositor(xc);
 
 	struct client_gl_context *app_ctx = &c->app_context;
-
-	os_mutex_lock(&c->base.context_mutex);
 
 	context_save_current(&c->temp_context);
 
@@ -92,8 +90,6 @@ client_gl_context_begin(struct xrt_compositor *xc)
 	        (void *)c->temp_context.hGLRC, (void *)app_ctx->hGLRC);
 
 	if (need_make_current && !context_make_current(app_ctx)) {
-		os_mutex_unlock(&c->base.context_mutex);
-
 		U_LOG_E("Failed to make WGL context current");
 		// No need to restore on failure.
 		return XRT_ERROR_OPENGL;
@@ -103,7 +99,7 @@ client_gl_context_begin(struct xrt_compositor *xc)
 }
 
 static void
-client_gl_context_end(struct xrt_compositor *xc)
+client_gl_context_end_locked(struct xrt_compositor *xc, enum client_gl_context_reason reason)
 {
 	struct client_gl_win32_compositor *c = client_gl_win32_compositor(xc);
 
@@ -120,8 +116,6 @@ client_gl_context_end(struct xrt_compositor *xc)
 		U_LOG_E("Failed to make old WGL context current!");
 		// fall through to os_mutex_unlock even if we didn't succeed in restoring the context
 	}
-
-	os_mutex_unlock(&c->base.context_mutex);
 }
 
 static GLADapiproc
@@ -228,8 +222,13 @@ client_gl_win32_compositor_create(struct xrt_compositor_native *xcn, void *hDC, 
 	// Same for the opengl library handle
 	c->opengl = opengl;
 
-	if (!client_gl_compositor_init(&c->base, xcn, client_gl_context_begin, client_gl_context_end,
-	                               client_gl_memobj_swapchain_create, NULL)) {
+	if (!client_gl_compositor_init(            //
+	        &c->base,                          //
+	        xcn,                               //
+	        client_gl_context_begin_locked,    //
+	        client_gl_context_end_locked,      //
+	        client_gl_memobj_swapchain_create, //
+	        NULL)) {                           //
 		U_LOG_E("Failed to init parent GL client compositor!");
 		FreeLibrary(opengl);
 		free(c);

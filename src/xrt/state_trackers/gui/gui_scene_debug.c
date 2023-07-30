@@ -36,6 +36,25 @@
 
 #include <float.h>
 
+/*
+ *
+ * Structs and defines.
+ *
+ */
+
+/*!
+ * @defgroup gui_debug Debug GUI
+ * @ingroup gui
+ *
+ * @brief GUI for live inspecting Monado.
+ */
+
+/*!
+ * A single record window, here only used to draw a single element in a object
+ * window, holds all the needed state.
+ *
+ * @ingroup gui_debug
+ */
 struct debug_record
 {
 	void *ptr;
@@ -44,8 +63,11 @@ struct debug_record
 };
 
 /*!
- * A GUI scene showing the variable tracking provided by @ref util/u_var.h
+ * A GUI scene for debugging Monado while it is running, it uses the variable
+ * tracking code in the @ref util/u_var.h file to provide live updates state.
+ *
  * @implements gui_scene
+ * @ingroup gui_debug
  */
 struct debug_scene
 {
@@ -56,16 +78,50 @@ struct debug_scene
 	uint32_t num_recrs;
 };
 
-struct priv_tuple
+//! How many nested gui headers can we show, overly large.
+#define MAX_HEADER_NESTING 256
+
+//! Shared flags for color gui elements.
+#define COLOR_FLAGS (ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel)
+
+/*!
+ * One "frame" of draw state, what is passed to the variable tracking visitor
+ * functions, holds pointers to the program and live state such as visibility
+ * stack of gui headers.
+ *
+ * @ingroup gui_debug
+ */
+struct draw_state
 {
 	struct gui_program *p;
 	struct debug_scene *ds;
+
+	//! Visibility stack for nested headers.
+	bool vis_stack[MAX_HEADER_NESTING];
+	int vis_i;
+
+	//! Should we show the GUI headers for record sinks.
+	bool inhibit_sink_headers;
+};
+
+/*!
+ * State for plotting @ref m_ff_vec3_f32, assumes it's relative to now.
+ *
+ * @ingroup gui_debug
+ */
+struct plot_state
+{
+	//! The filter fifo we are plotting.
+	struct m_ff_vec3_f32 *ff;
+
+	//! When now is, all entries are made relative to this.
+	uint64_t now;
 };
 
 
 /*
  *
- * Internal functions.
+ * Helper functions.
  *
  */
 
@@ -111,21 +167,55 @@ handle_draggable_quat(const char *name, struct xrt_quat *q)
 	math_quat_normalize(q);
 }
 
-struct draw_state
+static struct debug_record *
+ensure_debug_record_created(void *ptr, struct draw_state *state)
 {
-	struct gui_program *p;
-	struct debug_scene *ds;
-	bool hidden;
-};
+	struct debug_scene *ds = state->ds;
+	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
 
-struct plot_state
+	if (usd->sink == NULL) {
+		struct debug_record *dr = &ds->recs[ds->num_recrs++];
+
+		dr->ptr = ptr;
+
+		gui_window_record_init(&dr->rw);
+		u_sink_debug_set_sink(usd, &dr->rw.sink);
+
+		return dr;
+	}
+
+	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
+		struct debug_record *dr = &ds->recs[i];
+
+		if ((ptrdiff_t)dr->ptr == (ptrdiff_t)ptr) {
+			return dr;
+		}
+	}
+
+	return NULL;
+}
+
+// Currently unused.
+XRT_MAYBE_UNUSED static void
+draw_sink_to_background(struct u_var_info *var, struct draw_state *state)
 {
-	struct m_ff_vec3_f32 *ff;
-	uint64_t now;
-};
+	struct debug_record *dr = ensure_debug_record_created(var->ptr, state);
+	if (dr == NULL) {
+		return;
+	}
+
+	gui_window_record_to_background(&dr->rw, state->p);
+}
+
+
+/*
+ *
+ * Plot helpers.
+ *
+ */
 
 #define PLOT_HELPER(elm)                                                                                               \
-	ImPlotPoint plot_##elm(void *ptr, int index)                                                                   \
+	static ImPlotPoint plot_vec3_f32_##elm(void *ptr, int index)                                                   \
 	{                                                                                                              \
 		struct plot_state *state = (struct plot_state *)ptr;                                                   \
 		struct xrt_vec3 value;                                                                                 \
@@ -138,6 +228,126 @@ struct plot_state
 PLOT_HELPER(x)
 PLOT_HELPER(y)
 PLOT_HELPER(z)
+
+static ImPlotPoint
+plot_curve_point(void *ptr, int i)
+{
+	struct u_var_curve *c = (struct u_var_curve *)ptr;
+	struct u_var_curve_point point = c->getter(c->data, i);
+	ImPlotPoint implot_point = {point.x, point.y};
+	return implot_point;
+}
+
+static float
+plot_f32_array_value(void *ptr, int i)
+{
+	float *arr = ptr;
+	return arr[i];
+}
+
+
+/*
+ *
+ * Main debug gui visitor functions.
+ *
+ */
+
+
+static void
+on_color_rgb_f32(const char *name, void *ptr)
+{
+	igColorEdit3(name, (float *)ptr, COLOR_FLAGS);
+	igSameLine(0.0f, 4.0f);
+	igText("%s", name);
+}
+
+static void
+on_color_rgb_u8(const char *name, void *ptr)
+{
+	struct xrt_colour_rgb_f32 tmp;
+	conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
+	igColorEdit3(name, (float *)&tmp, COLOR_FLAGS);
+	igSameLine(0.0f, 4.0f);
+	igText("%s", name);
+	conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
+}
+
+static void
+on_f32_arr(const char *name, void *ptr)
+{
+	struct u_var_f32_arr *f32_arr = ptr;
+	int index = *f32_arr->index_ptr;
+	int length = f32_arr->length;
+	float *arr = (float *)f32_arr->data;
+
+	float w = igGetWindowContentRegionWidth();
+	ImVec2 graph_size = {w, 200};
+
+	float stats_min = FLT_MAX;
+	float stats_max = FLT_MAX;
+
+	igPlotLinesFnFloatPtr(    //
+	    name,                 //
+	    plot_f32_array_value, //
+	    arr,                  //
+	    length,               //
+	    index,                //
+	    NULL,                 //
+	    stats_min,            //
+	    stats_max,            //
+	    graph_size);          //
+}
+
+static void
+on_timing(const char *name, void *ptr)
+{
+	struct u_var_timing *frametime_arr = ptr;
+	struct u_var_f32_arr *f32_arr = &frametime_arr->values;
+	int index = *f32_arr->index_ptr;
+	int length = f32_arr->length;
+	float *arr = (float *)f32_arr->data;
+
+	float w = igGetWindowContentRegionWidth();
+	ImVec2 graph_size = {w, 200};
+
+
+	float stats_min = FLT_MAX;
+	float stats_max = 0;
+
+	for (int f = 0; f < length; f++) {
+		if (arr[f] < stats_min)
+			stats_min = arr[f];
+		if (arr[f] > stats_max)
+			stats_max = arr[f];
+	}
+
+	igPlotTimings(                              //
+	    name,                                   //
+	    plot_f32_array_value,                   //
+	    arr,                                    //
+	    length,                                 //
+	    index,                                  //
+	    NULL,                                   //
+	    0,                                      //
+	    stats_max,                              //
+	    graph_size,                             //
+	    frametime_arr->reference_timing,        //
+	    frametime_arr->center_reference_timing, //
+	    frametime_arr->range,                   //
+	    frametime_arr->unit,                    //
+	    frametime_arr->dynamic_rescale);        //
+}
+
+static void
+on_pose(const char *name, void *ptr)
+{
+	struct xrt_pose *pose = (struct xrt_pose *)ptr;
+	char text[512];
+	snprintf(text, 512, "%s.position", name);
+	handle_draggable_vec3_f32(text, &pose->position);
+	snprintf(text, 512, "%s.orientation", name);
+	handle_draggable_quat(text, &pose->orientation);
+}
 
 static void
 on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
@@ -182,29 +392,31 @@ on_ff_vec3_var(struct u_var_info *info, struct gui_program *p)
 	}
 
 	size_t num = m_ff_vec3_f32_get_num(ff);
-	ImPlot_PlotLineG("z", plot_z, &state, num, 0); // ZXY order to match RGB colors with default color map
-	ImPlot_PlotLineG("x", plot_x, &state, num, 0);
-	ImPlot_PlotLineG("y", plot_y, &state, num, 0);
+	ImPlot_PlotLineG("z", plot_vec3_f32_z, &state, num, 0); // ZXY order to match RGB colors with default color map
+	ImPlot_PlotLineG("x", plot_vec3_f32_x, &state, num, 0);
+	ImPlot_PlotLineG("y", plot_vec3_f32_y, &state, num, 0);
 
 	ImPlot_EndPlot();
 }
 
 static void
-on_sink_debug_var(const char *name, void *ptr, struct gui_program *p, struct debug_scene *ds)
+on_sink_debug_var(const char *name, void *ptr, struct draw_state *state)
 {
-	for (size_t i = 0; i < ARRAY_SIZE(ds->recs); i++) {
-		struct debug_record *dr = &ds->recs[i];
+	bool gui_header = !state->inhibit_sink_headers;
 
-		if ((ptrdiff_t)dr->ptr != (ptrdiff_t)ptr) {
-			continue;
-		}
-
-		if (!igCollapsingHeaderBoolPtr(name, NULL, 0)) {
-			continue;
-		}
-
-		gui_window_record_render(&dr->rw, p);
+	struct debug_record *dr = ensure_debug_record_created(ptr, state);
+	if (dr == NULL) {
+		return;
 	}
+
+	if (gui_header) {
+		const ImGuiTreeNodeFlags_ flags = ImGuiTreeNodeFlags_DefaultOpen;
+		if (!igCollapsingHeaderBoolPtr(name, NULL, flags)) {
+			return;
+		}
+	}
+
+	gui_window_record_render(&dr->rw, state->p);
 }
 
 static void
@@ -245,16 +457,6 @@ on_histogram_f32_var(const char *name, void *ptr)
 	igPlotHistogramFloatPtr(name, h->values, h->count, 0, NULL, FLT_MAX, FLT_MAX, zero, sizeof(float));
 }
 
-
-static ImPlotPoint
-curve_var_implot_getter(void *ptr, int i)
-{
-	struct u_var_curve *c = (struct u_var_curve *)ptr;
-	struct u_var_curve_point point = c->getter(c->data, i);
-	ImPlotPoint implot_point = {point.x, point.y};
-	return implot_point;
-}
-
 static void
 on_curve_var(const char *name, void *ptr)
 {
@@ -266,7 +468,7 @@ on_curve_var(const char *name, void *ptr)
 		return;
 	}
 
-	ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+	ImPlot_PlotLineG(c->label, plot_curve_point, c, c->count, 0);
 	ImPlot_EndPlot();
 }
 
@@ -283,7 +485,7 @@ on_curves_var(const char *name, void *ptr)
 
 	for (int i = 0; i < cs->curve_count; i++) {
 		struct u_var_curve *c = &cs->curves[i];
-		ImPlot_PlotLineG(c->label, curve_var_implot_getter, c, c->count, 0);
+		ImPlot_PlotLineG(c->label, plot_curve_point, c, c->count, 0);
 	}
 	ImPlot_EndPlot();
 }
@@ -303,19 +505,38 @@ on_draggable_u16_var(const char *name, void *ptr)
 }
 
 static void
-on_root_enter(const char *name, void *priv)
+on_gui_header(const char *name, struct draw_state *state)
 {
-	struct draw_state *state = (struct draw_state *)priv;
-	state->hidden = false;
 
-	igBegin(name, NULL, 0);
+	assert(state->vis_i == 0 && "Do not mix GUI_HEADER with GUI_HEADER_BEGIN/END");
+	state->vis_stack[state->vis_i] = igCollapsingHeaderBoolPtr(name, NULL, 0);
 }
 
-static float
-get_float_arr_val(void *_data, int _idx)
+static void
+on_gui_header_begin(const char *name, struct draw_state *state)
 {
-	float *arr = _data;
-	return arr[_idx];
+	bool is_open = igCollapsingHeaderBoolPtr(name, NULL, 0);
+	state->vis_stack[state->vis_i] = is_open;
+	if (is_open) {
+		igIndent(8.0f);
+	}
+}
+
+static void
+on_gui_header_end(void)
+{
+	igDummy((ImVec2){0, 8.0f});
+	igUnindent(8.0f);
+}
+
+static void
+on_root_enter(struct u_var_root_info *info, void *priv)
+{
+	struct draw_state *state = (struct draw_state *)priv;
+	state->vis_i = 0;
+	state->vis_stack[0] = true;
+
+	igBegin(info->name, NULL, 0);
 }
 
 static void
@@ -326,94 +547,52 @@ on_elem(struct u_var_info *info, void *priv)
 	enum u_var_kind kind = info->kind;
 
 	struct draw_state *state = (struct draw_state *)priv;
-	if (state->hidden && kind != U_VAR_KIND_GUI_HEADER) {
+
+	bool visible = state->vis_stack[state->vis_i];
+
+	// Handle the visibility stack.
+	switch (kind) {
+	case U_VAR_KIND_GUI_HEADER_BEGIN: // Increment stack and copy the current visible stack.
+		state->vis_i++;
+		state->vis_stack[state->vis_i] = visible;
+		break;
+	case U_VAR_KIND_GUI_HEADER_END: // Decrement the stack.
+		state->vis_i--;
+		break;
+	case U_VAR_KIND_GUI_HEADER: // Always visible.
+		on_gui_header(name, state);
+		return; // Not doing anything more.
+	default: break;
+	}
+
+	// Check balanced GUI_HEADER_BEGIN/END pairs
+	assert(state->vis_i >= 0 && state->vis_i < MAX_HEADER_NESTING);
+
+	if (!visible) {
 		return;
 	}
 
 	const float drag_speed = 0.2f;
 	const float power = 1.0f;
-	const ImVec2 scratch = {0, 0};
-	ImGuiColorEditFlags flags =
-	    ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueWheel;
-	(void)scratch;
 	ImGuiInputTextFlags i_flags = ImGuiInputTextFlags_None;
 	ImGuiInputTextFlags ro_i_flags = ImGuiInputTextFlags_ReadOnly;
 
 	switch (kind) {
 	case U_VAR_KIND_BOOL: igCheckbox(name, (bool *)ptr); break;
-	case U_VAR_KIND_RGB_F32:
-		igColorEdit3(name, (float *)ptr, flags);
-		igSameLine(0.0f, 4.0f);
-		igText("%s", name);
-		break;
-	case U_VAR_KIND_RGB_U8: {
-		struct xrt_colour_rgb_f32 tmp;
-		conv_rgb_u8_to_f32((struct xrt_colour_rgb_u8 *)ptr, &tmp);
-		igColorEdit3(name, (float *)&tmp, flags);
-		igSameLine(0.0f, 4.0f);
-		igText("%s", name);
-		conv_rgb_f32_to_u8(&tmp, (struct xrt_colour_rgb_u8 *)ptr);
-		break;
-	}
+	case U_VAR_KIND_RGB_F32: on_color_rgb_f32(name, ptr); break;
+	case U_VAR_KIND_RGB_U8: on_color_rgb_u8(name, ptr); break;
 	case U_VAR_KIND_U8: igDragScalar(name, ImGuiDataType_U8, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_U16: igDragScalar(name, ImGuiDataType_U16, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_U64: igDragScalar(name, ImGuiDataType_U64, ptr, drag_speed, NULL, NULL, NULL, power); break;
 	case U_VAR_KIND_I32: igInputInt(name, (int *)ptr, 1, 10, i_flags); break;
+	case U_VAR_KIND_I64: igInputScalar(name, ImGuiDataType_S64, ptr, NULL, NULL, NULL, i_flags); break;
 	case U_VAR_KIND_VEC3_I32: igInputInt3(name, (int *)ptr, i_flags); break;
 	case U_VAR_KIND_F32: igInputFloat(name, (float *)ptr, 1, 10, "%+f", i_flags); break;
 	case U_VAR_KIND_F64: igInputDouble(name, (double *)ptr, 0.1, 1, "%+f", i_flags); break;
-	case U_VAR_KIND_F32_ARR: {
-		struct u_var_f32_arr *f32_arr = ptr;
-		int index = *f32_arr->index_ptr;
-		int length = f32_arr->length;
-		float *arr = (float *)f32_arr->data;
-
-		float w = igGetWindowContentRegionWidth();
-		ImVec2 graph_size = {w, 200};
-
-		float stats_min = FLT_MAX;
-		float stats_max = FLT_MAX;
-
-		igPlotLinesFnFloatPtr(name, get_float_arr_val, arr, length, index, NULL, stats_min, stats_max,
-		                      graph_size);
-		break;
-	}
-	case U_VAR_KIND_TIMING: {
-		struct u_var_timing *frametime_arr = ptr;
-		struct u_var_f32_arr *f32_arr = &frametime_arr->values;
-		int index = *f32_arr->index_ptr;
-		int length = f32_arr->length;
-		float *arr = (float *)f32_arr->data;
-
-		float w = igGetWindowContentRegionWidth();
-		ImVec2 graph_size = {w, 200};
-
-
-		float stats_min = FLT_MAX;
-		float stats_max = 0;
-
-		for (int f = 0; f < length; f++) {
-			if (arr[f] < stats_min)
-				stats_min = arr[f];
-			if (arr[f] > stats_max)
-				stats_max = arr[f];
-		}
-
-		igPlotTimings(name, get_float_arr_val, arr, length, index, NULL, 0, stats_max, graph_size,
-		              frametime_arr->reference_timing, frametime_arr->center_reference_timing,
-		              frametime_arr->range, frametime_arr->unit, frametime_arr->dynamic_rescale);
-		break;
-	}
+	case U_VAR_KIND_F32_ARR: on_f32_arr(name, ptr); break;
+	case U_VAR_KIND_TIMING: on_timing(name, ptr); break;
 	case U_VAR_KIND_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", i_flags); break;
-	case U_VAR_KIND_POSE: {
-		struct xrt_pose *pose = (struct xrt_pose *)ptr;
-		char text[512];
-		snprintf(text, 512, "%s.position", name);
-		handle_draggable_vec3_f32(text, &pose->position);
-		snprintf(text, 512, "%s.orientation", name);
-		handle_draggable_quat(text, &pose->orientation);
-		break;
-	}
+	case U_VAR_KIND_POSE: on_pose(name, ptr); break;
 	case U_VAR_KIND_LOG_LEVEL: igComboStr(name, (int *)ptr, "Trace\0Debug\0Info\0Warn\0Error\0\0", 5); break;
 	case U_VAR_KIND_RO_TEXT: igText("%s: '%s'", name, (char *)ptr); break;
 	case U_VAR_KIND_RO_FTEXT: igText(ptr ? (char *)ptr : "%s", name); break;
@@ -427,11 +606,10 @@ on_elem(struct u_var_info *info, void *priv)
 	case U_VAR_KIND_RO_VEC3_F32: igInputFloat3(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_QUAT_F32: igInputFloat4(name, (float *)ptr, "%+f", ro_i_flags); break;
 	case U_VAR_KIND_RO_FF_VEC3_F32: on_ff_vec3_var(info, state->p); break;
-	case U_VAR_KIND_GUI_HEADER: {
-		state->hidden = !igCollapsingHeaderBoolPtr(name, NULL, 0);
-		break;
-	}
-	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state->p, state->ds); break;
+	case U_VAR_KIND_GUI_HEADER: assert(false && "Should be handled before this"); break;
+	case U_VAR_KIND_GUI_HEADER_BEGIN: on_gui_header_begin(name, state); break;
+	case U_VAR_KIND_GUI_HEADER_END: on_gui_header_end(); break;
+	case U_VAR_KIND_SINK_DEBUG: on_sink_debug_var(name, ptr, state); break;
 	case U_VAR_KIND_DRAGGABLE_F32: on_draggable_f32_var(name, ptr); break;
 	case U_VAR_KIND_BUTTON: on_button_var(name, ptr); break;
 	case U_VAR_KIND_COMBO: on_combo_var(name, ptr); break;
@@ -444,10 +622,12 @@ on_elem(struct u_var_info *info, void *priv)
 }
 
 static void
-on_root_exit(const char *name, void *priv)
+on_root_exit(struct u_var_root_info *info, void *priv)
 {
 	struct draw_state *state = (struct draw_state *)priv;
-	state->hidden = false;
+	assert(state->vis_i == 0 && "Unbalanced GUI_HEADER_BEGIN/END pairs");
+	state->vis_i = 0;
+	state->vis_stack[0] = false;
 
 	igEnd();
 }
@@ -460,31 +640,11 @@ on_root_exit(const char *name, void *priv)
  */
 
 static void
-on_root_enter_sink(const char *name, void *priv)
+on_root_enter_sink(struct u_var_root_info *info, void *priv)
 {}
 
 static void
-on_elem_sink_debug_add(struct u_var_info *info, void *priv)
-{
-	void *ptr = info->ptr;
-	enum u_var_kind kind = info->kind;
-
-	if (kind != U_VAR_KIND_SINK_DEBUG) {
-		return;
-	}
-
-	struct u_sink_debug *usd = (struct u_sink_debug *)ptr;
-	struct debug_scene *ds = ((struct priv_tuple *)priv)->ds;
-	struct debug_record *dr = &ds->recs[ds->num_recrs++];
-
-	dr->ptr = ptr;
-
-	gui_window_record_init(&dr->rw);
-	u_sink_debug_set_sink(usd, &dr->rw.sink);
-}
-
-static void
-on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
+on_elem_sink_debug_remove(struct u_var_info *info, void *null_ptr)
 {
 	void *ptr = info->ptr;
 	enum u_var_kind kind = info->kind;
@@ -498,7 +658,7 @@ on_elem_sink_debug_remove(struct u_var_info *info, void *priv)
 }
 
 static void
-on_root_exit_sink(const char *name, void *priv)
+on_root_exit_sink(struct u_var_root_info *info, void *priv)
 {}
 
 
@@ -512,7 +672,7 @@ static void
 scene_render(struct gui_scene *scene, struct gui_program *p)
 {
 	struct debug_scene *ds = (struct debug_scene *)scene;
-	struct draw_state state = {p, ds, false};
+	struct draw_state state = {p, ds, {0}, 0, false};
 
 	u_var_visit(on_root_enter, on_root_exit, on_elem, &state);
 }
@@ -523,8 +683,7 @@ scene_destroy(struct gui_scene *scene, struct gui_program *p)
 	struct debug_scene *ds = (struct debug_scene *)scene;
 
 	// Remove the sink interceptors.
-	struct priv_tuple pt = {p, ds};
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_remove, &pt);
+	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_remove, NULL);
 
 	if (ds->xfctx != NULL) {
 		xrt_frame_context_destroy_nodes(ds->xfctx);
@@ -555,8 +714,4 @@ gui_scene_debug(struct gui_program *p)
 	ds->base.destroy = scene_destroy;
 
 	gui_scene_push_front(p, &ds->base);
-
-	// Create the sink interceptors.
-	struct priv_tuple pt = {p, ds};
-	u_var_visit(on_root_enter_sink, on_root_exit_sink, on_elem_sink_debug_add, &pt);
 }

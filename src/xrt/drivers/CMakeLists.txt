@@ -37,6 +37,7 @@ if(XRT_BUILD_DRIVER_DEPTHAI)
 		PRIVATE
 			xrt-interfaces
 			aux_os
+			aux_util
 			aux_tracking
 			${OpenCV_LIBRARIES}
 			depthai::core
@@ -48,8 +49,8 @@ endif()
 
 if(XRT_BUILD_DRIVER_SIMULATED)
 	add_library(
-		drv_simulated STATIC simulated/simulated_hmd.c simulated/simulated_interface.h
-				     simulated/simulated_prober.c
+		drv_simulated STATIC simulated/simulated_controller.c simulated/simulated_hmd.c
+				     simulated/simulated_interface.h simulated/simulated_prober.c
 		)
 	target_link_libraries(drv_simulated PRIVATE xrt-interfaces aux_util)
 	list(APPEND ENABLED_HEADSET_DRIVERS simulated)
@@ -156,8 +157,7 @@ if(XRT_BUILD_DRIVER_QWERTY)
 		qwerty/qwerty_prober.c
 		qwerty/qwerty_sdl.c
 		)
-	target_link_libraries(drv_qwerty PRIVATE xrt-interfaces aux_util ${SDL2_LIBRARIES})
-	target_include_directories(drv_qwerty PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_link_libraries(drv_qwerty PRIVATE xrt-interfaces aux_util SDL2::SDL2)
 	list(APPEND ENABLED_DRIVERS qwerty)
 
 	add_library(drv_qwerty_includes INTERFACE)
@@ -240,10 +240,16 @@ if(XRT_BUILD_DRIVER_PSMV)
 	add_library(drv_psmv STATIC psmv/psmv_driver.c psmv/psmv_interface.h)
 	target_link_libraries(
 		drv_psmv
-		PRIVATE xrt-interfaces
+		PRIVATE xrt-interfaces aux_util
 		PUBLIC aux_os aux_tracking
 		)
 	list(APPEND ENABLED_DRIVERS psmv)
+endif()
+
+if(XRT_BUILD_DRIVER_PSSENSE)
+	add_library(drv_pssense STATIC pssense/pssense_driver.c pssense/pssense_interface.h)
+	target_link_libraries(drv_pssense PRIVATE aux_os aux_util)
+	list(APPEND ENABLED_DRIVERS pssense)
 endif()
 
 if(XRT_BUILD_DRIVER_PSVR)
@@ -315,10 +321,14 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 		PRIVATE
 			xrt-interfaces
 			aux_util
+			aux_util_sink
 			aux_math
 			xrt-external-cjson
 			xrt-external-tinyceres
 		)
+	if(XRT_BUILD_DRIVER_HANDTRACKING)
+		target_link_libraries(drv_rift_s PRIVATE drv_ht)
+	endif()
 	list(APPEND ENABLED_HEADSET_DRIVERS rift-s)
 endif()
 
@@ -444,7 +454,6 @@ if(XRT_BUILD_DRIVER_HANDTRACKING)
 			aux_util
 			aux_math
 			t_ht_mercury
-			t_ht_old_rgb
 			hand_async
 		)
 
@@ -509,10 +518,18 @@ if(XRT_BUILD_DRIVER_WMR)
 		wmr/wmr_common.h
 		wmr/wmr_config.c
 		wmr/wmr_config.h
+		wmr/wmr_controller_base.c
+		wmr/wmr_controller_base.h
+		wmr/wmr_controller_og.c
+		wmr/wmr_controller_hp.c
+		wmr/wmr_controller.c
+		wmr/wmr_controller.h
 		wmr/wmr_bt_controller.c
 		wmr/wmr_bt_controller.h
 		wmr/wmr_hmd.c
 		wmr/wmr_hmd.h
+		wmr/wmr_hmd_controller.c
+		wmr/wmr_hmd_controller.h
 		wmr/wmr_interface.h
 		wmr/wmr_prober.c
 		wmr/wmr_protocol.c
@@ -567,6 +584,32 @@ if(XRT_BUILD_DRIVER_SIMULAVR)
 	add_library(drv_svr STATIC simula/svr_hmd.c simula/svr_interface.h)
 	target_link_libraries(drv_svr PRIVATE xrt-interfaces aux_math xrt-external-cjson)
 	list(APPEND ENABLED_HEADSET_DRIVERS svr)
+endif()
+
+if(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
+	add_library(
+		drv_steamvr_lh STATIC
+		steamvr_lh/steamvr_lh.cpp
+		steamvr_lh/device.cpp
+		steamvr_lh/interfaces/driver_manager.cpp
+		steamvr_lh/interfaces/iobuffer.cpp
+		steamvr_lh/interfaces/resources.cpp
+		steamvr_lh/interfaces/settings.cpp
+		steamvr_lh/interfaces/blockqueue.cpp
+		steamvr_lh/interfaces/paths.cpp
+		)
+	target_link_libraries(
+		drv_steamvr_lh
+		PRIVATE
+			aux_util
+			aux_math
+			xrt-interfaces
+			xrt-external-openvr
+			xrt-external-cjson
+			xrt-external-vdf
+			${CMAKE_DL_LIBS}
+		)
+	list(APPEND ENABLED_HEADSET_DRIVERS steamvr_lh)
 endif()
 
 if(XRT_BUILD_SAMPLES)

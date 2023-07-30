@@ -495,6 +495,10 @@ oxr_vk_get_physical_device(struct oxr_logger *log,
 	VkResult vk_ret;
 	uint32_t count;
 
+	if (sys->xsysc == NULL) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, " sys->xsysc == NULL");
+	}
+
 	vk_ret = vkEnumeratePhysicalDevices(vkInstance, &count, NULL);
 	if (vk_ret != VK_SUCCESS) {
 		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Call to vkEnumeratePhysicalDevices returned %u",

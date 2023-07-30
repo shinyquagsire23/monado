@@ -5,6 +5,8 @@ Copyright 2018-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
+[TOC]
+
 This documentation is intended for developers wanting to dive into the code of
 Monado. It also assumes that you have read [README.md][]: that file also holds
 getting started information and general documentation.
@@ -68,6 +70,7 @@ modules.
 * @ref vulkan-extensions
 * @ref howto-remote-driver
 * @ref tracing
+* @ref metrics
 
 ## Source layout
 
@@ -81,4 +84,3 @@ modules.
   aux_tracking and @ref aux_math.
 * src/xrt/targets - glue code and build logic to produce final binaries.
 * src/external - a small collection of external code and headers.
-

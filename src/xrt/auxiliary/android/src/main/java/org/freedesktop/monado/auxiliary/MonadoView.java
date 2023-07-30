@@ -11,6 +11,9 @@ package org.freedesktop.monado.auxiliary;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -22,18 +25,11 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.Calendar;
-
 @Keep
-public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
+public class MonadoView extends SurfaceView
+        implements SurfaceHolder.Callback, SurfaceHolder.Callback2 {
     private static final String TAG = "MonadoView";
 
-    @NonNull
-    private final Context context;
-
-    /// The activity we've connected to.
-    @Nullable
-    private final Activity activity;
     private final Object currentSurfaceHolderSync = new Object();
 
     public int width = -1;
@@ -42,59 +38,100 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
 
     private NativeCounterpart nativeCounterpart;
 
-    @GuardedBy("currentSurfaceHolderSync")
-    @Nullable
-    private SurfaceHolder currentSurfaceHolder = null;
+    @GuardedBy("currentSurfaceHolderSync") @Nullable private SurfaceHolder currentSurfaceHolder = null;
+
+    private SystemUiController systemUiController = null;
 
     public MonadoView(Context context) {
         super(context);
-        this.context = context;
-        Activity activity;
+
         if (context instanceof Activity) {
-            activity = (Activity) context;
-        } else {
-            activity = null;
+            Activity activity = (Activity) context;
+            systemUiController = new SystemUiController(activity.getWindow().getDecorView());
+            systemUiController.hide();
         }
-        this.activity = activity;
+        SurfaceHolder surfaceHolder = getHolder();
+        surfaceHolder.addCallback(this);
     }
 
-    public MonadoView(Activity activity) {
-        super(activity);
-        this.context = activity;
-        this.activity = activity;
-    }
+    private MonadoView(Context context, long nativePointer) {
+        this(context);
 
-    private MonadoView(Activity activity, long nativePointer) {
-        this(activity);
         nativeCounterpart = new NativeCounterpart(nativePointer);
     }
 
     /**
      * Construct and start attaching a MonadoView to a client application.
      *
-     * @param activity      The activity to attach to.
-     * @param nativePointer The native android_custom_surface pointer, cast to a long.
+     * @param activity The activity to attach to.
      * @return The MonadoView instance created and asynchronously attached.
      */
-    @NonNull
-    @Keep
-    @SuppressWarnings("deprecation")
-    public static MonadoView attachToActivity(@NonNull final Activity activity, long nativePointer) {
-        final MonadoView view = new MonadoView(activity, nativePointer);
-        view.createSurfaceInActivity();
-        return view;
-    }
-
-    @NonNull
-    @Keep
+    @NonNull @Keep
     public static MonadoView attachToActivity(@NonNull final Activity activity) {
         final MonadoView view = new MonadoView(activity);
-        view.createSurfaceInActivity();
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+        lp.flags =
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+                        | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        attachToWindow(activity, view, lp);
         return view;
     }
 
-    @NonNull
+    /**
+     * Construct and start attaching a MonadoView to window.
+     *
+     * @param displayContext Display context used for looking for target window.
+     * @param nativePointer The native android_custom_surface pointer, cast to a long.
+     * @param lp Layout parameters associated with view.
+     * @return The MonadoView instance created and asynchronously attached.
+     */
+    @NonNull @Keep
+    public static MonadoView attachToWindow(
+            @NonNull final Context displayContext,
+            long nativePointer,
+            WindowManager.LayoutParams lp)
+            throws IllegalArgumentException {
+        final MonadoView view = new MonadoView(displayContext, nativePointer);
+        attachToWindow(displayContext, view, lp);
+        return view;
+    }
+
+    private static void attachToWindow(
+            @NonNull final Context context,
+            @NonNull MonadoView view,
+            @NonNull WindowManager.LayoutParams lp) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(
+                () -> {
+                    Log.d(TAG, "Start adding view to window");
+                    WindowManager wm =
+                            (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                    wm.addView(view, lp);
+
+                    SystemUiController systemUiController = new SystemUiController(view);
+                    systemUiController.hide();
+                });
+    }
+
+    /**
+     * Remove given MonadoView from window.
+     *
+     * @param view The view to remove.
+     */
     @Keep
+    public static void removeFromWindow(@NonNull MonadoView view) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(
+                () -> {
+                    Log.d(TAG, "Start removing view from window");
+                    WindowManager wm =
+                            (WindowManager)
+                                    view.getContext().getSystemService(Context.WINDOW_SERVICE);
+                    wm.removeView(view);
+                });
+    }
+
+    @NonNull @Keep
     public static DisplayMetrics getDisplayMetrics(@NonNull Context context) {
         DisplayMetrics displayMetrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -116,62 +153,26 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
         return nativeCounterpart.getNativePointer();
     }
 
-    private void createSurfaceInActivity() {
-        createSurfaceInActivity(false);
-    }
-
-    /**
-     * @param focusable Indicates MonadoView should be focusable or not
-     */
-    private void createSurfaceInActivity(boolean focusable) {
-        Log.i(TAG, "Starting to add a new surface!");
-        activity.runOnUiThread(() -> {
-            Log.i(TAG, "Starting runOnUiThread");
-            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-            WindowManager windowManager = activity.getWindowManager();
-            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-            if (focusable) {
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
-            } else {
-                // There are 2 problems if view is focusable on all-in-one device:
-                // 1. Navigation bar won't go away because view gets focus.
-                // 2. Underlying activity lost focus and cannot receive input.
-                lp.flags = WindowManager.LayoutParams.FLAG_FULLSCREEN |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
-            }
-            windowManager.addView(this, lp);
-            if (focusable) {
-                requestFocus();
-            }
-            SurfaceHolder surfaceHolder = getHolder();
-            surfaceHolder.addCallback(this);
-            Log.i(TAG, "Registered callbacks!");
-        });
-    }
-
     /**
      * Block up to a specified amount of time, waiting for the surfaceCreated callback to be fired
      * and populate the currentSurfaceHolder.
-     * <p>
-     * If it returns a SurfaceHolder, the `usedByNativeCode` flag will be set.
-     * <p>
-     * Called by native code!
      *
-     * @param wait_ms Max duration you prefer to wait, in millseconds. Spurious wakeups mean this
-     *                not be totally precise.
+     * <p>If it returns a SurfaceHolder, the `usedByNativeCode` flag will be set.
+     *
+     * <p>Called by native code!
+     *
+     * @param wait_ms Max duration you prefer to wait, in milliseconds. Spurious wakeups mean this
+     *     not be totally precise.
      * @return A SurfaceHolder or null.
      */
     @Keep
-    public @Nullable
-    SurfaceHolder waitGetSurfaceHolder(int wait_ms) {
-        long currentTime = Calendar.getInstance().getTimeInMillis();
+    public @Nullable SurfaceHolder waitGetSurfaceHolder(int wait_ms) {
+        long currentTime = SystemClock.uptimeMillis();
         long timeout = currentTime + wait_ms;
         SurfaceHolder ret = null;
         synchronized (currentSurfaceHolderSync) {
-            while (currentSurfaceHolder == null
-                    && Calendar.getInstance().getTimeInMillis() < timeout) {
+            ret = currentSurfaceHolder;
+            while (currentSurfaceHolder == null && SystemClock.uptimeMillis() < timeout) {
                 try {
                     currentSurfaceHolderSync.wait(wait_ms, 0);
                     ret = currentSurfaceHolder;
@@ -182,8 +183,7 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (ret != null) {
-            if (nativeCounterpart != null)
-                nativeCounterpart.markAsUsedByNativeCode();
+            if (nativeCounterpart != null) nativeCounterpart.markAsUsedByNativeCode();
         }
         return ret;
     }
@@ -191,13 +191,12 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     /**
      * Change the flag and notify those waiting on it, to indicate that native code is done with
      * this object.
-     * <p>
-     * Called by native code!
+     *
+     * <p>Called by native code!
      */
     @Keep
     public void markAsDiscardedByNative() {
-        if (nativeCounterpart != null)
-            nativeCounterpart.markAsDiscardedByNative(TAG);
+        if (nativeCounterpart != null) nativeCounterpart.markAsDiscardedByNative(TAG);
     }
 
     @Override
@@ -210,7 +209,8 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
     }
 
     @Override
-    public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
+    public void surfaceChanged(
+            @NonNull SurfaceHolder surfaceHolder, int format, int width, int height) {
 
         synchronized (currentSurfaceHolderSync) {
             currentSurfaceHolder = surfaceHolder;
@@ -233,18 +233,19 @@ public class MonadoView extends SurfaceView implements SurfaceHolder.Callback, S
             }
         }
         if (lost) {
-            //! @todo this function should notify native code that the surface is gone.
+            // ! @todo this function should notify native code that the surface is gone.
             if (nativeCounterpart != null && !nativeCounterpart.blockUntilNativeDiscard(TAG)) {
-                Log.i(TAG,
-                        "Interrupted in surfaceDestroyed while waiting for native code to finish up.");
+                Log.i(
+                        TAG,
+                        "Interrupted in surfaceDestroyed while waiting for native code to finish"
+                                + " up.");
             }
         }
     }
 
     @Override
     public void surfaceRedrawNeeded(@NonNull SurfaceHolder surfaceHolder) {
-//        currentSurfaceHolder = surfaceHolder;
+        //        currentSurfaceHolder = surfaceHolder;
         Log.i(TAG, "surfaceRedrawNeeded");
     }
-
 }

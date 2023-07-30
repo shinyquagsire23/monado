@@ -17,7 +17,8 @@
         "vulkan"
     ],
     "default-features": [
-        "usb"
+        "usb",
+        "gui"
     ],
     "features": {
         "usb": {
@@ -34,7 +35,19 @@
         "gui": {
             "description": "Debug GUI support",
             "dependencies": [
-                "sdl2"
+                {
+                    "name": "sdl2",
+                    "features": [
+                        "base",
+                        "vulkan"
+                    ]
+                }
+            ]
+        },
+        "tracking": {
+            "description": "OpenCV-based tracking features",
+            "dependencies": [
+                "opencv"
             ]
         }
     }

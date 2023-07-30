@@ -1,1 +1,1 @@
-vulkan: Add fence import function.
+vk: Add fence import function.

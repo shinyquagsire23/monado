@@ -1,4 +1,5 @@
 // Copyright 2022, Simon Zeni <simon@bl4ckb0ne.ca>
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -8,24 +9,40 @@
  */
 
 #include "main/comp_compositor.h"
-#include "main/comp_renderer.h"
 #include "main/comp_target_swapchain.h"
 #include "main/comp_window_peek.h"
 
 #include "util/u_debug.h"
 
-#include <SDL_vulkan.h>
+#ifdef XRT_HAVE_SDL2
+#include <SDL2/SDL.h>
+#else
+#error "comp_window_peek.h requires SDL2"
+#endif
+#include <SDL2/SDL_vulkan.h>
 
 
 DEBUG_GET_ONCE_OPTION(window_peek, "XRT_WINDOW_PEEK", NULL)
 
 #define PEEK_IMAGE_USAGE (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 
-#define D(TYPE, thing)                                                                                                 \
-	if (thing != VK_NULL_HANDLE) {                                                                                 \
-		vk->vkDestroy##TYPE(vk->device, thing, NULL);                                                          \
-		thing = VK_NULL_HANDLE;                                                                                \
-	}
+struct comp_window_peek
+{
+	struct comp_target_swapchain base;
+	struct comp_compositor *c;
+
+	enum comp_window_peek_eye eye;
+	SDL_Window *window;
+	uint32_t width, height;
+	bool running;
+	bool hidden;
+
+	struct vk_cmd_pool pool;
+	VkCommandBuffer cmd;
+
+	struct os_thread_helper oth;
+};
+
 
 static inline struct vk_bundle *
 get_vk(struct comp_window_peek *w)
@@ -122,9 +139,33 @@ comp_window_peek_create(struct comp_compositor *c)
 	w->c = c;
 	w->eye = eye;
 
+
+	/*
+	 * Vulkan
+	 */
+
+	struct vk_bundle *vk = get_vk(w);
+
+	VkResult ret = vk_cmd_pool_init(vk, &w->pool, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_cmd_pool_init: %s", vk_result_string(ret));
+		goto err_free;
+	}
+
+	ret = vk_cmd_pool_create_cmd_buffer(vk, &w->pool, &w->cmd);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "vk_cmd_pool_create_cmd_buffer: %s", vk_result_string(ret));
+		goto err_pool;
+	}
+
+
+	/*
+	 * SDL
+	 */
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		COMP_ERROR(c, "Failed to init SDL2");
-		return NULL;
+		goto err_pool;
 	}
 
 	int x = SDL_WINDOWPOS_UNDEFINED;
@@ -135,8 +176,7 @@ comp_window_peek_create(struct comp_compositor *c)
 	w->window = SDL_CreateWindow(xdev->str, x, y, width, height, flags);
 	if (w->window == NULL) {
 		COMP_ERROR(c, "Failed to create SDL window: %s", SDL_GetError());
-		free(w);
-		return NULL;
+		goto err_pool;
 	}
 
 	w->width = width;
@@ -144,7 +184,7 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	comp_target_swapchain_init_and_set_fnptrs(&w->base, COMP_TARGET_FORCE_FAKE_DISPLAY_TIMING);
 
-	struct vk_bundle *vk = get_vk(w);
+
 
 	w->base.base.name = "peek";
 	w->base.base.c = c;
@@ -152,10 +192,13 @@ comp_window_peek_create(struct comp_compositor *c)
 
 	if (!SDL_Vulkan_CreateSurface(w->window, vk->instance, &w->base.surface.handle)) {
 		COMP_ERROR(c, "Failed to create SDL surface: %s", SDL_GetError());
-		SDL_DestroyWindow(w->window);
-		free(w);
-		return NULL;
+		goto err_window;
 	}
+
+
+	/*
+	 * Images
+	 */
 
 	/* TODO: present mode fallback to FIFO if MAILBOX is not available */
 	comp_target_create_images(        //
@@ -167,31 +210,27 @@ comp_window_peek_create(struct comp_compositor *c)
 	    PEEK_IMAGE_USAGE,             //
 	    VK_PRESENT_MODE_MAILBOX_KHR); //
 
-	VkSemaphoreCreateInfo sem_info = {
-	    .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-	    .pNext = NULL,
-	    .flags = 0,
-	};
 
-	VkResult ret = vk->vkCreateSemaphore(vk->device, &sem_info, NULL, &w->acquire);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk->vkCreateSemaphore(vk->device, &sem_info, NULL, &w->submit);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vkCreateSemaphore: %s", vk_result_string(ret));
-	}
-
-	ret = vk_cmd_buffer_create(vk, &w->cmd);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(c, "vk_cmd_buffer_create: %s", vk_result_string(ret));
-	}
+	/*
+	 * Thread
+	 */
 
 	os_thread_helper_init(&w->oth);
 	os_thread_helper_start(&w->oth, window_peek_run_thread, w);
 
 	return w;
+
+
+err_window:
+	SDL_DestroyWindow(w->window);
+
+err_pool:
+	vk_cmd_pool_destroy(vk, &w->pool);
+
+err_free:
+	free(w);
+
+	return NULL;
 }
 
 void
@@ -202,18 +241,26 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 		return;
 	}
 
+	// Finish the SDL window loop
 	w->running = false;
+	os_thread_helper_destroy(&w->oth);
 
-	SDL_DestroyWindow(w->window);
 
 	struct vk_bundle *vk = get_vk(w);
 
-	vk->vkFreeCommandBuffers(vk->device, vk->cmd_pool, 1, &w->cmd);
-	D(Semaphore, w->acquire);
-	D(Semaphore, w->submit);
+	os_mutex_lock(&vk->queue_mutex);
+	vk->vkDeviceWaitIdle(vk->device);
+	os_mutex_unlock(&vk->queue_mutex);
+
+	vk_cmd_pool_lock(&w->pool);
+	vk->vkFreeCommandBuffers(vk->device, w->pool.pool, 1, &w->cmd);
+	vk_cmd_pool_unlock(&w->pool);
+
+	vk_cmd_pool_destroy(vk, &w->pool);
 
 	comp_target_swapchain_cleanup(&w->base);
-	os_thread_helper_destroy(&w->oth);
+
+	SDL_DestroyWindow(w->window);
 
 	free(w);
 
@@ -223,7 +270,7 @@ comp_window_peek_destroy(struct comp_window_peek **w_ptr)
 void
 comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, int32_t height)
 {
-	if (w->hidden) {
+	if (w->hidden || !w->running) {
 		return;
 	}
 
@@ -252,12 +299,12 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 
 	struct vk_bundle *vk = get_vk(w);
 
-	// For submitting commands.
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
 	VkCommandBufferBeginInfo begin_info = {
 	    .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 	};
+
+	// For writing and submitting commands.
+	vk_cmd_pool_lock(&w->pool);
 
 	ret = vk->vkBeginCommandBuffer(w->cmd, &begin_info);
 
@@ -354,10 +401,8 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    range);                                   // subresourceRange
 
 	ret = vk->vkEndCommandBuffer(w->cmd);
-
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
 	if (ret != VK_SUCCESS) {
+		vk_cmd_pool_unlock(&w->pool);
 		VK_ERROR(vk, "Error: Could not end command buffer.\n");
 		return;
 	}
@@ -369,20 +414,21 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &w->acquire,
+	    .pWaitSemaphores = &w->base.base.semaphores.present_complete,
 	    .pWaitDstStageMask = &submit_flags,
 	    .commandBufferCount = 1,
 	    .pCommandBuffers = &w->cmd,
 	    .signalSemaphoreCount = 1,
-	    .pSignalSemaphores = &w->submit,
+	    .pSignalSemaphores = &w->base.base.semaphores.render_complete,
 	};
 
-	os_mutex_lock(&vk->queue_mutex);
-	os_mutex_lock(&vk->cmd_pool_mutex);
-	ret = vk->vkQueueSubmit(vk->queue, 1, &submit, VK_NULL_HANDLE);
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-	os_mutex_unlock(&vk->queue_mutex);
+	// Done writing commands, submit to queue.
+	ret = vk_cmd_submit_locked(vk, 1, &submit, VK_NULL_HANDLE);
 
+	// Done submitting commands, unlock pool.
+	vk_cmd_pool_unlock(&w->pool);
+
+	// Check results from submit.
 	if (ret != VK_SUCCESS) {
 		VK_ERROR(vk, "Error: Could not submit to queue.\n");
 		return;
@@ -392,7 +438,7 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 	    .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 	    .pNext = NULL,
 	    .waitSemaphoreCount = 1,
-	    .pWaitSemaphores = &w->submit,
+	    .pWaitSemaphores = &w->base.base.semaphores.render_complete,
 	    .swapchainCount = 1,
 	    .pSwapchains = &w->base.swapchain.handle,
 	    .pImageIndices = &current,
@@ -407,4 +453,10 @@ comp_window_peek_blit(struct comp_window_peek *w, VkImage src, int32_t width, in
 		VK_ERROR(vk, "Error: could not present to queue.\n");
 		return;
 	}
+}
+
+enum comp_window_peek_eye
+comp_window_peek_get_eye(struct comp_window_peek *w)
+{
+	return w->eye;
 }

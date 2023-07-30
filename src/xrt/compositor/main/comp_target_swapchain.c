@@ -9,18 +9,18 @@
  */
 
 #include "os/os_threading.h"
-#include "xrt/xrt_config_os.h"
 
 #include "util/u_misc.h"
 #include "util/u_pacing.h"
+#include "util/u_pretty_print.h"
+
+#include "vk/vk_surface_info.h"
 
 #include "main/comp_compositor.h"
 #include "main/comp_target_swapchain.h"
 
-#include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <string.h>
 #include <inttypes.h>
 
 
@@ -189,62 +189,34 @@ select_image_count(struct comp_target_swapchain *cts,
 }
 
 static bool
-check_surface_present_mode(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkPresentModeKHR present_mode)
+check_surface_present_mode(struct comp_target_swapchain *cts,
+                           const struct vk_surface_info *info,
+                           VkPresentModeKHR present_mode)
 {
-	struct vk_bundle *vk = get_vk(cts);
-	VkResult ret;
-
-	uint32_t present_mode_count;
-	VkPresentModeKHR *present_modes;
-	ret = vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count, NULL);
-
-	if (present_mode_count != 0) {
-		present_modes = U_TYPED_ARRAY_CALLOC(VkPresentModeKHR, present_mode_count);
-		vk->vkGetPhysicalDeviceSurfacePresentModesKHR(vk->physical_device, surface, &present_mode_count,
-		                                              present_modes);
-	} else {
-		COMP_ERROR(cts->base.c, "Could not enumerate present modes. '%s'", vk_result_string(ret));
-		return false;
-	}
-
-	for (uint32_t i = 0; i < present_mode_count; i++) {
-		if (present_modes[i] == present_mode) {
-			free(present_modes);
+	for (uint32_t i = 0; i < info->present_mode_count; i++) {
+		if (info->present_modes[i] == present_mode) {
 			return true;
 		}
 	}
 
-	free(present_modes);
-	COMP_ERROR(cts->base.c, "Requested present mode not supported.\n");
+	struct u_pp_sink_stack_only sink;
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	u_pp(dg, "Present mode %s not supported, available:", vk_present_mode_string(present_mode));
+	for (uint32_t i = 0; i < info->present_mode_count; i++) {
+		u_pp(dg, "\n\t%s", vk_present_mode_string(info->present_modes[i]));
+	}
+
+	COMP_ERROR(cts->base.c, "%s", sink.buffer);
+
 	return false;
 }
 
 static bool
-find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkSurfaceFormatKHR *format)
+find_surface_format(struct comp_target_swapchain *cts, const struct vk_surface_info *info, VkSurfaceFormatKHR *format)
 {
-	struct vk_bundle *vk = get_vk(cts);
-	uint32_t format_count;
-	VkSurfaceFormatKHR *formats = NULL;
-	VkResult ret;
-
-	ret = vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &format_count, NULL);
-
-	if (format_count != 0) {
-		formats = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, format_count);
-		vk->vkGetPhysicalDeviceSurfaceFormatsKHR(vk->physical_device, surface, &format_count, formats);
-	} else {
-		COMP_ERROR(cts->base.c, "Could not enumerate surface formats. '%s'", vk_result_string(ret));
-		return false;
-	}
-
-	// Dump formats
-	for (uint32_t i = 0; i < format_count; i++) {
-		COMP_DEBUG(cts->base.c, "VkSurfaceFormatKHR: %i [%s, %s]", i, vk_format_string(formats[i].format),
-		           vk_color_space_string(formats[i].colorSpace));
-	}
-
 	VkSurfaceFormatKHR *formats_for_colorspace = NULL;
-	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, format_count);
+	formats_for_colorspace = U_TYPED_ARRAY_CALLOC(VkSurfaceFormatKHR, info->format_count);
 
 	uint32_t format_for_colorspace_count = 0;
 	uint32_t pref_format_count = ARRAY_SIZE(preferred_color_formats);
@@ -253,9 +225,9 @@ find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkS
 	// from these in preference to others.
 
 
-	for (uint32_t i = 0; i < format_count; i++) {
-		if (formats[i].colorSpace == cts->preferred.color_space) {
-			formats_for_colorspace[format_for_colorspace_count] = formats[i];
+	for (uint32_t i = 0; i < info->format_count; i++) {
+		if (info->formats[i].colorSpace == cts->preferred.color_space) {
+			formats_for_colorspace[format_for_colorspace_count] = info->formats[i];
 			format_for_colorspace_count++;
 		}
 	}
@@ -296,9 +268,9 @@ find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkS
 
 		// we have nothing with the preferred colorspace? we can try to
 		// return a preferred format at least
-		for (uint32_t i = 0; i < format_count; i++) {
+		for (uint32_t i = 0; i < info->format_count; i++) {
 			for (uint32_t j = 0; j < pref_format_count; j++) {
-				if (formats[i].format == preferred_color_formats[j]) {
+				if (info->formats[i].format == preferred_color_formats[j]) {
 					*format = formats_for_colorspace[i];
 					COMP_ERROR(cts->base.c,
 					           "Returning known-wrong color space! Color shift may occur.");
@@ -309,7 +281,7 @@ find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkS
 		// if we are still here, we should just return the first format
 		// we have. we know its the wrong colorspace, and its not on our
 		// list of preferred formats, but its something.
-		*format = formats[0];
+		*format = info->formats[0];
 		COMP_ERROR(cts->base.c,
 		           "Returning fallback format! cue up some Kenny Loggins, cos we're in the DANGER ZONE!");
 		goto cleanup;
@@ -320,7 +292,6 @@ find_surface_format(struct comp_target_swapchain *cts, VkSurfaceKHR surface, VkS
 
 cleanup:
 	free(formats_for_colorspace);
-	free(formats);
 
 	COMP_DEBUG(cts->base.c,
 	           "VkSurfaceFormatKHR"
@@ -335,7 +306,6 @@ cleanup:
 
 error:
 	free(formats_for_colorspace);
-	free(formats);
 	return false;
 }
 
@@ -444,7 +414,7 @@ get_surface_counter_val(struct comp_target *ct)
 	    &counter_val);                  // pCounterValue
 
 	if (ret == VK_SUCCESS) {
-		COMP_SPEW(cts->base.c, "vkGetSwapchainCounterEXT: %lu", counter_val);
+		COMP_SPEW(cts->base.c, "vkGetSwapchainCounterEXT: %" PRIu64, counter_val);
 	} else if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
 		COMP_ERROR(cts->base.c, "vkGetSwapchainCounterEXT: Swapchain out of date!");
 	} else {
@@ -477,6 +447,9 @@ vblank_event_func(struct comp_target *ct, uint64_t *out_timestamp_ns)
 		COMP_ERROR(ct->c, "vkRegisterDisplayEventEXT: %s", vk_result_string(ret));
 		return false;
 	}
+
+	// Name for debugging.
+	VK_NAME_OBJECT(vk, FENCE, vblank_event_fence, "Comp VBlank");
 
 	// Not scoped to not effect timing.
 	COMP_TRACE_IDENT(vblank);
@@ -531,7 +504,8 @@ run_vblank_event_thread(void *ptr)
 
 	COMP_DEBUG(ct->c, "Surface thread starting");
 
-	os_thread_helper_name(&cts->vblank.event_thread, "VBlank Event Thread");
+	os_thread_helper_name(&cts->vblank.event_thread, "VBlank Events");
+	U_TRACE_SET_THREAD_NAME("VBlank Events");
 
 	os_thread_helper_lock(&cts->vblank.event_thread);
 
@@ -687,33 +661,54 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 	    &supported);                                // pSupported
 	if (ret != VK_SUCCESS) {
 		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: %s", vk_result_string(ret));
+		destroy_old(cts, old_swapchain_handle);
+		return;
 	} else if (!supported) {
 		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceSupportKHR: Surface not supported!");
+		destroy_old(cts, old_swapchain_handle);
+		return;
 	}
 
-	if (!check_surface_present_mode(cts, cts->surface.handle, cts->present_mode)) {
+	// Get information.
+	struct vk_surface_info info = {0};
+	ret = vk_surface_info_fill_in(vk, &info, cts->surface.handle);
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_surface_info_fill_in: %s", vk_result_string(ret));
+		destroy_old(cts, old_swapchain_handle);
+		return;
+	}
+
+	// Always print the first one.
+	{
+		static bool first = true;
+		if (first) {
+			vk_print_surface_info(vk, &info, U_LOGGING_INFO);
+			first = false;
+		} else {
+			vk_print_surface_info(vk, &info, U_LOGGING_DEBUG);
+		}
+	}
+
+	if (!check_surface_present_mode(cts, &info, cts->present_mode)) {
 		// Free old.
 		destroy_old(cts, old_swapchain_handle);
+		vk_surface_info_destroy(&info);
 		return;
 	}
 
 	// Find the correct format.
-	if (!find_surface_format(cts, cts->surface.handle, &cts->surface.format)) {
+	if (!find_surface_format(cts, &info, &cts->surface.format)) {
 		// Free old.
 		destroy_old(cts, old_swapchain_handle);
+		vk_surface_info_destroy(&info);
 		return;
 	}
 
 	// Get the caps first.
-	VkSurfaceCapabilitiesKHR surface_caps;
-	ret = vk->vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->physical_device, cts->surface.handle, &surface_caps);
-	if (ret != VK_SUCCESS) {
-		COMP_ERROR(ct->c, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR: %s", vk_result_string(ret));
+	VkSurfaceCapabilitiesKHR surface_caps = info.caps;
 
-		// Free old.
-		destroy_old(cts, old_swapchain_handle);
-		return;
-	}
+	// Now we can free the info.
+	vk_surface_info_destroy(&info);
 
 	// Get the extents of the swapchain.
 	VkExtent2D extent = select_extent(cts, surface_caps, preferred_width, preferred_height);
@@ -727,11 +722,23 @@ comp_target_swapchain_create_images(struct comp_target *ct,
 		extent.height = w2;
 	}
 
-	COMP_DEBUG(ct->c, "swapchain minImageCount %d maxImageCount %d", surface_caps.minImageCount,
-	           surface_caps.maxImageCount);
+	/*
+	 * For all direct mode outputs 2 is what we want since we want to run
+	 * lockstep with the display. Most direct mode swapchains only supports
+	 * FIFO mode, and since there is no commonly available Vulkan API to
+	 * wait for a specific VBLANK event, even just the latest, we can set
+	 * the number of images to two and then acquire immediately after
+	 * present. Since the old images are being displayed and the new can't
+	 * be flipped this will block until the flip has gone through. Crude but
+	 * works well enough on both AMD(Mesa) and Nvidia(Blob).
+	 *
+	 * When not in direct mode and display to a composited window we
+	 * probably want 3, but most compositors on Linux sets the minImageCount
+	 * to 3 anyways so we get what we want.
+	 */
+	const uint32_t preferred_at_least_image_count = 2;
 
 	// Get the image count.
-	const uint32_t preferred_at_least_image_count = 3;
 	uint32_t image_count = select_image_count(cts, surface_caps, preferred_at_least_image_count);
 
 

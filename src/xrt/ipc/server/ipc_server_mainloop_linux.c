@@ -211,7 +211,9 @@ handle_listen(struct ipc_server *vs, struct ipc_server_mainloop *ml)
 		ipc_server_handle_failure(vs);
 		return;
 	}
-	ipc_server_start_client_listener_thread(vs, ret);
+
+	// Call into the generic client connected handling code.
+	ipc_server_handle_client_connected(vs, ret);
 }
 
 #define NUM_POLL_EVENTS 8

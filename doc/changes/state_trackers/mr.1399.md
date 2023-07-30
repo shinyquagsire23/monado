@@ -1,1 +1,1 @@
-Validate faceCount parameter of XrSwapchainCreateInfo.
+OpenXR: Validate faceCount parameter of XrSwapchainCreateInfo.

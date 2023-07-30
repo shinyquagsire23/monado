@@ -1,11 +1,13 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 # Mercury hand tracking library!
 
 add_subdirectory(kine_lm)
-add_subdirectory(kine_ccdik)
 
+xrt_optimized_math_flags()
+
+# t_ht_mercury_model
 add_library(t_ht_mercury_model STATIC hg_model.cpp)
 
 target_link_libraries(t_ht_mercury_model PRIVATE aux_math aux_tracking aux_os aux_util)
@@ -21,10 +23,33 @@ target_link_libraries(
 		aux_tracking
 		aux_os
 		aux_util
+		xrt-optimized-math
 		${OpenCV_LIBRARIES}
 		ONNXRuntime::ONNXRuntime
 	)
 
+# t_ht_mercury_distorter
+add_library(t_ht_mercury_distorter STATIC hg_image_distorter.cpp)
+
+target_link_libraries(t_ht_mercury_distorter PRIVATE aux_math aux_tracking aux_os aux_util)
+
+target_include_directories(
+	t_ht_mercury_distorter SYSTEM PRIVATE ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR}
+	)
+
+target_link_libraries(
+	t_ht_mercury_distorter
+	PRIVATE
+		aux_math
+		aux_tracking
+		aux_os
+		aux_util
+		xrt-optimized-math
+		${OpenCV_LIBRARIES}
+		ONNXRuntime::ONNXRuntime # no, wrong
+	)
+
+# t_ht_mercury
 add_library(t_ht_mercury STATIC hg_sync.cpp hg_sync.hpp hg_interface.h kine_common.hpp)
 
 target_link_libraries(
@@ -37,11 +62,13 @@ target_link_libraries(
 		aux_util
 		ONNXRuntime::ONNXRuntime
 		t_ht_mercury_kine_lm
-		t_ht_mercury_kine_ccdik
 		t_ht_mercury_model
-		# ncnn # Soon...
+		t_ht_mercury_distorter
+		xrt-optimized-math
 		${OpenCV_LIBRARIES}
 	)
+
+target_include_directories(t_ht_mercury INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(XRT_HAVE_OPENCV)
 	target_include_directories(

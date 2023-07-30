@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -28,7 +28,7 @@ struct vive_source *
 vive_source_create(struct xrt_frame_context *xfctx);
 
 void
-vive_source_push_imu_packet(struct vive_source *vs, timepoint_ns t, struct xrt_vec3 a, struct xrt_vec3 g);
+vive_source_push_imu_packet(struct vive_source *vs, uint32_t age, timepoint_ns t, struct xrt_vec3 a, struct xrt_vec3 g);
 
 void
 vive_source_push_frame_ticks(struct vive_source *vs, timepoint_ns ticks);

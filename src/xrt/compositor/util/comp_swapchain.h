@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,7 @@
 #pragma once
 
 #include "vk/vk_image_allocator.h"
+#include "vk/vk_cmd_pool.h"
 
 #include "util/u_threading.h"
 #include "util/u_index_fifo.h"
@@ -32,14 +33,19 @@ struct comp_swapchain;
 typedef void (*comp_swapchain_destroy_func_t)(struct comp_swapchain *sc);
 
 /*!
- * A garbage collector that collects swapchains to be safely destroyed.
+ * Shared resource(s) and garbage collector for swapchains. The garbage
+ * collector allows to delay the destruction until it's safe to destroy them.
+ * The lifetime of @p pool is handled by the compositor that implements this
+ * struct.
  *
  * @ingroup comp_util
  */
-struct comp_swapchain_gc
+struct comp_swapchain_shared
 {
 	//! Thread object for safely destroying swapchain.
 	struct u_threading_stack destroy_swapchains;
+
+	struct vk_cmd_pool pool;
 };
 
 /*!
@@ -50,9 +56,6 @@ struct comp_swapchain_gc
  */
 struct comp_swapchain_image
 {
-	//! Sampler used by the renderer and distortion code.
-	VkSampler sampler;
-	VkSampler repeat_sampler;
 	//! Views used by the renderer and distortion code, for each array layer.
 	struct
 	{
@@ -61,6 +64,15 @@ struct comp_swapchain_image
 	} views;
 	//! The number of array slices in a texture, 1 == regular 2D texture.
 	size_t array_size;
+
+	//! A usage counter, similar to a reference counter.
+	uint32_t use_count;
+
+	//! A condition variable per swapchain image that is notified when @ref use_count count reaches 0.
+	pthread_cond_t use_cond;
+
+	//! A mutex per swapchain image that is used with @ref use_cond.
+	struct os_mutex use_mutex;
 };
 
 /*!
@@ -81,7 +93,7 @@ struct comp_swapchain
 	struct xrt_swapchain_native base;
 
 	struct vk_bundle *vk;
-	struct comp_swapchain_gc *gc;
+	struct comp_swapchain_shared *cscs;
 
 	struct vk_image_collection vkic;
 	struct comp_swapchain_image images[XRT_MAX_SWAPCHAIN_IMAGES];
@@ -133,7 +145,7 @@ xrt_result_t
 comp_swapchain_create_init(struct comp_swapchain *sc,
                            comp_swapchain_destroy_func_t destroy_func,
                            struct vk_bundle *vk,
-                           struct comp_swapchain_gc *cscgc,
+                           struct comp_swapchain_shared *cscs,
                            const struct xrt_swapchain_create_info *info,
                            const struct xrt_swapchain_create_properties *xsccp);
 
@@ -148,7 +160,7 @@ xrt_result_t
 comp_swapchain_import_init(struct comp_swapchain *sc,
                            comp_swapchain_destroy_func_t destroy_func,
                            struct vk_bundle *vk,
-                           struct comp_swapchain_gc *cscgc,
+                           struct comp_swapchain_shared *cscs,
                            const struct xrt_swapchain_create_info *info,
                            struct xrt_image_native *native_images,
                            uint32_t native_image_count);
@@ -164,9 +176,25 @@ comp_swapchain_teardown(struct comp_swapchain *sc);
 
 /*
  *
- * 'Exported' garbage collection functions.
+ * 'Exported' shared struct functions.
  *
  */
+
+/*!
+ * Create the shared struct.
+ *
+ * @ingroup comp_util
+ */
+XRT_CHECK_RESULT xrt_result_t
+comp_swapchain_shared_init(struct comp_swapchain_shared *cscs, struct vk_bundle *vk);
+
+/*!
+ * Destroy the shared struct.
+ *
+ * @ingroup comp_util
+ */
+void
+comp_swapchain_shared_destroy(struct comp_swapchain_shared *cscs, struct vk_bundle *vk);
 
 /*!
  * Do garbage collection, destroying any resources that has been scheduled for
@@ -175,7 +203,7 @@ comp_swapchain_teardown(struct comp_swapchain *sc);
  * @ingroup comp_util
  */
 void
-comp_swapchain_garbage_collect(struct comp_swapchain_gc *cscgc);
+comp_swapchain_shared_garbage_collect(struct comp_swapchain_shared *cscs);
 
 
 /*
@@ -200,7 +228,7 @@ comp_swapchain_get_create_properties(const struct xrt_swapchain_create_info *inf
  */
 xrt_result_t
 comp_swapchain_create(struct vk_bundle *vk,
-                      struct comp_swapchain_gc *cscgc,
+                      struct comp_swapchain_shared *cscs,
                       const struct xrt_swapchain_create_info *info,
                       const struct xrt_swapchain_create_properties *xsccp,
                       struct xrt_swapchain **out_xsc);
@@ -212,7 +240,7 @@ comp_swapchain_create(struct vk_bundle *vk,
  */
 xrt_result_t
 comp_swapchain_import(struct vk_bundle *vk,
-                      struct comp_swapchain_gc *cscgc,
+                      struct comp_swapchain_shared *cscs,
                       const struct xrt_swapchain_create_info *info,
                       struct xrt_image_native *native_images,
                       uint32_t image_count,

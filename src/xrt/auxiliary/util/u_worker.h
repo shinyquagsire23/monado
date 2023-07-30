@@ -42,11 +42,13 @@ struct u_worker_thread_pool
  * @param thread_count          The number of threads to be created in total,
  *                              this is the maximum threads that can be in
  *                              flight at the same time.
+ * @param prefix                Prefix to used when naming threads, used for
+ *                              tracing and debugging.
  *
  * @ingroup aux_util
  */
 struct u_worker_thread_pool *
-u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_count);
+u_worker_thread_pool_create(uint32_t starting_worker_count, uint32_t thread_count, const char *prefix);
 
 /*!
  * Internal function, only called by reference.

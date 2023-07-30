@@ -110,14 +110,28 @@ android_run_thread(void *ptr)
 	d->event_queue = ASensorManager_createEventQueue(d->sensor_manager, looper, ALOOPER_POLL_CALLBACK,
 	                                                 android_sensor_callback, (void *)d);
 
-	// Start sensors in case this was not done already.
+	/*
+	 * Start sensors in case this was not done already.
+	 *
+	 * On some Android devices, such as Pixel 4 and Meizu 20 series, running
+	 * apps was not smooth due to the failure in setting the sensor's event
+	 * rate. This was caused by the calculated sensor's event rate based on
+	 * the screen refresh rate, which could be smaller than the sensor's
+	 * minimum delay value. Make sure to set it to a valid value.
+	 */
 	if (d->accelerometer != NULL) {
+		int32_t accelerometer_min_delay = ASensor_getMinDelay(d->accelerometer);
+		int32_t accelerometer_poll_rate_usec = MAX(poll_rate_usec, accelerometer_min_delay);
+
 		ASensorEventQueue_enableSensor(d->event_queue, d->accelerometer);
-		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer, poll_rate_usec);
+		ASensorEventQueue_setEventRate(d->event_queue, d->accelerometer, accelerometer_poll_rate_usec);
 	}
 	if (d->gyroscope != NULL) {
+		int32_t gyroscope_min_delay = ASensor_getMinDelay(d->gyroscope);
+		int32_t gyroscope_poll_rate_usec = MAX(poll_rate_usec, gyroscope_min_delay);
+
 		ASensorEventQueue_enableSensor(d->event_queue, d->gyroscope);
-		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope, poll_rate_usec);
+		ASensorEventQueue_setEventRate(d->event_queue, d->gyroscope, gyroscope_poll_rate_usec);
 	}
 
 	int ret = 0;
@@ -198,7 +212,8 @@ android_device_get_view_poses(struct xrt_device *xdev,
  */
 
 static bool
-android_device_compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+android_device_compute_distortion(
+    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct android_device *d = android_device(xdev);
 	return u_compute_distortion_cardboard(&d->cardboard.values[view], u, v, result);

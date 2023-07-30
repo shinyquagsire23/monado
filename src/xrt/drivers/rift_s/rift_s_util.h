@@ -20,6 +20,9 @@
 extern "C" {
 #endif
 
+struct t_camera_calibration
+rift_s_get_cam_calib(struct rift_s_camera_calibration_block *camera_calibration, enum rift_s_camera_id cam_id);
+
 struct t_stereo_camera_calibration *
 rift_s_create_stereo_camera_calib_rotated(struct rift_s_camera_calibration_block *camera_calibration);
 

@@ -13,6 +13,7 @@
 #include "util/u_misc.h"
 #include "util/u_debug.h"
 #include "util/u_pacing.h"
+#include "util/u_metrics.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
 
@@ -400,8 +401,37 @@ adjust_comp_time(struct pacing_compositor *pc, struct frame *f)
  */
 
 static void
+do_metrics(struct pacing_compositor *pc, struct frame *f)
+{
+	if (!u_metrics_is_active()) {
+		return;
+	}
+
+	struct u_metrics_system_present_info umpi = {
+	    .frame_id = f->frame_id,
+	    .expected_comp_time_ns = f->current_comp_time_ns,
+	    .predicted_wake_up_time_ns = f->wake_up_time_ns,
+	    .predicted_done_time_ns = f->expected_done_time_ns,
+	    .predicted_display_time_ns = f->predicted_display_time_ns,
+	    .when_predict_ns = f->when_predict_ns,
+	    .when_woke_ns = f->when_woke_ns,
+	    .when_began_ns = f->when_began_ns,
+	    .when_submitted_ns = f->when_submitted_ns,
+	    .when_infoed_ns = f->when_infoed_ns,
+	    .desired_present_time_ns = f->desired_present_time_ns,
+	    .present_slop_ns = PRESENT_SLOP_NS,
+	    .present_margin_ns = f->present_margin_ns,
+	    .actual_present_time_ns = f->actual_present_time_ns,
+	    .earliest_present_time_ns = f->earliest_present_time_ns,
+	};
+
+	u_metrics_write_system_present_info(&umpi);
+}
+
+static void
 do_tracing(struct pacing_compositor *pc, struct frame *f)
 {
+#ifdef U_TRACE_PERCETTO // Uses Percetto specific things.
 	if (!U_TRACE_CATEGORY_IS_ENABLED(timing)) {
 		return;
 	}
@@ -512,6 +542,7 @@ do_tracing(struct pacing_compositor *pc, struct frame *f)
 
 #undef TE_BEG
 #undef TE_END
+#endif
 }
 
 
@@ -655,7 +686,8 @@ pc_info(struct u_pacing_compositor *upc,
 	    f->present_margin_ns,                        //
 	    present_margin_ms);                          //
 
-	// Write out tracing data.
+	// Write out metrics and tracing data.
+	do_metrics(pc, f);
 	do_tracing(pc, f);
 }
 
@@ -663,7 +695,16 @@ static void
 pc_info_gpu(
     struct u_pacing_compositor *upc, int64_t frame_id, uint64_t gpu_start_ns, uint64_t gpu_end_ns, uint64_t when_ns)
 {
-	// No-op
+	if (u_metrics_is_active()) {
+		struct u_metrics_system_gpu_info umgi = {
+		    .frame_id = frame_id,
+		    .gpu_start_ns = gpu_start_ns,
+		    .gpu_end_ns = gpu_end_ns,
+		    .when_ns = when_ns,
+		};
+
+		u_metrics_write_system_gpu_info(&umgi);
+	}
 }
 
 static void

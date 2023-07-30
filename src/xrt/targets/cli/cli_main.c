@@ -24,13 +24,14 @@ cli_print_help(int argc, const char **argv)
 	}
 
 	P("Monado-CLI 0.0.1\n");
-	P("Usage: %s command [options]\n", argv[0]);
+	P("Usage: %s command [options] [file]\n", argv[0]);
 	P("\n");
 	P("Commands:\n");
 	P("  test       - List found devices, for prober testing.\n");
 	P("  probe      - Just probe and then exit.\n");
 	P("  lighthouse - Control the power of lighthouses [on|off].\n");
 	P("  calibrate  - Calibrate a camera and save config (not implemented yet).\n");
+	P("  calib-dumb - Load and dump a calibration to stdout.\n");
 	P("  slambatch  - Runs a sequence of EuRoC datasets with the SLAM tracker.\n");
 
 	return 1;
@@ -54,6 +55,9 @@ main(int argc, const char **argv)
 		return cli_cmd_calibrate(argc, argv);
 	}
 #endif // !XRT_OS_WINDOWS
+	if (strcmp(argv[1], "calib-dump") == 0) {
+		return cli_cmd_calibration_dump(argc, argv);
+	}
 	if (strcmp(argv[1], "lighthouse") == 0) {
 		return cli_cmd_lighthouse(argc, argv);
 	}

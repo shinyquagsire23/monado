@@ -93,3 +93,19 @@ BUILTIN_STL_SUPPORT    = YES
 CASE_SENSE_NAMES       = NO
 
 GENERATE_LATEX         = NO
+
+USE_MATHJAX            = YES
+
+# Doxygen Awesome theme settings
+GENERATE_TREEVIEW      = YES # required!
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT # required with Doxygen >= 1.9.5
+HTML_HEADER            = @SRCDIR@/doc/header.html
+HTML_EXTRA_STYLESHEET  = @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome.css \
+HTML_EXTRA_FILES       = @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                         @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js \
+                         @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome-paragraph-link.js \
+                         @SRCDIR@/doc/doxygen-awesome-css/doxygen-custom/toggle-alternative-theme.js \
+                         @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome-interactive-toc.js \
+                         @SRCDIR@/doc/doxygen-awesome-css/doxygen-awesome-tabs.js

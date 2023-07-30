@@ -13,6 +13,8 @@ add_library(
 	gui_scene.cpp
 	gui_scene_calibrate.c
 	gui_scene_debug.c
+	gui_scene_hand_tracking_demo.c
+	gui_scene_record_euroc.c
 	gui_scene_main_menu.c
 	gui_scene_record.c
 	gui_scene_remote.c
@@ -42,6 +44,10 @@ endif()
 
 if(XRT_BUILD_DRIVER_DEPTHAI)
 	target_link_libraries(st_gui PRIVATE drv_depthai)
+endif()
+
+if(XRT_BUILD_DRIVER_HANDTRACKING)
+	target_link_libraries(st_gui PRIVATE drv_ht)
 endif()
 
 if(XRT_BUILD_DRIVER_REMOTE)

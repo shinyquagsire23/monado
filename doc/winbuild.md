@@ -5,6 +5,8 @@ Copyright 2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
+[TOC]
+
 Monado has a work-in-progress port to Windows. While it's not ready for
 widespread usage due to some rough edges and lack of drivers, it does build and
 can serve as a base for further development.
@@ -106,7 +108,7 @@ w:
 cd "w:\src\monado"
 
 cmake -S . ^
-  -b build
+  -B build
   -G Ninja ^
   -DCMAKE_BUILD_TYPE="Release" ^
   -DCMAKE_TOOLCHAIN_FILE="w:\vcpkg\scripts\buildsystems\vcpkg.cmake"
@@ -114,7 +116,31 @@ cmake -S . ^
 ninja -C build
 ```
 
+If you want to build the `outOfProcess` version of Monado, please add extra
+build parameter `-DXRT_FEATURE_SERVICE=ON`.
+
 ## Using
+
+### Run Monado service
+
+If you build the `outOfProcess` version of Monado, you need to start
+the `monado-service.exe` first with the following command in `cmd.exe`
+command prompt before running OpenXR clients:
+
+```bat
+monado-service.exe
+```
+
+or the following in PowerShell:
+
+```pwsh
+.\monado-service.exe
+```
+
+If you build the `inProcess` version of Monado, you don't need the above
+steps, and you can jump to the next section to run OpenXR clients directly.
+
+### Run hello_xr
 
 Proper install of a runtime in Windows involves registry modifications. However,
 the easiest way to test is just to set the `XR_RUNTIME_JSON` environment
@@ -134,12 +160,11 @@ or the following in PowerShell:
 ```pwsh
 $env:XR_RUNTIME_JSON="w:\src\monado\build\openxr_monado-dev.json"
 .\hello_xr.exe -G Vulkan
-
 ```
 
 ## Limitations
 
-Note that there are current limitations in the Windows build. The main one
-currently is that IPC/service mode is not (yet) supported. There are also no
-actual headset drivers yet, partially because some USB stuff needs porting, and
-partially because direct mode on Windows is more complicated.
+Note that there are current limitations in the Windows build.
+The main one currently is no actual headset drivers yet, partially because
+some USB stuff needs porting, and partially because direct mode on Windows
+is more complicated.

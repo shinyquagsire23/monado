@@ -28,14 +28,16 @@ class DisplayOverOtherAppsStatusFragment : Fragment() {
     private var displayOverOtherAppsEnabled = false
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view =
             inflater.inflate(R.layout.fragment_display_over_other_app_status, container, false)
         updateStatus(view)
-        view.findViewById<View>(R.id.btnLaunchDisplayOverOtherAppsSettings)
-            .setOnClickListener { launchDisplayOverOtherAppsSettings() }
+        view.findViewById<View>(R.id.btnLaunchDisplayOverOtherAppsSettings).setOnClickListener {
+            launchDisplayOverOtherAppsSettings()
+        }
         return view
     }
 
@@ -44,10 +46,12 @@ class DisplayOverOtherAppsStatusFragment : Fragment() {
         val tv = view!!.findViewById<TextView>(R.id.textDisplayOverOtherAppsStatus)
         // Combining format with html style tag might have problem. See
         // https://developer.android.com/guide/topics/resources/string-resource.html#StylingWithHTML
-        val msg = getString(
-            R.string.msg_display_over_other_apps,
-            if (displayOverOtherAppsEnabled) getString(R.string.enabled) else getString(R.string.disabled)
-        )
+        val msg =
+            getString(
+                R.string.msg_display_over_other_apps,
+                if (displayOverOtherAppsEnabled) getString(R.string.enabled)
+                else getString(R.string.disabled)
+            )
         tv.text = Html.fromHtml(msg, Html.FROM_HTML_MODE_LEGACY)
     }
 
@@ -55,10 +59,11 @@ class DisplayOverOtherAppsStatusFragment : Fragment() {
         // Since Android 11, framework ignores the uri and takes user to the top-level settings.
         // See https://developer.android.com/about/versions/11/privacy/permissions#system-alert
         // for detail.
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:" + context!!.packageName)
-        )
+        val intent =
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + context!!.packageName)
+            )
         startActivityForResult(intent, REQUEST_CODE_DISPLAY_OVER_OTHER_APPS)
     }
 
@@ -68,8 +73,9 @@ class DisplayOverOtherAppsStatusFragment : Fragment() {
             return
         }
 
-        if (isRuntimeServiceRunning &&
-            displayOverOtherAppsEnabled != Settings.canDrawOverlays(requireContext())
+        if (
+            isRuntimeServiceRunning &&
+                displayOverOtherAppsEnabled != Settings.canDrawOverlays(requireContext())
         ) {
             showRestartDialog()
         } else {
@@ -92,9 +98,10 @@ class DisplayOverOtherAppsStatusFragment : Fragment() {
         }
 
     private fun showRestartDialog() {
-        val dialog: DialogFragment = RestartRuntimeDialogFragment.newInstance(
-            getString(R.string.msg_display_over_other_apps_changed)
-        )
+        val dialog: DialogFragment =
+            RestartRuntimeDialogFragment.newInstance(
+                getString(R.string.msg_display_over_other_apps_changed)
+            )
         dialog.show(parentFragmentManager, null)
     }
 

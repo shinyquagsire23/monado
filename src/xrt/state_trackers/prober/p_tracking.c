@@ -29,6 +29,7 @@
 #include <string.h>
 
 #ifdef XRT_BUILD_DRIVER_EUROC
+#include "euroc/euroc_interface.h"
 #include "util/u_debug.h"
 DEBUG_GET_ONCE_OPTION(euroc_path, "EUROC_PATH", NULL)
 #endif
@@ -169,11 +170,13 @@ p_factory_ensure_frameserver(struct p_factory *fact)
 	struct xrt_colour_rgb_f32 rgb[2] = {{1.f, 0.f, 0.f}, {1.f, 0.f, 1.f}};
 
 	// We create the two psmv trackers up front, but don't start them.
-	// clang-format off
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSMV)
 	t_psmv_create(&fact->xfctx, &rgb[0], fact->data, &fact->xtmv[0], &xsinks[0]);
 	t_psmv_create(&fact->xfctx, &rgb[1], fact->data, &fact->xtmv[1], &xsinks[1]);
+#endif
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSVR)
 	t_psvr_create(&fact->xfctx, fact->data, &fact->xtvr, &xsinks[2]);
-	// clang-format on
+#endif
 
 	// Setup origin to the common one.
 	fact->xtvr->origin = &fact->origin;
@@ -254,8 +257,15 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 		xrt_prober_open_video_device(&fact->p->base, NULL, &fact->xfctx, &fact->xfs);
 		assert(fact->xfs->source_id == 0xECD0FEED && "xfs is not Euroc, unsynced open_video_device?");
 
+		struct euroc_player_config ep_config;
+		euroc_player_fill_default_config_for(&ep_config, debug_get_option_euroc_path());
+
 #ifdef XRT_FEATURE_SLAM
-		int ret = t_slam_create(&fact->xfctx, NULL, &fact->xts, &sinks);
+		struct t_slam_tracker_config st_config;
+		t_slam_fill_default_config(&st_config);
+		st_config.cam_count = ep_config.dataset.cam_count;
+
+		int ret = t_slam_create(&fact->xfctx, &st_config, &fact->xts, &sinks);
 		if (ret != 0) {
 			U_LOG_W("Unable to initialize SLAM tracking, the Euroc driver will not be tracked");
 		}
@@ -310,7 +320,7 @@ p_factory_ensure_slam_frameserver(struct p_factory *fact)
 static int
 p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact, struct xrt_tracked_psmv **out_xtmv)
 {
-#ifdef XRT_HAVE_OPENCV
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSMV)
 	struct p_factory *fact = p_factory(xfact);
 
 	struct xrt_tracked_psmv *xtmv = NULL;
@@ -339,7 +349,7 @@ p_factory_create_tracked_psmv(struct xrt_tracking_factory *xfact, struct xrt_tra
 static int
 p_factory_create_tracked_psvr(struct xrt_tracking_factory *xfact, struct xrt_tracked_psvr **out_xtvr)
 {
-#ifdef XRT_HAVE_OPENCV
+#if defined(XRT_HAVE_OPENCV) && defined(XRT_BUILD_DRIVER_PSVR)
 	struct p_factory *fact = p_factory(xfact);
 
 	struct xrt_tracked_psvr *xtvr = NULL;

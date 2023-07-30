@@ -1,4 +1,4 @@
-# Copyright 2020, Collabora, Ltd.
+# Copyright 2020-2022, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 # Catch2
@@ -51,6 +51,21 @@ if(ANDROID)
 	target_link_libraries(xrt-external-jni-wrap PUBLIC xrt-external-jnipp)
 endif()
 
+# Nano Protobuf
+add_library(
+	xrt-external-nanopb STATIC
+	nanopb/monado_metrics.pb.c
+	nanopb/monado_metrics.pb.h
+	nanopb/pb.h
+	nanopb/pb_common.c
+	nanopb/pb_common.h
+	nanopb/pb_decode.c
+	nanopb/pb_decode.h
+	nanopb/pb_encode.c
+	nanopb/pb_encode.h
+	)
+target_include_directories(xrt-external-nanopb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/nanopb)
+
 # OpenXR
 add_library(xrt-external-openxr INTERFACE)
 target_include_directories(
@@ -65,7 +80,7 @@ if(XRT_FEATURE_SLAM)
 		xrt-external-slam INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/slam_tracker
 		)
 	target_include_directories(xrt-external-slam SYSTEM INTERFACE ${SLAM_INCLUDE_DIRS})
-	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LIBRARIES})
+	target_link_libraries(xrt-external-slam INTERFACE ${SLAM_LDFLAGS})
 endif()
 
 # STB
@@ -123,10 +138,8 @@ if(XRT_HAVE_OPENGL)
 		target_link_libraries(
 			xrt-external-imgui-sdl2
 			PUBLIC xrt-external-imgui
-			PUBLIC ${SDL2_LIBRARIES}
+			PUBLIC SDL2::SDL2
 			)
-
-		target_include_directories(xrt-external-imgui-sdl2 PUBLIC ${SDL2_INCLUDE_DIRS})
 		target_include_directories(
 			xrt-external-imgui-sdl2 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui
 			)
@@ -141,4 +154,20 @@ endif()
 add_library(xrt-external-tinyceres INTERFACE)
 target_include_directories(
 	xrt-external-tinyceres SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinyceres/include
+	)
+
+# Tracy
+if(XRT_HAVE_TRACY)
+	add_library(xrt-external-tracy STATIC tracy/TracyClient.cpp)
+	target_include_directories(
+		xrt-external-tracy SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tracy
+		)
+	target_compile_definitions(xrt-external-tracy PRIVATE TRACY_ENABLE)
+	target_link_libraries(xrt-external-tracy PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
+# Valve VDF parser
+add_library(xrt-external-vdf INTERFACE)
+target_include_directories(
+	xrt-external-vdf SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/valve-file-vdf
 	)

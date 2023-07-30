@@ -207,6 +207,14 @@ void
 math_quat_from_angle_vector(float angle_rads, const struct xrt_vec3 *vector, struct xrt_quat *result);
 
 /*!
+ * Create a rotation from euler angles to a quaternion
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_from_euler_angles(const struct xrt_vec3 *angles, struct xrt_quat *result);
+
+/*!
  * Create a rotation from a 3x3 rotation (row major) matrix.
  *
  * @relates xrt_quat
@@ -351,7 +359,8 @@ math_quat_finite_difference(const struct xrt_quat *quat0,
                             struct xrt_vec3 *out_ang_vel);
 
 /*!
- * Converts a rotation vector in axis-angle form to its corresponding unit quaternion.
+ * Takes a rotation vector equal to half of a Rodrigues rotation vector and returns its corresponding unit quaternion.
+ * Useful for head tracking and pose-prediction.
  *
  * @relates xrt_quat
  * @see xrt_vec3
@@ -362,7 +371,8 @@ math_quat_exp(const struct xrt_vec3 *axis_angle, struct xrt_quat *out_quat);
 
 
 /*!
- * Converts a unit quaternion into its corresponding axis-angle vector representation.
+ * Takes a unit quaternion and returns a rotation vector equal to half of its corresponding Rodrigues rotation vector.
+ * Useful for head tracking and pose-prediction.
  *
  * @relates xrt_quat
  * @see xrt_vec3
@@ -411,33 +421,20 @@ math_quat_from_swing(const struct xrt_vec2 *swing, struct xrt_quat *result);
 void
 math_quat_from_swing_twist(const struct xrt_vec2 *swing, const float twist, struct xrt_quat *result);
 
+/*!
+ * Converts a quaternion to XY-swing and Z-twist
+ *
+ * @relates xrt_quat
+ * @ingroup aux_math
+ */
+void
+math_quat_to_swing_twist(const struct xrt_quat *in, struct xrt_vec2 *out_swing, float *out_twist);
+
 /*
  *
  * Matrix functions
  *
  */
-
-/*!
- * Multiply Matrix2x2.
- *
- * @relates xrt_matrix_2x2
- * @ingroup aux_math
- */
-void
-math_matrix_2x2_multiply(const struct xrt_matrix_2x2 *left,
-                         const struct xrt_matrix_2x2 *right,
-                         struct xrt_matrix_2x2 *result_out);
-
-/*!
- * Transform a vec2 by a 2x2 matrix
- *
- * @see xrt_matrix_2x2
- * @ingroup aux_math
- */
-void
-math_matrix_2x2_transform_vec2(const struct xrt_matrix_2x2 *left,
-                               const struct xrt_vec2 *right,
-                               struct xrt_vec2 *result_out);
 
 /*!
  * Initialize a 3x3 matrix to the identity matrix

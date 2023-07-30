@@ -146,3 +146,31 @@ typedef intptr_t ssize_t;
  * @ingroup xrt_iface
  */
 #define container_of(ptr, type, field) (type *)((char *)ptr - offsetof(type, field))
+
+
+#ifdef XRT_DOXYGEN
+
+/*!
+ * Very small default init for structs that works in both C and C++. Helps with
+ * code that needs to be compiled with both C and C++.
+ *
+ * @ingroup xrt_iface
+ */
+
+// clang-format off
+#define XRT_STRUCT_INIT {}
+// clang-format on
+
+#elif defined(__cplusplus)
+
+// clang-format off
+#define XRT_STRUCT_INIT {}
+// clang-format on
+
+#else
+
+// clang-format off
+#define XRT_STRUCT_INIT {0}
+// clang-format on
+
+#endif

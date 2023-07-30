@@ -22,10 +22,13 @@ set(tests
     tests_pacing
     tests_quatexpmap
     tests_quat_change_of_basis
+    tests_quat_swing_twist
     tests_rational
+    tests_relation_chain
     tests_vector
     tests_worker
     tests_pose
+    tests_vec3_angle
 	)
 if(XRT_HAVE_D3D11)
 	list(APPEND tests tests_aux_d3d_d3d11 tests_comp_client_d3d11)
@@ -67,10 +70,14 @@ target_link_libraries(tests_lowpass_float PRIVATE aux_math)
 target_link_libraries(tests_lowpass_integer PRIVATE aux_math)
 target_link_libraries(tests_quatexpmap PRIVATE aux_math)
 target_link_libraries(tests_rational PRIVATE aux_math)
+target_link_libraries(tests_relation_chain PRIVATE aux_math)
 target_link_libraries(tests_pose PRIVATE aux_math)
 target_link_libraries(tests_quat_change_of_basis PRIVATE aux_math)
+target_link_libraries(tests_quat_swing_twist PRIVATE aux_math)
+target_link_libraries(tests_vec3_angle PRIVATE aux_math)
 
 target_include_directories(tests_quat_change_of_basis SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
+target_include_directories(tests_quat_swing_twist SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})
 
 if(XRT_BUILD_DRIVER_HANDTRACKING)
 	target_link_libraries(
@@ -101,7 +108,11 @@ endif()
 
 if(_have_opengl_test)
 	target_link_libraries(
-		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl ${SDL2_LIBRARIES}
+		tests_comp_client_opengl PRIVATE comp_client comp_mock aux_ogl SDL2::SDL2
 		)
-	target_include_directories(tests_comp_client_opengl PRIVATE ${SDL2_INCLUDE_DIRS})
+	target_include_directories(tests_comp_client_opengl PRIVATE SDL2::SDL2)
+endif()
+
+if(XRT_HAVE_VULKAN AND XRT_HAVE_D3D11)
+	target_link_libraries(tests_aux_d3d_d3d11 PRIVATE comp_util aux_vk)
 endif()

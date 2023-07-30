@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -35,6 +35,7 @@ struct xrt_auto_prober;
 struct xrt_tracking_factory;
 struct xrt_builder;
 struct xrt_system_devices;
+struct xrt_space_overseer;
 struct os_hid_device;
 
 /*!
@@ -90,7 +91,6 @@ struct xrt_prober_device
 	 * USB/Bluetooth product ID (PID)
 	 */
 	uint16_t product_id;
-	char product_name[XRT_DEVICE_PRODUCT_NAME_LEN];
 
 	/*!
 	 * Device bus type
@@ -182,10 +182,13 @@ struct xrt_prober
 	 *
 	 * @param[in]  xp        Prober self parameter.
 	 * @param[out] out_xsysd Return of system devices, the pointed pointer must be NULL.
+	 * @param[out] out_xso   Return of the @ref xrt_space_overseer, the pointed pointer must be NULL.
 	 *
 	 * @note Code consuming this interface should use xrt_prober_create_system()
 	 */
-	xrt_result_t (*create_system)(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd);
+	xrt_result_t (*create_system)(struct xrt_prober *xp,
+	                              struct xrt_system_devices **out_xsysd,
+	                              struct xrt_space_overseer **out_xso);
 
 	/*!
 	 * Iterate through drivers (by ID and auto-probers) checking to see if
@@ -384,9 +387,11 @@ xrt_prober_dump(struct xrt_prober *xp)
  * @public @memberof xrt_prober
  */
 static inline xrt_result_t
-xrt_prober_create_system(struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+xrt_prober_create_system(struct xrt_prober *xp,
+                         struct xrt_system_devices **out_xsysd,
+                         struct xrt_space_overseer **out_xso)
 {
-	return xp->create_system(xp, out_xsysd);
+	return xp->create_system(xp, out_xsysd, out_xso);
 }
 
 /*!
@@ -614,13 +619,15 @@ struct xrt_builder
 	 * @param[in]  xp        Prober
 	 * @param[in]  config    JSON config object if found for this setter upper.
 	 * @param[out] out_xsysd Return of system devices, the pointed pointer must be NULL.
+	 * @param[out] out_xso   Return of the @ref xrt_space_overseer, the pointed pointer must be NULL.
 	 *
 	 * @note Code consuming this interface should use xrt_builder_open_system()
 	 */
 	xrt_result_t (*open_system)(struct xrt_builder *xb,
 	                            cJSON *config,
 	                            struct xrt_prober *xp,
-	                            struct xrt_system_devices **out_xsysd);
+	                            struct xrt_system_devices **out_xsysd,
+	                            struct xrt_space_overseer **out_xso);
 
 	/*!
 	 * Destroy this setter upper.
@@ -657,9 +664,10 @@ static inline xrt_result_t
 xrt_builder_open_system(struct xrt_builder *xb,
                         cJSON *config,
                         struct xrt_prober *xp,
-                        struct xrt_system_devices **out_xsysd)
+                        struct xrt_system_devices **out_xsysd,
+                        struct xrt_space_overseer **out_xso)
 {
-	return xb->open_system(xb, config, xp, out_xsysd);
+	return xb->open_system(xb, config, xp, out_xsysd, out_xso);
 }
 
 /*!
@@ -758,7 +766,7 @@ struct xrt_prober_entry
  *
  * @ingroup xrt_iface
  */
-typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)();
+typedef struct xrt_auto_prober *(*xrt_auto_prober_create_func_t)(void);
 
 /*!
  * @interface xrt_auto_prober

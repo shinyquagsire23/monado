@@ -1,7 +1,19 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-add_library(aux_vive STATIC vive_config.h vive_config.c vive_bindings.c vive_bindings.h)
+add_library(
+	aux_vive STATIC
+	vive_bindings.c
+	vive_bindings.h
+	vive_calibration.c
+	vive_calibration.h
+	vive_config.h
+	vive_config.c
+	vive_poses.h
+	vive_poses.c
+	vive_tweaks.c
+	vive_tweaks.h
+	)
 target_link_libraries(
 	aux_vive
 	PRIVATE
@@ -10,6 +22,4 @@ target_link_libraries(
 		aux_math
 		aux_tracking
 		xrt-external-cjson
-		${ZLIB_LIBRARIES}
 	)
-target_include_directories(aux_vive PRIVATE ${ZLIB_INCLUDE_DIRS})

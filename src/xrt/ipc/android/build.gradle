@@ -7,10 +7,12 @@ plugins {
 
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
+
+    id 'com.diffplug.spotless'
 }
 
 android {
-    compileSdkVersion project.sharedTargetSdk
+    compileSdk project.sharedCompileSdk
     buildToolsVersion buildToolsVersion
 
 
@@ -39,15 +41,18 @@ android {
         }
     }
 
-    lintOptions {
-        fatal 'StopShip'
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
     packagingOptions {
-        exclude("META-INF/*.kotlin_module")
+        resources {
+            excludes += ['META-INF/*.kotlin_module']
+        }
+    }
+    namespace 'org.freedesktop.monado.ipc'
+    lint {
+        fatal 'StopShip'
     }
 }
 
@@ -60,4 +65,20 @@ dependencies {
     // for Hilt dependency injection
     api "com.google.dagger:hilt-android:$hiltVersion"
     kapt "com.google.dagger:hilt-compiler:$hiltVersion"
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+        // apply a specific flavor of google-java-format.
+        googleJavaFormat('1.8').aosp().reflowLongStrings()
+        // fix formatting of type annotations.
+        formatAnnotations()
+    }
+
+    kotlin {
+        target 'src/main/java/**/*.kt'
+        // Use ktfmt(https://github.com/facebook/ktfmt) as the default Kotlin formatter.
+        ktfmt('0.43').kotlinlangStyle()
+    }
 }

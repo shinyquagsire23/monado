@@ -451,3 +451,46 @@ comp_window_direct_randr_get_outputs(struct comp_window_direct_randr *w)
 	free(non_desktop_reply);
 	free(resources_reply);
 }
+
+
+/*
+ *
+ * Factory
+ *
+ */
+
+static const char *instance_extensions[] = {
+    VK_KHR_DISPLAY_EXTENSION_NAME,
+    VK_EXT_DIRECT_MODE_DISPLAY_EXTENSION_NAME,
+    VK_EXT_ACQUIRE_XLIB_DISPLAY_EXTENSION_NAME,
+};
+
+static bool
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	return false;
+}
+
+static bool
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+{
+	struct comp_target *ct = comp_window_direct_randr_create(c);
+	if (ct == NULL) {
+		return false;
+	}
+
+	*out_ct = ct;
+
+	return true;
+}
+
+const struct comp_target_factory comp_target_factory_direct_randr = {
+    .name = "X11(RandR) Direct-Mode",
+    .identifier = "x11_direct",
+    .requires_vulkan_for_create = false,
+    .is_deferred = false,
+    .required_instance_extensions = instance_extensions,
+    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .detect = detect,
+    .create_target = create_target,
+};

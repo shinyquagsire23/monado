@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -87,6 +87,7 @@ vk_format_to_gl(int64_t format)
 	case 90 /*  VK_FORMAT_R16G16B16_SFLOAT         */: return GL_RGB16F;
 	case 91 /*  VK_FORMAT_R16G16B16A16_UNORM       */: return GL_RGBA16;
 	case 97 /*  VK_FORMAT_R16G16B16A16_SFLOAT      */: return GL_RGBA16F;
+	case 100 /* VK_FORMAT_R32_SFLOAT               */: return 0;
 	case 124 /* VK_FORMAT_D16_UNORM                */: return GL_DEPTH_COMPONENT16;
 	case 125 /* VK_FORMAT_X8_D24_UNORM_PACK32      */: return 0; // GL_DEPTH_COMPONENT24?
 	case 126 /* VK_FORMAT_D32_SFLOAT               */: return GL_DEPTH_COMPONENT32F;
@@ -151,6 +152,12 @@ client_gl_swapchain_wait_image(struct xrt_swapchain *xsc, uint64_t timeout_ns, u
 }
 
 static xrt_result_t
+client_gl_swapchain_barrier_image(struct xrt_swapchain *xsc, enum xrt_barrier_direction direction, uint32_t index)
+{
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
 client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
 {
 	struct client_gl_swapchain *sc = client_gl_swapchain(xsc);
@@ -167,12 +174,12 @@ client_gl_swapchain_release_image(struct xrt_swapchain *xsc, uint32_t index)
  */
 
 static xrt_result_t
-client_gl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+client_gl_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
 	// Pipe down call into native compositor.
-	return xrt_comp_begin_session(&c->xcn->base, type);
+	return xrt_comp_begin_session(&c->xcn->base, info);
 }
 
 static xrt_result_t
@@ -215,14 +222,11 @@ client_gl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-client_gl_compositor_layer_begin(struct xrt_compositor *xc,
-                                 int64_t frame_id,
-                                 uint64_t display_time_ns,
-                                 enum xrt_blend_mode env_blend_mode)
+client_gl_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
 
-	return xrt_comp_layer_begin(&c->xcn->base, frame_id, display_time_ns, env_blend_mode);
+	return xrt_comp_layer_begin(&c->xcn->base, data);
 }
 
 static xrt_result_t
@@ -371,7 +375,7 @@ client_gl_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+client_gl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
@@ -382,15 +386,15 @@ client_gl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, x
 
 	sync_handle = XRT_GRAPHICS_SYNC_HANDLE_INVALID;
 
-	xrt_result_t xret = c->context_begin(xc);
+	xrt_result_t xret = client_gl_compositor_context_begin(xc, CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE);
 	if (xret == XRT_SUCCESS) {
 		sync_handle = handle_fencing_or_finish(c);
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_SYNCHRONIZE);
 	}
 
 	COMP_TRACE_IDENT(layer_commit);
 
-	return xrt_comp_layer_commit(&c->xcn->base, frame_id, sync_handle);
+	return xrt_comp_layer_commit(&c->xcn->base, sync_handle);
 }
 
 static xrt_result_t
@@ -399,6 +403,15 @@ client_gl_compositor_get_swapchain_create_properties(struct xrt_compositor *xc,
                                                      struct xrt_swapchain_create_properties *xsccp)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+
+	int64_t vk_format = gl_format_to_vk(info->format);
+	if (vk_format == 0) {
+		U_LOG_E("Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
+	struct xrt_swapchain_create_info vkinfo = *info;
+	vkinfo.format = vk_format;
 
 	return xrt_comp_get_swapchain_create_properties(&c->xcn->base, info, xsccp);
 }
@@ -409,9 +422,24 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
                            struct xrt_swapchain **out_xsc)
 {
 	struct client_gl_compositor *c = client_gl_compositor(xc);
+	struct xrt_swapchain_create_properties xsccp = {0};
 	xrt_result_t xret = XRT_SUCCESS;
 
-	xret = c->context_begin(xc);
+	// Do before getting the context, not using ourselves.
+	xret = xrt_comp_get_swapchain_create_properties(xc, info, &xsccp);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("Failed to get create properties: %u", xret);
+		return xret;
+	}
+
+	// Check before setting the context.
+	int64_t vk_format = gl_format_to_vk(info->format);
+	if (vk_format == 0) {
+		U_LOG_E("Invalid format!");
+		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
+	}
+
+	xret = client_gl_compositor_context_begin(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 	if (xret != XRT_SUCCESS) {
 		return xret;
 	}
@@ -420,25 +448,24 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 		const char *version_str = (const char *)glGetString(GL_VERSION);
 		if (strstr(version_str, "OpenGL ES 2.") == version_str) {
 			U_LOG_E("Only one array layer is supported with OpenGL ES 2");
-			c->context_end(xc);
+			client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 			return XRT_ERROR_SWAPCHAIN_FLAG_VALID_BUT_UNSUPPORTED;
 		}
 	}
 
-	int64_t vk_format = gl_format_to_vk(info->format);
-	if (vk_format == 0) {
-		U_LOG_E("Invalid format!");
-		c->context_end(xc);
-		return XRT_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
-	}
-
 	struct xrt_swapchain_create_info xinfo = *info;
-	xinfo.format = vk_format;
+	struct xrt_swapchain_create_info vkinfo = *info;
+
+	// Update the create info.
+	xinfo.bits |= xsccp.extra_bits;
+	vkinfo.format = vk_format;
+	vkinfo.bits |= xsccp.extra_bits;
+
 	struct xrt_swapchain_native *xscn = NULL; // Has to be NULL.
-	xret = xrt_comp_native_create_swapchain(c->xcn, &xinfo, &xscn);
+	xret = xrt_comp_native_create_swapchain(c->xcn, &vkinfo, &xscn);
 
 	if (xret != XRT_SUCCESS) {
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return xret;
 	}
 	assert(xscn != NULL);
@@ -454,16 +481,16 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	struct xrt_swapchain *xsc = &xscn->base;
 
 	struct client_gl_swapchain *sc = NULL;
-	if (NULL == c->create_swapchain(xc, info, xscn, &sc)) {
+	if (NULL == c->create_swapchain(xc, &xinfo, xscn, &sc)) {
 		// Drop our reference, does NULL checking.
 		xrt_swapchain_reference(&xsc, NULL);
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return XRT_ERROR_OPENGL;
 	}
 
 	if (sc == NULL) {
 		U_LOG_E("Could not create OpenGL swapchain.");
-		c->context_end(xc);
+		client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 		return XRT_ERROR_OPENGL;
 	}
 
@@ -472,6 +499,9 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 	}
 	if (NULL == sc->base.base.wait_image) {
 		sc->base.base.wait_image = client_gl_swapchain_wait_image;
+	}
+	if (NULL == sc->base.base.barrier_image) {
+		sc->base.base.barrier_image = client_gl_swapchain_barrier_image;
 	}
 	if (NULL == sc->base.base.release_image) {
 		sc->base.base.release_image = client_gl_swapchain_release_image;
@@ -482,7 +512,7 @@ client_gl_swapchain_create(struct xrt_compositor *xc,
 
 	glBindTexture(tex_target, prev_texture);
 
-	c->context_end(xc);
+	client_gl_compositor_context_end(xc, CLIENT_GL_CONTEXT_REASON_OTHER);
 
 	*out_xsc = &sc->base.base;
 	return XRT_SUCCESS;
@@ -519,13 +549,13 @@ client_gl_compositor_close(struct client_gl_compositor *c)
 bool
 client_gl_compositor_init(struct client_gl_compositor *c,
                           struct xrt_compositor_native *xcn,
-                          client_gl_context_begin_func_t context_begin,
-                          client_gl_context_end_func_t context_end,
+                          client_gl_context_begin_locked_func_t context_begin_locked,
+                          client_gl_context_end_locked_func_t context_end_locked,
                           client_gl_swapchain_create_func_t create_swapchain,
                           client_gl_insert_fence_func_t insert_fence)
 {
-	assert(context_begin != NULL);
-	assert(context_end != NULL);
+	assert(context_begin_locked != NULL);
+	assert(context_end_locked != NULL);
 
 	c->base.base.get_swapchain_create_properties = client_gl_compositor_get_swapchain_create_properties;
 	c->base.base.create_swapchain = client_gl_swapchain_create;
@@ -545,8 +575,8 @@ client_gl_compositor_init(struct client_gl_compositor *c,
 	c->base.base.layer_commit = client_gl_compositor_layer_commit;
 	c->base.base.destroy = client_gl_compositor_destroy;
 	c->base.base.poll_events = client_gl_compositor_poll_events;
-	c->context_begin = context_begin;
-	c->context_end = context_end;
+	c->context_begin_locked = context_begin_locked;
+	c->context_end_locked = context_end_locked;
 	c->create_swapchain = create_swapchain;
 	c->insert_fence = insert_fence;
 	c->xcn = xcn;

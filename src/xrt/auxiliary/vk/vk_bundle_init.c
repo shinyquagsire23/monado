@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -17,6 +17,7 @@
  * @ingroup aux_vk
  */
 
+#include "util/u_pretty_print.h"
 #include "vk/vk_helpers.h"
 
 #include <stdio.h>
@@ -76,23 +77,76 @@ is_instance_ext_supported(VkExtensionProperties *props, uint32_t prop_count, con
  *
  */
 
+VkResult
+vk_check_required_instance_extensions(struct vk_bundle *vk, struct u_string_list *required_instance_ext_list)
+{
+	struct u_pp_sink_stack_only sink;
+	VkExtensionProperties *props = NULL;
+	uint32_t prop_count = 0;
+	VkResult ret;
+
+	// Two call.
+	ret = vk_enumerate_instance_extensions_properties( //
+	    vk,                                            // vk_bundle
+	    NULL,                                          // layer_name
+	    &prop_count,                                   // out_prop_count
+	    &props);                                       // out_props
+	if (ret != VK_SUCCESS) {
+		return ret; // Already logged.
+	}
+
+	// We want to print all missing extensions.
+	bool have_missing = false;
+
+	// Used to build a nice pretty list of missing extensions.
+	u_pp_delegate_t dg = u_pp_sink_stack_only_init(&sink);
+
+	// Check if required extensions are supported.
+	uint32_t required_instance_ext_count = u_string_list_get_size(required_instance_ext_list);
+	const char *const *required_instance_exts = u_string_list_get_data(required_instance_ext_list);
+	for (uint32_t i = 0; i < required_instance_ext_count; i++) {
+		const char *required_ext = required_instance_exts[i];
+
+		if (is_instance_ext_supported(props, prop_count, required_ext)) {
+			continue;
+		}
+
+		u_pp(dg, "\n\t%s", required_ext);
+		have_missing = true;
+	}
+
+	if (!have_missing) {
+		return VK_SUCCESS;
+	}
+
+	VK_ERROR(vk, "Missing required instance extensions:%s", sink.buffer);
+
+	return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
 struct u_string_list *
 vk_build_instance_extensions(struct vk_bundle *vk,
                              struct u_string_list *required_instance_ext_list,
                              struct u_string_list *optional_instance_ext_list)
 {
-	VkResult res;
-
+	VkExtensionProperties *props = NULL;
 	uint32_t prop_count = 0;
-	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, NULL);
-	vk_check_error("vkEnumerateInstanceExtensionProperties", res, NULL);
+	VkResult ret;
 
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-	res = vk->vkEnumerateInstanceExtensionProperties(NULL, &prop_count, props);
-	vk_check_error_with_free("vkEnumerateInstanceExtensionProperties", res, NULL, props);
+	// Two call.
+	ret = vk_enumerate_instance_extensions_properties( //
+	    vk,                                            // vk_bundle
+	    NULL,                                          // layer_name
+	    &prop_count,                                   // out_prop_count
+	    &props);                                       // out_props
+	if (ret != VK_SUCCESS) {
+		return NULL; // Already logged.
+	}
 
-	struct u_string_list *ret = u_string_list_create_from_list(required_instance_ext_list);
+	// Assumed to be supported.
+	struct u_string_list *list = u_string_list_create_from_list(required_instance_ext_list);
 
+	// Check any supported extensions.
 	uint32_t optional_instance_ext_count = u_string_list_get_size(optional_instance_ext_list);
 	const char *const *optional_instance_exts = u_string_list_get_data(optional_instance_ext_list);
 	for (uint32_t i = 0; i < optional_instance_ext_count; i++) {
@@ -108,17 +162,17 @@ vk_build_instance_extensions(struct vk_bundle *vk,
 			continue;
 		}
 
-		int added = u_string_list_append_unique(ret, optional_ext);
+		int added = u_string_list_append_unique(list, optional_ext);
 		if (added == 1) {
 			VK_DEBUG(vk, "Using optional instance ext %s", optional_ext);
 		} else {
 			VK_WARN(vk, "Duplicate instance extension %s not added twice", optional_ext);
 		}
-		break;
 	}
 
 	free(props);
-	return ret;
+
+	return list;
 }
 
 void
@@ -127,6 +181,7 @@ vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *e
 	// beginning of GENERATED instance extension code - do not modify - used by scripts
 	// Reset before filling out.
 	vk->has_EXT_display_surface_counter = false;
+	vk->has_EXT_swapchain_colorspace = false;
 
 	const char *const *exts = u_string_list_get_data(ext_list);
 	uint32_t ext_count = u_string_list_get_size(ext_list);
@@ -140,6 +195,13 @@ vk_fill_in_has_instance_extensions(struct vk_bundle *vk, struct u_string_list *e
 			continue;
 		}
 #endif // defined(VK_EXT_display_surface_counter)
+
+#if defined(VK_EXT_swapchain_colorspace)
+		if (strcmp(ext, VK_EXT_SWAPCHAIN_COLORSPACE_EXTENSION_NAME) == 0) {
+			vk->has_EXT_swapchain_colorspace = true;
+			continue;
+		}
+#endif // defined(VK_EXT_swapchain_colorspace)
 	}
 	// end of GENERATED instance extension code - do not modify - used by scripts
 }
@@ -309,7 +371,7 @@ get_timeline_semaphore_bit_support(struct vk_bundle *vk,
 #endif
 }
 
-bool
+static bool
 is_timeline_semaphore_bit_supported(struct vk_bundle *vk, VkExternalSemaphoreHandleTypeFlagBits handle_type)
 {
 	bool importable = false, exportable = false;
@@ -434,64 +496,113 @@ fill_in_external_object_properties(struct vk_bundle *vk)
  *
  */
 
+static int
+device_type_priority(VkPhysicalDeviceType device_type)
+{
+	switch (device_type) {
+	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return 4;
+	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return 3;
+	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return 2;
+	case VK_PHYSICAL_DEVICE_TYPE_CPU: return 1;
+	default: return 0;
+	}
+}
+
+static bool
+device_is_preferred(VkPhysicalDeviceProperties *l_device, VkPhysicalDeviceProperties *r_device)
+{
+	int l_priority = device_type_priority(l_device->deviceType);
+	int r_priority = device_type_priority(r_device->deviceType);
+
+	if (l_priority > r_priority)
+		return true;
+
+	return false;
+}
+
+static uint32_t
+select_preferred_device(struct vk_bundle *vk, VkPhysicalDevice *devices, uint32_t device_count)
+{
+	assert(device_count > 0);
+
+	// Default to first if there is only one.
+	uint32_t gpu_index = 0;
+	VkPhysicalDeviceProperties gpu_properties;
+	vk->vkGetPhysicalDeviceProperties(devices[0], &gpu_properties);
+
+	for (uint32_t i = 1; i < device_count; i++) {
+		VkPhysicalDeviceProperties pdp;
+		vk->vkGetPhysicalDeviceProperties(devices[i], &pdp);
+
+		char title[32];
+		(void)snprintf(title, sizeof(title), "GPU index %u\n", i);
+		vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
+
+		// Prefer devices based on device type priority, with preference to equal devices with smaller index
+		if (device_is_preferred(&pdp, &gpu_properties)) {
+			gpu_index = i;
+			gpu_properties = pdp;
+		}
+	}
+
+	return gpu_index;
+}
+
 static VkResult
 select_physical_device(struct vk_bundle *vk, int forced_index)
 {
-	VkPhysicalDevice physical_devices[16];
-	uint32_t gpu_count = ARRAY_SIZE(physical_devices);
+	VkPhysicalDevice *physical_devices = NULL;
+	uint32_t gpu_count = 0;
 	VkResult ret;
 
-	ret = vk->vkEnumeratePhysicalDevices(vk->instance, &gpu_count, physical_devices);
+	ret = vk_enumerate_physical_devices( //
+	    vk,                              // vk_bundle
+	    &gpu_count,                      // out_physical_device_count
+	    &physical_devices);              // out_physical_devices
 	if (ret != VK_SUCCESS) {
-		VK_DEBUG(vk, "vkEnumeratePhysicalDevices: %s", vk_result_string(ret));
+		VK_ERROR(vk, "vk_enumerate_physical_devices: %s", vk_result_string(ret));
 		return ret;
 	}
-
-	if (gpu_count < 1) {
-		VK_DEBUG(vk, "No physical device found!");
-		return VK_ERROR_DEVICE_LOST;
-	}
-
-	if (gpu_count > 1) {
-		VK_DEBUG(vk, "Cannot deal well with multiple devices.");
+	if (gpu_count == 0) {
+		VK_ERROR(vk, "No physical device found!");
+		return VK_ERROR_DEVICE_LOST; // No need to free if zero devices.
 	}
 
 	VK_DEBUG(vk, "Choosing Vulkan device index");
 	uint32_t gpu_index = 0;
-	if (forced_index > -1) {
-		if ((uint32_t)forced_index + 1 > gpu_count) {
-			VK_ERROR(vk, "Attempted to force GPU index %d, but only %d GPUs are available", forced_index,
+	if (forced_index >= 0) {
+		uint32_t uint_index = (uint32_t)forced_index;
+		if (uint_index + 1 > gpu_count) {
+			VK_ERROR(vk, "Attempted to force GPU index %u, but only %u GPUs are available", uint_index,
 			         gpu_count);
+			free(physical_devices);
 			return VK_ERROR_DEVICE_LOST;
 		}
-		gpu_index = forced_index;
-		VK_DEBUG(vk, "Forced use of Vulkan device index %d.", gpu_index);
+		gpu_index = uint_index;
+		VK_DEBUG(vk, "Forced use of Vulkan device index %u.", gpu_index);
 	} else {
 		VK_DEBUG(vk, "Available GPUs");
-		// as a first-step to 'intelligent' selection, prefer a
-		// 'discrete' gpu if it is present
-		for (uint32_t i = 0; i < gpu_count; i++) {
-			VkPhysicalDeviceProperties pdp;
-			vk->vkGetPhysicalDeviceProperties(physical_devices[i], &pdp);
-
-			char title[20];
-			snprintf(title, 20, "GPU index %d\n", i);
-			vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, i, title);
-
-			if (pdp.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-				gpu_index = i;
-			}
-		}
+		gpu_index = select_preferred_device(vk, physical_devices, gpu_count);
 	}
 
+	// Setup the physical device on the bundle.
 	vk->physical_device = physical_devices[gpu_index];
 	vk->physical_device_index = gpu_index;
 
+	// Free the array.
+	free(physical_devices);
+	physical_devices = NULL;
+
+
+	/*
+	 * Have now selected device, get properties of it.
+	 */
+
 	VkPhysicalDeviceProperties pdp;
-	vk->vkGetPhysicalDeviceProperties(physical_devices[gpu_index], &pdp);
+	vk->vkGetPhysicalDeviceProperties(vk->physical_device, &pdp);
 
 	char title[20];
-	snprintf(title, 20, "Selected GPU: %d\n", gpu_index);
+	(void)snprintf(title, sizeof(title), "Selected GPU: %u\n", gpu_index);
 	vk_print_device_info(vk, U_LOGGING_DEBUG, &pdp, gpu_index, title);
 
 	char *tegra_substr = strstr(pdp.deviceName, "Tegra");
@@ -617,6 +728,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	// Reset before filling out.
 	vk->has_KHR_external_fence_fd = false;
 	vk->has_KHR_external_semaphore_fd = false;
+	vk->has_KHR_format_feature_flags2 = false;
 	vk->has_KHR_global_priority = false;
 	vk->has_KHR_image_format_list = false;
 	vk->has_KHR_maintenance1 = false;
@@ -625,6 +737,7 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	vk->has_KHR_maintenance4 = false;
 	vk->has_KHR_timeline_semaphore = false;
 	vk->has_EXT_calibrated_timestamps = false;
+	vk->has_EXT_debug_marker = false;
 	vk->has_EXT_display_control = false;
 	vk->has_EXT_external_memory_dma_buf = false;
 	vk->has_EXT_global_priority = false;
@@ -651,6 +764,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 			continue;
 		}
 #endif // defined(VK_KHR_external_semaphore_fd)
+
+#if defined(VK_KHR_format_feature_flags2)
+		if (strcmp(ext, VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME) == 0) {
+			vk->has_KHR_format_feature_flags2 = true;
+			continue;
+		}
+#endif // defined(VK_KHR_format_feature_flags2)
 
 #if defined(VK_KHR_global_priority)
 		if (strcmp(ext, VK_KHR_GLOBAL_PRIORITY_EXTENSION_NAME) == 0) {
@@ -708,6 +828,13 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 		}
 #endif // defined(VK_EXT_calibrated_timestamps)
 
+#if defined(VK_EXT_debug_marker)
+		if (strcmp(ext, VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == 0) {
+			vk->has_EXT_debug_marker = true;
+			continue;
+		}
+#endif // defined(VK_EXT_debug_marker)
+
 #if defined(VK_EXT_display_control)
 		if (strcmp(ext, VK_EXT_DISPLAY_CONTROL_EXTENSION_NAME) == 0) {
 			vk->has_EXT_display_control = true;
@@ -753,28 +880,6 @@ fill_in_has_device_extensions(struct vk_bundle *vk, struct u_string_list *ext_li
 	// end of GENERATED device extension code - do not modify - used by scripts
 }
 
-static VkResult
-get_device_ext_props(struct vk_bundle *vk,
-                     VkPhysicalDevice physical_device,
-                     VkExtensionProperties **out_props,
-                     uint32_t *out_prop_count)
-{
-	uint32_t prop_count = 0;
-	VkResult res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, NULL);
-	vk_check_error("vkEnumerateDeviceExtensionProperties", res, false);
-
-	VkExtensionProperties *props = U_TYPED_ARRAY_CALLOC(VkExtensionProperties, prop_count);
-
-	res = vk->vkEnumerateDeviceExtensionProperties(physical_device, NULL, &prop_count, props);
-	vk_check_error_with_free("vkEnumerateDeviceExtensionProperties", res, false, props);
-
-	// The preceding check returns on failure.
-	*out_props = props;
-	*out_prop_count = prop_count;
-
-	return VK_SUCCESS;
-}
-
 static bool
 should_skip_optional_device_ext(struct vk_bundle *vk,
                                 struct u_string_list *required_device_ext_list,
@@ -805,7 +910,16 @@ build_device_extensions(struct vk_bundle *vk,
 {
 	VkExtensionProperties *props = NULL;
 	uint32_t prop_count = 0;
-	if (get_device_ext_props(vk, physical_device, &props, &prop_count) != VK_SUCCESS) {
+	VkResult ret;
+
+	ret = vk_enumerate_physical_device_extension_properties( //
+	    vk,                                                  // vk_bundle
+	    physical_device,                                     // physical_device
+	    NULL,                                                // layer_name
+	    &prop_count,                                         // out_prop_count
+	    &props);                                             // out_props
+	if (ret != VK_SUCCESS) {
+		VK_ERROR(vk, "vk_enumerate_physical_device_extension_properties: %s", vk_result_string(ret));
 		return false;
 	}
 
@@ -858,7 +972,7 @@ build_device_extensions(struct vk_bundle *vk,
 	return true;
 }
 
-/**
+/*!
  * @brief Sets fields in @p device_features to true if and only if they are available and they are true in @p
  * optional_device_features (indicating a desire for that feature)
  *
@@ -955,6 +1069,12 @@ filter_device_features(struct vk_bundle *vk,
  * 'Exported' device functions.
  *
  */
+
+VkResult
+vk_select_physical_device(struct vk_bundle *vk, int forced_index)
+{
+	return select_physical_device(vk, forced_index);
+}
 
 XRT_CHECK_RESULT VkResult
 vk_create_device(struct vk_bundle *vk,
@@ -1120,9 +1240,6 @@ err_destroy:
 VkResult
 vk_init_mutex(struct vk_bundle *vk)
 {
-	if (os_mutex_init(&vk->cmd_pool_mutex) < 0) {
-		return VK_ERROR_INITIALIZATION_FAILED;
-	}
 	if (os_mutex_init(&vk->queue_mutex) < 0) {
 		return VK_ERROR_INITIALIZATION_FAILED;
 	}
@@ -1132,27 +1249,8 @@ vk_init_mutex(struct vk_bundle *vk)
 VkResult
 vk_deinit_mutex(struct vk_bundle *vk)
 {
-	os_mutex_destroy(&vk->cmd_pool_mutex);
 	os_mutex_destroy(&vk->queue_mutex);
 	return VK_SUCCESS;
-}
-
-XRT_CHECK_RESULT VkResult
-vk_init_cmd_pool(struct vk_bundle *vk)
-{
-	VkCommandPoolCreateInfo cmd_pool_info = {
-	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-	    .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-	    .queueFamilyIndex = vk->queue_family_index,
-	};
-
-	VkResult ret;
-	ret = vk->vkCreateCommandPool(vk->device, &cmd_pool_info, NULL, &vk->cmd_pool);
-	if (ret != VK_SUCCESS) {
-		VK_ERROR(vk, "vkCreateCommandPool: %s", vk_result_string(ret));
-	}
-
-	return ret;
 }
 
 
@@ -1236,12 +1334,6 @@ vk_init_from_given(struct vk_bundle *vk,
 	}
 
 	vk->vkGetDeviceQueue(vk->device, vk->queue_family_index, vk->queue_index, &vk->queue);
-
-	// Create the pool.
-	ret = vk_init_cmd_pool(vk);
-	if (ret != VK_SUCCESS) {
-		goto err_memset;
-	}
 
 
 	return VK_SUCCESS;

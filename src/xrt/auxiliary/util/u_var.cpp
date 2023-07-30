@@ -8,10 +8,7 @@
  */
 
 #include "util/u_var.h"
-#include "util/u_time.h"
-#include "util/u_misc.h"
 #include "util/u_debug.h"
-#include "util/u_device.h"
 
 #include <string>
 #include <sstream>
@@ -44,6 +41,8 @@ class Obj
 {
 public:
 	std::string name = {};
+	std::string raw_name = {};
+	struct u_var_root_info info = {};
 	std::vector<Var> vars = {};
 };
 
@@ -53,17 +52,17 @@ public:
 class Tracker
 {
 public:
-	std::unordered_map<std::string, size_t> counters = {};
+	std::unordered_map<std::string, uint32_t> counters = {};
 	std::unordered_map<ptrdiff_t, Obj> map = {};
 	bool on = false;
 	bool tested = false;
 
 public:
-	int
+	uint32_t
 	getNumber(const std::string &name)
 	{
 		auto s = counters.find(name);
-		int count = int(s != counters.end() ? s->second : 0) + 1;
+		uint32_t count = (s != counters.end() ? s->second : 0u) + 1u;
 		counters[name] = count;
 
 		return count;
@@ -125,16 +124,18 @@ u_var_force_on(void)
 }
 
 extern "C" void
-u_var_add_root(void *root, const char *c_name, bool number)
+u_var_add_root(void *root, const char *c_name, bool suffix_with_number)
 {
 	if (!get_on()) {
 		return;
 	}
 
 	auto name = std::string(c_name);
+	auto raw_name = name;
+	uint32_t count = 0; // Zero means no number.
 
-	if (number) {
-		int count = gTracker.getNumber(name);
+	if (suffix_with_number) {
+		count = gTracker.getNumber(name);
 
 		std::stringstream ss;
 		ss << name << " #" << count;
@@ -143,6 +144,10 @@ u_var_add_root(void *root, const char *c_name, bool number)
 
 	auto &obj = gTracker.map[(ptrdiff_t)root] = Obj();
 	obj.name = name;
+	obj.raw_name = raw_name;
+	obj.info.name = obj.name.c_str();
+	obj.info.raw_name = obj.raw_name.c_str();
+	obj.info.number = count;
 }
 
 extern "C" void
@@ -175,13 +180,13 @@ u_var_visit(u_var_root_cb enter_cb, u_var_root_cb exit_cb, u_var_elm_cb elem_cb,
 	}
 
 	for (Obj *obj : tmp) {
-		enter_cb(obj->name.c_str(), priv);
+		enter_cb(&obj->info, priv);
 
 		for (auto &var : obj->vars) {
 			elem_cb(&var.info, priv);
 		}
 
-		exit_cb(obj->name.c_str(), priv);
+		exit_cb(&obj->info, priv);
 	}
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2019-2021, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -49,8 +49,8 @@ struct comp_layer
  */
 struct comp_layer_slot
 {
-	//! What environmental blend mode did the app use.
-	enum xrt_blend_mode env_blend_mode;
+	//! The per frame data.
+	struct xrt_layer_frame_data data;
 
 	//! All of the layers.
 	struct comp_layer layers[COMP_MAX_LAYERS];
@@ -61,11 +61,9 @@ struct comp_layer_slot
 	//! Special case one layer projection/projection-depth fast-path.
 	bool one_projection_layer_fast_path;
 
-	//! head relation as reported by device for the current submit.
-	struct xrt_space_relation head_relation;
 	//! fov as reported by device for the current submit.
 	struct xrt_fov fovs[2];
-	//! pose as reported by device for the current submit.
+	//! absolute pose as reported by device for the current submit.
 	struct xrt_pose poses[2];
 };
 
@@ -105,7 +103,7 @@ struct comp_base
 	struct os_precise_sleeper sleeper;
 
 	//! Swapchain garbage collector, used by swapchain, child class needs to call.
-	struct comp_swapchain_gc cscgc;
+	struct comp_swapchain_shared cscs;
 
 	//! We only need to track a single slot.
 	struct comp_layer_slot slot;

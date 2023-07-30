@@ -1,38 +1,62 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  vive json header
  * @author Lubosz Sarnecki <lubosz.sarnecki@collabora.com>
  * @author Moses Turner <moses@collabora.com>
- * @ingroup drv_vive
+ * @ingroup aux_vive
  */
 
 #pragma once
 
-#include <stdbool.h>
-
+#include "xrt/xrt_compiler.h"
 #include "xrt/xrt_defines.h"
+
 #include "util/u_logging.h"
 #include "util/u_distortion_mesh.h"
-#include "tracking/t_tracking.h"
+
 
 // public documentation
 #define INDEX_MIN_IPD 0.058
 #define INDEX_MAX_IPD 0.07
 
+// https://vr-compare.com/headset/htcvive
+// #define VIVE_MIN_IPD 0.061
+// #define VIVE_MAX_IPD 0.072
+
+// steamvr goes from ~60 to 75
+#define VIVE_MIN_IPD 0.060
+#define VIVE_MAX_IPD 0.075
+
 // arbitrary default values
 #define DEFAULT_HAPTIC_FREQ 150.0f
 #define MIN_HAPTIC_DURATION 0.05f
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/*!
+ * Headset variant.
+ *
+ * @ingroup aux_vive
+ */
 enum VIVE_VARIANT
 {
 	VIVE_UNKNOWN = 0,
 	VIVE_VARIANT_VIVE,
 	VIVE_VARIANT_PRO,
-	VIVE_VARIANT_INDEX
+	VIVE_VARIANT_INDEX,
+	VIVE_VARIANT_PRO2,
 };
 
+/*!
+ * Controller variant.
+ *
+ * @ingroup aux_vive
+ */
 enum VIVE_CONTROLLER_VARIANT
 {
 	CONTROLLER_VIVE_WAND,
@@ -40,11 +64,15 @@ enum VIVE_CONTROLLER_VARIANT
 	CONTROLLER_INDEX_RIGHT,
 	CONTROLLER_TRACKER_GEN1,
 	CONTROLLER_TRACKER_GEN2,
+	CONTROLLER_TRACKER_GEN3,
+	CONTROLLER_TRACKER_TUNDRA,
 	CONTROLLER_UNKNOWN
 };
 
 /*!
  * A calibrated camera on an Index.
+ *
+ * @ingroup aux_vive
  */
 struct index_camera
 {
@@ -82,6 +110,8 @@ struct index_camera
 
 /*!
  * A single lighthouse senosor point and normal, in IMU space.
+ *
+ * @ingroup aux_vive
  */
 struct lh_sensor
 {
@@ -95,6 +125,8 @@ struct lh_sensor
  * A lighthouse consisting of sensors.
  *
  * All sensors are placed in IMU space.
+ *
+ * @ingroup aux_vive
  */
 struct lh_model
 {
@@ -102,6 +134,11 @@ struct lh_model
 	size_t sensor_count;
 };
 
+/*!
+ * headset config.
+ *
+ * @ingroup aux_vive
+ */
 struct vive_config
 {
 	//! log level accessed by the config parser
@@ -150,7 +187,11 @@ struct vive_config
 		char device_serial_number[32];
 	} firmware;
 
-	struct u_vive_values distortion[2];
+	struct
+	{
+		struct u_vive_values values[2];
+		struct xrt_fov fov[2];
+	} distortion;
 
 	struct
 	{
@@ -170,6 +211,11 @@ struct vive_config
 	struct lh_model lh;
 };
 
+/*!
+ * Controller config.
+ *
+ * @ingroup aux_vive
+ */
 struct vive_controller_config
 {
 	enum u_logging_level log_level;
@@ -202,27 +248,38 @@ struct vive_controller_config
 	} imu;
 };
 
+
+/*
+ *
+ * Functions.
+ *
+ */
+
+/*!
+ * Parse a headset config.
+ *
+ * @ingroup aux_vive
+ */
 bool
 vive_config_parse(struct vive_config *d, char *json_string, enum u_logging_level log_level);
 
 /*!
  * Free any allocated resources on this config.
+ *
+ * @ingroup aux_vive
  */
 void
 vive_config_teardown(struct vive_config *config);
 
-struct vive_controller_device;
-
+/*!
+ * Parse a controller config.
+ *
+ * @ingroup aux_vive
+ */
 bool
 vive_config_parse_controller(struct vive_controller_config *d, char *json_string, enum u_logging_level log_level);
 
-bool
-vive_get_stereo_camera_calibration(struct vive_config *d,
-                                   struct t_stereo_camera_calibration **calibration_ptr_to_ref,
-                                   struct xrt_pose *out_head_in_left_camera);
 
-struct t_imu_calibration
-vive_get_imu_calibration(struct vive_config *d);
-
-struct t_slam_calib_extras
-vive_get_extra_calibration(struct vive_config *d);
+#ifdef __cplusplus
+} // extern "C"
+#endif

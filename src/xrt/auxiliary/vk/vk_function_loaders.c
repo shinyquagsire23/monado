@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -217,6 +217,7 @@ vk_get_device_functions(struct vk_bundle *vk)
 	vk->vkCmdCopyImage                              = GET_DEV_PROC(vk, vkCmdCopyImage);
 	vk->vkCmdCopyImageToBuffer                      = GET_DEV_PROC(vk, vkCmdCopyImageToBuffer);
 	vk->vkCmdBlitImage                              = GET_DEV_PROC(vk, vkCmdBlitImage);
+	vk->vkCmdPushConstants                          = GET_DEV_PROC(vk, vkCmdPushConstants);
 	vk->vkEndCommandBuffer                          = GET_DEV_PROC(vk, vkEndCommandBuffer);
 	vk->vkFreeCommandBuffers                        = GET_DEV_PROC(vk, vkFreeCommandBuffers);
 
@@ -312,7 +313,16 @@ vk_get_device_functions(struct vk_bundle *vk)
 
 #if defined(VK_EXT_image_drm_format_modifier)
 	vk->vkGetImageDrmFormatModifierPropertiesEXT    = GET_DEV_PROC(vk, vkGetImageDrmFormatModifierPropertiesEXT);
+
 #endif // defined(VK_EXT_image_drm_format_modifier)
+
+#if defined(VK_EXT_debug_marker)
+	vk->vkCmdDebugMarkerBeginEXT                    = GET_DEV_PROC(vk, vkCmdDebugMarkerBeginEXT);
+	vk->vkCmdDebugMarkerEndEXT                      = GET_DEV_PROC(vk, vkCmdDebugMarkerEndEXT);
+	vk->vkCmdDebugMarkerInsertEXT                   = GET_DEV_PROC(vk, vkCmdDebugMarkerInsertEXT);
+	vk->vkDebugMarkerSetObjectNameEXT               = GET_DEV_PROC(vk, vkDebugMarkerSetObjectNameEXT);
+	vk->vkDebugMarkerSetObjectTagEXT                = GET_DEV_PROC(vk, vkDebugMarkerSetObjectTagEXT);
+#endif // defined(VK_EXT_debug_marker)
 
 	// end of GENERATED device loader code - do not modify - used by scripts
 	// clang-format on

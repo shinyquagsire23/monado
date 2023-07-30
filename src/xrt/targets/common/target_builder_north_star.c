@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -89,6 +89,7 @@ struct ns_ultraleap_device
 struct ns_depthai_device
 {
 	bool active;
+	bool upside_down;
 	struct xrt_pose P_imu_to_left_camera_basalt;
 	struct xrt_pose P_middleofeyes_to_imu_oxr;
 };
@@ -149,6 +150,15 @@ ns_tracking_config_parse_depthai(struct ns_builder *nsb, bool *out_config_valid)
 		*out_config_valid = true;
 		// not invalid, but doesn't exist. active is not set and won't be used
 		return;
+	}
+
+	// Ad-hoc optional field - the only device that needs this is Moshi's personal NS, and they might rebuild it.
+	const cJSON *upside_down = u_json_get(root, "upside_down");
+
+	if (upside_down != NULL) {
+		u_json_get_bool(upside_down, &nsb->depthai_device.upside_down);
+	} else {
+		nsb->depthai_device.upside_down = false;
 	}
 
 	*out_config_valid = *out_config_valid && //
@@ -268,6 +278,7 @@ ns_setup_depthai_device(struct ns_builder *nsb,
                         struct xrt_device **out_head_device)
 {
 	struct depthai_slam_startup_settings settings = {0};
+	xrt_result_t xret;
 
 	settings.frames_per_second = 60;
 	settings.half_size_ov9282 = true;
@@ -287,18 +298,23 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
 	struct xrt_slam_sinks *hand_sinks = NULL;
 
-	struct t_camera_extra_info extra_camera_info;
-	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_180;
-	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_180;
+	struct t_camera_extra_info extra_camera_info = {0};
+
+	if (nsb->depthai_device.upside_down) {
+		extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_180;
+		extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_180;
+	} else {
+		extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
+		extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+	}
 
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
-	int create_status = ht_device_create(&usysd->xfctx,        //
-	                                     calib,                //
-	                                     HT_ALGORITHM_MERCURY, //
-	                                     extra_camera_info,    //
-	                                     &hand_sinks,          //
+	int create_status = ht_device_create(&usysd->xfctx,     //
+	                                     calib,             //
+	                                     extra_camera_info, //
+	                                     &hand_sinks,       //
 	                                     out_hand_device);
 	t_stereo_camera_calibration_reference(&calib, NULL);
 	if (create_status != 0) {
@@ -307,23 +323,31 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 #endif
 
 	struct xrt_slam_sinks *slam_sinks = NULL;
-	twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
+	xret = twrap_slam_create_device(&usysd->xfctx, XRT_DEVICE_DEPTHAI, &slam_sinks, out_head_device);
+	if (xret != XRT_SUCCESS) {
+		U_LOG_E("twrap_slam_create_device: %u", xret);
+		return xret;
+	}
+	if (slam_sinks == NULL) {
+		U_LOG_E("twrap_slam_create_device: Returned NULL slam_sinks!");
+		return XRT_ERROR_DEVICE_CREATION_FAILED;
+	}
 
 	struct xrt_slam_sinks entry_sinks = {0};
 	struct xrt_frame_sink *entry_left_sink = NULL;
 	struct xrt_frame_sink *entry_right_sink = NULL;
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	u_sink_split_create(&usysd->xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-	u_sink_split_create(&usysd->xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+	u_sink_split_create(&usysd->xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_left_sink);
+	u_sink_split_create(&usysd->xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_right_sink);
 #else
-	entry_left_sink = slam_sinks->left;
-	entry_right_sink = slam_sinks->right;
+	entry_left_sink = slam_sinks->cams[0];
+	entry_right_sink = slam_sinks->cams[1];
 #endif
 
 	entry_sinks = (struct xrt_slam_sinks){
-	    .left = entry_left_sink,
-	    .right = entry_right_sink,
+	    .cams[0] = entry_left_sink,
+	    .cams[1] = entry_right_sink,
 	    .imu = slam_sinks->imu,
 	    .gt = slam_sinks->gt,
 	};
@@ -331,8 +355,8 @@ ns_setup_depthai_device(struct ns_builder *nsb,
 	struct xrt_slam_sinks dummy_slam_sinks = {0};
 	dummy_slam_sinks.imu = entry_sinks.imu;
 
-	u_sink_force_genlock_create(&usysd->xfctx, entry_sinks.left, entry_sinks.right, &dummy_slam_sinks.left,
-	                            &dummy_slam_sinks.right);
+	u_sink_force_genlock_create(&usysd->xfctx, entry_sinks.cams[0], entry_sinks.cams[1], &dummy_slam_sinks.cams[0],
+	                            &dummy_slam_sinks.cams[1]);
 
 	xrt_fs_slam_stream_start(the_fs, &dummy_slam_sinks);
 
@@ -409,7 +433,11 @@ ns_estimate_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp,
 
 
 static xrt_result_t
-ns_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, struct xrt_system_devices **out_xsysd)
+ns_open_system(struct xrt_builder *xb,
+               cJSON *config,
+               struct xrt_prober *xp,
+               struct xrt_system_devices **out_xsysd,
+               struct xrt_space_overseer **out_xso)
 {
 	struct ns_builder *nsb = (struct ns_builder *)xb;
 
@@ -548,6 +576,7 @@ ns_open_system(struct xrt_builder *xb, cJSON *config, struct xrt_prober *xp, str
 end:
 	if (result == XRT_SUCCESS) {
 		*out_xsysd = &usysd->base;
+		u_builder_create_space_overseer(&usysd->base, out_xso);
 	} else {
 		u_system_devices_destroy(&usysd);
 	}

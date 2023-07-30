@@ -1,4 +1,5 @@
 // Copyright 2021, Mateo de Mayo.
+// Copyright 2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -9,9 +10,13 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 typedef union SDL_Event SDL_Event;
 
@@ -20,12 +25,13 @@ typedef union SDL_Event SDL_Event;
  * @ingroup drv
  *
  * @brief Driver for emulated HMD and controllers through keyboard and mouse.
- * @{
  */
 
-//! Create an auto prober for qwerty devices.
-struct xrt_auto_prober *
-qwerty_create_auto_prober(void);
+/*!
+ * @dir drivers/qwerty
+ *
+ * @brief @ref drv_qwerty files.
+ */
 
 /*!
  * Process an SDL_Event (like a key press) and dispatches a suitable action
@@ -35,19 +41,23 @@ qwerty_create_auto_prober(void);
  * physical controllers connected), though its memory will be modified by these
  * events regardless. A qwerty_hmd not in use will not be modified as it never
  * gets created.
+ *
+ * @ingroup drv_qwerty
  */
 void
 qwerty_process_event(struct xrt_device **xdevs, size_t xdev_count, SDL_Event event);
 
 /*!
- * @}
- */
-
-/*!
- * @dir drivers/qwerty
+ * Create all qwerty devices.
  *
- * @brief @ref drv_qwerty files.
+ * @ingroup drv_qwerty
  */
+xrt_result_t
+qwerty_create_devices(enum u_logging_level log_level,
+                      struct xrt_device **out_hmd,
+                      struct xrt_device **out_left,
+                      struct xrt_device **out_right);
+
 
 #ifdef __cplusplus
 }

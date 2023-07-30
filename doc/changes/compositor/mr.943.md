@@ -8,4 +8,4 @@
 - mr.1340
 ---
 
-Initial support for D3D11 client applications on Windows.
+client: Initial support for D3D11 client applications on Windows.

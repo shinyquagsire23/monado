@@ -12,6 +12,7 @@
 #include "wmr_protocol.h"
 
 #include "math/m_api.h"
+#include "math/m_clock_offset.h"
 #include "math/m_filter_fifo.h"
 #include "util/u_debug.h"
 #include "util/u_sink.h"
@@ -22,6 +23,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #define WMR_SOURCE_STR "WMR Source"
 
@@ -59,23 +61,22 @@ struct wmr_source
 	struct wmr_hmd_config config;
 	struct wmr_camera *camera;
 
-	// Sinks
-	struct xrt_frame_sink left_sink;  //!< Intermediate sink for left camera frames
-	struct xrt_frame_sink right_sink; //!< Intermediate sink for right camera frames
-	struct xrt_imu_sink imu_sink;     //!< Intermediate sink for IMU samples
-	struct xrt_slam_sinks in_sinks;   //!< Pointers to intermediate sinks
-	struct xrt_slam_sinks out_sinks;  //!< Pointers to downstream sinks
+	// Sinks (head tracking)
+	struct xrt_frame_sink cam_sinks[WMR_MAX_CAMERAS]; //!< Intermediate sinks for camera frames
+	struct xrt_imu_sink imu_sink;                     //!< Intermediate sink for IMU samples
+	struct xrt_slam_sinks in_sinks;                   //!< Pointers to intermediate sinks
+	struct xrt_slam_sinks out_sinks;                  //!< Pointers to downstream sinks
 
-	// UI Sinks
-	struct u_sink_debug ui_left_sink;  //!< Sink to display left frames in UI
-	struct u_sink_debug ui_right_sink; //!< Sink to display right frames in UI
-	struct m_ff_vec3_f32 *gyro_ff;     //!< Queue of gyroscope data to display in UI
-	struct m_ff_vec3_f32 *accel_ff;    //!< Queue of accelerometer data to display in UI
+	// UI Sinks (head tracking)
+	struct u_sink_debug ui_cam_sinks[WMR_MAX_CAMERAS]; //!< Sink to display camera frames in UI
+	struct m_ff_vec3_f32 *gyro_ff;                     //!< Queue of gyroscope data to display in UI
+	struct m_ff_vec3_f32 *accel_ff;                    //!< Queue of accelerometer data to display in UI
 
 	bool is_running;              //!< Whether the device is streaming
 	bool first_imu_received;      //!< Don't send frames until first IMU sample
+	timepoint_ns last_imu_ns;     //!< Last timepoint received.
 	time_duration_ns hw2mono;     //!< Estimated offset from IMU to monotonic clock
-	time_duration_ns cam_hw2mono; //!< Cache for hw2mono used in last left frame
+	time_duration_ns cam_hw2mono; //!< Caches hw2mono for use in the full frame bundle
 };
 
 /*
@@ -84,72 +85,64 @@ struct wmr_source
  *
  */
 
-/*!
- * Convert a hardware timestamp into monotonic clock. Updates offset estimate.
- * @note Only used with IMU samples as they have the smallest USB transmission time.
- *
- * @param ws wmr_source
- * @param[in, out] ts Hardware timestamp, gets converted to monotonic clock.
- */
-static inline void
-clock_hw2mono(struct wmr_source *ws, timepoint_ns *ts)
-{
-	const double alpha = 0.95; // Weight to put on accumulated hw2mono clock offset
-	timepoint_ns mono = os_monotonic_get_ns();
-	timepoint_ns hw = *ts;
-	time_duration_ns old_hw2mono = ws->hw2mono;
-	time_duration_ns got_hw2mono = mono - hw;
-	time_duration_ns new_hw2mono = old_hw2mono * alpha + got_hw2mono * (1.0 - alpha);
-	if (old_hw2mono == 0) { // hw2mono was not set for the first time yet
-		new_hw2mono = got_hw2mono;
+#define DEFINE_RECEIVE_CAM(cam_id)                                                                                     \
+	static void receive_cam##cam_id(struct xrt_frame_sink *sink, struct xrt_frame *xf)                             \
+	{                                                                                                              \
+		struct wmr_source *ws = container_of(sink, struct wmr_source, cam_sinks[cam_id]);                      \
+		if (cam_id == 0) {                                                                                     \
+			ws->cam_hw2mono = ws->hw2mono;                                                                 \
+		}                                                                                                      \
+		xf->timestamp += ws->cam_hw2mono;                                                                      \
+		WMR_TRACE(ws, "cam" #cam_id " img t=%" PRId64 " source_t=%" PRId64, xf->timestamp,                     \
+		          xf->source_timestamp);                                                                       \
+		u_sink_debug_push_frame(&ws->ui_cam_sinks[cam_id], xf);                                                \
+		if (ws->out_sinks.cams[cam_id] && ws->first_imu_received) {                                            \
+			xrt_sink_push_frame(ws->out_sinks.cams[cam_id], xf);                                           \
+		}                                                                                                      \
 	}
-	ws->hw2mono = new_hw2mono;
-	*ts = hw + new_hw2mono;
-}
 
-//! Camera specific logic for clock conversion
-static inline void
-clock_cam_hw2mono(struct wmr_source *ws, struct xrt_frame *xf, bool is_left)
-{
-	if (is_left) {
-		ws->cam_hw2mono = ws->hw2mono; // Cache last hw2mono used for right frame
-	}
-	xf->timestamp += ws->cam_hw2mono;
-}
+DEFINE_RECEIVE_CAM(0)
+DEFINE_RECEIVE_CAM(1)
+DEFINE_RECEIVE_CAM(2)
+DEFINE_RECEIVE_CAM(3)
 
-static void
-receive_left_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
-{
-	struct wmr_source *ws = container_of(sink, struct wmr_source, left_sink);
-	clock_cam_hw2mono(ws, xf, true);
-	WMR_TRACE(ws, "left img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
-	u_sink_debug_push_frame(&ws->ui_left_sink, xf);
-	if (ws->out_sinks.left && ws->first_imu_received) {
-		xrt_sink_push_frame(ws->out_sinks.left, xf);
-	}
-}
-
-static void
-receive_right_frame(struct xrt_frame_sink *sink, struct xrt_frame *xf)
-{
-	struct wmr_source *ws = container_of(sink, struct wmr_source, right_sink);
-	clock_cam_hw2mono(ws, xf, false);
-	WMR_TRACE(ws, "right img t=%ld source_t=%ld", xf->timestamp, xf->source_timestamp);
-	u_sink_debug_push_frame(&ws->ui_right_sink, xf);
-	if (ws->out_sinks.right && ws->first_imu_received) {
-		xrt_sink_push_frame(ws->out_sinks.right, xf);
-	}
-}
+//! Define a function for each WMR_MAX_CAMERAS and reference it in this array
+void (*receive_cam[WMR_MAX_CAMERAS])(struct xrt_frame_sink *, struct xrt_frame *) = {
+    receive_cam0, //
+    receive_cam1, //
+    receive_cam2, //
+    receive_cam3, //
+};
 
 static void
 receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 {
 	struct wmr_source *ws = container_of(sink, struct wmr_source, imu_sink);
-	clock_hw2mono(ws, &s->timestamp_ns);
-	timepoint_ns ts = s->timestamp_ns;
+
+	// Convert hardware timestamp into monotonic clock. Update offset estimate hw2mono.
+	// Note this is only done with IMU samples as they have the smallest USB transmission time.
+	const float IMU_FREQ = 250.f; //!< @todo use 1000 if "average_imus" is false
+	timepoint_ns now_hw = s->timestamp_ns;
+	timepoint_ns now_mono = (timepoint_ns)os_monotonic_get_ns();
+	timepoint_ns ts = m_clock_offset_a2b(IMU_FREQ, now_hw, now_mono, &ws->hw2mono);
+
+	/*
+	 * Check if the timepoint does time travel, we get one or two
+	 * old samples when the device has not been cleanly shut down.
+	 */
+	if (ws->last_imu_ns > ts) {
+		WMR_WARN(ws, "Received sample from the past, new: %" PRIu64 ", last: %" PRIu64 ", diff: %" PRIu64, ts,
+		         s->timestamp_ns, ts - s->timestamp_ns);
+		return;
+	}
+
+	ws->first_imu_received = true;
+	ws->last_imu_ns = ts;
+	s->timestamp_ns = ts;
+
 	struct xrt_vec3_f64 a = s->accel_m_s2;
 	struct xrt_vec3_f64 w = s->gyro_rad_secs;
-	WMR_TRACE(ws, "imu t=%ld a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
+	WMR_TRACE(ws, "imu t=%" PRId64 " a=(%f %f %f) w=(%f %f %f)", ts, a.x, a.y, a.z, w.x, w.y, w.z);
 
 	// Push to debug UI
 	struct xrt_vec3 gyro = {(float)w.x, (float)w.y, (float)w.z};
@@ -160,7 +153,6 @@ receive_imu_sample(struct xrt_imu_sink *sink, struct xrt_imu_sample *s)
 	if (ws->out_sinks.imu) {
 		xrt_sink_push_imu(ws->out_sinks.imu, s);
 	}
-	ws->first_imu_received = true;
 }
 
 
@@ -229,14 +221,15 @@ wmr_source_stream_start(struct xrt_fs *xfs,
 	if (xs == NULL && capture_type == XRT_FS_CAPTURE_TYPE_TRACKING) {
 		WMR_INFO(ws, "Starting WMR stream in tracking mode");
 	} else if (xs != NULL && capture_type == XRT_FS_CAPTURE_TYPE_CALIBRATION) {
-		WMR_INFO(ws, "Starting WMR stream in calibration mode, will stream only left frames");
-		ws->out_sinks.left = xs;
+		WMR_INFO(ws, "Starting WMR stream in calibration mode, will stream only cam0 frames");
+		ws->out_sinks.cam_count = 1;
+		ws->out_sinks.cams[0] = xs;
 	} else {
 		WMR_ASSERT(false, "Unsupported stream configuration xs=%p capture_type=%d", (void *)xs, capture_type);
 		return false;
 	}
 
-	bool started = wmr_camera_start(ws->camera, ws->config.cameras, ws->config.n_cameras);
+	bool started = wmr_camera_start(ws->camera);
 	if (!started) {
 		WMR_ERROR(ws, "Unable to start WMR cameras");
 		WMR_ASSERT_(false);
@@ -281,8 +274,9 @@ wmr_source_node_destroy(struct xrt_frame_node *node)
 
 	struct wmr_source *ws = container_of(node, struct wmr_source, node);
 	WMR_DEBUG(ws, "Destroying WMR source");
-	u_sink_debug_destroy(&ws->ui_left_sink);
-	u_sink_debug_destroy(&ws->ui_right_sink);
+	for (int i = 0; i < ws->config.tcam_count; i++) {
+		u_sink_debug_destroy(&ws->ui_cam_sinks[i]);
+	}
 	m_ff_vec3_f32_free(&ws->gyro_ff);
 	m_ff_vec3_f32_free(&ws->accel_ff);
 	u_var_remove_root(ws);
@@ -316,33 +310,51 @@ wmr_source_create(struct xrt_frame_context *xfctx, struct xrt_prober_device *dev
 	xfs->slam_stream_start = wmr_source_slam_stream_start;
 	xfs->stream_stop = wmr_source_stream_stop;
 	xfs->is_running = wmr_source_is_running;
-	snprintf(xfs->name, sizeof(xfs->name), WMR_SOURCE_STR);
-	snprintf(xfs->product, sizeof(xfs->product), WMR_SOURCE_STR " Product");
-	snprintf(xfs->manufacturer, sizeof(xfs->manufacturer), WMR_SOURCE_STR " Manufacturer");
-	snprintf(xfs->serial, sizeof(xfs->serial), WMR_SOURCE_STR " Serial");
-	xfs->source_id = 0x574d522d53524300; // WMR_SRC\0 in hex
+	(void)snprintf(xfs->name, sizeof(xfs->name), WMR_SOURCE_STR);
+	(void)snprintf(xfs->product, sizeof(xfs->product), WMR_SOURCE_STR " Product");
+	(void)snprintf(xfs->manufacturer, sizeof(xfs->manufacturer), WMR_SOURCE_STR " Manufacturer");
+	(void)snprintf(xfs->serial, sizeof(xfs->serial), WMR_SOURCE_STR " Serial");
+	xfs->source_id = *((uint64_t *)"WMR_SRC\0");
 
 	// Setup sinks
-	ws->left_sink.push_frame = receive_left_frame;
-	ws->right_sink.push_frame = receive_right_frame;
+	for (int i = 0; i < WMR_MAX_CAMERAS; i++) {
+		ws->cam_sinks[i].push_frame = receive_cam[i];
+	}
 	ws->imu_sink.push_imu = receive_imu_sample;
-	ws->in_sinks.left = &ws->left_sink;
-	ws->in_sinks.right = &ws->right_sink;
+
+	ws->in_sinks.cam_count = cfg.tcam_count;
+	for (int i = 0; i < cfg.tcam_count; i++) {
+		ws->in_sinks.cams[i] = &ws->cam_sinks[i];
+	}
 	ws->in_sinks.imu = &ws->imu_sink;
-	ws->camera = wmr_camera_open(dev_holo, ws->in_sinks.left, ws->in_sinks.right, ws->log_level);
+
+	struct wmr_camera_open_config options = {
+	    .dev_holo = dev_holo,
+	    .tcam_confs = cfg.tcams,
+	    .tcam_sinks = ws->in_sinks.cams,
+	    .tcam_count = cfg.tcam_count,
+	    .slam_cam_count = cfg.slam_cam_count,
+	    .log_level = ws->log_level,
+	};
+
+	ws->camera = wmr_camera_open(&options);
 	ws->config = cfg;
 
 	// Setup UI
-	u_sink_debug_init(&ws->ui_left_sink);
-	u_sink_debug_init(&ws->ui_right_sink);
+	for (int i = 0; i < cfg.tcam_count; i++) {
+		u_sink_debug_init(&ws->ui_cam_sinks[i]);
+	}
 	m_ff_vec3_f32_alloc(&ws->gyro_ff, 1000);
 	m_ff_vec3_f32_alloc(&ws->accel_ff, 1000);
 	u_var_add_root(ws, WMR_SOURCE_STR, false);
 	u_var_add_log_level(ws, &ws->log_level, "Log Level");
 	u_var_add_ro_ff_vec3_f32(ws, ws->gyro_ff, "Gyroscope");
 	u_var_add_ro_ff_vec3_f32(ws, ws->accel_ff, "Accelerometer");
-	u_var_add_sink_debug(ws, &ws->ui_left_sink, "Left Camera");
-	u_var_add_sink_debug(ws, &ws->ui_right_sink, "Right Camera");
+	for (int i = 0; i < cfg.tcam_count; i++) {
+		char label[] = "Camera NNNNNNNNNNN";
+		(void)snprintf(label, sizeof(label), "Camera %d", i);
+		u_var_add_sink_debug(ws, &ws->ui_cam_sinks[i], label);
+	}
 
 	// Setup node
 	struct xrt_frame_node *xfn = &ws->node;

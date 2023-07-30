@@ -5,6 +5,8 @@ Copyright 2021-2022, Collabora, Ltd. and the Monado contributors
 SPDX-License-Identifier: BSL-1.0
 -->
 
+[TOC]
+
 - Last updated: 12-September-2022
 
 When the service starts, an `xrt_instance` is created and selected, a native

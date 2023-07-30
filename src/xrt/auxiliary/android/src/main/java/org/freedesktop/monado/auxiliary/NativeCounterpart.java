@@ -20,11 +20,13 @@ import java.security.InvalidParameterException;
  * Object that tracks the native counterpart object for a type. Must be initialized on construction,
  * and may have its native code destroyed/discarded, but may not "re-seat" it to new native code
  * pointer.
+ *
+ * <p>Use as a member of any type with a native counterpart (a native-allocated-and-owned object
+ * that holds a reference to the owning class). Include the following field and delegating method to
+ * use (note: assumes you have a tag for logging purposes as TAG)
+ *
  * <p>
- * Use as a member of any type with a native counterpart (a native-allocated-and-owned object that
- * holds a reference to the owning class). Include the following field and delegating method to use
- * (note: assumes you have a tag for logging purposes as TAG)
- * <p>
+ *
  * <pre>
  * private final NativeCounterpart nativeCounterpart;
  *
@@ -33,36 +35,33 @@ import java.security.InvalidParameterException;
  *     nativeCounterpart.markAsDiscardedByNative(TAG);
  * }
  * </pre>
+ *
  * Then, initialize it in your constructor, call {@code markAsUsedByNativeCode()} where desired
- * (often in your constructor), and call {@code getNativePointer()} and
- * {@code blockUntilNativeDiscard()} as needed.
- * <p>
- * Your native code can use this to turn a void* into a jlong:
- * {@code static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))}
+ * (often in your constructor), and call {@code getNativePointer()} and {@code
+ * blockUntilNativeDiscard()} as needed.
+ *
+ * <p>Your native code can use this to turn a void* into a jlong: {@code static_cast<long
+ * long>(reinterpret_cast<intptr_t>(nativePointer))}
  */
 public final class NativeCounterpart {
-    /**
-     * Guards the usedByNativeCodeSync.
-     */
+    /** Guards the usedByNativeCodeSync. */
     private final Object usedByNativeCodeSync = new Object();
 
     /**
      * Indicates if the containing object is in use by native code.
-     * <p>
-     * Guarded by usedByNativeCodeSync.
+     *
+     * <p>Guarded by usedByNativeCodeSync.
      */
     private boolean usedByNativeCode = false;
 
-    /**
-     * Contains the pointer to the native counterpart object.
-     */
+    /** Contains the pointer to the native counterpart object. */
     private long nativePointer = 0;
 
     /**
      * Constructor
      *
      * @param nativePointer The native pointer, cast appropriately. Must be non-zero. Can cast like:
-     *                      {@code static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))}
+     *     {@code static_cast<long long>(reinterpret_cast<intptr_t>(nativePointer))}
      */
     public NativeCounterpart(long nativePointer) throws InvalidParameterException {
         if (nativePointer == 0) {
@@ -92,8 +91,10 @@ public final class NativeCounterpart {
     public void markAsDiscardedByNative(String TAG) {
         synchronized (usedByNativeCodeSync) {
             if (!usedByNativeCode) {
-                Log.w(TAG,
-                        "This should not have happened: Discarding by native code, but not marked as used!");
+                Log.w(
+                        TAG,
+                        "This should not have happened: Discarding by native code, but not marked"
+                                + " as used!");
             }
             usedByNativeCode = false;
             nativePointer = 0;
@@ -130,10 +131,8 @@ public final class NativeCounterpart {
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-            Log.i(TAG,
-                    "Interrupted while waiting for native code to finish up: " + e.toString());
+            Log.i(TAG, "Interrupted while waiting for native code to finish up: " + e);
             return false;
         }
-
     }
 }

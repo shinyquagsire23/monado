@@ -12,18 +12,65 @@
 #include "xrt/xrt_config_build.h"
 
 #include "util/u_debug.h"
+#include "u_json.h"
+#include "util/u_truncate_printf.h"
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
 
+
+/*
+ *
+ * Defines.
+ *
+ */
+
+/*
+ * Avoid 4K stack variables.
+ * https://learn.microsoft.com/en-us/windows/win32/devnotes/-win32-chkstk
+ */
+#define LOG_BUFFER_SIZE (3 * 1024)
+
+/*
+ * 16MB max binary data
+ */
+#define LOG_MAX_HEX_DUMP (0x00ffffff)
+
+#define LOG_MAX_HEX_DUMP_HUMAN_READABLE "16MB"
+
+/*
+ * Hex dumps put 16 bytes per line
+ */
+#define LOG_HEX_BYTES_PER_LINE (16)
+
+/*
+ * This is enough space for the line's bytes to be in both hex and ascii
+ */
+#define LOG_HEX_LINE_BUF_SIZE (128)
+
+/*
+ *
+ * Global log level functions.
+ *
+ */
+
 DEBUG_GET_ONCE_LOG_OPTION(global_log, "XRT_LOG", U_LOGGING_WARN)
+DEBUG_GET_ONCE_BOOL_OPTION(json_log, "XRT_JSON_LOG", false)
 
 enum u_logging_level
 u_log_get_global_level(void)
 {
 	return debug_get_log_option_global_log();
 }
+
+
+/*
+ *
+ * Logging sink.
+ *
+ */
 
 // Logging sink global data.
 static u_log_sink_func_t g_log_sink_func;
@@ -44,6 +91,112 @@ u_log_set_sink(u_log_sink_func_t func, void *data)
 		va_end(copy);                                                                                          \
 	}
 
+
+/*
+ *
+ * Hexdump functions.
+ *
+ */
+
+static void
+u_log_hexdump_line(char *buf, size_t offset, const uint8_t *data, size_t data_size)
+{
+	char *pos = buf;
+
+	if (data_size > LOG_HEX_BYTES_PER_LINE) {
+		data_size = LOG_HEX_BYTES_PER_LINE;
+	}
+
+	pos += sprintf(pos, "%08x: ", (uint32_t)offset);
+
+	char *ascii = pos + ((ptrdiff_t)LOG_HEX_BYTES_PER_LINE * 3) + 1;
+	size_t i;
+
+	for (i = 0; i < data_size; i++) {
+		pos += sprintf(pos, "%02x ", data[i]);
+
+		if (data[i] >= ' ' && data[i] <= '~') {
+			*ascii++ = data[i];
+		} else {
+			*ascii++ = '.';
+		}
+	}
+
+	/* Pad short lines with spaces, and null terminate */
+	while (i++ < LOG_HEX_BYTES_PER_LINE) {
+		pos += sprintf(pos, "   ");
+	}
+	/* Replace the first NULL terminator with a space */
+	*pos++ = ' ';
+	/* and set it after the ASCII representation */
+	*ascii++ = '\0';
+}
+
+void
+u_log_hex(const char *file,
+          int line,
+          const char *func,
+          enum u_logging_level level,
+          const uint8_t *data,
+          const size_t data_size)
+{
+	size_t offset = 0;
+
+	while (offset < data_size) {
+		char tmp[LOG_HEX_LINE_BUF_SIZE];
+		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
+		u_log(file, line, func, level, "%s", tmp);
+
+		offset += LOG_HEX_BYTES_PER_LINE;
+		/*
+		 * Limit the dump length to 16MB, this used to be 4GB which
+		 * would on 32bit system always evaltuate to false. So we have
+		 * the limit on something more sensible.
+		 */
+		if (offset > LOG_MAX_HEX_DUMP) {
+			u_log(file, line, func, level, "Truncating output over " LOG_MAX_HEX_DUMP_HUMAN_READABLE);
+			break;
+		}
+	}
+}
+
+void
+u_log_xdev_hex(const char *file,
+               int line,
+               const char *func,
+               enum u_logging_level level,
+               struct xrt_device *xdev,
+               const uint8_t *data,
+               const size_t data_size)
+{
+	size_t offset = 0;
+
+	while (offset < data_size) {
+		char tmp[LOG_HEX_LINE_BUF_SIZE];
+		u_log_hexdump_line(tmp, offset, data + offset, data_size - offset);
+		u_log_xdev(file, line, func, level, xdev, "%s", tmp);
+
+		offset += LOG_HEX_BYTES_PER_LINE;
+		/*
+		 * Limit the dump length to 16MB, this used to be 4GB which
+		 * would on 32bit system always evaltuate to false. So we have
+		 * the limit on something more sensible.
+		 */
+		if (offset > LOG_MAX_HEX_DUMP) {
+			u_log_xdev(file, line, func, level, xdev,
+			           "Truncating output over " LOG_MAX_HEX_DUMP_HUMAN_READABLE);
+			break;
+		}
+	}
+}
+
+
+/*
+ *
+ * Platform specific functions.
+ *
+ */
+
 #if defined(XRT_OS_ANDROID)
 
 #include <android/log.h>
@@ -63,110 +216,16 @@ u_log_convert_priority(enum u_logging_level level)
 	return ANDROID_LOG_INFO;
 }
 
-void
-u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
-{
-	// print_prefix(func, level);
-	android_LogPriority prio = u_log_convert_priority(level);
-	va_list args;
-	va_start(args, format);
-	DISPATCH_SINK(file, line, func, level, format, args);
-	__android_log_vprint(prio, func, format, args);
-	va_end(args);
-}
-
-void
-u_log_xdev(const char *file,
-           int line,
-           const char *func,
-           enum u_logging_level level,
-           struct xrt_device *xdev,
-           const char *format,
-           ...)
-{
-	android_LogPriority prio = u_log_convert_priority(level);
-	va_list args;
-	va_start(args, format);
-	DISPATCH_SINK(file, line, func, level, format, args);
-	__android_log_vprint(prio, func, format, args);
-	va_end(args);
-}
-
-
 #elif defined(XRT_OS_WINDOWS)
 
 #include <debugapi.h>
 
-static int
-print_prefix(int remainingBuf, char *buf, const char *func, enum u_logging_level level)
-{
-	int printed = 0;
-	switch (level) {
-	case U_LOGGING_TRACE: printed = sprintf_s(buf, remainingBuf, "TRACE "); break;
-	case U_LOGGING_DEBUG: printed = sprintf_s(buf, remainingBuf, "DEBUG "); break;
-	case U_LOGGING_INFO: printed = sprintf_s(buf, remainingBuf, " INFO "); break;
-	case U_LOGGING_WARN: printed = sprintf_s(buf, remainingBuf, " WARN "); break;
-	case U_LOGGING_ERROR: printed = sprintf_s(buf, remainingBuf, "ERROR "); break;
-	case U_LOGGING_RAW: break;
-	default: break;
-	}
-
-	if (level != U_LOGGING_RAW && func != NULL) {
-		printed += sprintf_s(buf + printed, remainingBuf - printed, "[%s] ", func);
-	}
-	return printed;
-}
-
-void
-u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
-{
-
-	char buf[16384] = {0};
-
-	int remainingBuffer = sizeof(buf) - 2; // 2 for \n\0
-	int printed = print_prefix(remainingBuffer, buf, func, level);
-
-	va_list args;
-	va_start(args, format);
-	DISPATCH_SINK(file, line, func, level, format, args);
-	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
-	va_end(args);
-	buf[printed++] = '\n';
-	buf[printed++] = '\0';
-	OutputDebugStringA(buf);
-	fprintf(stderr, "%s", buf);
-}
-
-void
-u_log_xdev(const char *file,
-           int line,
-           const char *func,
-           enum u_logging_level level,
-           struct xrt_device *xdev,
-           const char *format,
-           ...)
-{
-
-	char buf[16384] = {0};
-
-	int remainingBuffer = sizeof(buf) - 2; // 2 for \n\0
-	int printed = print_prefix(remainingBuffer, buf, func, level);
-
-	va_list args;
-	va_start(args, format);
-	DISPATCH_SINK(file, line, func, level, format, args);
-	printed += vsprintf_s(buf + printed, remainingBuffer - printed, format, args);
-	va_end(args);
-	buf[printed++] = '\n';
-	buf[printed++] = '\0';
-	OutputDebugStringA(buf);
-	fprintf(stderr, "%s", buf);
-}
-
-
 #else
 
 #include <unistd.h>
+
+#endif
+
 
 /*
  *
@@ -174,6 +233,16 @@ u_log_xdev(const char *file,
  *
  */
 
+#define CHECK_RET_AND_UPDATE_STATE()                                                                                   \
+	do {                                                                                                           \
+		if (ret < 0) {                                                                                         \
+			return ret;                                                                                    \
+		}                                                                                                      \
+                                                                                                                       \
+		printed += ret; /* Is not negative, checked above. */                                                  \
+		remaining -= ret;                                                                                      \
+		buf += ret; /* Continue in the buffer from where we left off. */                                       \
+	} while (false);
 
 #ifdef XRT_FEATURE_COLOR_LOG
 #define COLOR_TRACE "\033[2m"
@@ -183,51 +252,157 @@ u_log_xdev(const char *file,
 #define COLOR_ERROR "\033[31m"
 #define COLOR_RESET "\033[0m"
 
-static void
-print_prefix_color(const char *func, enum u_logging_level level)
+static int
+print_prefix_color(const char *func, enum u_logging_level level, char *buf, int remaining)
 {
 	switch (level) {
-	case U_LOGGING_TRACE: fprintf(stderr, COLOR_TRACE "TRACE " COLOR_RESET); break;
-	case U_LOGGING_DEBUG: fprintf(stderr, COLOR_DEBUG "DEBUG " COLOR_RESET); break;
-	case U_LOGGING_INFO: fprintf(stderr, COLOR_INFO " INFO " COLOR_RESET); break;
-	case U_LOGGING_WARN: fprintf(stderr, COLOR_WARN " WARN " COLOR_RESET); break;
-	case U_LOGGING_ERROR: fprintf(stderr, COLOR_ERROR "ERROR " COLOR_RESET); break;
-	case U_LOGGING_RAW: break;
-	default: break;
+	case U_LOGGING_TRACE: return u_truncate_snprintf(buf, remaining, COLOR_TRACE "TRACE " COLOR_RESET);
+	case U_LOGGING_DEBUG: return u_truncate_snprintf(buf, remaining, COLOR_DEBUG "DEBUG " COLOR_RESET);
+	case U_LOGGING_INFO: return u_truncate_snprintf(buf, remaining, COLOR_INFO " INFO " COLOR_RESET);
+	case U_LOGGING_WARN: return u_truncate_snprintf(buf, remaining, COLOR_WARN " WARN " COLOR_RESET);
+	case U_LOGGING_ERROR: return u_truncate_snprintf(buf, remaining, COLOR_ERROR "ERROR " COLOR_RESET);
+	case U_LOGGING_RAW: return 0;
+	default: return 0;
 	}
 }
 #endif
 
-static void
-print_prefix_mono(const char *func, enum u_logging_level level)
+static int
+print_prefix_mono(const char *func, enum u_logging_level level, char *buf, int remaining)
 {
 	switch (level) {
-	case U_LOGGING_TRACE: fprintf(stderr, "TRACE "); break;
-	case U_LOGGING_DEBUG: fprintf(stderr, "DEBUG "); break;
-	case U_LOGGING_INFO: fprintf(stderr, " INFO "); break;
-	case U_LOGGING_WARN: fprintf(stderr, " WARN "); break;
-	case U_LOGGING_ERROR: fprintf(stderr, "ERROR "); break;
-	case U_LOGGING_RAW: break;
-	default: break;
+	case U_LOGGING_TRACE: return u_truncate_snprintf(buf, remaining, "TRACE ");
+	case U_LOGGING_DEBUG: return u_truncate_snprintf(buf, remaining, "DEBUG ");
+	case U_LOGGING_INFO: return u_truncate_snprintf(buf, remaining, " INFO ");
+	case U_LOGGING_WARN: return u_truncate_snprintf(buf, remaining, " WARN ");
+	case U_LOGGING_ERROR: return u_truncate_snprintf(buf, remaining, "ERROR ");
+	case U_LOGGING_RAW: return 0;
+	default: return 0;
 	}
 }
 
-static void
-print_prefix(const char *func, enum u_logging_level level)
+static int
+print_prefix(const char *func, enum u_logging_level level, char *buf, int remaining)
 {
+	int printed = 0;
+	int ret = 0;
+
 #ifdef XRT_FEATURE_COLOR_LOG
 	if (isatty(STDERR_FILENO)) {
-		print_prefix_color(func, level);
+		ret = print_prefix_color(func, level, buf, remaining);
 	} else {
-		print_prefix_mono(func, level);
+		ret = print_prefix_mono(func, level, buf, remaining);
 	}
 #else
-	print_prefix_mono(func, level);
+	ret = print_prefix_mono(func, level, buf, remaining);
 #endif
 
+	// Does what it says.
+	CHECK_RET_AND_UPDATE_STATE();
+
+	// Print the function name.
 	if (level != U_LOGGING_RAW && func != NULL) {
-		fprintf(stderr, "[%s] ", func);
+		ret = u_truncate_snprintf(buf, remaining, "[%s] ", func);
 	}
+
+	// Does what it says.
+	CHECK_RET_AND_UPDATE_STATE();
+
+	// Total printed characters.
+	return printed;
+}
+
+static int
+log_as_json(const char *file, const char *func, enum u_logging_level level, const char *format, va_list args)
+{
+	cJSON *root = cJSON_CreateObject();
+
+	char *level_s;
+	switch (level) {
+	case U_LOGGING_TRACE: level_s = "trace"; break;
+	case U_LOGGING_DEBUG: level_s = "debug"; break;
+	case U_LOGGING_INFO: level_s = "info"; break;
+	case U_LOGGING_WARN: level_s = "warn"; break;
+	case U_LOGGING_ERROR: level_s = "error"; break;
+	default: level_s = "raw"; break;
+	}
+
+	// Add metadata.
+	cJSON_AddItemToObject(root, "level", cJSON_CreateString(level_s));
+	cJSON_AddItemToObject(root, "file", cJSON_CreateString(file));
+	cJSON_AddItemToObject(root, "func", cJSON_CreateString(func));
+
+	// Add message.
+	char msg_buf[LOG_BUFFER_SIZE];
+	vsprintf(msg_buf, format, args);
+	cJSON_AddItemToObject(root, "message", cJSON_CreateString(msg_buf));
+
+	// Get string and print to stderr.
+	char *out = cJSON_PrintUnformatted(root);
+	int printed = fprintf(stderr, "%s\n", out);
+
+	// Clean up after us.
+	cJSON_Delete(root);
+	cJSON_free(out);
+
+	return printed;
+}
+
+static int
+do_print(const char *file, int line, const char *func, enum u_logging_level level, const char *format, va_list args)
+{
+	if (debug_get_bool_option_json_log()) {
+		return log_as_json(file, func, level, format, args);
+	}
+
+	char storage[LOG_BUFFER_SIZE];
+
+	int remaining = sizeof(storage) - 2; // 2 for \n\0
+	int printed = 0;
+	char *buf = storage; // We update the pointer.
+	int ret = 0;
+
+	// The prefix of the log.
+	ret = print_prefix(func, level, buf, remaining);
+
+	// Does what it says.
+	CHECK_RET_AND_UPDATE_STATE();
+
+	ret = u_truncate_vsnprintf(buf, remaining, format, args);
+
+	// Does what it says.
+	CHECK_RET_AND_UPDATE_STATE();
+
+	/*
+	 * The variable storage now holds the entire null-terminated message,
+	 * but without a new-line character, proceed to output it.
+	 */
+	assert(storage[printed] == '\0');
+
+
+#ifdef XRT_OS_ANDROID
+
+	android_LogPriority prio = u_log_convert_priority(level);
+	__android_log_write(prio, func, storage);
+
+#elif defined XRT_OS_WINDOWS || defined XRT_OS_LINUX
+
+	// We want a newline, so add it, then null-terminate again.
+	storage[printed++] = '\n';
+	storage[printed] = '\0'; // Don't count zero termination as printed.
+
+#if defined XRT_OS_WINDOWS
+	// Visual Studio output needs the newline char
+	OutputDebugStringA(storage);
+#endif
+
+	fwrite(storage, printed, 1, stderr);
+
+#else
+#error "Port needed for logging function"
+#endif
+
+	return printed;
 }
 
 
@@ -240,15 +415,11 @@ print_prefix(const char *func, enum u_logging_level level)
 void
 u_log(const char *file, int line, const char *func, enum u_logging_level level, const char *format, ...)
 {
-	print_prefix(func, level);
-
 	va_list args;
 	va_start(args, format);
 	DISPATCH_SINK(file, line, func, level, format, args);
-	vfprintf(stderr, format, args);
+	do_print(file, line, func, level, format, args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
 
 void
@@ -260,14 +431,9 @@ u_log_xdev(const char *file,
            const char *format,
            ...)
 {
-	print_prefix(func, level);
-
 	va_list args;
 	va_start(args, format);
 	DISPATCH_SINK(file, line, func, level, format, args);
-	vfprintf(stderr, format, args);
+	do_print(file, line, func, level, format, args);
 	va_end(args);
-
-	fprintf(stderr, "\n");
 }
-#endif

@@ -1,4 +1,4 @@
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -130,6 +130,9 @@ struct sdl_program
 	//! System devices base.
 	struct xrt_system_devices xsysd_base;
 
+	//! Space overseer, implemented for now using helper code.
+	struct xrt_space_overseer *xso;
+
 	//! SDL compositor struct.
 	struct sdl_compositor c;
 
@@ -211,14 +214,14 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_TRACE(sp, ...) U_LOG_IFL_T(sp->log_level, __VA_ARGS__);
+#define ST_TRACE(sp, ...) U_LOG_IFL_T(sp->log_level, __VA_ARGS__);
 
 /*!
  * Debug level logging.
  *
  * @relates sdl_program
  */
-#define SP_DEBUG(sp, ...) U_LOG_IFL_D(sp->log_level, __VA_ARGS__);
+#define ST_DEBUG(sp, ...) U_LOG_IFL_D(sp->log_level, __VA_ARGS__);
 
 /*!
  * Info level logging.
@@ -226,7 +229,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_INFO(sp, ...) U_LOG_IFL_I(sp->log_level, __VA_ARGS__);
+#define ST_INFO(sp, ...) U_LOG_IFL_I(sp->log_level, __VA_ARGS__);
 
 /*!
  * Warn level logging.
@@ -234,7 +237,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_WARN(sp, ...) U_LOG_IFL_W(sp->log_level, __VA_ARGS__);
+#define ST_WARN(sp, ...) U_LOG_IFL_W(sp->log_level, __VA_ARGS__);
 
 /*!
  * Error level logging.
@@ -242,7 +245,7 @@ from_comp(struct xrt_compositor *xc)
  * @relates sdl_program
  * @ingroup sdl_test
  */
-#define SP_ERROR(sp, ...) U_LOG_IFL_E(sp->log_level, __VA_ARGS__);
+#define ST_ERROR(sp, ...) U_LOG_IFL_E(sp->log_level, __VA_ARGS__);
 
 /*!
  * Check for OpenGL errors, context needs to be current.
@@ -386,7 +389,7 @@ sdl_instance_init(struct sdl_program *sp);
  * @ingroup sdl_test
  */
 struct sdl_program *
-sdl_program_plus_create();
+sdl_program_plus_create(void);
 
 /*!
  * Render a frame, called by the compositor when layers have been committed.

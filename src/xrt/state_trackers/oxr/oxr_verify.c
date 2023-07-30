@@ -269,7 +269,7 @@ subaction_path_no_dups(struct oxr_logger *log,
 
 	OXR_FOR_EACH_VALID_SUBACTION_PATH(HANDLE_SUBACTION_PATH)
 	{
-		// else clasue
+		// else clause
 		const char *str = NULL;
 		size_t length = 0;
 
@@ -317,7 +317,7 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
 }
 
 XrResult
-oxr_verify_subaction_path_sync(struct oxr_logger *log, struct oxr_instance *inst, XrPath path, uint32_t index)
+oxr_verify_subaction_path_sync(struct oxr_logger *log, const struct oxr_instance *inst, XrPath path, uint32_t index)
 {
 #define VERIFY_PATH(X)                                                                                                 \
 	else if (path == inst->path_cache.X)                                                                           \

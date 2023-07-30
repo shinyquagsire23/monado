@@ -9,23 +9,24 @@
  * @ingroup drv_cemu
  */
 
-#include "ht_ctrl_emu_interface.h"
-
 #include "xrt/xrt_defines.h"
+#include "xrt/xrt_device.h"
+
+#include "os/os_time.h"
 
 #include "math/m_api.h"
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 
-#include "util/u_debug.h"
+#include "util/u_var.h"
 #include "util/u_time.h"
+#include "util/u_misc.h"
+#include "util/u_debug.h"
 #include "util/u_device.h"
 #include "util/u_distortion_mesh.h"
-#include "util/u_var.h"
 #include "util/u_config_json.h"
 
-#include "os/os_time.h"
-#include "xrt/xrt_device.h"
+#include "ht_ctrl_emu_interface.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -369,10 +370,10 @@ decide(xrt_vec3 one, xrt_vec3 two, bool *out)
 	float dist = m_vec3_len_sqrd(one - two);
 	// These used to be 0.02f and 0.04f, but I bumped them way up to compensate for bad tracking. Once our tracking
 	// is better, bump these back down.
-	float activation_dist = 0.04f;
-	float deactivation_dist = 0.1f;
+	float activation_dist = 0.02f;
+	float deactivation_dist = 0.04f;
 	const float pinch_activation_dist =
-	    (*out ? activation_dist * activation_dist : deactivation_dist * deactivation_dist);
+	    (*out ? deactivation_dist * deactivation_dist : activation_dist * activation_dist);
 
 	*out = (dist < pinch_activation_dist);
 }

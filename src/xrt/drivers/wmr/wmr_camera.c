@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#include "math/m_api.h"
 #include "os/os_threading.h"
 #include "util/u_autoexpgain.h"
 #include "util/u_debug.h"
@@ -24,14 +25,18 @@
 #include "util/u_frame.h"
 #include "util/u_trace_marker.h"
 
+#include "wmr_config.h"
 #include "wmr_protocol.h"
 #include "wmr_camera.h"
 
 //! Specifies whether the user wants to enable autoexposure from the start.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_autoexposure, "WMR_AUTOEXPOSURE", true)
 
+//! Specifies whether the user wants to use the same exp/gain values for all cameras
+DEBUG_GET_ONCE_BOOL_OPTION(wmr_unify_expgain, "WMR_UNIFY_EXPGAIN", false)
+
 static int
-update_expgain(struct wmr_camera *cam, struct xrt_frame *xf);
+update_expgain(struct wmr_camera *cam, struct xrt_frame **frames);
 
 /*
  *
@@ -55,6 +60,12 @@ update_expgain(struct wmr_camera *cam, struct xrt_frame *xf);
 
 #define DEFAULT_EXPOSURE 6000
 #define DEFAULT_GAIN 127
+
+#define WMR_FRAMETYPE_SLAM 0x0
+#define WMR_FRAMETYPE_CONTROLLER 0x2
+
+#define WMR_DEBUG_SINK_SLAM 0
+#define WMR_DEBUG_SINK_CONTROLLER 1
 
 struct wmr_camera_active_cmd
 {
@@ -84,8 +95,9 @@ struct wmr_camera
 	struct os_thread_helper usb_thread;
 	int usb_complete;
 
-	const struct wmr_camera_config *configs;
-	int config_count;
+	struct wmr_camera_config tcam_confs[WMR_MAX_CAMERAS]; //!< Configs for tracking cameras
+	int tcam_count;                                       //!< Number of tracking cameras
+	int slam_cam_count;                                   //!< Number of tracking cameras used for SLAM
 
 	size_t xfer_size;
 	uint32_t frame_width, frame_height;
@@ -97,16 +109,19 @@ struct wmr_camera
 
 	struct libusb_transfer *xfers[NUM_XFERS];
 
-	bool manual_control; //!< Whether to control exp/gain manually or with aeg
-	uint16_t last_exposure, exposure;
-	uint8_t last_gain, gain;
-	struct u_var_draggable_u16 exposure_ui; //! Widget to control `exposure` value
-	struct u_autoexpgain *aeg;
+	struct wmr_camera_expgain
+	{
+		bool manual_control; //!< Whether to control exp/gain manually or with aeg
+		uint16_t last_exposure, exposure;
+		uint8_t last_gain, gain;
+		struct u_var_draggable_u16 exposure_ui; //! Widget to control `exposure` value
+		struct u_autoexpgain *aeg;
+	} ceg[WMR_MAX_CAMERAS]; //!< Camera exposure-gain control
+	bool unify_expgains;    //!< Whether to use the same exposure/gain values for all cameras
 
 	struct u_sink_debug debug_sinks[2];
 
-	struct xrt_frame_sink *left_sink;  //!< Downstream sinks to push left tracking frames to
-	struct xrt_frame_sink *right_sink; //!< Downstream sinks to push right tracking frames to
+	struct xrt_frame_sink *cam_sinks[WMR_MAX_CAMERAS]; //!< Downstream sinks to push tracking frames to
 
 	enum u_logging_level log_level;
 };
@@ -158,11 +173,8 @@ compute_frame_size(struct wmr_camera *cam)
 
 	F = 26;
 
-	for (i = 0; i < cam->config_count; i++) {
-		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
-			continue;
-		}
+	for (i = 0; i < cam->tcam_count; i++) {
+		const struct wmr_camera_config *config = &cam->tcam_confs[i];
 
 		WMR_CAM_DEBUG(cam, "Found head tracking camera index %d width %d height %d", i, config->roi.extent.w,
 		              config->roi.extent.h);
@@ -207,7 +219,7 @@ compute_frame_size(struct wmr_camera *cam)
 static void *
 wmr_cam_usb_thread(void *ptr)
 {
-	DRV_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("WMR: USB-Camera");
 
 	struct wmr_camera *cam = ptr;
 
@@ -223,6 +235,7 @@ wmr_cam_usb_thread(void *ptr)
 	//! @todo Think this is not needed? what condition are we waiting for?
 	os_thread_helper_wait_locked(&cam->usb_thread);
 	os_thread_helper_unlock(&cam->usb_thread);
+
 	return NULL;
 }
 
@@ -295,6 +308,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	size_t dst_remain = xf->size;
 	const size_t chunk_size = 0x6000 - 32;
 
+	DRV_TRACE_BEGIN(copy_to_frame);
 	while (dst_remain > 0) {
 		const size_t to_copy = dst_remain > chunk_size ? chunk_size : dst_remain;
 
@@ -313,6 +327,7 @@ img_xfer_cb(struct libusb_transfer *xfer)
 		dst += to_copy;
 		dst_remain -= to_copy;
 	}
+	DRV_TRACE_END(copy_to_frame);
 
 	/* There should be exactly a 26 byte footer left over */
 	assert(xfer->buffer + xfer->length - src == 26);
@@ -331,11 +346,18 @@ img_xfer_cb(struct libusb_transfer *xfer)
 
 	uint16_t unknown16 = read16(&src);
 	uint16_t unknown16_2 = read16(&src);
+	src += 4; // Skip "Dlo+" magic bytes
+	uint16_t frametype = read16(&src);
+	/* frametype 0 is SLAM, frametype 2 is controller tracking */
+	bool slam_tracking_frame = (frametype == WMR_FRAMETYPE_SLAM);
 
-	WMR_CAM_TRACE(
-	    cam, "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64 " unknown %u %u",
-	    frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2);
+	WMR_CAM_TRACE(cam,
+	              "Frame start TS %" PRIu64 " (%" PRIi64 " since last) end %" PRIu64 " dt %" PRIi64
+	              " unknown %u %u frame type %u",
+	              frame_start_ts, frame_start_ts - cam->last_frame_ts, frame_end_ts, delta, unknown16, unknown16_2,
+	              frametype);
 
+	/* Read values from the pixel header */
 	uint16_t exposure = xf->data[6] << 8 | xf->data[7];
 	uint8_t seq = xf->data[89];
 	uint8_t seq_delta = seq - cam->last_seq;
@@ -353,34 +375,31 @@ img_xfer_cb(struct libusb_transfer *xfer)
 	cam->last_frame_ts = frame_start_ts;
 	cam->last_seq = seq;
 
-	/* Exposure of 0 is a dark frame for controller tracking (usually ~60fps) */
-	int sink_index = (exposure == 0) ? 1 : 0;
-
+	/* Push to the appropriate debug output based on frame type */
+	int sink_index = slam_tracking_frame ? WMR_DEBUG_SINK_SLAM : WMR_DEBUG_SINK_CONTROLLER;
 	if (u_sink_debug_is_active(&cam->debug_sinks[sink_index])) {
 		u_sink_debug_push_frame(&cam->debug_sinks[sink_index], xf);
 	}
 
 	// Push to sinks
-	bool tracking_frame = sink_index == 0;
-	if (tracking_frame) {
+	if (slam_tracking_frame) {
+		DRV_TRACE_IDENT(push_to_sinks);
+
 		// Tracking frames usually come at ~30fps
-		struct xrt_frame *xf_left = NULL;
-		struct xrt_frame *xf_right = NULL;
-		u_frame_create_roi(xf, cam->configs[0].roi, &xf_left);
-		u_frame_create_roi(xf, cam->configs[1].roi, &xf_right);
-
-		update_expgain(cam, xf_left);
-
-		if (cam->left_sink != NULL) {
-			xrt_sink_push_frame(cam->left_sink, xf_left);
+		struct xrt_frame *frames[WMR_MAX_CAMERAS] = {NULL};
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			u_frame_create_roi(xf, cam->tcam_confs[i].roi, &frames[i]);
 		}
 
-		if (cam->right_sink != NULL) {
-			xrt_sink_push_frame(cam->right_sink, xf_right);
+		update_expgain(cam, frames);
+
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			xrt_sink_push_frame(cam->cam_sinks[i], frames[i]);
 		}
 
-		xrt_frame_reference(&xf_left, NULL);
-		xrt_frame_reference(&xf_right, NULL);
+		for (int i = 0; i < cam->slam_cam_count; i++) {
+			xrt_frame_reference(&frames[i], NULL);
+		}
 	}
 
 	xrt_frame_reference(&xf, NULL);
@@ -397,10 +416,7 @@ out:
  */
 
 struct wmr_camera *
-wmr_camera_open(struct xrt_prober_device *dev_holo,
-                struct xrt_frame_sink *left_sink,
-                struct xrt_frame_sink *right_sink,
-                enum u_logging_level log_level)
+wmr_camera_open(struct wmr_camera_open_config *config)
 {
 	DRV_TRACE_MARKER();
 
@@ -408,9 +424,14 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 	int res;
 	int i;
 
-	cam->log_level = log_level;
-	cam->exposure = DEFAULT_EXPOSURE;
-	cam->gain = DEFAULT_GAIN;
+	cam->tcam_count = config->tcam_count;
+	cam->slam_cam_count = config->slam_cam_count;
+	cam->log_level = config->log_level;
+
+	for (int i = 0; i < cam->tcam_count; i++) {
+		cam->tcam_confs[i] = *config->tcam_confs[i];
+		cam->cam_sinks[i] = config->tcam_sinks[i];
+	}
 
 	if (os_thread_helper_init(&cam->usb_thread) != 0) {
 		WMR_CAM_ERROR(cam, "Failed to initialise threading");
@@ -423,6 +444,7 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 		goto fail;
 	}
 
+	struct xrt_prober_device *dev_holo = config->dev_holo;
 	cam->dev = libusb_open_device_with_vid_pid(cam->ctx, dev_holo->vendor_id, dev_holo->product_id);
 	if (cam->dev == NULL) {
 		goto fail;
@@ -449,31 +471,60 @@ wmr_camera_open(struct xrt_prober_device *dev_holo,
 
 	bool enable_aeg = debug_get_bool_option_wmr_autoexposure();
 	int frame_delay = 3; // WMR takes about three frames until the cmd changes the image
-	cam->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
+	cam->unify_expgains = debug_get_bool_option_wmr_unify_expgain();
 
-	cam->exposure_ui.val = &cam->exposure;
-	cam->exposure_ui.max = WMR_MAX_EXPOSURE;
-	cam->exposure_ui.min = WMR_MIN_EXPOSURE;
-	cam->exposure_ui.step = 25;
+	for (int i = 0; i < cam->tcam_count; i++) {
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+		ceg->manual_control = false;
+		ceg->last_exposure = DEFAULT_EXPOSURE;
+		ceg->exposure = DEFAULT_EXPOSURE;
+		ceg->last_gain = DEFAULT_GAIN;
+		ceg->gain = DEFAULT_GAIN;
+		ceg->exposure_ui.val = &ceg->exposure;
+		ceg->exposure_ui.max = WMR_MAX_EXPOSURE;
+		ceg->exposure_ui.min = WMR_MIN_EXPOSURE;
+		ceg->exposure_ui.step = 25;
+		ceg->aeg = u_autoexpgain_create(U_AEG_STRATEGY_TRACKING, enable_aeg, frame_delay);
+	}
 
-	u_sink_debug_init(&cam->debug_sinks[0]);
-	u_sink_debug_init(&cam->debug_sinks[1]);
+	u_sink_debug_init(&cam->debug_sinks[WMR_DEBUG_SINK_SLAM]);
+	u_sink_debug_init(&cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER]);
 	u_var_add_root(cam, "WMR Camera", true);
 	u_var_add_log_level(cam, &cam->log_level, "Log level");
-	u_var_add_bool(cam, &cam->manual_control, "Manual exposure and gain control");
-	u_var_add_draggable_u16(cam, &cam->exposure_ui, "Exposure (usec)");
-	u_var_add_u8(cam, &cam->gain, "Gain");
-	u_var_add_gui_header(cam, NULL, "Auto exposure and gain control");
-	u_autoexpgain_add_vars(cam->aeg, cam);
-	u_var_add_gui_header(cam, NULL, "Camera Streams");
-	u_var_add_sink_debug(cam, &cam->debug_sinks[0], "Tracking Streams");
-	u_var_add_sink_debug(cam, &cam->debug_sinks[1], "Controller Streams");
 
-	cam->left_sink = left_sink;
-	cam->right_sink = right_sink;
+	u_var_add_gui_header_begin(cam, NULL, "Camera Streams");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[WMR_DEBUG_SINK_SLAM], "SLAM Tracking Streams");
+	u_var_add_sink_debug(cam, &cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER], "Controller Tracking Streams");
+	u_var_add_gui_header_end(cam, NULL, NULL);
+
+	u_var_add_gui_header_begin(cam, NULL, "Exposure and gain control");
+	u_var_add_bool(cam, &cam->unify_expgains, "Use same values");
+
+	for (int i = 0; i < cam->tcam_count; i++) {
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+		char label[256] = {0};
+
+		(void)snprintf(label, sizeof(label), "Control for camera %d", i);
+		u_var_add_gui_header_begin(cam, NULL, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Manual exposure and gain control", i);
+		u_var_add_bool(cam, &ceg->manual_control, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Exposure (usec)", i);
+		u_var_add_draggable_u16(cam, &ceg->exposure_ui, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] Gain", i);
+		u_var_add_u8(cam, &ceg->gain, label);
+
+		(void)snprintf(label, sizeof(label), "[%d] ", i);
+		u_autoexpgain_add_vars(ceg->aeg, cam, label);
+
+		u_var_add_gui_header_end(cam, NULL, NULL);
+	}
+
+	u_var_add_gui_header_end(cam, NULL, "Auto exposure and gain control END");
 
 	return cam;
-
 
 fail:
 	WMR_CAM_ERROR(cam, "Failed to open camera: %s", libusb_error_name(res));
@@ -503,32 +554,33 @@ wmr_camera_free(struct wmr_camera *cam)
 		os_thread_helper_destroy(&cam->usb_thread);
 
 		for (i = 0; i < NUM_XFERS; i++) {
-			if (cam->xfers[i] != NULL)
-				libusb_free_transfer(cam->xfers[i]);
+			if (cam->xfers[i] == NULL) {
+				continue;
+			}
+
+			libusb_free_transfer(cam->xfers[i]);
+			cam->xfers[i] = NULL;
 		}
 
 		libusb_exit(cam->ctx);
+		cam->ctx = NULL;
 	}
 
 	// Tidy the variable tracking.
 	u_var_remove_root(cam);
-	u_sink_debug_destroy(&cam->debug_sinks[0]);
-	u_sink_debug_destroy(&cam->debug_sinks[1]);
-
-
+	u_sink_debug_destroy(&cam->debug_sinks[WMR_DEBUG_SINK_SLAM]);
+	u_sink_debug_destroy(&cam->debug_sinks[WMR_DEBUG_SINK_CONTROLLER]);
 
 	free(cam);
 }
 
 bool
-wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_configs, int config_count)
+wmr_camera_start(struct wmr_camera *cam)
 {
 	DRV_TRACE_MARKER();
 
 	int res = 0;
 
-	cam->configs = cam_configs;
-	cam->config_count = config_count;
 	if (!compute_frame_size(cam)) {
 		WMR_CAM_WARN(cam, "Invalid config or no head tracking cameras found");
 		goto fail;
@@ -552,7 +604,8 @@ wmr_camera_start(struct wmr_camera *cam, const struct wmr_camera_config *cam_con
 	for (int i = 0; i < NUM_XFERS; i++) {
 		uint8_t *recv_buf = malloc(cam->xfer_size);
 
-		libusb_fill_bulk_transfer(cam->xfers[i], cam->dev, 0x85, recv_buf, cam->xfer_size, img_xfer_cb, cam, 0);
+		libusb_fill_bulk_transfer(cam->xfers[i], cam->dev, LIBUSB_ENDPOINT_IN | 5, recv_buf, cam->xfer_size,
+		                          img_xfer_cb, cam, 0);
 		cam->xfers[i]->flags |= LIBUSB_TRANSFER_FREE_BUFFER;
 
 		res = libusb_submit_transfer(cam->xfers[i]);
@@ -614,31 +667,36 @@ fail:
 }
 
 static int
-update_expgain(struct wmr_camera *cam, struct xrt_frame *xf)
+update_expgain(struct wmr_camera *cam, struct xrt_frame **frames)
 {
-	if (!cam->manual_control && xf != NULL) {
-		u_autoexpgain_update(cam->aeg, xf);
-		cam->exposure = u_autoexpgain_get_exposure(cam->aeg);
-		cam->gain = u_autoexpgain_get_gain(cam->aeg);
-	}
-
-	if (cam->last_exposure == cam->exposure && cam->last_gain == cam->gain) {
-		return 0;
-	}
-	cam->last_exposure = cam->exposure;
-	cam->last_gain = cam->gain;
-
 	int res = 0;
-	for (int i = 0; i < cam->config_count; i++) {
-		const struct wmr_camera_config *config = &cam->configs[i];
-		if (config->purpose != WMR_CAMERA_PURPOSE_HEAD_TRACKING) {
+	for (int i = 0; i < cam->tcam_count; i++) {
+		const struct wmr_camera_config *config = &cam->tcam_confs[i];
+
+		struct wmr_camera_expgain *ceg = &cam->ceg[i];
+
+		if (!ceg->manual_control && frames != NULL && frames[i] != NULL) {
+			if (!cam->unify_expgains || i == 0) {
+				u_autoexpgain_update(ceg->aeg, frames[i]);
+				ceg->exposure = (uint16_t)u_autoexpgain_get_exposure(ceg->aeg);
+				ceg->gain = (uint8_t)u_autoexpgain_get_gain(ceg->aeg);
+			} else {
+				ceg->exposure = cam->ceg[0].exposure;
+				ceg->gain = cam->ceg[0].gain;
+			}
+		}
+
+		if (ceg->last_exposure == ceg->exposure && ceg->last_gain == ceg->gain) {
 			continue;
 		}
-		res = wmr_camera_set_exposure_gain(cam, config->location, cam->exposure, cam->gain);
-		if (res != 0) {
+		ceg->last_exposure = ceg->exposure;
+		ceg->last_gain = ceg->gain;
+
+		bool status = wmr_camera_set_exposure_gain(cam, config->location, ceg->exposure, ceg->gain);
+		if (status != 0) {
 			WMR_CAM_ERROR(cam, "Failed to set exposure and gain for camera %d", i);
-			return res;
 		}
+		res |= status;
 	}
 	return res;
 }
@@ -648,6 +706,7 @@ wmr_camera_set_exposure_gain(struct wmr_camera *cam, uint8_t camera_id, uint16_t
 {
 	DRV_TRACE_MARKER();
 
+	WMR_CAM_TRACE(cam, "Setting camera %d exposure %u gain %u", camera_id, exposure, gain);
 	struct wmr_camera_gain_cmd cmd = {
 	    .magic = __cpu_to_le32(WMR_MAGIC),
 	    .len = __cpu_to_le32(sizeof(struct wmr_camera_gain_cmd)),

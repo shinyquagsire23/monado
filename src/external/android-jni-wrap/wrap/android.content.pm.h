@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 // Author: Ryan Pavlik <ryan.pavlik@collabora.com>
 
@@ -106,9 +106,21 @@ class ComponentInfo : public PackageItemInfo {
     }
 
     /*!
+     * Getter for the applicationInfo field value
+     *
+     * Java prototype:
+     * `public android.content.pm.ApplicationInfo applicationInfo;`
+     *
+     * JNI signature: Landroid/content/pm/ApplicationInfo;
+     *
+     */
+    ApplicationInfo getApplicationInfo() const;
+
+    /*!
      * Class metadata
      */
     struct Meta : public MetaBaseDroppable {
+        impl::WrappedFieldId<ApplicationInfo> applicationInfo;
 
         /*!
          * Singleton accessor
@@ -126,9 +138,9 @@ class ComponentInfo : public PackageItemInfo {
 /*!
  * Wrapper for android.content.pm.ServiceInfo objects.
  */
-class ServiceInfo : public PackageItemInfo {
+class ServiceInfo : public ComponentInfo {
   public:
-    using PackageItemInfo::PackageItemInfo;
+    using ComponentInfo::ComponentInfo;
     static constexpr const char *getTypeName() noexcept {
         return "android/content/pm/ServiceInfo";
     }

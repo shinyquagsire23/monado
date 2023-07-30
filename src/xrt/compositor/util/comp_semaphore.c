@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -6,6 +6,8 @@
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @ingroup comp_util
  */
+
+#include "util/u_handles.h"
 
 #include "util/comp_semaphore.h"
 
@@ -53,11 +55,18 @@ semaphore_destroy(struct xrt_compositor_semaphore *xcsem)
 	struct comp_semaphore *csem = comp_semaphore(xcsem);
 	struct vk_bundle *vk = csem->vk;
 
-	vk->vkDestroySemaphore( //
-	    vk->device,         // device
-	    csem->semaphore,    // semaphore
-	    NULL);              // pAllocator
+	if (csem->semaphore != VK_NULL_HANDLE) {
+		vk->vkDestroySemaphore( //
+		    vk->device,         // device
+		    csem->semaphore,    // semaphore
+		    NULL);              // pAllocator
+		csem->semaphore = VK_NULL_HANDLE;
+	}
 
+	// Does invalid checking and sets to invalid.
+	u_graphics_sync_unref(&csem->handle);
+
+	// Do the final freeing.
 	free(csem);
 }
 #endif
@@ -82,7 +91,8 @@ comp_semaphore_create(struct vk_bundle *vk,
 	}
 
 	VkSemaphore semaphore;
-	ret = vk_create_timeline_semaphore_and_native(vk, &semaphore, out_handle);
+	xrt_graphics_sync_handle_t handle;
+	ret = vk_create_timeline_semaphore_and_native(vk, &semaphore, &handle);
 	if (ret != VK_SUCCESS) {
 		return XRT_ERROR_VULKAN;
 	}
@@ -94,9 +104,11 @@ comp_semaphore_create(struct vk_bundle *vk,
 	csem->base.destroy = semaphore_destroy;
 	csem->base.wait = semaphore_wait;
 	csem->semaphore = semaphore;
+	csem->handle = handle;
 	csem->vk = vk;
 
 	*out_xcsem = &csem->base;
+	*out_handle = handle;
 
 	return XRT_SUCCESS;
 #else

@@ -14,10 +14,12 @@ namespace wrap {
 namespace org::freedesktop::monado::auxiliary {
 	MonadoView::Meta::Meta(jni::jclass clazz)
 	    : MetaBase(MonadoView::getTypeName(), clazz),
-	      attachToActivity(classRef().getStaticMethod(
-	          "attachToActivity", "(Landroid/app/Activity;J)Lorg/freedesktop/monado/auxiliary/MonadoView;")),
-	      attachToActivity1(classRef().getStaticMethod(
-	          "attachToActivity", "(Landroid/app/Activity;)Lorg/freedesktop/monado/auxiliary/MonadoView;")),
+	      attachToWindow(classRef().getStaticMethod(
+	          "attachToWindow",
+	          "(Landroid/content/Context;JLandroid/view/WindowManager$LayoutParams;)Lorg/freedesktop/monado/"
+	          "auxiliary/MonadoView;")),
+	      removeFromWindow(
+	          classRef().getStaticMethod("removeFromWindow", "(Lorg/freedesktop/monado/auxiliary/MonadoView;)V")),
 	      getDisplayMetrics(classRef().getStaticMethod("getDisplayMetrics",
 	                                                   "(Landroid/content/Context;)Landroid/util/DisplayMetrics;")),
 	      getDisplayRefreshRate(

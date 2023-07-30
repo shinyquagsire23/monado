@@ -14,6 +14,7 @@
 #include "xrt/xrt_instance.h"
 
 #include "util/u_misc.h"
+#include "util/u_trace_marker.h"
 
 
 /*
@@ -51,6 +52,8 @@ t_instance(struct xrt_instance *xinst)
 static xrt_result_t
 t_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 {
+	XRT_TRACE_MARKER();
+
 	struct t_instance *tinst = t_instance(xinst);
 
 	if (tinst->xp == NULL) {
@@ -65,6 +68,8 @@ t_instance_get_prober(struct xrt_instance *xinst, struct xrt_prober **out_xp)
 static void
 t_instance_destroy(struct xrt_instance *xinst)
 {
+	XRT_TRACE_MARKER();
+
 	struct t_instance *tinst = t_instance(xinst);
 
 	xrt_prober_destroy(&tinst->xp);

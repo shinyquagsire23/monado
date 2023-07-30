@@ -236,8 +236,8 @@ oxr_input_transform_process(struct oxr_input_transform *transform,
 			enum oxr_dpad_region bound_region = dpad_state->bound_region;
 			enum oxr_dpad_region active_regions = OXR_DPAD_REGION_CENTER;
 
-			for (int i = 0; i < 4; i++) {
-				enum oxr_dpad_region query_region = 1 << i;
+			for (unsigned int i = 0; i < 4; i++) {
+				enum oxr_dpad_region query_region = 1u << i;
 
 				bool rot90 =
 				    (query_region == OXR_DPAD_REGION_LEFT) || (query_region == OXR_DPAD_REGION_RIGHT);

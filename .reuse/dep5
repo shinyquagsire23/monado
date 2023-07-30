@@ -10,11 +10,17 @@ Files: doc/changes/drivers/*
   doc/changes/xrt/*
   doc/changes/auxiliary/*
   doc/changes/compositor/*
+  doc/changes/doc/*
   doc/changes/big/*
   doc/changes/tracking/*
 Copyright: 2020-2021, Collabora, Ltd. and the Monado contributors
 License: CC0-1.0
 Comment: Prevents needing a license header per fragment between releases.
+
+Files: doc/doxygen-awesome-css/*
+Copyright: 2021-2023, jothepro
+License: MIT
+Comment: SPDX-License-Identifier missing.
 
 Files: src/external/cjson/*
 Copyright: 2009-2017, Dave Gamble and cJSON contributors
@@ -106,5 +112,20 @@ Comment: This is generated from the specification XML (licensed as indicated ear
 
 Files:  src/external/glad/src/*
 Copyright: 2013-2022, David Herberth
+License: MIT
+Comment: SPDX-License-Identifier missing.
+
+Files: src/external/nanopb/*
+Copyright: 2011-2022, Petteri Aimonen
+License: Zlib
+Comment: License information global from repository.
+
+Files:  src/external/tracy/*
+Copyright: 2017-2022, Bartosz Taudul
+License: BSD-3-Clause
+Comment: SPDX-License-Identifier missing.
+
+Files:  src/external/valve-file-vdf/*
+Copyright: 2016-2023, Matthias Moeller
 License: MIT
 Comment: SPDX-License-Identifier missing.

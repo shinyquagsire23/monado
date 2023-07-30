@@ -30,10 +30,29 @@
 #include "main/comp_renderer.h"
 
 struct comp_window_peek;
+struct comp_target_factory;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/*
+ *
+ * Defines
+ *
+ */
+
+// clang-format off
+#define COMP_INSTANCE_EXTENSIONS_COMMON                         \
+	VK_EXT_DEBUG_REPORT_EXTENSION_NAME,                     \
+	VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME,      \
+	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,     \
+	VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME,  \
+	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, \
+	VK_KHR_SURFACE_EXTENSION_NAME
+// clang-format on
+
 
 /*
  *
@@ -89,6 +108,9 @@ struct comp_compositor
 	//! Vulkan resources that the compositor (renderer) uses.
 	struct render_resources nr;
 
+	//! The selected target factory that we create our target from.
+	const struct comp_target_factory *target_factory;
+
 	//! The target we are displaying to.
 	struct comp_target *target;
 
@@ -133,6 +155,9 @@ struct comp_compositor
 		//! Temporarily disable ATW
 		bool atw_off;
 	} debug;
+
+	//! If true, part of the compositor startup will be delayed until a session is started
+	bool deferred_surface;
 };
 
 
@@ -152,6 +177,13 @@ comp_compositor(struct xrt_compositor *xc)
 {
 	return (struct comp_compositor *)xc;
 }
+
+/*!
+ * Helper define for printing Vulkan errors.
+ *
+ * @relates comp_compositor
+ */
+#define CVK_ERROR(C, FUNC, MSG, RET) COMP_ERROR(C, FUNC ": %s\n\t" MSG, vk_result_string(RET));
 
 /*!
  * Spew level logging.

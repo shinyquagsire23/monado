@@ -19,7 +19,7 @@
 #include <inttypes.h>
 
 
-#ifdef XRT_FEATURE_TRACING
+#ifdef U_TRACE_PERCETTO
 
 DEBUG_GET_ONCE_BOOL_OPTION(tracing, "XRT_TRACING", false)
 
@@ -100,7 +100,7 @@ u_trace_marker_init(void)
 	}
 }
 
-#else /* XRT_FEATURE_TRACING */
+#else // !U_TRACE_PERCETTO
 
 void
 u_trace_marker_setup(enum u_trace_which which)
@@ -116,4 +116,4 @@ u_trace_marker_init(void)
 	// Noop
 }
 
-#endif /* XRT_FEATURE_TRACING */
+#endif // !U_TRACE_PERCETTO

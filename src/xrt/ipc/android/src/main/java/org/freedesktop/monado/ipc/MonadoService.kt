@@ -16,8 +16,8 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
-import org.freedesktop.monado.auxiliary.IServiceNotification
 import javax.inject.Inject
+import org.freedesktop.monado.auxiliary.IServiceNotification
 
 /**
  * Implementation of a Service that provides the Monado AIDL interface.
@@ -30,22 +30,19 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
 
     private lateinit var watchdog: Watchdog
 
-    @Inject
-    lateinit var serviceNotification: IServiceNotification
-
-    private lateinit var surfaceManager: SurfaceManager
+    @Inject lateinit var serviceNotification: IServiceNotification
 
     override fun onCreate() {
         super.onCreate()
 
-        surfaceManager = SurfaceManager(this)
-        binder = MonadoImpl(surfaceManager)
-        watchdog = Watchdog(
-            // If the surface comes from client, just stop the service when client disconnected
-            // because the surface belongs to the client.
-            if (surfaceManager.canDrawOverlays()) BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS else 0,
-            this
-        )
+        binder = MonadoImpl(this)
+        watchdog =
+            Watchdog(
+                // If the surface comes from client, just stop the service when client disconnected
+                // because the surface belongs to the client.
+                if (binder.canDrawOverOtherApps()) BuildConfig.WATCHDOG_TIMEOUT_MILLISECONDS else 0,
+                this
+            )
         watchdog.startMonitor()
 
         // start the service so it could be foregrounded
@@ -58,9 +55,8 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
         super.onDestroy()
         Log.d(TAG, "onDestroy")
 
-        binder.shutdown();
+        binder.shutdown()
         watchdog.stopMonitor()
-        surfaceManager.destroySurface()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -76,7 +72,7 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
     }
 
     override fun onBind(intent: Intent): IBinder? {
-        Log.d(TAG, "onBind");
+        Log.d(TAG, "onBind")
         watchdog.onClientConnected()
         return binder
     }
@@ -87,12 +83,13 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             flags = PendingIntent.FLAG_IMMUTABLE
         }
-        val pendingShutdownIntent = PendingIntent.getForegroundService(
-            this,
-            0,
-            Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
-            flags
-        )
+        val pendingShutdownIntent =
+            PendingIntent.getForegroundService(
+                this,
+                0,
+                Intent(BuildConfig.SHUTDOWN_ACTION).setPackage(packageName),
+                flags
+            )
 
         val notification = serviceNotification.buildNotification(this, pendingShutdownIntent)
 
@@ -103,21 +100,18 @@ class MonadoService : Service(), Watchdog.ShutdownListener {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST
             )
         } else {
-            startForeground(
-                serviceNotification.getNotificationId(),
-                notification
-            )
+            startForeground(serviceNotification.getNotificationId(), notification)
         }
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        Log.d(TAG, "onUnbind");
+        Log.d(TAG, "onUnbind")
         watchdog.onClientDisconnected()
-        return true;
+        return true
     }
 
     override fun onRebind(intent: Intent?) {
-        Log.d(TAG, "onRebind");
+        Log.d(TAG, "onRebind")
         watchdog.onClientConnected()
     }
 

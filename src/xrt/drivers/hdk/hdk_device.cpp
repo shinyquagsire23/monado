@@ -122,9 +122,9 @@ static constexpr uint8_t MSG_LEN_SMALL = 16;
 static int
 hdk_device_update(struct hdk_device *hd)
 {
-	uint8_t buffer[MSG_LEN_LARGE];
+	uint8_t buffer[MSG_LEN_LARGE]{};
 
-	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 0);
+	auto bytesRead = os_hid_read(hd->dev, buffer, sizeof(buffer), 100);
 	if (bytesRead == -1) {
 		if (!hd->disconnect_notified) {
 			HDK_ERROR(hd,
@@ -135,6 +135,9 @@ hdk_device_update(struct hdk_device *hd)
 		}
 		hd->quat_valid = false;
 		return 0;
+	} else if (bytesRead == 0) {
+		HDK_WARN(hd, "Read 0 bytes from device");
+		return 1;
 	}
 	while (bytesRead > 0) {
 		if (bytesRead != MSG_LEN_LARGE && bytesRead != MSG_LEN_SMALL) {
@@ -476,9 +479,16 @@ hdk_device_create(struct os_hid_device *dev, enum HDK_VARIANT variant)
 	// XRT_DISTORTION_MODEL_PANOTOOLS;
 	// }
 
+	int ret = os_thread_helper_init(&hd->imu_thread);
+	if (ret != 0) {
+		HDK_ERROR(hd, "Failed to start imu thread!");
+		hdk_device_destroy((struct xrt_device *)hd);
+		return 0;
+	}
+
 	if (hd->dev) {
 		// Mutex before thread.
-		int ret = os_mutex_init(&hd->lock);
+		ret = os_mutex_init(&hd->lock);
 		if (ret != 0) {
 			HDK_ERROR(hd, "Failed to init mutex!");
 			hdk_device_destroy(&hd->base);

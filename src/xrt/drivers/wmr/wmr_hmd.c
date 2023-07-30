@@ -1,6 +1,6 @@
 // Copyright 2018, Philipp Zabel.
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2022, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -38,6 +38,10 @@
 #include "util/u_distortion_mesh.h"
 #include "util/u_sink.h"
 
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
+
 #include "tracking/t_tracking.h"
 
 #include "wmr_hmd.h"
@@ -67,6 +71,9 @@
 //! Specifies whether the user wants to use a SLAM tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_slam, "WMR_SLAM", true)
 
+//! Specifies whether the user wants to use a SLAM tracker.
+DEBUG_GET_ONCE_NUM_OPTION(sleep_seconds, "WMR_DISPLAY_INIT_SLEEP_SECONDS", 4)
+
 //! Specifies whether the user wants to use the hand tracker.
 DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 
@@ -74,6 +81,13 @@ DEBUG_GET_ONCE_BOOL_OPTION(wmr_handtracking, "WMR_HANDTRACKING", true)
 //! Whether to submit samples to the SLAM tracker from the start.
 DEBUG_GET_ONCE_OPTION(slam_submit_from_start, "SLAM_SUBMIT_FROM_START", NULL)
 #endif
+
+#define WMR_TRACE(d, ...) U_LOG_XDEV_IFL_T(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_DEBUG(d, ...) U_LOG_XDEV_IFL_D(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_DEBUG_HEX(d, data, data_size) U_LOG_XDEV_IFL_D_HEX(&d->base, d->log_level, data, data_size)
+#define WMR_INFO(d, ...) U_LOG_XDEV_IFL_I(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_WARN(d, ...) U_LOG_XDEV_IFL_W(&d->base, d->log_level, __VA_ARGS__)
+#define WMR_ERROR(d, ...) U_LOG_XDEV_IFL_E(&d->base, d->log_level, __VA_ARGS__)
 
 static int
 wmr_hmd_activate_reverb(struct wmr_hmd *wh);
@@ -154,6 +168,29 @@ hololens_sensors_decode_packet(struct wmr_hmd *wh,
 	}
 }
 
+static void
+hololens_ensure_controller(struct wmr_hmd *wh, uint8_t controller_id, uint16_t vid, uint16_t pid)
+{
+	if (controller_id >= WMR_MAX_CONTROLLERS)
+		return;
+
+	if (wh->controller[controller_id] != NULL) {
+		return;
+	}
+
+	WMR_DEBUG(wh, "Adding controller device %d", controller_id);
+
+	enum xrt_device_type controller_type =
+	    controller_id == 0 ? XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER : XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER;
+	uint8_t hmd_cmd_base = controller_id == 0 ? 0x5 : 0xd;
+
+	struct wmr_hmd_controller_connection *controller =
+	    wmr_hmd_controller_create(wh, hmd_cmd_base, controller_type, vid, pid, wh->log_level);
+
+	os_mutex_lock(&wh->controller_status_lock);
+	wh->controller[controller_id] = controller;
+	os_mutex_unlock(&wh->controller_status_lock);
+}
 
 /*
  *
@@ -210,7 +247,7 @@ hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char
 		break;
 	}
 	case WMR_CONTROLLER_STATUS_ONLINE: {
-		if (size < 10) {
+		if (size < 7) {
 			WMR_TRACE(wh, "Got small controller online status packet (%i)", size);
 			return;
 		}
@@ -220,17 +257,32 @@ hololens_handle_controller_status_packet(struct wmr_hmd *wh, const unsigned char
 
 		uint16_t vid = read16(&buffer);
 		uint16_t pid = read16(&buffer);
-		uint8_t unknown1 = read8(&buffer);
-		uint16_t unknown2160 = read16(&buffer);
 
-		WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x val1 %u val2 %u", controller_id, vid, pid,
-		          unknown1, unknown2160);
+		if (size >= 10) {
+			uint8_t unknown1 = read8(&buffer);
+			uint16_t unknown2160 = read16(&buffer);
+			WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x val1 %u val2 %u", controller_id, vid,
+			          pid, unknown1, unknown2160);
+		} else {
+			WMR_TRACE(wh, "Controller %d online. VID 0x%04x PID 0x%04x", controller_id, vid, pid);
+		}
+
+		hololens_ensure_controller(wh, controller_id, vid, pid);
 		break;
 	}
 	default: //
 		WMR_DEBUG(wh, "Unknown controller status packet (%i) type 0x%02x", size, pkt_type);
 		break;
 	}
+
+	os_mutex_lock(&wh->controller_status_lock);
+	if (controller_id == 0)
+		wh->have_left_controller_status = true;
+	else if (controller_id == 1)
+		wh->have_right_controller_status = true;
+	if (wh->have_left_controller_status && wh->have_right_controller_status)
+		os_cond_signal(&wh->controller_status_cond);
+	os_mutex_unlock(&wh->controller_status_lock);
 }
 
 static void
@@ -251,6 +303,7 @@ hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer,
 	pkt_type = buffer[1];
 	if (pkt_type != WMR_BT_IFACE_MSG_DEBUG) {
 		WMR_DEBUG(wh, "Unknown Bluetooth interface packet (%d) type 0x%02x", size, pkt_type);
+		WMR_DEBUG_HEX(wh, buffer, size);
 		return;
 	}
 	buffer += 2;
@@ -270,19 +323,25 @@ hololens_handle_bt_iface_packet(struct wmr_hmd *wh, const unsigned char *buffer,
 static void
 hololens_handle_controller_packet(struct wmr_hmd *wh, const unsigned char *buffer, int size)
 {
-	DRV_TRACE_MARKER();
-
-	if (size >= 45) {
-		WMR_TRACE(wh,
-		          "Got controller (%i)\n\t%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x "
-		          "%02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",
-		          size, buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7],
-		          buffer[8], buffer[9], buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15],
-		          buffer[16], buffer[17], buffer[18], buffer[19], buffer[20], buffer[21], buffer[22],
-		          buffer[23], buffer[24], buffer[25], buffer[26], buffer[27], buffer[28], buffer[29]);
-	} else {
-		WMR_TRACE(wh, "Got controller packet (%i)\n\t%02x", size, buffer[0]);
+	if (size < 45) {
+		WMR_TRACE(wh, "Got unknown short controller packet (%i)\n\t%02x", size, buffer[0]);
+		return;
 	}
+
+	uint8_t packet_id = buffer[0];
+	struct wmr_controller_connection *controller = NULL;
+
+	if (packet_id == WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER) {
+		controller = (struct wmr_controller_connection *)wh->controller[0];
+	} else if (packet_id == WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER) {
+		controller = (struct wmr_controller_connection *)wh->controller[1];
+	}
+
+	if (controller == NULL)
+		return; /* Controller online message not yet seen */
+
+	uint64_t now_ns = os_monotonic_get_ns();
+	wmr_controller_connection_receive_bytes(controller, now_ns, (uint8_t *)buffer, size);
 }
 
 static void
@@ -340,8 +399,8 @@ hololens_handle_sensors_avg(struct wmr_hmd *wh, const unsigned char *buffer, int
 	math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, &avg_raw_gyro, &avg_calib_gyro);
 	math_vec3_accum(&wh->config.sensors.accel.bias_offsets, &avg_calib_accel);
 	math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, &avg_calib_gyro);
-	math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, &avg_calib_accel, &avg_calib_accel);
-	math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, &avg_calib_gyro, &avg_calib_gyro);
+	math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_acc.orientation, &avg_calib_accel, &avg_calib_accel);
+	math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_gyr.orientation, &avg_calib_gyro, &avg_calib_gyro);
 
 	// Fusion tracking
 	os_mutex_lock(&wh->fusion.mutex);
@@ -376,14 +435,14 @@ hololens_handle_sensors_all(struct wmr_hmd *wh, const unsigned char *buffer, int
 		vec3_from_hololens_gyro(wh->packet.gyro, i, rg);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.gyro.mix_matrix, rg, cg);
 		math_vec3_accum(&wh->config.sensors.gyro.bias_offsets, cg);
-		math_quat_rotate_vec3(&wh->P_oxr_gyr.orientation, cg, cg);
+		math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_gyr.orientation, cg, cg);
 
 		struct xrt_vec3 *ra = &raw_accel[i];
 		struct xrt_vec3 *ca = &calib_accel[i];
 		vec3_from_hololens_accel(wh->packet.accel, i, ra);
 		math_matrix_3x3_transform_vec3(&wh->config.sensors.accel.mix_matrix, ra, ca);
 		math_vec3_accum(&wh->config.sensors.accel.bias_offsets, ca);
-		math_quat_rotate_vec3(&wh->P_oxr_acc.orientation, ca, ca);
+		math_quat_rotate_vec3(&wh->config.sensors.transforms.P_oxr_acc.orientation, ca, ca);
 	}
 
 	// Fusion tracking
@@ -428,7 +487,9 @@ hololens_sensors_read_packets(struct wmr_hmd *wh)
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Block for 100ms
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_read(wh->hid_hololens_sensors_dev, buffer, sizeof(buffer), 100);
+	os_mutex_unlock(&wh->hid_lock);
 
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from Hololens Sensors device. Call to os_hid_read returned %i", size);
@@ -511,7 +572,9 @@ control_read_packets(struct wmr_hmd *wh)
 	unsigned char buffer[WMR_FEATURE_BUFFER_SIZE];
 
 	// Do not block
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_read(wh->hid_control_dev, buffer, sizeof(buffer), 0);
+	os_mutex_unlock(&wh->hid_lock);
 
 	if (size < 0) {
 		WMR_ERROR(wh, "Error reading from companion (HMD control) device. Call to os_hid_read returned %i",
@@ -544,8 +607,13 @@ control_read_packets(struct wmr_hmd *wh)
 	case WMR_CONTROL_MSG_DEVICE_STATUS: //
 		WMR_DEBUG(wh, "Device status message type: %02x (size %i)", buffer[0], size);
 		if (size != 11) {
-			WMR_DEBUG(wh, "---> Unexpected message size. Expected 11 bytes incl. message type.");
-			break;
+			WMR_DEBUG(wh,
+			          "---> Unexpected message size. Expected 11 bytes incl. message type. Got %d bytes",
+			          size);
+			WMR_DEBUG_HEX(wh, buffer, size);
+			if (size < 11) {
+				break;
+			}
 		}
 
 		// Todo: HMD state info to be decoded further.
@@ -565,6 +633,7 @@ control_read_packets(struct wmr_hmd *wh)
 		break;
 	default: //
 		WMR_DEBUG(wh, "Unknown message type: %02x (size %i)", buffer[0], size);
+		WMR_DEBUG_HEX(wh, buffer, size);
 		break;
 	}
 
@@ -581,9 +650,16 @@ control_read_packets(struct wmr_hmd *wh)
 static void *
 wmr_run_thread(void *ptr)
 {
-	DRV_TRACE_MARKER();
-
 	struct wmr_hmd *wh = (struct wmr_hmd *)ptr;
+
+	U_TRACE_SET_THREAD_NAME("WMR: USB-HMD");
+	os_thread_helper_name(&wh->oth, "WMR: USB-HMD");
+
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(wh->log_level, "WMR: USB-HMD");
+#endif
+
 
 	os_thread_helper_lock(&wh->oth);
 	while (os_thread_helper_is_running_locked(&wh->oth)) {
@@ -612,26 +688,36 @@ hololens_sensors_enable_imu(struct wmr_hmd *wh)
 {
 	DRV_TRACE_MARKER();
 
+	os_mutex_lock(&wh->hid_lock);
 	int size = os_hid_write(wh->hid_hololens_sensors_dev, hololens_sensors_imu_on, sizeof(hololens_sensors_imu_on));
+	os_mutex_unlock(&wh->hid_lock);
+
 	if (size <= 0) {
 		WMR_ERROR(wh, "Error writing to device");
 		return;
 	}
 }
 
-#define HID_SEND(HID, DATA, STR)                                                                                       \
+#define HID_SEND(hmd, HID, DATA, STR)                                                                                  \
 	do {                                                                                                           \
+		os_mutex_lock(&hmd->hid_lock);                                                                         \
 		int _ret = os_hid_set_feature(HID, DATA, sizeof(DATA));                                                \
+		os_mutex_unlock(&hmd->hid_lock);                                                                       \
 		if (_ret < 0) {                                                                                        \
 			WMR_ERROR(wh, "Send (%s): %i", STR, _ret);                                                     \
 		}                                                                                                      \
 	} while (false);
 
-#define HID_GET(HID, DATA, STR)                                                                                        \
+#define HID_GET(hmd, HID, DATA, STR)                                                                                   \
 	do {                                                                                                           \
+		os_mutex_lock(&hmd->hid_lock);                                                                         \
 		int _ret = os_hid_get_feature(HID, DATA[0], DATA, sizeof(DATA));                                       \
+		os_mutex_unlock(&hmd->hid_lock);                                                                       \
 		if (_ret < 0) {                                                                                        \
 			WMR_ERROR(wh, "Get (%s): %i", STR, _ret);                                                      \
+		} else {                                                                                               \
+			WMR_DEBUG(wh, "0x%02x HID feature returned", DATA[0]);                                         \
+			WMR_DEBUG_HEX(wh, DATA, _ret);                                                                 \
 		}                                                                                                      \
 	} while (false);
 
@@ -651,22 +737,22 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 
 	for (int i = 0; i < 4; i++) {
 		unsigned char cmd[64] = {0x50, 0x01};
-		HID_SEND(hid, cmd, "loop");
+		HID_SEND(wh, hid, cmd, "loop");
 
 		unsigned char data[64] = {0x50};
-		HID_GET(hid, data, "loop");
+		HID_GET(wh, hid, data, "loop");
 
 		os_nanosleep(U_TIME_1MS_IN_NS * 10); // Sleep 10ms
 	}
 
 	unsigned char data[64] = {0x09};
-	HID_GET(hid, data, "data_1");
+	HID_GET(wh, hid, data, "data_1");
 
 	data[0] = 0x08;
-	HID_GET(hid, data, "data_2");
+	HID_GET(wh, hid, data, "data_2");
 
 	data[0] = 0x06;
-	HID_GET(hid, data, "data_3");
+	HID_GET(wh, hid, data, "data_3");
 
 	WMR_INFO(wh, "Sent activation report.");
 
@@ -677,11 +763,12 @@ wmr_hmd_activate_reverb(struct wmr_hmd *wh)
 
 	// Allow time for enumeration of available displays by host system, so the compositor can select among them.
 	WMR_INFO(wh,
-	         "Sleep until the HMD display is powered up so, the available displays can be enumerated by the host "
+	         "Sleep until the HMD display is powered up, so the available displays can be enumerated by the host "
 	         "system.");
 
-	// Two seconds seems to be needed, 1 was not enough.
-	os_nanosleep(U_TIME_1MS_IN_NS * 2000);
+	// Get the sleep amount, then sleep. One or two seconds was not enough.
+	uint64_t seconds = debug_get_num_option_sleep_seconds();
+	os_nanosleep(U_TIME_1S_IN_NS * seconds);
 
 	return 0;
 }
@@ -720,7 +807,7 @@ wmr_hmd_screen_enable_reverb(struct wmr_hmd *wh, bool enable)
 		cmd[1] = enable ? 0x01 : 0x00;
 	}
 
-	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+	HID_SEND(wh, hid, cmd, (enable ? "screen_on" : "screen_off"));
 
 	wh->hmd_screen_enable = enable;
 
@@ -740,13 +827,13 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 	os_nanosleep(U_TIME_1MS_IN_NS * 300);
 
 	unsigned char data[64] = {0x16};
-	HID_GET(hid, data, "data_1");
+	HID_GET(wh, hid, data, "data_1");
 
 	data[0] = 0x15;
-	HID_GET(hid, data, "data_2");
+	HID_GET(wh, hid, data, "data_2");
 
 	data[0] = 0x14;
-	HID_GET(hid, data, "data_3");
+	HID_GET(wh, hid, data, "data_3");
 
 	// Enable the HMD screen now, if required. Otherwise, if screen should initially be disabled, then
 	// proactively disable it now. Why? Because some cases of irregular termination of Monado will
@@ -758,7 +845,7 @@ wmr_hmd_activate_odyssey_plus(struct wmr_hmd *wh)
 	         "Sleep until the HMD display is powered up, so the available displays can be enumerated by the host "
 	         "system.");
 
-	os_nanosleep(3L * U_TIME_1S_IN_NS);
+	os_nanosleep(3LL * U_TIME_1S_IN_NS);
 
 	return 0;
 }
@@ -786,7 +873,7 @@ wmr_hmd_screen_enable_odyssey_plus(struct wmr_hmd *wh, bool enable)
 		cmd[1] = enable ? 0x01 : 0x00;
 	}
 
-	HID_SEND(hid, cmd, (enable ? "screen_on" : "screen_off"));
+	HID_SEND(wh, hid, cmd, (enable ? "screen_on" : "screen_off"));
 
 	wh->hmd_screen_enable = enable;
 
@@ -820,8 +907,8 @@ wmr_config_command_sync(struct wmr_hmd *wh, unsigned char type, unsigned char *b
 	os_hid_write(hid, cmd, sizeof(cmd));
 
 	do {
-		int size = os_hid_read(hid, buf, len, -1);
-		if (size == -1) {
+		int size = os_hid_read(hid, buf, len, 100);
+		if (size < 1) {
 			return -1;
 		}
 		if (buf[0] == WMR_MS_HOLOLENS_MSG_CONTROL) {
@@ -1061,7 +1148,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 	bool pose_tracked = out_relation->relation_flags & pose_bits;
 
 	if (pose_tracked) {
-#if defined(XRT_HAVE_BASALT_SLAM)
+#if defined(XRT_HAVE_BASALT)
 		wh->pose = wmr_hmd_correct_pose_from_basalt(out_relation->pose);
 #else
 		wh->pose = out_relation->pose;
@@ -1069,7 +1156,7 @@ wmr_hmd_get_slam_tracked_pose(struct xrt_device *xdev,
 	}
 
 	if (wh->tracking.imu2me) {
-		math_pose_transform(&wh->pose, &wh->P_imu_me, &wh->pose);
+		math_pose_transform(&wh->pose, &wh->config.sensors.transforms.P_imu_me, &wh->pose);
 	}
 
 	out_relation->pose = wh->pose;
@@ -1087,6 +1174,9 @@ wmr_hmd_get_tracked_pose(struct xrt_device *xdev,
 	DRV_TRACE_MARKER();
 
 	struct wmr_hmd *wh = wmr_hmd(xdev);
+
+	at_timestamp_ns += (uint64_t)(wh->tracked_offset_ms.val * (double)U_TIME_1MS_IN_NS);
+
 	if (wh->tracking.slam_enabled && wh->slam_over_3dof) {
 		wmr_hmd_get_slam_tracked_pose(xdev, name, at_timestamp_ns, out_relation);
 	} else {
@@ -1118,6 +1208,22 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	// Destroy the thread object.
 	os_thread_helper_destroy(&wh->oth);
 
+	// Disconnect tunnelled controllers
+	os_mutex_lock(&wh->controller_status_lock);
+	if (wh->controller[0] != NULL) {
+		struct wmr_controller_connection *wcc = (struct wmr_controller_connection *)wh->controller[0];
+		wmr_controller_connection_disconnect(wcc);
+	}
+
+	if (wh->controller[1] != NULL) {
+		struct wmr_controller_connection *wcc = (struct wmr_controller_connection *)wh->controller[1];
+		wmr_controller_connection_disconnect(wcc);
+	}
+	os_mutex_unlock(&wh->controller_status_lock);
+
+	os_mutex_destroy(&wh->controller_status_lock);
+	os_cond_destroy(&wh->controller_status_cond);
+
 	if (wh->hid_hololens_sensors_dev != NULL) {
 		os_hid_destroy(wh->hid_hololens_sensors_dev);
 		wh->hid_hololens_sensors_dev = NULL;
@@ -1139,12 +1245,13 @@ wmr_hmd_destroy(struct xrt_device *xdev)
 	m_imu_3dof_close(&wh->fusion.i3dof);
 
 	os_mutex_destroy(&wh->fusion.mutex);
+	os_mutex_destroy(&wh->hid_lock);
 
 	u_device_free(&wh->base);
 }
 
 static bool
-compute_distortion_wmr(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+compute_distortion_wmr(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	DRV_TRACE_MARKER();
 
@@ -1285,6 +1392,37 @@ compute_distortion_bounds(struct wmr_hmd *wh,
 	*out_angle_up = -atanf(tanangle_up);
 }
 
+XRT_MAYBE_UNUSED static struct t_camera_calibration
+wmr_hmd_get_cam_calib(struct wmr_hmd *wh, int cam_index)
+{
+	struct t_camera_calibration res;
+	struct wmr_camera_config *wcalib = wh->config.tcams[cam_index];
+	struct wmr_distortion_6KT *intr = &wcalib->distortion6KT;
+
+	res.image_size_pixels.h = wcalib->roi.extent.h;
+	res.image_size_pixels.w = wcalib->roi.extent.w;
+	res.intrinsics[0][0] = intr->params.fx * (double)wcalib->roi.extent.w;
+	res.intrinsics[1][1] = intr->params.fy * (double)wcalib->roi.extent.h;
+	res.intrinsics[0][2] = intr->params.cx * (double)wcalib->roi.extent.w;
+	res.intrinsics[1][2] = intr->params.cy * (double)wcalib->roi.extent.h;
+	res.intrinsics[2][2] = 1.0;
+
+	res.distortion_model = T_DISTORTION_WMR;
+	res.wmr.k1 = intr->params.k[0];
+	res.wmr.k2 = intr->params.k[1];
+	res.wmr.p1 = intr->params.p1;
+	res.wmr.p2 = intr->params.p2;
+	res.wmr.k3 = intr->params.k[2];
+	res.wmr.k4 = intr->params.k[3];
+	res.wmr.k5 = intr->params.k[4];
+	res.wmr.k6 = intr->params.k[5];
+	res.wmr.codx = intr->params.dist_x;
+	res.wmr.cody = intr->params.dist_y;
+	res.wmr.rpmax = intr->params.metric_radius;
+
+	return res;
+}
+
 /*!
  * Creates an OpenCV-compatible @ref t_stereo_camera_calibration pointer from
  * the WMR config.
@@ -1296,45 +1434,25 @@ compute_distortion_bounds(struct wmr_hmd *wh,
  * 2. The terms that use the tangential parameters, p1 and p2, aren't multiplied by 2
  * 3. There is a "metric radius" that delimits a valid area of distortion/undistortion
  *
- * Thankfully, parameters of points 1 and 2 tend to be almost zero in practice and we
- * only do unprojections (for hand tracking) in very safe camera regions so 3
- * doesn't bother us that much either.
+ * Thankfully, parameters of points 1 and 2 tend to be almost zero in practice. For 3, we place metric_radius into
+ * the calibration struct so that downstream tracking algorithms can use it as needed.
  */
 XRT_MAYBE_UNUSED static struct t_stereo_camera_calibration *
 wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 {
 	struct t_stereo_camera_calibration *calib = NULL;
-	t_stereo_camera_calibration_alloc(&calib, 8);
+	t_stereo_camera_calibration_alloc(&calib, T_DISTORTION_WMR);
+
 
 	// Intrinsics
-	for (int view = 0; view < 2; view++) { // Assuming that cameras[0-1] are HT0 and HT1
-		struct t_camera_calibration *tcc = &calib->view[view];
-		struct wmr_camera_config *cam = &wh->config.cameras[view];
-		struct wmr_distortion_6KT *intr = &cam->distortion6KT;
-
-		tcc->image_size_pixels.h = wh->config.cameras[view].roi.extent.h;
-		tcc->image_size_pixels.w = wh->config.cameras[view].roi.extent.w;
-		tcc->intrinsics[0][0] = intr->params.fx * (double)cam->roi.extent.w;
-		tcc->intrinsics[1][1] = intr->params.fy * (double)cam->roi.extent.h;
-		tcc->intrinsics[0][2] = intr->params.cx * (double)cam->roi.extent.w;
-		tcc->intrinsics[1][2] = intr->params.cy * (double)cam->roi.extent.h;
-		tcc->intrinsics[2][2] = 1.0;
-
-		tcc->distortion[0] = intr->params.k[0];
-		tcc->distortion[1] = intr->params.k[1];
-		tcc->distortion[2] = intr->params.p1;
-		tcc->distortion[3] = intr->params.p2;
-		tcc->distortion[4] = intr->params.k[2];
-		tcc->distortion[5] = intr->params.k[3];
-		tcc->distortion[6] = intr->params.k[4];
-		tcc->distortion[7] = intr->params.k[5];
-		tcc->use_fisheye = false;
+	for (int i = 0; i < 2; i++) {
+		calib->view[i] = wmr_hmd_get_cam_calib(wh, i);
 	}
 
 	// Extrinsics
 
 	// Compute transform from HT1 to HT0 (HT0 space into HT1 space)
-	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
+	struct wmr_camera_config *ht1 = &wh->config.cams[1];
 	calib->camera_translation[0] = ht1->translation.x;
 	calib->camera_translation[1] = ht1->translation.y;
 	calib->camera_translation[2] = ht1->translation.z;
@@ -1351,8 +1469,52 @@ wmr_hmd_create_stereo_camera_calib(struct wmr_hmd *wh)
 	return calib;
 }
 
+//! Extended camera calibration info for SLAM
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_cams_calibration(struct wmr_hmd *wh)
+{
+	wh->tracking.slam_calib.cam_count = wh->config.tcam_count;
+
+	// Fill camera 0
+	struct xrt_pose P_imu_c0 = wh->config.sensors.accel.pose;
+	struct xrt_matrix_4x4 T_imu_c0;
+	math_matrix_4x4_isometry_from_pose(&P_imu_c0, &T_imu_c0);
+	wh->tracking.slam_calib.cams[0] = (struct t_slam_camera_calibration){
+	    .base = wmr_hmd_get_cam_calib(wh, 0),
+	    .T_imu_cam = T_imu_c0,
+	    .frequency = CAMERA_FREQUENCY,
+	};
+
+	// Fill remaining cameras
+	for (int i = 1; i < wh->config.tcam_count; i++) {
+		struct xrt_pose P_ci_c0 = wh->config.tcams[i]->pose;
+
+		if (i == 2 || i == 3) {
+			//! @note The calibration json for the reverb G2v2 (the only 4-camera wmr
+			//! headset we know about) has the HT2 and HT3 extrinsics flipped compared
+			//! to the order the third and fourth camera images come from usb.
+			P_ci_c0 = wh->config.tcams[i == 2 ? 3 : 2]->pose;
+		}
+
+		struct xrt_pose P_c0_ci;
+		math_pose_invert(&P_ci_c0, &P_c0_ci);
+
+		struct xrt_pose P_imu_ci;
+		math_pose_transform(&P_imu_c0, &P_c0_ci, &P_imu_ci);
+
+		struct xrt_matrix_4x4 T_imu_ci;
+		math_matrix_4x4_isometry_from_pose(&P_imu_ci, &T_imu_ci);
+
+		wh->tracking.slam_calib.cams[i] = (struct t_slam_camera_calibration){
+		    .base = wmr_hmd_get_cam_calib(wh, i),
+		    .T_imu_cam = T_imu_ci,
+		    .frequency = CAMERA_FREQUENCY,
+		};
+	}
+}
+
 XRT_MAYBE_UNUSED static struct t_imu_calibration
-wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
+wmr_hmd_get_imu_calib(struct wmr_hmd *wh)
 {
 	float *at = wh->config.sensors.accel.mix_matrix.v;
 	struct xrt_vec3 ao = wh->config.sensors.accel.bias_offsets;
@@ -1383,45 +1545,26 @@ wmr_hmd_create_imu_calib(struct wmr_hmd *wh)
 	return calib;
 }
 
-//! IMU extrinsics, frequencies, and rpmax
-XRT_MAYBE_UNUSED static struct t_slam_calib_extras
-wmr_hmd_create_extra_calib(struct wmr_hmd *wh)
+//! Extended IMU calibration data for SLAM
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_imu_calibration(struct wmr_hmd *wh)
 {
-	struct wmr_camera_config *ht0 = &wh->config.cameras[0];
-	struct wmr_camera_config *ht1 = &wh->config.cameras[1];
-
-	struct xrt_pose P_imu_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_ht1_ht0 = ht1->pose;
-	struct xrt_pose P_ht0_ht1;
-	math_pose_invert(&P_ht1_ht0, &P_ht0_ht1);
-	struct xrt_pose P_imu_ht1;
-	math_pose_transform(&P_imu_ht0, &P_ht0_ht1, &P_imu_ht1);
-
-	struct xrt_matrix_4x4 T_imu_ht0;
-	struct xrt_matrix_4x4 T_imu_ht1;
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht0, &T_imu_ht0);
-	math_matrix_4x4_isometry_from_pose(&P_imu_ht1, &T_imu_ht1);
-
-	//! @note This might change during runtime but the calibration data will be already submitted
+	//! @note `average_imus` might change during runtime but the calibration data will be already submitted
 	double imu_frequency = wh->average_imus ? IMU_FREQUENCY / IMU_SAMPLES_PER_PACKET : IMU_FREQUENCY;
 
-	struct t_slam_calib_extras calib = {
-	    .imu_frequency = imu_frequency,
-	    .cams =
-	        {
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_ht0,
-	                .rpmax = ht0->distortion6KT.params.metric_radius,
-	            },
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_ht1,
-	                .rpmax = ht1->distortion6KT.params.metric_radius,
-	            },
-	        },
+	struct t_slam_imu_calibration imu_calib = {
+	    .base = wmr_hmd_get_imu_calib(wh),
+	    .frequency = imu_frequency,
 	};
-	return calib;
+
+	wh->tracking.slam_calib.imu = imu_calib;
+}
+
+XRT_MAYBE_UNUSED static void
+wmr_hmd_fill_slam_calibration(struct wmr_hmd *wh)
+{
+	wmr_hmd_fill_slam_imu_calibration(wh);
+	wmr_hmd_fill_slam_cams_calibration(wh);
 }
 
 static void
@@ -1445,10 +1588,7 @@ wmr_hmd_switch_hmd_tracker(void *wh_ptr)
 }
 
 static struct xrt_slam_sinks *
-wmr_hmd_slam_track(struct wmr_hmd *wh,
-                   struct t_stereo_camera_calibration *stereo_calib,
-                   struct t_imu_calibration *imu_calib,
-                   struct t_slam_calib_extras *extra_calib)
+wmr_hmd_slam_track(struct wmr_hmd *wh)
 {
 	DRV_TRACE_MARKER();
 
@@ -1457,9 +1597,9 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 #ifdef XRT_FEATURE_SLAM
 	struct t_slam_tracker_config config = {0};
 	t_slam_fill_default_config(&config);
-	config.stereo_calib = stereo_calib; // No need to do refcount here
-	config.imu_calib = imu_calib;
-	config.extra_calib = extra_calib;
+	config.cam_count = wh->config.slam_cam_count;
+	wh->tracking.slam_calib.cam_count = wh->config.slam_cam_count;
+	config.slam_calib = &wh->tracking.slam_calib;
 	if (debug_get_option_slam_submit_from_start() == NULL) {
 		config.submit_from_start = true;
 	}
@@ -1480,6 +1620,42 @@ wmr_hmd_slam_track(struct wmr_hmd *wh,
 	return sinks;
 }
 
+#ifdef XRT_BUILD_DRIVER_HANDTRACKING
+static enum t_camera_orientation
+wmr_hmd_guess_camera_orientation(struct wmr_hmd *wh)
+{
+	struct xrt_quat Q_ht0_me = wh->config.sensors.transforms.P_ht0_me.orientation;
+	struct xrt_vec2 swing = {0};
+	float twist = 0;
+	math_quat_to_swing_twist(&Q_ht0_me, &swing, &twist);
+	WMR_DEBUG(wh, "HT0 twist value is %f", twist);
+
+	float abstwist = fabsf(twist);
+
+	// Bottom quadrant
+	if (abstwist < M_PI / 4) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_0 front cameras!");
+		return CAMERA_ORIENTATION_0;
+	}
+
+	// Top quadrant
+	if (abstwist > 3 * M_PI / 4) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_180 front cameras!");
+		return CAMERA_ORIENTATION_180;
+	}
+
+	// Right quadrant
+	if (twist < 0) {
+		WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_90 front cameras!");
+		return CAMERA_ORIENTATION_90;
+	}
+
+	// Left quadrant
+	WMR_DEBUG(wh, "I think this headset has CAMERA_ORIENTATION_270 front cameras!");
+	return CAMERA_ORIENTATION_270;
+}
+#endif
+
 static int
 wmr_hmd_hand_track(struct wmr_hmd *wh,
                    struct t_stereo_camera_calibration *stereo_calib,
@@ -1492,28 +1668,34 @@ wmr_hmd_hand_track(struct wmr_hmd *wh,
 	struct xrt_device *device = NULL;
 
 #ifdef XRT_BUILD_DRIVER_HANDTRACKING
-	//!@todo Turning it off is okay for now, but we should plug metric_radius (or whatever it's called) in, at some
-	//! point.
+
 	struct t_camera_extra_info extra_camera_info = {0};
 
-	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_0;
-	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_0;
+	enum t_camera_orientation ori_guess = CAMERA_ORIENTATION_0;
 
+	if (wh->hmd_desc->hmd_type == WMR_HEADSET_GENERIC || //
+	    wh->hmd_desc->hmd_type == WMR_HEADSET_REVERB_G2) {
+		ori_guess = wmr_hmd_guess_camera_orientation(wh);
+	}
+	extra_camera_info.views[0].camera_orientation = ori_guess;
+	extra_camera_info.views[1].camera_orientation = ori_guess;
+
+	//!@todo Turning it off is okay for now, but we should plug metric_radius (or whatever it's called) in, at some
+	//! point.
 	extra_camera_info.views[0].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 	extra_camera_info.views[1].boundary_type = HT_IMAGE_BOUNDARY_NONE;
 
-	int create_status = ht_device_create(&wh->tracking.xfctx,  //
-	                                     stereo_calib,         //
-	                                     HT_ALGORITHM_MERCURY, //
-	                                     extra_camera_info,    //
-	                                     &sinks,               //
+	int create_status = ht_device_create(&wh->tracking.xfctx, //
+	                                     stereo_calib,        //
+	                                     extra_camera_info,   //
+	                                     &sinks,              //
 	                                     &device);
 	if (create_status != 0) {
 		return create_status;
 	}
 
 	device = multi_create_tracking_override(XRT_TRACKING_OVERRIDE_ATTACHED, device, &wh->base,
-	                                        XRT_INPUT_GENERIC_HEAD_POSE, &wh->P_ht0_me);
+	                                        XRT_INPUT_GENERIC_HEAD_POSE, &wh->config.sensors.transforms.P_ht0_me);
 
 	WMR_DEBUG(wh, "WMR HMD hand tracker successfully created");
 #endif
@@ -1538,6 +1720,7 @@ wmr_hmd_setup_ui(struct wmr_hmd *wh)
 	u_var_add_pose(wh, &wh->pose, "Tracked Pose");
 	u_var_add_pose(wh, &wh->offset, "Pose Offset");
 	u_var_add_bool(wh, &wh->average_imus, "Average IMU samples");
+	u_var_add_draggable_f32(wh, &wh->tracked_offset_ms, "Timecode offset(ms)");
 
 	u_var_add_gui_header(wh, NULL, "3DoF Tracking");
 	m_imu_3dof_add_vars(&wh->fusion.i3dof, wh, "");
@@ -1622,12 +1805,11 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 
 	assert(slam_status != NULL && hand_status != NULL);
 
-	snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
-	snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
+	(void)snprintf(wh->gui.slam_status, sizeof(wh->gui.slam_status), "%s", slam_status);
+	(void)snprintf(wh->gui.hand_status, sizeof(wh->gui.hand_status), "%s", hand_status);
 
 	struct t_stereo_camera_calibration *stereo_calib = wmr_hmd_create_stereo_camera_calib(wh);
-	struct t_imu_calibration imu_calib = wmr_hmd_create_imu_calib(wh);
-	struct t_slam_calib_extras extra_calib = wmr_hmd_create_extra_calib(wh);
+	wmr_hmd_fill_slam_calibration(wh);
 
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&wh->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
@@ -1635,7 +1817,7 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	// Initialize SLAM tracker
 	struct xrt_slam_sinks *slam_sinks = NULL;
 	if (wh->tracking.slam_enabled) {
-		slam_sinks = wmr_hmd_slam_track(wh, stereo_calib, &imu_calib, &extra_calib);
+		slam_sinks = wmr_hmd_slam_track(wh);
 		if (slam_sinks == NULL) {
 			WMR_WARN(wh, "Unable to setup the SLAM tracker");
 			return false;
@@ -1658,18 +1840,15 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
 	if (slam_enabled && hand_enabled) {
-		struct xrt_frame_sink *entry_left_sink = NULL;
-		struct xrt_frame_sink *entry_right_sink = NULL;
+		struct xrt_frame_sink *entry_cam0_sink = NULL;
+		struct xrt_frame_sink *entry_cam1_sink = NULL;
 
-		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_cam0_sink);
+		u_sink_split_create(&wh->tracking.xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_cam1_sink);
 
-		entry_sinks = (struct xrt_slam_sinks){
-		    .left = entry_left_sink,
-		    .right = entry_right_sink,
-		    .imu = slam_sinks->imu,
-		    .gt = slam_sinks->gt,
-		};
+		entry_sinks = *slam_sinks;
+		entry_sinks.cams[0] = entry_cam0_sink;
+		entry_sinks.cams[1] = entry_cam1_sink;
 	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
 	} else if (hand_enabled) {
@@ -1683,67 +1862,12 @@ wmr_hmd_setup_trackers(struct wmr_hmd *wh, struct xrt_slam_sinks *out_sinks, str
 	return true;
 }
 
-/*!
- * Precompute transforms to convert between OpenXR and WMR coordinate systems.
- *
- * OpenXR: X: Right, Y: Up, Z: Backward
- * WMR: X: Right, Y: Down, Z: Forward
- * ┌────────────────────┐
- * │   OXR       WMR    │
- * │                    │
- * │ ▲ y                │
- * │ │         ▲ z      │
- * │ │    x    │    x   │
- * │ ├──────►  ├──────► │
- * │ │         │        │
- * │ ▼ z       │        │
- * │           ▼ y      │
- * └────────────────────┘
- */
-static void
-precompute_sensor_transforms(struct wmr_hmd *wh)
+static bool
+wmr_hmd_request_controller_status(struct wmr_hmd *wh)
 {
-	// P_A_B is such that B = P_A_B * A. See conventions.md
-	struct xrt_pose P_oxr_wmr = {{.x = 1.0, .y = 0.0, .z = 0.0, .w = 0.0}, XRT_VEC3_ZERO};
-	struct xrt_pose P_wmr_oxr = {0};
-	struct xrt_pose P_acc_ht0 = wh->config.sensors.accel.pose;
-	struct xrt_pose P_gyr_ht0 = wh->config.sensors.gyro.pose;
-	struct xrt_pose P_ht0_acc = {0};
-	struct xrt_pose P_ht0_gyr = {0};
-	struct xrt_pose P_me_ht0 = {0}; // "me" == "middle of the eyes"
-	struct xrt_pose P_me_acc = {0};
-	struct xrt_pose P_me_gyr = {0};
-	struct xrt_pose P_ht0_me = {0};
-	struct xrt_pose P_acc_me = {0};
-	struct xrt_pose P_oxr_ht0_me = {0}; // P_ht0_me in OpenXR coordinates
-	struct xrt_pose P_oxr_acc_me = {0}; // P_acc_me in OpenXR coordinates
-
-	// All of the observed headsets have reported a zero translation for its gyro
-	assert(m_vec3_equal_exact(P_gyr_ht0.position, (struct xrt_vec3){0, 0, 0}));
-
-	// Initialize transforms
-
-	// All of these are in WMR coordinates.
-	math_pose_invert(&P_oxr_wmr, &P_wmr_oxr); // P_wmr_oxr == P_oxr_wmr
-	math_pose_invert(&P_acc_ht0, &P_ht0_acc);
-	math_pose_invert(&P_gyr_ht0, &P_ht0_gyr);
-	math_pose_interpolate(&wh->config.eye_params[0].pose, &wh->config.eye_params[1].pose, 0.5, &P_me_ht0);
-	math_pose_transform(&P_me_ht0, &P_ht0_acc, &P_me_acc);
-	math_pose_transform(&P_me_ht0, &P_ht0_gyr, &P_me_gyr);
-	math_pose_invert(&P_me_ht0, &P_ht0_me);
-	math_pose_invert(&P_me_acc, &P_acc_me);
-
-	// Express P_*_me pose in OpenXR coordinates through sandwich products.
-	math_pose_transform(&P_acc_me, &P_wmr_oxr, &P_oxr_acc_me);
-	math_pose_transform(&P_oxr_wmr, &P_oxr_acc_me, &P_oxr_acc_me);
-	math_pose_transform(&P_ht0_me, &P_wmr_oxr, &P_oxr_ht0_me);
-	math_pose_transform(&P_oxr_wmr, &P_oxr_ht0_me, &P_oxr_ht0_me);
-
-	// Save transforms
-	math_pose_transform(&P_oxr_wmr, &P_me_acc, &wh->P_oxr_acc);
-	math_pose_transform(&P_oxr_wmr, &P_me_gyr, &wh->P_oxr_gyr);
-	wh->P_ht0_me = P_oxr_ht0_me;
-	wh->P_imu_me = P_oxr_acc_me; // Assume accel pose is IMU pose
+	DRV_TRACE_MARKER();
+	unsigned char cmd[64] = {WMR_MS_HOLOLENS_MSG_BT_CONTROL, WMR_MS_HOLOLENS_MSG_CONTROLLER_STATUS};
+	return wmr_hmd_send_controller_packet(wh, cmd, sizeof(cmd));
 }
 
 void
@@ -1753,7 +1877,9 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
                struct xrt_prober_device *dev_holo,
                enum u_logging_level log_level,
                struct xrt_device **out_hmd,
-               struct xrt_device **out_handtracker)
+               struct xrt_device **out_handtracker,
+               struct xrt_device **out_left_controller,
+               struct xrt_device **out_right_controller)
 {
 	DRV_TRACE_MARKER();
 
@@ -1783,7 +1909,31 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	// Mutex before thread.
 	ret = os_mutex_init(&wh->fusion.mutex);
 	if (ret != 0) {
-		WMR_ERROR(wh, "Failed to init mutex!");
+		WMR_ERROR(wh, "Failed to init fusion mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_mutex_init(&wh->hid_lock);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init HID mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_mutex_init(&wh->controller_status_lock);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init Controller status mutex!");
+		wmr_hmd_destroy(&wh->base);
+		wh = NULL;
+		return;
+	}
+
+	ret = os_cond_init(&wh->controller_status_cond);
+	if (ret != 0) {
+		WMR_ERROR(wh, "Failed to init Controller status cond!");
 		wmr_hmd_destroy(&wh->base);
 		wh = NULL;
 		return;
@@ -1812,6 +1962,12 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 	wh->pose = (struct xrt_pose)XRT_POSE_IDENTITY;
 	wh->offset = (struct xrt_pose)XRT_POSE_IDENTITY;
 	wh->average_imus = true;
+	wh->tracked_offset_ms = (struct u_var_draggable_f32){
+	    .val = 0.0,
+	    .min = -40.0,
+	    .step = 0.1,
+	    .max = +120.0,
+	};
 
 	/* Now that we have the config loaded, iterate the map of known headsets and see if we have
 	 * an entry for this specific headset (otherwise the generic entry will be used)
@@ -1836,7 +1992,7 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 
 	WMR_INFO(wh, "Found WMR headset type: %s", wh->hmd_desc->debug_name);
 
-	precompute_sensor_transforms(wh);
+	wmr_config_precompute_transforms(&wh->config.sensors, wh->config.eye_params);
 
 	struct u_extents_2d exts;
 	exts.w_pixels = (uint32_t)wh->config.eye_params[0].display_size.x;
@@ -1922,8 +2078,63 @@ wmr_hmd_create(enum wmr_headset_type hmd_type,
 		return;
 	}
 
+	/* Send controller status request to check for online controllers
+	 * and wait 250ms for the reports for Reverb G2 and Odyssey+ */
+	if (wh->hmd_desc->hmd_type == WMR_HEADSET_REVERB_G2 || wh->hmd_desc->hmd_type == WMR_HEADSET_SAMSUNG_800ZAA) {
+		bool have_controller_status = false;
+
+		os_mutex_lock(&wh->controller_status_lock);
+		if (wmr_hmd_request_controller_status(wh)) {
+			/* @todo: Add a timed version of os_cond_wait and a timeout? */
+			/* This will be signalled from the reader thread */
+			os_cond_wait(&wh->controller_status_cond, &wh->controller_status_lock);
+			have_controller_status = true;
+		}
+		os_mutex_unlock(&wh->controller_status_lock);
+
+		if (!have_controller_status) {
+			WMR_WARN(wh, "Failed to request controller status from HMD");
+		}
+	}
+
 	wmr_hmd_setup_ui(wh);
 
 	*out_hmd = &wh->base;
 	*out_handtracker = hand_device;
+
+	os_mutex_lock(&wh->controller_status_lock);
+	if (wh->controller[0] != NULL) {
+		*out_left_controller = wmr_hmd_controller_connection_get_controller(wh->controller[0]);
+	} else {
+		*out_left_controller = NULL;
+	}
+
+	if (wh->controller[1] != NULL) {
+		*out_right_controller = wmr_hmd_controller_connection_get_controller(wh->controller[1]);
+	} else {
+		*out_right_controller = NULL;
+	}
+	os_mutex_unlock(&wh->controller_status_lock);
+}
+
+bool
+wmr_hmd_send_controller_packet(struct wmr_hmd *hmd, const uint8_t *buffer, uint32_t buf_size)
+{
+	os_mutex_lock(&hmd->hid_lock);
+	int ret = os_hid_write(hmd->hid_hololens_sensors_dev, buffer, buf_size);
+	os_mutex_unlock(&hmd->hid_lock);
+
+	return ret != -1 && (uint32_t)(ret) == buf_size;
+}
+
+/* Called from WMR controller implementation only during fw reads. @todo: Refactor
+ * controller firmware reads to happen from a state machine and not require this blocking method */
+int
+wmr_hmd_read_sync_from_controller(struct wmr_hmd *hmd, uint8_t *buffer, uint32_t buf_size, int timeout_ms)
+{
+	os_mutex_lock(&hmd->hid_lock);
+	int res = os_hid_read(hmd->hid_hololens_sensors_dev, buffer, buf_size, timeout_ms);
+	os_mutex_unlock(&hmd->hid_lock);
+
+	return res;
 }

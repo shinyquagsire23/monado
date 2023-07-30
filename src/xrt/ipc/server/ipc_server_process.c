@@ -1,4 +1,4 @@
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -23,6 +23,7 @@
 #include "util/u_trace_marker.h"
 #include "util/u_verify.h"
 #include "util/u_process.h"
+#include "util/u_debug_gui.h"
 
 #include "util/u_git_tag.h"
 
@@ -39,18 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-/* ---- HACK ---- */
-extern int
-oxr_sdl2_hack_create(void **out_hack);
-
-extern void
-oxr_sdl2_hack_start(void *hack, struct xrt_instance *xinst, struct xrt_system_devices *xsysd);
-
-extern void
-oxr_sdl2_hack_stop(void **hack_ptr);
-/* ---- HACK ---- */
-
+#include <limits.h>
 
 /*
  *
@@ -142,14 +132,18 @@ teardown_all(struct ipc_server *s)
 
 	teardown_idevs(s);
 
+	xrt_space_overseer_destroy(&s->xso);
 	xrt_system_devices_destroy(&s->xsysd);
 
 	xrt_instance_destroy(&s->xinst);
 
 	ipc_server_mainloop_deinit(&s->ml);
 
-	os_mutex_destroy(&s->global_state.lock);
 	u_process_destroy(s->process);
+
+	os_mutex_destroy(&s->global_state.lock);
+
+	ipc_shmem_destroy(&s->ism_handle, (void **)&s->ism, sizeof(struct ipc_shared_memory));
 }
 
 static int
@@ -281,12 +275,15 @@ init_shm(struct ipc_server *s)
 
 		isdev->name = xdev->name;
 		memcpy(isdev->str, xdev->str, sizeof(isdev->str));
+		memcpy(isdev->serial, xdev->serial, sizeof(isdev->serial));
 
 		isdev->orientation_tracking_supported = xdev->orientation_tracking_supported;
 		isdev->position_tracking_supported = xdev->position_tracking_supported;
 		isdev->device_type = xdev->device_type;
 		isdev->hand_tracking_supported = xdev->hand_tracking_supported;
 		isdev->force_feedback_supported = xdev->force_feedback_supported;
+		isdev->form_factor_check_supported = xdev->form_factor_check_supported;
+		isdev->eye_gaze_supported = xdev->eye_gaze_supported;
 
 		// Is this a HMD?
 		if (xdev->hmd != NULL) {
@@ -367,6 +364,7 @@ init_shm(struct ipc_server *s)
 	ism->roles.gamepad = find_xdev_index(s, s->xsysd->roles.gamepad);
 	ism->roles.hand_tracking.left = find_xdev_index(s, s->xsysd->roles.hand_tracking.left);
 	ism->roles.hand_tracking.right = find_xdev_index(s, s->xsysd->roles.hand_tracking.right);
+	ism->roles.eyes = find_xdev_index(s, s->xsysd->roles.eyes);
 
 	// Fill out git version info.
 	snprintf(s->ism->u_git_tag, IPC_VERSION_NAME_LEN, "%s", u_git_tag);
@@ -388,7 +386,7 @@ ipc_server_handle_shutdown_signal(struct ipc_server *vs)
 }
 
 void
-ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle)
+ipc_server_handle_client_connected(struct ipc_server *vs, xrt_ipc_handle_t ipc_handle)
 {
 	volatile struct ipc_client_state *ics = NULL;
 	int32_t cs_index = -1;
@@ -434,10 +432,21 @@ ipc_server_start_client_listener_thread(struct ipc_server *vs, xrt_ipc_handle_t 
 	}
 
 	it->state = IPC_THREAD_STARTING;
+
+	// Allocate a new ID, avoid zero.
+	//! @todo validate ID.
+	uint32_t id = ++vs->id_generator;
+
+	// Reset everything.
+	U_ZERO((struct ipc_client_state *)ics);
+
+	// Set state.
+	ics->client_state.id = id;
 	ics->imc.ipc_handle = ipc_handle;
 	ics->server = vs;
 	ics->server_thread_index = cs_index;
 	ics->io_active = true;
+
 	os_thread_start(&it->thread, ipc_server_client_thread, (void *)ics);
 
 	// Unlock when we are done.
@@ -449,6 +458,13 @@ init_all(struct ipc_server *s)
 {
 	xrt_result_t xret;
 	int ret;
+
+	ret = os_mutex_init(&s->global_state.lock);
+	if (ret < 0) {
+		IPC_ERROR(s, "Global state lock mutex failed to init!");
+		teardown_all(s);
+		return ret;
+	}
 
 	s->process = u_process_create_if_not_running();
 
@@ -470,7 +486,7 @@ init_all(struct ipc_server *s)
 		return -1;
 	}
 
-	xret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xsysc);
+	xret = xrt_instance_create_system(s->xinst, &s->xsysd, &s->xso, &s->xsysc);
 	if (xret != XRT_SUCCESS) {
 		IPC_ERROR(s, "Could not create system!");
 		teardown_all(s);
@@ -505,17 +521,10 @@ init_all(struct ipc_server *s)
 		return ret;
 	}
 
-	ret = os_mutex_init(&s->global_state.lock);
-	if (ret < 0) {
-		IPC_ERROR(s, "Global state lock mutex failed to inti!");
-		teardown_all(s);
-		return ret;
-	}
-
 	u_var_add_root(s, "IPC Server", false);
 	u_var_add_log_level(s, &s->log_level, "Log level");
 	u_var_add_bool(s, &s->exit_on_disconnect, "exit_on_disconnect");
-	u_var_add_bool(s, (void *)&s->running, "running");
+	u_var_add_bool(s, (bool *)&s->running, "running");
 
 	return 0;
 }
@@ -698,13 +707,94 @@ update_server_state_locked(struct ipc_server *s)
 	s->global_state.last_active_client_index = s->global_state.active_client_index;
 }
 
-static void
-set_active_client_locked(struct ipc_server *s, int client_id)
+static volatile struct ipc_client_state *
+find_client_locked(struct ipc_server *s, uint32_t client_id)
 {
-	if (client_id != s->global_state.active_client_index) {
-		s->global_state.active_client_index = client_id;
+	// Check for invalid IDs.
+	if (client_id == 0 || client_id > INT_MAX) {
+		IPC_WARN(s, "Invalid ID '%u', failing operation.", client_id);
+		return NULL;
 	}
+
+	for (uint32_t i = 0; i < IPC_MAX_CLIENTS; i++) {
+		volatile struct ipc_client_state *ics = &s->threads[i].ics;
+
+		// Is this the client we are looking for?
+		if (ics->client_state.id != client_id) {
+			continue;
+		}
+
+		// Just in case of state data.
+		if (!xrt_ipc_handle_is_valid(ics->imc.ipc_handle)) {
+			IPC_WARN(s, "Encountered invalid state while searching for client with ID '%d'", client_id);
+			return NULL;
+		}
+
+		return ics;
+	}
+
+	IPC_WARN(s, "No client with ID '%u', failing operation.", client_id);
+
+	return NULL;
 }
+
+static xrt_result_t
+get_client_app_state_locked(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	struct ipc_app_state ias = ics->client_state;
+	ias.io_active = ics->io_active;
+
+	// @todo: track this data in the ipc_client_state struct
+	ias.primary_application = false;
+
+	// The active client is decided by index, so get that from the ics.
+	int index = ics->server_thread_index;
+
+	if (s->global_state.active_client_index == index) {
+		ias.primary_application = true;
+	}
+
+	*out_ias = ias;
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+set_active_client_locked(struct ipc_server *s, uint32_t client_id)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	// The active client is decided by index, so get that from the ics.
+	int index = ics->server_thread_index;
+
+	if (index != s->global_state.active_client_index) {
+		s->global_state.active_client_index = index;
+	}
+
+	return XRT_SUCCESS;
+}
+
+static xrt_result_t
+toggle_io_client_locked(struct ipc_server *s, uint32_t client_id)
+{
+	volatile struct ipc_client_state *ics = find_client_locked(s, client_id);
+	if (ics == NULL) {
+		return XRT_ERROR_IPC_FAILURE;
+	}
+
+	ics->io_active = !ics->io_active;
+
+	return XRT_SUCCESS;
+}
+
 
 /*
  *
@@ -712,12 +802,35 @@ set_active_client_locked(struct ipc_server *s, int client_id)
  *
  */
 
-void
-ipc_server_set_active_client(struct ipc_server *s, int client_id)
+
+xrt_result_t
+ipc_server_get_client_app_state(struct ipc_server *s, uint32_t client_id, struct ipc_app_state *out_ias)
 {
 	os_mutex_lock(&s->global_state.lock);
-	set_active_client_locked(s, client_id);
+	xrt_result_t xret = get_client_app_state_locked(s, client_id, out_ias);
 	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
+}
+
+xrt_result_t
+ipc_server_set_active_client(struct ipc_server *s, uint32_t client_id)
+{
+	os_mutex_lock(&s->global_state.lock);
+	xrt_result_t xret = set_active_client_locked(s, client_id);
+	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
+}
+
+xrt_result_t
+ipc_server_toggle_io_client(struct ipc_server *s, uint32_t client_id)
+{
+	os_mutex_lock(&s->global_state.lock);
+	xrt_result_t xret = toggle_io_client_locked(s, client_id);
+	os_mutex_unlock(&s->global_state.lock);
+
+	return xret;
 }
 
 void
@@ -745,7 +858,8 @@ ipc_server_activate_session(volatile struct ipc_client_state *ics)
 		                             s->global_state.last_active_client_index);
 	} else {
 		// Update active client
-		set_active_client_locked(s, ics->server_thread_index);
+		set_active_client_locked(s, ics->client_state.id);
+
 		// For new active regular sessions update all clients.
 		update_server_state_locked(s);
 	}
@@ -787,29 +901,23 @@ ipc_server_main(int argc, char **argv)
 
 	U_LOG_I("Monado Service %s starting up...", u_git_tag);
 
-	/* ---- HACK ---- */
 	// need to create early before any vars are added
-	oxr_sdl2_hack_create(&s->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_create(&s->debug_gui);
 
 	int ret = init_all(s);
 	if (ret < 0) {
-		free(s->hack);
+		free(s->debug_gui);
 		free(s);
 		return ret;
 	}
 
 	init_server_state(s);
 
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_start(s->hack, s->xinst, s->xsysd);
-	/* ---- HACK ---- */
+	u_debug_gui_start(s->debug_gui, s->xinst, s->xsysd);
 
 	ret = main_loop(s);
 
-	/* ---- HACK ---- */
-	oxr_sdl2_hack_stop(&s->hack);
-	/* ---- HACK ---- */
+	u_debug_gui_stop(&s->debug_gui);
 
 	teardown_all(s);
 	free(s);
@@ -831,6 +939,7 @@ ipc_server_main_android(struct ipc_server **ps, void (*startup_complete_callback
 	int ret = init_all(s);
 	if (ret < 0) {
 		free(s);
+		startup_complete_callback(data);
 		return ret;
 	}
 

@@ -1,5 +1,5 @@
 // Copyright 2020-2021, N Madsen.
-// Copyright 2020-2021, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -12,11 +12,30 @@
 
 #pragma once
 
+#include "xrt/xrt_compiler.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+/*!
+ * Headset type, used to select different control and init/shutdown procedures.
+ *
+ * @ingroup drv_wmr
+ */
+enum wmr_headset_type
+{
+	WMR_HEADSET_GENERIC,
+	WMR_HEADSET_HP_VR1000,
+	WMR_HEADSET_REVERB_G1,
+	WMR_HEADSET_REVERB_G2,
+	WMR_HEADSET_SAMSUNG_XE700X3AI,
+	WMR_HEADSET_SAMSUNG_800ZAA,
+	WMR_HEADSET_LENOVO_EXPLORER,
+	WMR_HEADSET_MEDION_ERAZER_X1000,
+};
 
 /*!
  * Defines for the WMR driver.

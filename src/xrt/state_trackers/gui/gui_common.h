@@ -1,4 +1,4 @@
-// Copyright 2019, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -47,6 +47,7 @@ struct gui_program
 	struct gui_scene_manager *gsm;
 
 	struct xrt_system_devices *xsysd;
+	struct xrt_space_overseer *xso;
 	struct xrt_instance *instance;
 	struct xrt_prober *xp;
 
@@ -79,8 +80,6 @@ struct gui_ogl_texture
 	uint32_t w, h;
 	uint32_t id;
 	bool half;
-
-	void *ptr;
 };
 
 /*!
@@ -212,6 +211,22 @@ gui_scene_tracking_overrides(struct gui_program *p);
  */
 void
 gui_scene_debug(struct gui_program *p);
+
+/*!
+ * Small hand-tracking demo.
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_hand_tracking_demo(struct gui_program *p);
+
+/*!
+ * EuRoC recorder for DepthAI cameras
+ *
+ * @ingroup gui
+ */
+void
+gui_scene_record_euroc(struct gui_program *p);
 
 /*!
  * Create a recording view scene.

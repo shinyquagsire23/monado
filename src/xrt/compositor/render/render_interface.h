@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -18,6 +18,7 @@
 #include "xrt/xrt_defines.h"
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd_pool.h"
 
 
 #ifdef __cplusplus
@@ -78,6 +79,7 @@ render_calc_time_warp_matrix(const struct xrt_pose *src_pose,
  */
 struct render_shaders
 {
+	VkShaderModule blit_comp;
 	VkShaderModule clear_comp;
 	VkShaderModule layer_comp;
 	VkShaderModule distortion_comp;
@@ -217,6 +219,9 @@ struct render_resources
 	 * Shared pools and caches.
 	 */
 
+	//! Pool used for distortion image uploads.
+	struct vk_cmd_pool distortion_pool;
+
 	//! Shared for all rendering.
 	VkPipelineCache pipeline_cache;
 
@@ -231,6 +236,21 @@ struct render_resources
 
 	//! Command buffer for recording everything.
 	VkCommandBuffer cmd;
+
+	struct
+	{
+		//! Sampler for mock/null images.
+		VkSampler mock;
+
+		//! Sampler that repeats the texture in all directions.
+		VkSampler repeat;
+
+		//! Sampler that clamps the coordinates to the edge in all directions.
+		VkSampler clamp_to_edge;
+
+		//! Sampler that clamps color samples to black in all directions.
+		VkSampler clamp_to_border_black;
+	} samplers;
 
 	struct
 	{
@@ -308,9 +328,6 @@ struct render_resources
 
 		//! Uniform data binding.
 		uint32_t ubo_binding;
-
-		//! Default sampler for null images.
-		VkSampler default_sampler;
 
 		struct
 		{
@@ -407,10 +424,16 @@ render_resources_close(struct render_resources *r);
  * Creates or recreates the compute distortion textures if necessary.
  */
 bool
-render_ensure_distortion_buffer(struct render_resources *r,
+render_distortion_images_ensure(struct render_resources *r,
                                 struct vk_bundle *vk,
                                 struct xrt_device *xdev,
                                 bool pre_rotate);
+
+/*!
+ * Free distortion images.
+ */
+void
+render_distortion_images_close(struct render_resources *r);
 
 /*!
  * Ensure that the scratch image is created and has the given extent.
@@ -434,6 +457,19 @@ render_ensure_scratch_image(struct render_resources *r, VkExtent2D extent);
  */
 bool
 render_resources_get_timestamps(struct render_resources *r, uint64_t *out_gpu_start_ns, uint64_t *out_gpu_end_ns);
+
+/*!
+ * Returns the duration for the latest GPU work that was submitted using
+ * @ref render_gfx or @ref render_compute cmd buf builders.
+ *
+ * Behaviour for this function is undefined if the GPU has not completed before
+ * calling this function, so make sure to call vkQueueWaitIdle or wait on the
+ * fence that the work was submitted with have fully completed.
+ *
+ * @public @memberof render_resources
+ */
+bool
+render_resources_get_duration(struct render_resources *r, uint64_t *out_gpu_duration_ns);
 
 
 /*
@@ -704,6 +740,15 @@ struct render_compute
 
 	//! Descriptor set for distortion.
 	VkDescriptorSet distortion_descriptor_set;
+};
+
+/*!
+ * Push data that is sent to the blit shader.
+ */
+struct render_compute_blit_push_data
+{
+	struct xrt_normalized_rect source_rect;
+	struct xrt_rect target_rect;
 };
 
 /*!

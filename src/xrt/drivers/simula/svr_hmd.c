@@ -127,7 +127,7 @@ svr_hmd_get_view_poses(struct xrt_device *xdev,
 
 //!@todo: remove hard-coding and move to u_distortion_mesh
 bool
-svr_mesh_calc(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *result)
+svr_mesh_calc(struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *result)
 {
 	struct svr_hmd *svr = svr_hmd(xdev);
 

@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -12,11 +12,12 @@
 
 #include "xrt/xrt_compiler.h"
 #include "xrt/xrt_config_os.h"
-#include "shared/ipc_protocol.h"
-#include "shared/ipc_utils.h"
 
 #include "util/u_threading.h"
 #include "util/u_logging.h"
+
+#include "shared/ipc_protocol.h"
+#include "shared/ipc_utils.h"
 
 #include <stdio.h>
 
@@ -61,11 +62,38 @@ struct ipc_connection
 	enum u_logging_level log_level;
 };
 
+/*!
+ * An IPC client proxy for an @ref xrt_device.
+ *
+ * @implements xrt_device
+ * @ingroup ipc_client
+ */
+struct ipc_client_xdev
+{
+	struct xrt_device base;
+
+	struct ipc_connection *ipc_c;
+
+	uint32_t device_id;
+};
+
+
 /*
  *
  * Internal functions.
  *
  */
+
+/*!
+ * Convenience helper to go from a xdev to @ref ipc_client_xdev.
+ *
+ * @ingroup ipc_client
+ */
+static inline struct ipc_client_xdev *
+ipc_client_xdev(struct xrt_device *xdev)
+{
+	return (struct ipc_client_xdev *)xdev;
+}
 
 /*!
  * Create an IPC client system compositor.
@@ -87,3 +115,6 @@ ipc_client_hmd_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *
 
 struct xrt_device *
 ipc_client_device_create(struct ipc_connection *ipc_c, struct xrt_tracking_origin *xtrack, uint32_t device_id);
+
+struct xrt_space_overseer *
+ipc_client_space_overseer_create(struct ipc_connection *ipc_c);

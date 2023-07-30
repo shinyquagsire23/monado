@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -30,6 +30,10 @@
 
 #ifdef XRT_BUILD_DRIVER_PSMV
 #include "psmv/psmv_interface.h"
+#endif
+
+#ifdef XRT_BUILD_DRIVER_PSSENSE
+#include "pssense/pssense_interface.h"
 #endif
 
 #ifdef XRT_BUILD_DRIVER_PSVR
@@ -72,10 +76,6 @@
 #include "depthai/depthai_interface.h"
 #endif
 
-#ifdef XRT_BUILD_DRIVER_QWERTY
-#include "qwerty/qwerty_interface.h"
-#endif
-
 #ifdef XRT_BUILD_DRIVER_WMR
 #include "wmr/wmr_interface.h"
 #include "wmr/wmr_common.h"
@@ -96,9 +96,21 @@
  * Builders
  */
 xrt_builder_create_func_t target_builder_list[] = {
+#ifdef T_BUILDER_QWERTY // High up to override any real hardware.
+    t_builder_qwerty_create,
+#endif // T_BUILDER_QWERTY
+
+#ifdef T_BUILDER_REMOTE // High up to override any real hardware.
+    t_builder_remote_create,
+#endif // T_BUILDER_REMOTE
+
+#ifdef T_BUILDER_SIMULATED // High up to override any real hardware.
+    t_builder_simulated_create,
+#endif // T_BUILDER_SIMULATED
+
 #ifdef XRT_BUILD_DRIVER_RIFT_S
     rift_s_builder_create,
-#endif
+#endif // XRT_BUILD_DRIVER_RIFT_S
 
 #ifdef T_BUILDER_RGB_TRACKING
     t_builder_rgb_tracking_create,
@@ -106,22 +118,24 @@ xrt_builder_create_func_t target_builder_list[] = {
 
 #ifdef T_BUILDER_SIMULAVR
     t_builder_simula_create,
-#endif
+#endif // T_BUILDER_SIMULAVR
 
 #ifdef T_BUILDER_LIGHTHOUSE
     t_builder_lighthouse_create,
 #endif // T_BUILDER_LIGHTHOUSE
 
-#ifdef T_BUILDER_REMOTE
-    t_builder_remote_create,
-#endif // T_BUILDER_REMOTE
-
 #ifdef T_BUILDER_NS
     t_builder_north_star_create,
-#endif
+#endif // T_BUILDER_NS
+
+#ifdef T_BUILDER_WMR
+    t_builder_wmr_create,
+#endif // T_BUILDER_WMR
+
 #ifdef T_BUILDER_LEGACY
     t_builder_legacy_create,
 #endif // T_BUILDER_LEGACY
+
     NULL,
 };
 
@@ -149,6 +163,11 @@ struct xrt_prober_entry target_entry_list[] = {
     {PSMV_VID, PSMV_PID_ZCM2, psmv_found, "PS Move Controller (ZCM2)", "psmv"},
 #endif // XRT_BUILD_DRIVER_PSMV
 
+#ifdef XRT_BUILD_DRIVER_PSSENSE
+    {PSSENSE_VID, PSSENSE_PID_LEFT, pssense_found, "PlayStation VR2 Sense Controller (L)", "pssense"},
+    {PSSENSE_VID, PSSENSE_PID_RIGHT, pssense_found, "PlayStation VR2 Sense Controller (R)", "pssense"},
+#endif // XRT_BUILD_DRIVER_PSSENSE
+
 #ifdef XRT_BUILD_DRIVER_HYDRA
     {HYDRA_VID, HYDRA_PID, hydra_found, "Razer Hydra", "hydra"},
 #endif // XRT_BUILD_DRIVER_HYDRA
@@ -156,14 +175,6 @@ struct xrt_prober_entry target_entry_list[] = {
 #ifdef XRT_BUILD_DRIVER_HDK
     {HDK_VID, HDK_PID, hdk_found, "OSVR HDK", "osvr"},
 #endif // XRT_BUILD_DRIVER_HDK
-
-#ifdef XRT_BUILD_DRIVER_WMR
-    {MICROSOFT_VID, HOLOLENS_SENSORS_PID, wmr_found, "Microsoft HoloLens Sensors", "wmr"},
-    {MICROSOFT_VID, WMR_CONTROLLER_PID, wmr_bt_controller_found, "WMR Bluetooth controller", "wmr"},
-    {MICROSOFT_VID, REVERB_G2_CONTROLLER_PID, wmr_bt_controller_found, "HP Reverb G2 Bluetooth controller", "wmr"},
-    {MICROSOFT_VID, ODYSSEY_CONTROLLER_PID, wmr_bt_controller_found, "Odyssey Bluetooth controller", "wmr"},
-
-#endif // XRT_BUILD_DRIVER_WMR
 
 #ifdef XRT_BUILD_DRIVER_QUEST_LINK
     {META_PLATFORMS_TECH_LLC_VID, QUEST_XRSP_PID, ql_found, "Quest Link (XRSP)", "quest_link"},
@@ -214,10 +225,6 @@ xrt_auto_prober_create_func_t target_auto_list[] = {
 
 #ifdef XRT_BUILD_DRIVER_EUROC
     euroc_create_auto_prober,
-#endif
-
-#ifdef XRT_BUILD_DRIVER_QWERTY
-    qwerty_create_auto_prober,
 #endif
 
 #ifdef XRT_BUILD_DRIVER_SIMULATED

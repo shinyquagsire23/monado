@@ -24,12 +24,12 @@
 #include "util/u_config_json.h"
 #include "util/u_debug.h"
 #include "util/u_sink.h"
+#include "util/u_file.h"
 
 #include "tracking/t_hand_tracking.h"
 
 // Save me, Obi-Wan!
 
-#include "../../tracking/hand/old_rgb/rgb_interface.h"
 #include "../../tracking/hand/mercury/hg_interface.h"
 
 #ifdef XRT_BUILD_DRIVER_DEPTHAI
@@ -240,7 +240,6 @@ ht_device_create_common(struct t_stereo_camera_calibration *calib,
 int
 ht_device_create(struct xrt_frame_context *xfctx,
                  struct t_stereo_camera_calibration *calib,
-                 enum t_hand_tracking_algorithm algorithm_choice,
                  struct t_camera_extra_info extra_camera_info,
                  struct xrt_slam_sinks **out_sinks,
                  struct xrt_device **out_device)
@@ -251,20 +250,24 @@ ht_device_create(struct xrt_frame_context *xfctx,
 
 	struct t_hand_tracking_sync *sync = NULL;
 
-	switch (algorithm_choice) {
-	case HT_ALGORITHM_MERCURY: {
-		sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info);
-	} break;
-	case HT_ALGORITHM_OLD_RGB: {
-		//!@todo Either have this deal with the output space correctly, or have everything use LEFT_CAMERA
-		sync = t_hand_tracking_sync_old_rgb_create(calib);
+	char path[1024] = {0};
+
+	int ret = u_file_get_hand_tracking_models_dir(path, ARRAY_SIZE(path));
+	if (ret < 0) {
+		U_LOG_E(
+		    "Could not find any directory with hand-tracking models!\n\t"
+		    "Run ./scripts/get-ht-models.sh or install monado-data package");
+		return -1;
 	}
-	}
+
+	sync = t_hand_tracking_sync_mercury_create(calib, extra_camera_info, path);
+
 	struct ht_device *htd = ht_device_create_common(calib, false, xfctx, sync);
 
 	HT_DEBUG(htd, "Hand Tracker initialized!");
 
 	*out_sinks = &htd->async->sinks;
 	*out_device = &htd->base;
+
 	return 0;
 }

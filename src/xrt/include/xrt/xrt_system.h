@@ -31,6 +31,7 @@ struct xrt_system_devices
 		struct xrt_device *left;
 		struct xrt_device *right;
 		struct xrt_device *gamepad;
+		struct xrt_device *eyes;
 
 		struct
 		{

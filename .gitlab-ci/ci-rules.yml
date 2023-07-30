@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2018-2023 the Mesa contributors
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
+
+# YAML anchors for rule conditions
+# --------------------------------
+.rules-anchors:
+  rules:
+    # Post-merge pipeline
+    - if: &is-post-merge '$CI_PROJECT_NAMESPACE == "monado" && $CI_COMMIT_BRANCH'
+      when: on_success
+    # Pre-merge pipeline
+    - if: &is-pre-merge '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: on_success
+    # Outside of monado.
+    - if: &is-forked-branch '$CI_PROJECT_NAMESPACE != "monado" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != $CI_COMMIT_REF_NAME'
+      when: manual
+    # GitLab CI paths
+    - changes: &paths-ci-files
+        - ".gitlab-ci.yml"
+        - ".gitlab-ci/**/*"
+      when: on_success
+    # All paths, 1 hours have been wasted trying to combine the above arrays.
+    - changes: &paths-all-files
+        # Code
+        - "scripts/**/*"
+        - "src/**/*"
+        # Doc
+        - "doc/**/*"
+        # Build sys
+        - CMakeLists.txt
+        - "*.cmake"
+        - "**/*.gradle"
+        - "cmake/**/*"
+        - "gradle/**/*"
+        # CI paths
+        - ".gitlab-ci.yml"
+        - ".gitlab-ci/**/*"
+      when: on_success
+
+# When to automatically run the CI for build jobs
+.build-rules:
+  rules:
+    # If any files affecting the pipeline are changed, build/test jobs run
+    # automatically once all dependency jobs have passed
+    - changes:
+        *paths-all-files
+      when: on_success
+    # Don't build on forked repos.
+    - if: *is-forked-branch
+      when: manual
+    # Otherwise, build/test jobs won't run because no rule matched.
+
+
+.container-rules:
+  rules:
+    # Run pipeline by default in the main project if any CI pipeline
+    # configuration files were changed, to ensure docker images are up to date
+    - if: *is-post-merge
+      changes:
+        *paths-ci-files
+      when: on_success
+    # Run pipeline by default if it is for a merge request, and any files
+    # affecting the pipeline were changed
+    - if: *is-pre-merge
+      changes:
+        *paths-all-files
+      when: on_success
+    # Allow triggering jobs manually in other cases if any files affecting the
+    # pipeline were changed: Disabled for now because it causes the pipeline on
+    # main to be blocked because it gets stuck in the container stage.
+    #- changes:
+    #    *paths-ci-files
+    #  when: manual
+    # Don't build on forked repos.
+    - if: *is-forked-branch
+      when: manual
+    # Otherwise, container jobs won't run because no rule matched.

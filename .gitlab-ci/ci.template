@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: CC0-1.0
-# SPDX-FileCopyrightText: 2018-2022 Collabora, Ltd. and the Monado contributors
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
 
 {# ignore the warning, this is actually the template to edit. #}
-######################################
-#      GENERATED - DO NOT EDIT       #
-# see .gitlab-ci/ci.template instead #
-######################################
+###############################################
+# GENERATED - DO NOT EDIT
+# see .gitlab-ci/ci.template, etc instead
+###############################################
+{# See README.md for instructions to regenerate after modification. #}
 {#
 useful links:
 https://freedesktop.pages.freedesktop.org/ci-templates/
@@ -21,30 +22,25 @@ The following will update all files from templates:
 make -f .gitlab-ci/ci-scripts.mk
 #}
 
-variables:
-  FDO_UPSTREAM_REPO: monado/monado
+# Detached MR pipelines, needed due to https://gitlab.freedesktop.org/freedesktop/freedesktop/-/issues/438
 
-.templates_sha: &templates_sha {{fdo_ci_templates_sha}}
+# workflow:
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+#     - if: $CI_PIPELINE_SOURCE == 'push'
+
+variables:
+  FDO_UPSTREAM_REPO: "monado/monado"
 
 include:
-{% for distro in distributions %}
-  # {{ distro.name | capitalize }}
   - project: "freedesktop/ci-templates"
-    ref: *templates_sha
-    file: "/templates/{{distro.name}}.yml"
+    ref: {{fdo_ci_templates_sha}}
+    file:
+{% for distro in distributions %}
+      - "/templates/{{distro.name}}.yml"
 {% endfor %}
-
-{% for distro in distributions -%} {%- for image in distro.images %}
-
-# Variables for build and usage of {{ distro.name|capitalize }} {{image.codename}} image
-.monado.variables.{{distro.name}}:{{image.codename}}:
-  variables:
-    FDO_DISTRIBUTION_VERSION: "{{ image["distro_version"] | default(image.codename) }}"
-    FDO_DISTRIBUTION_TAG: "{{image["tag"]}}"
-{% if "repo_suffix" in image %}
-    FDO_REPO_SUFFIX: {{image["repo_suffix"]}}
-{% endif %}
-{% endfor -%} {%- endfor %}
+  # - local: .gitlab-ci/containers/ci-container-prep.yml
+  - local: .gitlab-ci/ci-rules.yml
 
 stages:
   - container_prep
@@ -55,51 +51,21 @@ stages:
   - deploy
 
 ###
-# Container prep jobs
+# Extra rules for packaging
+.monado.packaging.conditions:
+  rules:
+    # Only the default branch of the "upstream" repo.
+    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
+      when: on_success
+    # Otherwise, don't build packages.
+    - when: never
 
-{%- for distro in distributions -%} {%- for image in distro.images %}
-
-# Make {{ distro.name|capitalize }} {{image.codename}} image
-{{distro.name}}:{{image.codename}}:container_prep:
-  stage: container_prep
-  extends:
-    - .monado.variables.{{distro.name}}:{{image.codename}}
-    - .fdo.container-build@{{distro.name}} # from ci-templates
-  only:
-    changes:
-      - .gitlab-ci/**/*
-  variables:
-    {# The packages list is actually a mapping, not an array, but the same syntax works. #}
-    {# Needed to be a mapping so it could be "merged" #}
-    FDO_DISTRIBUTION_PACKAGES: '{{image.packages | sort | join(" ")}}'
-{% if "script" in image %}
-    FDO_DISTRIBUTION_EXEC: 'bash .gitlab-ci/{{image["script"]}}'
-{% endif %}
-{% endfor -%} {%- endfor %}
-
-{# Macro to compute job name to extend to use image given distro and image objects#}
-{% macro base_job_to_use_image(distro, image) %}.monado.image.{{distro.name}}:{{image.codename}}{% endmacro -%}
-
-###
-# Container usage base jobs
-{% for distro in distributions -%} {%- for image in distro.images %}
-
-# Base for using {{ distro.name|capitalize }} {{image.codename}} image
-{{base_job_to_use_image(distro, image)}}:
-  extends:
-    - .monado.variables.{{distro.name}}:{{image.codename}}
-    - .fdo.{{ "suffixed" if "repo_suffix" in image else "distribution" }}-image@{{distro.name}} # from ci-templates
-
-{% endfor -%} {%- endfor %}
-
-{# Macro to compute job name to extend to use image given a package we want#}
-{% macro base_job_to_use_image_containing(package) %}
-{% for distro in distributions -%} {%- for image in distro.images if package in image.packages %}
-{{ base_job_to_use_image(distro, image) if loop.first }}
-{% endfor -%} {%- endfor %}
-{% endmacro -%}
 
 {% include 'win_containers.yml' %}
+{% include 'ci-containers-variables.yml.jinja' %}
+{% include 'ci-containers.yml.jinja' %}
+
+{% from 'functions.jinja' import base_job_to_use_image_containing, base_job_to_use_image with context %}
 
 # Style check job
 format-and-spellcheck:
@@ -116,6 +82,8 @@ format-and-spellcheck:
 
 # Verify REUSE compliance
 reuse:
+  extends:
+    - .build-rules
   stage: build
   image:
     name: fsfe/reuse:latest
@@ -135,6 +103,9 @@ reuse:
 {{job.name}}:
   stage: build
   extends:
+{% if job.name == documentation_build %}
+    - .monado.packaging.conditions
+{% endif %}
     - {{base_job_to_use_image(distro, image)}}
 
 {%- if job.before_script or "android" in job.name %}
@@ -159,20 +130,16 @@ reuse:
 
   script:
 
+    - .gitlab-ci/prebuild.sh
 {#- regular or NDK cmake builds -#}
 {%- if "cmake" in job.name or "ndk" in job.name %}
 
-    - rm -rf build
-    - cmake -GNinja -B build -S . {{- make_cmake_args(job.cmake_defines) }}
-    - echo "Build Options:"; grep "^XRT_" build/CMakeCache.txt
-    - ninja -C build
+    - .gitlab-ci/ci-cmake-build.sh {{- make_cmake_args(job.cmake_defines) }}
 
 {#- gradle builds -#}
 {%- elif "android" in job.name %}
 
-    - cp .gitlab-ci/local.properties .
-    - ./gradlew clean
-    - ./gradlew {{ job.target }}
+    - .gitlab-ci/ci-gradle-build.sh {{ job.target }}
 
 {%- else %}
 
@@ -208,15 +175,6 @@ windows:
       - install
       - build/Testing/Temporary
 
-# Packaging
-.monado.packaging.conditions:
-  rules:
-    # Only the default branch of the "upstream" repo.
-    - if: "$CI_PROJECT_PATH == $FDO_UPSTREAM_REPO && $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH"
-      when: on_success
-    # Otherwise, don't build packages.
-    - when: never
-
 {% macro packaging_job_name(distro, image) -%}
 {{distro.name}}:{{image.codename}}:package
 {%- endmacro %}
@@ -240,6 +198,7 @@ windows:
     - git config --global user.name {{packaging.name}}
     - git config --global user.email {{packaging.email}}
   script:
+    - .gitlab-ci/prebuild.sh
     # Prep the source tree
     - git clean -dfx
     # Call this script to build binary and source packages.
@@ -272,10 +231,10 @@ reprepro:package:
 ###
 pages:
   stage: pages
-  only:
-    - main@monado/monado
+  extends:
+    - .monado.packaging.conditions
   needs:
-    - debian:cmake
+    - {{ documentation_build }}
     - reprepro:package
   script:
     - mkdir -p public

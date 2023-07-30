@@ -4,5 +4,5 @@
 - mr.1144
 ---
 
-renderer:
-Add support for mirroring the left view back to the debug gui, so we can record it or see what somebody's doing in VR.
+main: Add support for mirroring the left view back to the debug gui, so we can
+record it or see what somebody's doing in VR.

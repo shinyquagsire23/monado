@@ -40,7 +40,15 @@
 		assert(system != NULL);                                                                                \
 	} while (false)
 
-XrResult
+#define OXR_VERIFY_XSYSC(LOG, SYS)                                                                                     \
+	do {                                                                                                           \
+		if ((SYS)->xsysc == NULL) {                                                                            \
+			return oxr_error((LOG), XR_ERROR_VALIDATION_FAILURE,                                           \
+			                 " Function can not be called when specifically not asking for graphics");     \
+		}                                                                                                      \
+	} while (false)
+
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetSystem(XrInstance instance, const XrSystemGetInfo *getInfo, XrSystemId *systemId)
 {
 	OXR_TRACE_MARKER();
@@ -65,7 +73,7 @@ oxr_xrGetSystem(XrInstance instance, const XrSystemGetInfo *getInfo, XrSystemId 
 	return XR_SUCCESS;
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProperties *properties)
 {
 	OXR_TRACE_MARKER();
@@ -79,7 +87,7 @@ oxr_xrGetSystemProperties(XrInstance instance, XrSystemId systemId, XrSystemProp
 	return oxr_system_get_properties(&log, sys, properties);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateViewConfigurations(XrInstance instance,
                                   XrSystemId systemId,
                                   uint32_t viewConfigurationTypeCapacityInput,
@@ -97,7 +105,7 @@ oxr_xrEnumerateViewConfigurations(XrInstance instance,
 	                                       viewConfigurationTypeCountOutput, viewConfigurationTypes);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateEnvironmentBlendModes(XrInstance instance,
                                      XrSystemId systemId,
                                      XrViewConfigurationType viewConfigurationType,
@@ -124,7 +132,7 @@ oxr_xrEnumerateEnvironmentBlendModes(XrInstance instance,
 	                                        environmentBlendModeCountOutput, environmentBlendModes);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetViewConfigurationProperties(XrInstance instance,
                                      XrSystemId systemId,
                                      XrViewConfigurationType viewConfigurationType,
@@ -141,7 +149,7 @@ oxr_xrGetViewConfigurationProperties(XrInstance instance,
 	return oxr_system_get_view_conf_properties(&log, sys, viewConfigurationType, configurationProperties);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrEnumerateViewConfigurationViews(XrInstance instance,
                                       XrSystemId systemId,
                                       XrViewConfigurationType viewConfigurationType,
@@ -156,6 +164,10 @@ oxr_xrEnumerateViewConfigurationViews(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrEnumerateViewConfigurationViews");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 
+	for (uint32_t i = 0; i < viewCapacityInput; i++) {
+		OXR_VERIFY_ARG_ARRAY_ELEMENT_TYPE(&log, views, i, XR_TYPE_VIEW_CONFIGURATION_VIEW);
+	}
+
 	return oxr_system_enumerate_view_conf_views(&log, sys, viewConfigurationType, viewCapacityInput,
 	                                            viewCountOutput, views);
 }
@@ -169,7 +181,7 @@ oxr_xrEnumerateViewConfigurationViews(XrInstance instance,
 
 #ifdef XR_USE_GRAPHICS_API_OPENGL_ES
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetOpenGLESGraphicsRequirementsKHR(XrInstance instance,
                                          XrSystemId systemId,
                                          XrGraphicsRequirementsOpenGLESKHR *graphicsRequirements)
@@ -181,6 +193,7 @@ oxr_xrGetOpenGLESGraphicsRequirementsKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetOpenGLESGraphicsRequirementsKHR");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_ES_KHR);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	struct xrt_api_requirements ver;
 
@@ -205,7 +218,7 @@ oxr_xrGetOpenGLESGraphicsRequirementsKHR(XrInstance instance,
 
 #ifdef XR_USE_GRAPHICS_API_OPENGL
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
                                        XrSystemId systemId,
                                        XrGraphicsRequirementsOpenGLKHR *graphicsRequirements)
@@ -217,6 +230,7 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetOpenGLGraphicsRequirementsKHR");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	struct xrt_api_requirements ver;
 
@@ -241,7 +255,7 @@ oxr_xrGetOpenGLGraphicsRequirementsKHR(XrInstance instance,
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
                                      XrSystemId systemId,
                                      uint32_t namesCapacityInput,
@@ -254,11 +268,12 @@ oxr_xrGetVulkanInstanceExtensionsKHR(XrInstance instance,
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanInstanceExtensionsKHR");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_instance_exts(&log, sys, namesCapacityInput, namesCountOutput, namesString);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
                                    XrSystemId systemId,
                                    uint32_t namesCapacityInput,
@@ -271,15 +286,16 @@ oxr_xrGetVulkanDeviceExtensionsKHR(XrInstance instance,
 	struct oxr_logger log;
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanDeviceExtensionsKHR");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_device_exts(&log, sys, namesCapacityInput, namesCountOutput, namesString);
 }
 
 // NOLINTNEXTLINE // don't remove the forward decl.
 VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-vkGetInstanceProcAddr(VkInstance instance, const char *pName);
+vkGetInstanceProcAddr(VkInstance instance, const char *pName); // NOLINT
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
                                  XrSystemId systemId,
                                  VkInstance vkInstance,
@@ -292,11 +308,12 @@ oxr_xrGetVulkanGraphicsDeviceKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsDeviceKHR");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 	OXR_VERIFY_ARG_NOT_NULL(&log, vkPhysicalDevice);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_physical_device(&log, inst, sys, vkInstance, vkGetInstanceProcAddr, vkPhysicalDevice);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsDevice2KHR(XrInstance instance,
                                   const XrVulkanGraphicsDeviceGetInfoKHR *getInfo,
                                   VkPhysicalDevice *vkPhysicalDevice)
@@ -310,12 +327,13 @@ oxr_xrGetVulkanGraphicsDevice2KHR(XrInstance instance,
 
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, getInfo->systemId, sys);
 	OXR_VERIFY_ARG_NOT_NULL(&log, vkPhysicalDevice);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_physical_device(&log, inst, sys, getInfo->vulkanInstance, vkGetInstanceProcAddr,
 	                                  vkPhysicalDevice);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsRequirementsKHR(XrInstance instance,
                                        XrSystemId systemId,
                                        XrGraphicsRequirementsVulkanKHR *graphicsRequirements)
@@ -327,11 +345,12 @@ oxr_xrGetVulkanGraphicsRequirementsKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetVulkanGraphicsRequirementsKHR");
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_requirements(&log, sys, graphicsRequirements);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetVulkanGraphicsRequirements2KHR(XrInstance instance,
                                         XrSystemId systemId,
                                         XrGraphicsRequirementsVulkan2KHR *graphicsRequirements)
@@ -345,6 +364,7 @@ oxr_xrGetVulkanGraphicsRequirements2KHR(XrInstance instance,
 	/* XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN2_KHR aliased to
 	 * XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR */
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	return oxr_vk_get_requirements(&log, sys, graphicsRequirements);
 }
@@ -368,6 +388,7 @@ oxr_xrCreateVulkanInstanceKHR(XrInstance instance,
 
 	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->pfnGetInstanceProcAddr);
 	OXR_VERIFY_ARG_NOT_NULL(&log, createInfo->vulkanCreateInfo);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	// createInfo->vulkanAllocator can be NULL
 
@@ -380,7 +401,7 @@ oxr_xrCreateVulkanInstanceKHR(XrInstance instance,
 	return oxr_vk_create_vulkan_instance(&log, sys, createInfo, vulkanInstance, vulkanResult);
 }
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
                             const XrVulkanDeviceCreateInfoKHR *createInfo,
                             VkDevice *vulkanDevice,
@@ -405,6 +426,7 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
 
 	OXR_VERIFY_ARG_NOT_NULL(&log, sys->suggested_vulkan_physical_device);
 	OXR_VERIFY_ARG_NOT_NULL(&log, sys->vulkan_enable2_instance);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	if (sys->suggested_vulkan_physical_device != createInfo->vulkanPhysicalDevice) {
 		return oxr_error(&log, XR_ERROR_HANDLE_INVALID,
@@ -427,7 +449,7 @@ oxr_xrCreateVulkanDeviceKHR(XrInstance instance,
 
 #ifdef XR_USE_GRAPHICS_API_D3D11
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
                                       XrSystemId systemId,
                                       XrGraphicsRequirementsD3D11KHR *graphicsRequirements)
@@ -438,6 +460,7 @@ oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetD3D11GraphicsRequirementsKHR");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	sys->gotten_requirements = true;
 
@@ -454,7 +477,7 @@ oxr_xrGetD3D11GraphicsRequirementsKHR(XrInstance instance,
 
 #ifdef XR_USE_GRAPHICS_API_D3D12
 
-XrResult
+XRAPI_ATTR XrResult XRAPI_CALL
 oxr_xrGetD3D12GraphicsRequirementsKHR(XrInstance instance,
                                       XrSystemId systemId,
                                       XrGraphicsRequirementsD3D12KHR *graphicsRequirements)
@@ -465,6 +488,7 @@ oxr_xrGetD3D12GraphicsRequirementsKHR(XrInstance instance,
 	OXR_VERIFY_INSTANCE_AND_INIT_LOG(&log, instance, inst, "xrGetD3D12GraphicsRequirementsKHR");
 	OXR_VERIFY_ARG_TYPE_AND_NOT_NULL(&log, graphicsRequirements, XR_TYPE_GRAPHICS_REQUIREMENTS_D3D12_KHR);
 	OXR_VERIFY_SYSTEM_AND_GET(&log, inst, systemId, sys);
+	OXR_VERIFY_XSYSC(&log, sys);
 
 	sys->gotten_requirements = true;
 

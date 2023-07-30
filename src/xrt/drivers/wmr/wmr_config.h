@@ -137,12 +137,23 @@ struct wmr_inertial_sensor_config
 	struct xrt_vec3 noise_std;
 };
 
+/* Precomputed transforms to convert between OpenXR and WMR coordinate systems */
+struct wmr_sensor_transforms_config
+{
+	struct xrt_pose P_oxr_acc; //!< Converts accel samples into OpenXR coordinates
+	struct xrt_pose P_oxr_gyr; //!< Converts gyro samples into OpenXR coordinates
+	struct xrt_pose P_ht0_me;  //!< ME="middle of the eyes". HT0-to-ME transform but in OpenXR coordinates
+	struct xrt_pose P_imu_me;  //!< IMU=accel. IMU-to-ME transform but in OpenXR coordinates
+};
+
 /* Configuration for the set of inertial sensors */
 struct wmr_inertial_sensors_config
 {
 	struct wmr_inertial_sensor_config accel;
 	struct wmr_inertial_sensor_config gyro;
 	struct wmr_inertial_sensor_config mag;
+
+	struct wmr_sensor_transforms_config transforms;
 };
 
 struct wmr_led_config
@@ -158,9 +169,12 @@ struct wmr_hmd_config
 
 	struct wmr_inertial_sensors_config sensors;
 
-	int n_cameras;
-	int n_ht_cameras;
-	struct wmr_camera_config cameras[WMR_MAX_CAMERAS];
+	int cam_count;
+	struct wmr_camera_config cams[WMR_MAX_CAMERAS];
+
+	struct wmr_camera_config *tcams[WMR_MAX_CAMERAS]; //!< Pointers to tracking cameras in `cameras`
+	int tcam_count;                                   //!< Number of tracking cameras
+	int slam_cam_count;                               //!< Number of tracking cameras to use for SLAM
 };
 
 bool
@@ -177,6 +191,10 @@ struct wmr_controller_config
 
 bool
 wmr_controller_config_parse(struct wmr_controller_config *c, char *json_string, enum u_logging_level log_level);
+
+void
+wmr_config_precompute_transforms(struct wmr_inertial_sensors_config *sensors,
+                                 struct wmr_distortion_eye_config *eye_params);
 
 #ifdef __cplusplus
 }

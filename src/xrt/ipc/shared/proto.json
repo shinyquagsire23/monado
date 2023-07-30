@@ -5,18 +5,18 @@
 		"out_handles": {"type": "xrt_shmem_handle_t"}
 	},
 
+	"instance_describe_client": {
+		"in": [
+			{"name": "desc", "type": "struct ipc_client_description"}
+		]
+	},
+
 	"system_get_client_info": {
 		"in": [
 			{"name": "id", "type": "uint32_t"}
 		],
 		"out": [
-			{"name": "desc", "type": "struct ipc_app_state"}
-		]
-	},
-
-	"system_set_client_info": {
-		"in": [
-			{"name": "desc", "type": "struct ipc_app_state"}
+			{"name": "ias", "type": "struct ipc_app_state"}
 		]
 	},
 
@@ -68,6 +68,67 @@
 
 	"session_destroy": {},
 
+	"space_create_semantic_ids": {
+		"out": [
+			{"name": "root_id", "type": "uint32_t"},
+			{"name": "view_id", "type": "uint32_t"},
+			{"name": "local_id", "type": "uint32_t"},
+			{"name": "stage_id", "type": "uint32_t"},
+			{"name": "unbounded_id", "type": "uint32_t"}
+		]
+	},
+
+	"space_create_offset": {
+		"in": [
+			{"name": "parent_id", "type": "uint32_t"},
+			{"name": "offset", "type": "struct xrt_pose"}
+		],
+		"out": [
+			{"name": "space_id", "type": "uint32_t"}
+		]
+	},
+
+	"space_create_pose": {
+		"in": [
+			{"name": "xdev_id", "type": "uint32_t"},
+			{"name": "name", "type": "enum xrt_input_name"}
+		],
+		"out": [
+			{"name": "space_id", "type": "uint32_t"}
+		]
+	},
+
+	"space_locate_space": {
+		"in": [
+			{"name": "base_space_id", "type": "uint32_t"},
+			{"name": "base_offset", "type": "struct xrt_pose"},
+			{"name": "at_timestamp", "type": "uint64_t"},
+			{"name": "space_id", "type": "uint32_t"},
+			{"name": "offset", "type": "struct xrt_pose"}
+		],
+		"out": [
+			{"name": "relation", "type": "struct xrt_space_relation"}
+		]
+	},
+
+	"space_locate_device": {
+		"in": [
+			{"name": "base_space_id", "type": "uint32_t"},
+			{"name": "base_offset", "type": "struct xrt_pose"},
+			{"name": "at_timestamp", "type": "uint64_t"},
+			{"name": "xdev_id", "type": "uint32_t"}
+		],
+		"out": [
+			{"name": "relation", "type": "struct xrt_space_relation"}
+		]
+	},
+
+	"space_destroy": {
+		"in": [
+			{"name": "space_id", "type": "uint32_t"}
+		]
+	},
+
 	"compositor_get_info": {
 		"out": [
 			{"name": "info", "type": "struct xrt_compositor_info"}
@@ -103,7 +164,6 @@
 
 	"compositor_layer_sync": {
 		"in": [
-			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"}
 		],
 		"in_handles": {"type": "xrt_graphics_sync_handle_t"},
@@ -114,7 +174,6 @@
 
 	"compositor_layer_sync_with_semaphore": {
 		"in": [
-			{"name": "frame_id", "type": "int64_t"},
 			{"name": "slot_id", "type": "uint32_t"},
 			{"name": "semaphore_id", "type": "uint32_t"},
 			{"name": "semaphore_value", "type": "uint64_t"}
@@ -246,11 +305,34 @@
 		]
 	},
 
+	"device_compute_distortion": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "view", "type": "uint32_t"},
+			{"name": "u", "type": "float"},
+			{"name": "v", "type": "float"}
+		],
+		"out": [
+			{"name": "ret", "type": "bool"},
+			{"name": "triplet", "type": "struct xrt_uv_triplet"}
+		]
+	},
+
 	"device_set_output": {
 		"in": [
 			{"name": "id", "type": "uint32_t"},
 			{"name": "name", "type": "enum xrt_output_name"},
 			{"name": "value", "type": "union xrt_output_value"}
+		]
+	},
+
+	"device_is_form_factor_available": {
+		"in": [
+			{"name": "id", "type": "uint32_t"},
+			{"name": "form_factor", "type": "enum xrt_form_factor"}
+		],
+		"out": [
+			{"name": "available", "type": "bool"}
 		]
 	}
 }

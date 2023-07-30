@@ -37,42 +37,8 @@ extern "C" {
 #define WMR_MOTION_CONTROLLER_NS_PER_TICK 100
 
 
-// Messages types specific to Bluetooth connected WMR motion controllers
-#define WMR_BT_MOTION_CONTROLLER_MSG 0x01
-
-
-struct wmr_controller_input
-{
-	// buttons clicked
-	bool menu;
-	bool home;
-	bool bt_pairing;
-	bool squeeze; // Actually a "squeeze" click
-
-	float trigger;
-
-	struct
-	{
-		bool click;
-		struct xrt_vec2 values;
-	} thumbstick;
-	struct
-	{
-		bool click;
-		bool touch;
-		struct xrt_vec2 values;
-	} trackpad;
-
-	uint8_t battery;
-
-	struct
-	{
-		uint64_t timestamp_ticks;
-		struct xrt_vec3 acc;
-		struct xrt_vec3 gyro;
-		int32_t temperature;
-	} imu;
-};
+// Messages types for WMR motion controllers
+#define WMR_MOTION_CONTROLLER_STATUS_MSG 0x01
 
 struct wmr_controller_fw_cmd
 {
@@ -118,25 +84,6 @@ struct wmr_controller_fw_cmd_response
  */
 
 #undef WMR_PACKED
-
-/*!
- * WMR Motion Controller protocol helpers
- *
- * @addtogroup drv_wmr
- * @{
- */
-
-bool
-wmr_controller_packet_parse(const unsigned char *buffer,
-                            size_t len,
-                            struct wmr_controller_input *decoded_input,
-                            enum u_logging_level log_level);
-
-
-/*!
- * @}
- */
-
 
 #ifdef __cplusplus
 }

@@ -64,7 +64,9 @@ TEST_CASE("d3d12_client_compositor", "[.][needgpu]")
 			    data->nativeImportCalled = true;
 			    // need to release the native handles to avoid leaks
 			    for (uint32_t i = 0; i < image_count; ++i) {
-				    u_graphics_buffer_unref(&native_images[i].handle);
+				    if (!native_images[i].is_dxgi_handle) {
+					    u_graphics_buffer_unref(&native_images[i].handle);
+				    }
 			    }
 			    return XRT_SUCCESS;
 		    };

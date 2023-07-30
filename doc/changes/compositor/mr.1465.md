@@ -1,1 +1,1 @@
-Support for OpenGL client applications on Windows.
+client: Support for OpenGL client applications on Windows.

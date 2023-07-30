@@ -8,12 +8,15 @@
  * @ingroup drv_depthai
  */
 
+#include "xrt/xrt_tracking.h"
+
 #include "os/os_time.h"
 #include "os/os_threading.h"
 
-#include "util/u_sink.h"
-#include "xrt/xrt_tracking.h"
+#include "math/m_api.h"
+#include "math/m_vec3.h"
 
+#include "util/u_sink.h"
 #include "util/u_var.h"
 #include "util/u_misc.h"
 #include "util/u_debug.h"
@@ -21,7 +24,10 @@
 #include "util/u_format.h"
 #include "util/u_logging.h"
 #include "util/u_trace_marker.h"
-#include "math/m_api.h"
+
+#ifdef XRT_OS_LINUX
+#include "util/u_linux.h"
+#endif
 
 #include "tracking/t_tracking.h"
 
@@ -50,8 +56,11 @@
 #define DEPTHAI_ERROR(d, ...) U_LOG_IFL_E(d->log_level, __VA_ARGS__)
 
 DEBUG_GET_ONCE_LOG_OPTION(depthai_log, "DEPTHAI_LOG", U_LOGGING_INFO)
-DEBUG_GET_ONCE_BOOL_OPTION(depthai_want_floodlight, "DEPTHAI_WANT_FLOODLIGHT", true)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_floodlight_brightness, "DEPTHAI_FLOODLIGHT_BRIGHTNESS", 1000)
 DEBUG_GET_ONCE_NUM_OPTION(depthai_startup_wait_frames, "DEPTHAI_STARTUP_WAIT_FRAMES", 0)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_hz, "DEPTHAI_IMU_HZ", 500)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_batch_size, "DEPTHAI_IMU_BATCH_SIZE", 2)
+DEBUG_GET_ONCE_NUM_OPTION(depthai_imu_max_batch_size, "DEPTHAI_IMU_MAX_BATCH_SIZE", 2)
 
 
 
@@ -151,8 +160,29 @@ struct depthai_fs
 	bool interleaved;
 	bool oak_d_lite;
 
-	bool has_floodlight;
-	bool want_floodlight;
+	struct
+	{
+		bool has;
+		bool manual_control;
+
+		u_var_draggable_f32 mA;
+		float last_mA;
+	} floodlights;
+
+	struct
+	{
+		bool active;
+		// Remember, these hold a pointer to a value!
+		u_var_draggable_u16 exposure_time_ui;
+		u_var_draggable_u16 iso_ui;
+
+		uint16_t exposure_time;
+		uint16_t iso;
+
+		uint16_t last_exposure_time;
+		uint16_t last_iso;
+	} manual_exposure;
+
 
 	bool want_cameras;
 	bool want_imu;
@@ -211,16 +241,17 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 	 * Copy to the Monado calibration struct.
 	 */
 
-	uint32_t num_dist = 14;
 
 	// Good enough assumption that they're using the same distortion model
-	bool use_fisheye = calibData.getDistortionModel(dai::CameraBoardSocket::LEFT) == dai::CameraModel::Fisheye;
-	if (use_fisheye) {
-		num_dist = 4;
+	enum t_camera_distortion_model type = T_DISTORTION_OPENCV_RADTAN_14;
+	if (calibData.getDistortionModel(dai::CameraBoardSocket::LEFT) == dai::CameraModel::Fisheye) {
+		type = T_DISTORTION_FISHEYE_KB4;
 	}
 
+	uint32_t num_dist = t_num_params_from_distortion_model(type);
+
 	struct t_stereo_camera_calibration *c = NULL;
-	t_stereo_camera_calibration_alloc(&c, num_dist);
+	t_stereo_camera_calibration_alloc(&c, type);
 
 	// Copy intrinsics
 	c->view[0].image_size_pixels.w = left.width;
@@ -234,17 +265,11 @@ depthai_get_gray_cameras_calibration(struct depthai_fs *depthai, struct t_stereo
 		}
 	}
 
-	// Copy distortion
-	c->view[0].use_fisheye = use_fisheye;
-	c->view[1].use_fisheye = use_fisheye;
+	c->view[0].distortion_model = type;
+	c->view[1].distortion_model = type;
 	for (uint32_t i = 0; i < num_dist; i++) {
-		if (use_fisheye) {
-			c->view[0].distortion_fisheye[i] = left.distortion[i];
-			c->view[1].distortion_fisheye[i] = right.distortion[i];
-		} else {
-			c->view[0].distortion[i] = left.distortion[i];
-			c->view[1].distortion[i] = right.distortion[i];
-		}
+		c->view[0].distortion_parameters_as_array[i] = left.distortion[i];
+		c->view[1].distortion_parameters_as_array[i] = right.distortion[i];
 	}
 
 	// Copy translation
@@ -272,15 +297,16 @@ void
 depthai_guess_ir_drivers(struct depthai_fs *depthai)
 {
 	std::vector<std::tuple<std::string, int, int>> list_of_drivers = depthai->device->getIrDrivers();
-	depthai->has_floodlight = false;
+	depthai->floodlights.has = false;
 
 	for (std::tuple<std::string, int, int> elem : list_of_drivers) {
 		if (std::get<0>(elem) == "LM3644") {
 			DEPTHAI_DEBUG(depthai, "DepthAI: Found an IR floodlight");
-			depthai->has_floodlight = true;
+			depthai->floodlights.has = true;
 		}
 	}
-	if (!depthai->has_floodlight) {
+
+	if (!depthai->floodlights.has) {
 		DEPTHAI_DEBUG(depthai, "DepthAI: Didn't find any IR illuminators");
 	}
 }
@@ -411,13 +437,52 @@ depthai_do_one_frame(struct depthai_fs *depthai)
 	xrt_frame_reference(&xf, NULL);
 }
 
+static void
+depthai_maybe_send_exposure_command(struct depthai_fs *depthai)
+{
+	if (!depthai->manual_exposure.active) {
+		return;
+	}
+
+	// If the user hasn't changed the exposure values since last we sent a command, we don't need to send a new one.
+	if (depthai->manual_exposure.last_exposure_time == depthai->manual_exposure.exposure_time && //
+	    depthai->manual_exposure.last_iso == depthai->manual_exposure.iso) {
+		return;
+	}
+
+	dai::CameraControl ctrl;
+	ctrl.setManualExposure(depthai->manual_exposure.exposure_time, depthai->manual_exposure.iso);
+	depthai->control_queue->send(ctrl);
+
+	depthai->manual_exposure.last_exposure_time = depthai->manual_exposure.exposure_time;
+	depthai->manual_exposure.last_iso = depthai->manual_exposure.iso;
+}
+
+static void
+depthai_maybe_send_floodlight_command(struct depthai_fs *depthai)
+{
+	if (!(depthai->floodlights.has && depthai->floodlights.manual_control)) {
+		return;
+	}
+
+	// If the user hasn't changed the exposure values since last we sent a command, we don't need to send a new one.
+	if (depthai->floodlights.last_mA == depthai->floodlights.mA.val) {
+		return;
+	}
+
+	depthai->device->setIrFloodLightBrightness(depthai->floodlights.mA.val);
+}
+
+
 static void *
 depthai_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
-
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
+
+	U_TRACE_SET_THREAD_NAME("DepthAI: Image");
+	os_thread_helper_name(&depthai->image_thread, "DepthAI: Image");
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: Image thread called");
 
 	os_thread_helper_lock(&depthai->image_thread);
 	while (os_thread_helper_is_running_locked(&depthai->image_thread)) {
@@ -425,12 +490,16 @@ depthai_mainloop(void *ptr)
 
 		depthai_do_one_frame(depthai);
 
+		depthai_maybe_send_exposure_command(depthai);
+		depthai_maybe_send_floodlight_command(depthai);
+
 		// Need to lock the thread when we go back to the while condition.
 		os_thread_helper_lock(&depthai->image_thread);
 	}
 	os_thread_helper_unlock(&depthai->image_thread);
 
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
+	DEPTHAI_DEBUG(depthai, "DepthAI: Image thread exiting");
+
 	return nullptr;
 }
 
@@ -455,14 +524,13 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 
 
 	std::vector<dai::IMUPacket> imuPackets = imuData->packets;
+	uint32_t num_packets = (uint32_t)imuPackets.size();
 
-	if (imuPackets.size() != 2) {
-		DEPTHAI_ERROR(depthai, "Wrong number of IMU reports!");
-		// Yeah we're not dealing with this. Shouldn't ever happen
-		return;
-	}
-
-	assert(imuPackets.size() == 2);
+	/*
+	 * We used to check num_packets here, but don't since they are now
+	 * configurable. Tho we probably should test them, or warn when the
+	 * number of packets is larger then batch size for too long.
+	 */
 
 	struct xrt_vec3 a = {0, 0, 0};
 	struct xrt_vec3 g = {0, 0, 0};
@@ -479,8 +547,8 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 		int64_t ts_gyro = dai_ts_to_monado_ts(gyro.timestamp);
 		int64_t diff = (ts_gyro - ts_accel);
 
-		ts += ts_accel / 4;
-		ts += ts_gyro / 4;
+		ts += ts_accel / (2 * num_packets);
+		ts += ts_gyro / (2 * num_packets);
 
 		float diff_in_ms = (float)(abs((double)diff) / (double)U_TIME_1MS_IN_NS);
 		if (diff_in_ms > 2.5) {
@@ -495,10 +563,14 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 		math_vec3_accum(&this_g, &g);
 	}
 
-	math_vec3_scalar_mul(0.5, &a);
-	math_vec3_scalar_mul(0.5, &g);
+	if (num_packets > 1) {
+		float scalar = 1.0f / (float)num_packets;
+		math_vec3_scalar_mul(scalar, &a);
+		math_vec3_scalar_mul(scalar, &g);
+	}
 
 
+	// Prepare sample
 	xrt_imu_sample sample;
 	sample.timestamp_ns = ts;
 	sample.accel_m_s2.x = a.x;
@@ -508,16 +580,52 @@ depthai_do_one_imu_frame(struct depthai_fs *depthai)
 	sample.gyro_rad_secs.x = g.x;
 	sample.gyro_rad_secs.y = g.y;
 	sample.gyro_rad_secs.z = g.z;
+
+	// Sample prepared, now push it out.
 	xrt_sink_push_imu(depthai->imu_sink, &sample);
+
+	// Only do this if we are really debugging stuff.
+#ifdef XRT_FEATURE_TRACING
+	static timepoint_ns last_ns = 0;
+	if (last_ns == 0) {
+		last_ns = ts - U_TIME_1MS_IN_NS; // Just so it isn't zero.
+	}
+
+	timepoint_ns now_ns = (timepoint_ns)os_monotonic_get_ns();
+	timepoint_ns now_diff_ns = ts - now_ns;
+	timepoint_ns last_diff_ns = ts - last_ns;
+	last_ns = ts;
+
+	double now_diff_ms = time_ns_to_ms_f(now_diff_ns);
+	double last_diff_ms = time_ns_to_ms_f(last_diff_ns);
+
+	float gyro_length = m_vec3_len(g);
+	float weighted_gyro_length = gyro_length * time_ns_to_s(last_diff_ns);
+
+#ifdef U_TRACE_TRACY
+	TracyCPlot("DepthAI IMU to now(ms)", now_diff_ms);
+	TracyCPlot("DepthAI IMU to last(ms)", last_diff_ms);
+	TracyCPlot("DepthAI IMU num packets", num_packets);
+	TracyCPlot("DepthAI IMU gyro length", gyro_length);
+	TracyCPlot("DepthAI IMU gyro weighted length", weighted_gyro_length);
+#endif
+#endif
 }
 
 static void *
 depthai_imu_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
-
 	struct depthai_fs *depthai = (struct depthai_fs *)ptr;
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop called");
+
+	U_TRACE_SET_THREAD_NAME("DepthAI: IMU");
+	os_thread_helper_name(&depthai->imu_thread, "DepthAI: IMU");
+
+#ifdef XRT_OS_LINUX
+	// Try to raise priority of this thread.
+	u_linux_try_to_set_realtime_priority_on_thread(depthai->log_level, "DepthAI: IMU");
+#endif
+
+	DEPTHAI_DEBUG(depthai, "DepthAI: IMU thread called");
 
 	os_thread_helper_lock(&depthai->imu_thread);
 	while (os_thread_helper_is_running_locked(&depthai->imu_thread)) {
@@ -530,7 +638,8 @@ depthai_imu_mainloop(void *ptr)
 	}
 	os_thread_helper_unlock(&depthai->imu_thread);
 
-	DEPTHAI_DEBUG(depthai, "DepthAI: Mainloop exiting");
+	DEPTHAI_DEBUG(depthai, "DepthAI: IMU thread exiting");
+
 	return nullptr;
 }
 
@@ -724,13 +833,54 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 	}
 
 	if (depthai->want_imu) {
+		uint32_t imu_hz = (uint32_t)debug_get_num_option_depthai_imu_hz();
+		uint32_t batch_size = (uint32_t)debug_get_num_option_depthai_imu_batch_size();
+		uint32_t max_batch_size = (uint32_t)debug_get_num_option_depthai_imu_max_batch_size();
+
+		/*
+		 * Limitations from:
+		 * https://docs.luxonis.com/projects/api/en/latest/components/nodes/imu/#limitations
+		 */
+		switch (imu_hz) {
+		case 400: // Supposed to be okay
+			DEPTHAI_DEBUG(depthai, "%uHz IMU sample rate is supposed to be ok.", imu_hz);
+			break;
+		case 500: // Maybe ok?
+			DEPTHAI_INFO(depthai, "%uHz IMU sample rate maybe produce jitters.", imu_hz);
+			break;
+		default: // Not known to be good on any (or both IMU and both Gyra/Accel at the same time).
+			DEPTHAI_WARN(depthai, "%uHz IMU sample rate not a known good rate.", imu_hz);
+			break;
+		}
+
+		switch (batch_size) {
+		case 1:
+		case 2: // Seems okay
+			DEPTHAI_DEBUG(depthai, "%u IMU batch size is supposed to be ok.", batch_size);
+			break;
+		default: // Not known to be good on any
+			DEPTHAI_WARN(depthai, "%iHz IMU batch size is not tested!", batch_size);
+			break;
+		}
+
+		if (max_batch_size < 2) {
+			DEPTHAI_WARN(depthai, "Max batch size(%u) smaller then 2, setting two.", max_batch_size);
+			max_batch_size = 2;
+		}
+
+		if (max_batch_size < batch_size) {
+			DEPTHAI_WARN(depthai, "Max batch size(%u) smaller then batch size(%u), setting to batch size.",
+			             max_batch_size, batch_size);
+			max_batch_size = batch_size;
+		}
+
 		std::shared_ptr<dai::node::XLinkOut> xlinkOut_imu = p.create<dai::node::XLinkOut>();
 		xlinkOut_imu->setStreamName(name_imu);
 
 		auto imu = p.create<dai::node::IMU>();
-		imu->enableIMUSensor({dai::IMUSensor::ACCELEROMETER_RAW, dai::IMUSensor::GYROSCOPE_RAW}, 500);
-		imu->setBatchReportThreshold(2);
-		imu->setMaxBatchReports(2);
+		imu->enableIMUSensor({dai::IMUSensor::ACCELEROMETER_RAW, dai::IMUSensor::GYROSCOPE_RAW}, imu_hz);
+		imu->setBatchReportThreshold(batch_size);
+		imu->setMaxBatchReports(max_batch_size);
 		imu->out.link(xlinkOut_imu->input);
 	}
 
@@ -749,17 +899,21 @@ depthai_setup_stereo_grayscale_pipeline(struct depthai_fs *depthai)
 
 	depthai->control_queue = depthai->device->getInputQueue("control").get();
 
-	if (depthai->has_floodlight && depthai->want_floodlight) {
-		depthai->device->setIrFloodLightBrightness(1500);
+	if (depthai->floodlights.has) {
+		float mA = depthai->floodlights.mA.val;
+
+		if (mA > 1500.0f) {
+			DEPTHAI_ERROR(depthai, "Can not set brightness to more then 1500mA, clamping!");
+			mA = 1500.0f;
+		}
+
+		if (mA > 0.0f) {
+			depthai->device->setIrFloodLightBrightness(mA);
+		}
 	}
 
 	//!@todo This code will turn the exposure time down, but you may not want it. Or we may want to rework Monado's
 	//! AEG code to control the IR floodlight brightness in concert with the exposure itme. For now, disable.
-#if 0
-	dai::CameraControl ctrl;
-	ctrl.setManualExposure(500, 700);
-	depthai->control_queue->send(ctrl);
-#endif
 }
 
 #ifdef DEPTHAI_HAS_MULTICAM_SUPPORT
@@ -885,11 +1039,11 @@ depthai_fs_slam_stream_start(struct xrt_fs *xfs, struct xrt_slam_sinks *sinks)
 	struct depthai_fs *depthai = depthai_fs(xfs);
 	DEPTHAI_DEBUG(depthai, "DepthAI: SLAM stream start called");
 
-	depthai->sink[0] = nullptr;      // 0 == CamA-4L / RGB
-	depthai->sink[1] = sinks->left;  // 1 == CamB-2L / Left Gray
-	depthai->sink[2] = sinks->right; // 2 == CamC-2L / Right Gray
-	depthai->sink[3] = nullptr;      // 3 == CamD-4L
-	if (depthai->want_cameras && sinks->left != NULL && sinks->right != NULL) {
+	depthai->sink[0] = nullptr;        // 0 == CamA-4L / RGB
+	depthai->sink[1] = sinks->cams[0]; // 1 == CamB-2L / Left Gray
+	depthai->sink[2] = sinks->cams[1]; // 2 == CamC-2L / Right Gray
+	depthai->sink[3] = nullptr;        // 3 == CamD-4L
+	if (depthai->want_cameras && sinks->cams[0] != NULL && sinks->cams[1] != NULL) {
 		os_thread_helper_start(&depthai->image_thread, depthai_mainloop, depthai);
 	}
 	if (depthai->want_imu && sinks->imu != NULL) {
@@ -980,8 +1134,30 @@ depthai_create_and_do_minimal_setup(void)
 	depthai->node.break_apart = depthai_fs_node_break_apart;
 	depthai->node.destroy = depthai_fs_node_destroy;
 	depthai->log_level = debug_get_log_option_depthai_log();
-	depthai->want_floodlight = debug_get_bool_option_depthai_want_floodlight();
 	depthai->device = d;
+
+	depthai->manual_exposure.active = false;
+	// Low values, useful for marker calibration on a monitor.
+	depthai->manual_exposure.iso = 270;
+	depthai->manual_exposure.exposure_time = 320;
+
+	depthai->manual_exposure.iso_ui.val = &depthai->manual_exposure.iso;
+	depthai->manual_exposure.iso_ui.min = 0;
+	depthai->manual_exposure.iso_ui.max = 1600;
+	depthai->manual_exposure.iso_ui.step = 1;
+
+	depthai->manual_exposure.exposure_time_ui.val = &depthai->manual_exposure.exposure_time;
+	depthai->manual_exposure.exposure_time_ui.min = 0;
+	// 160,000 us = 0.1s
+	depthai->manual_exposure.exposure_time_ui.max = 65535;
+	depthai->manual_exposure.exposure_time_ui.step = 1;
+
+	depthai->floodlights.mA.val = debug_get_num_option_depthai_floodlight_brightness();
+	depthai->floodlights.mA.min = 0.0f;
+	depthai->floodlights.mA.max = 1500.0f;
+	depthai->floodlights.mA.step = 1.0f;
+
+
 
 	u_var_add_root(depthai, "DepthAI Source", 0);
 	for (int i = 0; i < 4; i++) {
@@ -992,9 +1168,21 @@ depthai_create_and_do_minimal_setup(void)
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[2], "Right");
 	u_var_add_sink_debug(depthai, &depthai->debug_sinks[3], "CamD");
 
+	u_var_add_bool(depthai, &depthai->manual_exposure.active, "Manual exposure");
+
+	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.exposure_time_ui, "Exposure time");
+	u_var_add_draggable_u16(depthai, &depthai->manual_exposure.iso_ui, "ISO");
+
+	depthai_guess_ir_drivers(depthai);
+	if (depthai->floodlights.has) {
+		u_var_add_bool(depthai, &depthai->floodlights.manual_control, "Manual floodlight control");
+		u_var_add_draggable_f32(depthai, &depthai->floodlights.mA, "Floodlight brightness (mA)");
+	}
+
+
 	// Some debug printing.
 	depthai_guess_camera_type(depthai);
-	depthai_guess_ir_drivers(depthai);
+
 	depthai_print_calib(depthai);
 
 	// Make sure that the thread helper is initialised.

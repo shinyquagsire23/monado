@@ -88,8 +88,8 @@ opengloves_get_serial_devices(uint16_t vid, uint16_t pid, struct opengloves_comm
 
 		struct udev_device *parent_dev = raw_dev;
 		while (parent_dev != NULL) {
-			uint16_t vendor_id;
-			uint16_t product_id;
+			uint16_t vendor_id = 0;
+			uint16_t product_id = 0;
 			opengloves_udev_get_sysattr_u16_base16(parent_dev, "idVendor", &vendor_id);
 			opengloves_udev_get_sysattr_u16_base16(parent_dev, "idProduct", &product_id);
 

@@ -724,7 +724,7 @@ v4l2_fs_create(struct xrt_frame_context *xfctx,
 void *
 v4l2_fs_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("V4L2");
 
 	struct xrt_fs *xfs = (struct xrt_fs *)ptr;
 	struct v4l2_fs *vid = v4l2_fs(xfs);

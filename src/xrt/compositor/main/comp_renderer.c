@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -18,8 +18,7 @@
 #include "os/os_time.h"
 
 #include "math/m_api.h"
-#include "math/m_vec3.h"
-#include "math/m_matrix_4x4_f64.h"
+#include "math/m_matrix_2x2.h"
 #include "math/m_space.h"
 
 #include "util/u_misc.h"
@@ -27,17 +26,20 @@
 #include "util/u_distortion_mesh.h"
 #include "util/u_sink.h"
 #include "util/u_var.h"
-#include "util/u_frame.h"
 #include "util/u_frame_times_widget.h"
 
 #include "main/comp_layer_renderer.h"
+#include "main/comp_frame.h"
+#include "main/comp_mirror_to_debug_gui.h"
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 #include "main/comp_window_peek.h"
 #endif
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd.h"
 #include "vk/vk_image_readback_to_xf_pool.h"
+#include "vk/vk_cmd.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -62,7 +64,7 @@
 
 /*
  *
- * Private struct.
+ * Private struct(s).
  *
  */
 
@@ -81,24 +83,7 @@ struct comp_renderer
 	struct comp_compositor *c;
 	struct comp_settings *settings;
 
-	struct
-	{
-		// Hint: enable/disable is in c->mirroring_to_debug_gui. It's there because comp_renderer is just a
-		// forward decl to comp_compositor.c
-
-		struct u_frame_times_widget push_frame_times;
-
-		float target_frame_time_ms;
-		uint64_t last_push_ts_ns;
-		int push_every_frame_out_of_X;
-
-		struct u_sink_debug debug_sink;
-		VkExtent2D image_extent;
-		uint64_t sequence;
-
-		struct vk_image_readback_to_xf_pool *pool;
-
-	} mirror_to_debug_gui;
+	struct comp_mirror_to_debug_gui mirror_to_debug_gui;
 
 	//! @}
 
@@ -145,13 +130,13 @@ struct comp_renderer
  */
 
 static void
-renderer_wait_gpu_idle(struct comp_renderer *r)
+renderer_wait_queue_idle(struct comp_renderer *r)
 {
 	COMP_TRACE_MARKER();
 	struct vk_bundle *vk = &r->c->base.vk;
 
 	os_mutex_lock(&vk->queue_mutex);
-	vk->vkDeviceWaitIdle(vk->device);
+	vk->vkQueueWaitIdle(vk->queue);
 	os_mutex_unlock(&vk->queue_mutex);
 }
 
@@ -232,7 +217,10 @@ renderer_build_rendering_target_resources(struct comp_renderer *r,
 	render_gfx_target_resources_init(rtr, &c->nr, r->c->target->images[index].view, &data);
 }
 
-//! @pre comp_target_has_images(r->c->target)
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ * @pre comp_target_has_images(r->c->target)
+ */
 static void
 renderer_build_rendering(struct comp_renderer *r,
                          struct render_gfx *rr,
@@ -267,10 +255,9 @@ renderer_build_rendering(struct comp_renderer *r,
 
 
 	/*
-	 * Init
+	 * Begin
 	 */
 
-	render_gfx_init(rr, &c->nr);
 	render_gfx_begin(rr);
 
 
@@ -298,12 +285,12 @@ renderer_build_rendering(struct comp_renderer *r,
 	}};
 
 	if (pre_rotate) {
-		math_matrix_2x2_multiply(&distortion_data[0].vertex_rot,  //
-		                         &rotation_90_cw,                 //
-		                         &distortion_data[0].vertex_rot); //
-		math_matrix_2x2_multiply(&distortion_data[1].vertex_rot,  //
-		                         &rotation_90_cw,                 //
-		                         &distortion_data[1].vertex_rot); //
+		m_mat2x2_multiply(&distortion_data[0].vertex_rot,  //
+		                  &rotation_90_cw,                 //
+		                  &distortion_data[0].vertex_rot); //
+		m_mat2x2_multiply(&distortion_data[1].vertex_rot,  //
+		                  &rotation_90_cw,                 //
+		                  &distortion_data[1].vertex_rot); //
 	}
 
 	render_gfx_update_distortion(rr,                   //
@@ -406,6 +393,10 @@ renderer_create_renderings_and_fences(struct comp_renderer *r)
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vkCreateFence: %s", vk_result_string(ret));
 		}
+
+		char buf[] = "Comp Renderer X_XXXX_XXXX";
+		snprintf(buf, ARRAY_SIZE(buf), "Comp Renderer %u", i);
+		VK_NAME_OBJECT(vk, FENCE, r->fences[i], buf);
 	}
 }
 
@@ -502,7 +493,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	 * make sure that validation doesn't complain. This is done
 	 * during resize so isn't time critical.
 	 */
-	renderer_wait_gpu_idle(r);
+	renderer_wait_queue_idle(r);
 
 	// Make we sure we destroy all dependent things before creating new images.
 	renderer_close_renderings_and_fences(r);
@@ -534,7 +525,7 @@ renderer_ensure_images_and_renderings(struct comp_renderer *r, bool force_recrea
 	}
 
 	// @todo: is it safe to fail here?
-	if (!render_ensure_distortion_buffer(&r->c->nr, &r->c->base.vk, r->c->xdev, pre_rotate))
+	if (!render_distortion_images_ensure(&r->c->nr, &r->c->base.vk, r->c->xdev, pre_rotate))
 		return false;
 
 	r->buffer_count = r->c->target->image_count;
@@ -558,33 +549,16 @@ renderer_init(struct comp_renderer *r, struct comp_compositor *c)
 	r->fenced_buffer = -1;
 	r->rtr_array = NULL;
 
-	// Do this init as early as possible.
-	u_sink_debug_init(&r->mirror_to_debug_gui.debug_sink);
-
 	// Try to early-allocate these, in case we can.
 	renderer_ensure_images_and_renderings(r, false);
 
-	double orig_width = r->lr->extent.width;
-	double orig_height = r->lr->extent.height;
-
-	double target_height = 1080;
-
-	double mul = target_height / orig_height;
-
-	// Casts seem to always round down; we don't want that here.
-	r->mirror_to_debug_gui.image_extent.width = (uint32_t)(round(orig_width * mul));
-	r->mirror_to_debug_gui.image_extent.height = (uint32_t)target_height;
-
-
-	// We want the images to have even widths/heights so that libx264 can encode them properly; no other reason.
-	if (r->mirror_to_debug_gui.image_extent.width % 2 == 1) {
-		r->mirror_to_debug_gui.image_extent.width += 1;
-	}
-
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	vk_image_readback_to_xf_pool_create(vk, r->mirror_to_debug_gui.image_extent, &r->mirror_to_debug_gui.pool,
-	                                    XRT_FORMAT_R8G8B8X8);
+	VkResult ret = comp_mirror_init(&r->mirror_to_debug_gui, vk, &c->shaders, r->lr->extent);
+	if (ret != VK_SUCCESS) {
+		COMP_ERROR(c, "comp_mirror_init: %s", vk_result_string(ret));
+		assert(false && "Whelp, can't return a error. But should never really fail.");
+	}
 }
 
 static void
@@ -654,7 +628,7 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	const void *next = NULL;
 
 #ifdef VK_KHR_timeline_semaphore
-	assert(r->c->frame.rendering.id >= 0);
+	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_values[WAIT_SEMAPHORE_COUNT] = {(uint64_t)r->c->frame.rendering.id};
 
 	VkTimelineSemaphoreSubmitInfoKHR timeline_info = {
@@ -685,8 +659,14 @@ renderer_submit_queue(struct comp_renderer *r, VkCommandBuffer cmd, VkPipelineSt
 	    .pSignalSemaphores = &ct->semaphores.render_complete,
 	};
 
+	/*
+	 * The renderer command buffer pool is only accessed from one thread,
+	 * this satisfies the `_locked` requirement of the function. This lets
+	 * us avoid taking a lot of locks. The queue lock will be taken by
+	 * @ref vk_cmd_submit_locked tho.
+	 */
 	if (!ct->semaphores.render_is_offscreen) {
-		ret = vk_locked_submit(vk, vk->queue, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
+		ret = vk_cmd_submit_locked(vk, 1, &comp_submit_info, r->fences[r->acquired_buffer]);
 		if (ret != VK_SUCCESS) {
 			COMP_ERROR(r->c, "vkQueueSubmit: %s", vk_result_string(ret));
 		}
@@ -707,20 +687,23 @@ renderer_get_view_projection(struct comp_renderer *r)
 	    0.0f,
 	};
 
+	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	struct xrt_pose poses[2] = {0};
+
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
 	    &default_eye_relation,                           //
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
-	    &r->c->base.slot.head_relation,                  //
+	    &head_relation,                                  //
 	    r->c->base.slot.fovs,                            //
-	    r->c->base.slot.poses);                          //
+	    poses);                                          //
 
 	struct xrt_pose base_space_pose = XRT_POSE_IDENTITY;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		const struct xrt_fov fov = r->c->base.slot.fovs[i];
-		const struct xrt_pose eye_pose = r->c->base.slot.poses[i];
+		const struct xrt_pose eye_pose = poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 
@@ -731,6 +714,7 @@ renderer_get_view_projection(struct comp_renderer *r)
 		m_relation_chain_push_pose_if_not_identity(&xrc, &base_space_pose);
 		m_relation_chain_resolve(&xrc, &result);
 
+		r->c->base.slot.poses[i] = result.pose;
 		comp_layer_renderer_set_pose(r->lr, &eye_pose, &result.pose, i);
 	}
 }
@@ -794,7 +778,7 @@ renderer_present_swapchain_image(struct comp_renderer *r, uint64_t desired_prese
 
 	VkResult ret;
 
-	assert(r->c->frame.rendering.id >= 0);
+	assert(!comp_frame_is_invalid_locked(&r->c->frame.rendering));
 	uint64_t render_complete_signal_value = (uint64_t)r->c->frame.rendering.id;
 
 	ret = comp_target_present(        //
@@ -820,21 +804,14 @@ renderer_fini(struct comp_renderer *r)
 {
 	struct vk_bundle *vk = &r->c->base.vk;
 
-	// Remove u_var root as early as possible.
-	u_var_remove_root(r);
-
-	// Left eye readback
-	vk_image_readback_to_xf_pool_destroy(vk, &r->mirror_to_debug_gui.pool);
-
 	// Command buffers
 	renderer_close_renderings_and_fences(r);
 
+	// Do before layer render just in case it holds any references.
+	comp_mirror_fini(&r->mirror_to_debug_gui, vk);
+
+	// Do this after the mirror struct.
 	comp_layer_renderer_destroy(&(r->lr));
-
-	u_frame_times_widget_teardown(&r->mirror_to_debug_gui.push_frame_times);
-
-	// Destroy as late as possible.
-	u_sink_debug_destroy(&r->mirror_to_debug_gui.debug_sink);
 }
 
 static VkImageView
@@ -847,6 +824,9 @@ get_image_view(const struct comp_swapchain_image *image, enum xrt_layer_composit
 	return image->views.no_alpha[array_index];
 }
 
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ */
 static void
 do_gfx_mesh_and_proj(struct comp_renderer *r,
                      struct render_gfx *rr,
@@ -869,9 +849,10 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 		src_norm_rects[1].y = 1 + src_norm_rects[1].y;
 	}
 
+	VkSampler clamp_to_border_black = rr->r->samplers.clamp_to_border_black;
 	VkSampler src_samplers[2] = {
-	    left->sampler,
-	    right->sampler,
+	    clamp_to_border_black,
+	    clamp_to_border_black,
 	};
 
 	VkImageView src_image_views[2] = {
@@ -882,6 +863,9 @@ do_gfx_mesh_and_proj(struct comp_renderer *r,
 	renderer_build_rendering(r, rr, rts, src_samplers, src_image_views, src_norm_rects);
 }
 
+/*!
+ * @pre render_gfx_init(rr, &c->nr)
+ */
 static void
 dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 {
@@ -901,10 +885,10 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		renderer_get_view_projection(r);
 		comp_layer_renderer_draw(r->lr);
 
+		VkSampler clamp_to_border_black = r->c->nr.samplers.clamp_to_border_black;
 		VkSampler src_samplers[2] = {
-		    r->lr->framebuffers[0].sampler,
-		    r->lr->framebuffers[1].sampler,
-
+		    clamp_to_border_black,
+		    clamp_to_border_black,
 		};
 		VkImageView src_image_views[2] = {
 		    r->lr->framebuffers[0].view,
@@ -940,7 +924,6 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
-		m_space_relation_ident(&c->base.slot.head_relation);
 		c->base.slot.poses[0] = lvd->pose;
 		c->base.slot.poses[1] = rvd->pose;
 		c->base.slot.fovs[0] = lvd->fov;
@@ -959,7 +942,6 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
-		m_space_relation_ident(&c->base.slot.head_relation);
 		c->base.slot.poses[0] = lvd->pose;
 		c->base.slot.poses[1] = rvd->pose;
 		c->base.slot.fovs[0] = lvd->fov;
@@ -973,7 +955,7 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
 	} break;
 
-	default: assert(false);
+	default: COMP_ERROR(c, "Unhandled case: '%u'", layer->data.type); assert(false);
 	}
 }
 
@@ -995,18 +977,21 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 	    0.0f,
 	};
 
+	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	struct xrt_pose poses[2] = {0};
+
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
 	    &default_eye_relation,                           //
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
-	    &r->c->base.slot.head_relation,                  //
+	    &head_relation,                                  //
 	    r->c->base.slot.fovs,                            //
-	    r->c->base.slot.poses);                          //
+	    poses);                                          //
 
 	for (uint32_t i = 0; i < 2; i++) {
 		const struct xrt_fov fov = r->c->base.slot.fovs[i];
-		const struct xrt_pose eye_pose = r->c->base.slot.poses[i];
+		const struct xrt_pose eye_pose = poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 
@@ -1018,6 +1003,7 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 
 		out_eye[i] = eye_pose;
 		out_world[i] = result.pose;
+		r->c->base.slot.poses[i] = result.pose;
 	}
 }
 
@@ -1119,6 +1105,9 @@ do_layers(struct comp_renderer *r,
 	ubo_data->pre_transforms[0] = crc->r->distortion.uv_to_tanangle[0];
 	ubo_data->pre_transforms[1] = crc->r->distortion.uv_to_tanangle[1];
 
+	VkSampler clamp_to_edge = crc->r->samplers.clamp_to_edge;
+	VkSampler clamp_to_border_black = crc->r->samplers.clamp_to_border_black;
+
 	VkImage target_image = crc->r->scratch.color.image;
 	VkImageView target_image_view = crc->r->scratch.color.unorm_view; // Have to write in linear
 
@@ -1194,12 +1183,12 @@ do_layers(struct comp_renderer *r,
 			const struct comp_swapchain_image *right = &layer->sc_array[1]->images[rvd->sub.image_index];
 
 			// Left
-			src_samplers[cur_image] = left->sampler;
+			src_samplers[cur_image] = clamp_to_border_black;
 			src_image_views[cur_image] = get_image_view(left, data->flags, left_array_index);
 			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image++;
 
 			// Right
-			src_samplers[cur_image] = right->sampler;
+			src_samplers[cur_image] = clamp_to_border_black;
 			src_image_views[cur_image] = get_image_view(right, data->flags, right_array_index);
 			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image++;
 
@@ -1212,13 +1201,14 @@ do_layers(struct comp_renderer *r,
 				const struct comp_swapchain_image *d_right =
 				    &layer->sc_array[3]->images[r_dvd->sub.image_index];
 
+
 				// Depth left
-				src_samplers[cur_image] = d_left->sampler;
+				src_samplers[cur_image] = clamp_to_edge; // Edge to keep depth stable at edges.
 				src_image_views[cur_image] = get_image_view(d_left, data->flags, d_left_array_index);
 				ubo_data->images_samplers[view_index_for_layer + 0].images[1] = cur_image++;
 
 				// Depth right
-				src_samplers[cur_image] = d_right->sampler;
+				src_samplers[cur_image] = clamp_to_edge; // Edge to keep depth stable at edges.
 				src_image_views[cur_image] = get_image_view(d_right, data->flags, d_right_array_index);
 				ubo_data->images_samplers[view_index_for_layer + 1].images[1] = cur_image++;
 			}
@@ -1258,7 +1248,7 @@ do_layers(struct comp_renderer *r,
 			uint32_t array_index = q->sub.array_index;
 
 			// Same image for both views
-			src_samplers[cur_image] = image->sampler;
+			src_samplers[cur_image] = clamp_to_edge;
 			src_image_views[cur_image] = get_image_view(image, layer->data.flags, array_index);
 			ubo_data->images_samplers[view_index_for_layer + 0].images[0] = cur_image;
 			ubo_data->images_samplers[view_index_for_layer + 1].images[0] = cur_image;
@@ -1361,7 +1351,7 @@ do_layers(struct comp_renderer *r,
 
 	//! @todo: If Vulkan 1.2, use VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT and skip this
 	while (cur_image < crc->r->compute.layer.image_array_size) {
-		src_samplers[cur_image] = crc->r->compute.default_sampler;
+		src_samplers[cur_image] = clamp_to_edge;
 		src_image_views[cur_image] = crc->r->mock.color.image_view;
 		cur_image++;
 	}
@@ -1384,7 +1374,7 @@ do_distortion(struct comp_renderer *r, struct render_compute *crc, const struct 
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
 	VkImageView view = crc->r->scratch.color.srgb_view; // Read with gamma curve.
-	VkSampler sampler = crc->r->compute.default_sampler;
+	VkSampler sampler = crc->r->samplers.clamp_to_border_black;
 
 	VkImageView src_image_views[2] = {view, view};
 	VkSampler src_samplers[2] = {sampler, sampler};
@@ -1440,9 +1430,10 @@ do_projection_layers(struct comp_renderer *r,
 	struct xrt_pose unused[2]; // New eye poses, unused.
 	get_view_poses(r, new_world_poses, unused);
 
+	VkSampler clamp_to_border_black = crc->r->samplers.clamp_to_border_black;
 	VkSampler src_samplers[2] = {
-	    left->sampler,
-	    right->sampler,
+	    clamp_to_border_black,
+	    clamp_to_border_black,
 	};
 
 	VkImageView src_image_views[2] = {
@@ -1496,6 +1487,9 @@ do_projection_layers(struct comp_renderer *r,
 	}
 }
 
+/*!
+ * @pre render_compute_init(crc, &c->nr)
+ */
 static void
 dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 {
@@ -1504,7 +1498,6 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 	struct comp_compositor *c = r->c;
 	struct comp_target *ct = c->target;
 
-	render_compute_init(crc, &c->nr);
 	render_compute_begin(crc);
 
 	struct render_viewport_data views[2];
@@ -1514,7 +1507,9 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 	VkImageView target_image_view = r->c->target->images[r->acquired_buffer].view;
 
 	uint32_t layer_count = c->base.slot.layer_count;
-	if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
+	bool fast_path = c->base.slot.one_projection_layer_fast_path;
+
+	if (fast_path && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_data *stereo = &layer->data.stereo;
@@ -1522,7 +1517,7 @@ dispatch_compute(struct comp_renderer *r, struct render_compute *crc)
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
 		do_projection_layers(r, crc, layer, lvd, rvd);
-	} else if (layer_count == 1 && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
+	} else if (fast_path && c->base.slot.layers[0].data.type == XRT_LAYER_STEREO_PROJECTION_DEPTH) {
 		int i = 0;
 		const struct comp_layer *layer = &c->base.slot.layers[i];
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
@@ -1567,8 +1562,16 @@ comp_renderer_set_quad_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->sampler,
-	                              get_image_view(image, data->flags, data->quad.sub.array_index));
+	VkSampler clamp_to_edge = r->c->nr.samplers.clamp_to_edge;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->quad.sub.array_index);         //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    clamp_to_edge,             //
+	    image_view);               //
 
 	struct xrt_vec3 s = {data->quad.size.x, data->quad.size.y, 1.0f};
 	struct xrt_matrix_4x4 model_matrix;
@@ -1613,9 +1616,16 @@ comp_renderer_set_cylinder_layer(struct comp_renderer *r,
 		return;
 	}
 
-	comp_layer_update_descriptors(r->lr->layers[layer], image->sampler,
-	                              get_image_view(image, data->flags, data->cylinder.sub.array_index));
+	VkSampler clamp_to_edge = r->c->nr.samplers.clamp_to_edge;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->cylinder.sub.array_index);     //
 
+	comp_layer_update_descriptors( //
+	    r->lr->layers[layer],      //
+	    clamp_to_edge,             //
+	    image_view);               //
 
 	float height = (data->cylinder.radius * data->cylinder.central_angle) / data->cylinder.aspect_ratio;
 
@@ -1652,9 +1662,24 @@ comp_renderer_set_projection_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_stereo_descriptors(l, left_image->sampler, right_image->sampler,
-	                                     get_image_view(left_image, data->flags, left_array_index),
-	                                     get_image_view(right_image, data->flags, right_array_index));
+	VkSampler clamp_to_border_black = r->c->nr.samplers.clamp_to_border_black;
+
+	VkImageView left_image_view = get_image_view( //
+	    left_image,                               //
+	    data->flags,                              //
+	    left_array_index);                        //
+
+	VkImageView right_image_view = get_image_view( //
+	    right_image,                               //
+	    data->flags,                               //
+	    right_array_index);                        //
+
+	comp_layer_update_stereo_descriptors( //
+	    l,                                //
+	    clamp_to_border_black,            //
+	    clamp_to_border_black,            //
+	    left_image_view,                  //
+	    right_image_view);                //
 
 	comp_layer_set_flip_y(l, data->flip_y);
 
@@ -1690,8 +1715,16 @@ comp_renderer_set_equirect1_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->equirect1.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->equirect1.sub.array_index);    //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 
 	comp_layer_update_equirect1_descriptor(l, &data->equirect1);
 
@@ -1724,8 +1757,16 @@ comp_renderer_set_equirect2_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->equirect2.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->equirect2.sub.array_index);    //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 
 	comp_layer_update_equirect2_descriptor(l, &data->equirect2);
 
@@ -1758,183 +1799,18 @@ comp_renderer_set_cube_layer(struct comp_renderer *r,
 	l->transformation_ubo_binding = r->lr->transformation_ubo_binding;
 	l->texture_binding = r->lr->texture_binding;
 
-	comp_layer_update_descriptors(l, image->repeat_sampler,
-	                              get_image_view(image, data->flags, data->cube.sub.array_index));
+	VkSampler repeat = r->c->nr.samplers.repeat;
+	VkImageView image_view = get_image_view( //
+	    image,                               //
+	    data->flags,                         //
+	    data->cube.sub.array_index);         //
+
+	comp_layer_update_descriptors( //
+	    l,                         //
+	    repeat,                    //
+	    image_view);               //
 }
 #endif
-
-static void
-mirror_to_debug_gui_fixup_ui_state(struct comp_renderer *r)
-{
-	// One out of every zero frames is not what we want!
-	// Also one out of every negative two frames, etc. is nonsensical
-	if (r->mirror_to_debug_gui.push_every_frame_out_of_X < 1) {
-		r->mirror_to_debug_gui.push_every_frame_out_of_X = 1;
-	}
-
-	r->mirror_to_debug_gui.target_frame_time_ms = (float)r->mirror_to_debug_gui.push_every_frame_out_of_X *
-	                                              (float)time_ns_to_ms_f(r->c->settings.nominal_frame_interval_ns);
-
-	r->mirror_to_debug_gui.push_frame_times.debug_var->reference_timing =
-	    r->mirror_to_debug_gui.target_frame_time_ms;
-	r->mirror_to_debug_gui.push_frame_times.debug_var->range = r->mirror_to_debug_gui.target_frame_time_ms;
-}
-
-static bool
-can_mirror_to_debug_gui(struct comp_renderer *r)
-{
-	if (!r->c->mirroring_to_debug_gui || !u_sink_debug_is_active(&r->mirror_to_debug_gui.debug_sink)) {
-		return false;
-	}
-
-	uint64_t now = r->c->frame.rendering.predicted_display_time_ns;
-
-	double diff_s = (double)(now - r->mirror_to_debug_gui.last_push_ts_ns) / (double)U_TIME_1MS_IN_NS;
-
-	// Completely unscientific - lower values probably works fine too.
-	// I figure we don't have very many 500Hz displays and this woorks great for 120-144hz
-	double slop_ms = 2;
-
-	if (diff_s < r->mirror_to_debug_gui.target_frame_time_ms - slop_ms) {
-		return false;
-	}
-	r->mirror_to_debug_gui.last_push_ts_ns = now;
-	return true;
-}
-
-static void
-mirror_to_debug_gui_do_blit(struct comp_renderer *r)
-{
-	struct vk_bundle *vk = &r->c->base.vk;
-	VkResult ret;
-
-	struct vk_image_readback_to_xf *wrap = NULL;
-
-	if (!vk_image_readback_to_xf_pool_get_unused_frame(vk, r->mirror_to_debug_gui.pool, &wrap)) {
-		return;
-	}
-
-	VkCommandBuffer cmd;
-	vk_cmd_buffer_create_and_begin(vk, &cmd);
-
-	// For submitting commands.
-	os_mutex_lock(&vk->cmd_pool_mutex);
-
-	VkImage copy_from = r->lr->framebuffers[0].image;
-
-	VkImageSubresourceRange first_color_level_subresource_range = {
-	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-	    .baseMipLevel = 0,
-	    .levelCount = 1,
-	    .baseArrayLayer = 0,
-	    .layerCount = 1,
-	};
-
-	// Barrier to make destination a destination
-	vk_cmd_image_barrier_locked(              //
-	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
-	    wrap->image,                          // image
-	    VK_ACCESS_HOST_READ_BIT,              // srcAccessMask
-	    VK_ACCESS_TRANSFER_WRITE_BIT,         // dstAccessMask
-	    wrap->layout,                         // oldImageLayout
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // newImageLayout
-	    VK_PIPELINE_STAGE_HOST_BIT,           // srcStageMask
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // dstStageMask
-	    first_color_level_subresource_range); // subresourceRange
-
-	// Barrier to make source a source
-	vk_cmd_image_barrier_locked(                  //
-	    vk,                                       // vk_bundle
-	    cmd,                                      // cmdbuffer
-	    copy_from,                                // image
-	    VK_ACCESS_SHADER_WRITE_BIT,               // srcAccessMask
-	    VK_ACCESS_TRANSFER_READ_BIT,              // dstAccessMask
-	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // oldImageLayout
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // newImageLayout
-	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // srcStageMask
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // dstStageMask
-	    first_color_level_subresource_range);     // subresourceRange
-
-
-	VkImageBlit blit = {0};
-	blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.srcSubresource.layerCount = 1;
-
-	blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blit.dstSubresource.layerCount = 1;
-
-	blit.srcOffsets[1].x = r->lr->extent.width;
-	blit.srcOffsets[1].y = r->lr->extent.height;
-	blit.srcOffsets[1].z = 1;
-
-
-	blit.dstOffsets[1].x = r->mirror_to_debug_gui.image_extent.width;
-	blit.dstOffsets[1].y = r->mirror_to_debug_gui.image_extent.height;
-	blit.dstOffsets[1].z = 1;
-
-	vk->vkCmdBlitImage(                       //
-	    cmd,                                  // commandBuffer
-	    copy_from,                            // srcImage
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // srcImageLayout
-	    wrap->image,                          // dstImage
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // dstImageLayout
-	    1,                                    // regionCount
-	    &blit,                                // pRegions
-	    VK_FILTER_LINEAR                      // filter
-	);
-
-	wrap->layout = VK_IMAGE_LAYOUT_GENERAL;
-
-	// Reset destination
-	vk_cmd_image_barrier_locked(              //
-	    vk,                                   // vk_bundle
-	    cmd,                                  // cmdbuffer
-	    wrap->image,                          // image
-	    VK_ACCESS_TRANSFER_WRITE_BIT,         // srcAccessMask
-	    VK_ACCESS_HOST_READ_BIT,              // dstAccessMask
-	    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // oldImageLayout
-	    wrap->layout,                         // newImageLayout
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,       // srcStageMask
-	    VK_PIPELINE_STAGE_HOST_BIT,           // dstStageMask
-	    first_color_level_subresource_range); // subresourceRange
-
-	// Reset src
-	vk_cmd_image_barrier_locked(                  //
-	    vk,                                       // vk_bundle
-	    cmd,                                      // cmdbuffer
-	    copy_from,                                // image
-	    VK_ACCESS_TRANSFER_READ_BIT,              // srcAccessMask
-	    VK_ACCESS_SHADER_WRITE_BIT,               // dstAccessMask
-	    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // oldImageLayout
-	    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // newImageLayout
-	    VK_PIPELINE_STAGE_TRANSFER_BIT,           // srcStageMask
-	    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,     // dstStageMask
-	    first_color_level_subresource_range);     // subresourceRange
-
-	// Done submitting commands.
-	os_mutex_unlock(&vk->cmd_pool_mutex);
-
-	// Waits for command to finish.
-	ret = vk_cmd_buffer_submit(vk, cmd);
-	if (ret != VK_SUCCESS) {
-		//! @todo Better handling of error?
-		COMP_ERROR(r->c, "Failed to mirror image");
-	}
-
-	wrap->base_frame.source_timestamp = wrap->base_frame.timestamp =
-	    r->c->frame.rendering.predicted_display_time_ns;
-	wrap->base_frame.source_id = r->mirror_to_debug_gui.sequence++;
-
-
-	struct xrt_frame *frame = &wrap->base_frame;
-	wrap = NULL;
-	u_sink_debug_push_frame(&r->mirror_to_debug_gui.debug_sink, frame);
-	u_frame_times_widget_push_sample(&r->mirror_to_debug_gui.push_frame_times,
-	                                 r->c->frame.rendering.predicted_display_time_ns);
-
-	xrt_frame_reference(&frame, NULL);
-}
 
 void
 comp_renderer_draw(struct comp_renderer *r)
@@ -1944,12 +1820,14 @@ comp_renderer_draw(struct comp_renderer *r)
 	struct comp_target *ct = r->c->target;
 	struct comp_compositor *c = r->c;
 
+	// Check that we don't have any bad data.
+	assert(!comp_frame_is_invalid_locked(&c->frame.waited));
+	assert(comp_frame_is_invalid_locked(&c->frame.rendering));
 
-	assert(c->frame.rendering.id == -1);
+	// Move waited frame to rendering frame, clear waited.
+	comp_frame_move_and_clear_locked(&c->frame.rendering, &c->frame.waited);
 
-	c->frame.rendering = c->frame.waited;
-	c->frame.waited.id = -1;
-
+	// Tell the target we are starting to render, for frame timing.
 	comp_target_mark_begin(ct, c->frame.rendering.id, os_monotonic_get_ns());
 
 	// Are we ready to render? No - skip rendering.
@@ -1957,6 +1835,9 @@ comp_renderer_draw(struct comp_renderer *r)
 		// Need to emulate rendering for the timing.
 		//! @todo This should be discard.
 		comp_target_mark_submit(ct, c->frame.rendering.id, os_monotonic_get_ns());
+
+		// Clear the rendering frame.
+		comp_frame_clear_locked(&c->frame.rendering);
 		return;
 	}
 
@@ -1975,14 +1856,16 @@ comp_renderer_draw(struct comp_renderer *r)
 	struct render_gfx rr = {0};
 	struct render_compute crc = {0};
 	if (use_compute) {
+		render_compute_init(&crc, &c->nr);
 		dispatch_compute(r, &crc);
 	} else {
+		render_gfx_init(&rr, &c->nr);
 		dispatch_graphics(r, &rr);
 	}
 
 #ifdef XRT_FEATURE_WINDOW_PEEK
 	if (c->peek) {
-		switch (c->peek->eye) {
+		switch (comp_window_peek_get_eye(c->peek)) {
 		case COMP_WINDOW_PEEK_EYE_LEFT:
 			comp_window_peek_blit(c->peek, r->lr->framebuffers[0].image, r->lr->extent.width,
 			                      r->lr->extent.height);
@@ -2005,13 +1888,47 @@ comp_renderer_draw(struct comp_renderer *r)
 
 	// Save for timestamps below.
 	uint64_t frame_id = c->frame.rendering.id;
+	uint64_t desired_present_time_ns = c->frame.rendering.desired_present_time_ns;
+	uint64_t predicted_display_time_ns = c->frame.rendering.predicted_display_time_ns;
 
-	// Clear the frame.
-	c->frame.rendering.id = -1;
+	// Clear the rendered frame.
+	comp_frame_clear_locked(&c->frame.rendering);
 
-	mirror_to_debug_gui_fixup_ui_state(r);
-	if (can_mirror_to_debug_gui(r)) {
-		mirror_to_debug_gui_do_blit(r);
+	comp_mirror_fixup_ui_state(&r->mirror_to_debug_gui, c);
+	if (comp_mirror_is_ready_and_active(&r->mirror_to_debug_gui, c, predicted_display_time_ns)) {
+
+		// Used for both, want clamp to edge to no bring in black.
+		VkSampler clamp_to_edge = c->nr.samplers.clamp_to_edge;
+
+		if (use_compute) {
+			// Covers only the first half of the view.
+			struct xrt_normalized_rect rect = {0, 0, 0.5f, 1.0f};
+
+			comp_mirror_do_blit(               //
+			    &r->mirror_to_debug_gui,       //
+			    &c->base.vk,                   //
+			    frame_id,                      //
+			    predicted_display_time_ns,     //
+			    c->nr.scratch.color.image,     //
+			    c->nr.scratch.color.srgb_view, //
+			    clamp_to_edge,                 //
+			    c->nr.scratch.extent,          //
+			    rect);                         //
+		} else {
+			// Covers the whole view.
+			struct xrt_normalized_rect rect = {0, 0, 1.0f, 1.0f};
+
+			comp_mirror_do_blit(              //
+			    &r->mirror_to_debug_gui,      //
+			    &c->base.vk,                  //
+			    frame_id,                     //
+			    predicted_display_time_ns,    //
+			    r->lr->framebuffers[0].image, //
+			    r->lr->framebuffers[0].view,  //
+			    clamp_to_edge,                //
+			    r->lr->extent,                //
+			    rect);                        //
+		}
 	}
 
 	/*
@@ -2021,7 +1938,7 @@ comp_renderer_draw(struct comp_renderer *r)
 	 *
 	 * This is done after a swap so isn't time critical.
 	 */
-	renderer_wait_gpu_idle(r);
+	renderer_wait_queue_idle(r);
 
 
 	/*
@@ -2050,8 +1967,30 @@ comp_renderer_draw(struct comp_renderer *r)
 	 * For direct mode this makes us wait until the last frame has been
 	 * actually shown to the user, this avoids us missing that we have
 	 * missed a frame and miss-predicting the next frame.
+	 *
+	 * Only do this if we are ready.
 	 */
-	renderer_acquire_swapchain_image(r);
+	if (comp_target_check_ready(r->c->target)) {
+		// For estimating frame misses.
+		uint64_t then_ns = os_monotonic_get_ns();
+
+		// Do the acquire
+		renderer_acquire_swapchain_image(r);
+
+		// How long did it take?
+		uint64_t now_ns = os_monotonic_get_ns();
+
+		/*
+		 * Make sure we at least waited 1ms before warning. Then check
+		 * if we are more then 1ms behind when we wanted to present.
+		 */
+		if (then_ns + U_TIME_1MS_IN_NS < now_ns && //
+		    desired_present_time_ns + U_TIME_1MS_IN_NS < now_ns) {
+			uint64_t diff_ns = now_ns - desired_present_time_ns;
+			double diff_ms_f = time_ns_to_ms_f(diff_ns);
+			COMP_WARN(c, "Compositor probably missed frame by %.2fms", diff_ms_f);
+		}
+	}
 
 	comp_target_update_timings(ct);
 }
@@ -2104,19 +2043,6 @@ void
 comp_renderer_add_debug_vars(struct comp_renderer *self)
 {
 	struct comp_renderer *r = self;
-	r->mirror_to_debug_gui.push_every_frame_out_of_X = 2;
 
-	u_frame_times_widget_init(&r->mirror_to_debug_gui.push_frame_times, 0.f, 0.f);
-	mirror_to_debug_gui_fixup_ui_state(r);
-
-	u_var_add_root(r, "Readback", true);
-
-	u_var_add_bool(r, &r->c->mirroring_to_debug_gui, "Readback left eye to debug GUI");
-	u_var_add_i32(r, &r->mirror_to_debug_gui.push_every_frame_out_of_X, "Push 1 frame out of every X frames");
-
-	u_var_add_ro_f32(r, &r->mirror_to_debug_gui.push_frame_times.fps, "FPS (Readback)");
-	u_var_add_f32_timing(r, r->mirror_to_debug_gui.push_frame_times.debug_var, "Frame Times (Readback)");
-
-
-	u_var_add_sink_debug(r, &r->mirror_to_debug_gui.debug_sink, "Left view!");
+	comp_mirror_add_debug_vars(&r->mirror_to_debug_gui, r->c);
 }

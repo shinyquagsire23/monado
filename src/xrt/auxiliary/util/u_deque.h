@@ -21,7 +21,7 @@ extern "C" {
 	{                                                                                                              \
 		void *ptr;                                                                                             \
 	};                                                                                                             \
-	struct u_deque_##TYPE u_deque_##TYPE##_create();                                                               \
+	struct u_deque_##TYPE u_deque_##TYPE##_create(void);                                                           \
 	void u_deque_##TYPE##_push_back(struct u_deque_##TYPE ud, TYPE e);                                             \
 	bool u_deque_##TYPE##_pop_front(struct u_deque_##TYPE ud, TYPE *e);                                            \
 	TYPE u_deque_##TYPE##_at(struct u_deque_##TYPE ud, size_t i);                                                  \

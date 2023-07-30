@@ -97,7 +97,6 @@ opengloves_device_get_hand_tracking(struct xrt_device *xdev,
 
 	enum xrt_hand hand = od->hand;
 
-	struct xrt_vec3 static_offset = {0, 0, 0};
 	struct u_hand_tracking_values values = {.little =
 	                                            {
 	                                                .splay = od->last_input->splay[4],
@@ -132,14 +131,6 @@ opengloves_device_get_hand_tracking(struct xrt_device *xdev,
 	struct xrt_space_relation ident;
 	m_space_relation_ident(&ident);
 	u_hand_sim_simulate_generic(&values, hand, &ident, out_joint_set);
-
-	struct xrt_space_relation controller_relation = {.pose = {.orientation.w = 1.0f, .position = {0, 0, 0}}};
-	controller_relation.relation_flags = XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
-	                                     XRT_SPACE_RELATION_POSITION_VALID_BIT;
-
-	struct xrt_pose hand_on_handle_pose;
-	u_hand_joints_offset_valve_index_controller(hand, &static_offset, &hand_on_handle_pose);
 
 	*out_timestamp_ns = requested_timestamp_ns;
 	out_joint_set->is_active = true;

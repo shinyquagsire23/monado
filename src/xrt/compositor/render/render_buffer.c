@@ -8,8 +8,6 @@
  * @ingroup comp_render
  */
 
-#include "main/comp_compositor.h"
-
 #include "render/render_interface.h"
 
 #include <stdio.h>

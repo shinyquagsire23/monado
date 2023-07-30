@@ -140,6 +140,19 @@ extern "C" {
 		OXR_VERIFY_ARG_TYPE_CAN_BE_NULL(log, arg, type_enum);                                                  \
 	} while (false)
 
+/*!
+ * Must only be used with full typed arrays, aka non-basetyped arrays like that
+ * passed into xrEnumerateSwapchainImages.
+ */
+#define OXR_VERIFY_ARG_ARRAY_ELEMENT_TYPE(log, array, index, type_enum)                                                \
+	do {                                                                                                           \
+		if ((array)[index].type != type_enum) {                                                                \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,                                             \
+			                 "(" #array "[%u]->type == 0x%08x) expected 0x%08x", index,                    \
+			                 (array)[index].type, type_enum);                                              \
+		}                                                                                                      \
+	} while (false)
+
 #define OXR_VERIFY_SUBACTION_PATHS(log, count, paths)                                                                  \
 	do {                                                                                                           \
 		if (count > 0 && paths == NULL) {                                                                      \
@@ -194,6 +207,21 @@ extern "C" {
 		}                                                                                                      \
 	} while (false)
 
+#define OXR_VERIFY_SESSION_NOT_LOST(log, sess)                                                                         \
+	do {                                                                                                           \
+		if (sess->has_lost) {                                                                                  \
+			return oxr_error(log, XR_ERROR_SESSION_LOST, "Session is lost");                               \
+		}                                                                                                      \
+	} while (false)
+
+#define OXR_VERIFY_SESSION_RUNNING(log, sess)                                                                          \
+	do {                                                                                                           \
+		if (!sess->has_begun) {                                                                                \
+			return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");                 \
+		}                                                                                                      \
+	} while (false)
+
+
 /*
  *
  * Implementation in oxr_verify.cpp
@@ -240,7 +268,7 @@ oxr_verify_subaction_paths_create(struct oxr_logger *log,
  * Verify a set of subaction paths for action sync.
  */
 XrResult
-oxr_verify_subaction_path_sync(struct oxr_logger *log, struct oxr_instance *inst, XrPath path, uint32_t index);
+oxr_verify_subaction_path_sync(struct oxr_logger *log, const struct oxr_instance *inst, XrPath path, uint32_t index);
 
 /*!
  * Verify a set of subaction paths for action state get.

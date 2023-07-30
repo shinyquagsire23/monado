@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -177,7 +177,7 @@ twrap_slam_create_device(struct xrt_frame_context *xfctx,
 	snprintf(dx->base.serial, XRT_DEVICE_NAME_LEN, "Generic Inside-Out Head Tracker");
 
 #ifdef XRT_FEATURE_SLAM
-#ifdef XRT_HAVE_BASALT_SLAM
+#ifdef XRT_HAVE_BASALT
 	// Arrived at mostly by trial and error; seeminly does a 90-degree rotation about the X axis.
 	dx->pre_rotate_x = (struct xrt_vec3){1.0f, 0.0f, 0.0f};
 	dx->pre_rotate_z = (struct xrt_vec3){0.0f, 1.0f, 0.0f};
@@ -203,6 +203,7 @@ twrap_slam_create_device(struct xrt_frame_context *xfctx,
 	int create_status = t_slam_create(xfctx, NULL, &dx->slam, out_sinks);
 
 	if (create_status != 0 || dx->slam == NULL) {
+		U_LOG_E("t_slam_create: %i, dx->slam: %p", create_status, (void *)dx->slam);
 		twrap_slam_destroy(&dx->base);
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}
@@ -222,6 +223,7 @@ twrap_slam_create_device(struct xrt_frame_context *xfctx,
 	int start_status = t_slam_start(dx->slam);
 
 	if (start_status != 0) {
+		U_LOG_E("t_slam_start: %i", start_status);
 		twrap_slam_destroy(&dx->base);
 		return XRT_ERROR_DEVICE_CREATION_FAILED;
 	}

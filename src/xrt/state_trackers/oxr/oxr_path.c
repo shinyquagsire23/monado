@@ -135,7 +135,7 @@ oxr_allocate_path(
 }
 
 struct oxr_path *
-get_path_or_null(struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path)
+get_path_or_null(struct oxr_logger *log, const struct oxr_instance *inst, XrPath xr_path)
 {
 	if (xr_path >= inst->path_array_length) {
 		return NULL;
@@ -214,7 +214,7 @@ oxr_path_only_get(struct oxr_logger *log, struct oxr_instance *inst, const char 
 
 XrResult
 oxr_path_get_string(
-    struct oxr_logger *log, struct oxr_instance *inst, XrPath xr_path, const char **out_str, size_t *out_length)
+    struct oxr_logger *log, const struct oxr_instance *inst, XrPath xr_path, const char **out_str, size_t *out_length)
 {
 	struct oxr_path *path = get_path_or_null(log, inst, xr_path);
 	if (path == NULL) {

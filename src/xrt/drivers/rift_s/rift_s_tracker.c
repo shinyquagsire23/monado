@@ -3,6 +3,7 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2023, Collabora, Ltd.
  * SPDX-License-Identifier: BSL-1.0
  *
  */
@@ -23,6 +24,7 @@
 #include <inttypes.h>
 
 #include "math/m_api.h"
+#include "math/m_clock_offset.h"
 #include "math/m_space.h"
 #include "math/m_vec3.h"
 
@@ -92,8 +94,8 @@ rift_s_tracker_switch_method_cb(void *t_ptr)
 	}
 }
 
-XRT_MAYBE_UNUSED struct t_imu_calibration
-rift_s_create_slam_imu_calib()
+XRT_MAYBE_UNUSED void
+rift_s_fill_slam_imu_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
 {
 	/* FIXME: Validate these hard coded standard deviations against
 	 * some actual at-rest IMU measurements */
@@ -106,7 +108,7 @@ rift_s_create_slam_imu_calib()
 	/* we pass already corrected accel and gyro
 	 * readings to Basalt, so the transforms and
 	 * offsets are just identity / zero matrices */
-	struct t_imu_calibration calib = {
+	struct t_imu_calibration imu_calib = {
 	    .accel =
 	        {
 	            .transform =
@@ -139,65 +141,60 @@ rift_s_create_slam_imu_calib()
 	        },
 	};
 
-	return calib;
+	struct t_slam_imu_calibration calib = {
+	    .base = imu_calib,
+	    .frequency = hmd_config->imu_config_info.imu_hz,
+	};
+
+	t->slam_calib.imu = calib;
 }
 
-//! IMU extrinsics, frequency
-static struct t_slam_calib_extras
-rift_s_create_extra_slam_calib(struct rift_s_hmd_config *hmd_config)
+//! Extended camera calibration for SLAM
+static void
+rift_s_fill_slam_cameras_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
 {
 	/* SLAM frames are every 2nd frame of 60Hz camera feed */
 	const int CAMERA_FREQUENCY = 30;
 
 	struct rift_s_camera_calibration_block *camera_calibration = &hmd_config->camera_calibration;
-	struct rift_s_camera_calibration *left = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_LEFT];
-	struct rift_s_camera_calibration *right = &camera_calibration->cameras[RIFT_S_CAMERA_FRONT_RIGHT];
 
 	/* Compute the IMU from cam transform for each cam */
 	struct xrt_pose device_from_imu, imu_from_device;
-
 	math_pose_from_isometry(&hmd_config->imu_calibration.device_from_imu, &device_from_imu);
 	math_pose_invert(&device_from_imu, &imu_from_device);
 
-	struct xrt_pose device_from_left, device_from_right;
-	math_pose_from_isometry(&left->device_from_camera, &device_from_left);
-	math_pose_from_isometry(&right->device_from_camera, &device_from_right);
+	t->slam_calib.cam_count = RIFT_S_CAMERA_COUNT;
+	for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+		enum rift_s_camera_id cam_id = CAM_IDX_TO_ID[i];
+		struct rift_s_camera_calibration *cam = &camera_calibration->cameras[cam_id];
 
-	struct xrt_pose P_imu_left_cam, P_imu_right_cam;
-	math_pose_transform(&imu_from_device, &device_from_left, &P_imu_left_cam);
-	math_pose_transform(&imu_from_device, &device_from_right, &P_imu_right_cam);
+		struct xrt_pose device_from_cam;
+		math_pose_from_isometry(&cam->device_from_camera, &device_from_cam);
 
-	struct xrt_matrix_4x4 T_imu_left_cam, T_imu_right_cam;
-	math_matrix_4x4_isometry_from_pose(&P_imu_left_cam, &T_imu_left_cam);
-	math_matrix_4x4_isometry_from_pose(&P_imu_right_cam, &T_imu_right_cam);
+		struct xrt_pose P_imu_cam;
+		math_pose_transform(&imu_from_device, &device_from_cam, &P_imu_cam);
 
-	RIFT_S_DEBUG("IMU left cam pose %f %f %f orient %f %f %f %f", P_imu_left_cam.position.x,
-	             P_imu_left_cam.position.y, P_imu_left_cam.position.z, P_imu_left_cam.orientation.x,
-	             P_imu_left_cam.orientation.y, P_imu_left_cam.orientation.z, P_imu_left_cam.orientation.w);
+		struct xrt_matrix_4x4 T_imu_cam;
+		math_matrix_4x4_isometry_from_pose(&P_imu_cam, &T_imu_cam);
 
-	RIFT_S_DEBUG("IMU right cam pose %f %f %f orient %f %f %f %f", P_imu_right_cam.position.x,
-	             P_imu_right_cam.position.y, P_imu_right_cam.position.z, P_imu_right_cam.orientation.x,
-	             P_imu_right_cam.orientation.y, P_imu_right_cam.orientation.z, P_imu_right_cam.orientation.w);
+		RIFT_S_DEBUG("IMU cam%d cam pose %f %f %f orient %f %f %f %f", i, P_imu_cam.position.x,
+		             P_imu_cam.position.y, P_imu_cam.position.z, P_imu_cam.orientation.x,
+		             P_imu_cam.orientation.y, P_imu_cam.orientation.z, P_imu_cam.orientation.w);
 
-	double imu_frequency = hmd_config->imu_config_info.imu_hz;
+		struct t_slam_camera_calibration calib = {
+		    .base = rift_s_get_cam_calib(&hmd_config->camera_calibration, cam_id),
+		    .frequency = CAMERA_FREQUENCY,
+		    .T_imu_cam = T_imu_cam,
+		};
+		t->slam_calib.cams[i] = calib;
+	}
+}
 
-	struct t_slam_calib_extras calib = {
-	    .imu_frequency = imu_frequency,
-	    .cams =
-	        {
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_left_cam,
-	                .rpmax = 0.0,
-	            },
-	            {
-	                .frequency = CAMERA_FREQUENCY,
-	                .T_imu_cam = T_imu_right_cam,
-	                .rpmax = 0.0,
-	            },
-	        },
-	};
-	return calib;
+static void
+rift_s_fill_slam_calibration(struct rift_s_tracker *t, struct rift_s_hmd_config *hmd_config)
+{
+	rift_s_fill_slam_imu_calibration(t, hmd_config);
+	rift_s_fill_slam_cameras_calibration(t, hmd_config);
 }
 
 static struct xrt_slam_sinks *
@@ -212,9 +209,8 @@ rift_s_create_slam_tracker(struct rift_s_tracker *t, struct xrt_frame_context *x
 	t_slam_fill_default_config(&config);
 
 	/* No need to refcount these parameters */
-	config.stereo_calib = t->stereo_calib;
-	config.imu_calib = &t->slam_imu_calib;
-	config.extra_calib = &t->slam_extra_calib;
+	config.cam_count = RIFT_S_CAMERA_COUNT;
+	config.slam_calib = &t->slam_calib;
 
 	int create_status = t_slam_create(xfctx, &config, &t->tracking.slam, &sinks);
 	if (create_status != 0) {
@@ -255,9 +251,8 @@ rift_s_create_hand_tracker(struct rift_s_tracker *t,
 	extra_camera_info.views[0].camera_orientation = CAMERA_ORIENTATION_90;
 	extra_camera_info.views[1].camera_orientation = CAMERA_ORIENTATION_90;
 
-	int create_status = ht_device_create(xfctx,                //
-	                                     t->stereo_calib,      //
-	                                     HT_ALGORITHM_MERCURY, //
+	int create_status = ht_device_create(xfctx,           //
+	                                     t->stereo_calib, //
 	                                     extra_camera_info,
 	                                     &sinks, //
 	                                     &device);
@@ -377,8 +372,8 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 
 	assert(slam_status != NULL && hand_status != NULL);
 
-	snprintf(t->gui.slam_status, sizeof(t->gui.slam_status), "%s", slam_status);
-	snprintf(t->gui.hand_status, sizeof(t->gui.hand_status), "%s", hand_status);
+	(void)snprintf(t->gui.slam_status, sizeof(t->gui.slam_status), "%s", slam_status);
+	(void)snprintf(t->gui.hand_status, sizeof(t->gui.hand_status), "%s", hand_status);
 
 	// Initialize 3DoF tracker
 	m_imu_3dof_init(&t->fusion.i3dof, M_IMU_3DOF_USE_GRAVITY_DUR_20MS);
@@ -387,8 +382,7 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 
 	// Construct the stereo camera calibration for the front cameras
 	t->stereo_calib = rift_s_create_stereo_camera_calib_rotated(&hmd_config->camera_calibration);
-	t->slam_imu_calib = rift_s_create_slam_imu_calib();
-	t->slam_extra_calib = rift_s_create_extra_slam_calib(hmd_config);
+	rift_s_fill_slam_calibration(t, hmd_config);
 
 	// Initialize the input sinks for the camera to send to
 
@@ -418,18 +412,15 @@ rift_s_tracker_create(struct xrt_tracking_origin *origin,
 	// Setup sinks depending on tracking configuration
 	struct xrt_slam_sinks entry_sinks = {0};
 	if (slam_enabled && hand_enabled) {
-		struct xrt_frame_sink *entry_left_sink = NULL;
-		struct xrt_frame_sink *entry_right_sink = NULL;
+		struct xrt_frame_sink *entry_cam0_sink = NULL;
+		struct xrt_frame_sink *entry_cam1_sink = NULL;
 
-		u_sink_split_create(xfctx, slam_sinks->left, hand_sinks->left, &entry_left_sink);
-		u_sink_split_create(xfctx, slam_sinks->right, hand_sinks->right, &entry_right_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[0], hand_sinks->cams[0], &entry_cam0_sink);
+		u_sink_split_create(xfctx, slam_sinks->cams[1], hand_sinks->cams[1], &entry_cam1_sink);
 
-		entry_sinks = (struct xrt_slam_sinks){
-		    .left = entry_left_sink,
-		    .right = entry_right_sink,
-		    .imu = slam_sinks->imu,
-		    .gt = slam_sinks->gt,
-		};
+		entry_sinks = *slam_sinks;
+		entry_sinks.cams[0] = entry_cam0_sink;
+		entry_sinks.cams[1] = entry_cam1_sink;
 	} else if (slam_enabled) {
 		entry_sinks = *slam_sinks;
 	} else if (hand_enabled) {
@@ -465,32 +456,18 @@ rift_s_tracker_get_hand_tracking_device(struct rift_s_tracker *t)
 	return t->handtracker;
 }
 
-//! Given a sample from two timestamp domains a and b that should have been
-//! sampled as close as possible, together with an estimate of the offset
-//! between a clock and b clock (or zero), it applies a smoothing average on the
-//! estimated offset and returns a in b clock.
-//! @todo Copy of clock_hw2mono in wmr_source.c and vive_source.c, unify into a utility.
-static inline timepoint_ns
-clock_offset_a2b(double freq, timepoint_ns a, timepoint_ns b, time_duration_ns *inout_a2b)
-{
-	// Totally arbitrary way of computing alpha, if you have a better one, replace it
-	const double alpha = 1.0 - 12.5 / freq; // Weight to put on accumulated a2b
-	time_duration_ns old_a2b = *inout_a2b;
-	time_duration_ns got_a2b = b - a;
-	time_duration_ns new_a2b = old_a2b * alpha + got_a2b * (1.0 - alpha);
-	if (old_a2b == 0) { // a2b has not been set yet
-		new_a2b = got_a2b;
-	}
-	*inout_a2b = new_a2b;
-	return a + new_a2b;
-}
-
 void
 rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_ns, timepoint_ns local_timestamp_ns)
 {
 	os_mutex_lock(&t->mutex);
 	time_duration_ns last_hw2mono = t->hw2mono;
-	clock_offset_a2b(25000, device_timestamp_ns, local_timestamp_ns, &t->hw2mono);
+	const float freq = 250.0;
+
+	t->seen_clock_observations++;
+	if (t->seen_clock_observations < 100)
+		goto done;
+
+	m_clock_offset_a2b(freq, device_timestamp_ns, local_timestamp_ns, &t->hw2mono);
 
 	if (!t->have_hw2mono) {
 		time_duration_ns change_ns = last_hw2mono - t->hw2mono;
@@ -499,6 +476,7 @@ rift_s_tracker_clock_update(struct rift_s_tracker *t, uint64_t device_timestamp_
 			t->have_hw2mono = true;
 		}
 	}
+done:
 	os_mutex_unlock(&t->mutex);
 }
 
@@ -564,8 +542,7 @@ rift_s_tracker_imu_update(struct rift_s_tracker *t,
 void
 rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
                                 uint64_t frame_ts_ns,
-                                struct xrt_frame *left_frame,
-                                struct xrt_frame *right_frame)
+                                struct xrt_frame *frames[RIFT_S_CAMERA_COUNT])
 {
 	timepoint_ns frame_time;
 
@@ -610,14 +587,11 @@ rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
 	t->last_frame_time = frame_time;
 	os_mutex_unlock(&t->mutex);
 
-	if (t->slam_sinks.left) {
-		left_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.left, left_frame);
-	}
-
-	if (t->slam_sinks.right) {
-		right_frame->timestamp = frame_time;
-		xrt_sink_push_frame(t->slam_sinks.right, right_frame);
+	for (int i = 0; i < RIFT_S_CAMERA_COUNT; i++) {
+		if (t->slam_sinks.cams[i]) {
+			frames[i]->timestamp = frame_time;
+			xrt_sink_push_frame(t->slam_sinks.cams[i], frames[i]);
+		}
 	}
 }
 
@@ -662,7 +636,7 @@ rift_s_tracker_get_tracked_pose(struct rift_s_tracker *t,
 		// Get the IMU pose from the SLAM tracker
 		xrt_tracked_slam_get_tracked_pose(t->tracking.slam, at_timestamp_ns, &imu_relation);
 
-#if defined(XRT_HAVE_BASALT_SLAM)
+#if defined(XRT_HAVE_BASALT)
 		rift_s_tracker_correct_pose_from_basalt(&imu_relation.pose);
 #endif
 

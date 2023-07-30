@@ -1,10 +1,11 @@
-// Copyright 2018-2022, Collabora, Ltd.
+// Copyright 2018-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Holds session related functions.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Moses Turner <mosesturner@protonmail.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup oxr_main
  */
 
@@ -39,8 +40,9 @@
 #include "oxr_handle.h"
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
-#include "oxr_chain.h"
 #include "oxr_pretty_print.h"
+#include "oxr_conversions.h"
+#include "oxr_xret.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,23 +54,12 @@ DEBUG_GET_ONCE_NUM_OPTION(ipd, "OXR_DEBUG_IPD_MM", 63)
 DEBUG_GET_ONCE_NUM_OPTION(wait_frame_sleep, "OXR_DEBUG_WAIT_FRAME_EXTRA_SLEEP_MS", 0)
 DEBUG_GET_ONCE_BOOL_OPTION(frame_timing_spew, "OXR_FRAME_TIMING_SPEW", false)
 
-#define CALL_CHK(call)                                                                                                 \
-	if ((call) == XRT_ERROR_IPC_FAILURE) {                                                                         \
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Error in function call over IPC");                      \
-	}
-
-static bool
-is_running(struct oxr_session *sess)
-{
-	return sess->has_begun;
-}
-
 static bool
 should_render(XrSessionState state)
 {
 	switch (state) {
-	case XR_SESSION_STATE_VISIBLE: return true;
-	case XR_SESSION_STATE_FOCUSED: return true;
+	case XR_SESSION_STATE_VISIBLE:
+	case XR_SESSION_STATE_FOCUSED:
 	case XR_SESSION_STATE_STOPPING: return true;
 	default: return false;
 	}
@@ -93,9 +84,9 @@ to_string(XrSessionState state)
 }
 
 void
-oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state)
+oxr_session_change_state(struct oxr_logger *log, struct oxr_session *sess, XrSessionState state, XrTime time)
 {
-	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, 0);
+	oxr_event_push_XrEventDataSessionStateChanged(log, sess, state, time);
 	sess->state = state;
 }
 
@@ -138,10 +129,6 @@ oxr_session_enumerate_formats(struct oxr_logger *log,
 XrResult
 oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSessionBeginInfo *beginInfo)
 {
-	if (is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_RUNNING, "Session is already running");
-	}
-
 	struct xrt_compositor *xc = sess->compositor;
 	if (xc != NULL) {
 		XrViewConfigurationType view_type = beginInfo->primaryViewConfigurationType;
@@ -155,7 +142,17 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 			                 view_type);
 		}
 
-		CALL_CHK(xrt_comp_begin_session(xc, (enum xrt_view_type)beginInfo->primaryViewConfigurationType));
+		const struct oxr_extension_status *extensions = &sess->sys->inst->extensions;
+
+		const struct xrt_begin_session_info begin_session_info = {
+		    .view_type = (enum xrt_view_type)beginInfo->primaryViewConfigurationType,
+		    .ext_hand_tracking_enabled = extensions->EXT_hand_tracking,
+		    .ext_eye_gaze_interaction_enabled = extensions->EXT_eye_gaze_interaction,
+		    .ext_hand_interaction_enabled = extensions->EXT_hand_interaction,
+		};
+
+		xrt_result_t xret = xrt_comp_begin_session(xc, &begin_session_info);
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_begin_session);
 	}
 
 	sess->has_begun = true;
@@ -166,11 +163,12 @@ oxr_session_begin(struct oxr_logger *log, struct oxr_session *sess, const XrSess
 XrResult
 oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 {
-	struct xrt_compositor *xc = sess->compositor;
-
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
+	// there is a bug in Unreal 4 where calling this function will result in a crash, so skip it.
+	if (sess->sys->inst->quirks.skip_end_session) {
+		return XR_SUCCESS;
 	}
+
+	struct xrt_compositor *xc = sess->compositor;
 	if (sess->state != XR_SESSION_STATE_STOPPING) {
 		return oxr_error(log, XR_ERROR_SESSION_NOT_STOPPING, "Session is not stopping");
 	}
@@ -186,14 +184,15 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 		}
 		sess->frame_started = false;
 
-		CALL_CHK(xrt_comp_end_session(xc));
+		xrt_result_t xret = xrt_comp_end_session(xc);
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_end_session);
 	}
 
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
 	if (sess->exiting) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_EXITING, 0);
 	} else {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_READY, 0);
 	}
 
 	sess->has_begun = false;
@@ -204,24 +203,20 @@ oxr_session_end(struct oxr_logger *log, struct oxr_session *sess)
 XrResult
 oxr_session_request_exit(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
 	if (sess->state == XR_SESSION_STATE_FOCUSED) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 	if (sess->state == XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 	}
 	if (!sess->has_ended_once) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 		// Fake the synchronization.
 		sess->has_ended_once = true;
 	}
 
 	//! @todo start fading out the app.
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_STOPPING, 0);
 	sess->exiting = true;
 	return oxr_session_success_result(sess);
 }
@@ -252,24 +247,30 @@ oxr_session_poll(struct oxr_logger *log, struct oxr_session *sess)
 		case XRT_COMPOSITOR_EVENT_OVERLAY_CHANGE:
 			oxr_event_push_XrEventDataMainSessionVisibilityChangedEXTX(log, sess, xce.overlay.visible);
 			break;
+		case XRT_COMPOSITOR_EVENT_LOSS_PENDING:
+			oxr_session_change_state(
+			    log, sess, XR_SESSION_STATE_LOSS_PENDING,
+			    time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, xce.loss_pending.loss_time_ns));
+			break;
+		case XRT_COMPOSITOR_EVENT_LOST: sess->has_lost = true; break;
 		default: U_LOG_W("unhandled event type! %d", xce.type); break;
 		}
 	}
 
 	if (sess->state == XR_SESSION_STATE_SYNCHRONIZED && sess->compositor_visible) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_VISIBLE && sess->compositor_focused) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_FOCUSED, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_FOCUSED && !sess->compositor_focused) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_VISIBLE, 0);
 	}
 
 	if (sess->state == XR_SESSION_STATE_VISIBLE && !sess->compositor_visible) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 	}
 }
 
@@ -339,7 +340,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 	const uint64_t xdisplay_time =
 	    time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, viewLocateInfo->displayTime);
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
+	// The head pose as in the xdev's space, aka XRT_INPUT_GENERIC_HEAD_POSE.
+	struct xrt_space_relation T_xdev_head = XRT_SPACE_RELATION_ZERO;
 	struct xrt_fov fovs[2] = {0};
 	struct xrt_pose poses[2] = {0};
 
@@ -348,38 +350,33 @@ oxr_session_locate_views(struct oxr_logger *log,
 	    &default_eye_relation, //
 	    xdisplay_time,         //
 	    2,                     //
-	    &head_relation,        //
+	    &T_xdev_head,          //
 	    fovs,                  //
 	    poses);
 
-
-	struct xrt_space_relation pure_head_relation;
-
-	// head_relation is in xdev space. Bring it into pure global space by applying tracking origin offset.
-	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &head_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &pure_head_relation);
-
-	// Clear here and filled in loop.
-	viewState->viewStateFlags = 0;
-
-	struct xrt_space_relation head_relation_in_base_space;
-	if (!oxr_space_pure_relation_in_space(log, viewLocateInfo->displayTime, &pure_head_relation, baseSpc, true,
-	                                      &head_relation_in_base_space)) {
-		for (uint32_t i = 0; i < view_count; i++) {
-			OXR_XRT_POSE_TO_XRPOSEF(XRT_POSE_IDENTITY, views[i].pose);
-		}
-
+	// The xdev pose in the base space.
+	struct xrt_space_relation T_base_xdev = XRT_SPACE_RELATION_ZERO;
+	XrResult ret = oxr_space_locate_device( //
+	    log,                                //
+	    xdev,                               //
+	    baseSpc,                            //
+	    viewLocateInfo->displayTime,        //
+	    &T_base_xdev);                      //
+	if (ret != XR_SUCCESS || T_base_xdev.relation_flags == 0) {
 		if (print) {
 			oxr_slog(&slog, "\n\tReturning invalid poses");
 			oxr_log_slog(log, &slog);
 		} else {
 			oxr_slog_cancel(&slog);
 		}
-
-		return XR_SUCCESS;
+		return ret;
 	}
+
+	struct xrt_space_relation T_base_head;
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &T_xdev_head);
+	m_relation_chain_push_relation(&xrc, &T_base_xdev);
+	m_relation_chain_resolve(&xrc, &T_base_head);
 
 	if (print) {
 		for (uint32_t i = 0; i < view_count; i++) {
@@ -388,8 +385,8 @@ oxr_session_locate_views(struct oxr_logger *log,
 			oxr_pp_fov_indented_as_object(&slog, &fovs[i], tmp);
 			oxr_pp_pose_indented_as_object(&slog, &poses[i], tmp);
 		}
-		oxr_pp_relation_indented(&slog, &head_relation, "xdev.head_relation");
-		oxr_pp_relation_indented(&slog, &head_relation_in_base_space, "head_relation_in_base_space");
+		oxr_pp_relation_indented(&slog, &T_xdev_head, "T_xdev_head");
+		oxr_pp_relation_indented(&slog, &T_base_xdev, "T_base_xdev");
 	}
 
 	for (uint32_t i = 0; i < view_count; i++) {
@@ -403,7 +400,7 @@ oxr_session_locate_views(struct oxr_logger *log,
 		struct xrt_space_relation result = {0};
 		struct xrt_relation_chain xrc = {0};
 		m_relation_chain_push_pose_if_not_identity(&xrc, &view_pose);
-		m_relation_chain_push_relation(&xrc, &head_relation_in_base_space);
+		m_relation_chain_push_relation(&xrc, &T_base_head);
 		m_relation_chain_resolve(&xrc, &result);
 		OXR_XRT_POSE_TO_XRPOSEF(result.pose, views[i].pose);
 
@@ -474,14 +471,53 @@ ts_ms(struct oxr_session *sess)
 	return ns_to_ms(monotonic);
 }
 
+static XrResult
+do_wait_frame_and_checks(struct oxr_logger *log,
+                         struct oxr_session *sess,
+                         int64_t *out_frame_id,
+                         uint64_t *out_predicted_display_time,
+                         uint64_t *out_predicted_display_period,
+                         XrTime *out_converted_time)
+{
+	assert(sess->compositor != NULL);
+
+	int64_t frame_id = -1;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
+
+	xrt_result_t xret = xrt_comp_wait_frame( //
+	    sess->compositor,                    // compositor
+	    &frame_id,                           // out_frame_id
+	    &predicted_display_time,             // out_predicted_display_time
+	    &predicted_display_period);          // out_predicted_display_period
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_wait_frame);
+
+	if (frame_id < 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative frame id '%" PRIi64 "'", frame_id);
+	}
+
+	if ((int64_t)predicted_display_time <= 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
+		                 (int64_t)predicted_display_time);
+	}
+
+	XrTime converted_time = time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, predicted_display_time);
+	if (converted_time <= 0) {
+		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got '%" PRIi64 "' from time_state_monotonic_to_ts_ns",
+		                 converted_time);
+	}
+
+	*out_frame_id = frame_id;
+	*out_predicted_display_time = predicted_display_time;
+	*out_predicted_display_period = predicted_display_period;
+	*out_converted_time = converted_time;
+
+	return XR_SUCCESS;
+}
+
 XrResult
 oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrameState *frameState)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
-
 	//! @todo this should be carefully synchronized, because there may be
 	//! more than one session per instance.
 	XRT_MAYBE_UNUSED timepoint_ns now = time_state_get_now_and_update(sess->sys->inst->timekeeping);
@@ -492,41 +528,59 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 		return oxr_session_success_result(sess);
 	}
 
-
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Called at %8.3fms", ts_ms(sess));
 	}
 
-	// A subsequent xrWaitFrame call must: block until the previous frame
-	// has been begun
+	/*
+	 * A subsequent xrWaitFrame call must: block until the previous frame
+	 * has been begun. It's extremely forbidden to call xrWaitFrame from
+	 * multiple threads. We do this before so we call predicted after any
+	 * waiting for xrBeginFrame has happened, for better timing information.
+	 */
 	os_semaphore_wait(&sess->sem, 0);
-
-	os_mutex_lock(&sess->active_wait_frames_lock);
-	sess->active_wait_frames++;
-	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log, "Finished waiting for previous frame begin at %8.3fms", ts_ms(sess));
 	}
 
-	uint64_t predicted_display_time;
-	uint64_t predicted_display_period;
-	CALL_CHK(xrt_comp_wait_frame(xc, &sess->frame_id.waited, &predicted_display_time, &predicted_display_period));
+	int64_t frame_id = -1;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
+	XrTime converted_time = 0;
 
-	if ((int64_t)predicted_display_time <= 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Got a negative display time '%" PRIi64 "'",
-		                 (int64_t)predicted_display_time);
+	XrResult ret = do_wait_frame_and_checks( //
+	    log,                                 // log
+	    sess,                                // sess
+	    &frame_id,                           // out_frame_id
+	    &predicted_display_time,             // out_predicted_display_time
+	    &predicted_display_period,           // out_predicted_display_period
+	    &converted_time);                    // out_converted_time
+	if (ret != XR_SUCCESS) {
+		// On error we need to release the semaphore ourselves as xrBeginFrame won't do it.
+		os_semaphore_release(&sess->sem);
+
+		// Error already logged.
+		return ret;
 	}
+	assert(predicted_display_time != 0);
+	assert(predicted_display_period != 0);
+	assert(converted_time != 0);
+
+	/*
+	 * We set the frame_id along with the number of active waited frames to
+	 * avoid races with xrBeginFrame. The function xrBeginFrame will only
+	 * allow xrWaitFrame to continue from the semaphore above once it has
+	 * cleared the `sess->frame_id.waited`.
+	 */
+	os_mutex_lock(&sess->active_wait_frames_lock);
+	sess->active_wait_frames++;
+	sess->frame_id.waited = frame_id;
+	os_mutex_unlock(&sess->active_wait_frames_lock);
 
 	frameState->shouldRender = should_render(sess->state);
 	frameState->predictedDisplayPeriod = predicted_display_period;
-	frameState->predictedDisplayTime =
-	    time_state_monotonic_to_ts_ns(sess->sys->inst->timekeeping, predicted_display_time);
-
-	if (frameState->predictedDisplayTime <= 0) {
-		return oxr_error(log, XR_ERROR_RUNTIME_FAILURE, "Time_state_monotonic_to_ts_ns returned '%" PRIi64 "'",
-		                 frameState->predictedDisplayTime);
-	}
+	frameState->predictedDisplayTime = converted_time;
 
 	if (sess->frame_timing_spew) {
 		oxr_log(log,
@@ -547,10 +601,6 @@ oxr_session_frame_wait(struct oxr_logger *log, struct oxr_session *sess, XrFrame
 XrResult
 oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 {
-	if (!is_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
-
 	struct xrt_compositor *xc = sess->compositor;
 
 	os_mutex_lock(&sess->active_wait_frames_lock);
@@ -572,7 +622,8 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 
 		ret = XR_FRAME_DISCARDED;
 		if (xc != NULL) {
-			CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
+			xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
+			OXR_CHECK_XRET(log, sess, xret, xrt_comp_discard_frame);
 			sess->frame_id.begun = -1;
 
 			os_mutex_lock(&sess->active_wait_frames_lock);
@@ -584,7 +635,8 @@ oxr_session_frame_begin(struct oxr_logger *log, struct oxr_session *sess)
 		sess->frame_started = true;
 	}
 	if (xc != NULL) {
-		CALL_CHK(xrt_comp_begin_frame(xc, sess->frame_id.waited));
+		xrt_result_t xret = xrt_comp_begin_frame(xc, sess->frame_id.waited);
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_begin_frame);
 		sess->frame_id.begun = sess->frame_id.waited;
 		sess->frame_id.waited = -1;
 	}
@@ -660,13 +712,21 @@ oxr_session_allocate_and_init(struct oxr_logger *log, struct oxr_system *sys, st
 	return XR_SUCCESS;
 }
 
+#define OXR_CHECK_XSYSC(LOG, SYS)                                                                                      \
+	do {                                                                                                           \
+		if (sys->xsysc == NULL) {                                                                              \
+			return oxr_error(log, XR_ERROR_VALIDATION_FAILURE,                                             \
+			                 " Can not use graphics bindings when have asked to not create graphics");     \
+		}                                                                                                      \
+	} while (false)
 
 #define OXR_ALLOCATE_NATIVE_COMPOSITOR(LOG, XSI, SESS)                                                                 \
 	do {                                                                                                           \
 		xrt_result_t xret = xrt_syscomp_create_native_compositor((SESS)->sys->xsysc, (XSI), &(SESS)->xcn);     \
 		if (xret == XRT_ERROR_MULTI_SESSION_NOT_IMPLEMENTED) {                                                 \
 			return oxr_error((LOG), XR_ERROR_LIMIT_REACHED, "Per instance multi-session not supported.");  \
-		} else if (xret != XRT_SUCCESS) {                                                                      \
+		}                                                                                                      \
+		if (xret != XRT_SUCCESS) {                                                                             \
 			return oxr_error((LOG), XR_ERROR_RUNTIME_FAILURE, "Failed to create native compositor! '%i'",  \
 			                 xret);                                                                        \
 		}                                                                                                      \
@@ -700,6 +760,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLXlibKHR const *opengl_xlib = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR, XrGraphicsBindingOpenGLXlibKHR);
 	if (opengl_xlib != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -716,6 +778,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLESAndroidKHR const *opengles_android = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_ES_ANDROID_KHR, XrGraphicsBindingOpenGLESAndroidKHR);
 	if (opengles_android != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -732,6 +796,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingOpenGLWin32KHR const *opengl_win32 = OXR_GET_INPUT_FROM_CHAIN(
 	    createInfo, XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR, XrGraphicsBindingOpenGLWin32KHR);
 	if (opengl_win32 != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called xrGetOpenGLGraphicsRequirementsKHR");
@@ -747,6 +813,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingVulkanKHR const *vulkan =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR, XrGraphicsBindingVulkanKHR);
 	if (vulkan != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->instance);
 		OXR_VERIFY_ARG_NOT_ZERO(log, vulkan->physicalDevice);
 		if (vulkan->device == VK_NULL_HANDLE) {
@@ -784,6 +852,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	XrGraphicsBindingEGLMNDX const *egl =
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_EGL_MNDX, XrGraphicsBindingEGLMNDX);
 	if (egl != NULL) {
+		OXR_CHECK_XSYSC(log, sys);
+
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
 			                 "Has not called "
@@ -801,6 +871,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D11_KHR, XrGraphicsBindingD3D11KHR);
 	if (d3d11 != NULL) {
 		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
+
+		OXR_CHECK_XSYSC(log, sys);
 
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
@@ -824,6 +896,8 @@ oxr_session_create_impl(struct oxr_logger *log,
 	    OXR_GET_INPUT_FROM_CHAIN(createInfo, XR_TYPE_GRAPHICS_BINDING_D3D12_KHR, XrGraphicsBindingD3D12KHR);
 	if (d3d12 != NULL) {
 		// we know the fields of this struct are OK by now since they were checked with XrSessionCreateInfo
+
+		OXR_CHECK_XSYSC(log, sys);
 
 		if (!sys->gotten_requirements) {
 			return oxr_error(log, XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING,
@@ -893,8 +967,8 @@ oxr_session_create(struct oxr_logger *log,
 	}
 
 	// Everything is in order, start the state changes.
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE);
-	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_IDLE, 0);
+	oxr_session_change_state(log, sess, XR_SESSION_STATE_READY, 0);
 
 	*out_session = sess;
 
@@ -940,23 +1014,31 @@ oxr_session_hand_joints(struct oxr_logger *log,
 
 	oxr_xdev_get_hand_tracking_at(log, sess->sys->inst, xdev, name, at_time, &value);
 
-	struct xrt_space_relation pure_hand_relation = value.hand_pose;
-	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &pure_hand_relation);
-	m_relation_chain_push_pose_if_not_identity(&xrc, &xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &pure_hand_relation);
+	// The hand pose is returned in the xdev's space.
+	struct xrt_space_relation T_xdev_hand = value.hand_pose;
 
-	struct xrt_space_relation hand_pose_in_base_space;
-	bool has_hand_pose_in_base_sapce = oxr_space_pure_relation_in_space( //
-	    log,                                                             //
-	    at_time,                                                         //
-	    &pure_hand_relation,                                             //
-	    baseSpc,                                                         //
-	    true,                                                            //
-	    &hand_pose_in_base_space);                                       //
+	// Get the xdev's pose in the base space.
+	struct xrt_space_relation T_base_xdev = XRT_SPACE_RELATION_ZERO;
+
+	XrResult ret = oxr_space_locate_device(log, xdev, baseSpc, at_time, &T_base_xdev);
+	if (ret != XR_SUCCESS) {
+		// Error printed logged oxr_space_locate_device
+		return ret;
+	}
+	if (T_base_xdev.relation_flags == 0) {
+		locations->isActive = false;
+		return XR_SUCCESS;
+	}
+
+	// Get the hands pose in the base space.
+	struct xrt_space_relation T_base_hand;
+	struct xrt_relation_chain xrc = {0};
+	m_relation_chain_push_relation(&xrc, &T_xdev_hand);
+	m_relation_chain_push_relation(&xrc, &T_base_xdev);
+	m_relation_chain_resolve(&xrc, &T_base_hand);
 
 	// Can we not relate to this space or did we not get values?
-	if (!has_hand_pose_in_base_sapce || !value.is_active) {
+	if (T_base_hand.relation_flags == 0 || !value.is_active) {
 		locations->isActive = false;
 
 		// Loop over all joints and zero flags.
@@ -984,7 +1066,7 @@ oxr_session_hand_joints(struct oxr_logger *log,
 		struct xrt_space_relation result;
 		struct xrt_relation_chain chain = {0};
 		m_relation_chain_push_relation(&chain, &r);
-		m_relation_chain_push_relation(&chain, &hand_pose_in_base_space);
+		m_relation_chain_push_relation(&chain, &T_base_hand);
 		m_relation_chain_resolve(&chain, &result);
 
 		xrt_to_xr_pose(&result.pose, &locations->jointLocations[i].pose);
@@ -1026,7 +1108,7 @@ xr_hand_to_force_feedback_output(XrHandEXT hand)
 XrResult
 oxr_session_apply_force_feedback(struct oxr_logger *log,
                                  struct oxr_hand_tracker *hand_tracker,
-                                 const XrApplyForceFeedbackCurlLocationsMNDX *locations)
+                                 const XrForceFeedbackCurlApplyLocationsMNDX *locations)
 {
 	struct xrt_device *xdev = hand_tracker->xdev;
 

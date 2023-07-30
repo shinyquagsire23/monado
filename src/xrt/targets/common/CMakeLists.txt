@@ -1,4 +1,4 @@
-# Copyright 2019-2022, Collabora, Ltd.
+# Copyright 2019-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
 ####
@@ -28,8 +28,15 @@ if(XRT_BUILD_DRIVER_RIFT_S)
 	target_sources(target_lists PRIVATE target_builder_rift_s.c)
 endif()
 
-if(XRT_BUILD_DRIVER_SURVIVE OR XRT_BUILD_DRIVER_VIVE)
+if(XRT_BUILD_DRIVER_SURVIVE
+   OR XRT_BUILD_DRIVER_VIVE
+   OR XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE
+	)
 	target_sources(target_lists PRIVATE target_builder_lighthouse.c)
+endif()
+
+if(XRT_BUILD_DRIVER_SIMULATED)
+	target_sources(target_lists PRIVATE target_builder_simulated.c)
 endif()
 
 if(XRT_BUILD_DRIVER_SIMULAVR)
@@ -39,6 +46,16 @@ endif()
 if(XRT_BUILD_DRIVER_NS)
 	target_sources(target_lists PRIVATE target_builder_north_star.c)
 	target_link_libraries(target_lists PRIVATE drv_ns)
+endif()
+
+if(XRT_BUILD_DRIVER_WMR)
+	target_sources(target_lists PRIVATE target_builder_wmr.c)
+	target_link_libraries(target_lists PRIVATE drv_wmr)
+endif()
+
+if(XRT_BUILD_DRIVER_QWERTY)
+	target_sources(target_lists PRIVATE target_builder_qwerty.c)
+	target_link_libraries(target_lists PRIVATE drv_qwerty)
 endif()
 
 ###
@@ -99,6 +116,10 @@ if(XRT_BUILD_DRIVER_PSMV)
 	target_link_libraries(target_lists PRIVATE drv_psmv)
 endif()
 
+if(XRT_BUILD_DRIVER_PSSENSE)
+	target_link_libraries(target_lists PRIVATE drv_pssense)
+endif()
+
 if(XRT_BUILD_DRIVER_PSVR)
 	target_link_libraries(target_lists PRIVATE drv_psvr)
 endif()
@@ -135,6 +156,10 @@ if(XRT_BUILD_DRIVER_SURVIVE)
 	target_link_libraries(target_lists PRIVATE drv_survive)
 endif()
 
+if(XRT_BUILD_DRIVER_STEAMVR_LIGHTHOUSE)
+	target_link_libraries(target_lists PRIVATE drv_steamvr_lh)
+endif()
+
 if(XRT_BUILD_DRIVER_ANDROID)
 	target_link_libraries(target_lists PRIVATE drv_android)
 endif()
@@ -169,7 +194,7 @@ endif()
 # Instance
 #
 
-if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
+if(XRT_MODULE_COMPOSITOR_MAIN OR XRT_MODULE_COMPOSITOR_NULL)
 	add_library(target_instance STATIC target_instance.c)
 	target_link_libraries(
 		target_instance
@@ -183,11 +208,11 @@ if(XRT_FEATURE_COMPOSITOR_MAIN OR XRT_FEATURE_COMPOSITOR_NULL)
 		)
 	target_include_directories(target_instance PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-	if(XRT_FEATURE_COMPOSITOR_MAIN)
+	if(XRT_MODULE_COMPOSITOR_MAIN)
 		target_link_libraries(target_instance PRIVATE comp_main)
 	endif()
 
-	if(XRT_FEATURE_COMPOSITOR_NULL)
+	if(XRT_MODULE_COMPOSITOR_NULL)
 		target_link_libraries(target_instance PRIVATE comp_null)
 	endif()
 endif()

@@ -1,4 +1,4 @@
-// Copyright 2019-2022, Collabora, Ltd.
+// Copyright 2019-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,8 +11,6 @@
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup sdl_test
  */
-
-#include "xrt/xrt_gfx_native.h"
 
 #include "os/os_time.h"
 
@@ -212,6 +210,12 @@ compositor_init_vulkan(struct sdl_compositor *c, enum u_logging_level log_level)
 	c->sys_info.client_d3d_deviceLUID = vk_res.client_gpu_deviceLUID;
 	c->sys_info.client_d3d_deviceLUID_valid = vk_res.client_gpu_deviceLUID_valid;
 
+	// Tie the lifetimes of swapchains to Vulkan.
+	xrt_result_t xret = comp_swapchain_shared_init(&c->base.cscs, vk);
+	if (xret != XRT_SUCCESS) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -314,7 +318,7 @@ compositor_init_sys_info(struct sdl_compositor *c, struct sdl_program *sp, struc
  */
 
 static xrt_result_t
-sdl_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type type)
+sdl_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct sdl_compositor *c = &from_comp(xc)->c;
 	SC_DEBUG(c, "BEGIN_SESSION");
@@ -424,12 +428,13 @@ sdl_compositor_discard_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-sdl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+sdl_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	COMP_TRACE_MARKER();
 
 	struct sdl_program *sp = from_comp(xc);
 	struct sdl_compositor *c = &sp->c;
+	int64_t frame_id = c->base.slot.data.frame_id;
 
 	SC_TRACE(c, "LAYER_COMMIT");
 
@@ -462,7 +467,7 @@ sdl_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 	}
 
 	// Now is a good point to garbage collect.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
 	return XRT_SUCCESS;
 }
@@ -520,13 +525,10 @@ sdl_compositor_destroy(struct xrt_compositor *xc)
 	SC_DEBUG(c, "DESTROY");
 
 	// Make sure we don't have anything to destroy.
-	comp_swapchain_garbage_collect(&c->base.cscgc);
+	comp_swapchain_shared_garbage_collect(&c->base.cscs);
 
-
-	if (vk->cmd_pool != VK_NULL_HANDLE) {
-		vk->vkDestroyCommandPool(vk->device, vk->cmd_pool, NULL);
-		vk->cmd_pool = VK_NULL_HANDLE;
-	}
+	// Must be destroyed before Vulkan.
+	comp_swapchain_shared_destroy(&c->base.cscs, vk);
 
 	if (vk->device != VK_NULL_HANDLE) {
 		vk->vkDestroyDevice(vk->device, NULL);
@@ -575,7 +577,7 @@ sdl_compositor_init(struct sdl_program *sp)
 	c->frame.waited.id = -1;
 	c->frame.rendering.id = -1;
 	c->state = SDL_COMP_STATE_READY;
-	c->settings.frame_interval_ns = U_TIME_1S_IN_NS / 20; // 20 FPS
+	c->settings.frame_interval_ns = U_TIME_1S_IN_NS / 60; // 60 FPS
 
 	SC_DEBUG(c, "Doing init %p", (void *)c);
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Functions for adding a new Surface to an activity and otherwise
+ * @brief  Functions for adding a new Surface to a window and otherwise
  *         interacting with an Android View.
  * @author Ryan Pavlik <ryan.pavlik@collabora.com>
  * @ingroup aux_android
@@ -36,7 +36,7 @@ struct xrt_android_display_metrics
 };
 
 /*!
- * Opaque type representing a custom surface added to an activity, and the async
+ * Opaque type representing a custom surface added to a window, and the async
  * operation to perform this adding.
  *
  * @note You must keep this around for as long as you're using the surface.
@@ -44,7 +44,7 @@ struct xrt_android_display_metrics
 struct android_custom_surface;
 
 /*!
- * Start adding a custom surface to an activity.
+ * Start adding a custom surface to a window.
  *
  * This is an asynchronous operation, so this creates an opaque pointer for you
  * to check on the results and maintain a reference to the result.
@@ -52,8 +52,8 @@ struct android_custom_surface;
  * Uses org.freedesktop.monado.auxiliary.MonadoView
  *
  * @param vm Java VM pointer
- * @param activity An android.app.Activity jobject, cast to
- * `void *`.
+ * @param context An android.content.Context jobject, cast to `void *`.
+ * @param display_id Id of the display that the surface is attached to.
  *
  * @return An opaque handle for monitoring this operation and referencing the
  * surface, or NULL if there was an error.
@@ -61,7 +61,7 @@ struct android_custom_surface;
  * @public @memberof android_custom_surface
  */
 struct android_custom_surface *
-android_custom_surface_async_start(struct _JavaVM *vm, void *activity);
+android_custom_surface_async_start(struct _JavaVM *vm, void *context, int32_t display_id);
 
 /*!
  * Destroy the native handle for the custom surface.
@@ -92,6 +92,9 @@ bool
 android_custom_surface_get_display_metrics(struct _JavaVM *vm,
                                            void *activity,
                                            struct xrt_android_display_metrics *out_metrics);
+
+bool
+android_custom_surface_can_draw_overlays(struct _JavaVM *vm, void *context);
 
 #ifdef __cplusplus
 }

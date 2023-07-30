@@ -1,4 +1,4 @@
-// Copyright 2020, Collabora, Ltd.
+// Copyright 2020,2023 Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -7,6 +7,7 @@
  * @author Christoph Haag <christoph.haag@collabora.com>
  * @author Daniel Willmott <web@dan-w.com>
  * @author Moses Turner <moses@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup st_ovrd
  */
 
@@ -26,8 +27,10 @@ extern "C" {
 #include "os/os_time.h"
 #include "util/u_debug.h"
 #include "util/u_device.h"
+#include "util/u_builders.h"
 #include "util/u_hand_tracking.h"
 
+#include "xrt/xrt_space.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_device.h"
@@ -406,7 +409,9 @@ public:
 			break;
 		case XRT_DEVICE_VIVE_WAND: m_render_model = "vr_controller_vive_1_5"; break;
 		case XRT_DEVICE_VIVE_TRACKER_GEN1:
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
+		case XRT_DEVICE_VIVE_TRACKER_GEN2:
+		case XRT_DEVICE_VIVE_TRACKER_GEN3:
+		case XRT_DEVICE_VIVE_TRACKER_TUNDRA: m_render_model = "{htc}vr_tracker_vive_1_0"; break;
 		case XRT_DEVICE_PSMV:
 		case XRT_DEVICE_HYDRA:
 		case XRT_DEVICE_DAYDREAM:
@@ -615,11 +620,13 @@ public:
 			AddOutputControl(XRT_OUTPUT_NAME_PSMV_RUMBLE_VIBRATION, "/output/haptic");
 		} break;
 
-		case XRT_DEVICE_TOUCH_CONTROLLER: break;  // TODO
-		case XRT_DEVICE_WMR_CONTROLLER: break;    // TODO
-		case XRT_DEVICE_XBOX_CONTROLLER: break;   // TODO
-		case XRT_DEVICE_VIVE_TRACKER_GEN1: break; // TODO
-		case XRT_DEVICE_VIVE_TRACKER_GEN2: break; // TODO
+		case XRT_DEVICE_TOUCH_CONTROLLER: break;    // TODO
+		case XRT_DEVICE_WMR_CONTROLLER: break;      // TODO
+		case XRT_DEVICE_XBOX_CONTROLLER: break;     // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN1: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN2: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_GEN3: break;   // TODO
+		case XRT_DEVICE_VIVE_TRACKER_TUNDRA: break; // TODO
 		case XRT_DEVICE_REALSENSE: break;
 		case XRT_DEVICE_DEPTHAI: break;
 
@@ -631,6 +638,9 @@ public:
 		case XRT_DEVICE_HAND_TRACKER: break;      // shouldn't happen
 		case XRT_DEVICE_GENERIC_HMD:
 		case XRT_DEVICE_VIVE_PRO: break; // no
+		case XRT_DEVICE_EXT_HAND_INTERACTION: break;
+
+		default: break;
 		}
 	}
 
@@ -1430,6 +1440,7 @@ public:
 private:
 	struct xrt_instance *m_xinst = NULL;
 	struct xrt_system_devices *m_xsysd = NULL;
+	struct xrt_space_overseer *m_xso = NULL;
 	struct xrt_device *m_xhmd = NULL;
 
 	CDeviceDriver_Monado *m_MonadoDeviceDriver = NULL;
@@ -1459,7 +1470,7 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 		return vr::VRInitError_Init_HmdNotFound;
 	}
 
-	xret = xrt_instance_create_system(m_xinst, &m_xsysd, NULL);
+	xret = xrt_instance_create_system(m_xinst, &m_xsysd, &m_xso, NULL);
 	if (xret < 0) {
 		ovrd_log("Failed to create system devices\n");
 		xrt_instance_destroy(&m_xinst);
@@ -1467,6 +1478,8 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 	}
 	if (m_xsysd->roles.head == NULL) {
 		ovrd_log("Didn't get a HMD device!\n");
+		xrt_space_overseer_destroy(&m_xso);
+		xrt_system_devices_destroy(&m_xsysd);
 		xrt_instance_destroy(&m_xinst);
 		return vr::VRInitError_Init_HmdNotFound;
 	}
@@ -1483,7 +1496,7 @@ CServerDriver_Monado::Init(vr::IVRDriverContext *pDriverContext)
 
 	// use steamvr room setup instead
 	struct xrt_vec3 offset = {0, 0, 0};
-	u_device_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
+	u_builder_setup_tracking_origins(m_xhmd, left_xdev, right_xdev, &offset);
 
 	if (left_xdev) {
 		m_left = new CDeviceDriver_Monado_Controller(m_xinst, left_xdev, XRT_HAND_LEFT);
@@ -1505,6 +1518,7 @@ CServerDriver_Monado::Cleanup()
 		m_MonadoDeviceDriver = NULL;
 	}
 
+	xrt_space_overseer_destroy(&m_xso);
 	xrt_system_devices_destroy(&m_xsysd);
 	m_xhmd = NULL;
 	m_left->m_xdev = NULL;

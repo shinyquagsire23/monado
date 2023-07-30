@@ -24,6 +24,9 @@ using wrap::android::content::pm::ApplicationInfo;
  * @note Starting from Android 11, NameNotFoundException exception is thrown if application doesn't
  * specify either <queries> or "android.permission.QUERY_ALL_PACKAGES".
  * See https://developer.android.com/training/package-visibility for detail.
+ *
+ * We work around this by querying first for org.khronos.openxr.OpenXRRuntimeService, for which a query entry is
+ * added by the Loader manifest.
  */
 ApplicationInfo
 getAppInfo(std::string const &packageName, jobject application_context);

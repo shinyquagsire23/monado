@@ -11,6 +11,7 @@
 // https://github.com/microsoft/onnxruntime-inference-examples/blob/main/c_cxx/fns_candy_style_transfer/fns_candy_style_transfer.c
 #include "hg_sync.hpp"
 #include "hg_image_math.inl"
+#include "hg_numerics_checker.hpp"
 
 
 #include <filesystem>
@@ -28,7 +29,6 @@ namespace xrt::tracking::hand::mercury {
 			assert(false);                                                                                 \
 		}                                                                                                      \
 	} while (0)
-
 
 static cv::Matx23f
 blackbar(const cv::Mat &in, enum t_camera_orientation rot, cv::Mat &out, xrt_size out_size)
@@ -99,7 +99,7 @@ blackbar(const cv::Mat &in, enum t_camera_orientation rot, cv::Mat &out, xrt_siz
 		break;
 	case CAMERA_ORIENTATION_270:
 		// clang-format off
-			go(0,0) = 0.0f;        go(0,1) = -scale_down;   go(0,2) = translate_x+out_size.w-1;
+			go(0,0) = 0.0f;        go(0,1) = -scale_down;   go(0,2) = -translate_x+out_size.w-1;
 			go(1,0) = scale_down;  go(1,1) = 0.0f;          go(1,2) = translate_y;
 		// clang-format on
 		break;
@@ -134,9 +134,71 @@ argmax(const float *data, int size)
 	return out_idx;
 }
 
-static void
-refine_center_of_distribution(
-    const float *data, int coarse_x, int coarse_y, int w, int h, float *out_refined_x, float *out_refined_y)
+static bool
+hand_depth_center_of_mass(struct HandTracking *hgt, float data[22], float *out_depth, float *out_confidence)
+{
+	float avg_location_px_coord = 0;
+	float sum = 0;
+
+	for (int i = 0; i < 22; i++) {
+		data[i] = fmin(1.0, fmax(data[i], 0.0));
+		sum += data[i];
+		avg_location_px_coord += data[i] * (float)i;
+	}
+
+	if (sum < 1e-5) {
+		HG_DEBUG(hgt, "All depth outputs were zero!");
+		return false;
+	}
+
+	avg_location_px_coord /= sum;
+
+	// std::cout << avg_location_px_coord << std::endl;
+
+	// bounds check
+	if (avg_location_px_coord < 0 || avg_location_px_coord > 21) {
+		HG_DEBUG(hgt, "Very bad! avg_location_px_coord was %f", avg_location_px_coord);
+		for (int i = 0; i < 22; i++) {
+			HG_DEBUG(hgt, "%f", data[i]);
+		}
+
+		avg_location_px_coord = fmin(21.0, fmax(0.0, avg_location_px_coord));
+		return false;
+	}
+
+	// nan check
+	if (avg_location_px_coord != avg_location_px_coord) {
+		HG_DEBUG(hgt, "Very bad! avg_location_px_coord was not a number: %f", avg_location_px_coord);
+		for (int i = 0; i < 22; i++) {
+			HG_DEBUG(hgt, "%f", data[i]);
+		}
+		*out_depth = 0;
+		*out_confidence = 0;
+		return false;
+	}
+	// printf("%f %d\n", avg_location_px_coord, (int)avg_location_px_coord);
+	*out_confidence = data[(int)avg_location_px_coord];
+
+
+
+	float depth_value = avg_location_px_coord + 0.5;
+	depth_value /= 22;
+	depth_value -= 0.5;
+	depth_value *= 2 * 1.5;
+
+	*out_depth = depth_value;
+	return true;
+}
+
+static bool
+refine_center_of_distribution(struct HandTracking *hgt, //
+                              const float *data,        //
+                              int coarse_x,             //
+                              int coarse_y,             //
+                              int w,                    //
+                              int h,                    //
+                              float *out_refined_x,     //
+                              float *out_refined_y)
 {
 	// Be VERY suspicious of this function, it's probably not centering correctly.
 	float sum_of_values = 0;
@@ -170,18 +232,15 @@ refine_center_of_distribution(
 		// Edge case, will fix soon
 		*out_refined_x = coarse_x;
 		*out_refined_y = coarse_y;
-		U_LOG_E("Failed! %d %d %d %d %d", coarse_x, coarse_y, w, h, max_kern_width);
-		return;
+		HG_DEBUG(hgt, "Failed! %d %d %d %d %d", coarse_x, coarse_y, w, h, max_kern_width);
+		return false;
 	}
-
 	*out_refined_x = sum_of_values_times_locations_x / sum_of_values;
 	*out_refined_y = sum_of_values_times_locations_y / sum_of_values;
-	return;
+	return true;
 }
 
-
-
-static void
+static bool
 normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 {
 	data_in.convertTo(data_out, CV_32FC1, 1 / 255.0);
@@ -192,7 +251,7 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 
 	if (stddev.at<double>(0, 0) == 0) {
 		U_LOG_W("Got image with zero standard deviation!");
-		return;
+		return false;
 	}
 
 	data_out *= 0.25 / stddev.at<double>(0, 0);
@@ -201,6 +260,7 @@ normalizeGrayscaleImage(cv::Mat &data_in, cv::Mat &data_out)
 	//! @todo optimize
 	cv::meanStdDev(data_out, mean, stddev);
 	data_out += (0.5 - mean.at<double>(0, 0));
+	return true;
 }
 
 void
@@ -228,18 +288,19 @@ setup_model_image_input(HandTracking *hgt, onnx_wrap *wrap, const char *name, in
 {
 	model_input_wrap inputimg = {};
 	inputimg.name = name;
-	inputimg.dimensions.push_back(1);
-	inputimg.dimensions.push_back(1);
-	inputimg.dimensions.push_back(h);
-	inputimg.dimensions.push_back(w);
+	inputimg.dimensions[0] = 1;
+	inputimg.dimensions[1] = 1;
+	inputimg.dimensions[2] = h;
+	inputimg.dimensions[3] = w;
+	inputimg.num_dimensions = 4;
 	size_t data_size = w * h * sizeof(float);
 	inputimg.data = (float *)malloc(data_size);
 
 	ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
 	                                   inputimg.data,                       //
 	                                   data_size,                           //
-	                                   inputimg.dimensions.data(),          //
-	                                   inputimg.dimensions.size(),          //
+	                                   inputimg.dimensions,                 //
+	                                   inputimg.num_dimensions,             //
 	                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
 	                                   &inputimg.tensor));
 
@@ -320,12 +381,12 @@ run_hand_detection(void *ptr)
 
 
 	for (int hand_idx = 0; hand_idx < 2; hand_idx++) {
-		hand_bounding_box *output = info->outputs[hand_idx];
+		hand_region_of_interest &output = info->outputs[hand_idx];
 
-		output->found = hand_exists[hand_idx] > 0.3;
+		output.found = hand_exists[hand_idx] > 0.3;
 
-		if (output->found) {
-			output->confidence = hand_exists[hand_idx];
+		if (output.found) {
+			output.hand_detection_confidence = hand_exists[hand_idx];
 
 			xrt_vec2 _pt = {};
 			_pt.x = math_map_ranges(cx[hand_idx], -1, 1, 0, kDetectionInputSize);
@@ -344,14 +405,11 @@ run_hand_detection(void *ptr)
 
 			_pt = transformVecBy2x3(_pt, go_back);
 
-			output->center = _pt;
-			output->size_px = size;
+			output.center_px = _pt;
+			output.size_px = size;
 
 			if (hgt->debug_scribble) {
-				cv::Point2i pt((int)output->center.x, (int)output->center.y);
-				cv::rectangle(debug_frame,
-				              cv::Rect(pt - cv::Point2i(size / 2, size / 2), cv::Size(size, size)),
-				              PINK, 1);
+				handSquare(debug_frame, output.center_px, output.size_px, PINK);
 			}
 		}
 
@@ -377,81 +435,151 @@ init_keypoint_estimation(HandTracking *hgt, onnx_wrap *wrap)
 
 	std::filesystem::path path = hgt->models_folder;
 
-	path /= "grayscale_keypoint_new.onnx";
+	path /= "grayscale_keypoint_jan18.onnx";
 
 	wrap->wraps.clear();
 
-	setup_ort_api(hgt, wrap, path);
 
-	setup_model_image_input(hgt, wrap, "inputImg", kKeypointInputSize, kKeypointInputSize);
-}
+	wrap->api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
 
-void
-calc_src_tri(cv::Point2f center,
-             cv::Point2f go_right,
-             cv::Point2f go_down,
-             enum t_camera_orientation rot,
-             cv::Point2f out_src_tri[3])
-{
-	cv::Point2f top_left = {center - go_down - go_right};
-	cv::Point2f bottom_left = {center + go_down - go_right};
-	cv::Point2f bottom_right = {center + go_down + go_right};
-	cv::Point2f top_right = {center - go_down + go_right};
 
-	switch (rot) {
-	case CAMERA_ORIENTATION_0: {
+	OrtSessionOptions *opts = nullptr;
+	ORT(CreateSessionOptions(&opts));
 
-		// top left
-		out_src_tri[0] = top_left; // {center - go_down - go_right};
+	// TODO review options, config for threads?
+	ORT(SetSessionGraphOptimizationLevel(opts, ORT_ENABLE_ALL));
+	ORT(SetIntraOpNumThreads(opts, 1));
 
-		// bottom left
-		out_src_tri[1] = bottom_left; //{center + go_down - go_right};
 
-		// top right
-		out_src_tri[2] = top_right; //{center - go_down + go_right};
-	} break;
-	case CAMERA_ORIENTATION_90: {
-		// Need to rotate the view back by -90°
-		// top left (becomes top right)
-		out_src_tri[0] = top_right;
+	ORT(CreateEnv(ORT_LOGGING_LEVEL_FATAL, "monado_ht", &wrap->env));
 
-		// bottom left (becomes top left)
-		out_src_tri[1] = top_left;
+	ORT(CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &wrap->meminfo));
 
-		// top right (becomes bottom right)
-		out_src_tri[2] = bottom_right;
-	} break;
+	// HG_DEBUG(this->device, "Loading hand detection model from file '%s'", path.c_str());
+	ORT(CreateSession(wrap->env, path.c_str(), opts, &wrap->session));
+	assert(wrap->session != NULL);
 
-	case CAMERA_ORIENTATION_180: {
-		// top left (becomes bottom right)
-		out_src_tri[0] = bottom_right;
+	// size_t input_size = wrap->input_shape[0] * wrap->input_shape[1] * wrap->input_shape[2] *
+	// wrap->input_shape[3];
 
-		// bottom left (becomes top right)
-		out_src_tri[1] = top_right;
+	// wrap->data = (float *)malloc(input_size * sizeof(float));
+	{
+		model_input_wrap inputimg = {};
+		inputimg.name = "inputImg";
+		inputimg.dimensions[0] = 1;
+		inputimg.dimensions[1] = 1;
+		inputimg.dimensions[2] = 128;
+		inputimg.dimensions[3] = 128;
+		inputimg.num_dimensions = 4;
 
-		// top right (becomes bottom left)
-		out_src_tri[2] = bottom_left;
-	} break;
-	case CAMERA_ORIENTATION_270: {
-		// Need to rotate the view clockwise 90°
-		// top left (becomes bottom left)
-		out_src_tri[0] = bottom_left; //{center + go_down - go_right};
+		inputimg.data = (float *)malloc(128 * 128 * sizeof(float)); // SORRY IM BUSY
 
-		// bottom left (becomes bottom right)
-		out_src_tri[1] = bottom_right; //{center + go_down + go_right};
 
-		// top right (becomes top left)
-		out_src_tri[2] = top_left; //{center - go_down - go_right};
-	} break;
-	default: assert(false);
+
+		ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
+		                                   inputimg.data,                       //
+		                                   128 * 128 * sizeof(float),           //
+		                                   inputimg.dimensions,                 //
+		                                   inputimg.num_dimensions,             //
+		                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
+		                                   &inputimg.tensor));
+
+		assert(inputimg.tensor);
+		int is_tensor;
+		ORT(IsTensor(inputimg.tensor, &is_tensor));
+		assert(is_tensor);
+
+		wrap->wraps.push_back(inputimg);
 	}
+
+	{
+		model_input_wrap inputimg = {};
+		inputimg.name = "lastKeypoints";
+		inputimg.dimensions[0] = 1;
+		inputimg.dimensions[1] = 42;
+		inputimg.num_dimensions = 2;
+
+		inputimg.data = (float *)malloc(1 * 42 * sizeof(float)); // SORRY IM BUSY
+
+
+
+		ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
+		                                   inputimg.data,                       //
+		                                   1 * 42 * sizeof(float),              //
+		                                   inputimg.dimensions,                 //
+		                                   inputimg.num_dimensions,             //
+		                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
+		                                   &inputimg.tensor));
+
+		assert(inputimg.tensor);
+		int is_tensor;
+		ORT(IsTensor(inputimg.tensor, &is_tensor));
+		assert(is_tensor);
+		wrap->wraps.push_back(inputimg);
+	}
+
+	{
+		model_input_wrap inputimg = {};
+		inputimg.name = "useLastKeypoints";
+		inputimg.dimensions[0] = 1;
+		inputimg.num_dimensions = 1;
+
+		inputimg.data = (float *)malloc(1 * sizeof(float)); // SORRY IM BUSY
+
+
+
+		ORT(CreateTensorWithDataAsOrtValue(wrap->meminfo,                       //
+		                                   inputimg.data,                       //
+		                                   1 * sizeof(float),                   //
+		                                   inputimg.dimensions,                 //
+		                                   inputimg.num_dimensions,             //
+		                                   ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT, //
+		                                   &inputimg.tensor));
+
+		assert(inputimg.tensor);
+		int is_tensor;
+		ORT(IsTensor(inputimg.tensor, &is_tensor));
+		assert(is_tensor);
+		wrap->wraps.push_back(inputimg);
+	}
+
+
+	wrap->api->ReleaseSessionOptions(opts);
 }
+
+enum xrt_hand_joint joints_ml_to_xr[21]{
+    XRT_HAND_JOINT_WRIST,               //
+    XRT_HAND_JOINT_THUMB_METACARPAL,    //
+    XRT_HAND_JOINT_THUMB_PROXIMAL,      //
+    XRT_HAND_JOINT_THUMB_DISTAL,        //
+    XRT_HAND_JOINT_THUMB_TIP,           //
+                                        //
+    XRT_HAND_JOINT_INDEX_PROXIMAL,      //
+    XRT_HAND_JOINT_INDEX_INTERMEDIATE,  //
+    XRT_HAND_JOINT_INDEX_DISTAL,        //
+    XRT_HAND_JOINT_INDEX_TIP,           //
+                                        //
+    XRT_HAND_JOINT_MIDDLE_PROXIMAL,     //
+    XRT_HAND_JOINT_MIDDLE_INTERMEDIATE, //
+    XRT_HAND_JOINT_MIDDLE_DISTAL,       //
+    XRT_HAND_JOINT_MIDDLE_TIP,          //
+                                        //
+    XRT_HAND_JOINT_RING_PROXIMAL,       //
+    XRT_HAND_JOINT_RING_INTERMEDIATE,   //
+    XRT_HAND_JOINT_RING_DISTAL,         //
+    XRT_HAND_JOINT_RING_TIP,            //
+                                        //
+    XRT_HAND_JOINT_LITTLE_PROXIMAL,     //
+    XRT_HAND_JOINT_LITTLE_INTERMEDIATE, //
+    XRT_HAND_JOINT_LITTLE_DISTAL,       //
+    XRT_HAND_JOINT_LITTLE_TIP,          //
+};
 
 void
 make_keypoint_heatmap_output(int camera_idx, int hand_idx, int grid_pt_x, int grid_pt_y, float *plane, cv::Mat &out)
 {
-	int root_x = kVisSpacerSize + ((1 + 2 * hand_idx) * (kKeypointInputSize + kVisSpacerSize));
-	int root_y = kVisSpacerSize + (camera_idx * (kKeypointInputSize + kVisSpacerSize));
+	int root_x = 8 + ((1 + 2 * hand_idx) * (128 + 8));
+	int root_y = 8 + ((2 * camera_idx) * (128 + 8));
 
 	int org_x = (root_x) + (grid_pt_x * 25);
 	int org_y = (root_y) + (grid_pt_y * 25);
@@ -464,168 +592,383 @@ make_keypoint_heatmap_output(int camera_idx, int hand_idx, int grid_pt_x, int gr
 	start.copyTo(out(p));
 }
 
+void
+make_keypoint_depth_heatmap_output(int camera_idx, //
+                                   int hand_idx,   //
+                                   int grid_pt_x,  //
+                                   int grid_pt_y,
+                                   float *plane, //
+                                   cv::Mat &out)
+{
+	int root_x = 8 + ((1 + 2 * hand_idx) * (128 + 8));
+	int root_y = 8 + ((1 + 2 * camera_idx) * (128 + 8));
+
+	int org_x = (root_x) + (grid_pt_x * 25);
+	int org_y = (root_y) + (grid_pt_y * 25);
+
+
+	cv::Rect p = cv::Rect(org_x, org_y, 22, 22);
+
+
+	cv::Mat start(cv::Size(22, 22), CV_32FC1);
+	float *ptr = (float *)start.data; // Cope cope cope cope cope
+
+
+	for (int i = 0; i < 22; i++) {
+		for (int j = 0; j < 22; j++) {
+			ptr[(i * 22) + j] = plane[i];
+		}
+	}
+
+	start *= 255.0;
+
+	start.copyTo(out(p));
+}
+
+void
+set_predicted_zero(float *data)
+{
+	for (int i = 0; i < 42; i++) {
+		data[i] = 0.0f;
+	}
+}
 
 void
 run_keypoint_estimation(void *ptr)
 {
 	XRT_TRACE_MARKER();
-	keypoint_estimation_run_info *info = (keypoint_estimation_run_info *)ptr;
+	keypoint_estimation_run_info info = *(keypoint_estimation_run_info *)ptr;
 
-	onnx_wrap *wrap = &info->view->keypoint[info->hand_idx];
-	struct HandTracking *hgt = info->view->hgt;
+	onnx_wrap *wrap = &info.view->keypoint[info.hand_idx];
+	struct HandTracking *hgt = info.view->hgt;
 
+	int view_idx = info.view->view;
+	int hand_idx = info.hand_idx;
+	one_frame_one_view &this_output = hgt->keypoint_outputs[hand_idx].views[view_idx];
+	MLOutput2D &px_coord = this_output.keypoints_in_scaled_stereographic;
 	// Factor out starting here
 
-	cv::Mat &debug = info->view->debug_out_to_this;
+	hand_region_of_interest &output = info.view->regions_of_interest_this_frame[hand_idx];
 
-	hand_bounding_box *output = &info->view->bboxes_this_frame[info->hand_idx];
+	cv::Mat data_128x128_uint8;
 
-	cv::Point2f src_tri[3];
-	cv::Point2f dst_tri[3];
-	// top-left
-	cv::Point2f center = {output->center.x, output->center.y};
+	projection_instructions instr(info.view->hgdist);
+	instr.rot_quat = Eigen::Quaternionf::Identity();
+	instr.stereographic_radius = 0.4;
 
-	cv::Point2f go_right = {output->size_px / 2, 0};
-	cv::Point2f go_down = {0, output->size_px / 2};
 
-	calc_src_tri(center, go_right, go_down, info->view->camera_info.camera_orientation, src_tri);
 
-	/* For the right hand, flip the result horizontally since
-	 * the model is trained on left hands.
-	 * Top left, bottom left, top right */
-	if (info->hand_idx == 1) {
-		dst_tri[0] = {kKeypointInputSize, 0};
-		dst_tri[1] = {kKeypointInputSize, kKeypointInputSize};
-		dst_tri[2] = {0, 0};
+	t_camera_model_params dist = info.view->hgdist;
+
+
+	float twist = 0;
+
+	if (output.provenance == ROIProvenance::HAND_DETECTION) {
+
+		xrt_vec3 center;
+
+		xrt_vec3 edges[4];
+
+
+		t_camera_models_unproject_and_flip(&hgt->views[view_idx].hgdist, output.center_px.x, output.center_px.y,
+		                                   &center.x, &center.y, &center.z);
+
+		xrt_vec2 r = {output.size_px / 2, 0};
+		xrt_vec2 d = {0, output.size_px / 2};
+		xrt_vec2 v;
+
+		// note! we do not need to rotate this! it's *already* in camera space.
+		int acc_idx = 0;
+		v = output.center_px + r + d;
+		t_camera_models_unproject_and_flip(&hgt->views[view_idx].hgdist, v.x, v.y, &edges[acc_idx].x,
+		                                   &edges[acc_idx].y, &edges[acc_idx].z);
+		acc_idx++;
+
+		v = output.center_px - r + d;
+		t_camera_models_unproject_and_flip(&hgt->views[view_idx].hgdist, v.x, v.y, &edges[acc_idx].x,
+		                                   &edges[acc_idx].y, &edges[acc_idx].z);
+		acc_idx++;
+
+		v = output.center_px - r - d;
+		t_camera_models_unproject_and_flip(&hgt->views[view_idx].hgdist, v.x, v.y, &edges[acc_idx].x,
+		                                   &edges[acc_idx].y, &edges[acc_idx].z);
+		acc_idx++;
+
+		v = output.center_px + r - d;
+		t_camera_models_unproject_and_flip(&hgt->views[view_idx].hgdist, v.x, v.y, &edges[acc_idx].x,
+		                                   &edges[acc_idx].y, &edges[acc_idx].z);
+
+
+		float angle = 0;
+
+		for (int i = 0; i < 4; i++) {
+			angle = fmaxf(angle, m_vec3_angle(center, edges[i]));
+		}
+
+
+		make_projection_instructions_angular(center, hand_idx, angle,
+		                                     hgt->tuneable_values.after_detection_fac.val, twist, instr);
+
+		wrap->wraps[2].data[0] = 0.0f;
+		set_predicted_zero(wrap->wraps[1].data);
 	} else {
-		dst_tri[0] = {0, 0};
-		dst_tri[1] = {0, kKeypointInputSize};
-		dst_tri[2] = {kKeypointInputSize, 0};
+		Eigen::Array<float, 3, 21> keypoints_in_camera;
+
+
+		if (view_idx == 0) {
+			keypoints_in_camera = hgt->pose_predicted_keypoints[hand_idx];
+		} else {
+			for (int i = 0; i < 21; i++) {
+
+				Eigen::Quaternionf ori = map_quat(hgt->left_in_right.orientation);
+				Eigen::Vector3f tmp = hgt->pose_predicted_keypoints[hand_idx].col(i);
+
+				tmp = ori * tmp;
+				tmp += map_vec3(hgt->left_in_right.position);
+				keypoints_in_camera.col(i) = tmp;
+			}
+		}
+
+		hand21_2d bleh;
+
+		make_projection_instructions(dist, hand_idx, hgt->tuneable_values.dyn_radii_fac.val, twist,
+		                             keypoints_in_camera, instr, bleh);
+
+		if (hgt->tuneable_values.enable_pose_predicted_input) {
+			for (int ml_joint_idx = 0; ml_joint_idx < 21; ml_joint_idx++) {
+				float *data = wrap->wraps[1].data;
+				data[(ml_joint_idx * 2) + 0] = bleh[ml_joint_idx].pos_2d.x;
+				data[(ml_joint_idx * 2) + 1] = bleh[ml_joint_idx].pos_2d.y;
+				// data[(ml_joint_idx * 2) + 2] = bleh[ml_joint_idx].depth_relative_to_midpxm;
+			}
+
+
+			wrap->wraps[2].data[0] = 1.0f;
+		} else {
+			wrap->wraps[2].data[0] = 0.0f;
+			set_predicted_zero(wrap->wraps[1].data);
+		}
 	}
 
-	cv::Matx23f go_there = getAffineTransform(src_tri, dst_tri);
-	cv::Matx23f go_back = getAffineTransform(dst_tri, src_tri); // NOLINT
+	stereographic_project_image(dist, instr, hgt->views[view_idx].run_model_on_this,
+	                            &hgt->views[view_idx].debug_out_to_this, info.hand_idx ? RED : YELLOW,
+	                            data_128x128_uint8);
 
-	cv::Mat cropped_image_uint8;
+
+	xrt::auxiliary::math::map_quat(this_output.look_dir) = instr.rot_quat;
+	this_output.stereographic_radius = instr.stereographic_radius;
+
+	bool is_hand = true;
 
 	{
-		XRT_TRACE_IDENT(transforms);
+		XRT_TRACE_IDENT(convert_format);
 
-		cv::warpAffine(info->view->run_model_on_this, cropped_image_uint8, go_there,
-		               cv::Size(kKeypointInputSize, kKeypointInputSize), cv::INTER_LINEAR);
+		// here!
+		cv::Mat data_128x128_float(cv::Size(128, 128), CV_32FC1, wrap->wraps[0].data, 128 * sizeof(float));
 
-		cv::Mat cropped_image_float_wrapper(cv::Size(kKeypointInputSize, kKeypointInputSize), //
-		                                    CV_32FC1,                                         //
-		                                    wrap->wraps[0].data,                              //
-		                                    kKeypointInputSize * sizeof(float));
-
-		normalizeGrayscaleImage(cropped_image_uint8, cropped_image_float_wrapper);
+		is_hand = is_hand && normalizeGrayscaleImage(data_128x128_uint8, data_128x128_float);
 	}
+
 
 	// Ending here
 
-	const OrtValue *inputs[] = {wrap->wraps[0].tensor};
-	const char *input_names[] = {wrap->wraps[0].name};
 
-	OrtValue *output_tensors[] = {nullptr};
+	const OrtValue *inputs[] = {wrap->wraps[0].tensor, wrap->wraps[1].tensor, wrap->wraps[2].tensor};
+	const char *input_names[] = {wrap->wraps[0].name, wrap->wraps[1].name, wrap->wraps[2].name};
 
-	const char *output_names[] = {"heatmap"};
-
-
-	// OrtValue *output_tensor = nullptr;
+	OrtValue *output_tensors[] = {nullptr, nullptr, nullptr, nullptr};
+	const char *output_names[] = {"heatmap_xy", "heatmap_depth", "scalar_extras", "curls"};
 
 	{
 		XRT_TRACE_IDENT(model);
-		static_assert(ARRAY_SIZE(input_names) == ARRAY_SIZE(inputs));
-		static_assert(ARRAY_SIZE(output_names) == ARRAY_SIZE(output_tensors));
+		assert(ARRAY_SIZE(input_names) == ARRAY_SIZE(inputs));
+		assert(ARRAY_SIZE(output_names) == ARRAY_SIZE(output_tensors));
 		ORT(Run(wrap->session, nullptr, input_names, inputs, ARRAY_SIZE(input_names), output_names,
 		        ARRAY_SIZE(output_names), output_tensors));
 	}
 
 	// To here
 
+	// Interpret model outputs!
+
+
 	float *out_data = nullptr;
 
 
 	ORT(GetTensorMutableData(output_tensors[0], (void **)&out_data));
 
-	Hand2D &px_coord = info->view->keypoint_outputs[info->hand_idx].hand_px_coord;
-	Hand2D &tan_space = info->view->keypoint_outputs[info->hand_idx].hand_tan_space;
-	float *confidences = info->view->keypoint_outputs[info->hand_idx].hand_tan_space.confidences;
-	xrt_vec2 *keypoints_global = px_coord.kps;
+	// I don't know why this was added
+	// float *confidences = info.view->keypoint_outputs.views[hand_idx].confidences;
 
-	size_t plane_size = kKeypointOutputHeatmapSize * kKeypointOutputHeatmapSize;
+	// This was added for debug scribbling, and should be added back at some point.
+	// xrt_vec2 *keypoints_global = px_coord.kps;
+
+	size_t plane_size = 22 * 22;
 
 	for (int i = 0; i < 21; i++) {
 		float *data = &out_data[i * plane_size];
-		int out_idx = argmax(data, kKeypointOutputHeatmapSize * kKeypointOutputHeatmapSize);
-		int row = out_idx / kKeypointOutputHeatmapSize;
-		int col = out_idx % kKeypointOutputHeatmapSize;
-
-		xrt_vec2 loc;
 
 
-		refine_center_of_distribution(data, col, row, kKeypointOutputHeatmapSize, kKeypointOutputHeatmapSize,
-		                              &loc.x, &loc.y);
+		// This will be optimized out if nan checking is disabled in hg_numerics_checker
+		for (size_t x = 0; x < plane_size; x++) {
+			CHECK_NOT_NAN(data[i]);
+		}
 
-		// 128.0/22.0f
-		loc.x *= float(kKeypointInputSize) / float(kKeypointOutputHeatmapSize);
-		loc.y *= float(kKeypointInputSize) / float(kKeypointOutputHeatmapSize);
 
-		loc = transformVecBy2x3(loc, go_back);
+		int out_idx = argmax(data, 22 * 22);
+		int row = out_idx / 22;
+		int col = out_idx % 22;
 
-		confidences[i] = data[out_idx];
-		px_coord.kps[i] = loc;
+		xrt_vec2 loc = {};
 
-		tan_space.kps[i] = raycoord(info->view, loc);
+		// This is a good start but rethink it. Maybe fail if less than 18/21 joints failed?
+		// is_hand = is_hand &&
+		refine_center_of_distribution(hgt, data, col, row, 22, 22, &loc.x, &loc.y);
+
+		if (hand_idx == 0) {
+			px_coord[i].pos_2d.x = math_map_ranges(loc.x, 0, 22, -1, 1);
+		} else {
+			px_coord[i].pos_2d.x = math_map_ranges(loc.x, 0, 22, 1, -1);
+		}
+
+		//!@todo when you change this to have +Z-forward
+		// note note note the flip!!!
+		px_coord[i].pos_2d.y = math_map_ranges(loc.y, 0, 22, 1, -1);
+
+		px_coord[i].confidence_xy = data[out_idx];
 	}
+
+
+	float *out_data_depth = nullptr;
+	ORT(GetTensorMutableData(output_tensors[1], (void **)&out_data_depth));
+
+	for (int joint_idx = 0; joint_idx < 21; joint_idx++) {
+		float *p_ptr = &out_data_depth[(joint_idx * 22)];
+
+
+		float depth = 0;
+		float confidence = 0;
+
+		// This function can fail
+		if (hand_depth_center_of_mass(hgt, p_ptr, &depth, &confidence)) {
+
+			px_coord[joint_idx].depth_relative_to_midpxm = depth;
+			px_coord[joint_idx].confidence_depth = confidence;
+		} else {
+			px_coord[joint_idx].depth_relative_to_midpxm = 0;
+			px_coord[joint_idx].confidence_depth = 0;
+		}
+	}
+
+	float *out_data_extras = nullptr;
+	ORT(GetTensorMutableData(output_tensors[2], (void **)&out_data_extras));
+
+	float is_hand_explicit = out_data_extras[0];
+
+	is_hand_explicit = (1.0) / (1.0 + powf(2.71828182845904523536, -is_hand_explicit));
+
+	// When the model is sure, it's _really_ sure.
+	// Index was fine with 0.99.
+	// North Star seemed to need 0.97.
+	if (is_hand_explicit < 0.97) {
+		U_LOG_D("Not hand! %f", is_hand_explicit);
+		is_hand = false;
+	}
+
+	this_output.active = is_hand;
+
+
+	float *out_data_curls = nullptr;
+	ORT(GetTensorMutableData(output_tensors[3], (void **)&out_data_curls));
+
+	for (int i = 0; i < 5; i++) {
+		float curl = out_data_curls[i];
+		float variance = out_data_curls[5 + i];
+
+		// Next two lines directly correspond to py_training/settings.py
+		// We don't want it to be negative
+		variance = fabsf(variance);
+		// We don't want it to be possible to be zero
+		variance += 0.01;
+
+		this_output.curls[i].value = curl;
+		this_output.curls[i].variance = curl;
+	}
+
+
 
 	if (hgt->debug_scribble) {
 		int data_acc_idx = 0;
 
-		int root_x = kVisSpacerSize + ((2 * info->hand_idx) * (kKeypointInputSize + kVisSpacerSize));
-		int root_y = kVisSpacerSize + (info->view->view * (kKeypointInputSize + kVisSpacerSize));
+		int root_x = 8 + ((2 * hand_idx) * (128 + 8));
+		int root_y = 8 + (2 * info.view->view * (128 + 8));
 
-		cv::Rect p = cv::Rect(root_x, root_y, kKeypointInputSize, kKeypointInputSize);
+		cv::Rect p = cv::Rect(root_x, root_y, 128, 128);
 
-		cropped_image_uint8.copyTo(hgt->visualizers.mat(p));
+		data_128x128_uint8.copyTo(hgt->visualizers.mat(p));
 
-		make_keypoint_heatmap_output(info->view->view, info->hand_idx, 0, 0,
-		                             out_data + (data_acc_idx * plane_size), hgt->visualizers.mat);
+		make_keypoint_heatmap_output(info.view->view, hand_idx, 0, 0, out_data + (data_acc_idx * plane_size),
+		                             hgt->visualizers.mat);
+		make_keypoint_depth_heatmap_output(info.view->view, hand_idx, 0, 0,
+		                                   out_data_depth + (data_acc_idx * 22), hgt->visualizers.mat);
+
 		data_acc_idx++;
 
 		for (int finger = 0; finger < 5; finger++) {
 			for (int joint = 0; joint < 4; joint++) {
 
-				make_keypoint_heatmap_output(info->view->view, info->hand_idx, 1 + joint, finger,
+				make_keypoint_heatmap_output(info.view->view, hand_idx, 1 + joint, finger,
 				                             out_data + (data_acc_idx * plane_size),
 				                             hgt->visualizers.mat);
+				make_keypoint_depth_heatmap_output(info.view->view, hand_idx, 1 + joint, finger,
+				                                   out_data_depth + (data_acc_idx * 22),
+				                                   hgt->visualizers.mat);
 				data_acc_idx++;
 			}
 		}
 
+		// Hand existence
+		char amt[5];
+
+		snprintf(amt, ARRAY_SIZE(amt), "%.2f", is_hand_explicit);
+
+		cv::Point2i text_origin;
+
+		text_origin.x = root_x + 128 + 2;
+		text_origin.y = root_y + 60;
+
+		// Clear out what was there before
+		cv::rectangle(hgt->visualizers.mat, cv::Rect(text_origin - cv::Point2i{0, 25}, cv::Size{30, 30}), {255},
+		              cv::FILLED);
 
 
-		if (hgt->tuneable_values.scribble_keypoint_model_outputs) {
-			for (int finger = 0; finger < 5; finger++) {
-				cv::Point last = {(int)keypoints_global[0].x, (int)keypoints_global[0].y};
-				for (int joint = 0; joint < 4; joint++) {
-					cv::Point the_new = {(int)keypoints_global[1 + finger * 4 + joint].x,
-					                     (int)keypoints_global[1 + finger * 4 + joint].y};
+		cv::putText(hgt->visualizers.mat, amt, text_origin, cv::FONT_HERSHEY_SIMPLEX, 0.3, {0, 0, 0});
 
-					cv::line(debug, last, the_new, colors[info->hand_idx]);
-					last = the_new;
-				}
-			}
+		// Curls
+		cv::rectangle(hgt->visualizers.mat, cv::Rect(cv::Point2i{root_x, root_y + 128 + 22}, cv::Size{128, 60}),
+		              {255}, cv::FILLED);
+		for (int i = 0; i < 5; i++) {
+			int r = 15;
 
-			for (int i = 0; i < 21; i++) {
-				xrt_vec2 loc = keypoints_global[i];
-				handDot(debug, loc, 2, (float)(i) / 21.0, 1, 2);
-			}
+			cv::Point2i center = {root_x + r + (20 * i), root_y + 128 + 60};
+
+			cv::circle(hgt->visualizers.mat, center, 1, {0}, 1);
+
+			float c = this_output.curls[i].value * 0.3;
+			int x = cos(c) * r;
+			// Remember, OpenCV has (0,0) at top left
+			int y = -sin(c) * r;
+
+			cv::Point2i pt2 = {x, y};
+			pt2 += center;
+			cv::circle(hgt->visualizers.mat, pt2, 1, {0}, 1);
+			cv::line(hgt->visualizers.mat, center, pt2, {0}, 1);
 		}
 	}
 
-	wrap->api->ReleaseValue(output_tensors[0]);
+	for (size_t i = 0; i < ARRAY_SIZE(output_tensors); i++) {
+		wrap->api->ReleaseValue(output_tensors[i]);
+	}
 }
 
 void

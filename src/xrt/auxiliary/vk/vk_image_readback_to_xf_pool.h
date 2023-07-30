@@ -60,7 +60,8 @@ void
 vk_image_readback_to_xf_pool_create(struct vk_bundle *vk,
                                     VkExtent2D extent,
                                     struct vk_image_readback_to_xf_pool **out_pool,
-                                    enum xrt_format desired_format);
+                                    enum xrt_format xrt_format,
+                                    VkFormat vk_format);
 
 void
 vk_image_readback_to_xf_pool_destroy(struct vk_bundle *vk, struct vk_image_readback_to_xf_pool **pool_ptr);

@@ -13,9 +13,7 @@ import android.os.HandlerThread
 import android.os.Message
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * Client watchdog, to determine whether runtime service should be stopped.
- */
+/** Client watchdog, to determine whether runtime service should be stopped. */
 class Watchdog(
     private val shutdownDelayMilliseconds: Long,
     private val shutdownListener: ShutdownListener
@@ -25,14 +23,10 @@ class Watchdog(
      * all the callbacks run on background thread.
      */
     interface ShutdownListener {
-        /**
-         * Callback to be invoked when last client disconnected.
-         */
+        /** Callback to be invoked when last client disconnected. */
         fun onPrepareShutdown()
 
-        /**
-         * Callback to be invoked when shutdown delay ended and there's no new client connected.
-         */
+        /** Callback to be invoked when shutdown delay ended and there's no new client connected. */
         fun onShutdown()
     }
 
@@ -45,15 +39,17 @@ class Watchdog(
     fun startMonitor() {
         shutdownThread = HandlerThread("monado-client-watchdog")
         shutdownThread.start()
-        shutdownHandler = object : Handler(shutdownThread.looper) {
-            override fun handleMessage(msg: Message) {
-                when (msg.what) {
-                    MSG_SHUTDOWN -> if (clientCount.get() == 0) {
-                        shutdownListener.onShutdown()
+        shutdownHandler =
+            object : Handler(shutdownThread.looper) {
+                override fun handleMessage(msg: Message) {
+                    when (msg.what) {
+                        MSG_SHUTDOWN ->
+                            if (clientCount.get() == 0) {
+                                shutdownListener.onShutdown()
+                            }
                     }
                 }
             }
-        }
     }
 
     fun stopMonitor() {

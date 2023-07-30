@@ -1,7 +1,12 @@
-# Copyright 2022, Collabora, Ltd.
+# Copyright 2022-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 
-add_library(t_ht_mercury_kine_lm STATIC lm_interface.hpp lm_main.cpp)
+xrt_optimized_math_flags()
+
+add_library(
+	t_ht_mercury_kine_lm STATIC lm_interface.hpp lm_main.cpp lm_hand_init_guesser.hpp
+				    lm_hand_init_guesser.cpp
+	)
 
 target_link_libraries(
 	t_ht_mercury_kine_lm
@@ -11,6 +16,7 @@ target_link_libraries(
 		aux_os
 		aux_util
 		xrt-external-tinyceres
+		xrt-optimized-math
 	)
 
 target_include_directories(t_ht_mercury_kine_lm SYSTEM PRIVATE ${EIGEN3_INCLUDE_DIR})

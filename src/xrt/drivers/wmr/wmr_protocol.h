@@ -37,6 +37,7 @@ extern "C" {
 #define WMR_MS_HOLOLENS_MSG_BT_IFACE 0x05         /* Bluetooth interface */
 #define WMR_MS_HOLOLENS_MSG_LEFT_CONTROLLER 0x06  /* Left controller */
 #define WMR_MS_HOLOLENS_MSG_RIGHT_CONTROLLER 0x0E /* Right controller */
+#define WMR_MS_HOLOLENS_MSG_BT_CONTROL 0x16       /* BT control message on Reverb G2 & Odyssey+ */
 #define WMR_MS_HOLOLENS_MSG_CONTROLLER_STATUS 0x17
 
 // Messages types specific to WMR Hololens Sensors' companion devices
@@ -51,6 +52,16 @@ extern "C" {
 #define WMR_CONTROLLER_STATUS_UNPAIRED 0x0
 #define WMR_CONTROLLER_STATUS_OFFLINE 0x1
 #define WMR_CONTROLLER_STATUS_ONLINE 0x2
+
+/* Messages we can send the G2 via WMR_MS_HOLOLENS_MSG_BT_CONTROL */
+enum wmr_bt_control_msg
+{
+	WMR_BT_CONTROL_MSG_ONLINE_STATUS = 0x04,
+	WMR_BT_CONTROL_MSG_PAIR = 0x05,
+	WMR_BT_CONTROL_MSG_UNPAIR = 0x06,
+	WMR_BT_CONTROL_MSG_PAIRING_STATUS = 0x08,
+	WMR_BT_CONTROL_MSG_CMD_STATUS = 0x09,
+};
 
 #define STR_TO_U32(s) ((uint32_t)(((s)[0]) | ((s)[1] << 8) | ((s)[2] << 16) | ((s)[3] << 24)))
 #define WMR_MAGIC STR_TO_U32("Dlo+")

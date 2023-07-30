@@ -53,7 +53,7 @@ struct u_sink_queue
 static void *
 queue_mainloop(void *ptr)
 {
-	SINK_TRACE_MARKER();
+	U_TRACE_SET_THREAD_NAME("Sink Queue");
 
 	struct u_sink_queue *q = (struct u_sink_queue *)ptr;
 	struct xrt_frame *frame = NULL;

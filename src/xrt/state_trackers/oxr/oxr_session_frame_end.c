@@ -30,6 +30,7 @@
 #include "oxr_chain.h"
 #include "oxr_api_verify.h"
 #include "oxr_chain.h"
+#include "oxr_xret.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,11 +43,6 @@
  * Helper functions and defines.
  *
  */
-
-#define CALL_CHK(call)                                                                                                 \
-	if ((call) == XRT_ERROR_IPC_FAILURE) {                                                                         \
-		return oxr_error(log, XR_ERROR_INSTANCE_LOST, "Error in function call over IPC");                      \
-	}
 
 static double
 ns_to_ms(int64_t ns)
@@ -61,12 +57,6 @@ ts_ms(struct oxr_session *sess)
 	timepoint_ns now = time_state_get_now(sess->sys->inst->timekeeping);
 	int64_t monotonic = time_state_ts_to_monotonic_ns(sess->sys->inst->timekeeping, now);
 	return ns_to_ms(monotonic);
-}
-
-static bool
-is_session_running(struct oxr_session *sess)
-{
-	return sess->has_begun;
 }
 
 static XrResult
@@ -837,6 +827,18 @@ verify_equirect2_layer(struct xrt_compositor *xc,
  *
  */
 
+/**
+ * Turn the poses supplied with a composition layer into the poses the compositor wants.
+ *
+ * @param log logger
+ * @param sess session
+ * @param spc space that @p pose_ptr is supplied in
+ * @param pose_ptr pose supplied with layer
+ * @param inv_offset inverse of the tracking origin offset
+ * @param timestamp timestamp for pose
+ * @param[out] out_pose Resulting view-space pose
+ * @return true if successfully transformed into a view space pose
+ */
 static bool
 handle_space(struct oxr_logger *log,
              struct oxr_session *sess,
@@ -846,11 +848,12 @@ handle_space(struct oxr_logger *log,
              uint64_t timestamp,
              struct xrt_pose *out_pose)
 {
-	struct xrt_pose pose = *pose_ptr;
+	// Aka T_offset_layer
+	struct xrt_pose T_space_layer = *pose_ptr;
 
-	// The pose might be valid for OpenXR, but not good enough for math.
-	if (!math_quat_validate(&pose.orientation)) {
-		math_quat_normalize(&pose.orientation);
+	// The T_space_layer might be valid for OpenXR, but not good enough for math.
+	if (!math_quat_validate(&T_space_layer.orientation)) {
+		math_quat_normalize(&T_space_layer.orientation);
 	}
 
 	/*
@@ -859,27 +862,32 @@ handle_space(struct oxr_logger *log,
 	if (spc->space_type == OXR_SPACE_TYPE_REFERENCE_VIEW) {
 		struct xrt_space_relation rel;
 		struct xrt_relation_chain xrc = {0};
-		m_relation_chain_push_pose(&xrc, &pose);
-		m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose);
+		m_relation_chain_push_pose(&xrc, &T_space_layer);             // T_offset_layer
+		m_relation_chain_push_pose_if_not_identity(&xrc, &spc->pose); // T_space_offset
 		m_relation_chain_resolve(&xrc, &rel);
 		*out_pose = rel.pose;
 		return true;
 	}
 
-	struct xrt_space_relation rel;
-	if (!oxr_space_pure_pose_from_space(log, timestamp, &pose, spc, &rel)) {
+	// The compositor doesn't know about spaces, so we want the space in the xdev's "space".
+	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_space_relation T_space_xdev = XRT_SPACE_RELATION_ZERO;
+
+	XrResult ret = oxr_space_locate_device(log, head_xdev, spc, timestamp, &T_space_xdev);
+	if (ret != XR_SUCCESS) {
+		return false;
+	}
+	if (T_space_xdev.relation_flags == 0) {
 		return false;
 	}
 
-
-	// The compositor doesn't know about tracking origins, transform into the "raw" HMD tracking space.
-	struct xrt_device *head_xdev = GET_XDEV_BY_ROLE(sess->sys, head);
+	struct xrt_space_relation T_xdev_layer;
 	struct xrt_relation_chain xrc = {0};
-	m_relation_chain_push_relation(&xrc, &rel);
-	m_relation_chain_push_inverted_pose_if_not_identity(&xrc, &head_xdev->tracking_origin->offset);
-	m_relation_chain_resolve(&xrc, &rel);
+	m_relation_chain_push_pose_if_not_identity(&xrc, &T_space_layer);
+	m_relation_chain_push_inverted_relation(&xrc, &T_space_xdev); // T_xdev_space
+	m_relation_chain_resolve(&xrc, &T_xdev_layer);
 
-	*out_pose = rel.pose;
+	*out_pose = T_xdev_layer.pose;
 
 	return true;
 }
@@ -924,7 +932,8 @@ submit_quad_layer(struct oxr_session *sess,
 	data.quad.size = *size;
 	fill_in_sub_image(sc, &quad->subImage, &data.quad.sub);
 
-	CALL_CHK(xrt_comp_layer_quad(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_quad(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_quad);
 
 	return XR_SUCCESS;
 }
@@ -1015,20 +1024,26 @@ submit_projection_layer(struct oxr_session *sess,
 	if (d_scs[0] != NULL && d_scs[1] != NULL) {
 #ifdef XRT_FEATURE_OPENXR_LAYER_DEPTH
 		data.type = XRT_LAYER_STEREO_PROJECTION_DEPTH;
-		CALL_CHK(xrt_comp_layer_stereo_projection_depth(xc, head,
-		                                                scs[0]->swapchain,   // Left
-		                                                scs[1]->swapchain,   // Right
-		                                                d_scs[0]->swapchain, // Left
-		                                                d_scs[1]->swapchain, // Right
-		                                                &data));
+		xrt_result_t xret = xrt_comp_layer_stereo_projection_depth( //
+		    xc,                                                     // compositor
+		    head,                                                   // xdev
+		    scs[0]->swapchain,                                      // left
+		    scs[1]->swapchain,                                      // right
+		    d_scs[0]->swapchain,                                    // left
+		    d_scs[1]->swapchain,                                    // right
+		    &data);                                                 // data
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_stereo_projection_depth);
 #else
 		assert(false && "Should not get here");
 #endif // XRT_FEATURE_OPENXR_LAYER_DEPTH
 	} else {
-		CALL_CHK(xrt_comp_layer_stereo_projection(xc, head,
-		                                          scs[0]->swapchain, // Left
-		                                          scs[1]->swapchain, // Right
-		                                          &data));
+		xrt_result_t xret = xrt_comp_layer_stereo_projection( //
+		    xc,                                               // compositor
+		    head,                                             // xdev
+		    scs[0]->swapchain,                                // left
+		    scs[1]->swapchain,                                // right
+		    &data);                                           // data
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_stereo_projection);
 	}
 
 	return XR_SUCCESS;
@@ -1078,7 +1093,8 @@ submit_cube_layer(struct oxr_session *sess,
 		return XR_SUCCESS;
 	}
 
-	CALL_CHK(xrt_comp_layer_cube(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_cube(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_cube);
 
 	return XR_SUCCESS;
 }
@@ -1124,7 +1140,8 @@ submit_cylinder_layer(struct oxr_session *sess,
 	data.cylinder.aspect_ratio = cylinder->aspectRatio;
 	fill_in_sub_image(sc, &cylinder->subImage, &data.cylinder.sub);
 
-	CALL_CHK(xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_cylinder(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_cylinder);
 
 	return XR_SUCCESS;
 }
@@ -1173,7 +1190,8 @@ submit_equirect1_layer(struct oxr_session *sess,
 	data.equirect1.scale = *scale;
 	data.equirect1.bias = *bias;
 
-	CALL_CHK(xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_equirect1(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_equirect1);
 
 	return XR_SUCCESS;
 }
@@ -1182,7 +1200,7 @@ static void
 do_synchronize_state_change(struct oxr_logger *log, struct oxr_session *sess)
 {
 	if (!sess->has_ended_once && sess->state < XR_SESSION_STATE_VISIBLE) {
-		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED);
+		oxr_session_change_state(log, sess, XR_SESSION_STATE_SYNCHRONIZED, 0);
 		sess->has_ended_once = true;
 	}
 }
@@ -1227,7 +1245,8 @@ submit_equirect2_layer(struct oxr_session *sess,
 	data.equirect2.lower_vertical_angle = equirect->lowerVerticalAngle;
 	fill_in_sub_image(sc, &equirect->subImage, &data.equirect2.sub);
 
-	CALL_CHK(xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data));
+	xrt_result_t xret = xrt_comp_layer_equirect2(xc, head, sc->swapchain, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_equirect2);
 
 	return XR_SUCCESS;
 }
@@ -1236,12 +1255,8 @@ XrResult
 oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const XrFrameEndInfo *frameEndInfo)
 {
 	/*
-	 * Session state and call order.
+	 * Call order.
 	 */
-
-	if (!is_session_running(sess)) {
-		return oxr_error(log, XR_ERROR_SESSION_NOT_RUNNING, "Session is not running");
-	}
 
 	if (!sess->frame_started) {
 		return oxr_error(log, XR_ERROR_CALL_ORDER_INVALID, "Frame not begun with xrBeginFrame");
@@ -1312,7 +1327,8 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		sess->active_wait_frames--;
 		os_mutex_unlock(&sess->active_wait_frames_lock);
 
-		CALL_CHK(xrt_comp_discard_frame(xc, sess->frame_id.begun));
+		xrt_result_t xret = xrt_comp_discard_frame(xc, sess->frame_id.begun);
+		OXR_CHECK_XRET(log, sess, xret, xrt_comp_discard_frame);
 		sess->frame_id.begun = -1;
 		sess->frame_started = false;
 
@@ -1386,7 +1402,15 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 	struct xrt_pose inv_offset = {0};
 	math_pose_invert(&xdev->tracking_origin->offset, &inv_offset);
 
-	CALL_CHK(xrt_comp_layer_begin(xc, sess->frame_id.begun, xrt_display_time_ns, blend_mode));
+	struct xrt_layer_frame_data data = {
+	    .frame_id = sess->frame_id.begun,
+	    .display_time_ns = xrt_display_time_ns,
+	    .env_blend_mode = blend_mode,
+	};
+
+	xrt_result_t xret;
+	xret = xrt_comp_layer_begin(xc, &data);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_begin);
 
 	for (uint32_t i = 0; i < frameEndInfo->layerCount; i++) {
 		const XrCompositionLayerBaseHeader *layer = frameEndInfo->layers[i];
@@ -1421,9 +1445,10 @@ oxr_session_frame_end(struct oxr_logger *log, struct oxr_session *sess, const Xr
 		}
 	}
 
-	CALL_CHK(xrt_comp_layer_commit(xc, sess->frame_id.begun, XRT_GRAPHICS_SYNC_HANDLE_INVALID));
-	sess->frame_id.begun = -1;
+	xret = xrt_comp_layer_commit(xc, XRT_GRAPHICS_SYNC_HANDLE_INVALID);
+	OXR_CHECK_XRET(log, sess, xret, xrt_comp_layer_commit);
 
+	sess->frame_id.begun = -1;
 	sess->frame_started = false;
 
 	os_mutex_lock(&sess->active_wait_frames_lock);

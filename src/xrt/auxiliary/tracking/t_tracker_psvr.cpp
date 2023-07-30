@@ -137,8 +137,7 @@ struct View
 
 	cv::Matx33d intrinsics;
 	cv::Mat distortion; // size may vary
-	cv::Vec4d distortion_fisheye;
-	bool use_fisheye;
+	enum t_camera_distortion_model distortion_model;
 
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -150,8 +149,7 @@ struct View
 		CameraCalibrationWrapper wrap(calib);
 		intrinsics = wrap.intrinsics_mat;
 		distortion = wrap.distortion_mat.clone();
-		distortion_fisheye = wrap.distortion_fisheye_mat;
-		use_fisheye = wrap.use_fisheye;
+		distortion_model = wrap.distortion_model;
 
 		undistort_rectify_map_x = rectification.remap_x;
 		undistort_rectify_map_y = rectification.remap_y;
@@ -2081,7 +2079,7 @@ t_psvr_create(struct xrt_frame_context *xfctx,
 	blob_params.filterByInertia = false;
 	blob_params.filterByColor = true;
 	blob_params.blobColor = 255; // 0 or 255 - color comes from binarized image?
-	blob_params.minArea = 0;
+	blob_params.minArea = 1;
 	blob_params.maxArea = 1000;
 	blob_params.maxThreshold = 51; // using a wide threshold span slows things down bigtime
 	blob_params.minThreshold = 50;

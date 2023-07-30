@@ -12,15 +12,15 @@
  * Based in part on https://github.com/thaytan/OpenHMD/blob/rift-kalman-filter/src/exponential-filter.c
  */
 
+#include "math/m_mathinclude.h"
+#include "math/m_vec2.h"
+#include "math/m_vec3.h"
+
+#include "util/u_time.h"
+#include "util/u_misc.h"
 
 #include "m_filter_one_euro.h"
 
-#include "math/m_mathinclude.h"
-
-#include "math/m_vec2.h"
-#include "math/m_vec3.h"
-#include "util/u_time.h"
-#include "util/u_misc.h"
 
 static double
 calc_smoothing_alpha(double Fc, double dt)
@@ -64,6 +64,8 @@ exp_smooth_quat(double alpha, struct xrt_quat y, struct xrt_quat prev_y)
 static void
 filter_one_euro_init(struct m_filter_one_euro_base *f, double fc_min, double fc_min_d, double beta)
 {
+	U_ZERO(f);
+
 	f->fc_min = fc_min;
 	f->beta = beta;
 	f->fc_min_d = fc_min_d;
@@ -131,7 +133,7 @@ m_filter_euro_f32_init(struct m_filter_euro_f32 *f, double fc_min, double fc_min
 }
 
 void
-m_filter_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
+m_filter_euro_f32_run(struct m_filter_euro_f32 *f, uint64_t ts, const float *in_y, float *out_y)
 {
 
 	if (filter_one_euro_handle_first_sample(&f->base, ts, true)) {

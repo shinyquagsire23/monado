@@ -21,6 +21,7 @@
 #include "util/u_debug.h"
 #include "util/u_frame.h"
 #include "util/u_format.h"
+#include "util/u_trace_marker.h"
 
 #include "math/m_api.h"
 
@@ -50,8 +51,7 @@ public:
 
 	cv::Matx33d intrinsics;
 	cv::Mat distortion; // size may vary
-	cv::Vec4d distortion_fisheye;
-	bool use_fisheye;
+	enum t_camera_distortion_model distortion_model;
 
 	std::vector<cv::KeyPoint> keypoints;
 
@@ -63,8 +63,7 @@ public:
 		CameraCalibrationWrapper wrap(calib);
 		intrinsics = wrap.intrinsics_mat;
 		distortion = wrap.distortion_mat.clone();
-		distortion_fisheye = wrap.distortion_fisheye_mat;
-		use_fisheye = wrap.use_fisheye;
+		distortion_model = wrap.distortion_model;
 
 		undistort_rectify_map_x = rectification.remap_x;
 		undistort_rectify_map_y = rectification.remap_y;
@@ -134,28 +133,40 @@ static_assert(std::is_standard_layout<TrackerPSMV>::value);
 static void
 do_view(TrackerPSMV &t, View &view, cv::Mat &grey, cv::Mat &rgb)
 {
-	// Undistort and rectify the whole image.
-	cv::remap(grey,                         // src
-	          view.frame_undist_rectified,  // dst
-	          view.undistort_rectify_map_x, // map1
-	          view.undistort_rectify_map_y, // map2
-	          cv::INTER_NEAREST,            // interpolation
-	          cv::BORDER_CONSTANT,          // borderMode
-	          cv::Scalar(0, 0, 0));         // borderValue
+	XRT_TRACE_MARKER();
 
-	cv::threshold(view.frame_undist_rectified, // src
-	              view.frame_undist_rectified, // dst
-	              32.0,                        // thresh
-	              255.0,                       // maxval
-	              0);                          // type
+	{
+		XRT_TRACE_IDENT(remap);
 
-	// tracker_measurement_t m = {};
+		// Undistort and rectify the whole image.
+		cv::remap(grey,                         // src
+		          view.frame_undist_rectified,  // dst
+		          view.undistort_rectify_map_x, // map1
+		          view.undistort_rectify_map_y, // map2
+		          cv::INTER_NEAREST,            // interpolation
+		          cv::BORDER_CONSTANT,          // borderMode
+		          cv::Scalar(0, 0, 0));         // borderValue
+	}
 
-	// Do blob detection with our masks.
-	//! @todo Re-enable masks.
-	t.sbd->detect(view.frame_undist_rectified, // image
-	              view.keypoints,              // keypoints
-	              cv::noArray());              // mask
+	{
+		XRT_TRACE_IDENT(threshold);
+
+		cv::threshold(view.frame_undist_rectified, // src
+		              view.frame_undist_rectified, // dst
+		              32.0,                        // thresh
+		              255.0,                       // maxval
+		              0);                          // type
+	}
+
+	{
+		XRT_TRACE_IDENT(detect);
+
+		// Do blob detection with our masks.
+		//! @todo Re-enable masks.
+		t.sbd->detect(view.frame_undist_rectified, // image
+		              view.keypoints,              // keypoints
+		              cv::noArray());              // mask
+	}
 
 
 	// Debug is wanted, draw the keypoints.
@@ -246,6 +257,8 @@ world_point_from_blobs(const cv::Point2f &left, const cv::Point2f &right, const 
 static void
 process(TrackerPSMV &t, struct xrt_frame *xf)
 {
+	XRT_TRACE_MARKER();
+
 	// Only IMU data: nothing to do
 	if (xf == NULL) {
 		return;
@@ -350,6 +363,8 @@ process(TrackerPSMV &t, struct xrt_frame *xf)
 static void
 run(TrackerPSMV &t)
 {
+	U_TRACE_SET_THREAD_NAME("PSMV");
+
 	struct xrt_frame *frame = NULL;
 
 	os_thread_helper_lock(&t.oth);
@@ -357,7 +372,7 @@ run(TrackerPSMV &t)
 	while (os_thread_helper_is_running_locked(&t.oth)) {
 
 		// No data
-		if (!t.has_imu || t.frame == NULL) {
+		if (!t.has_imu && t.frame == NULL) {
 			os_thread_helper_wait_locked(&t.oth);
 
 			/*
@@ -549,6 +564,8 @@ t_psmv_create(struct xrt_frame_context *xfctx,
               struct xrt_tracked_psmv **out_xtmv,
               struct xrt_frame_sink **out_sink)
 {
+	XRT_TRACE_MARKER();
+
 	U_LOG_D("Creating PSMV tracker.");
 
 	auto &t = *(new TrackerPSMV());

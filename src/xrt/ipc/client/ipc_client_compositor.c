@@ -13,14 +13,12 @@
 #include "xrt/xrt_defines.h"
 #include "xrt/xrt_config_os.h"
 
-#include "util/u_misc.h"
-#include "util/u_handles.h"
-#include "util/u_trace_marker.h"
 
 #include "os/os_time.h"
 
-#include "util/u_wait.h"
 #include "util/u_misc.h"
+#include "util/u_wait.h"
+#include "util/u_handles.h"
 #include "util/u_trace_marker.h"
 
 #include "shared/ipc_protocol.h"
@@ -334,6 +332,14 @@ swapchain_server_import(struct ipc_client_compositor *icc,
 	for (uint32_t i = 0; i < image_count; i++) {
 		handles[i] = native_images[i].handle;
 		args.sizes[i] = native_images[i].size;
+
+#if defined(XRT_GRAPHICS_BUFFER_HANDLE_IS_WIN32_HANDLE)
+		// DXGI handles need to be dealt with differently, they are identified
+		// by having their lower bit set to 1 during transfer
+		if (native_images[i].is_dxgi_handle) {
+			handles[i] = (void *)((size_t)handles[i] | 1);
+		}
+#endif
 	}
 
 	// This does not consume the handles, it copies them.
@@ -477,7 +483,7 @@ ipc_compositor_poll_events(struct xrt_compositor *xc, union xrt_compositor_event
 }
 
 static xrt_result_t
-ipc_compositor_begin_session(struct xrt_compositor *xc, enum xrt_view_type view_type)
+ipc_compositor_begin_session(struct xrt_compositor *xc, const struct xrt_begin_session_info *info)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -511,19 +517,28 @@ ipc_compositor_wait_frame(struct xrt_compositor *xc,
 	IPC_TRACE_MARKER();
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
+	int64_t frame_id = -1;
 	uint64_t wake_up_time_ns = 0;
+	uint64_t predicted_display_time = 0;
+	uint64_t predicted_display_period = 0;
 
-	IPC_CALL_CHK(ipc_call_compositor_predict_frame(icc->ipc_c,                     // Connection
-	                                               out_frame_id,                   // Frame id
-	                                               &wake_up_time_ns,               // When we should wake up
-	                                               out_predicted_display_time,     // Display time
-	                                               out_predicted_display_period)); // Current period
+	IPC_CALL_CHK(ipc_call_compositor_predict_frame( //
+	    icc->ipc_c,                                 // Connection
+	    &frame_id,                                  // Frame id
+	    &wake_up_time_ns,                           // When we should wake up
+	    &predicted_display_time,                    // Display time
+	    &predicted_display_period));                // Current period
 
 	// Wait until the given wake up time.
 	u_wait_until(&icc->sleeper, wake_up_time_ns);
 
 	// Signal that we woke up.
-	res = ipc_call_compositor_wait_woke(icc->ipc_c, *out_frame_id);
+	res = ipc_call_compositor_wait_woke(icc->ipc_c, frame_id);
+
+	// Only write arguments once we have fully waited.
+	*out_frame_id = frame_id;
+	*out_predicted_display_time = predicted_display_time;
+	*out_predicted_display_period = predicted_display_period;
 
 	return res;
 }
@@ -539,18 +554,14 @@ ipc_compositor_begin_frame(struct xrt_compositor *xc, int64_t frame_id)
 }
 
 static xrt_result_t
-ipc_compositor_layer_begin(struct xrt_compositor *xc,
-                           int64_t frame_id,
-                           uint64_t display_time_ns,
-                           enum xrt_blend_mode env_blend_mode)
+ipc_compositor_layer_begin(struct xrt_compositor *xc, const struct xrt_layer_frame_data *data)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
 	struct ipc_shared_memory *ism = icc->ipc_c->ism;
 	struct ipc_layer_slot *slot = &ism->slots[icc->layers.slot_id];
 
-	slot->display_time_ns = display_time_ns;
-	slot->env_blend_mode = env_blend_mode;
+	slot->data = *data;
 
 	return XRT_SUCCESS;
 }
@@ -694,7 +705,7 @@ ipc_compositor_layer_equirect2(struct xrt_compositor *xc,
 }
 
 static xrt_result_t
-ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_graphics_sync_handle_t sync_handle)
+ipc_compositor_layer_commit(struct xrt_compositor *xc, xrt_graphics_sync_handle_t sync_handle)
 {
 	struct ipc_client_compositor *icc = ipc_client_compositor(xc);
 
@@ -708,7 +719,6 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync( //
 	    icc->ipc_c,                              //
-	    frame_id,                                //
 	    icc->layers.slot_id,                     //
 	    &sync_handle,                            //
 	    valid_sync ? 1 : 0,                      //
@@ -727,7 +737,6 @@ ipc_compositor_layer_commit(struct xrt_compositor *xc, int64_t frame_id, xrt_gra
 
 static xrt_result_t
 ipc_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
-                                           int64_t frame_id,
                                            struct xrt_compositor_semaphore *xcsem,
                                            uint64_t value)
 {
@@ -742,7 +751,6 @@ ipc_compositor_layer_commit_with_semaphore(struct xrt_compositor *xc,
 
 	IPC_CALL_CHK(ipc_call_compositor_layer_sync_with_semaphore( //
 	    icc->ipc_c,                                             //
-	    frame_id,                                               //
 	    icc->layers.slot_id,                                    //
 	    iccs->id,                                               //
 	    value,                                                  //

@@ -84,6 +84,7 @@ struct rift_s_tracker
 	struct xrt_pose left_cam_from_imu;
 
 	//!< Estimated offset from HMD device timestamp to local monotonic clock
+	uint64_t seen_clock_observations;
 	bool have_hw2mono;
 	time_duration_ns hw2mono;
 	timepoint_ns last_frame_time;
@@ -100,8 +101,7 @@ struct rift_s_tracker
 
 	/* Stereo calibration for the front 2 cameras */
 	struct t_stereo_camera_calibration *stereo_calib;
-	struct t_imu_calibration slam_imu_calib;
-	struct t_slam_calib_extras slam_extra_calib;
+	struct t_slam_calibration slam_calib;
 
 	/* Input sinks that the camera delivers SLAM frames to */
 	struct xrt_slam_sinks in_slam_sinks;
@@ -148,8 +148,7 @@ rift_s_tracker_imu_update(struct rift_s_tracker *t,
 void
 rift_s_tracker_push_slam_frames(struct rift_s_tracker *t,
                                 uint64_t frame_ts_ns,
-                                struct xrt_frame *left,
-                                struct xrt_frame *right);
+                                struct xrt_frame *frames[RIFT_S_CAMERA_COUNT]);
 void
 rift_s_tracker_get_tracked_pose(struct rift_s_tracker *t,
                                 enum rift_s_tracker_pose pose,

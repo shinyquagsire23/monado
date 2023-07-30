@@ -254,3 +254,44 @@ comp_window_vk_display_init_swapchain(struct comp_target *ct, uint32_t width, ui
 
 	return init_swapchain(&w_direct->base, d->display, width, height);
 }
+
+
+/*
+ *
+ * Factory
+ *
+ */
+
+static const char *instance_extensions[] = {
+    VK_KHR_DISPLAY_EXTENSION_NAME,
+};
+
+static bool
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	return false;
+}
+
+static bool
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+{
+	struct comp_target *ct = comp_window_vk_display_create(c);
+	if (ct == NULL) {
+		return false;
+	}
+
+	*out_ct = ct;
+
+	return true;
+}
+
+const struct comp_target_factory comp_target_factory_vk_display = {
+    .name = "Vulkan Display Direct-Mode",
+    .identifier = "vk_display",
+    .requires_vulkan_for_create = true,
+    .is_deferred = false,
+    .required_instance_extensions = instance_extensions,
+    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .detect = detect,
+    .create_target = create_target,
+};

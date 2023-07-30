@@ -1,4 +1,4 @@
-// Copyright 2022, Collabora, Ltd.
+// Copyright 2022-2023, Collabora, Ltd.
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
@@ -11,6 +11,8 @@
 
 #include "util/u_handles.h"
 #include "ogl/ogl_helpers.h"
+
+#include <inttypes.h>
 
 
 static int64_t
@@ -43,7 +45,7 @@ vk_format_to_gl(int64_t format)
 static void
 post_init_setup(struct sdl_swapchain *ssc, struct sdl_program *sp, const struct xrt_swapchain_create_info *info)
 {
-	SP_DEBUG(sp, "CREATE");
+	ST_DEBUG(sp, "CREATE");
 
 	// Setup fields
 	ssc->sp = sp;
@@ -77,7 +79,7 @@ post_init_setup(struct sdl_swapchain *ssc, struct sdl_program *sp, const struct 
 		    ssc->memory[i],                //
 		    ssc->base.base.images[i].size, //
 		    GL_HANDLE_TYPE_OPAQUE_FD_EXT,  //
-		    handle);                       //
+		    (GLint)handle);                //
 		CHECK_GL();
 
 		if (info->array_size == 1) {
@@ -112,7 +114,7 @@ really_destroy(struct comp_swapchain *sc)
 	struct sdl_swapchain *ssc = (struct sdl_swapchain *)sc;
 	struct sdl_program *sp = ssc->sp;
 
-	SP_DEBUG(sp, "DESTROY");
+	ST_DEBUG(sp, "DESTROY");
 
 	sdl_make_current(sp);
 
@@ -162,7 +164,7 @@ sdl_swapchain_create(struct xrt_compositor *xc,
 	    &ssc->base,                    //
 	    really_destroy,                //
 	    &sp->c.base.vk,                //
-	    &sp->c.base.cscgc,             //
+	    &sp->c.base.cscs,              //
 	    info,                          //
 	    &xsccp);                       //
 	if (xret != XRT_SUCCESS) {
@@ -195,7 +197,7 @@ sdl_swapchain_import(struct xrt_compositor *xc,
 	    &ssc->base,                    //
 	    really_destroy,                //
 	    &sp->c.base.vk,                //
-	    &sp->c.base.cscgc,             //
+	    &sp->c.base.cscs,              //
 	    info,                          //
 	    native_images,                 //
 	    native_image_count);           //

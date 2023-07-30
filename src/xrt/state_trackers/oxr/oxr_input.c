@@ -330,8 +330,8 @@ oxr_action_create(struct oxr_logger *log,
 	// Mod music for all!
 	static uint32_t key_gen = 1;
 
-	if (!oxr_classify_sub_action_paths(log, inst, createInfo->countSubactionPaths, createInfo->subactionPaths,
-	                                   &subaction_paths)) {
+	if (!oxr_classify_subaction_paths(log, inst, createInfo->countSubactionPaths, createInfo->subactionPaths,
+	                                  &subaction_paths)) {
 		return XR_ERROR_PATH_UNSUPPORTED;
 	}
 
@@ -370,11 +370,11 @@ oxr_action_create(struct oxr_logger *log,
  */
 
 bool
-oxr_classify_sub_action_paths(struct oxr_logger *log,
-                              struct oxr_instance *inst,
-                              uint32_t subaction_path_count,
-                              const XrPath *subaction_paths,
-                              struct oxr_subaction_paths *subaction_paths_out)
+oxr_classify_subaction_paths(struct oxr_logger *log,
+                             const struct oxr_instance *inst,
+                             uint32_t subaction_path_count,
+                             const XrPath *subaction_paths,
+                             struct oxr_subaction_paths *subaction_paths_out)
 {
 	const char *str = NULL;
 	size_t length = 0;
@@ -1591,8 +1591,8 @@ oxr_action_sync_data(struct oxr_logger *log,
 		oxr_session_get_action_set_attachment(sess, actionSets[i].actionSet, &act_set_attached, &act_set);
 		assert(act_set_attached != NULL);
 
-		if (!oxr_classify_sub_action_paths(log, sess->sys->inst, 1, &actionSets[i].subactionPath,
-		                                   &subaction_paths)) {
+		if (!oxr_classify_subaction_paths(log, sess->sys->inst, 1, &actionSets[i].subactionPath,
+		                                  &subaction_paths)) {
 			return XR_ERROR_PATH_UNSUPPORTED;
 		}
 

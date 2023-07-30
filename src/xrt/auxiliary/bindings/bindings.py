@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-# Copyright 2020-2022, Collabora, Ltd.
+# Copyright 2020-2023, Collabora, Ltd.
 # SPDX-License-Identifier: BSL-1.0
 """Generate code from a JSON file describing interaction profiles and
 bindings."""
 
 import argparse
 import json
+import copy
+import itertools
 
 
 def find_component_in_list_by_name(name, component_list, subaction_path=None, identifier_json_path=None):
@@ -18,6 +20,19 @@ def find_component_in_list_by_name(name, component_list, subaction_path=None, id
                 continue
             return component
     return None
+
+
+def steamvr_subpath_name(steamvr_path, subpath_type):
+    if subpath_type == "pose":
+        return steamvr_path.replace("/input/", "/pose/")
+
+    if subpath_type == "trigger" or subpath_type == "button":
+        return steamvr_path.replace("squeeze", "grip")
+
+    if subpath_type == "joystick":
+        return steamvr_path.replace("thumbstick", "joystick")
+
+    return steamvr_path
 
 
 class PathsByLengthCollector:
@@ -45,6 +60,7 @@ class PathsByLengthCollector:
             ret[length] = list(set_per_length)
         return ret
 
+
 def dpad_paths(identifier_path, center):
     paths = [
         identifier_path + "/dpad_up",
@@ -57,6 +73,7 @@ def dpad_paths(identifier_path, center):
         paths.append(identifier_path + "/dpad_center")
 
     return paths
+
 
 class DPad:
     """Class holding per identifier information for dpad emulation."""
@@ -119,8 +136,13 @@ class Component:
             if component_name in monado_bindings:
                 monado_binding = monado_bindings[component_name]
 
+            steamvr_path = steamvr_subpath_name(identifier_json_path, json_subpath["type"])
+            if "steamvr_path" in json_subpath:
+                steamvr_path = json_subpath["steamvr_path"]
+
             c = Component(subaction_path,
                           identifier_json_path,
+                          steamvr_path,
                           json_subpath["localized_name"],
                           json_subpath["type"],
                           component_name,
@@ -134,6 +156,7 @@ class Component:
     def __init__(self,
                  subaction_path,
                  identifier_json_path,
+                 steamvr_path,
                  subpath_localized_name,
                  subpath_type,
                  component_name,
@@ -142,6 +165,7 @@ class Component:
                  components_for_subpath):
         self.subaction_path = subaction_path
         self.identifier_json_path = identifier_json_path  # note: starts with a slash
+        self.steamvr_path = steamvr_path
         self.subpath_localized_name = subpath_localized_name
         self.subpath_type = subpath_type
         self.component_name = component_name
@@ -172,6 +196,9 @@ class Component:
 
         return paths
 
+    def get_full_path(self):
+        return self.subaction_path + self.identifier_json_path + '/' + self.component_name
+
     def is_input(self):
         # only haptics is output so far, everything else is input
         return self.component_name != "haptic"
@@ -183,10 +210,10 @@ class Component:
         return not self.is_input()
 
 
-class Identifer:
+class Identifier:
     """A Identifier is a OpenXR identifier with a user path, such as button
     X, a trackpad, a pose such as aim. It can have one or more features, even
-    tho outputs doesn't include a component/feature path a output indentifier
+    tho outputs doesn't include a component/feature path a output identifier
     will have a haptic output feature.
     """
 
@@ -201,7 +228,8 @@ class Identifer:
         for subaction_path in json_subaction_paths:  # /user/hand/*
             for json_sub_path_itm in json_subpaths.items():  # /input/*, /output/*
                 json_path = json_sub_path_itm[0]  # /input/trackpad
-                json_subpath = json_sub_path_itm[1]  # json object associated with a subpath (type, localized_name, ...)
+                # json object associated with a subpath (type, localized_name, ...)
+                json_subpath = json_sub_path_itm[1]
 
                 # Oculus Touch a,b/x,y components only exist on one controller
                 if "side" in json_subpath and "/user/hand/" + json_subpath["side"] != subaction_path:
@@ -220,7 +248,7 @@ class Identifer:
                                            component_list,
                                            json_subpath["dpad_emulation"])
 
-                i = Identifer(subaction_path,
+                i = Identifier(subaction_path,
                               identifier_path,
                               json_path,
                               component_list,
@@ -248,18 +276,25 @@ class Profile:
 
     def __init__(self, profile_name, json_profile):
         """Construct an profile."""
+        self.parent_profiles = set()
         self.name = profile_name
         self.localized_name = json_profile['title']
         self.profile_type = json_profile["type"]
         self.monado_device_enum = json_profile["monado_device"]
-        self.validation_func_name = profile_name.replace("/interaction_profiles/", "").replace("/", "_")
-        self.identifiers = Identifer.parse_identifiers(json_profile)
+        self.validation_func_name = Profile.__strip_profile_prefix(
+            profile_name).replace("/", "_")
+        self.extension_name = json_profile.get("extension")
+        self.extended_by = json_profile.get("extended_by")
+        if self.extended_by is None:
+            self.extended_by = []
+        self.is_virtual = profile_name.startswith("/virtual_profiles/")
+        self.identifiers = Identifier.parse_identifiers(json_profile)
 
-        self.components = []
-        for identifier in self.identifiers:
-            for component in identifier.components:
-                self.components.append(component)
+        self.steamvr_controller_type = None
+        if "steamvr_controllertype" in json_profile:
+            self.steamvr_controller_type = json_profile["steamvr_controllertype"]
 
+        self.__update_component_list()
         collector = PathsByLengthCollector()
         for component in self.components:
             collector.add_paths(component.get_full_openxr_paths())
@@ -278,8 +313,59 @@ class Profile:
                 continue
             path = identifier.identifier_path
             collector.add_paths(identifier.dpad.paths)
-
         self.dpad_paths_by_length = collector.to_dict_of_lists()
+
+    @classmethod
+    def __strip_profile_prefix(cls, profile_path):
+        return profile_path.replace("/interaction_profiles/", "").replace("/virtual_profiles/", "")
+
+    def is_parent_profile(self, child_profile):
+        if child_profile == self:
+            return False
+        if child_profile.extended_by is None:
+            return False
+        parent_path = Profile.__strip_profile_prefix(self.name)
+        return parent_path in child_profile.extended_by
+
+    def merge_parent_profiles(self):
+        self.identifiers = self.__get_merged_identifiers_helper({}).values()
+        self.__update_component_list()
+
+    def __get_merged_identifiers_helper(self, identifier_map):
+        for ident in self.identifiers:
+            if ident.identifier_path not in identifier_map:
+                identifier_map[ident.identifier_path] = copy.deepcopy(ident)
+                continue
+            child_indent = identifier_map[ident.identifier_path]
+            if child_indent.dpad is None:
+                child_indent.dpad = ident.dpad
+            child_comps = child_indent.components
+            for parent_comp in ident.components:
+                parent_path = parent_comp.get_full_path()
+                child_exists = False
+                for child_comp in child_comps:
+                    if child_comp.get_full_path() == parent_path:
+                        child_exists = True
+                        break
+                if not child_exists:
+                    child_comps.append(parent_comp)
+
+        parent_profiles = self.parent_profiles
+        if parent_profiles is None or len(parent_profiles) == 0:
+            return identifier_map
+        else:
+            for parent in parent_profiles:
+                parent.__get_merged_identifiers_helper(identifier_map)
+            return identifier_map
+
+    def __update_component_list(self):
+        self.components = []
+        for identifier in self.identifiers:
+            for component in identifier.components:
+                self.components.append(component)
+
+
+oxr_verify_extension_status_struct_name = "oxr_verify_extension_status"
 
 
 class Bindings:
@@ -302,6 +388,50 @@ class Bindings:
         """Construct a bindings from a dictionary of profiles."""
         self.profiles = [Profile(profile_name, json_profile) for
                          profile_name, json_profile in json_root["profiles"].items()]
+        self.__set_parent_profile_refs()
+        self.__mine_for_diamond_errors()
+
+        self.virtual_profiles = [p for p in self.profiles if p.is_virtual]
+        self.profiles = [p for p in self.profiles if not p.is_virtual]
+        for profile in self.profiles:
+            profile.merge_parent_profiles()
+
+    def __set_parent_profile_refs(self):
+        for profile1 in self.profiles:
+            for profile2 in self.profiles:
+                if profile1.is_parent_profile(profile2):
+                    profile2.parent_profiles.add(profile1)
+
+    def __mine_for_diamond_errors(self):
+        for profile in self.profiles:
+            parent_path_set = []
+            if self.__has_diamonds(profile, parent_path_set):
+                msg = f"Interaction Profile: {profile.name} in bindings.json has a diamond hierarchy, this is not supported."
+                raise RuntimeError(msg)
+
+    def __has_diamonds(self, profile, parent_path_set):
+        if profile.name in parent_path_set:
+            return True
+        parent_path_set.append(profile.name)
+        for parent in profile.parent_profiles:
+            if self.__has_diamonds(parent, parent_path_set):
+                return True
+        return False
+
+    def make_oxr_verify_extension_status_struct_str(self):
+        struct_str: str = f"struct {oxr_verify_extension_status_struct_name}{{\n"
+        ext_set = set()
+        for profile in itertools.chain(self.virtual_profiles, self.profiles):
+            ext_name = profile.extension_name
+            if ext_name is None or len(ext_name) == 0:
+                continue
+            if ext_name in ext_set:
+                continue
+            ext_set.add(ext_name)
+            ext_name = ext_name.replace("XR_", "")
+            struct_str += f"\tbool {ext_name};\n"
+        struct_str += "};\n"
+        return struct_str
 
 
 header = '''// Copyright 2020-2022, Collabora, Ltd.
@@ -311,34 +441,81 @@ header = '''// Copyright 2020-2022, Collabora, Ltd.
  * @brief  {brief}.
  * @author Jakob Bornecrantz <jakob@collabora.com>
  * @author Christoph Haag <christoph.haag@collabora.com>
+ * @author Korcan Hussein <korcan.hussein@collabora.com>
  * @ingroup {group}
  */
 '''
 
 func_start = '''
 bool
-{name}(const char *str, size_t length)
+{name}(const struct {ext_status_struct_name}* exts, const char *str, size_t length)
 {{
-\tswitch (length) {{
 '''
 
-if_strcmp = '''if (strcmp(str, "{check}") == 0) {{
-\t\t\treturn true;
-\t\t}} else '''
+
+def write_verify_func_begin(f, name):
+    f.write(func_start.format(
+        name=name, ext_status_struct_name=oxr_verify_extension_status_struct_name))
 
 
-def write_verify_func(f, name, dict_of_lists):
+def write_verify_func_end(f):
+    f.write("\treturn false;\n}\n")
+
+
+if_strcmp = '''{exttab}if (strcmp(str, "{check}") == 0) {{
+{exttab}\t\t\treturn true;
+{exttab}\t\t}} else '''
+
+
+def write_verify_func_switch(f, dict_of_lists, profile_name, ext_name):
     """Generate function to check if a string is in a set of strings.
     Input is a file to write the code into, a dict where keys are length and
     the values are lists of strings of that length. And a suffix if any."""
+    if len(dict_of_lists) == 0:
+        return
 
-    f.write(func_start.format(name=name))
+    f.write(f"\t// generated from: {profile_name}\n")
+    is_ext = ext_name is not None and len(ext_name) > 0
+    ext_tab = ""
+    if is_ext:
+        ext_name = ext_name.replace("XR_", "")
+        f.write(f"\tif (exts->{ext_name}) {{\n")
+        ext_tab = "\t"
+
+    f.write(f"{ext_tab}\tswitch (length) {{\n")
     for length in dict_of_lists:
-        f.write("\tcase " + str(length) + ":\n\t\t")
+        f.write(f"{ext_tab}\tcase {str(length)}:\n\t\t")
         for path in dict_of_lists[length]:
-            f.write(if_strcmp.format(check=path))
-        f.write("{\n\t\t\treturn false;\n\t\t}\n")
-    f.write("\tdefault:\n\t\treturn false;\n\t}\n}\n")
+            f.write(if_strcmp.format(exttab=ext_tab, check=path))
+        f.write(f"{ext_tab}{{\n{ext_tab}\t\t\tbreak;\n{ext_tab}\t\t}}\n")
+    f.write(f"{ext_tab}\tdefault: break;\n{ext_tab}\t}}\n")
+
+    if is_ext:
+        f.write("\t}\n")
+
+
+def write_verify_func_body(f, profile, dict_name):
+    if profile is None or dict_name is None or len(dict_name) == 0:
+        return
+    write_verify_func_switch(f, getattr(
+        profile, dict_name), profile.name, profile.extension_name)
+    if profile.parent_profiles is None:
+        return
+    for pp in profile.parent_profiles:
+        write_verify_func_body(f, pp, dict_name)
+
+
+def write_verify_func(f, profile, dict_name, suffix):
+    write_verify_func_begin(
+        f, f"oxr_verify_{profile.validation_func_name}{suffix}")
+    write_verify_func_body(f, profile, dict_name)
+    write_verify_func_end(f)
+
+
+def generate_verify_functions(f, profile):
+    write_verify_func(f, profile, "subpaths_by_length", "_subpath")
+    write_verify_func(f, profile, "dpad_paths_by_length", "_dpad_path")
+    write_verify_func(f, profile, "dpad_emulators_by_length", "_dpad_emulator")
 
 
 def generate_bindings_c(file, p):
@@ -353,12 +530,7 @@ def generate_bindings_c(file, p):
 ''')
 
     for profile in p.profiles:
-        name = "oxr_verify_" + profile.validation_func_name + "_subpath"
-        write_verify_func(f, name, profile.subpaths_by_length)
-        name = "oxr_verify_" + profile.validation_func_name + "_dpad_path"
-        write_verify_func(f, name, profile.dpad_paths_by_length)
-        name = "oxr_verify_" + profile.validation_func_name + "_dpad_emulator"
-        write_verify_func(f, name, profile.dpad_emulators_by_length)
+        generate_verify_functions(f, profile)
 
     f.write(
         f'\n\nstruct profile_template profile_templates[{len(p.profiles)}] = {{ // array of profile_template\n')
@@ -382,8 +554,8 @@ def generate_bindings_c(file, p):
         component: Component
         for idx, component in enumerate(profile.components):
 
-            json_path = component.identifier_json_path
-            steamvr_path = json_path # @todo Doesn't handle pose yet.
+            # @todo Doesn't handle pose yet.
+            steamvr_path = component.steamvr_path
             if component.component_name in ["click", "touch", "force", "value"]:
                 steamvr_path += "/" + component.component_name
 
@@ -545,13 +717,14 @@ def generate_bindings_h(file, p):
 // clang-format off
 ''')
 
+    oxr_verify_struct_str = p.make_oxr_verify_extension_status_struct_str()
+    f.write(oxr_verify_struct_str)
+
+    fn_prefixes = ["_subpath", "_dpad_path", "_dpad_emulator"]
     for profile in p.profiles:
-        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
-                "_subpath(const char *str, size_t length);\n")
-        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
-                "_dpad_path(const char *str, size_t length);\n")
-        f.write("\nbool\noxr_verify_" + profile.validation_func_name +
-                "_dpad_emulator(const char *str, size_t length);\n")
+        for fn_suffix in fn_prefixes:
+            f.write(
+                f"\nbool\noxr_verify_{profile.validation_func_name}{fn_suffix}(const struct {oxr_verify_extension_status_struct_name}* extensions, const char *str, size_t length);\n")
 
     f.write(f'''
 #define PATHS_PER_BINDING_TEMPLATE 16

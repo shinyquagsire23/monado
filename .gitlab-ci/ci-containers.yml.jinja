@@ -1,0 +1,41 @@
+{#
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-FileCopyrightText: 2018-2023 Collabora, Ltd. and the Monado contributors
+#}
+
+###
+# Container prep jobs
+
+{%- for distro in distributions -%} {%- for image in distro.images %}
+
+# Make {{ distro.name|capitalize }} {{image.codename}} image
+{{distro.name}}:{{image.codename}}:container_prep:
+  stage: container_prep
+  extends:
+    - .container-rules
+    - .monado.variables.{{distro.name}}:{{image.codename}}
+    - .fdo.container-build@{{distro.name}} # from ci-templates
+
+  variables:
+    {# The packages list is actually a mapping, not an array, but the same syntax works. #}
+    {# Needed to be a mapping so it could be "merged" #}
+    FDO_DISTRIBUTION_PACKAGES: '{{image.packages | sort | join(" ")}}'
+{% if "script" in image %}
+    FDO_DISTRIBUTION_EXEC: 'env FDO_CI_CONCURRENT=${FDO_CI_CONCURRENT} bash .gitlab-ci/{{image["script"]}}'
+{% endif %}
+{% endfor -%} {%- endfor %}
+
+{% from 'functions.jinja' import base_job_to_use_image with context %}
+
+###
+# Container usage base jobs
+{% for distro in distributions -%} {%- for image in distro.images %}
+
+# Base for using {{ distro.name|capitalize }} {{image.codename}} image
+{{base_job_to_use_image(distro, image)}}:
+  extends:
+    - .monado.variables.{{distro.name}}:{{image.codename}}
+    - .fdo.{{ "suffixed" if "repo_suffix" in image else "distribution" }}-image@{{distro.name}} # from ci-templates
+    - .build-rules
+
+{% endfor -%} {%- endfor %}

@@ -1,1 +1,1 @@
-st/oxr: Add `XRT_CHECK_RESULT` to oxr space functions.
+OpenXR: Add `XRT_CHECK_RESULT` to oxr space functions.

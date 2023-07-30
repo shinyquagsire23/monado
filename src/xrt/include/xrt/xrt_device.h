@@ -10,10 +10,8 @@
 
 #pragma once
 
-#define XRT_DEVICE_NAME_LEN 256
-#define XRT_DEVICE_PRODUCT_NAME_LEN 64 // Incl. termination
-
 #include "xrt/xrt_defines.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +20,8 @@ extern "C" {
 struct xrt_tracking;
 struct comp_compositor;
 struct comp_target;
+
+#define XRT_DEVICE_NAME_LEN 256
 
 
 /*!
@@ -261,7 +261,9 @@ struct xrt_device
 	bool orientation_tracking_supported;
 	bool position_tracking_supported;
 	bool hand_tracking_supported;
+	bool eye_gaze_supported;
 	bool force_feedback_supported;
+	bool form_factor_check_supported;
 
 	/*!
 	 * Update any attached inputs.
@@ -394,7 +396,7 @@ struct xrt_device
 	 * @param[out] out_result corresponding u,v pairs for all three color channels.
 	 */
 	bool (*compute_distortion)(
-	    struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *out_result);
+	    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *out_result);
 
 	/**
 	 * Create a compositor target
@@ -411,6 +413,18 @@ struct xrt_device
 	 * Destroy device.
 	 */
 	void (*destroy)(struct xrt_device *xdev);
+
+	/*!
+	 * @brief Check if given form factor is available or not.
+	 *
+	 * This should only be used in HMD device, if the device driver supports form factor check.
+	 *
+	 * @param[in] xdev The device.
+	 * @param[in] form_factor Form factor to check.
+	 *
+	 * @return true if given form factor is available; otherwise false.
+	 */
+	bool (*is_form_factor_available)(struct xrt_device *xdev, enum xrt_form_factor form_factor);
 };
 
 /*!
@@ -498,10 +512,11 @@ xrt_device_get_view_poses(struct xrt_device *xdev,
  *
  * @public @memberof xrt_device
  */
-static inline void
-xrt_device_compute_distortion(struct xrt_device *xdev, int view, float u, float v, struct xrt_uv_triplet *out_result)
+static inline bool
+xrt_device_compute_distortion(
+    struct xrt_device *xdev, uint32_t view, float u, float v, struct xrt_uv_triplet *out_result)
 {
-	xdev->compute_distortion(xdev, view, u, v, out_result);
+	return xdev->compute_distortion(xdev, view, u, v, out_result);
 }
 
 /*!
@@ -523,6 +538,18 @@ xrt_device_destroy(struct xrt_device **xdev_ptr)
 	*xdev_ptr = NULL;
 }
 
+/*!
+ * Helper function for @ref xrt_device::is_form_factor_available.
+ *
+ * @copydoc xrt_device::is_form_factor_available
+ *
+ * @public @memberof xrt_device
+ */
+static inline bool
+xrt_device_is_form_factor_available(struct xrt_device *xdev, enum xrt_form_factor form_factor)
+{
+	return xdev->is_form_factor_available(xdev, form_factor);
+}
 
 #ifdef __cplusplus
 } // extern "C"

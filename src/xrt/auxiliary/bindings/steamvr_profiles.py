@@ -33,14 +33,6 @@ def open_file(args, fname):
     f = open(fname, "w")
     return f
 
-
-def steamvr_subpath_name(component):
-    if component.subpath_type == "pose":
-        return component.identifier_json_path.replace("/input/", "/pose/")
-
-    return component.identifier_json_path
-
-
 def get_required_components(path_type):
     if path_type == "button":
         return ["click", "touch"]
@@ -62,6 +54,9 @@ def main():
         'bindings', help='Bindings file to use')
     parser.add_argument(
         'output', type=str, help='Output directory')
+    parser.add_argument(
+        '-s', '--steamvr', action='store_true',
+        help='Use SteamVR standard controller type names')
     args = parser.parse_args()
 
     bindings = Bindings.load_and_parse(args.bindings)
@@ -77,11 +72,15 @@ def main():
 
         profile_type, vendor_name, fname = names(p)
 
+        controller_type = "monado_" + vendor_name + "_" + profile_type
+        if args.steamvr == True and p.steamvr_controller_type is not None:
+            controller_type = p.steamvr_controller_type
+
         input_source = {}
 
         component: Component
         for idx, component in enumerate(p.components):
-            subpath_name = steamvr_subpath_name(component)
+            subpath_name = component.steamvr_path
 
             input_source[subpath_name] = {
                 "type": component.subpath_type,
@@ -94,13 +93,13 @@ def main():
 
         j = {
             "json_id": "input_profile",
-            "controller_type": "monado_" + vendor_name + "_" + profile_type,
+            "controller_type": controller_type,
             "device_class": device_class,
             "resource_root": "steamvr-monado",
             "driver_name": "monado",
             # "legacy_binding": None, # TODO
             "input_bindingui_mode": "controller_handed",
-            "should_show_binidng_errors": True,
+            "should_show_binding_errors": True,
             "input_bindingui_left": {
                 "image": "{indexcontroller}/icons/indexcontroller_left.svg"  # TODO
             },
