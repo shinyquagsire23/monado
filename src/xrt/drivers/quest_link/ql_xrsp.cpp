@@ -1363,6 +1363,15 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
         xrsp_send_mesh(host);
     }*/
 
+    static uint64_t last_roundtrip = 0;
+    uint64_t roundtrip_ns = xrsp_ts_ns(host) - last_roundtrip;
+    last_roundtrip = xrsp_ts_ns(host);
+    //printf("%llu\n", roundtrip_ns);
+
+    /*if (roundtrip_ns < 5000000) {
+        return;
+    }*/
+
     uint64_t ts_before = xrsp_ts_ns(host);
     host->tx_started_ns[read_index] = ts_before;
 

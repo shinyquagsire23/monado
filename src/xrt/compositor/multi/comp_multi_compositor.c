@@ -219,14 +219,14 @@ wait_for_scheduled_free(struct multi_compositor *mc)
 	while (v_mc->scheduled.active) {
 
 		// This frame is for the next frame, drop the old one no matter what.
-		if (!mc->msc->xcn->base.never_repeat_frames && time_is_within_half_ms(mc->progress.display_time_ns, mc->slot_next_frame_display)) {
+		if (time_is_within_half_ms(mc->progress.display_time_ns, mc->slot_next_frame_display)) {
 			//U_LOG_W("Dropping old missed frame in favour for completed new frame");//HACK
 			break;
 		}
 
 		// Replace the scheduled frame if it's in the past.
 		uint64_t now_ns = os_monotonic_get_ns();
-		if (!mc->msc->xcn->base.never_repeat_frames && v_mc->scheduled.display_time_ns < now_ns) {
+		if (v_mc->scheduled.display_time_ns < now_ns) {
 			break;
 		}
 
@@ -604,7 +604,7 @@ multi_compositor_wait_frame(struct xrt_compositor *xc,
 	    out_predicted_display_period_ns); //
 
 	// Wait until the given wake up time.
-	//u_wait_until(&mc->frame_sleeper, wake_up_time_ns); // TODO HACK
+	u_wait_until(&mc->frame_sleeper, wake_up_time_ns); // TODO HACK
 
 	uint64_t now_ns = os_monotonic_get_ns();
 
