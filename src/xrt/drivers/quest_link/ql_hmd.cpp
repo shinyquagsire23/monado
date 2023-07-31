@@ -60,7 +60,7 @@ ql_update_inputs(struct xrt_device *xdev)
 
 static void ql_hmd_create_compositor_target(struct xrt_device * xdev,
                                                struct comp_compositor * comp,
-                                               struct comp_target ** out_target);
+                                               const struct comp_target_factory ** out_target);
 
 static void
 ql_get_tracked_pose(struct xrt_device *xdev,
@@ -244,7 +244,7 @@ static std::tuple<float, float> solve_foveation(float scale, float c)
 	return {a, b};
 }
 
-bool ql_hmd_compute_distortion(xrt_device * xdev, int view_index, float u, float v, xrt_uv_triplet * result)
+bool ql_hmd_compute_distortion(xrt_device * xdev, uint32_t view_index, float u, float v, xrt_uv_triplet * result)
 {
 	// u,v are in the output coordinates (sent to the encoder)
 	// result is in the input coordinates (from the application)
@@ -576,18 +576,59 @@ cleanup:
 	return NULL;
 }
 
+/*
+ *
+ * Factory
+ *
+ */
+
+static struct comp_target* hack_comp_target = NULL; // HACK
+
+static const char *instance_extensions[] = {
+    
+};
+
+static bool
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	return true;
+}
+
+static bool
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+{
+	struct comp_target *ct = hack_comp_target;//comp_window_none_create(c);
+	if (ct == NULL) {
+		return false;
+	}
+
+	*out_ct = ct;
+
+	return true;
+}
+
+const struct comp_target_factory comp_target_factory_ql = {
+    .name = "Quest Link Compositor",
+    .identifier = "ql_comp",
+    .requires_vulkan_for_create = true,
+    .is_deferred = false,
+    .required_instance_extensions = instance_extensions,
+    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .detect = detect,
+    .create_target = create_target,
+};
+
 static void ql_hmd_create_compositor_target(struct xrt_device * xdev,
                                                struct comp_compositor * comp,
-                                               struct comp_target ** out_target)
+                                               const struct comp_target_factory ** out_target)
 {
 	struct ql_hmd *hmd = (struct ql_hmd *)(xdev);
 	while (!hmd->sys->xrsp_host.ready_to_send_frames) {
 		os_nanosleep(U_TIME_1MS_IN_NS * 10);
 	}
 
-	comp_target* target = comp_target_ql_create(&hmd->sys->xrsp_host, hmd->fps);
+	hack_comp_target = comp_target_ql_create(&hmd->sys->xrsp_host, hmd->fps);
+	hack_comp_target->c = comp;
 
-	target->c = comp;
-	*out_target = target;
+	*out_target = &comp_target_factory_ql;
 }
-

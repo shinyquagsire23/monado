@@ -10,7 +10,7 @@
 
 #pragma once
 
-#define COMP_MAX_LAYERS 8
+#define COMP_MAX_LAYERS 4
 #define COMP_VIEWS_PER_LAYER 2
 #define COMP_MAX_IMAGES 16
 

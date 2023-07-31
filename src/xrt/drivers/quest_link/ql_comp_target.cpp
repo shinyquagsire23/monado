@@ -76,6 +76,9 @@ struct ql_comp_target : public comp_target
 
 	VkColorSpaceKHR color_space;
 
+	struct vk_cmd_pool comp_pool;
+	VkCommandPool cmd_pool;
+
 	struct encoder_thread
 	{
 		int index;
@@ -256,6 +259,7 @@ static VkResult create_images(struct ql_comp_target * cn, VkImageUsageFlags flag
 
 	assert(cn->image_count > 0);
 	COMP_DEBUG(cn->c, "Creating %d images.", cn->image_count);
+	printf("asdf\n");
 
 	destroy_images(cn);
 
@@ -337,6 +341,23 @@ static bool comp_ql_init_pre_vulkan(struct comp_target * ct)
 
 static bool comp_ql_init_post_vulkan(struct comp_target * ct, uint32_t preferred_width, uint32_t preferred_height)
 {
+	struct ql_comp_target * cn = (struct ql_comp_target *)ct;
+	struct vk_bundle * vk = get_vk(cn);
+
+	/*
+	 * Command buffer pool, needs to go first.
+	 */
+	//TODO error check
+	vk_cmd_pool_init(vk, &cn->comp_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+
+	VkCommandPoolCreateInfo command_pool_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+	    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+	    .queueFamilyIndex = vk->queue_family_index,
+	};
+
+	vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &cn->cmd_pool);
+
 	return true;
 }
 
@@ -460,8 +481,8 @@ static VkResult comp_ql_acquire(struct comp_target * ct, uint32_t * out_index)
 	submit.signalSemaphoreCount = 1;
 	submit.pSignalSemaphores = &cn->semaphores.present_complete;
 
-	VkResult res = vk_locked_submit(vk, vk->queue, 1, &submit, VK_NULL_HANDLE);
-	vk_check_error("vk_locked_submit", res, res);
+	VkResult res = vk_cmd_submit_locked(vk, 1, &submit, VK_NULL_HANDLE);
+	vk_check_error("vk_cmd_submit_locked", res, res);
 
 	res = VK_ERROR_OUT_OF_HOST_MEMORY;
 
@@ -618,8 +639,8 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	std::vector<VkCommandBuffer> cmdBuffers;
 
 	VkCommandBuffer cmdBuffer;
-	VkResult res = vk_cmd_buffer_create_and_begin(vk, &cmdBuffer);
-	vk_check_error("vk_cmd_buffer_create_and_begin", res, res);
+	VkResult res = vk_cmd_create_and_begin_cmd_buffer_locked(vk, cn->cmd_pool, 0, &cmdBuffer);
+	vk_check_error("vk_cmd_create_and_begin_cmd_buffer_locked", res, res);
 
 	VkImageSubresourceRange first_color_level_subresource_range{};
 	first_color_level_subresource_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -659,8 +680,8 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	std::lock_guard lock(cn->psc.mutex);
 	res = vk->vkResetFences(vk->device, 1, &cn->psc.images[index].fence);
 	vk_check_error("vkResetFences", res, res);
-	res = vk_locked_submit(vk, vk->queue, 1, &submit, cn->psc.images[index].fence);
-	vk_check_error("vk_locked_submit", res, res);
+	res = vk_cmd_submit_locked(vk, 1, &submit, cn->psc.images[index].fence);
+	vk_check_error("vk_cmd_submit_locked", res, res);
 
 	assert(cn->psc.images[index].status == image_acquired);
 	cn->frame_index++;

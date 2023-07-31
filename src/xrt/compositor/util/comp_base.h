@@ -61,6 +61,8 @@ struct comp_layer_slot
 	//! Special case one layer projection/projection-depth fast-path.
 	bool one_projection_layer_fast_path;
 
+	//! head relation as reported by device for the current submit.
+	struct xrt_space_relation head_relation;
 	//! fov as reported by device for the current submit.
 	struct xrt_fov fovs[2];
 	//! absolute pose as reported by device for the current submit.

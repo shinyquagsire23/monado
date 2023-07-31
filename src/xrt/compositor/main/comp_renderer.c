@@ -687,23 +687,20 @@ renderer_get_view_projection(struct comp_renderer *r)
 	    0.0f,
 	};
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
-	struct xrt_pose poses[2] = {0};
-
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
 	    &default_eye_relation,                           //
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
-	    &head_relation,                                  //
+	    &r->c->base.slot.head_relation,                  //
 	    r->c->base.slot.fovs,                            //
-	    poses);                                          //
+	    r->c->base.slot.poses);                          //
 
 	struct xrt_pose base_space_pose = XRT_POSE_IDENTITY;
 
 	for (uint32_t i = 0; i < 2; i++) {
 		const struct xrt_fov fov = r->c->base.slot.fovs[i];
-		const struct xrt_pose eye_pose = poses[i];
+		const struct xrt_pose eye_pose = r->c->base.slot.poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 
@@ -924,6 +921,8 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
 
+		m_space_relation_ident(&c->base.slot.head_relation);
+
 		c->base.slot.poses[0] = lvd->pose;
 		c->base.slot.poses[1] = rvd->pose;
 		c->base.slot.fovs[0] = lvd->fov;
@@ -941,6 +940,8 @@ dispatch_graphics(struct comp_renderer *r, struct render_gfx *rr)
 		const struct xrt_layer_stereo_projection_depth_data *stereo = &layer->data.stereo_depth;
 		const struct xrt_layer_projection_view_data *lvd = &stereo->l;
 		const struct xrt_layer_projection_view_data *rvd = &stereo->r;
+
+		m_space_relation_ident(&c->base.slot.head_relation);
 
 		c->base.slot.poses[0] = lvd->pose;
 		c->base.slot.poses[1] = rvd->pose;
@@ -977,21 +978,18 @@ get_view_poses(struct comp_renderer *r, struct xrt_pose out_world[2], struct xrt
 	    0.0f,
 	};
 
-	struct xrt_space_relation head_relation = XRT_SPACE_RELATION_ZERO;
-	struct xrt_pose poses[2] = {0};
-
 	xrt_device_get_view_poses(                           //
 	    r->c->xdev,                                      //
 	    &default_eye_relation,                           //
 	    r->c->frame.rendering.predicted_display_time_ns, //
 	    2,                                               //
-	    &head_relation,                                  //
+	    &r->c->base.slot.head_relation,                  //
 	    r->c->base.slot.fovs,                            //
-	    poses);                                          //
+	    r->c->base.slot.poses);                          //
 
 	for (uint32_t i = 0; i < 2; i++) {
 		const struct xrt_fov fov = r->c->base.slot.fovs[i];
-		const struct xrt_pose eye_pose = poses[i];
+		const struct xrt_pose eye_pose = r->c->base.slot.poses[i];
 
 		comp_layer_renderer_set_fov(r->lr, &fov, i);
 

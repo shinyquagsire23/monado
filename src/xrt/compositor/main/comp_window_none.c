@@ -774,3 +774,44 @@ comp_window_none_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t
 
 	return init_swapchain(&w_direct->base, d->display, width, height);
 }
+
+
+/*
+ *
+ * Factory
+ *
+ */
+
+static const char *instance_extensions[] = {
+    
+};
+
+static bool
+detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
+{
+	return true;
+}
+
+static bool
+create_target(const struct comp_target_factory *ctf, struct comp_compositor *c, struct comp_target **out_ct)
+{
+	struct comp_target *ct = comp_window_none_create(c);
+	if (ct == NULL) {
+		return false;
+	}
+
+	*out_ct = ct;
+
+	return true;
+}
+
+const struct comp_target_factory comp_target_factory_none = {
+    .name = "No window, swapchain only",
+    .identifier = "none",
+    .requires_vulkan_for_create = true,
+    .is_deferred = false,
+    .required_instance_extensions = instance_extensions,
+    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .detect = detect,
+    .create_target = create_target,
+};

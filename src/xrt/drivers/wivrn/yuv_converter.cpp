@@ -176,6 +176,18 @@ YuvConverter::YuvConverter(vk_bundle * vk, VkExtent3D extent, int offset_x, int 
 	        shader_load(vk, shaders.at("yuv_converter.uv.frag"), &uv.frag);
 	vk_check_throw("shader_load", res);
 
+	// TODO
+
+	vk_cmd_pool_init(vk, &comp_pool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+
+	VkCommandPoolCreateInfo command_pool_info = {
+	    .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+	    .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
+	    .queueFamilyIndex = vk->queue_family_index,
+	};
+
+	vk->vkCreateCommandPool(vk->device, &command_pool_info, NULL, &cmd_pool);
+
 	for (int i = 0; i < 2; ++i)
 	{
 		VkAttachmentDescription colorAttachment{};
@@ -365,8 +377,8 @@ void YuvConverter::SetImages(int num_images, VkImage * images, VkImageView * vie
 		vk.vkUpdateDescriptorSets(vk.device, 1, &descriptorWrite, 0, nullptr);
 
 		VkCommandBuffer cmdBuffer;
-		res = vk_cmd_buffer_create_and_begin(&vk, &cmdBuffer);
-		vk_check_throw("vk_cmd_buffer_create_and_begin", res);
+		res = vk_cmd_create_and_begin_cmd_buffer_locked(&vk, cmd_pool, 0, &cmdBuffer);
+		vk_check_throw("vk_cmd_create_and_begin_cmd_buffer_locked", res);
 
 		for (auto & comp: {y, uv})
 		{

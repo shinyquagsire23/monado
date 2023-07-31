@@ -139,6 +139,8 @@ extern const struct comp_target_factory comp_target_factory_mswin;
 struct comp_target *
 comp_window_none_create(struct comp_compositor *c);
 
+extern const struct comp_target_factory comp_target_factory_none;
+
 #ifdef __cplusplus
 }
 #endif

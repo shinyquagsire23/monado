@@ -132,8 +132,8 @@ xrt_instance_create(struct xrt_instance_info *ii, struct xrt_instance **out_xins
 
 	u_trace_marker_init();
 
-	if (debug_get_bool_option_wivrn_target_hack())
-		return wivrn_xrt_instance_create(ii, out_xinst);
+	//if (debug_get_bool_option_wivrn_target_hack())
+	//	return wivrn_xrt_instance_create(ii, out_xinst);
 
 	XRT_TRACE_MARKER();
 

@@ -2,7 +2,7 @@
 // Copyright 2022, Patrick Nicolas
 // SPDX-License-Identifier: BSL-1.0
 
-#include "xrt/xrt_gfx_native.h"
+//#include "xrt/xrt_gfx_native.h"
 #include "xrt/xrt_system.h"
 #include "xrt/xrt_config_build.h"
 
@@ -11,6 +11,8 @@
 #include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "util/u_system_helpers.h"
+
+#include "main/comp_main_interface.h"
 
 #include <assert.h>
 
@@ -49,7 +51,7 @@ wivrn_instance_create_system(struct xrt_instance *xinst,
 	struct xrt_device *head = xsysd->roles.head;
 
 	if (xret == XRT_SUCCESS && xsysc == NULL) {
-		xret = xrt_gfx_provider_create_system(head, &xsysc);
+		xret = comp_main_create_system_compositor(head, NULL, &xsysc);
 	}
 
 	if (xret != XRT_SUCCESS) {

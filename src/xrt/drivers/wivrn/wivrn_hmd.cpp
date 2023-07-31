@@ -78,7 +78,7 @@ static void wivrn_hmd_get_view_poses(xrt_device * xdev,
 
 static void wivrn_hmd_create_compositor_target(struct xrt_device * xdev,
                                                struct comp_compositor * comp,
-                                               struct comp_target ** out_target);
+                                               const struct comp_target_factory ** out_target);
 
 wivrn_hmd::wivrn_hmd(std::shared_ptr<xrt::drivers::wivrn::wivrn_session> cnx,
                      const from_headset::headset_info_packet & info) :
@@ -261,7 +261,7 @@ static void wivrn_hmd_get_view_poses(xrt_device * xdev,
 
 static void wivrn_hmd_create_compositor_target(struct xrt_device * xdev,
                                                struct comp_compositor * comp,
-                                               struct comp_target ** out_target)
+                                               const struct comp_target_factory ** out_target)
 {
-	*out_target = static_cast<wivrn_hmd *>(xdev)->create_compositor_target(comp);
+	//*out_target = static_cast<wivrn_hmd *>(xdev)->create_compositor_target(comp);
 }

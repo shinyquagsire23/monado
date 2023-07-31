@@ -17,6 +17,7 @@
 extern "C" {
 #endif
 
+struct comp_target_factory;
 struct xrt_tracking;
 struct comp_compositor;
 struct comp_target;
@@ -407,7 +408,7 @@ struct xrt_device
 	 */
 	void (*create_compositor_target)(struct xrt_device *xdev,
 	                                 struct comp_compositor *comp,
-	                                 struct comp_target **out_target);
+	                                 const struct comp_target_factory **out_target);
 
 	/*!
 	 * Destroy device.

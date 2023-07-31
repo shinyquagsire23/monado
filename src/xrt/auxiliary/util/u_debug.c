@@ -81,7 +81,7 @@ get_option_raw(char *chars, size_t char_count, const char *name)
 	return chars;
 }
 
-#elif defined XRT_OS_LINUX
+#elif defined XRT_OS_LINUX || defined XRT_OS_APPLE
 
 static const char *
 get_option_raw(char *chars, size_t char_count, const char *name)

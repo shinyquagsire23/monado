@@ -20,6 +20,8 @@
 #pragma once
 
 #include "vk/vk_helpers.h"
+#include "vk/vk_cmd.h"
+#include "vk/vk_cmd_pool.h"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -53,6 +55,9 @@ public:
 	VkSampler sampler = VK_NULL_HANDLE;
 	VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
 	VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+
+	struct vk_cmd_pool comp_pool;
+	VkCommandPool cmd_pool;
 
 	VkBuffer ubo_buf;
 	VkDeviceMemory ubo_mem;
