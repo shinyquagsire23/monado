@@ -690,7 +690,7 @@ static VkResult comp_ql_present(struct comp_target * ct,
 	cn->psc.images[index].frame_index = cn->frame_index;
 
 	auto & view_info = cn->psc.images[index].view_info;
-	view_info.display_time = desired_present_time_ns+present_slop_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
+	view_info.display_time = cn->c->base.slot.layers[0].data.timestamp;//desired_present_time_ns+present_slop_ns;//1;//cn->cnx->get_offset().to_headset(desired_present_time_ns).count();
 	for (int eye = 0; eye < 2; ++eye)
 	{
 		xrt_relation_chain xrc{};
@@ -789,7 +789,7 @@ static void comp_ql_calc_frame_pacing(struct comp_target * ct,
 	int64_t frame_id = ++cn->current_frame_id; //-1;
 	uint64_t now_ns = os_monotonic_get_ns();
 	uint64_t desired_present_time_ns = now_ns + (U_TIME_1S_IN_NS / (cn->fps));
-	uint64_t wake_up_time_ns = desired_present_time_ns - 33 * U_TIME_1MS_IN_NS - encode_display_delay;
+	uint64_t wake_up_time_ns = desired_present_time_ns - 40 * U_TIME_1MS_IN_NS - encode_display_delay;
 	uint64_t present_slop_ns = encode_display_delay;//U_TIME_HALF_MS_IN_NS;
 	uint64_t predicted_display_time_ns = desired_present_time_ns + encode_display_delay;
 

@@ -306,8 +306,6 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		u_index_fifo_push(&sc->fifo, i);
 	}
 
-	// HACK
-#if 0
 	/*
 	 *
 	 * Transition image.
@@ -361,7 +359,6 @@ do_post_create_vulkan_setup(struct vk_bundle *vk,
 		//! @todo Propegate error
 		VK_ERROR(vk, "Failed to barrier images");
 	}
-#endif
 
 	for (uint32_t i = 0; i < image_count; i++) {
 
