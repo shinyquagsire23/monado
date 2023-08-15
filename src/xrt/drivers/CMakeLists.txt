@@ -336,6 +336,7 @@ if(XRT_BUILD_DRIVER_QUEST_LINK)
 	capnp_generate_cpp(quest_link_proto_srcs quest_link_proto_headers 
 		quest_link/protos/Audio.capnp
 		quest_link/protos/CameraStream.capnp
+		quest_link/protos/Haptic.capnp
 		quest_link/protos/HostInfo.capnp
 		quest_link/protos/Logging.capnp
 		quest_link/protos/Mesh.capnp

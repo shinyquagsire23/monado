@@ -20,7 +20,7 @@ struct PayloadSlice {
   poseY @8 :Float32;
   poseZ @9 :Float32;
 
-  timestamp05 @10 :UInt64;
+  poseTimestamp @10 :UInt64;
   sliceNum @11 :UInt8;
   unk6p1 @12 :UInt8;
   unk6p2 @13 :UInt8;

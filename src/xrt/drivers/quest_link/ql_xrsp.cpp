@@ -1434,7 +1434,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     uint64_t tx_start_ts = host->tx_started_ns[QL_IDX_SLICE(0, index)];
 
     // all timestamps are all the same between different slices, only pipeline_pred_delta_ma changes
-    msg.setTimestamp05(xrsp_ts_ns_to_target(host, sending_pose_ns));//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
+    msg.setPoseTimestamp(xrsp_ts_ns_to_target(host, sending_pose_ns));//xrsp_target_ts_ns(host)+41540173 // Deadline //18278312488115 // xrsp_ts_ns(host)
     msg.setSliceNum(slice_idx);
     msg.setUnk6p1(bits);
     msg.setUnk6p2(0);
@@ -1453,7 +1453,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
   poseX = 0.010952883,
   poseY = 0.17921059,
   poseZ = 0.18543391,
-  timestamp05 = 18789777081583,
+  poseTimestamp = 18789777081583,
   sliceNum = 4,
   unk6p1 = 2,
   unk6p2 = 0,
@@ -1472,11 +1472,11 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     unkA = 2916100 ... 5472800,    2.92ms ... 5.47ms
   
-  timestamp09 = 18789735622294, +0          0.00ms   +0          0.00ms       transmission start?? more likely, encoding start?
-  timestamp0D = 18789744739291, +9116997    9.11ms   +9116997    9.11ms       estimated GPU end
-  timestamp0C = 18789759255729, +14516438  14.51ms   +23633435   23.63ms      deadline?
-  timestamp0B = 18789764254886, +4999157    4.99ms   +28632592   28.62ms      unknown B
-  timestamp05 = 18789777081583, +12826697  12.82ms   +41459289   41.45ms      predicted pose
+  timestamp09   = 18789735622294, +0          0.00ms   +0          0.00ms       transmission start?? more likely, encoding start?
+  timestamp0D   = 18789744739291, +9116997    9.11ms   +9116997    9.11ms       estimated GPU end
+  timestamp0C   = 18789759255729, +14516438  14.51ms   +23633435   23.63ms      deadline?
+  timestamp0B   = 18789764254886, +4999157    4.99ms   +28632592   28.62ms      unknown B
+  poseTimestamp = 18789777081583, +12826697  12.82ms   +41459289   41.45ms      predicted pose
   
   ( unk0 = 0,
       timestampUs = 18789759065,
