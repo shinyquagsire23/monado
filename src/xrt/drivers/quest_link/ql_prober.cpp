@@ -23,13 +23,8 @@
 
 #define XRSP_IF_CLASS    (0xFF)
 #define XRSP_IF_SUBCLASS (0x89)
+#define XRSP_IF_SUBCLASS_2 (0x8A)
 #define XRSP_IF_PROTOCOL (0x01)
-
-static const char QUEST_LINK_PRODUCT_STRING[] = "HTC Vive";
-static const char QUEST_LINK_PRO_PRODUCT_STRING[] = "VIVE Pro";
-static const char VALVE_INDEX_PRODUCT_STRING[] = "Index HMD";
-static const char VALVE_INDEX_MANUFACTURER_STRING[] = "Valve";
-static const char QUEST_LINK_MANUFACTURER_STRING[] = "HTC";
 
 DEBUG_GET_ONCE_LOG_OPTION(ql_log, "QUEST_LINK_LOG", U_LOGGING_WARN)
 
@@ -81,6 +76,10 @@ init_ql_usb(struct xrt_prober *xp,
 	}*/
 
 	int if_num = xrt_prober_find_interface(xp, dev, XRSP_IF_CLASS, XRSP_IF_SUBCLASS, XRSP_IF_PROTOCOL);
+	if (if_num < 0) {
+		if_num = xrt_prober_find_interface(xp, dev, XRSP_IF_CLASS, XRSP_IF_SUBCLASS_2, XRSP_IF_PROTOCOL);
+	}
+
 	if (if_num < 0) {
 		U_LOG_E("Could not find XRSP interface on Quest Link device.");
 		return 0;

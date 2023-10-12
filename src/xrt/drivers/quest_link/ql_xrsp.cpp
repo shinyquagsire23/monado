@@ -52,6 +52,7 @@ static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t
 static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx);
 static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos);
+static void xrsp_init_session_bye(struct ql_xrsp_host *host);
 int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset);
 static void xrsp_send_mesh(struct ql_xrsp_host *host);
 
@@ -321,9 +322,12 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     libusb_clear_halt(host->dev, host->ep_in);
     libusb_clear_halt(host->dev, host->ep_out);
 
-    host->usb_valid = true;
+    host->usb_valid = true;    
 
     os_mutex_unlock(&host->usb_mutex);
+
+    //xrsp_init_session_bye(host);
+
     return 0;
 
 cleanup:
@@ -698,6 +702,21 @@ self.send_to_topic(TOPIC_HOSTINFO_ADV, request_echo_ping)
     host->echo_idx += 1;
 }
 //uint8_t* ql_xrsp_craft_capnp(uint8_t message_type, uint16_t result, uint32_t unk_4, const uint8_t* payload, size_t payload_size, int32_t* out_len);
+
+static void xrsp_init_session_bye(struct ql_xrsp_host *host)
+{
+    //xrsp_read_usb(host);
+    const uint8_t response_bye_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    int32_t response_bye_len = 0;
+    uint8_t* response_bye = ql_xrsp_craft_capnp(BUILTIN_BYE, 0x3E6, 1, response_bye_payload, sizeof(response_bye_payload), &response_bye_len);
+
+    printf("BYE send\n");
+
+    xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_bye, response_bye_len);
+    free(response_bye);
+
+    //xrsp_read_usb(host); // old
+}
 
 static void xrsp_init_session(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
