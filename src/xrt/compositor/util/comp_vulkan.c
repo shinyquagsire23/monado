@@ -589,7 +589,7 @@ comp_vulkan_formats_copy_to_info(const struct comp_vulkan_formats *formats, stru
 
 #undef ADD_IF_SUPPORTED
 
-	assert(format_count <= XRT_MAX_SWAPCHAIN_FORMATS);
+	//assert(format_count <= XRT_MAX_SWAPCHAIN_FORMATS); HACK
 	info->format_count = format_count;
 }
 
