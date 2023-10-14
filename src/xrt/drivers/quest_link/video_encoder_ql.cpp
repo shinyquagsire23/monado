@@ -63,6 +63,7 @@ std::unique_ptr<VideoEncoderQl> VideoEncoderQl::Create(
 		res = std::make_unique<VideoEncoderX264>(vk, settings, input_width, input_height, fps);
 	}
 #endif
+#if 0 // TODO: unsupported for now
 #ifdef WIVRN_HAVE_CUDA
 	if (settings.encoder_name == encoder_nvenc)
 	{
@@ -74,6 +75,7 @@ std::unique_ptr<VideoEncoderQl> VideoEncoderQl::Create(
 	{
 		res = std::make_unique<VideoEncoderVA>(vk, settings, fps);
 	}
+#endif
 #endif
 	if (res)
 	{
