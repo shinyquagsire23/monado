@@ -199,7 +199,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     host->dev = libusb_open_device_with_vid_pid(host->ctx, host->vid, host->pid);
     if (host->dev == NULL) {
         QUEST_LINK_ERROR("Failed initial libusb_open_device_with_vid_pid");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
         goto cleanup;
     }
 
@@ -209,12 +209,12 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         ret = libusb_reset_device(host->dev);
         if (ret == LIBUSB_ERROR_NOT_FOUND) {
             // We're reconnecting anyhow.
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             QUEST_LINK_INFO("Device needs reconnect...");
         }
         else if (ret != LIBUSB_SUCCESS) {
             QUEST_LINK_ERROR("Failed libusb_reset_device");
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             goto cleanup;
         }
         else {
@@ -236,7 +236,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
 
         if (host->dev == NULL) {
             QUEST_LINK_ERROR("Failed post-reset libusb_open_device_with_vid_pid");
-            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+            QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
             goto cleanup;
         }
     }
@@ -246,7 +246,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     ret = libusb_claim_interface(host->dev, host->if_num);
     if (ret < 0) {
         QUEST_LINK_ERROR("Failed libusb_claim_interface");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
 
         // Reset, there's probably something weird.
         libusb_reset_device(host->dev);
@@ -259,7 +259,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
     ret = libusb_get_active_config_descriptor(usb_dev, &config);
     if (ret < 0 || !config) {
         QUEST_LINK_ERROR("Failed libusb_get_active_config_descriptor");
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(ret));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)ret));
         goto cleanup;
     }
 
@@ -469,7 +469,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
     int r = libusb_bulk_transfer(host->dev, host->ep_out, (uint8_t*)data, data_size, &sent_len, 1000);
     if (r != 0 || !sent_len) {
         QUEST_LINK_ERROR("Failed to send %x bytes (sent %x)", data_size, sent_len);
-        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+        QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
 
         if (r == LIBUSB_ERROR_NO_DEVICE || r == LIBUSB_ERROR_TIMEOUT) {
            host->usb_valid = false;
@@ -1218,7 +1218,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             //printf("asdf %d %x\n", r, read_len);
 
             if (r != LIBUSB_ERROR_TIMEOUT) {
-                QUEST_LINK_ERROR("libusb error: %s", libusb_strerror(r));
+                QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
             }
 
             if (r == LIBUSB_ERROR_NO_DEVICE) {
