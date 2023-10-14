@@ -154,7 +154,7 @@ static double foveate(double a, double b, double scale, double c, double x)
 	// df(x)/dx = scale for x = c
 }
 
-static std::tuple<float, float> solve_foveation(float scale, float c)
+static void solve_foveation(float scale, float c, double* out1, double* out2)
 {
 	// Compute a and b for the foveation function such that:
 	//   foveate(a, b, scale, c, -1) = -1   (eq. 1)
@@ -241,7 +241,8 @@ static std::tuple<float, float> solve_foveation(float scale, float c)
 
 	double b = 1 - foveate(a, 0, scale, c, 1);
 
-	return {a, b};
+	if (out1) *out1 = a;
+	if (out2) *out2 = b;
 }
 
 bool ql_hmd_compute_distortion(xrt_device * xdev, uint32_t view_index, float u, float v, xrt_uv_triplet * result)
@@ -376,7 +377,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 			float cu = (r + l) / (l - r);
 			hmd->foveation_parameters[i].x.center = cu;
 
-			std::tie(hmd->foveation_parameters[i].x.a, hmd->foveation_parameters[i].x.b) = solve_foveation(scale[0], cu);
+			solve_foveation(scale[0], cu, &hmd->foveation_parameters[i].x.a, &hmd->foveation_parameters[i].x.b);
 		}
 
 		if (scale[1] < 1)
@@ -384,7 +385,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 			float cv = (t + b) / (t - b);
 			hmd->foveation_parameters[i].y.center = cv;
 
-			std::tie(hmd->foveation_parameters[i].y.a, hmd->foveation_parameters[i].y.b) = solve_foveation(scale[1], cv);
+			solve_foveation(scale[1], cv, &hmd->foveation_parameters[i].y.a, &hmd->foveation_parameters[i].y.b);
 		}
 	}
 
