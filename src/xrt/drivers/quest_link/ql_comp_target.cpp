@@ -259,7 +259,6 @@ static VkResult create_images(struct ql_comp_target * cn, VkImageUsageFlags flag
 
 	assert(cn->image_count > 0);
 	COMP_DEBUG(cn->c, "Creating %d images.", cn->image_count);
-	printf("asdf\n");
 
 	destroy_images(cn);
 

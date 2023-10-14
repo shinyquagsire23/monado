@@ -19,7 +19,11 @@
 
 #include "video_encoder_x264.h"
 
+#include "util/u_debug.h"
+
 #include <stdexcept>
+
+DEBUG_GET_ONCE_NUM_OPTION(threads_per_slice, "QL_THREADS_PER_SLICE", 1)
 
 static void hex_dump(const uint8_t* b, size_t amt)
 {
@@ -136,6 +140,7 @@ VideoEncoderX264::VideoEncoderX264(
 	param.i_log_level = X264_LOG_WARNING;
 	param.i_fps_num = fps * 1'000'000;
 	param.i_fps_den = 1'000'000;
+	param.i_threads = debug_get_num_option_threads_per_slice();
 	param.b_repeat_headers = 1;
 	param.b_aud = 1;
 	param.b_annexb = 1;
