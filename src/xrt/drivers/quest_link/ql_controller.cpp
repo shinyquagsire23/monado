@@ -45,6 +45,7 @@
 #include "ql_controller.h"
 #include "ql_system.h"
 
+#define DEG_TO_RAD(D) ((D)*M_PI / 180.)
 
 static struct xrt_binding_input_pair simple_inputs_ql[4] = {
     {XRT_INPUT_SIMPLE_SELECT_CLICK, XRT_INPUT_TOUCH_TRIGGER_VALUE},
@@ -203,7 +204,21 @@ ql_get_tracked_pose(struct xrt_device *xdev,
     double prediction_s = time_ns_to_s(prediction_ns);
     os_mutex_unlock(&host->pose_mutex);
 
-    m_predict_relation(&relation, prediction_s, out_relation);
+    struct xrt_relation_chain xrc = {};
+    struct xrt_pose pose_correction = {};
+
+    /* Rotate the grip/aim pose up by 40 degrees around the X axis */
+    struct xrt_vec3 axis = {1.0, 0, 0};
+
+    math_quat_from_angle_vector(DEG_TO_RAD(35), &axis, &pose_correction.orientation);
+
+    m_relation_chain_push_pose(&xrc, &pose_correction);
+
+    /* Apply the fusion rotation */
+    struct xrt_space_relation *rel = m_relation_chain_reserve(&xrc);
+
+    m_predict_relation(&relation, prediction_s, rel);
+    m_relation_chain_resolve(&xrc, out_relation);
 }
 
 static void
