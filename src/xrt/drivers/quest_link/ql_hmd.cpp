@@ -584,10 +584,6 @@ cleanup:
 
 static struct comp_target* hack_comp_target = NULL; // HACK
 
-static const char *instance_extensions[] = {
-    
-};
-
 static bool
 detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
 {
@@ -612,8 +608,8 @@ const struct comp_target_factory comp_target_factory_ql = {
     .identifier = "ql_comp",
     .requires_vulkan_for_create = true,
     .is_deferred = false,
-    .required_instance_extensions = instance_extensions,
-    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .required_instance_extensions = NULL,
+    .required_instance_extension_count = 0,
     .detect = detect,
     .create_target = create_target,
 };
