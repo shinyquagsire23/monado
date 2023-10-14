@@ -782,10 +782,6 @@ comp_window_none_init_swapchain(struct comp_target *ct, uint32_t width, uint32_t
  *
  */
 
-static const char *instance_extensions[] = {
-    
-};
-
 static bool
 detect(const struct comp_target_factory *ctf, struct comp_compositor *c)
 {
@@ -810,8 +806,8 @@ const struct comp_target_factory comp_target_factory_none = {
     .identifier = "none",
     .requires_vulkan_for_create = true,
     .is_deferred = false,
-    .required_instance_extensions = instance_extensions,
-    .required_instance_extension_count = ARRAY_SIZE(instance_extensions),
+    .required_instance_extensions = NULL,
+    .required_instance_extension_count = 0,
     .detect = detect,
     .create_target = create_target,
 };
