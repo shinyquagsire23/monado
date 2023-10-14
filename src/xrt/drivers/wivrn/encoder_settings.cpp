@@ -22,6 +22,8 @@
 #include "vk/vk_helpers.h"
 #include "configuration.h"
 
+#include "util/u_debug.h"
+
 #include <cmath>
 #include <string>
 #include <vulkan/vulkan.h>
@@ -35,7 +37,7 @@
 using namespace xrt::drivers::wivrn;
 
 // TODO: size independent bitrate
-static const uint64_t default_bitrate = 130'000'000; // 11'000'000 one slice
+DEBUG_GET_ONCE_NUM_OPTION(default_bitrate, "QL_OVERRIDE_BITRATE_KBPS", 130000)
 
 static bool is_nvidia(vk_bundle * vk)
 {
@@ -50,7 +52,7 @@ static std::vector<xrt::drivers::wivrn::encoder_settings> get_encoder_default_se
 	settings.width = width;
 	settings.height = height;
 	settings.codec = xrt::drivers::wivrn::h265;
-	settings.bitrate = default_bitrate;
+	settings.bitrate = debug_get_num_option_default_bitrate() * 1000;
 
 	if (is_nvidia(vk))
 	{
@@ -107,7 +109,7 @@ std::vector<encoder_settings> xrt::drivers::wivrn::get_encoder_settings(vk_bundl
 			settings.height = std::ceil(encoder.height.value_or(1) * height);
 			settings.offset_x = std::ceil(encoder.offset_x.value_or(0) * width);
 			settings.offset_y = std::ceil(encoder.offset_y.value_or(0) * height);
-			settings.bitrate = encoder.bitrate.value_or(default_bitrate);
+			settings.bitrate = encoder.bitrate.value_or(debug_get_num_option_default_bitrate() * 1000);
 			settings.codec = encoder.codec.value_or(xrt::drivers::wivrn::h264);
 			settings.group = encoder.group.value_or(next_group);
 			settings.options = encoder.options;
