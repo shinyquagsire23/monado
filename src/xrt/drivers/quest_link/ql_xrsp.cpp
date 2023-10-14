@@ -11,6 +11,7 @@
 #include <libusb.h>
 #include <stdio.h>
 
+#include "util/u_debug.h"
 #include "util/u_trace_marker.h"
 #include "math/m_api.h"
 #include "math/m_vec3.h"
@@ -36,6 +37,11 @@
 #include "protos/Slice.capnp.h"
 #include "protos/RuntimeIPC.capnp.h"
 #include "protos/Mesh.capnp.h"
+
+DEBUG_GET_ONCE_NUM_OPTION(force_fps, "QL_OVERRIDE_FPS", -1)
+DEBUG_GET_ONCE_NUM_OPTION(force_w, "QL_OVERRIDE_FB_W", -1)
+DEBUG_GET_ONCE_NUM_OPTION(force_h, "QL_OVERRIDE_FB_H", -1)
+DEBUG_GET_ONCE_FLOAT_OPTION(force_scale, "QL_OVERRIDE_SCALE", 0.0)
 
 static void *
 ql_xrsp_read_thread(void *ptr);
@@ -1058,7 +1064,15 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
             }
         }
 
-        QUEST_LINK_INFO("HMD FPS is %f, scale is %f", hmd->fps, scale);
+        int fps_override = debug_get_num_option_force_fps();
+        if (fps_override > 0) {
+            hmd->fps = fps_override;
+        }
+
+        float scale_override = debug_get_float_option_force_scale();
+        if (scale_override > 0) {
+            scale = scale_override;
+        }
         
         // Quest 2:
         // 58mm (0.057928182) angle_left -> -52deg
@@ -1078,7 +1092,19 @@ static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinf
 
         hmd->fov_angle_left = lensLeft.getAngleLeft();
 
-        ql_hmd_set_per_eye_resolution(hmd, (int)((float)description.getResolutionWidth() * scale), (int)((float)description.getResolutionHeight() * scale), /*description.getRefreshRateHz()*/ hmd->fps);
+        int w = (int)((float)description.getResolutionWidth() * scale);
+        int h = (int)((float)description.getResolutionHeight() * scale);
+        int w_override = debug_get_num_option_force_w();
+        if (w_override > 0) {
+            w = w_override;
+        }
+        int h_override = debug_get_num_option_force_h();
+        if (h_override > 0) {
+            h = h_override;
+        }
+
+        QUEST_LINK_INFO("HMD FPS is %d, scale is %f, w=%d, h=%d", hmd->fps, scale, w, h);
+        ql_hmd_set_per_eye_resolution(hmd, w, h, /*description.getRefreshRateHz()*/ hmd->fps);
 
         os_mutex_unlock(&host->pose_mutex);
     }
