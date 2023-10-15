@@ -1393,30 +1393,27 @@ static void xrsp_send_mesh(struct ql_xrsp_host *host)
     host->sent_mesh = true;
 }
 
+// TODO: get this to work lol (is it possible for it to work...?)
 static void xrsp_send_buffered_haptic(struct ql_xrsp_host *host, int64_t ts, ovr_haptic_target_t controller_id)
 {
     ::capnp::MallocMessageBuilder message;
     PayloadHaptics::Builder msg = message.initRoot<PayloadHaptics>();
 
-    // 1 = enumerate?
-    // 
-    msg.setDataUnk0(ts); // Timestamp?
-    msg.setInputType(controller_id); // 0x1, 0x2, 0x3? which controller maybe? 0x3 = gamepad? 0x1=left, 0x2=right
-    msg.setHapticType(OVR_HAPTIC_BUFFERED); // usually 0x1 or 0x0, 0=Simple 1=Buffered
-    msg.setDataUnk1p2(0x19); // unk, usually 0
-    msg.setDataUnk1p3(0x19); // unk, usually 0
-    msg.setAmplitude(1.0);
-    msg.setDataUnk3(ts); // Timestamp identical to poseTimestamp in Slice, sometimes 0 if hapticType is 0? // 
-    //msg.setDataUnk3(0); // Timestamp identical to poseTimestamp in Slice, sometimes 0 if hapticType is 0? // 
+    msg.setTimestamp(ts); // TODO: idk what this timestamp is?
+    msg.setInputType(controller_id);
+    msg.setHapticType(OVR_HAPTIC_BUFFERED);
+    msg.setDataUnk1p2(0x1919); // unk, usually 0
+    msg.setDataUnk1p3(0x1919); // unk, usually 0
+    msg.setAmplitude(1.0); // TODO idk if this is set for buffered
+    msg.setPoseTimestamp(ts); // Timestamp identical to poseTimestamp in Slice, sometimes 0 if hapticType is simple?
 
     uint8_t* test_data = (uint8_t*)malloc(0x20);
-    memset(test_data, 0, 0x20);
+    memset(test_data, 0xFF, 0x20);
     for (int i = 0; i < 0x20; i += 1) {
-        //*(float*)&test_data[i] = 1.0;
         test_data[i] = 0xFF;
     }
-    //*(float*)test_data = 1.0;
     
+    // TODO where is this maximum defined? It seems hardcoded in XRSP tho.
     msg.setData(kj::arrayPtr(test_data, 0x19));
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
@@ -1429,13 +1426,13 @@ void xrsp_send_simple_haptic(struct ql_xrsp_host *host, int64_t ts, ovr_haptic_t
     ::capnp::MallocMessageBuilder message;
     PayloadHaptics::Builder msg = message.initRoot<PayloadHaptics>();
 
-    msg.setDataUnk0(ts);
+    msg.setTimestamp(ts);
     msg.setInputType(controller_id);
     msg.setHapticType(OVR_HAPTIC_SIMPLE);
     msg.setDataUnk1p2(0); // unk, usually 0
     msg.setDataUnk1p3(0); // unk, usually 0
     msg.setAmplitude(amplitude);
-    msg.setDataUnk3(0);
+    msg.setPoseTimestamp(0);
     
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
     xrsp_send_to_topic_capnp_segments(host, TOPIC_HAPTIC, 0, out); // host->haptic_idx++
@@ -1445,11 +1442,6 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
                             const uint8_t* video_dat, size_t video_len, int blit_y_pos)
 {
     int64_t sending_pose_ns = host->stream_pose_ns[QL_IDX_SLICE(0, index)];
-
-    if (slice_idx == 0) {
-        //xrsp_send_simple_haptic(host, xrsp_ts_ns_to_target(host, sending_pose_ns), OVR_HAPTIC_RIGHT, 1.0);
-        //xrsp_send_buffered_haptic(host, xrsp_ts_ns_to_target(host, sending_pose_ns), OVR_HAPTIC_RIGHT);
-    }
 
     ::capnp::MallocMessageBuilder message;
     PayloadSlice::Builder msg = message.initRoot<PayloadSlice>();
