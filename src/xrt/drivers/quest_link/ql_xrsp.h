@@ -28,6 +28,8 @@ int64_t xrsp_ts_ns(struct ql_xrsp_host *host);
 void xrsp_send_to_topic_capnp_wrapped(struct ql_xrsp_host *host, uint8_t topic, uint32_t idx, const uint8_t* data, int32_t data_size);
 void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size);
 
+void xrsp_send_simple_haptic(struct ql_xrsp_host *host, int64_t ts, ovr_haptic_target_t controller_id, float amplitude);
+
 #ifdef __cplusplus
 }
 #endif

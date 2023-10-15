@@ -512,7 +512,7 @@ static void * comp_ql_present_thread(void * void_param)
 	std::unique_ptr<encoder_thread_param> param((encoder_thread_param *)void_param);
 	struct ql_comp_target * cn = param->cn;
 	struct vk_bundle * vk = get_vk(cn);
-	U_LOG_I("Starting encoder thread %d", param->thread->index);
+	COMP_DEBUG(cn->c, "Starting encoder thread %d", param->thread->index);
 
 	uint8_t status_bit = 1 << (param->thread->index + 1);
 

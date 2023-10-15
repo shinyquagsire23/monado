@@ -44,6 +44,7 @@
 
 #include "ql_controller.h"
 #include "ql_system.h"
+#include "ql_xrsp.h"
 
 #define DEG_TO_RAD(D) ((D)*M_PI / 180.)
 
@@ -237,7 +238,15 @@ ql_get_view_poses(struct xrt_device *xdev,
 static void
 ql_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xrt_output_value *value)
 {
-    /* TODO: Implement haptic sending */
+    struct ql_controller *ctrl = (struct ql_controller *)(xdev);
+    struct ql_xrsp_host *host = &ctrl->sys->xrsp_host;
+
+    if (ctrl->features & OVR_TOUCH_FEAT_RIGHT) {
+        xrsp_send_simple_haptic(host, xrsp_ts_ns_to_target(host, ctrl->pose_ns), OVR_HAPTIC_RIGHT, value->vibration.amplitude);
+    }
+    else {
+        xrsp_send_simple_haptic(host, xrsp_ts_ns_to_target(host, ctrl->pose_ns), OVR_HAPTIC_LEFT, value->vibration.amplitude);
+    }
 }
 
 static void

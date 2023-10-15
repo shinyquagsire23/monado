@@ -223,6 +223,7 @@ typedef struct ql_xrsp_host
     bool shell_connected;
     bool sent_mesh;
     bool is_inactive;
+    int32_t haptic_idx;
 
     void (*start_encode)(struct ql_xrsp_host* host,  int64_t target_ns, int index, int slice_idx);
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
@@ -411,6 +412,20 @@ enum ovr_touch_cap
     OVR_TOUCH_CAP_20000000  = 0x20000000,
     OVR_TOUCH_CAP_40000000  = 0x40000000,
     OVR_TOUCH_CAP_80000000  = 0x80000000,
+};
+
+enum ovr_haptic_target
+{
+    OVR_HAPTIC_LEFT = 1,
+    OVR_HAPTIC_RIGHT = 2,
+    OVR_HAPTIC_GAMEPAD = 3,
+};
+typedef int ovr_haptic_target_t;
+
+enum ovr_haptic_type
+{
+    OVR_HAPTIC_SIMPLE = 0,
+    OVR_HAPTIC_BUFFERED = 1,
 };
 
 // Quest Pro Left: 00036100, 0035f00?

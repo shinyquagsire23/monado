@@ -2,5 +2,5 @@
 
 struct PayloadAudio {
     dataUnk0 @0 :UInt64;
-    data @1 :List(UInt8);
+    data @1 :Data;
 }
