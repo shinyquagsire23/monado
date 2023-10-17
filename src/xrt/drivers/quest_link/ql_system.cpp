@@ -3,25 +3,20 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
  *
  */
-
 /*!
  * @file
  * @brief  Meta Quest Link headset tracking system
  *
- * The Quest Link system provides the HID/USB polling thread
- * and dispatches incoming packets to the HMD and controller
- * implementations.
+ * The Quest Link system instantiates the HMD, controller,
+ * and hand devices, and manages refcounts
  *
- * Ported from OpenHMD
- *
- * @author Jan Schmidt <jan@centricular.com>
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
-
-/* Meta Quest Link Driver - HID/USB Driver Implementation */
 
 #include <stdlib.h>
 #include <string.h>
@@ -63,7 +58,7 @@ ql_system_create(struct xrt_prober *xp,
                      	 int if_num)
 {
 	int ret;
-	 struct ql_hmd *hmd;
+	struct ql_hmd *hmd;
 	struct ql_controller *ctrl_left, *ctrl_right;
 
 	DRV_TRACE_MARKER();
@@ -81,31 +76,29 @@ ql_system_create(struct xrt_prober *xp,
 		goto cleanup;
 	}
 
-	/* Create the HMD now. Controllers are created in the
-     * ql_system_get_controller() call later */
-    hmd = ql_hmd_create(sys, hmd_serial_no, &sys->hmd_config);
+	// Create the HMD
+    hmd = ql_hmd_create(sys, hmd_serial_no);
     if (hmd == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link device.");
         goto cleanup;
     }
 
+    // Assign HMD here if controller/hands need it
     sys->hmd = hmd;
 
-    /* Create the HMD now. Controllers are created in the
-     * ql_system_get_controller() call later */
+    // Create the two controllers
     ctrl_left = ql_controller_create(sys, XRT_DEVICE_TYPE_LEFT_HAND_CONTROLLER);
     if (ctrl_left == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
         goto cleanup;
     }
+    sys->controllers[0] = ctrl_left;
 
     ctrl_right = ql_controller_create(sys, XRT_DEVICE_TYPE_RIGHT_HAND_CONTROLLER);
     if (ctrl_right == NULL) {
         QUEST_LINK_ERROR("Failed to create Meta Quest Link controller.");
         goto cleanup;
     }
-
-    sys->controllers[0] = ctrl_left;
     sys->controllers[1] = ctrl_right;
 
     sys->hands = ql_hands_create(sys);
@@ -126,8 +119,6 @@ ql_system_create(struct xrt_prober *xp,
 		os_nanosleep(U_TIME_1MS_IN_NS * 10);
 	}
 
-	/* Turn on the headset and display connection */
-
 	QUEST_LINK_DEBUG("Meta Quest Link driver ready");
 
 	return sys;
@@ -136,8 +127,15 @@ cleanup:
 	if (sys->hmd != NULL) {
 		xrt_device_destroy((struct xrt_device **)&sys->hmd);
 	}
-	// TODO controllers
-	// TODO hands
+	if (sys->controllers[0] != NULL) {
+		xrt_device_destroy((struct xrt_device **)&sys->controllers[0]);
+	}
+	if (sys->controllers[1] != NULL) {
+		xrt_device_destroy((struct xrt_device **)&sys->controllers[1]);
+	}
+	if (sys->hands != NULL) {
+		xrt_device_destroy((struct xrt_device **)&sys->hands);
+	}
 	ql_system_reference(&sys, NULL);
 	return NULL;
 }
@@ -145,20 +143,9 @@ cleanup:
 static void
 ql_system_free(struct ql_system *sys)
 {
-	/* Stop the packet reading thread */
-	os_thread_helper_destroy(&sys->oth);
-
-	/* Stop all the frame processing (has to happen before the cameras
-	 * and tracker are destroyed */
-	xrt_frame_context_destroy_nodes(&sys->xfctx);
-
-	/* Close USB */
+	// Close USB
 	ql_xrsp_host_destroy(&sys->xrsp_host);
-
-	/* Free the camera */
 	
-	/* Free tracker */
-
 	os_mutex_destroy(&sys->dev_mutex);
 
 	free(sys);
@@ -199,48 +186,4 @@ ql_system_remove_hmd(struct ql_system *sys)
 	os_mutex_lock(&sys->dev_mutex);
 	sys->hmd = NULL;
 	os_mutex_unlock(&sys->dev_mutex);
-}
-
-static bool handle_packets(struct ql_system *sys)
-{
-
-	return true;
-}
-
-static void *
-ql_run_thread(void *ptr)
-{
-	DRV_TRACE_MARKER();
-
-	struct ql_system *sys = (struct ql_system *)ptr;
-
-	os_thread_helper_lock(&sys->oth);
-	while (os_thread_helper_is_running_locked(&sys->oth)) {
-		os_thread_helper_unlock(&sys->oth);
-
-		printf(".\n");
-		bool success = handle_packets(sys);
-
-		if (success) {
-			//radio
-			os_mutex_lock(&sys->dev_mutex);
-			//cam
-			os_mutex_unlock(&sys->dev_mutex);
-		}
-
-		os_thread_helper_lock(&sys->oth);
-
-		if (!success) {
-			break;
-		}
-
-		if (os_thread_helper_is_running_locked(&sys->oth)) {
-			os_nanosleep(U_TIME_1MS_IN_NS / 2);
-		}
-	}
-	os_thread_helper_unlock(&sys->oth);
-
-	QUEST_LINK_DEBUG("Exiting packet reading thread");
-
-	return NULL;
 }

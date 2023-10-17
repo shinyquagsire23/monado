@@ -145,7 +145,7 @@ int ql_xrsp_host_create(struct ql_xrsp_host* host, uint16_t vid, uint16_t pid, i
         goto cleanup;
     }
 
-    //printf("Endpoints %x %x\n", host->ep_out, host->ep_in);
+    //QUEST_LINK_INFO("Endpoints %x %x\n", host->ep_out, host->ep_in);
 
     host->pairing_state = PAIRINGSTATE_WAIT_FIRST;
     host->start_ns = os_monotonic_get_ns();
@@ -210,9 +210,8 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
         goto cleanup;
     }
 
-#if 1
     if (do_reset) {
-        printf("Reset?\n");
+        QUEST_LINK_INFO("Reset?\n");
         ret = libusb_reset_device(host->dev);
         if (ret == LIBUSB_ERROR_NOT_FOUND) {
             // We're reconnecting anyhow.
@@ -230,7 +229,7 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
 
         
 
-        printf("Reset done?\n");
+        QUEST_LINK_INFO("Reset done?\n");
 
         for (int i = 0; i < 10; i++)
         {
@@ -247,8 +246,6 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
             goto cleanup;
         }
     }
-    
-#endif
 
     ret = libusb_claim_interface(host->dev, host->if_num);
     if (ret < 0) {
@@ -333,8 +330,6 @@ int ql_xrsp_usb_init(struct ql_xrsp_host* host, bool do_reset)
 
     os_mutex_unlock(&host->usb_mutex);
 
-    //xrsp_init_session_bye(host);
-
     return 0;
 
 cleanup:
@@ -371,7 +366,7 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int 
     os_mutex_lock(&host->stream_mutex[stream_write_idx]);
 
     if (host->csd_stream_len[stream_write_idx] || host->idr_stream_len[stream_write_idx]) {
-        //printf("Write idx %x slice %x\n", index, slice_idx);
+        //QUEST_LINK_INFO("Write idx %x slice %x\n", index, slice_idx);
         host->needs_flush[stream_write_idx] = true;
         wait = true;
         host->stream_started_ns[stream_write_idx] = target_ns;
@@ -384,20 +379,10 @@ static void xrsp_flush_stream(struct ql_xrsp_host *host, int64_t target_ns, int 
 
         static int64_t last_ns = 0;
         int64_t delta = host->stream_started_ns[stream_write_idx] - last_ns;
-        //printf("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
-
-        /*if (delta <= 10000) {
-            host->csd_stream_len[stream_write_idx] = 0;
-            host->idr_stream_len[stream_write_idx] = 0;
-        }*/
+        //QUEST_LINK_INFO("%zx -> %ffps\n", delta, 1000000000.0 / (double)delta);
 
         last_ns = target_ns;
-
-        //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, target_ns, &out_head_relation);
-        //host->stream_poses[stream_write_idx] = out_head_relation.pose;
         os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
-
-
     }
     else {
         os_mutex_unlock(&host->stream_mutex[stream_write_idx]);
@@ -427,7 +412,7 @@ static void xrsp_start_encode(struct ql_xrsp_host *host, int64_t target_ns, int 
 static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t data_len, int index, int slice_idx)
 {
     int write_index = QL_IDX_SLICE(slice_idx, index);
-    //printf("CSD\n");
+    //QUEST_LINK_INFO("CSD\n");
     //if (!host->ready_to_send_frames) return;
     while (host->needs_flush[write_index]) {
         os_nanosleep(U_TIME_1MS_IN_NS / 10);
@@ -435,7 +420,7 @@ static void xrsp_send_csd(struct ql_xrsp_host *host, const uint8_t* data, size_t
     os_mutex_lock(&host->stream_mutex[write_index]);
     //bool success = xrsp_read_usb(host); 
     
-    //printf("CSD: %x into %x\n", data_len, host->csd_stream_len[write_index]);
+    //QUEST_LINK_INFO("CSD: %x into %x\n", data_len, host->csd_stream_len[write_index]);
     //hex_dump(data, data_len);
 
     if (host->csd_stream_len[write_index] + data_len < 0x1000000) {
@@ -455,7 +440,7 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
     }
     os_mutex_lock(&host->stream_mutex[write_index]);
 
-    //printf("IDR: %x into %x for slice %x, index %x\n", data_len, host->idr_stream_len[write_index], slice_idx, index);
+    //QUEST_LINK_INFO("IDR: %x into %x for slice %x, index %x\n", data_len, host->idr_stream_len[write_index], slice_idx, index);
 
     if (host->idr_stream_len[write_index] + data_len < 0x1000000) {
         memcpy(host->idr_stream[write_index] + host->idr_stream_len[write_index], data, data_len);
@@ -467,7 +452,7 @@ static void xrsp_send_idr(struct ql_xrsp_host *host, const uint8_t* data, size_t
 
 static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_t data_size)
 {
-    //printf("Send to usb:\n");
+    //QUEST_LINK_INFO("Send to usb:\n");
     //hex_dump(data, data_size);
 
     if (!host->usb_valid) return;
@@ -484,7 +469,7 @@ static void xrsp_send_usb(struct ql_xrsp_host *host, const uint8_t* data, int32_
         }
     }
     else {
-        //printf("Sent %x bytes\n", sent_len);
+        //QUEST_LINK_INFO("Sent %x bytes\n", sent_len);
     }
 }
 
@@ -521,7 +506,7 @@ void xrsp_send_to_topic_capnp_segments(struct ql_xrsp_host *host, uint8_t topic,
 
 void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size)
 {
-    //printf("Send to topic %s\n", xrsp_topic_str(topic));
+    //QUEST_LINK_INFO("Send to topic %s\n", xrsp_topic_str(topic));
     //hex_dump(data, data_size);
 
     os_mutex_lock(&host->usb_mutex);
@@ -548,7 +533,7 @@ void xrsp_send_to_topic(struct ql_xrsp_host *host, uint8_t topic, const uint8_t*
 
 static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, const uint8_t* data, int32_t data_size)
 {
-    //printf("Send to topic raw %s\n", xrsp_topic_str(topic));
+    //QUEST_LINK_INFO("Send to topic raw %s\n", xrsp_topic_str(topic));
     //hex_dump(data, data_size);
 
     if (!host) return;
@@ -560,7 +545,7 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
         align_up_bytes = 0;
     }
 
-    //printf("align up %x, %x, %x\n", align_up_bytes, data_size, real_len);
+    //QUEST_LINK_INFO("align up %x, %x, %x\n", align_up_bytes, data_size, real_len);
 
     // TODO place this in a fixed buffer?
     uint8_t* msg = (uint8_t*)malloc(data_size + align_up_bytes + sizeof(xrsp_topic_header) + 0x400);
@@ -603,7 +588,7 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
 
     int32_t to_fill = 0x400 - ((msg_size + 0x400) & 0x3FF) - 8;
     int32_t final_size = (msg_size + 8 + to_fill);
-    //printf("final_size=%x, to_fill=%x, msg_size=%x\n", final_size, to_fill, msg_size);
+    //QUEST_LINK_INFO("final_size=%x, to_fill=%x, msg_size=%x\n", final_size, to_fill, msg_size);
     if (to_fill < 0x3f8 && to_fill >= 0) { // && final_size <= 0x10000
         xrsp_topic_header* fill_header = (xrsp_topic_header*)msg_end;
         fill_header->version_maybe = 0;
@@ -617,10 +602,6 @@ static void xrsp_send_to_topic_raw(struct ql_xrsp_host *host, uint8_t topic, con
         fill_header->sequence_num = host->increment;
         fill_header->pad = 0;
         msg_size += to_fill + sizeof(xrsp_topic_header);
-    }
-
-    if (topic == TOPIC_MESH) {
-        //hex_dump(msg, msg_size);
     }
 
     xrsp_send_usb(host, msg, msg_size);
@@ -645,10 +626,12 @@ static void xrsp_reset_echo(struct ql_xrsp_host *host)
     host->add_test = 0;
     host->sent_mesh = false;
     host->is_inactive = false;
-    host->haptic_idx = 0;
 
-    ql_xrsp_segpkt_init(&host->pose_ctx, host, 1, ql_xrsp_handle_pose);
-    ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, host, ql_xrsp_handle_ipc);
+    ql_xrsp_segpkt_destroy(&host->pose_ctx);
+    ql_xrsp_ipc_segpkt_destroy(&host->ipc_ctx);
+
+    ql_xrsp_segpkt_init(&host->pose_ctx, 1, ql_xrsp_handle_pose);
+    ql_xrsp_ipc_segpkt_init(&host->ipc_ctx, ql_xrsp_handle_ipc);
 
     if (!host->sys) return;
 
@@ -693,13 +676,7 @@ static void xrsp_send_ping(struct ql_xrsp_host *host)
 
     host->echo_req_sent_ns = xrsp_ts_ns(host);
 
-/*
-request_echo_ping = HostInfoPkt.craft_echo(self, result=ECHO_PING, echo_id=self.echo_idx, org=0, recv=0, xmt=self., offset=self.).to_bytes()
-#hex_dump(request_echo_ping)
-self.send_to_topic(TOPIC_HOSTINFO_ADV, request_echo_ping)
-*/
-
-    //printf("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
+    //QUEST_LINK_INFO("Ping sent: xmt=%zx offs=%zx\n", host->echo_req_sent_ns, host->ns_offset);
 
     int32_t request_echo_ping_len = 0;
     uint8_t* request_echo_ping = ql_xrsp_craft_echo(ECHO_PING, host->echo_idx, 0, 0, host->echo_req_sent_ns, host->ns_offset, &request_echo_ping_len);
@@ -709,23 +686,21 @@ self.send_to_topic(TOPIC_HOSTINFO_ADV, request_echo_ping)
 
     host->echo_idx += 1;
 }
-//uint8_t* ql_xrsp_craft_capnp(uint8_t message_type, uint16_t result, uint32_t unk_4, const uint8_t* payload, size_t payload_size, int32_t* out_len);
 
+// TODO: capnproto struct for these?
 static void xrsp_init_session_bye(struct ql_xrsp_host *host)
 {
-    //xrsp_read_usb(host);
     const uint8_t response_bye_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     int32_t response_bye_len = 0;
     uint8_t* response_bye = ql_xrsp_craft_capnp(BUILTIN_BYE, 0x3E6, 1, response_bye_payload, sizeof(response_bye_payload), &response_bye_len);
 
-    printf("BYE send\n");
+    QUEST_LINK_INFO("BYE send\n");
 
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_bye, response_bye_len);
     free(response_bye);
-
-    //xrsp_read_usb(host); // old
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_init_session(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     //xrsp_read_usb(host);
@@ -733,21 +708,20 @@ static void xrsp_init_session(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo
     int32_t response_ok_len = 0;
     uint8_t* response_ok = ql_xrsp_craft_capnp(BUILTIN_OK, 0x2C8, 1, response_ok_payload, sizeof(response_ok_payload), &response_ok_len);
 
-    printf("OK send\n");
+    QUEST_LINK_INFO("OK send\n");
 
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_ok, response_ok_len);
     free(response_ok);
-
-    //xrsp_read_usb(host); // old
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_send_codegen_1(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t response_codegen_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     int32_t response_codegen_len = 0;
     uint8_t* response_codegen = ql_xrsp_craft_capnp(BUILTIN_CODE_GENERATION, 0xC8, 1, response_codegen_payload, sizeof(response_codegen_payload), &response_codegen_len);
 
-    printf("Codegen send\n");
+    QUEST_LINK_INFO("Codegen send\n");
 
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_codegen, response_codegen_len);
     free(response_codegen);
@@ -755,13 +729,14 @@ static void xrsp_send_codegen_1(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     //xrsp_read_usb(host); // old
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_send_pairing_1(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t response_pairing_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
     int32_t response_pairing_len = 0;
     uint8_t* response_pairing = ql_xrsp_craft_capnp(BUILTIN_PAIRING, 0xC8, 1, response_pairing_payload, sizeof(response_pairing_payload), &response_pairing_len);
 
-    printf("Pairing send\n");
+    QUEST_LINK_INFO("Pairing send\n");
 
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_pairing, response_pairing_len);
     free(response_pairing);
@@ -769,6 +744,7 @@ static void xrsp_send_pairing_1(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     //xrsp_read_usb(host); // old
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_trigger_bye(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t request_video_idk[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -776,19 +752,21 @@ static void xrsp_trigger_bye(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_VIDEO, 0, request_video_idk, sizeof(request_video_idk));
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_finish_pairing_1(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t request_video_idk[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-    printf("Echo send\n");
+    QUEST_LINK_INFO("Echo send\n");
     xrsp_send_ping(host);
 
-    printf("Video idk cmd send\n");
+    QUEST_LINK_INFO("Video idk cmd send\n");
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_VIDEO, 0, request_video_idk, sizeof(request_video_idk));
 
-    printf("Waiting for user to accept...\n");
+    QUEST_LINK_INFO("Waiting for user to accept...\n");
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_init_session_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     xrsp_reset_echo(host);
@@ -799,6 +777,7 @@ static void xrsp_init_session_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     uint8_t fps = (uint8_t)hmd->fps;
     uint8_t session_type = 0x03;
     uint8_t error_code = 0x01;
+
     // 0x0 = AVC/H264, 0x1 = HEVC/H265 TODO TODO get this from the video encoder!
 #ifdef XRT_HAVE_VT
     uint8_t encoding_type = 0x1;
@@ -809,39 +788,41 @@ static void xrsp_init_session_2(struct ql_xrsp_host *host, struct ql_xrsp_hostin
     int32_t response_ok_2_len = 0;
     uint8_t* response_ok_2 = ql_xrsp_craft_capnp(BUILTIN_OK, 0x2C8, 1, response_ok_2_payload, sizeof(response_ok_2_payload), &response_ok_2_len);
 
-    printf("Done?\n");
+    QUEST_LINK_INFO("Done?\n");
 
-    printf("OK send #2\n");
+    QUEST_LINK_INFO("OK send #2\n");
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_ok_2, response_ok_2_len);
     free(response_ok_2);
 
-    printf("OK read #2\n");
+    QUEST_LINK_INFO("OK read #2\n");
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_send_codegen_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t response_codegen_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     int32_t response_codegen_len = 0;
     uint8_t* response_codegen = ql_xrsp_craft_capnp(BUILTIN_CODE_GENERATION, 0xC8, 1, response_codegen_payload, sizeof(response_codegen_payload), &response_codegen_len);
 
-    printf("Codegen send #2\n");
+    QUEST_LINK_INFO("Codegen send #2\n");
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_codegen, response_codegen_len);
     free(response_codegen);
 
-    printf("Codegen read #2\n");
+    QUEST_LINK_INFO("Codegen read #2\n");
 }
 
+// TODO: capnproto struct for these?
 static void xrsp_send_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     const uint8_t response_pairing_payload[] = {0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     int32_t response_pairing_len = 0;
     uint8_t* response_pairing = ql_xrsp_craft_capnp(BUILTIN_PAIRING, 0xC8, 1, response_pairing_payload, sizeof(response_pairing_payload), &response_pairing_len);
 
-    printf("Pairing send #2\n");
+    QUEST_LINK_INFO("Pairing send #2\n");
     xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, response_pairing, response_pairing_len);
     free(response_pairing);
 
-    printf("Pairing read #2\n");
+    QUEST_LINK_INFO("Pairing read #2\n");
 }
 
 typedef struct cmd_pkt_idk
@@ -878,7 +859,8 @@ typedef struct body_pkt_idk
 static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     struct audio_pkt_idk send_audiocontrol_idk = {0, 2, 1, 1, 0, 0, 0};
-        
+    
+    // TODO: are those hex values just timestamps
     struct cmd_pkt_idk send_cmd_chemx_toggle = {0x0005EC94E91B9D4F, COMMAND_TOGGLE_CHEMX, 0, 0, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_asw_toggle = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 0, 0, 0, 0};
     struct cmd_pkt_idk send_cmd_asw_disable = {0x0005EC94E91B9D83, COMMAND_TOGGLE_ASW, 0, 1, 0, 0, 0};
@@ -891,22 +873,15 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     struct body_pkt_idk send_idk_body = {0,0};
 
 
-    printf("Echo send\n");
+    QUEST_LINK_INFO("Echo send\n");
     xrsp_send_ping(host);
 
     //xrsp_send_mesh(host);
 
-    printf("Audio Control cmd send\n");
+    QUEST_LINK_INFO("Audio Control cmd send\n");
     xrsp_send_to_topic_capnp_wrapped(host, TOPIC_AUDIO_CONTROL, 0, (uint8_t*)&send_audiocontrol_idk, sizeof(send_audiocontrol_idk));
 
-    //print ("1A read")
-    //self.old_read_xrsp()
-
-    //print ("1 send")
-    //response_echo_pong = HostInfoPkt.craft_echo(self, result=ECHO_PONG, echo_id=1, org=0x000011148017ea57, recv=0x00000074c12277bc, xmt=0x00000074c122daf4, offset=0).to_bytes()
-    //self.send_to_topic(TOPIC_HOSTINFO_ADV, response_echo_pong)
-
-    //print ("2 sends")
+    
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_chemx_toggle, sizeof(send_cmd_chemx_toggle)); // link sharpening
     xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_toggle, sizeof(send_cmd_asw_toggle));
     //xrsp_send_to_topic(host, TOPIC_COMMAND, (uint8_t*)&send_cmd_asw_disable, sizeof(send_cmd_asw_disable));
@@ -932,8 +907,7 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
     xrsp_ripc_ensure_service_started(host, host->client_id, "com.oculus.systemdriver", "com.oculus.vrruntimeservice.VrRuntimeService");
     xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_1, "com.oculus.systemdriver", "com.oculus.vrruntimeservice", "RuntimeServiceServer");
 
-    // Disable for now, causes lag.
-#if 1
+
     xrsp_ripc_ensure_service_started(host, host->client_id+1, "com.oculus.bodyapiservice", "com.oculus.bodyapiservice.BodyApiService");
     xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_2, "com.oculus.bodyapiservice", "com.oculus.bodyapiservice", "BodyApiServiceServer");
 
@@ -945,7 +919,6 @@ static void xrsp_finish_pairing_2(struct ql_xrsp_host *host, struct ql_xrsp_host
 
     //xrsp_ripc_ensure_service_started(host, host->client_id+3, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost.DialogHostService");
     //xrsp_ripc_connect_to_remote_server(host, RIPC_FAKE_CLIENT_4, "com.oculus.os.dialoghost", "com.oculus.os.dialoghost", "DialogHostService");
-#endif
 
     //if (!host->sent_mesh)
     {
@@ -964,7 +937,6 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
         host->echo_req_sent_ns = xrsp_ts_ns(host);
 
         int64_t calc_ns_offset = ((host->echo_req_recv_ns-host->echo_req_sent_ns) + (host->echo_resp_sent_ns-pkt->recv_ns)) >> 1; // 2
-        //self.ns_offset = self.ns_offset & 0xFFFFFFFFFFFFFFFF
 
         if (!host->ns_offset) {
             host->ns_offset = calc_ns_offset;
@@ -975,9 +947,9 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
             host->ns_offset /= 2;
         }
 
-        //printf("Ping offs: %zx %zx %zd/%zd\n", host->ns_offset, -host->ns_offset_from_target, host->ns_offset-host->ns_offset_from_target, host->ns_offset_from_target-host->ns_offset);
+        //QUEST_LINK_INFO("Ping offs: %zx %zx %zd/%zd\n", host->ns_offset, -host->ns_offset_from_target, host->ns_offset-host->ns_offset_from_target, host->ns_offset_from_target-host->ns_offset);
 
-        //printf("Pong get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
+        //QUEST_LINK_INFO("Pong get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
 
         /*if (payload->offset) {
             host->ns_offset_from_target = payload->offset;
@@ -989,7 +961,6 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
     }
     else //PING
     {
-        //printf ("Ping! %x\n", self.ns_offset);
         host->last_xmt = payload->xmt;
 
         if (payload->offset) {
@@ -998,13 +969,13 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
             host->ns_offset /= 2;
         }
 
-        //printf("Ping get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
+        //QUEST_LINK_INFO("Ping get: org=%zx recv=%zx xmt=%zx offs=%zx\n", payload->org, payload->recv, payload->xmt, payload->offset);
 
         int32_t request_echo_ping_len = 0;
         int64_t send_xmt = xrsp_ts_ns(host);
         uint8_t* request_echo_ping = ql_xrsp_craft_echo(ECHO_PONG, pkt->unk_4, host->last_xmt, pkt->recv_ns, send_xmt, host->ns_offset, &request_echo_ping_len);
 
-        //printf("Pong sent: org=%zx recv=%zx xmt=%zx offs=%zx\n", host->last_xmt, pkt->recv_ns, send_xmt, host->ns_offset);
+        //QUEST_LINK_INFO("Pong sent: org=%zx recv=%zx xmt=%zx offs=%zx\n", host->last_xmt, pkt->recv_ns, send_xmt, host->ns_offset);
 
         xrsp_send_to_topic(host, TOPIC_HOSTINFO_ADV, request_echo_ping, request_echo_ping_len);
         free(request_echo_ping);
@@ -1013,18 +984,12 @@ static void xrsp_handle_echo(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_
             xrsp_send_ping(host);
         }
     }  
-
-    //printf("%lld %lld\n", host->ns_offset_from_target, host->ns_offset);
 }
 
 static void xrsp_handle_invite(struct ql_xrsp_host *host, struct ql_xrsp_hostinfo_pkt* pkt)
 {
     ql_xrsp_hostinfo_capnp_payload* payload = (ql_xrsp_hostinfo_capnp_payload*)pkt->payload;
     uint8_t* capnp_data = pkt->payload + sizeof(*payload);
-
-    //hex_dump(capnp_data, payload->len_u64s * 8);
-
-    //size_t num_words = (pkt->stream_size - 8) >> 3;
 
     try
     {
@@ -1125,8 +1090,6 @@ static void xrsp_handle_hostinfo_adv(struct ql_xrsp_host *host)
     if (ret < 0) {
         // TODO
     }
-
-    //hex_dump(pkt->payload, pkt->payload_valid);
 
     if (hostinfo.message_type == BUILTIN_ECHO) {
         xrsp_handle_echo(host, &hostinfo);
@@ -1229,7 +1192,6 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
 
     if (!host->usb_valid) return false;
 
-    //os_mutex_lock(&host->usb_mutex);
     while (true)
     {
         unsigned char data[0x400];
@@ -1243,8 +1205,6 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
         int read_len = 0;
         int r = libusb_bulk_transfer(host->dev, host->ep_in, data, amt_to_read, &read_len, 1);
         if (r != 0 || !read_len) {
-            //printf("asdf %d %x\n", r, read_len);
-
             if (r != LIBUSB_ERROR_TIMEOUT) {
                 QUEST_LINK_ERROR("libusb error: %s", libusb_strerror((libusb_error)r));
             }
@@ -1257,11 +1217,10 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
 
         host->last_read_ns = xrsp_ts_ns(host);
 
-        //printf("Read %x bytes\n", read_len);
+        //QUEST_LINK_INFO("Read %x bytes\n", read_len);
         //hex_dump(data, read_len);
 
         if (!host->have_working_pkt) {
-            //printf("Create pkt\n");
             ret = ql_xrsp_topic_pkt_create(&host->working_pkt, data, read_len, host->last_read_ns);
             if (ret < 0) {
                 // TODO
@@ -1274,7 +1233,6 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             }
         }
         else if (host->working_pkt.missing_bytes == 0) {
-            //printf("Handle pkt\n");
             try {
                 xrsp_handle_pkt(host);
             }
@@ -1283,24 +1241,11 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             }
             
 
-            printf("Is remaining data possible?\n");
+            QUEST_LINK_INFO("Is remaining data possible?\n");
 
             int32_t remaining_data = read_len - data_consumed;
-            /*
-            remains = self.working_pkt.remainder_bytes()
-            if len(remains) > 0 and len(remains) < 8:
-                self.working_pkt = None
-                print("Weird remainder!")
-                hex_dump(remains)
-            elif len(remains) > 0:
-                self.working_pkt = TopicPkt(self, remains)
-                self.working_pkt.add_missing_bytes(b)
-            else:
-                self.working_pkt = TopicPkt(self, b)
-            */
         }
         else {
-            //printf("Append pkt\n");
             ret = ql_xrsp_topic_pkt_append(&host->working_pkt, data, read_len);
             if (ret < 0) {
                 // TODO
@@ -1313,9 +1258,7 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
         }
 
         while (host->have_working_pkt) {
-            //printf("Handle pkt 2 loop %x\n", read_len - data_consumed);
             if (host->working_pkt.missing_bytes == 0) {
-                //printf("Handle pkt 2 %x\n", read_len - data_consumed);
                 xrsp_handle_pkt(host);
                 ql_xrsp_topic_pkt_destroy(&host->working_pkt);
                 host->have_working_pkt = false;
@@ -1327,13 +1270,11 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
             }
 
             if (remaining_data > 0 && remaining_data < 8) {
-                //printf("Weird remainder! data_consumed: %x\n", data_consumed);
                 hex_dump(&data[data_consumed], read_len-data_consumed);
                 ql_xrsp_topic_pkt_destroy(&host->working_pkt);
                 host->have_working_pkt = false;
             }
             else if (remaining_data > 0) {
-                //printf("Create pkt 2 %x\n", read_len - data_consumed);
                 ret = ql_xrsp_topic_pkt_create(&host->working_pkt, &data[data_consumed], remaining_data, host->last_read_ns);
                 if (ret < 0) {
                     // TODO
@@ -1344,11 +1285,9 @@ static bool xrsp_read_usb(struct ql_xrsp_host *host)
                     data_consumed += ret;
                     host->have_working_pkt = true;
                 }
-                //printf("Create pkt 2 end %x\n", read_len - data_consumed);
             }
         }
     }
-    //os_mutex_unlock(&host->usb_mutex);
     
     return true;
 }
@@ -1417,7 +1356,7 @@ static void xrsp_send_buffered_haptic(struct ql_xrsp_host *host, int64_t ts, ovr
     msg.setData(kj::arrayPtr(test_data, 0x19));
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
-    xrsp_send_to_topic_capnp_segments(host, TOPIC_HAPTIC, 0, out); // host->haptic_idx++
+    xrsp_send_to_topic_capnp_segments(host, TOPIC_HAPTIC, 0, out);
     free(test_data);
 }
 
@@ -1435,7 +1374,7 @@ void xrsp_send_simple_haptic(struct ql_xrsp_host *host, int64_t ts, ovr_haptic_t
     msg.setPoseTimestamp(0);
     
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
-    xrsp_send_to_topic_capnp_segments(host, TOPIC_HAPTIC, 0, out); // host->haptic_idx++
+    xrsp_send_to_topic_capnp_segments(host, TOPIC_HAPTIC, 0, out);
 }
 
 static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx, int frame_idx, int64_t frame_started_ns, const uint8_t* csd_dat, size_t csd_len,
@@ -1452,28 +1391,13 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     struct xrt_pose sending_pose;
     U_ZERO(&sending_pose);
 
-    /*if (!host->sent_mesh)
-    {
-        xrsp_send_mesh(host);
-    }*/
-
     static uint64_t last_roundtrip = 0;
     uint64_t roundtrip_ns = xrsp_ts_ns(host) - last_roundtrip;
     last_roundtrip = xrsp_ts_ns(host);
-    //printf("%llu\n", roundtrip_ns);
-
-    /*if (roundtrip_ns < 5000000) {
-        return;
-    }*/
 
     uint64_t ts_before = xrsp_ts_ns(host);
     host->tx_started_ns[read_index] = ts_before;
 
-    //printf("a %llx\n", frame_started_ns);
-
-    //xrt_device_get_tracked_pose(&hmd->base, XRT_INPUT_GENERIC_HEAD_POSE, frame_started_ns, &out_head_relation);
-
-    //os_mutex_lock(&host->pose_mutex);
     int bits = 0;
     if (csd_len > 0)
         bits |= 1;
@@ -1506,18 +1430,10 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setPoseY(sending_pose.position.y);
     msg.setPoseZ(sending_pose.position.z);
 
-    /*msg.setPoseQuatX(0.0);
-    msg.setPoseQuatY(0.0);
-    msg.setPoseQuatZ(0.0);
-    msg.setPoseQuatW(1.0);
-    msg.setPoseX(0.0);
-    msg.setPoseY(0.0);
-    msg.setPoseZ(0.0);*/
-
     // TODO this might include render time?
     uint64_t pipeline_pred_delta_ma = host->encode_done_ns[QL_IDX_SLICE(slice_idx, index)] - host->encode_started_ns[QL_IDX_SLICE(0, index)];//2916100;
     //uint64_t pipeline_pred_delta_ma = 0;
-    //printf("%llu\n", pipeline_pred_delta_ma);
+    //QUEST_LINK_INFO("%llu\n", pipeline_pred_delta_ma);
 
     // TODO maybe pull a round-trip delta time?
     uint64_t duration_a = (uint64_t)(1000000000.0/hmd->fps) /*+ 9116997*/; // 9ms this might also include the slice 0 pipeline_pred_delta_ma, but we don't include render time yet?
@@ -1589,7 +1505,7 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
     msg.setTimestamp0B(base_ts+duration_a+duration_b+duration_c); // unknown
     msg.setTimestamp0C(base_ts+duration_a+duration_b); // deadline
     msg.setTimestamp0D(base_ts+duration_a); // unknown
-    //printf("%x\n", host->ns_offset);
+    //QUEST_LINK_INFO("%x\n", host->ns_offset);
 
     // left eye orientation? for foveated compression weirdness?
     msg.getQuat1().setX(0.0);
@@ -1605,44 +1521,23 @@ static void xrsp_send_video(struct ql_xrsp_host *host, int index, int slice_idx,
 
     msg.setCsdSize(csd_len);
     msg.setVideoSize(video_len);
-    //os_mutex_unlock(&host->pose_mutex);
 
     kj::ArrayPtr<const kj::ArrayPtr<const capnp::word>> out = message.getSegmentsForOutput();
 
-    //hex_dump(packed_data, packed_data_size);
-
-    //printf("adsf %zx %zx\n", csd_len, video_len);
-
-    
-
-    // Safety fallback: xrsp kicks us out if we exceed this.
-    //if (video_len < 0x40000)
-    {
-        //printf("Send capnp\n");
-        xrsp_send_to_topic_capnp_segments(host, TOPIC_SLICE_0+slice_idx, 0, out);
-        //printf("Send csd %x\n", csd_len);
-        if (csd_len)
-            xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, csd_dat, csd_len);
-        //printf("Send vid %x\n", video_len);
-        /*for (int i = 0; i < video_len; i += 0x40000) {
-            xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat + i, (video_len - i) > 0x40000 ? 0x40000 : (video_len - i));
-        }*/
-        xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat, video_len);
-        //printf("done\n");  
-    }
-    /*else 
-    {
-        QUEST_LINK_ERROR("Bitrate is too high, cannot send to device!! Frame size: 0x%x > 0x40000", video_len);
-    }*/
+    xrsp_send_to_topic_capnp_segments(host, TOPIC_SLICE_0+slice_idx, 0, out);
+        
+    if (csd_len)
+        xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, csd_dat, csd_len);
+        
+    xrsp_send_to_topic(host, TOPIC_SLICE_0+slice_idx, video_dat, video_len);
 
     uint64_t ts_after = xrsp_ts_ns(host);
-
     host->tx_done_ns[read_index] = ts_after;
 
     int64_t ts_diff = ts_after - ts_before;
     host->tx_duration_ns[read_index] = ts_diff;
 
-    
+    // TODO: ehhhhh    
     xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableEyeTrackingForPCLink"); 
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "EnableFaceTrackingForPCLink");
     //xrsp_ripc_void_bool_cmd(host, host->client_id, "SendSwitchToHandsNotif");
@@ -1660,30 +1555,15 @@ ql_xrsp_read_thread(void *ptr)
     while (os_thread_helper_is_running_locked(&host->read_thread)) {
         os_thread_helper_unlock(&host->read_thread);
 
-        //printf("%x %x %x\n", xrsp_ts_ns(host) - host->last_read_ns > 1000000000, host->pairing_state == PAIRINGSTATE_WAIT_FIRST, host->usb_valid);
         if (xrsp_ts_ns(host) - host->last_read_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_WAIT_FIRST && !host->usb_valid)
         {
             ql_xrsp_usb_init(host, false);
             host->last_read_ns = xrsp_ts_ns(host);
         }
 
-        //printf(".\n");
-        //os_mutex_lock(&host->usb_mutex);
-        bool success = xrsp_read_usb(host); 
+        xrsp_read_usb(host); 
         
-
-        if (success) {
-            
-        }
-        //os_mutex_unlock(&host->usb_mutex);
-        
-
         os_thread_helper_lock(&host->read_thread);
-
-        //if (!success) {
-        //    break;
-        //}
-
         if (os_thread_helper_is_running_locked(&host->read_thread)) {
             os_nanosleep(U_TIME_1MS_IN_NS / 10);
         }
@@ -1717,7 +1597,7 @@ ql_xrsp_write_thread(void *ptr)
             {
                 int full_idx = QL_IDX_SLICE(j, i);
                 os_mutex_lock(&host->stream_mutex[full_idx]);
-                //printf("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
+                //QUEST_LINK_INFO("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
                 if (!host->needs_flush[full_idx]) {
                     all_slices_present = false;
                 }
@@ -1726,9 +1606,8 @@ ql_xrsp_write_thread(void *ptr)
 
             int first_idx = QL_IDX_SLICE(0, i);
             os_mutex_lock(&host->stream_mutex[first_idx]);
-            //printf("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
+            //QUEST_LINK_INFO("%x %zx %zx\n", host->needs_flush[i], host->stream_started_ns[i], present_ns);
             if (all_slices_present && host->stream_started_ns[first_idx] < present_ns) {
-                //printf("asdf %x\n", i);
                 present_ns = host->stream_started_ns[first_idx];
                 to_present = i;
             }
@@ -1744,7 +1623,7 @@ ql_xrsp_write_thread(void *ptr)
             {
                 int to_present_idx = QL_IDX_SLICE(slice, to_present);
                 os_mutex_lock(&host->stream_mutex[to_present_idx]);
-                //printf("Flush: %x %x\n", slice, to_present);
+                //QUEST_LINK_INFO("Flush: %x %x\n", slice, to_present);
                 
                 if (host->csd_stream_len[to_present_idx] || host->idr_stream_len[to_present_idx])
                     xrsp_send_video(host, to_present, slice, host->frame_idx, present_ns, (const uint8_t*)host->csd_stream[to_present_idx], host->csd_stream_len[to_present_idx], (const uint8_t*)host->idr_stream[to_present_idx], host->idr_stream_len[to_present_idx], 0);
@@ -1756,7 +1635,7 @@ ql_xrsp_write_thread(void *ptr)
                 host->idr_stream_len[to_present_idx] = 0;
                 host->needs_flush[to_present_idx] = false;
 
-                //printf("Flush: %x\n", host->stream_read_idx);
+                //QUEST_LINK_INFO("Flush: %x\n", host->stream_read_idx);
                 os_mutex_unlock(&host->stream_mutex[to_present_idx]);
             }
             host->frame_idx++;
@@ -1764,7 +1643,7 @@ ql_xrsp_write_thread(void *ptr)
 
         
 
-        //printf("%zx\n", xrsp_ts_ns(host) - host->paired_ns);
+        //QUEST_LINK_INFO("%zx\n", xrsp_ts_ns(host) - host->paired_ns);
         if (xrsp_ts_ns(host) - host->paired_ns > 1000000000 && host->pairing_state == PAIRINGSTATE_PAIRED) // && xrsp_ts_ns(host) - host->frame_sent_ns >= 16000000
         {
             host->ready_to_send_frames = true;

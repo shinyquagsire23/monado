@@ -3,15 +3,21 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
+ *
  */
-
 /*!
  * @file
- * @brief  Interface to the Meta Quest Link HMD driver code.
- * @author Jan Schmidt <jan@centricular.com>
+ * @brief  Translation layer from XRSP controller samples to OpenXR
+ *
+ * Glue code from sampled XRSP poses/button bitfields to OpenXR inputs,
+ * haptics, and base poses.
+ *
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
+
 
 #pragma once
 

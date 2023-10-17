@@ -3,23 +3,20 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
  *
  */
 /*!
  * @file
- * @brief  Driver code for Meta Quest Link headsets
+ * @brief  Translation layer from XRSP controller samples to OpenXR
  *
- * Implementation for the HMD communication, calibration and
- * IMU integration.
+ * Glue code from sampled XRSP poses/button bitfields to OpenXR inputs,
+ * haptics, and base poses.
  *
- * Ported from OpenHMD
- *
- * @author Jan Schmidt <jan@centricular.com>
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
-
-/* Meta Quest Link Driver - HID/USB Driver Implementation */
 
 #include <stdlib.h>
 #include <string.h>
@@ -177,7 +174,6 @@ ql_get_tracked_pose(struct xrt_device *xdev,
 {
     struct ql_controller *ctrl = (struct ql_controller *)(xdev);
 
-    //printf("Get tracked %p %x\n", ctrl, name);
     if (name != XRT_INPUT_TOUCH_AIM_POSE && name != XRT_INPUT_TOUCH_GRIP_POSE) {
         QUEST_LINK_ERROR("Unknown input name");
         return;
@@ -192,14 +188,10 @@ ql_get_tracked_pose(struct xrt_device *xdev,
     relation.pose.position += ctrl->pose_add;
     relation.angular_velocity = ctrl->angvel;
     relation.linear_velocity = ctrl->vel;
-    //ql_controller_get_interpolated_pose(ctrl, at_timestamp_ns, &ctrl->pose, &out_relation->pose);
 
-    //out_relation->pose = ctrl->pose;
     relation.relation_flags = (enum xrt_space_relation_flags)(XRT_SPACE_RELATION_ORIENTATION_VALID_BIT |
                                                                    XRT_SPACE_RELATION_POSITION_VALID_BIT |
                                                                    XRT_SPACE_RELATION_ORIENTATION_TRACKED_BIT);
-
-    //ql_tracker_get_tracked_pose(ctrl->tracker, RIFT_S_TRACKER_POSE_DEVICE, at_timestamp_ns, out_relation);
 
     timepoint_ns prediction_ns = at_timestamp_ns - ctrl->pose_ns;
     double prediction_s = time_ns_to_s(prediction_ns);
@@ -208,14 +200,14 @@ ql_get_tracked_pose(struct xrt_device *xdev,
     struct xrt_relation_chain xrc = {};
     struct xrt_pose pose_correction = {};
 
-    /* Rotate the grip/aim pose up by 40 degrees around the X axis */
+    // Rotate the grip/aim pose up by 40 degrees around the X axis
     struct xrt_vec3 axis = {1.0, 0, 0};
 
     math_quat_from_angle_vector(DEG_TO_RAD(35), &axis, &pose_correction.orientation);
 
     m_relation_chain_push_pose(&xrc, &pose_correction);
 
-    /* Apply the fusion rotation */
+    // Apply the fusion rotation
     struct xrt_space_relation *rel = m_relation_chain_reserve(&xrc);
 
     m_predict_relation(&relation, prediction_s, rel);
@@ -256,10 +248,7 @@ ql_controller_destroy(struct xrt_device *xdev)
 
     DRV_TRACE_MARKER();
 
-    /* Remove this device from the system */
-    //ql_system_remove_controller(ctrl->sys);
-
-    /* Drop the reference to the system */
+    // Drop the reference to the system
     ql_system_reference(&ctrl->sys, NULL);
 
     u_var_remove_root(ctrl);
@@ -280,7 +269,7 @@ ql_controller_create(struct ql_system *sys, enum xrt_device_type device_type)
         return NULL;
     }
 
-    /* Take a reference to the ql_system */
+    // Take a reference to the ql_system
     ql_system_reference(&ctrl->sys, sys);
 
     ctrl->base.tracking_origin = &sys->base;
@@ -301,7 +290,6 @@ ql_controller_create(struct ql_system *sys, enum xrt_device_type device_type)
         SET_TOUCH_INPUT(ctrl, Y_CLICK);
         SET_TOUCH_INPUT(ctrl, Y_TOUCH);
         SET_TOUCH_INPUT(ctrl, MENU_CLICK);
-        //ctrl->base.inputs[0].name = XRT_INPUT_GENERIC_HAND_TRACKING_LEFT;
     } else {
         snprintf(ctrl->base.str, XRT_DEVICE_NAME_LEN, "Quest Right Touch Controller");
         snprintf(ctrl->base.serial, XRT_DEVICE_NAME_LEN, "Right Controller");
@@ -310,7 +298,6 @@ ql_controller_create(struct ql_system *sys, enum xrt_device_type device_type)
         SET_TOUCH_INPUT(ctrl, B_CLICK);
         SET_TOUCH_INPUT(ctrl, B_TOUCH);
         SET_TOUCH_INPUT(ctrl, SYSTEM_CLICK);
-        //ctrl->base.inputs[0].name = XRT_INPUT_GENERIC_HAND_TRACKING_RIGHT;
     }
 
     SET_TOUCH_INPUT(ctrl, SQUEEZE_VALUE);
@@ -327,8 +314,6 @@ ql_controller_create(struct ql_system *sys, enum xrt_device_type device_type)
 
     ctrl->base.binding_profiles = binding_profiles_ql;
     ctrl->base.binding_profile_count = ARRAY_SIZE(binding_profiles_ql);
-
-    //ctrl->tracker = ql_system_get_tracker(sys);
 
     ctrl->created_ns = os_monotonic_get_ns();
 

@@ -3,13 +3,20 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022  Guillaume Meunier
+ * Copyright 2022  Patrick Nicolas
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
+ *
  */
-
 /*!
  * @file
- * @brief  Interface to the Meta Quest Link HMD driver code.
- * @author Jan Schmidt <jan@centricular.com>
+ * @brief  Translation layer from XRSP HMD pose samples to OpenXR
+ *
+ * Glue code from sampled XRSP HMD poses OpenXR poses.
+ * Includes distortion meshes for AADT.
+ *
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
 
@@ -33,7 +40,7 @@ extern "C" {
 void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, float fps);
 
 struct ql_hmd *
-ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct ql_hmd_config *config);
+ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no);
 //void
 //ql_hmd_handle_report(struct ql_hmd *hmd, timepoint_ns local_ts, ql_hmd_report_t *report);
 void

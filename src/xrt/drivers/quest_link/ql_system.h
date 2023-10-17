@@ -3,15 +3,18 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
  *
- * OpenHMD - Free and Open Source API and drivers for immersive technology.
  */
-
 /*!
  * @file
- * @brief  Meta Quest Link Driver Internal Interface
- * @author Jan Schmidt <jan@centricular.com>
+ * @brief  Meta Quest Link headset tracking system
+ *
+ * The Quest Link system instantiates the HMD, controller,
+ * and hand devices, and manages refcounts
+ *
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
 
@@ -40,24 +43,10 @@ ql_system_create(struct xrt_prober *xp,
                          const unsigned char *hmd_serial_no,
                          int if_num);
 
-struct os_hid_device *
-ql_system_hid_handle(struct ql_system *sys);
-
-struct ql_tracker *
-ql_system_get_tracker(struct ql_system *sys);
-
 struct xrt_device *
 ql_system_get_hmd(struct ql_system *sys);
 void
 ql_system_remove_hmd(struct ql_system *sys);
-
-struct xrt_device *
-ql_system_get_controller(struct ql_system *sys, int index);
-void
-ql_system_remove_controller(struct ql_system *sys, struct ql_controller *ctrl);
-
-struct xrt_device *
-ql_system_get_hand_tracking_device(struct ql_system *sys);
 
 void
 ql_system_reference(struct ql_system **dst, struct ql_system *src);

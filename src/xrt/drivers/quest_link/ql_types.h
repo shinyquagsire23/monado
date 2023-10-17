@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  Interface to quest_link XRSP protocol.
+ * @brief  All types, structs and enums associated with Quest Link and XRSP
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -137,11 +137,9 @@ typedef struct ql_xrsp_host
 {
     struct ql_system* sys;
 
-    /* Packet processing threads */
+    // Packet processing threads
     struct os_thread_helper read_thread;
     struct os_thread_helper write_thread;
-
-    //struct ql_system* sys;
 
     libusb_context *ctx;
     libusb_device_handle *dev;
@@ -190,9 +188,6 @@ typedef struct ql_xrsp_host
     bool ready_to_send_frames;
     int frame_idx;
 
-    //std::vector<uint8_t> csd_stream;
-    //std::vector<uint8_t> idr_stream;
-
     struct os_mutex stream_mutex[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     bool needs_flush[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
     int stream_write_idx;
@@ -223,26 +218,12 @@ typedef struct ql_xrsp_host
     bool shell_connected;
     bool sent_mesh;
     bool is_inactive;
-    int32_t haptic_idx;
 
     void (*start_encode)(struct ql_xrsp_host* host,  int64_t target_ns, int index, int slice_idx);
     void (*send_csd)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
     void (*send_idr)(struct ql_xrsp_host* host, const uint8_t* data, size_t len, int index, int slice_idx);
     void (*flush_stream)(struct ql_xrsp_host* host, int64_t target_ns, int index, int slice_idx);
 } ql_xrsp_host;
-
-/* All HMD Configuration / calibration info */
-struct ql_hmd_config
-{
-    int proximity_threshold;
-};
-
-/* Structure to track online devices and type */
-struct ql_tracked_device
-{
-    uint64_t device_id;
-    //ql_device_type device_type;
-};
 
 struct ql_controller
 {
@@ -552,8 +533,6 @@ struct ql_hmd
     double created_ns;
 
     struct ql_system *sys;
-    /* HMD config info (belongs to the system, which we have a ref to */
-    struct ql_hmd_config *config;
 
     /* Pose tracker provided by the system */
     struct ql_tracker *tracker;
@@ -583,16 +562,8 @@ typedef struct ql_system
 
     ql_xrsp_host xrsp_host;
 
-    /* Packet processing thread */
-    struct os_thread_helper oth;
-    uint64_t last_keep_alive;
-
     /* Device lock protects device access */
     struct os_mutex dev_mutex;
-
-    /* All configuration data for the HMD, stored
-     * here for sharing to child objects */
-    struct ql_hmd_config hmd_config;
 
     /* HMD device */
     struct ql_hmd *hmd;
@@ -601,10 +572,6 @@ typedef struct ql_system
     struct ql_controller *controllers[MAX_TRACKED_DEVICES];
 
     struct ql_hands *hands;
-
-    /* Video feed handling */
-    struct xrt_frame_context xfctx;
-    struct ql_camera *cam;
 } ql_system;
 
 void ql_xrsp_host_init();

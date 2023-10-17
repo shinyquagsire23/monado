@@ -59,13 +59,6 @@ int32_t ql_xrsp_hostinfo_pkt_create(struct ql_xrsp_hostinfo_pkt* pkt, struct ql_
     pkt->stream_size = header->stream_size_words << 2;
 
     pkt->unk_4 = header->unk_4;
-    //pkt->unk_8 = header->unk_8;
-    //pkt->len_u64s = header->len_u64s;
-
-    //pkt->echo_org = -1;
-    //pkt->echo_recv = -1;
-    //pkt->echo_xmt = -1;
-    //pkt->echo_offset = -1;
     return 0;
 }
 
@@ -87,8 +80,6 @@ void ql_xrsp_hostinfo_pkt_dump(struct ql_xrsp_hostinfo_pkt* pkt)
 
     printf("unk_4: %x\n",  pkt->unk_4);
     printf("------\n");
-    //printf("unk_8: %x\n",  pkt->unk_8);
-    //printf("len_u64s: %x (%x bytes)\n",  pkt->len_u64s, pkt->len_u64s * sizeof(uint64_t));
 }
 
 uint8_t* ql_xrsp_craft_echo(uint16_t result, uint32_t echo_id, int64_t org, int64_t recv, int64_t xmt, int64_t offset, int32_t* out_len)
@@ -141,29 +132,3 @@ uint8_t* ql_xrsp_craft(uint8_t message_type, uint16_t result, uint32_t stream_si
     }
     return out;
 }
-
-/*
-
-def craft_basic(host, message_type, result, unk_4, payload):
-    return HostInfoPkt.craft(host, message_type, result, len(payload) + 0x8, unk_4, payload)
-
-def craft_capnp(host, message_type, result, unk_4, payload):
-    return HostInfoPkt.craft(host, message_type, result, len(payload) + 0x10, unk_4, struct.pack("<LL", 0, len(payload) // 8) + payload)
-
-def craft(host, message_type, result, stream_size, unk_4, payload):
-
-    header_0 = (message_type & 0xF) | ((result & 0x3FF) << 4) | ((stream_size & 0xFFFFC) << 12)
-    b = struct.pack("<LL", header_0, unk_4) + payload
-
-    return HostInfoPkt(host, 0, b)
-
-def to_bytes(self):
-    self.header_0 = (self.message_type & 0xF) | ((self.result & 0x3FF) << 4) | ((self.stream_size & 0xFFFFC) << 12)
-    b = struct.pack("<LL", self.header_0, self.unk_4)
-    if self.message_type == BUILTIN_ECHO:
-        b += struct.pack("<QQQQ", self.echo_org, self.echo_recv, self.echo_xmt, self.echo_offset)
-    else:
-        b += struct.pack("<LL", self.unk_8, self.len_u64s)
-        b += self.payload
-    return b
-*/

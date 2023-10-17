@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  quest_link XRSP hostinfo packets
+ * @brief  quest_link XRSP logging packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -28,8 +28,6 @@ extern "C"
 
 void ql_xrsp_handle_logging(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
 {
-    //printf("Parse logging\n");
-
     // TODO parse segment header
     if (pkt->payload_valid <= 8) {
         return;
@@ -44,7 +42,6 @@ void ql_xrsp_handle_logging(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt*
 
         PayloadLogging::Reader logging = message.getRoot<PayloadLogging>();
 
-        //std::cout << logging << "\n";
         for (LogEntry::Reader entry: logging.getError()) {
             std::string out = entry.getData();
             QUEST_LINK_ERROR("%s", out.c_str());

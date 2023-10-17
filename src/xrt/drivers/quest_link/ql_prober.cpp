@@ -70,12 +70,9 @@ init_ql_usb(struct xrt_prober *xp,
 
 	*out_vdev = NULL;
 
-	/*if (!u_prober_match_string(xp, dev, XRT_PROBER_STRING_MANUFACTURER, QUEST_LINK_MANUFACTURER_STRING) ||
-	    !u_prober_match_string(xp, dev, XRT_PROBER_STRING_PRODUCT, QUEST_LINK_PRODUCT_STRING)) {
-		return;
-	}*/
-
 	int if_num = xrt_prober_find_interface(xp, dev, XRSP_IF_CLASS, XRSP_IF_SUBCLASS, XRSP_IF_PROTOCOL);
+
+	// Newer XRSP versions (firmwares after Quest 3 release) use this one
 	if (if_num < 0) {
 		if_num = xrt_prober_find_interface(xp, dev, XRSP_IF_CLASS, XRSP_IF_SUBCLASS_2, XRSP_IF_PROTOCOL);
 	}
@@ -84,7 +81,6 @@ init_ql_usb(struct xrt_prober *xp,
 		U_LOG_E("Could not find XRSP interface on Quest Link device.");
 		return 0;
 	}
-	printf("Found if %x\n", if_num);
 
 	unsigned char hmd_serial_no[XRT_DEVICE_NAME_LEN];
 	int result = xrt_prober_get_string_descriptor(xp, dev, XRT_PROBER_STRING_SERIAL_NUMBER, hmd_serial_no,
@@ -117,7 +113,6 @@ ql_found(struct xrt_prober *xp,
           struct xrt_device **out_xdev)
 {
 	XRT_TRACE_MARKER();
-	printf("ql_found\n");
 
 	struct xrt_prober_device *dev = devices[index];
 
@@ -143,14 +138,6 @@ ql_found(struct xrt_prober *xp,
 	}
 	default: U_LOG_E("No product ids matched %.4x", dev->product_id); return 0;
 	}
-
-	/*if (vdev == NULL) {
-		U_LOG_E("Failed after opening Quest Link device?");
-		return 0;
-	}*/
-
-	//*out_ql_config = &vdev->config;
-	//*out_xdev = &vdev->base;
 
 	return count;
 }

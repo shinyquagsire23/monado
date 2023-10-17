@@ -42,8 +42,7 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
         pkt->payload = NULL;
         pkt->remainder_offs = 0;
         pkt->payload_valid = 0;
-        //printf("Bad topic pkt?\n");
-        //hex_dump(p_initial, 0x10);
+
         return -1;
 
     }
@@ -67,42 +66,17 @@ int32_t ql_xrsp_topic_pkt_create(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_initi
         pkt->missing_bytes = 0;
     }
 
-    if (pkt->missing_bytes) 
-    {
-        //printf("Payload: %x bytes, missing %x, topic %x\n", consumed, pkt->missing_bytes, pkt->topic);
-        //hex_dump(p_initial, 0x10);
-    }
-    else {
-        //printf("Payload: %x bytes, missing %x, topic %x\n", consumed, pkt->missing_bytes, pkt->topic);
-        //hex_dump(p_initial, 0x10);
-    }
-
     return consumed + sizeof(xrsp_topic_header);
 }
 
 int32_t ql_xrsp_topic_pkt_append(struct ql_xrsp_topic_pkt* pkt, uint8_t* p_data, int32_t data_size)
 {
-    /*
-    self.payload += b
-        before = len(self.payload)
-        self.payload = self.payload[:self.real_size]
-        after = len(self.payload)
-
-        if self.bHasAlignPadding and len(self.payload) >= self.real_size:
-            self.real_size -= self.payload[self.real_size-1]
-            self.payload = self.payload[:self.real_size]
-
-        self.payload_remainder = b[len(b) - (before-after):]
-    */
-
     int32_t consumed = pkt->missing_bytes < data_size ? pkt->missing_bytes : data_size;
     if (consumed) {
         memcpy(pkt->payload + pkt->payload_valid, p_data, consumed);
     }
     pkt->missing_bytes -= consumed;
     pkt->payload_valid += consumed;
-
-    //printf("Payload: consumed %x bytes, %x valid, missing %x (topic %x)\n", consumed, pkt->payload_valid, pkt->missing_bytes, pkt->topic);
 
     return consumed;
 }

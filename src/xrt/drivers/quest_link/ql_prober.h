@@ -21,7 +21,7 @@ extern "C" {
 
 
 /*!
- * Probing function for Vive devices.
+ * Probing function for Quest Link devices.
  *
  * @ingroup drv_quest_link
  * @see xrt_prober_found_func_t

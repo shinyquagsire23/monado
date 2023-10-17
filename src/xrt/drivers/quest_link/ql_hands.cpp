@@ -3,23 +3,19 @@
  * Copyright 2013, Jakob Bornecrantz.
  * Copyright 2016 Philipp Zabel
  * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
  *
  */
 /*!
  * @file
- * @brief  Driver code for Meta Quest Link headsets
+ * @brief  Translation layer from XRSP hand pose samples to OpenXR
  *
- * Implementation for the HMD communication, calibration and
- * IMU integration.
+ * Glue code from sampled XRSP hand poses OpenXR poses
  *
- * Ported from OpenHMD
- *
- * @author Jan Schmidt <jan@centricular.com>
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
-
-/* Meta Quest Link Driver - HID/USB Driver Implementation */
 
 #include <stdlib.h>
 #include <string.h>
@@ -221,16 +217,6 @@ ql_get_hand_tracking(struct xrt_device *xdev,
                  mat.v[8], -mat.v[7], mat.v[6]}
              };
 
-            /*if (i >= XRT_HAND_JOINT_THUMB_METACARPAL && i <= XRT_HAND_JOINT_THUMB_TIP) {
-
-                mat2 = {
-                    {
-                     0.0, 0.0, 1.0,
-                     1.0, 0.0, 0.0,
-                     0.0, 1.0, 0.0,}
-                 };
-            }*/
-
             for (int j = 0; j < 9; j++) {
                 if (mat2.v[j] == -0.0) {
                     mat2.v[j] = 0.0;
@@ -286,10 +272,7 @@ ql_hands_destroy(struct xrt_device *xdev)
 
     DRV_TRACE_MARKER();
 
-    /* Remove this device from the system */
-    //ql_system_remove_controller(ctrl->sys);
-
-    /* Drop the reference to the system */
+    // Drop the reference to the system
     ql_system_reference(&ctrl->sys, NULL);
 
     u_var_remove_root(ctrl);
@@ -312,7 +295,7 @@ ql_hands_create(struct ql_system *sys)
         return NULL;
     }
 
-    /* Take a reference to the ql_system */
+    // Take a reference to the ql_system
     ql_system_reference(&ctrl->sys, sys);
 
     ctrl->base.tracking_origin = &sys->base;

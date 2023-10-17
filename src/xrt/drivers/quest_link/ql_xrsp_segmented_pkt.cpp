@@ -24,7 +24,7 @@
 extern "C"
 {
 
-void ql_xrsp_segpkt_init(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host, int num_segs, ql_xrsp_segpkt_handler_t handler)
+void ql_xrsp_segpkt_init(struct ql_xrsp_segpkt* segpkt, int num_segs, ql_xrsp_segpkt_handler_t handler)
 {
     segpkt->num_segs = num_segs;
     segpkt->reading_idx = 0;
@@ -47,6 +47,26 @@ void ql_xrsp_segpkt_init(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     }
 
     segpkt->state = STATE_SEGMENT_META;
+}
+
+void ql_xrsp_segpkt_destroy(struct ql_xrsp_segpkt* segpkt)
+{
+    if (!segpkt) return;
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (segpkt->segs[i] && segpkt->num_segs) {
+            free(segpkt->segs[i]);
+        }
+        segpkt->segs[i] = NULL;
+        segpkt->segs_valid[i] = 0;
+        segpkt->segs_expected[i] = 0;
+        segpkt->segs_max[i] = 0;
+    }
+
+    segpkt->num_segs = 0;
+    segpkt->reading_idx = 0;
+    segpkt->handler = NULL;
 }
 
 void ql_xrsp_segpkt_consume(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
@@ -87,16 +107,11 @@ void ql_xrsp_segpkt_consume(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* 
             memcpy(write_ptr, read_ptr, to_copy);
             segpkt->segs_valid[idx] += to_copy;
             read_ptr += to_copy;
-            //printf("Have %x bytes of pose...\n", segpkt->segs_valid[idx]);
 
             if (segpkt->segs_valid[idx] >= segpkt->segs_expected[idx]) {
 
                 segpkt->reading_idx++;
                 if (segpkt->reading_idx >= segpkt->num_segs) {
-                    //printf("Have %x bytes of pose!\n", segpkt->segs_valid[idx]);
-                    //hex_dump(segpkt->segs[idx], segpkt->segs_valid[idx]);
-                    //printf("---\n");
-                    //hex_dump(pkt->payload, pkt->payload_valid);
                     if (segpkt->handler) {
                         segpkt->handler(segpkt, host);
                     }

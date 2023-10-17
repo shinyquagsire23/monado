@@ -1,10 +1,11 @@
 // Copyright 2020-2021, Collabora, Ltd.
 // Copyright 2022 Jan Schmidt
+// Copyright 2022-2023 Max Thomas
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
  * @brief  Interface to quest_link driver.
- * @author Jan Schmidt <jan@centricular.com>
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
 
@@ -22,7 +23,7 @@ extern "C" {
  * @defgroup drv_quest_link Meta Quest Link driver
  * @ingroup drv
  *
- * @brief Driver for the Meta Quest Link and touch controllers
+ * @brief Driver for Meta Quest Link and touch controllers
  *
  */
 

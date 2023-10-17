@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  quest_link XRSP hostinfo packets
+ * @brief  quest_link XRSP Pose topic packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */

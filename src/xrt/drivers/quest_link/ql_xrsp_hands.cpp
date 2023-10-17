@@ -1,9 +1,9 @@
 // Copyright 2022, Collabora, Ltd.
-// Copyright 2022 Max Thomas
+// Copyright 2022-2023 Max Thomas
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  quest_link XRSP hostinfo packets
+ * @brief  quest_link XRSP hand and body skeleton packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -96,12 +96,12 @@ void ovr_pose_add(ovr_pose_f* out, const ovr_pose_f* rhs)
     *out = tmp;
 }
 
+// TODO: Body poses
 void ql_xrsp_handle_body(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
 {
+#if 0
     static int body_num = 0;
     printf("Parse body %x\n", pkt->payload_valid);
-
-    //hex_dump(pkt->payload, pkt->payload_valid);
 
     char tmp[256];
     snprintf(tmp, 256, "body_bin_%u.bin", body_num);
@@ -110,12 +110,13 @@ void ql_xrsp_handle_body(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pk
     fclose(f);
 
     body_num++;
+#endif
 }
 
 void ql_xrsp_handle_skeleton(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
 {
     static int skeleton_num = 0;
-    printf("Parse skeleton %x\n", pkt->payload_valid);
+    //printf("Parse skeleton %x\n", pkt->payload_valid);
 
     //char tmp[256];
     //snprintf(tmp, 256, "skeleton_bin_%u.bin", skeleton_num);
@@ -162,8 +163,6 @@ void dump_hand(struct hands_bin* hand)
 
 void ql_xrsp_handle_hands(struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
 {
-    //printf("Parse hands %x %x\n", pkt->payload_valid, sizeof(struct hands_bin));
-
     os_mutex_lock(&host->pose_mutex);
 
     struct ql_hands* ctrl = host->sys->hands;

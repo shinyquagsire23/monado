@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  quest_link XRSP hostinfo packets
+ * @brief  quest_link XRSP Pose topic packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -32,8 +32,6 @@ extern "C"
 
 void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* host)
 {
-    //printf("Parse pose\n");
-
     // TODO parse segment header
     os_mutex_lock(&host->pose_mutex);
 
@@ -52,9 +50,6 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     {
         return;
     }
-    
-
-    //std::cout << pose << "\n";
     
     for (PoseTrackedController::Reader controller: pose.getControllers()) {
         int idx = 1;
@@ -82,20 +77,6 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
         int64_t pose_ns = xrsp_ts_ns_from_target(host, controllerPose.getTimestamp());
         ctrl->pose_ns = pose_ns;
 
-        /*
-        capacitance @2 :UInt32;
-        triggerZ @3 :Float32;
-        gripZ @4 :Float32;
-        stickX @5 :Float32;
-        stickY @6 :Float32;
-        touchpadX @7 :Float32;
-        touchpadY @8 :Float32;
-        touchpadPressure @9 :Float32;
-        stylusPressure @10 :Float32;
-        triggerCovered @11 :Float32;
-        triggerFingerCurl @12 :Float32;
-        */
-
         uint32_t features_raw = controller.getFeatures();
 
         ctrl->features = features_raw & 0xFF;
@@ -108,13 +89,6 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
         ctrl->grip_z = controller.getGripZ();
         ctrl->trigger_z = controller.getTriggerZ();
         ctrl->stylus_pressure = controller.getStylusPressure();
-
-        if (idx == 1) {
-            //printf("%f %f\n", ctrl->joystick_y, ctrl->joystick_y * (double)U_TIME_HALF_MS_IN_NS);
-            //host->add_test += (int64_t)(ctrl->joystick_y * (double)U_TIME_HALF_MS_IN_NS * 0.001);
-        }
-
-        //printf("%02x bat=%02d %04x: %08x %08x\n", ctrl->features, ctrl->battery, ctrl->feat_2, ctrl->buttons, ctrl->capacitance);
     }
 
     OvrPoseF::Reader headsetPose = pose.getHeadset();
@@ -123,34 +97,28 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     int64_t pose_ns = xrsp_ts_ns_from_target(host, headsetPose.getTimestamp());
     host->is_inactive = false;
 
-    //printf("%zx vs %zx/%zx\n", host->ns_offset, host->ns_offset_from_target, -host->ns_offset_from_target);
-    //if (pose_ns >= hmd->pose_ns) 
-    {
-        hmd->pose_ns = pose_ns;
-        hmd->pose.position.x = headsetPose.getPosX();
-        hmd->pose.position.y = headsetPose.getPosY();
-        hmd->pose.position.z = headsetPose.getPosZ();
 
-        hmd->pose.orientation.x = headsetPose.getQuatX();
-        hmd->pose.orientation.y = headsetPose.getQuatY();
-        hmd->pose.orientation.z = headsetPose.getQuatZ();
-        hmd->pose.orientation.w = headsetPose.getQuatW();
+    hmd->pose_ns = pose_ns;
+    hmd->pose.position.x = headsetPose.getPosX();
+    hmd->pose.position.y = headsetPose.getPosY();
+    hmd->pose.position.z = headsetPose.getPosZ();
 
-        hmd->ipd_meters = pose.getIpd();
+    hmd->pose.orientation.x = headsetPose.getQuatX();
+    hmd->pose.orientation.y = headsetPose.getQuatY();
+    hmd->pose.orientation.z = headsetPose.getQuatZ();
+    hmd->pose.orientation.w = headsetPose.getQuatW();
 
-        hmd->vel = {0.0, 0.0, 0.0};
-        hmd->acc = {0.0, 0.0, 0.0};
-        hmd->angvel = {0.0, 0.0, 0.0};
-        hmd->angacc = {0.0, 0.0, 0.0};
+    hmd->ipd_meters = pose.getIpd();
 
-        hmd->vel = {headsetPose.getLinVelX(), headsetPose.getLinVelY(), headsetPose.getLinVelZ()};
-        hmd->acc = {headsetPose.getLinAccX(), headsetPose.getLinAccY(), headsetPose.getLinAccZ()};
-        hmd->angvel = {headsetPose.getAngVelX(), headsetPose.getAngVelY(), headsetPose.getAngVelZ()};
-        hmd->angacc = {headsetPose.getAngAccX(), headsetPose.getAngAccY(), headsetPose.getAngAccZ()};
-        //printf("Pose is from %zd ns ago\n", os_monotonic_get_ns() - hmd->pose_ns);
-    
-        //hmd->angvel = {-headsetPose.getAngVelX(), -headsetPose.getAngVelY(), -headsetPose.getAngVelZ()};
-    }
+    hmd->vel = {0.0, 0.0, 0.0};
+    hmd->acc = {0.0, 0.0, 0.0};
+    hmd->angvel = {0.0, 0.0, 0.0};
+    hmd->angacc = {0.0, 0.0, 0.0};
+
+    hmd->vel = {headsetPose.getLinVelX(), headsetPose.getLinVelY(), headsetPose.getLinVelZ()};
+    hmd->acc = {headsetPose.getLinAccX(), headsetPose.getLinAccY(), headsetPose.getLinAccZ()};
+    hmd->angvel = {headsetPose.getAngVelX(), headsetPose.getAngVelY(), headsetPose.getAngVelZ()};
+    hmd->angacc = {headsetPose.getAngAccX(), headsetPose.getAngAccY(), headsetPose.getAngAccZ()};
     
     // TODO: how is this even calculated??
     // Quest 2:
@@ -182,15 +150,6 @@ void ql_xrsp_handle_pose(struct ql_xrsp_segpkt* segpkt, struct ql_xrsp_host* hos
     {
         hmd->base.hmd->distortion.fov[0].angle_left = next_angle_left;
         hmd->base.hmd->distortion.fov[1].angle_right = next_angle_right;
-
-        //ql_hmd_set_per_eye_resolution(hmd, hmd->base.hmd->screens[0].w_pixels, hmd->base.hmd->screens[0].h_pixels, hmd->fps);
-    }
-
-    {
-        struct ql_hands* ctrl = host->sys->hands;
-
-        //ctrl->poses[0] = host->sys->controllers[0]->pose;
-        //ctrl->poses[1] = host->sys->controllers[1]->pose;
     }
     
     os_mutex_unlock(&host->pose_mutex);

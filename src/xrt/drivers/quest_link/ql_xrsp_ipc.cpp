@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: BSL-1.0
 /*!
  * @file
- * @brief  quest_link XRSP hostinfo packets
+ * @brief  quest_link XRSP IPC packets
  * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
@@ -33,7 +33,7 @@ extern "C"
 
 void xrsp_ripc_panel_cmd(struct ql_xrsp_host* host, uint32_t client_id);
 
-void ql_xrsp_ipc_segpkt_init(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, ql_xrsp_ipc_segpkt_handler_t handler)
+void ql_xrsp_ipc_segpkt_init(struct ql_xrsp_ipc_segpkt* segpkt, ql_xrsp_ipc_segpkt_handler_t handler)
 {
     segpkt->num_segs = 2;
     segpkt->reading_idx = 0;
@@ -56,6 +56,26 @@ void ql_xrsp_ipc_segpkt_init(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
     }
 
     segpkt->state = STATE_SEGMENT_META;
+}
+
+void ql_xrsp_ipc_segpkt_destroy(struct ql_xrsp_ipc_segpkt* segpkt)
+{
+    if (!segpkt) return;
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (segpkt->segs[i] && segpkt->num_segs) {
+            free(segpkt->segs[i]);
+        }
+        segpkt->segs[i] = NULL;
+        segpkt->segs_valid[i] = 0;
+        segpkt->segs_expected[i] = 0;
+        segpkt->segs_max[i] = 0;
+    }
+
+    segpkt->num_segs = 0;
+    segpkt->reading_idx = 0;
+    segpkt->handler = NULL;
 }
 
 void ql_xrsp_ipc_segpkt_consume(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_host* host, struct ql_xrsp_topic_pkt* pkt)
@@ -270,6 +290,7 @@ typedef struct ovrOneEyeGaze
     uint32_t is_valid;
 } ovrOneEyeGaze;
 
+// TODO: HACK: Need a real eye tracking API to use
 extern "C"
 {
     __attribute__((visibility("default"))) float ql_xrsp_sidechannel_eye_l_orient[4] = {0.0, 0.0, 0.0, 1.0};
@@ -289,6 +310,7 @@ void ql_xrsp_ipc_handle_eyes(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_h
 
     struct xrt_quat eye_l_filtered, eye_r_filtered;
 
+    // TODO: incorporate confidence values?
     m_filter_euro_quat_run(&hmd->eye_l_oe, now, &eye_l->pose.orient, &eye_l_filtered);
     m_filter_euro_quat_run(&hmd->eye_r_oe, now, &eye_r->pose.orient, &eye_r_filtered);
 
@@ -433,8 +455,6 @@ uint8_t* ql_xrsp_ipc_parse_state(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xr
     read_ptr += 0xC;
     read_ptr += to_copy;
 
-    //printf("State: %s\n", name_tmp);
-
     read_ptr += 0xC; // MemoryId?
 
     uint32_t to_skip = *(uint32_t*)(read_ptr + 8) + 0x10;
@@ -453,7 +473,6 @@ void ql_xrsp_ipc_parse_states(struct ql_xrsp_ipc_segpkt* segpkt, struct ql_xrsp_
     uint32_t num_states = *(uint32_t*)(segpkt->segs[1] + 0x11);
     uint8_t* read_ptr = segpkt->segs[1] + 0x15;
 
-    //printf("There are %u states:\n", num_states);
     for (int i = 0; i < num_states; i++)
     {
         read_ptr = ql_xrsp_ipc_parse_state(segpkt, host, read_ptr);

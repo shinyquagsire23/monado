@@ -1,24 +1,22 @@
 /*
  * Copyright 2013, Fredrik Hultin.
  * Copyright 2013, Jakob Bornecrantz.
- * Copyright 2016, Philipp Zabel
- * Copyright 2019-2022, Jan Schmidt
- * Copyright 2022, Guillaume Meunier <guillaume.meunier@centraliens.net>
- * Copyright 2022, Patrick Nicolas <patricknicolas@laposte.net>
- * Copyright 2022, Max Thomas
+ * Copyright 2016 Philipp Zabel
+ * Copyright 2019-2022 Jan Schmidt
+ * Copyright 2022  Guillaume Meunier
+ * Copyright 2022  Patrick Nicolas
+ * Copyright 2022-2023 Max Thomas
  * SPDX-License-Identifier: BSL-1.0
  *
  */
 /*!
  * @file
- * @brief  Driver code for Meta Quest Link headsets
+ * @brief  Translation layer from XRSP HMD pose samples to OpenXR
  *
- * Implementation for the HMD communication, calibration and
- * IMU integration.
+ * Glue code from sampled XRSP HMD poses OpenXR poses.
+ * Includes distortion meshes for AADT.
  *
- * Ported from OpenHMD
- *
- * @author Jan Schmidt <jan@centricular.com>
+ * @author Max Thomas <mtinc2@gmail.com>
  * @ingroup drv_quest_link
  */
 
@@ -112,9 +110,6 @@ ql_get_view_poses(struct xrt_device *xdev,
 
 	struct xrt_vec3 modify_eye_relation = *default_eye_relation;
 	modify_eye_relation.x = hmd->ipd_meters;
-	//printf("%f\n", modify_eye_relation.x);
-
-	//ql_hmd_get_interpolated_pose(hmd, at_timestamp_ns, NULL);
 
 	os_mutex_unlock(&host->pose_mutex);
 	u_device_get_view_poses(xdev, &modify_eye_relation, at_timestamp_ns, view_count, out_head_relation, out_fovs,
@@ -130,10 +125,10 @@ ql_hmd_destroy(struct xrt_device *xdev)
 
 	DRV_TRACE_MARKER();
 
-	/* Remove this device from the system */
+	// Remove this device from the system
 	ql_system_remove_hmd(hmd->sys);
 
-	/* Drop the reference to the system */
+	// Drop the reference to the system
 	ql_system_reference(&hmd->sys, NULL);
 
 	u_var_remove_root(hmd);
@@ -141,6 +136,7 @@ ql_hmd_destroy(struct xrt_device *xdev)
 	u_device_free(&hmd->base);
 }
 
+// TODO: is this redundant?
 static double foveate(double a, double b, double scale, double c, double x)
 {
 	// In order to save encoding, transmit and decoding time, only a portion of the image is encoded in full resolution.
@@ -429,14 +425,6 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 		if (i >= hmd->quest_vtx_count/2) {
 			u2 += 0.5;
 		}
-
-		if ((i % vert_cols) >= vert_cols-1)
-		{
-			//u2 = 0.0;
-			//printf("%u: %f %f, %f %f\n", i, u1, v1, u2, v2);
-		}
-		//u1 = 0.0;
-		//v1 = 0.0;
 		
 		vtx_out[0] = u1;
 		vtx_out[1] = v1;
@@ -470,7 +458,7 @@ void ql_hmd_set_per_eye_resolution(struct ql_hmd* hmd, uint32_t w, uint32_t h, f
 }
 
 struct ql_hmd *
-ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct ql_hmd_config *config)
+ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no)
 {
 	DRV_TRACE_MARKER();
 
@@ -482,10 +470,8 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 		return NULL;
 	}
 
-	/* Take a reference to the ql_system */
+	// Take a reference to the ql_system
 	ql_system_reference(&hmd->sys, sys);
-
-	hmd->config = config;
 
 	hmd->base.tracking_origin = &sys->base;
 
@@ -496,8 +482,6 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	hmd->base.destroy = ql_hmd_destroy;
 	hmd->base.name = XRT_DEVICE_GENERIC_HMD;
 	hmd->base.device_type = XRT_DEVICE_TYPE_HMD;
-
-	//hmd->tracker = ql_system_get_tracker(sys);
 
 	// Print name.
 	snprintf(hmd->base.str, XRT_DEVICE_NAME_LEN, "Meta Quest Link");
@@ -542,31 +526,7 @@ ql_hmd_create(struct ql_system *sys, const unsigned char *hmd_serial_no, struct 
 	m_filter_euro_quat_init(&hmd->eye_l_oe, min_cutoff, min_dcutoff, beta);
 	m_filter_euro_quat_init(&hmd->eye_r_oe, min_cutoff, min_dcutoff, beta);
 
-
-#if 0
-	// Setup info.
-	struct u_device_simple_info info;
-	info.display.w_pixels = 3616;
-	info.display.h_pixels = 1920;
-	info.display.w_meters = 0.13f;
-	info.display.h_meters = 0.07f;
-	info.lens_horizontal_separation_meters = 0.13f / 2.0f;
-	info.lens_vertical_position_meters = 0.07f / 2.0f;
-	info.fov[0] = 85.0f * ((float)(M_PI) / 180.0f);
-	info.fov[1] = 85.0f * ((float)(M_PI) / 180.0f);
-
-	if (!u_device_setup_split_side_by_side(&hmd->base, &info)) {
-		QUEST_LINK_ERROR("Failed to setup basic device info");
-		ql_hmd_destroy(&hmd->base);
-		return NULL;
-	}
-#endif
-
-	//u_distortion_mesh_set_none(&hmd->base);
-	
-
 	u_var_add_gui_header(hmd, NULL, "Misc");
-	//u_var_add_log_level(hmd, &ql_log_level, "log_level");
 
 	QUEST_LINK_DEBUG("Meta Quest Link HMD serial %s initialised.", hmd_serial_no);
 
