@@ -233,12 +233,19 @@ ql_set_output(struct xrt_device *xdev, enum xrt_output_name name, const union xr
     struct ql_controller *ctrl = (struct ql_controller *)(xdev);
     struct ql_xrsp_host *host = &ctrl->sys->xrsp_host;
 
+    // Skip redundant packets
+    if (ctrl->last_simple_haptic == value->vibration.amplitude) {
+        return;
+    }
+
     if (ctrl->features & OVR_TOUCH_FEAT_RIGHT) {
         xrsp_send_simple_haptic(host, xrsp_ts_ns_to_target(host, ctrl->pose_ns), OVR_HAPTIC_RIGHT, value->vibration.amplitude);
     }
     else {
         xrsp_send_simple_haptic(host, xrsp_ts_ns_to_target(host, ctrl->pose_ns), OVR_HAPTIC_LEFT, value->vibration.amplitude);
     }
+
+    ctrl->last_simple_haptic = value->vibration.amplitude;
 }
 
 static void
@@ -325,6 +332,8 @@ ql_controller_create(struct ql_system *sys, enum xrt_device_type device_type)
     ctrl->pose.orientation.y = 0.0f;
     ctrl->pose.orientation.z = 0.0f;
     ctrl->pose.orientation.w = 1.0f;
+
+    ctrl->last_simple_haptic = 0.0;
 
     QUEST_LINK_DEBUG("Meta Quest Link controller initialised.");
 

@@ -6,8 +6,9 @@ struct PayloadAudio {
 }
 
 struct PayloadAudioControl {
-    dataUnk0p0 @0 :UInt32;
-    dataUnk0p1 @1 :UInt32;
-    dataUnk1p0 @2 :Float32;
-    dataUnk1p1 @3 :Float32;
+    dataUnk0 @0 :UInt16;
+    dataUnk1 @1 :UInt16;
+    dataUnk2 @2 :UInt32;
+    dataUnk3 @3 :Float32;
+    dataUnk4 @4 :Float32;
 }

@@ -186,6 +186,7 @@ typedef struct ql_xrsp_host
     struct os_mutex pose_mutex;
 
     bool ready_to_send_frames;
+    bool sent_first_frame;
     int frame_idx;
 
     struct os_mutex stream_mutex[QL_SWAPCHAIN_DEPTH*QL_NUM_SLICES];
@@ -253,6 +254,8 @@ struct ql_controller
     float grip_z;
     float trigger_z;
     float stylus_pressure;
+
+    float last_simple_haptic;
 
     struct os_mutex pose_mutex;
 
